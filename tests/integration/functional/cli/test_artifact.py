@@ -21,7 +21,7 @@ from zenml.cli.cli import cli
 def test_artifact_list(clean_client_with_run):
     """Test that `zenml artifact list` does not fail."""
     runner = CliRunner()
-    list_command = cli.commands["pipeline"].commands["list"]
+    list_command = cli.commands["artifact"].commands["list"]
     result = runner.invoke(list_command)
     assert result.exit_code == 0
 

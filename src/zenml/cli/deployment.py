@@ -72,7 +72,9 @@ def deployment() -> None:
 
 
 @deployment.command("list", help="List all registered deployments.")
-@list_options(DeploymentFilter)
+@list_options(
+    DeploymentFilter, default_columns=["id", "name", "url", "status"]
+)
 def list_deployments(**kwargs: Any) -> None:
     """List all registered deployments for the filter.
 

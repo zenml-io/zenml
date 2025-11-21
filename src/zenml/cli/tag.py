@@ -37,8 +37,8 @@ def tag() -> None:
     """Interact with tags."""
 
 
-@cli_utils.list_options(TagFilter)
 @tag.command("list", help="List tags with filter.")
+@cli_utils.list_options(TagFilter)
 def list_tags(**kwargs: Any) -> None:
     """List tags with filter.
 

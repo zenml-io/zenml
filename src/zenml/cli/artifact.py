@@ -35,8 +35,8 @@ def artifact() -> None:
     """Commands for interacting with artifacts."""
 
 
-@cli_utils.list_options(ArtifactFilter)
 @artifact.command("list", help="List all artifacts.")
+@cli_utils.list_options(ArtifactFilter)
 def list_artifacts(**kwargs: Any) -> None:
     """List all artifacts.
 
@@ -115,8 +115,8 @@ def version() -> None:
     """Commands for interacting with artifact versions."""
 
 
-@cli_utils.list_options(ArtifactVersionFilter)
 @version.command("list", help="List all artifact versions.")
+@cli_utils.list_options(ArtifactVersionFilter)
 def list_artifact_versions(**kwargs: Any) -> None:
     """List all artifact versions.
 

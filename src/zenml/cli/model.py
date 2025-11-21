@@ -77,8 +77,8 @@ def model() -> None:
     """Interact with models and model versions in the Model Control Plane."""
 
 
-@cli_utils.list_options(ModelFilter)
 @model.command("list", help="List models with filter.")
+@cli_utils.list_options(ModelFilter)
 def list_models(**kwargs: Any) -> None:
     """List models with filter in the Model Control Plane.
 
@@ -390,8 +390,8 @@ def version() -> None:
     """Interact with model versions in the Model Control Plane."""
 
 
-@cli_utils.list_options(ModelVersionFilter)
 @version.command("list", help="List model versions with filter.")
+@cli_utils.list_options(ModelVersionFilter)
 def list_model_versions(**kwargs: Any) -> None:
     """List model versions with filter in the Model Control Plane.
 

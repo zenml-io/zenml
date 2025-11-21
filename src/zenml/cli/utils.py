@@ -15,6 +15,7 @@
 
 import contextlib
 import functools
+import inspect
 import json
 import os
 import platform
@@ -22,6 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
+from contextvars import ContextVar
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -31,6 +33,7 @@ from typing import (
     Dict,
     Iterator,
     List,
+    Literal,
     NoReturn,
     Optional,
     Sequence,
@@ -45,7 +48,7 @@ from typing import (
 import click
 import yaml
 from pydantic import BaseModel, SecretStr
-from rich import box, table
+from rich import table
 from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
@@ -57,8 +60,10 @@ from rich.table import Table
 from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
+    ENV_ZENML_CLI_COLUMN_WIDTH,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
+    handle_int_env_var,
 )
 from zenml.deployers.utils import (
     get_deployment_input_schema,
@@ -84,11 +89,11 @@ from zenml.models import (
     Page,
     ServiceConnectorRequirements,
     StrFilter,
+    UserResponse,
     UUIDFilter,
 )
 from zenml.models.v2.base.filter import FilterGenerator
 from zenml.services import BaseService
-from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import dict_utils, secret_utils
@@ -123,10 +128,15 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
 T = TypeVar("T", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+LIST_RENDER_OPTIONS: ContextVar[Optional[Dict[str, str]]] = ContextVar(
+    "list_render_options", default=None
+)
 
 
 def title(text: str) -> None:
@@ -257,27 +267,6 @@ def success(
     console.print(text, style=style, **kwargs)
 
 
-def print_markdown(text: str) -> None:
-    """Prints a string as markdown.
-
-    Args:
-        text: Markdown string to be printed.
-    """
-    markdown_text = Markdown(text)
-    console.print(markdown_text)
-
-
-def print_markdown_with_pager(text: str) -> None:
-    """Prints a string as markdown with a pager.
-
-    Args:
-        text: Markdown string to be printed.
-    """
-    markdown_text = Markdown(text)
-    with console.pager():
-        console.print(markdown_text)
-
-
 def print_table(
     obj: List[Dict[str, Any]],
     title: Optional[str] = None,
@@ -298,14 +287,27 @@ def print_table(
     """
     from rich.text import Text
 
+    render_options = LIST_RENDER_OPTIONS.get()
+    if render_options:
+        columns_arg = render_options.get("columns", "")
+        output_format_arg = render_options.get(
+            "output_format", get_default_output_format()
+        )
+        handle_output(
+            data=obj,
+            pagination_info=None,
+            columns=columns_arg,
+            output_format=output_format_arg,
+        )
+        return
+
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(
-        box=box.ROUNDED,
-        show_lines=True,
+        box=None,
+        show_lines=False,
         title=title,
         caption=caption,
-        border_style="dim",
     )
     for col_name in column_names:
         if isinstance(col_name, str):
@@ -335,8 +337,9 @@ def print_table(
                         value = escape(value)
                 values.append(value)
         rich_table.add_row(*values)
-    if len(rich_table.columns) > 1:
-        rich_table.columns[0].justify = "center"
+    # Consistent left alignment for all columns
+    for column in rich_table.columns:
+        column.justify = "left"
     console.print(rich_table)
 
 
@@ -478,7 +481,7 @@ def print_pydantic_models(
             ]
 
         print_table([__dictify(model) for model in table_items])
-        print_page_info(models)
+        print_page_info(models.pagination_info)
     else:
         table_items = list(models)
 
@@ -509,10 +512,9 @@ def print_pydantic_model(
         columns: Optionally specify subset and order of columns to display.
     """
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title=title,
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -628,11 +630,9 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     if active:
         stack_caption += " (ACTIVE)"
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title="Stack Configuration",
         caption=stack_caption,
-        show_lines=True,
-        border_style="dim",
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
@@ -650,10 +650,8 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         declare("No labels are set for this stack.")
     else:
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title="Labels",
-            show_lines=True,
-            border_style="dim",
         )
         rich_table.add_column("LABEL")
         rich_table.add_column("VALUE", overflow="fold")
@@ -727,10 +725,9 @@ def print_stack_component_configuration(
         if active_status:
             title_ += " (ACTIVE)"
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title=title_,
-            show_lines=True,
-            border_style="dim",
+            show_lines=False,
         )
         rich_table.add_column("COMPONENT_PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -751,10 +748,9 @@ def print_stack_component_configuration(
         declare("No labels are set for this component.")
     else:
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title="Labels",
-            show_lines=True,
-            border_style="dim",
+            show_lines=False,
         )
         rich_table.add_column("LABEL")
         rich_table.add_column("VALUE", overflow="fold")
@@ -768,10 +764,9 @@ def print_stack_component_configuration(
         declare("No connector is set for this component.")
     else:
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title="Service Connector",
-            show_lines=True,
-            border_style="dim",
+            show_lines=False,
         )
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -1246,9 +1241,8 @@ def print_list_items(list_items: List[str], column_title: str) -> None:
         column_title: Title of the column
     """
     rich_table = table.Table(
-        box=box.ROUNDED,
-        show_lines=True,
-        border_style="dim",
+        box=None,
+        show_lines=False,
     )
     rich_table.add_column(column_title.upper(), overflow="fold")
     list_items.sort()
@@ -1373,10 +1367,9 @@ def pretty_print_model_version_details(
     title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
 
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title=title_,
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1426,10 +1419,9 @@ def print_served_model_configuration(
     title_ = f"Properties of Served Model {model_service.uuid}"
 
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title=title_,
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("MODEL SERVICE PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1531,7 +1523,6 @@ def replace_emojis(text: str) -> str:
         try:
             text = text.replace(f":{emoji}:", str(Emoji(emoji)))
         except NoEmoji:
-            # If the emoji text is not a valid emoji, just ignore it
             pass
     return text
 
@@ -1541,15 +1532,16 @@ def print_stacks_table(
     stacks: Sequence["StackResponse"],
     show_active: bool = False,
 ) -> None:
-    """Print a prettified list of all stacks supplied to this method.
+    """Print a prettified list of stacks (legacy helper).
 
     Args:
-        client: Repository instance
-        stacks: List of stacks
-        show_active: Flag to decide whether to append the active stack on the
-            top of the list.
+        client: Repository instance.
+        stacks: List of stacks.
+        show_active: Whether to highlight the active stack at the top.
     """
-    stack_dicts = []
+    if len(stacks) == 0:
+        warning("No stacks found.")
+        return
 
     stacks = list(stacks)
     active_stack = client.active_stack_model
@@ -1561,25 +1553,32 @@ def print_stacks_table(
             s for s in stacks if s.id != active_stack.id
         ]
 
+    all_component_types: Set[StackComponentType] = set()
+    for stack in stacks:
+        all_component_types.update(stack.components.keys())
+
     active_stack_model_id = client.active_stack_model.id
+    stack_dicts = []
     for stack in stacks:
         is_active = stack.id == active_stack_model_id
-
-        if stack.user:
-            user_name = stack.user.name
-        else:
-            user_name = "-"
+        user_name = stack.user.name if stack.user else "-"
 
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
             "OWNER": user_name,
-            **{
-                component_type.upper(): components[0].name
-                for component_type, components in stack.components.items()
-            },
         }
+
+        for component_type in all_component_types:
+            component_name = component_type.value.upper().replace("_", " ")
+            if component_type in stack.components:
+                stack_config[component_name] = stack.components[
+                    component_type
+                ][0].name
+            else:
+                stack_config[component_name] = "-"
+
         stack_dicts.append(stack_config)
 
     print_table(stack_dicts)
@@ -1687,19 +1686,20 @@ def print_service_connectors_table(
             ]
 
     configurations = []
-    for connector in connectors:
+    for i, connector in enumerate(connectors):
         is_active = connector.id in [c.id for c in active_connectors]
         labels = [
             f"{label}:{value}" for label, value in connector.labels.items()
         ]
         resource_name = connector.resource_id or "<multiple>"
+        resource_types_str = "\n".join(connector.emojified_resource_types)
 
         connector_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": connector.name,
             "ID": connector.id,
             "TYPE": connector.emojified_connector_type,
-            "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
+            "RESOURCE TYPES": resource_types_str,
             "RESOURCE NAME": resource_name,
             "OWNER": f"{connector.user.name if connector.user else '-'}",
             "EXPIRES IN": (
@@ -1714,6 +1714,10 @@ def print_service_connectors_table(
             "LABELS": "\n".join(labels),
         }
         configurations.append(connector_config)
+
+        if i < len(connectors) - 1 and "\n" in resource_types_str:
+            configurations.append({key: "" for key in connector_config.keys()})
+
     print_table(configurations)
 
 
@@ -1727,13 +1731,24 @@ def print_service_connector_resource_table(
         resources: List of service connector resources to print.
         show_resources_only: If True, only the resources will be printed.
     """
+
+    def _truncate_error(error_msg: str, max_length: int = 100) -> str:
+        """Truncate long error messages for better readability."""
+        if len(error_msg) <= max_length:
+            return error_msg
+        truncated = error_msg[:max_length].rsplit(" ", 1)[0]
+        return f"{truncated}... (use --verbose for full error)"
+
     resource_table = []
-    for resource_model in resources:
+    errors_found = False
+
+    for i, resource_model in enumerate(resources):
         printed_connector = False
         resource_row: Dict[str, Any] = {}
 
         if resource_model.error:
             # Global error
+            errors_found = True
             if not show_resources_only:
                 resource_row = {
                     "CONNECTOR ID": str(resource_model.id),
@@ -1745,10 +1760,28 @@ def print_service_connector_resource_table(
                     "RESOURCE TYPE": "\n".join(
                         resource_model.get_emojified_resource_types()
                     ),
-                    "RESOURCE NAMES": f":collision: error: {resource_model.error}",
+                    "RESOURCE NAMES": f":collision: {_truncate_error(resource_model.error)}",
                 }
             )
             resource_table.append(resource_row)
+            if i < len(resources) - 1:
+                if not show_resources_only:
+                    resource_table.append(
+                        {
+                            "CONNECTOR ID": "",
+                            "CONNECTOR NAME": "",
+                            "CONNECTOR TYPE": "",
+                            "RESOURCE TYPE": "",
+                            "RESOURCE NAMES": "",
+                        }
+                    )
+                else:
+                    resource_table.append(
+                        {
+                            "RESOURCE TYPE": "",
+                            "RESOURCE NAMES": "",
+                        }
+                    )
             continue
 
         for resource in resource_model.resources:
@@ -1756,8 +1789,10 @@ def print_service_connector_resource_table(
                 resource.resource_type
             )[0]
             if resource.error:
-                # Error fetching resources
-                resource_ids = [f":collision: error: {resource.error}"]
+                errors_found = True
+                resource_ids = [
+                    f":collision: {_truncate_error(resource.error)}"
+                ]
             elif resource.resource_ids:
                 resource_ids = resource.resource_ids
             else:
@@ -1786,7 +1821,30 @@ def print_service_connector_resource_table(
             )
             resource_table.append(resource_row)
             printed_connector = True
+        if i < len(resources) - 1 and resource_model.resources:
+            if not show_resources_only:
+                resource_table.append(
+                    {
+                        "CONNECTOR ID": "",
+                        "CONNECTOR NAME": "",
+                        "CONNECTOR TYPE": "",
+                        "RESOURCE TYPE": "",
+                        "RESOURCE NAMES": "",
+                    }
+                )
+            else:
+                resource_table.append(
+                    {
+                        "RESOURCE TYPE": "",
+                        "RESOURCE NAMES": "",
+                    }
+                )
     print_table(resource_table)
+    if errors_found:
+        console.print(
+            "\n[dim]💡 Tip: Some error messages were truncated for readability. "
+            "Use describe commands for full error details.[/dim]"
+        )
 
 
 def print_service_connector_configuration(
@@ -1829,10 +1887,9 @@ def print_service_connector_configuration(
     if active_status:
         title_ += " (ACTIVE)"
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title=title_,
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1904,10 +1961,9 @@ def print_service_connector_configuration(
 
     else:
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title="Configuration",
-            show_lines=True,
-            border_style="dim",
+            show_lines=False,
         )
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -1933,10 +1989,9 @@ def print_service_connector_configuration(
         return
 
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title="Labels",
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("LABEL")
     rich_table.add_column("VALUE", overflow="fold")
@@ -2187,20 +2242,6 @@ def print_service_connector_type(
     return message
 
 
-def _get_stack_components(
-    stack: "Stack",
-) -> "List[StackComponent]":
-    """Get a dict of all components in a stack.
-
-    Args:
-        stack: A stack
-
-    Returns:
-        A list of all components in a stack.
-    """
-    return list(stack.components.values())
-
-
 def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
     """Remove secret values from a configuration.
 
@@ -2415,66 +2456,100 @@ def get_deployment_status_emoji(
     return ":question:"
 
 
-def format_deployment_status(status: Optional[str]) -> str:
-    """Format deployment status with color.
+def _generate_deployment_row(
+    deployment: "DeploymentResponse", output_format: str
+) -> Dict[str, Any]:
+    """Generate additional data for deployment display.
 
     Args:
-        status: The deployment status.
+        deployment: The deployment response.
+        output_format: The output format.
 
     Returns:
-        Formatted status string.
+        The additional data for the deployment.
     """
-    if status == DeploymentStatus.RUNNING:
-        return "[green]RUNNING[/green]"
-    elif status == DeploymentStatus.PENDING:
-        return "[yellow]PENDING[/yellow]"
-    elif status == DeploymentStatus.ERROR:
-        return "[red]ERROR[/red]"
-    elif status == DeploymentStatus.ABSENT:
-        return "[dim]ABSENT[/dim]"
+    if deployment.user:
+        user_name = deployment.user.name
+    else:
+        user_name = "-"
 
-    return "[dim]UNKNOWN[/dim]"
+    if deployment.snapshot is None or deployment.snapshot.pipeline is None:
+        pipeline_name = "unlisted"
+    else:
+        pipeline_name = deployment.snapshot.pipeline.name
+
+    if deployment.snapshot is None or deployment.snapshot.stack is None:
+        stack_name = "[DELETED]"
+    else:
+        stack_name = deployment.snapshot.stack.name
+
+    status = deployment.status or DeploymentStatus.UNKNOWN.value
+
+    # For table format, use emoji and colorized status
+    if output_format == "table":
+        status_emoji = get_deployment_status_emoji(status)
+        status_display = f"{status_emoji} {status.upper()}"
+    else:
+        # For other formats, use plain uppercase status
+        status_display = status.upper()
+
+    return {
+        "pipeline": pipeline_name,
+        "snapshot": deployment.snapshot.name or ""
+        if deployment.snapshot
+        else "N/A",
+        "url": deployment.url or "N/A",
+        "status": status_display,
+        "stack": stack_name,
+        "owner": user_name,
+    }
 
 
 def print_deployment_table(
-    deployments: Sequence["DeploymentResponse"],
+    deployments: Union[
+        Page["DeploymentResponse"], Sequence["DeploymentResponse"]
+    ],
+    output_format: Optional[str] = None,
+    columns: Optional[str] = None,
 ) -> None:
-    """Print a prettified list of all deployments supplied to this method.
+    """Print a prettified list of deployments.
 
     Args:
-        deployments: List of deployments
+        deployments: Page or list of deployments.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
     """
-    deployment_dicts = []
-    for deployment in deployments:
-        if deployment.user:
-            user_name = deployment.user.name
-        else:
-            user_name = "-"
+    render_opts = LIST_RENDER_OPTIONS.get() or {}
+    output_format = (
+        output_format
+        or render_opts.get("output_format")
+        or get_default_output_format()
+    )
+    columns = (
+        columns
+        or render_opts.get("columns")
+        or render_opts.get("default_columns")
+        or "id,name,url,status"
+    )
 
-        if deployment.snapshot is None or deployment.snapshot.pipeline is None:
-            pipeline_name = "unlisted"
-        else:
-            pipeline_name = deployment.snapshot.pipeline.name
-        if deployment.snapshot is None or deployment.snapshot.stack is None:
-            stack_name = "[DELETED]"
-        else:
-            stack_name = deployment.snapshot.stack.name
-        status = deployment.status or DeploymentStatus.UNKNOWN.value
-        status_emoji = get_deployment_status_emoji(status)
-        run_dict = {
-            "ID": deployment.id,
-            "NAME": deployment.name,
-            "PIPELINE": pipeline_name,
-            "SNAPSHOT": deployment.snapshot.name or ""
-            if deployment.snapshot
-            else "N/A",
-            "URL": deployment.url or "N/A",
-            "STATUS": f"{status_emoji} {status.upper()}",
-            "STACK": stack_name,
-            "OWNER": user_name,
-        }
-        deployment_dicts.append(run_dict)
-    print_table(deployment_dicts)
+    if isinstance(deployments, Page):
+        page = deployments
+    else:
+        # Build a minimal Page-like object for list inputs
+        page = Page(
+            index=1,
+            max_size=len(deployments) or 1,
+            total_pages=1,
+            total=len(deployments),
+            items=list(deployments),
+        )
+
+    render_list_output(
+        page=page,
+        output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_deployment_row,
+    )
 
 
 def pretty_print_deployment(
@@ -2670,15 +2745,20 @@ def check_zenml_pro_project_availability() -> None:
         )
 
 
-def print_page_info(page: Page[T]) -> None:
+def print_page_info(
+    pagination_info: Union[Dict[str, Any], "Page[Any]"],
+) -> None:
     """Print all page information showing the number of items and pages.
 
     Args:
-        page: The page to print the information for.
+        pagination_info: The pagination information to print.
     """
+    if isinstance(pagination_info, Page):
+        pagination_info = pagination_info.pagination_info
+
     declare(
-        f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
-        f"found for the applied filters."
+        f"Page `({pagination_info['index']}/{pagination_info['total_pages']})`, "
+        f"`{pagination_info['total']}` items found for the applied filters."
     )
 
 
@@ -2795,7 +2875,9 @@ def _is_list_field(field_info: Any) -> bool:
     )
 
 
-def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
+def list_options(
+    filter_model: Type[BaseFilter], default_columns: Optional[List[str]] = None
+) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of filter parameters.
 
     The Outer decorator (`list_options`) is responsible for creating the inner
@@ -2807,6 +2889,8 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
 
     Args:
         filter_model: The filter model based on which to decorate the function.
+        default_columns: Optional list of column names to use as defaults when
+            --columns is not specified and output format is table.
 
     Returns:
         The inner decorator.
@@ -2832,6 +2916,111 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                     create_data_type_help_text(filter_model, k)
                 )
 
+        # Add columns and output options
+        default_columns_list = default_columns or []
+        default_columns_str = ",".join(default_columns_list)
+
+        options.extend(
+            [
+                click.option(
+                    "--columns",
+                    "-c",
+                    type=str,
+                    default=default_columns_str,
+                    help="Comma-separated list of columns to display. Available columns: "
+                    f"{', '.join(default_columns_list)}.",
+                ),
+                click.option(
+                    "--output",
+                    "-o",
+                    "output_format",
+                    type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
+                    default=get_default_output_format(),
+                    help="Output format for the list.",
+                ),
+            ]
+        )
+
+        def wrapper(function: F) -> F:
+            for option in reversed(options):
+                function = option(function)
+
+            @functools.wraps(function)
+            def wrapped(*args: Any, **kwargs: Any) -> Any:
+                cleaned_kwargs = dict_utils.remove_none_values(kwargs)
+
+                columns_arg = cleaned_kwargs.pop(
+                    "columns", default_columns_str
+                )
+                if not columns_arg and default_columns_str:
+                    columns_arg = default_columns_str
+                output_format_arg = cleaned_kwargs.pop(
+                    "output_format", get_default_output_format()
+                )
+                cleaned_kwargs.pop("default_columns", None)
+
+                # Drop injected args the underlying function does not accept to
+                # keep existing command signatures working.
+                sig = inspect.signature(function)
+                accepts_kwargs = any(
+                    p.kind == inspect.Parameter.VAR_KEYWORD
+                    for p in sig.parameters.values()
+                )
+
+                if "columns" in sig.parameters:
+                    cleaned_kwargs["columns"] = columns_arg
+
+                if "output_format" in sig.parameters:
+                    cleaned_kwargs["output_format"] = output_format_arg
+
+                always_strip = {"columns", "output_format", "default_columns"}
+                if not accepts_kwargs:
+                    allowed = set(sig.parameters.keys())
+                    cleaned_kwargs = {
+                        k: v
+                        for k, v in cleaned_kwargs.items()
+                        if k in allowed and k not in always_strip
+                    }
+                else:
+                    cleaned_kwargs = {
+                        k: v
+                        for k, v in cleaned_kwargs.items()
+                        if k not in always_strip
+                    }
+
+                token = LIST_RENDER_OPTIONS.set(
+                    {
+                        "columns": columns_arg,
+                        "output_format": output_format_arg,
+                        "default_columns": default_columns_str,
+                    }
+                )
+                try:
+                    result = function(*args, **cleaned_kwargs)
+                finally:
+                    LIST_RENDER_OPTIONS.reset(token)
+
+                # Auto-render if the command returns a Page or (Page, row_formatter)
+                if result is None:
+                    return None
+
+                row_formatter = None
+                if isinstance(result, tuple) and len(result) == 2:
+                    result, row_formatter = result
+
+                if isinstance(result, Page):
+                    render_list_output(
+                        page=result,
+                        output_format=output_format_arg,
+                        columns=columns_arg,
+                        row_formatter=row_formatter,
+                    )
+                    return None
+
+                return result
+
+            return cast(F, wrapped)
+
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "
             f"interpreted as a check for equality. However advanced "
@@ -2852,17 +3041,7 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                 f"{joined_data_type_descriptors}"
             )
 
-        for option in reversed(options):
-            func = option(func)
-
-        @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            nonlocal func
-
-            kwargs = dict_utils.remove_none_values(kwargs)
-            return func(*args, **kwargs)
-
-        return cast(F, wrapper)
+        return wrapper(func)
 
     return inner_decorator
 
@@ -2948,16 +3127,14 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
         ctx: the Click context of the CLI call.
 
     Returns:
-        a boolean indicating whether any sorting or filtering parameters were
-        used during the list CLI call.
+        True if any parameter source differs from default, else False.
     """
     try:
         for _, source in ctx._parameter_source.items():
             if source != click.core.ParameterSource.DEFAULT:
                 return True
         return False
-
-    except Exception as e:
+    except Exception as e:  # pragma: no cover - best-effort safety
         logger.debug(
             f"There was a problem accessing the parameter source for "
             f'the "sort_by" option: {e}'
@@ -3018,9 +3195,8 @@ def multi_choice_prompt(
     table = Table(
         title=f"Available {object_type}",
         show_header=True,
-        border_style="dim",
         expand=True,
-        show_lines=True,
+        show_lines=False,
     )
     table.add_column("Choice", justify="left", width=1)
     for h in headers:
@@ -3070,3 +3246,516 @@ def requires_mac_env_var_warning() -> bool:
             "OBJC_DISABLE_INITIALIZE_FORK_SAFETY"
         ) and mac_version_tuple >= (10, 13)
     return False
+
+
+def get_default_output_format() -> str:
+    """Get the default output format from environment variable.
+
+    Returns:
+        The default output format, falling back to "table" if not configured.
+    """
+    from zenml.constants import ENV_ZENML_DEFAULT_OUTPUT
+
+    return os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
+
+
+def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
+    """Prepare data from BaseResponse instances.
+
+    Args:
+        item: BaseResponse instance to format
+
+    Returns:
+        Dictionary with the data
+    """
+    item_data: Dict[str, Any] = {"id": item.id}
+
+    if hasattr(item, "name"):
+        item_data["name"] = getattr(item, "name")
+
+    if item.body is not None:
+        body_data = item.body.model_dump(mode="json")
+        item_data.update(body_data)
+
+    if item.resources is not None:
+        if user := getattr(item.resources, "user", None):
+            if isinstance(user, UserResponse):
+                item_data["user"] = user.name
+
+    return item_data
+
+
+def render_list_output(
+    page: Page[AnyResponse],
+    output_format: str,
+    columns: str,
+    row_formatter: Optional[Callable[..., Dict[str, Any]]] = None,
+) -> None:
+    """Render a page of list results with consistent formatting.
+
+    This helper consolidates the common pattern for list commands:
+    1. Extract base data from each response using prepare_response_data
+    2. Optionally apply a command-specific formatter to add extra fields
+    3. Pass the result to handle_output for final rendering
+
+    The row_formatter can accept either one argument (item) or two arguments
+    (item, output_format), allowing formatters to adapt their output based on
+    the target format (e.g., add rich markup for table output, plain text for JSON).
+
+    Args:
+        page: Page of response items to render
+        output_format: Output format (table, json, yaml, tsv, csv)
+        columns: Comma-separated list of columns to display
+        row_formatter: Optional callable to add command-specific fields to each row.
+            Can accept (item) or (item, output_format) as arguments.
+    """
+    item_list = []
+
+    for item in page.items:
+        item_data = prepare_response_data(item)
+
+        if row_formatter:
+            sig = inspect.signature(row_formatter)
+            formatter_accepts_output_format = len(sig.parameters) >= 2
+            additional_data = (
+                row_formatter(item, output_format)
+                if formatter_accepts_output_format
+                else row_formatter(item)
+            )
+
+            if additional_data:
+                item_data.update(additional_data)
+
+        item_list.append(item_data)
+
+    handle_output(
+        item_list,
+        pagination_info=page.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
+
+
+def handle_output(
+    data: List[Dict[str, Any]],
+    pagination_info: Optional[Dict[str, Any]],
+    columns: str,
+    output_format: str,
+) -> None:
+    """Handle output formatting for CLI commands.
+
+    This function processes the output formatting parameters from CLI options
+    and calls the appropriate rendering function.
+
+    Args:
+        data: List of dictionaries to render
+        pagination_info: Info about the pagination
+        output_format: Optional output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated column names. If empty, all columns are shown.
+    """
+    cli_output = prepare_output(
+        data=data,
+        output_format=output_format,
+        columns=columns,
+        pagination=pagination_info,
+    )
+    if cli_output:
+        from zenml_cli import clean_output
+
+        clean_output(cli_output)
+
+    if pagination_info:
+        print_page_info(pagination_info)
+
+
+def prepare_output(
+    data: List[Dict[str, Any]],
+    output_format: str = "table",
+    columns: Optional[str] = None,
+    pagination: Optional[Dict[str, Any]] = None,
+) -> Optional[str]:
+    """Render data in specified format following ZenML CLI table guidelines.
+
+    This function provides a centralized way to render tabular data across
+    all ZenML CLI commands with consistent formatting and multiple output
+    formats.
+
+    Args:
+        data: List of dictionaries to render
+        output_format: Output format (table, json, yaml, tsv, none)
+        columns: Optional list of column names to include
+        sort_by: Column to sort by
+        reverse: Whether to reverse sort order
+        no_truncate: Whether to disable truncation
+        no_color: Whether to disable colored output
+        max_width: Maximum table width (default: use terminal width)
+        pagination: Optional pagination metadata for JSON/YAML output
+        **kwargs: Additional formatting options
+
+    Returns:
+        The rendered table in the specified format or None if no data is provided
+
+    Raises:
+        ValueError: If an unsupported output format is provided
+    """
+    if not data:
+        return ""
+
+    # Parse and normalize column names
+    if columns:
+        requested_cols = [c.strip() for c in columns.split(",")]
+        # Create mapping from normalized names to actual keys
+        # Support both "STACK ID" and "id" formats
+        available_keys = list(data[0].keys())
+        col_mapping = {}
+
+        for req_col in requested_cols:
+            req_normalized = req_col.lower().replace("_", " ")
+            # Try exact match first
+            if req_col in available_keys:
+                col_mapping[req_col] = req_col
+            else:
+                # Try case-insensitive match with normalization
+                for key in available_keys:
+                    key_normalized = key.lower().replace("_", " ")
+                    if req_normalized == key_normalized:
+                        col_mapping[req_col] = key
+                        break
+
+        selected_columns = list(col_mapping.values())
+    else:
+        selected_columns = list(data[0].keys())
+
+    filtered_data = []
+    for entry in data:
+        filtered_data.append(
+            {k: entry[k] for k in selected_columns if k in entry}
+        )
+
+    if output_format == "json":
+        return _render_json(filtered_data, pagination=pagination)
+    elif output_format == "yaml":
+        return _render_yaml(filtered_data, pagination=pagination)
+    elif output_format == "tsv":
+        return _render_tsv(filtered_data)
+    elif output_format == "csv":
+        return _render_csv(filtered_data)
+    elif output_format == "table":
+        return _render_table(filtered_data)
+    else:
+        raise ValueError(f"Unsupported output format: {output_format}")
+
+
+def _render_json(
+    data: List[Dict[str, Any]],
+    pagination: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Render data as JSON.
+
+    Args:
+        data: List of data dictionaries to render
+        pagination: Optional pagination metadata
+
+    Returns:
+        JSON string representation of the data
+    """
+    output: Dict[str, Any] = {"items": data}
+
+    if pagination:
+        output["pagination"] = pagination
+
+    return json.dumps(output, indent=2, default=str)
+
+
+def _render_yaml(
+    data: List[Dict[str, Any]],
+    pagination: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Render data as YAML.
+
+    Args:
+        data: List of data dictionaries to render
+        pagination: Optional pagination metadata
+
+    Returns:
+        YAML string representation of the data
+    """
+    output: Dict[str, Any] = {"items": data}
+
+    if pagination:
+        output["pagination"] = pagination
+
+    return yaml.dump(output, default_flow_style=False)
+
+
+def _render_tsv(
+    data: List[Dict[str, Any]],
+) -> str:
+    """Render data as TSV (Tab-Separated Values).
+
+    Args:
+        data: List of data dictionaries to render
+
+    Returns:
+        TSV string representation of the data
+    """
+    if not data:
+        return ""
+
+    headers = list(data[0].keys())
+
+    lines = []
+    lines.append("\t".join(headers))
+
+    for row in data:
+        values = []
+        for header in headers:
+            value = str(row.get(header, ""))
+            value = (
+                value.replace("\t", " ").replace("\n", " ").replace("\r", " ")
+            )
+            values.append(value)
+        lines.append("\t".join(values))
+
+    return "\n".join(lines)
+
+
+def _render_csv(
+    data: List[Dict[str, Any]],
+) -> str:
+    """Render data as CSV (Comma-Separated Values).
+
+    Args:
+        data: List of data dictionaries to render
+
+    Returns:
+        CSV string representation of the data
+    """
+    headers = list(data[0].keys())
+
+    lines = []
+
+    lines.append(",".join(headers))
+
+    for row in data:
+        values = []
+        for header in headers:
+            value = (
+                str(row.get(header, "")) if row.get(header) is not None else ""
+            )
+            if "," in value or '"' in value:
+                escaped_value = value.replace('"', '""')
+                value = f'"{escaped_value}"'
+            values.append(value)
+        lines.append(",".join(values))
+
+    return "\n".join(lines)
+
+
+def _get_terminal_width() -> Optional[int]:
+    """Get terminal width from ZENML_CLI_COLUMN_WIDTH environment variable or shutil.
+
+    Checks the ZENML_CLI_COLUMN_WIDTH environment variable first, then falls back
+    to shutil.get_terminal_size() for automatic detection.
+
+    Returns:
+        Terminal width in characters, or None if cannot be determined
+    """
+    # Check ZenML-specific CLI column width environment variable first
+    # Use handle_int_env_var with default=0 to indicate "not set"
+    columns_env = handle_int_env_var(ENV_ZENML_CLI_COLUMN_WIDTH, default=0)
+    if columns_env > 0:
+        return columns_env
+
+    # Fall back to shutil.get_terminal_size
+    try:
+        size = shutil.get_terminal_size()
+        # Use a reasonable minimum width even if terminal reports smaller
+        return max(size.columns, 100)
+    except (AttributeError, OSError):
+        # Default to a reasonable width if we can't detect terminal size
+        return 120
+
+
+def _render_table(
+    data: List[Dict[str, Any]],
+) -> str:
+    """Render data as a formatted table following ZenML guidelines.
+
+    Args:
+        data: List of data dictionaries to render
+
+    Returns:
+        Formatted table string representation of the data
+    """
+    headers = list(data[0].keys())
+
+    # Get terminal width using robust detection
+    terminal_width = _get_terminal_width()
+    console_width = (
+        max(80, min(terminal_width, 200)) if terminal_width else 150
+    )
+
+    def _column_cap(header: str) -> int:
+        lower = header.lower()
+        if "id" in lower:
+            return 36
+        if "url" in lower:
+            return 40
+        if "status" in lower:
+            return 18
+        if "name" in lower:
+            return 32
+        return 40
+
+    column_widths = {}
+    for header in headers:
+        content_lengths = [len(str(row.get(header, ""))) for row in data]
+        header_length = len(header)
+        optimal_width = max(
+            header_length, max(content_lengths) if content_lengths else 0
+        )
+        column_widths[header] = min(
+            _column_cap(header), max(8, optimal_width + 2)
+        )
+
+    available_width = console_width - (len(headers) * 3)
+    total_content_width = sum(column_widths.values())
+
+    if total_content_width > available_width:
+        # Identify protected columns (ID and URL columns should not be shrunk)
+        protected_headers = set()
+        protected_width = 0
+        for header in headers:
+            if "id" in header.lower() or "url" in header.lower():
+                protected_headers.add(header)
+                protected_width += column_widths[header]
+
+        # Calculate remaining space for non-protected columns
+        remaining_width = available_width - protected_width
+        non_protected_headers = [
+            h for h in headers if h not in protected_headers
+        ]
+
+        # If protected columns alone don't exceed available width, scale only non-protected columns
+        if protected_width <= available_width and non_protected_headers:
+            non_protected_width = sum(
+                column_widths[h] for h in non_protected_headers
+            )
+
+            if non_protected_width > remaining_width:
+                # Scale non-protected columns to fit remaining space
+                scale_factor = remaining_width / non_protected_width
+                for header in non_protected_headers:
+                    column_widths[header] = max(
+                        6, int(column_widths[header] * scale_factor)
+                    )
+        else:
+            # Fall back to scaling all columns if protected columns exceed available width
+            scale_factor = available_width / total_content_width
+            for header in headers:
+                column_widths[header] = max(
+                    6, int(column_widths[header] * scale_factor)
+                )
+
+    rich_table = Table(
+        box=None,
+        show_header=True,
+        show_lines=False,
+        pad_edge=False,
+        collapse_padding=False,
+        expand=False,
+        show_edge=False,
+    )
+
+    for header in headers:
+        # Clean header name: replace underscores with spaces and uppercase
+        header_display = header.replace("_", " ").upper()
+
+        # Smart overflow strategy based on column type
+        if "id" in header.lower() or "url" in header.lower():
+            overflow: Literal["fold", "ellipsis", "crop", "ignore"] = "fold"
+            no_wrap = False
+        elif "description" in header.lower():
+            overflow = "fold"
+            no_wrap = False
+        else:
+            overflow = "ellipsis"
+            no_wrap = True  # Keep single line, truncate with ... if needed
+
+        rich_table.add_column(
+            header_display,
+            justify="left",
+            overflow=overflow,
+            no_wrap=no_wrap,
+            min_width=6,
+            max_width=column_widths[header],
+        )
+
+    for row in data:
+        values = []
+        for header in headers:
+            value = str(row.get(header, ""))
+
+            if not os.getenv("NO_COLOR"):
+                value = _colorize_value(header, value)
+
+            values.append(value)
+
+        rich_table.add_row(*values)
+
+    from io import StringIO
+
+    output_buffer = StringIO()
+
+    table_console = Console(
+        width=console_width,
+        force_terminal=not os.getenv("NO_COLOR"),
+        no_color=os.getenv("NO_COLOR") is not None,
+        file=output_buffer,
+    )
+    table_console.print(rich_table)
+
+    return output_buffer.getvalue()
+
+
+def _colorize_value(column: str, value: str) -> str:
+    """Apply colorization to values based on column type and content.
+
+    Args:
+        column: Column name to determine colorization rules
+        value: Value to potentially colorize
+
+    Returns:
+        Potentially colorized value with Rich markup
+    """
+    # Status-like columns get color coding
+    if any(
+        keyword in column.lower() for keyword in ["status", "state", "health"]
+    ):
+        value_lower = value.lower()
+        if value_lower in [
+            "active",
+            "healthy",
+            "succeeded",
+            "completed",
+        ]:
+            return f"[green]{value}[/green]"
+        elif value_lower in [
+            "running",
+            "pending",
+            "initializing",
+            "starting",
+            "warning",
+        ]:
+            return f"[yellow]{value}[/yellow]"
+        elif value_lower in [
+            "failed",
+            "error",
+            "unhealthy",
+            "stopped",
+            "crashed",
+        ]:
+            return f"[red]{value}[/red]"
+
+    return value
