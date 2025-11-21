@@ -92,7 +92,8 @@ def _mock_rest_store_environment(mocker):
         "zenml.cli.login.get_credentials_store", return_value=credentials_store
     )
     mocker.patch(
-        "zenml.cli.login.BaseZenStore.get_store_type", return_value=StoreType.REST
+        "zenml.cli.login.BaseZenStore.get_store_type",
+        return_value=StoreType.REST,
     )
     mocker.patch(
         "zenml.cli.login.RestZenStoreConfiguration", return_value="rest-config"

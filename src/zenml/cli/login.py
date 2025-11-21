@@ -38,7 +38,7 @@ from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
     IllegalOperationError,
-    EntityNotFoundError
+    EntityNotFoundError,
 )
 from zenml.logger import get_logger
 from zenml.login.credentials import ServerType
@@ -306,7 +306,7 @@ def connect_to_server(
         else:
             if project:
                 _set_active_project(project)
-            
+
             cli_utils.declare(f"Connected to SQL database '{url}'")
 
 
@@ -615,7 +615,9 @@ def _set_active_project(project_name_or_id: str) -> None:
         )
     else:
         if project:
-            cli_utils.declare(f"✔ The active project has been set to {project.name}")
+            cli_utils.declare(
+                f"✔ The active project has been set to {project.name}"
+            )
 
 
 @cli.command(
@@ -905,7 +907,7 @@ def login(
             cli_utils.error(
                 "An API key cannot be used with the local ZenML server."
             )
-        
+
         if project and blocking:
             cli_utils.warning(
                 "The active project cannot be set while the local server "
