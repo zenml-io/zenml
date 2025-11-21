@@ -14,12 +14,10 @@
 """Dynamic pipeline execution outputs."""
 
 from concurrent.futures import Future
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union, overload
 
 from zenml.logger import get_logger
-from zenml.models import (
-    ArtifactVersionResponse,
-)
+from zenml.models import ArtifactVersionResponse
 
 logger = get_logger(__name__)
 
@@ -29,6 +27,8 @@ class OutputArtifact(ArtifactVersionResponse):
 
     output_name: str
     step_name: str
+    chunk_index: Optional[int] = None
+    chunk_size: Optional[int] = None
 
 
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
@@ -191,34 +191,46 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         else:
             raise ValueError(f"Invalid step run output: {result}")
 
-    def __getitem__(self, key: Any) -> ArtifactFuture:
-        """Get an artifact future by key or index.
+    @overload
+    def __getitem__(self, key: int) -> ArtifactFuture: ...
+
+    @overload
+    def __getitem__(self, key: slice) -> Tuple[ArtifactFuture, ...]: ...
+
+    def __getitem__(
+        self, key: Union[int, slice]
+    ) -> Union[ArtifactFuture, Tuple[ArtifactFuture, ...]]:
+        """Get an artifact future.
 
         Args:
-            key: The key or index of the artifact future.
+            key: The index or slice of the artifact futures.
 
         Raises:
-            TypeError: If the key is not an integer.
-            IndexError: If the index is out of range.
+            TypeError: If the key is not an integer or slice.
 
         Returns:
-            The artifact future.
+            The artifact futures.
         """
-        if not isinstance(key, int):
+        if isinstance(key, int):
+            output_key = self._output_keys[key]
+
+            return ArtifactFuture(
+                wrapped=self._wrapped,
+                invocation_id=self._invocation_id,
+                index=self._output_keys.index(output_key),
+            )
+        elif isinstance(key, slice):
+            output_keys = self._output_keys[key]
+            return tuple(
+                ArtifactFuture(
+                    wrapped=self._wrapped,
+                    invocation_id=self._invocation_id,
+                    index=self._output_keys.index(output_key),
+                )
+                for output_key in output_keys
+            )
+        else:
             raise TypeError(f"Invalid key type: {type(key)}")
-
-        # Convert to positive index if necessary
-        if key < 0:
-            key += len(self._output_keys)
-
-        if key > len(self._output_keys):
-            raise IndexError(f"Index out of range: {key}")
-
-        return ArtifactFuture(
-            wrapped=self._wrapped,
-            invocation_id=self._invocation_id,
-            index=key,
-        )
 
     def __iter__(self) -> Any:
         """Iterate over the artifact futures.

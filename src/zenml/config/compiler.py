@@ -497,11 +497,16 @@ class Compiler:
             The step spec.
         """
         inputs = {
-            key: InputSpec(
-                step_name=artifact.invocation_id,
-                output_name=artifact.output_name,
-            )
-            for key, artifact in invocation.input_artifacts.items()
+            key: [
+                InputSpec(
+                    step_name=artifact.invocation_id,
+                    output_name=artifact.output_name,
+                    chunk_index=artifact.chunk_index,
+                    chunk_size=artifact.chunk_size,
+                )
+                for artifact in artifact_list
+            ]
+            for key, artifact_list in invocation.input_artifacts.items()
         }
         return StepSpec(
             source=invocation.step.resolve(),

@@ -555,3 +555,60 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             return hash_.hexdigest()
 
         return None
+
+    def get_item_count(self, data: Any) -> Optional[int]:
+        """Get the number of items for the given data.
+
+        Args:
+            data: The data to get the number of items for.
+
+        Returns:
+            The number of items for the given data.
+        """
+        if isinstance(data, (list, tuple)):
+            return len(data)
+        return None
+
+    def load_chunk(
+        self, data_type: Type[Any], chunk_index: int, chunk_size: int
+    ) -> Any:
+        """Load a specific chunk of the data.
+
+        Args:
+            data_type: The type of the data to load.
+            chunk_index: The index of the chunk to load.
+            chunk_size: The size of the chunk to load.
+
+        Raises:
+            RuntimeError: If the metadata format is not supported.
+
+        Returns:
+            The loaded chunk of the data.
+        """
+        if self.artifact_store.exists(self.data_path):
+            outputs = yaml_utils.read_json(self.data_path)
+            outputs = outputs[chunk_index : chunk_index + chunk_size]
+        else:
+            metadata = yaml_utils.read_json(self.metadata_path)
+            outputs = []
+
+            if isinstance(metadata, list):
+                for entry in metadata[chunk_index : chunk_index + chunk_size]:
+                    path_ = entry["path"]
+                    type_ = source_utils.load(entry["type"])
+                    materializer_class = source_utils.load(
+                        entry["materializer"]
+                    )
+                    materializer = materializer_class(
+                        uri=path_, artifact_store=self.artifact_store
+                    )
+                    element = materializer.load(type_)
+                    outputs.append(element)
+
+            else:
+                raise RuntimeError(f"Unknown metadata format: {metadata}.")
+
+        if len(outputs) == 1:
+            return data_type(outputs[0])
+
+        return data_type(outputs)

@@ -21,6 +21,7 @@ from typing import (
     Dict,
     NamedTuple,
     NoReturn,
+    Optional,
     Sequence,
     Type,
     Union,
@@ -58,6 +59,8 @@ class StepArtifact:
         output_name: str,
         annotation: OutputSignature,
         pipeline: "Pipeline",
+        chunk_index: Optional[int] = None,
+        chunk_size: Optional[int] = None,
     ) -> None:
         """Initialize a step artifact.
 
@@ -66,11 +69,15 @@ class StepArtifact:
             output_name: The name of the output that produces this artifact.
             annotation: The output type annotation.
             pipeline: The pipeline which the invocation is part of.
+            chunk_index: The index of the chunk to load.
+            chunk_size: The size of the chunk to load.
         """
         self.invocation_id = invocation_id
         self.output_name = output_name
         self.annotation = annotation
         self.pipeline = pipeline
+        self.chunk_index = chunk_index
+        self.chunk_size = chunk_size
 
     def __iter__(self) -> NoReturn:
         """Raise a custom error if someone is trying to iterate this object.
@@ -159,6 +166,12 @@ class EntrypointFunctionDefinition(NamedTuple):
             # If we were to do any type validation for artifacts here, we
             # would not be able to leverage pydantics type coercion (e.g.
             # providing an `int` artifact for a `float` input)
+            return
+        elif isinstance(value, list) and all(
+            isinstance(item, StepArtifact) for item in value
+        ):
+            # Same as above, we don't do any type validation for a list of
+            # artifacts here.
             return
 
         # Not an artifact -> This is a parameter

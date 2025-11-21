@@ -240,6 +240,39 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         return None
 
+    def get_item_count(self, data: Any) -> Optional[int]:
+        """Get the number of items for the given data.
+
+        Note: The output value of this method is used when mapping over this
+        artifact. If a materializer implements this method, it must also
+        implement the `load_chunk` method to load specific chunks of the data.
+
+        Args:
+            data: The data to get the number of items for.
+
+        Returns:
+            The number of items for the given data.
+        """
+        return None
+
+    def load_chunk(
+        self, data_type: Type[Any], chunk_index: int, chunk_size: int
+    ) -> Any:
+        """Load a specific chunk of the data.
+
+        Args:
+            data_type: The type of the data to load.
+            chunk_index: The index of the chunk to load.
+            chunk_size: The size of the chunk to load.
+
+        Raises:
+            NotImplementedError: If the materializer does not support chunked
+                loading.
+        """
+        raise NotImplementedError(
+            f"The {self.__class__.__name__} does not support chunked loading."
+        )
+
     # ================
     # Internal Methods
     # ================
