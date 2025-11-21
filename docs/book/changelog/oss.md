@@ -171,10 +171,6 @@ See what's new and improved in version 0.91.0.
 ### Breaking Changes
 
 * Dropped Python 3.9 support - upgrade to Python 3.10+ ([#4053](https://github.com/zenml-io/zenml/pull/4053))
-
-### Breaking Changes
-
-* Dropped Python 3.9 support - upgrade to Python 3.10+ ([#4053](https://github.com/zenml-io/zenml/pull/4053))
 ## 0.90.0
 
 See what's new and improved in version 0.90.0.
@@ -462,10 +458,6 @@ See what's new and improved in version 0.84.0.
 * Path and Docker tag sanitization ([#3816](https://github.com/zenml-io/zenml/pull/3816) | [#3820](https://github.com/zenml-io/zenml/pull/3820))
 
 </details>
-
-### Breaking Changes
-
-* Kubernetes Orchestrator Compatibility: Client and orchestrator pod versions must match exactly
 
 ### Breaking Changes
 
