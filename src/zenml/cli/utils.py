@@ -128,12 +128,31 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar(
+    "AnyResponse", bound=BaseIdentifiedResponse[Any, Any, Any]
+)
+OutputFormat = Literal["table", "json", "yaml", "csv", "tsv"]
+RowFormatter = Union[
+    Callable[[AnyResponse], Dict[str, Any]],
+    Callable[[AnyResponse, OutputFormat], Dict[str, Any]],
+]
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
+ALLOWED_OUTPUT_FORMATS: Tuple[str, ...] = (
+    "table",
+    "json",
+    "yaml",
+    "csv",
+    "tsv",
+)
+ID_COLUMN_WIDTH = 36
+URL_COLUMN_WIDTH = 40
+STATUS_COLUMN_WIDTH = 20
+NAME_COLUMN_WIDTH = 32
+DEFAULT_COLUMN_WIDTH = 40
 
 
-T = TypeVar("T", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+T = TypeVar("T", bound=BaseIdentifiedResponse[Any, Any, Any])
 LIST_RENDER_OPTIONS: ContextVar[Optional[Dict[str, str]]] = ContextVar(
     "list_render_options", default=None
 )
@@ -290,8 +309,8 @@ def print_table(
     render_options = LIST_RENDER_OPTIONS.get()
     if render_options:
         columns_arg = render_options.get("columns", "")
-        output_format_arg = render_options.get(
-            "output_format", get_default_output_format()
+        output_format_arg = _normalize_output_format(
+            render_options.get("output_format", get_default_output_format())
         )
         handle_output(
             data=obj,
@@ -2457,7 +2476,7 @@ def get_deployment_status_emoji(
 
 
 def _generate_deployment_row(
-    deployment: "DeploymentResponse", output_format: str
+    deployment: "DeploymentResponse", output_format: OutputFormat
 ) -> Dict[str, Any]:
     """Generate additional data for deployment display.
 
@@ -2520,7 +2539,7 @@ def print_deployment_table(
         columns: Comma-separated list of columns to display.
     """
     render_opts = LIST_RENDER_OPTIONS.get() or {}
-    output_format = (
+    output_format_literal = _normalize_output_format(
         output_format
         or render_opts.get("output_format")
         or get_default_output_format()
@@ -2546,7 +2565,7 @@ def print_deployment_table(
 
     render_list_output(
         page=page,
-        output_format=output_format,
+        output_format=output_format_literal,
         columns=columns,
         row_formatter=_generate_deployment_row,
     )
@@ -2954,8 +2973,10 @@ def list_options(
                 )
                 if not columns_arg and default_columns_str:
                     columns_arg = default_columns_str
-                output_format_arg = cleaned_kwargs.pop(
-                    "output_format", get_default_output_format()
+                output_format_arg = _normalize_output_format(
+                    cleaned_kwargs.pop(
+                        "output_format", get_default_output_format()
+                    )
                 )
                 cleaned_kwargs.pop("default_columns", None)
 
@@ -3004,7 +3025,7 @@ def list_options(
                 if result is None:
                     return None
 
-                row_formatter = None
+                row_formatter: Optional[RowFormatter] = None
                 if isinstance(result, tuple) and len(result) == 2:
                     result, row_formatter = result
 
@@ -3259,6 +3280,17 @@ def get_default_output_format() -> str:
     return os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
 
 
+def _normalize_output_format(output_format: str) -> OutputFormat:
+    """Validate and normalize output format values for typing."""
+    if output_format not in ALLOWED_OUTPUT_FORMATS:
+        logger.warning(
+            "Unsupported output format '%s', falling back to table.",
+            output_format,
+        )
+        return "table"
+    return cast(OutputFormat, output_format)
+
+
 def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
     """Prepare data from BaseResponse instances.
 
@@ -3287,9 +3319,9 @@ def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
 
 def render_list_output(
     page: Page[AnyResponse],
-    output_format: str,
+    output_format: OutputFormat,
     columns: str,
-    row_formatter: Optional[Callable[..., Dict[str, Any]]] = None,
+    row_formatter: Optional[RowFormatter] = None,
 ) -> None:
     """Render a page of list results with consistent formatting.
 
@@ -3317,11 +3349,17 @@ def render_list_output(
         if row_formatter:
             sig = inspect.signature(row_formatter)
             formatter_accepts_output_format = len(sig.parameters) >= 2
-            additional_data = (
-                row_formatter(item, output_format)
-                if formatter_accepts_output_format
-                else row_formatter(item)
-            )
+            if formatter_accepts_output_format:
+                formatter_with_format = cast(
+                    Callable[[AnyResponse, OutputFormat], Dict[str, Any]],
+                    row_formatter,
+                )
+                additional_data = formatter_with_format(item, output_format)
+            else:
+                formatter_without_format = cast(
+                    Callable[[AnyResponse], Dict[str, Any]], row_formatter
+                )
+                additional_data = formatter_without_format(item)
 
             if additional_data:
                 item_data.update(additional_data)
@@ -3340,7 +3378,7 @@ def handle_output(
     data: List[Dict[str, Any]],
     pagination_info: Optional[Dict[str, Any]],
     columns: str,
-    output_format: str,
+    output_format: OutputFormat,
 ) -> None:
     """Handle output formatting for CLI commands.
 
@@ -3362,7 +3400,11 @@ def handle_output(
     if cli_output:
         from zenml_cli import clean_output
 
-        clean_output(cli_output)
+        try:
+            clean_output(cli_output)
+        except Exception as err:  # pragma: no cover - defensive logging
+            logger.warning("Failed to write clean output: %s", err)
+            print(cli_output)
 
     if pagination_info:
         print_page_info(pagination_info)
@@ -3370,7 +3412,7 @@ def handle_output(
 
 def prepare_output(
     data: List[Dict[str, Any]],
-    output_format: str = "table",
+    output_format: OutputFormat = "table",
     columns: Optional[str] = None,
     pagination: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
@@ -3381,22 +3423,17 @@ def prepare_output(
     formats.
 
     Args:
-        data: List of dictionaries to render
-        output_format: Output format (table, json, yaml, tsv, none)
-        columns: Optional list of column names to include
-        sort_by: Column to sort by
-        reverse: Whether to reverse sort order
-        no_truncate: Whether to disable truncation
-        no_color: Whether to disable colored output
-        max_width: Maximum table width (default: use terminal width)
-        pagination: Optional pagination metadata for JSON/YAML output
-        **kwargs: Additional formatting options
+        data: List of dictionaries to render.
+        output_format: Output format (`table`, `json`, `yaml`, `tsv`, `csv`).
+        columns: Optional comma-separated list of column names to include.
+        pagination: Optional pagination metadata for JSON/YAML output.
 
     Returns:
-        The rendered table in the specified format or None if no data is provided
+        The rendered output in the specified format or None/empty string if
+        no data is provided.
 
     Raises:
-        ValueError: If an unsupported output format is provided
+        ValueError: If an unsupported output format is provided.
     """
     if not data:
         return ""
@@ -3599,14 +3636,14 @@ def _render_table(
     def _column_cap(header: str) -> int:
         lower = header.lower()
         if "id" in lower:
-            return 36
+            return ID_COLUMN_WIDTH
         if "url" in lower:
-            return 40
+            return URL_COLUMN_WIDTH
         if "status" in lower:
-            return 18
+            return STATUS_COLUMN_WIDTH
         if "name" in lower:
-            return 32
-        return 40
+            return NAME_COLUMN_WIDTH
+        return DEFAULT_COLUMN_WIDTH
 
     column_widths = {}
     for header in headers:

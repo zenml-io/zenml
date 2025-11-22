@@ -13,13 +13,12 @@
 #  permissions and limitations under the License.
 """Core CLI functionality."""
 
-import sys
 import logging
-
-from typing import List
+import sys
 
 # Global variable to store original stdout for CLI clean output
 _original_stdout = sys.stdout
+_rerouted = False
 
 
 def reroute_stdout() -> None:
@@ -29,9 +28,11 @@ def reroute_stdout() -> None:
     output goes to stderr, while preserving the original stdout for clean
     output that can be piped.
     """
-    modified_handlers: List[logging.StreamHandler] = []
+    global _rerouted
 
-    # Reroute stdout to stderr
+    if _rerouted:
+        return
+
     sys.stdout = sys.stderr
 
     # Handle existing root logger handlers that hold references to original stdout
@@ -41,7 +42,7 @@ def reroute_stdout() -> None:
             and handler.stream is _original_stdout
         ):
             handler.stream = sys.stderr
-            modified_handlers.append(handler) 
+            continue
 
     # Handle ALL existing individual logger handlers that hold references to original stdout
     for _, logger in logging.Logger.manager.loggerDict.items():
@@ -52,8 +53,15 @@ def reroute_stdout() -> None:
                     and handler.stream is _original_stdout
                 ):
                     handler.setStream(sys.stderr)
-                    modified_handlers.append(handler)
+                    continue
 
+    _rerouted = True
+
+
+def ensure_rerouted() -> None:
+    """Ensure stdout rerouting happens lazily and idempotently."""
+    if not _rerouted:
+        reroute_stdout()
 
 
 def clean_output(text: str) -> None:
@@ -67,12 +75,10 @@ def clean_output(text: str) -> None:
     Args:
         text: Text to output to stdout.
     """
+    ensure_rerouted()
     _original_stdout.write(text)
     if not text.endswith("\n"):
         _original_stdout.write("\n")
     _original_stdout.flush()
 
-reroute_stdout()
-
-# Import the cli only after rerouting stdout
 from zenml.cli.cli import cli
