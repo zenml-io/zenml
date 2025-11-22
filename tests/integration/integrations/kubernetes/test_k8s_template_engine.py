@@ -251,3 +251,29 @@ def test_render_template_round_trips_to_yaml_and_back(tmp_path):
     parsed = yaml.safe_load(embedded)
     assert isinstance(parsed, dict)
     assert parsed.get("a") == 1
+
+
+def test_render_template_does_not_autoescape_strings(tmp_path):
+    """Ensure tojson output isn't HTML escaped which would break YAML parsing."""
+    yaml_file = tmp_path / "labels.yaml"
+    yaml_file.write_text(
+        textwrap.dedent(
+            """\
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: cm
+              labels:
+                foo: {{ value | tojson }}
+            data: {}
+            """
+        )
+    )
+
+    eng = KubernetesTemplateEngine(strict_undefined=True)
+    resources = eng.render_template(
+        str(yaml_file),
+        context={"value": "abc-123"},
+    )
+
+    assert resources[0]["metadata"]["labels"]["foo"] == "abc-123"

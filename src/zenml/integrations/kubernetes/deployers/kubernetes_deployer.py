@@ -291,8 +291,8 @@ class KubernetesDeployer(ContainerizedDeployer):
                             "  `kubectl config get-contexts`\n"
                         )
                     if kubernetes_context != active_context:
-                        logger.warning(
-                            f"{msg}the Kubernetes context "
+                        warning_msg = (
+                            f"{msg}the Kubernetes context "  # nosec
                             f"'{kubernetes_context}' configured for the "
                             f"Kubernetes deployer is not the same as the "
                             f"active context in the local Kubernetes "
@@ -309,6 +309,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                             f"  `kubectl config use-context "
                             f"{kubernetes_context}`\n"
                         )
+                        logger.warning(warning_msg)
                 else:
                     return False, (
                         f"{msg}you must either link this deployer to a "
