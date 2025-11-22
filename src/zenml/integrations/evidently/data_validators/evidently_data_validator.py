@@ -25,9 +25,11 @@ from typing import (
 )
 
 import pandas as pd
-from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
-from evidently.report import Report  # type: ignore
-from evidently.test_suite import TestSuite  # type: ignore
+from evidently.legacy.pipeline.column_mapping import (
+    ColumnMapping,  # type: ignore
+)
+from evidently.legacy.report import Report  # type: ignore
+from evidently.legacy.test_suite import TestSuite  # type: ignore
 
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.integrations.evidently.flavors.evidently_data_validator_flavor import (
@@ -83,7 +85,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         This is the same as saying:
 
         ```python
-        from evidently.options import ColorOptions
+        from evidently.legacy.options import ColorOptions
 
         color_scheme = ColorOptions()
         color_scheme.primary_color = "#5a86ad"
