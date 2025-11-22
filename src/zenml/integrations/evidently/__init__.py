@@ -54,9 +54,8 @@ class EvidentlyIntegration(Integration):
 
     NAME = EVIDENTLY
     REQUIREMENTS = [
-        "evidently>=0.4.16,<=0.4.22",
+        "evidently>=0.5.0",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
-        "numpy<2.0.0",  # evidently is not compatible with NumPy 2.0
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity", "pandas"]
 
