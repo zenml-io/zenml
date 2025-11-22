@@ -60,7 +60,6 @@ from rich.table import Table
 from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
-    ENV_ZENML_CLI_COLUMN_WIDTH,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
     handle_int_env_var,
@@ -137,6 +136,9 @@ RowFormatter = Union[
     Callable[[AnyResponse, OutputFormat], Dict[str, Any]],
 ]
 
+
+ENV_ZENML_DEFAULT_OUTPUT = "ZENML_DEFAULT_OUTPUT"
+ENV_ZENML_CLI_COLUMN_WIDTH = "ZENML_CLI_COLUMN_WIDTH"
 MAX_ARGUMENT_VALUE_SIZE = 10240
 ALLOWED_OUTPUT_FORMATS: Tuple[str, ...] = (
     "table",
@@ -145,17 +147,168 @@ ALLOWED_OUTPUT_FORMATS: Tuple[str, ...] = (
     "csv",
     "tsv",
 )
-ID_COLUMN_WIDTH = 36
-URL_COLUMN_WIDTH = 40
-STATUS_COLUMN_WIDTH = 20
-NAME_COLUMN_WIDTH = 32
-DEFAULT_COLUMN_WIDTH = 40
+ID_COLUMN_WIDTH = 36  # Standard UUID length
+URL_COLUMN_WIDTH = 40  # Reasonable URL display length
+STATUS_COLUMN_WIDTH = 18  # Typical status string length
+NAME_COLUMN_WIDTH = 32  # Default name column width
+DEFAULT_COLUMN_WIDTH = 40  # Fallback for other columns
 
 
 T = TypeVar("T", bound=BaseIdentifiedResponse[Any, Any, Any])
 LIST_RENDER_OPTIONS: ContextVar[Optional[Dict[str, str]]] = ContextVar(
     "list_render_options", default=None
 )
+
+
+def _is_id_column(name: str) -> bool:
+    """Check if column name should be treated as an ID column.
+
+    Args:
+        name: Column name to check
+
+    Returns:
+        True if this is an ID column (word boundary matching)
+    """
+    lower = name.lower().strip()
+    return lower == "id" or lower.endswith(" id") or lower.endswith("_id")
+
+
+def _is_name_column(name: str) -> bool:
+    """Check if column name should be treated as a NAME column.
+
+    Args:
+        name: Column name to check
+
+    Returns:
+        True if this is a NAME column (word boundary matching)
+    """
+    lower = name.lower().strip()
+    return (
+        lower == "name" or lower.endswith(" name") or lower.endswith("_name")
+    )
+
+
+def _get_user_name(user: Any) -> str:
+    """Extract user name with fallback to "-" if unavailable.
+
+    Args:
+        user: User object (UserResponse, UUID, or None)
+
+    Returns:
+        Human-readable user name or '-' if unavailable
+    """
+    if not user:
+        return "-"
+
+    if hasattr(user, "name"):
+        return str(user.name)
+
+    return str(user)
+
+
+def _extract_model_columns(
+    model: BaseModel,
+    columns: Optional[Sequence[str]],
+    exclude_columns: Optional[Sequence[str]],
+) -> List[str]:
+    """Extract column names from a model following BaseIdentifiedResponse semantics.
+
+    Args:
+        model: The model to extract columns from
+        columns: Optional explicit list of columns to include
+        exclude_columns: Optional list of columns to exclude
+
+    Returns:
+        List of column names to display
+    """
+    exclude_list = list(exclude_columns or [])
+
+    if columns:
+        return list(columns)
+
+    if isinstance(model, BaseIdentifiedResponse):
+        include_columns: List[str] = ["id"]
+
+        if "name" in type(model).model_fields:
+            include_columns.append("name")
+
+        include_columns.extend(
+            [
+                k
+                for k in type(model.get_body()).model_fields.keys()
+                if k not in exclude_list
+            ]
+        )
+
+        if model.metadata is not None:
+            include_columns.extend(
+                [
+                    k
+                    for k in type(model.get_metadata()).model_fields.keys()
+                    if k not in exclude_list
+                ]
+            )
+        return include_columns
+
+    return [k for k in model.model_dump().keys() if k not in exclude_list]
+
+
+def _format_response_value(value: Any) -> Any:
+    """Format a value for display in pydantic model tables.
+
+    Args:
+        value: The value to format
+
+    Returns:
+        Formatted value (string or list of strings)
+    """
+    if isinstance(value, BaseIdentifiedResponse):
+        if "name" in type(value).model_fields and hasattr(value, "name"):
+            return str(value.name)
+        return str(value.id)
+
+    if isinstance(value, list):
+        formatted_items: List[str] = []
+        for v in value:
+            if isinstance(v, BaseIdentifiedResponse):
+                formatted_items.append(str(_format_response_value(v)))
+            else:
+                formatted_items.append(str(v))
+        return formatted_items
+
+    if isinstance(value, Set):
+        return [str(v) for v in value]
+
+    return str(value)
+
+
+def _print_key_value_table(
+    items: Dict[str, Any],
+    title: Optional[str] = None,
+    key_header: str = "PROPERTY",
+    capitalize_keys: bool = True,
+) -> None:
+    """Print a simple key/value table with consistent formatting.
+
+    Args:
+        items: Dictionary of key-value pairs to display
+        title: Optional table title
+        key_header: Header text for the key column
+        capitalize_keys: Whether to uppercase the keys
+    """
+    rich_table = table.Table(
+        box=None,
+        title=title,
+        show_lines=False,
+    )
+    rich_table.add_column(key_header, overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+
+    for k, v in items.items():
+        key_display = k.upper() if capitalize_keys else str(k)
+        rich_table.add_row(key_display, str(v))
+
+    console.print(rich_table)
 
 
 def title(text: str) -> None:
@@ -212,7 +365,6 @@ def error(text: str) -> NoReturn:
     error_prefix = click.style("Error: ", fg="red", bold=True)
     error_message = click.style(text, fg="red", bold=False)
 
-    # Create a custom ClickException that bypasses Click's default "Error: " prefix
     class StyledClickException(click.ClickException):
         def show(self, file: Optional[IO[Any]] = None) -> None:
             if file is None:
@@ -356,7 +508,6 @@ def print_table(
                         value = escape(value)
                 values.append(value)
         rich_table.add_row(*values)
-    # Consistent left alignment for all columns
     for column in rich_table.columns:
         column.justify = "left"
     console.print(rich_table)
@@ -400,74 +551,17 @@ def print_pydantic_models(
         Returns:
             Dict of model attributes.
         """
-        # Explicitly defined columns take precedence over exclude columns
-        if not columns:
-            if isinstance(model, BaseIdentifiedResponse):
-                include_columns = ["id"]
-
-                if "name" in type(model).model_fields:
-                    include_columns.append("name")
-
-                include_columns.extend(
-                    [
-                        k
-                        for k in type(model.get_body()).model_fields.keys()
-                        if k not in exclude_columns
-                    ]
-                )
-
-                if model.metadata is not None:
-                    include_columns.extend(
-                        [
-                            k
-                            for k in type(
-                                model.get_metadata()
-                            ).model_fields.keys()
-                            if k not in exclude_columns
-                        ]
-                    )
-
-            else:
-                include_columns = [
-                    k
-                    for k in model.model_dump().keys()
-                    if k not in exclude_columns
-                ]
-        else:
-            include_columns = columns
+        include_columns = _extract_model_columns(
+            model=model, columns=columns, exclude_columns=exclude_columns
+        )
 
         items: Dict[str, Any] = {}
 
         for k in include_columns:
             value = getattr(model, k)
-            if k in rename_columns:
-                k = rename_columns[k]
-            # In case the response model contains nested `BaseResponse`s
-            #  we want to attempt to represent them by name, if they contain
-            #  such a field, else the id is used
-            if isinstance(value, BaseIdentifiedResponse):
-                if "name" in type(value).model_fields:
-                    items[k] = str(getattr(value, "name"))
-                else:
-                    items[k] = str(value.id)
+            key = rename_columns.get(k, k)
+            items[key] = _format_response_value(value)
 
-            # If it is a list of `BaseResponse`s access each Model within
-            #  the list and extract either name or id
-            elif isinstance(value, list):
-                for v in value:
-                    if isinstance(v, BaseIdentifiedResponse):
-                        if "name" in type(v).model_fields:
-                            items.setdefault(k, []).append(
-                                str(getattr(v, "name"))
-                            )
-                        else:
-                            items.setdefault(k, []).append(str(v.id))
-            elif isinstance(value, Set) or isinstance(value, List):
-                items[k] = [str(v) for v in value]
-            else:
-                items[k] = str(value)
-
-        # prepend an active marker if a function to mark active was passed
         if not active_models and not show_active:
             return items
 
@@ -530,82 +624,18 @@ def print_pydantic_model(
         exclude_columns: Optionally specify columns to exclude.
         columns: Optionally specify subset and order of columns to display.
     """
-    rich_table = table.Table(
-        box=None,
-        title=title,
-        show_lines=False,
+    include_columns = _extract_model_columns(
+        model=model,
+        columns=list(columns) if columns else None,
+        exclude_columns=list(exclude_columns) if exclude_columns else None,
     )
-    rich_table.add_column("PROPERTY", overflow="fold")
-    rich_table.add_column("VALUE", overflow="fold")
-
-    # TODO: This uses the same _dictify function up in the print_pydantic_models
-    #   function. This 2 can be generalized.
-    if exclude_columns is None:
-        exclude_columns = set()
-
-    if not columns:
-        if isinstance(model, BaseIdentifiedResponse):
-            include_columns = ["id"]
-
-            if "name" in type(model).model_fields:
-                include_columns.append("name")
-
-            include_columns.extend(
-                [
-                    k
-                    for k in type(model.get_body()).model_fields.keys()
-                    if k not in exclude_columns
-                ]
-            )
-
-            if model.metadata is not None:
-                include_columns.extend(
-                    [
-                        k
-                        for k in type(model.get_metadata()).model_fields.keys()
-                        if k not in exclude_columns
-                    ]
-                )
-
-        else:
-            include_columns = [
-                k
-                for k in model.model_dump().keys()
-                if k not in exclude_columns
-            ]
-    else:
-        include_columns = list(columns)
 
     items: Dict[str, Any] = {}
-
     for k in include_columns:
         value = getattr(model, k)
-        if isinstance(value, BaseIdentifiedResponse):
-            if "name" in type(value).model_fields:
-                items[k] = str(getattr(value, "name"))
-            else:
-                items[k] = str(value.id)
+        items[k] = _format_response_value(value)
 
-        # If it is a list of `BaseResponse`s access each Model within
-        #  the list and extract either name or id
-        elif isinstance(value, list):
-            for v in value:
-                if isinstance(v, BaseIdentifiedResponse):
-                    if "name" in type(v).model_fields:
-                        items.setdefault(k, []).append(str(getattr(v, "name")))
-                    else:
-                        items.setdefault(k, []).append(str(v.id))
-
-                items[k] = str(items[k])
-        elif isinstance(value, Set) or isinstance(value, List):
-            items[k] = str([str(v) for v in value])
-        else:
-            items[k] = str(value)
-
-    for k, v in items.items():
-        rich_table.add_row(str(k).upper(), v)
-
-    console.print(rich_table)
+    _print_key_value_table(items, title=title)
 
 
 def format_integration_list(
@@ -721,10 +751,7 @@ def print_stack_component_configuration(
             from the component flavor. Only needed if the component has a
             connector.
     """
-    if component.user:
-        user_name = component.user.name
-    else:
-        user_name = "-"
+    user_name = _get_user_name(component.user)
 
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
@@ -982,27 +1009,6 @@ def validate_keys(key: str) -> None:
         error("Please provide args with a proper identifier as the key.")
 
 
-def parse_unknown_component_attributes(args: List[str]) -> List[str]:
-    """Parse unknown options from the CLI.
-
-    Args:
-        args: A list of strings from the CLI.
-
-    Returns:
-        List of parsed args.
-    """
-    warning_message = (
-        "Please provide args with a proper "
-        "identifier as the key and the following structure: "
-        "--custom_attribute"
-    )
-
-    assert all(a.startswith("--") for a in args), warning_message
-    p_args = [a.lstrip("-") for a in args]
-    assert all(v.isidentifier() for v in p_args), warning_message
-    return p_args
-
-
 def prompt_configuration(
     config_schema: Dict[str, Any],
     show_secrets: bool = False,
@@ -1190,7 +1196,6 @@ def uninstall_package(package: str, use_uv: bool = False) -> None:
         use_uv: Whether to use uv for package uninstallation.
     """
     if use_uv and not requirement_installed("uv"):
-        # If uv is installed globally, don't run as a python module
         command = []
     else:
         command = [sys.executable, "-m"]
@@ -1580,10 +1585,10 @@ def print_stacks_table(
     stack_dicts = []
     for stack in stacks:
         is_active = stack.id == active_stack_model_id
-        user_name = stack.user.name if stack.user else "-"
+        user_name = _get_user_name(stack.user)
 
         stack_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
+            "ACTIVE": ":green_circle:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
             "OWNER": user_name,
@@ -1650,11 +1655,11 @@ def print_components_table(
             is_active = component.id == active_component.id
 
         component_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
+            "ACTIVE": ":green_circle:" if is_active else "",
             "NAME": component.name,
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor_name,
-            "OWNER": f"{component.user.name if component.user else '-'}",
+            "OWNER": _get_user_name(component.user),
         }
         configurations.append(component_config)
     print_table(configurations)
@@ -1714,13 +1719,13 @@ def print_service_connectors_table(
         resource_types_str = "\n".join(connector.emojified_resource_types)
 
         connector_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
+            "ACTIVE": ":green_circle:" if is_active else "",
             "NAME": connector.name,
             "ID": connector.id,
             "TYPE": connector.emojified_connector_type,
             "RESOURCE TYPES": resource_types_str,
             "RESOURCE NAME": resource_name,
-            "OWNER": f"{connector.user.name if connector.user else '-'}",
+            "OWNER": _get_user_name(connector.user),
             "EXPIRES IN": (
                 expires_in(
                     connector.expires_at,
@@ -1878,17 +1883,9 @@ def print_service_connector_configuration(
         active_status: Whether the connector is active.
         show_secrets: Whether to show secrets.
     """
-    from uuid import UUID
-
     from zenml.models import ServiceConnectorResponse
 
-    if connector.user:
-        if isinstance(connector.user, UUID):
-            user_name = str(connector.user)
-        else:
-            user_name = connector.user.name
-    else:
-        user_name = "-"
+    user_name = _get_user_name(connector.user)
 
     if isinstance(connector, ServiceConnectorResponse):
         declare(
@@ -2376,10 +2373,7 @@ def print_pipeline_runs_table(
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
-        if pipeline_run.user:
-            user_name = pipeline_run.user.name
-        else:
-            user_name = "-"
+        user_name = _get_user_name(pipeline_run.user)
 
         if pipeline_run.pipeline is None:
             pipeline_name = "unlisted"
@@ -2487,10 +2481,7 @@ def _generate_deployment_row(
     Returns:
         The additional data for the deployment.
     """
-    if deployment.user:
-        user_name = deployment.user.name
-    else:
-        user_name = "-"
+    user_name = _get_user_name(deployment.user)
 
     if deployment.snapshot is None or deployment.snapshot.pipeline is None:
         pipeline_name = "unlisted"
@@ -2504,12 +2495,10 @@ def _generate_deployment_row(
 
     status = deployment.status or DeploymentStatus.UNKNOWN.value
 
-    # For table format, use emoji and colorized status
     if output_format == "table":
         status_emoji = get_deployment_status_emoji(status)
         status_display = f"{status_emoji} {status.upper()}"
     else:
-        # For other formats, use plain uppercase status
         status_display = status.upper()
 
     return {
@@ -2554,7 +2543,6 @@ def print_deployment_table(
     if isinstance(deployments, Page):
         page = deployments
     else:
-        # Build a minimal Page-like object for list inputs
         page = Page(
             index=1,
             max_size=len(deployments) or 1,
@@ -2935,7 +2923,6 @@ def list_options(
                     create_data_type_help_text(filter_model, k)
                 )
 
-        # Add columns and output options
         default_columns_list = default_columns or []
         default_columns_str = ",".join(default_columns_list)
 
@@ -2979,9 +2966,6 @@ def list_options(
                     )
                 )
                 cleaned_kwargs.pop("default_columns", None)
-
-                # Drop injected args the underlying function does not accept to
-                # keep existing command signatures working.
                 sig = inspect.signature(function)
                 accepts_kwargs = any(
                     p.kind == inspect.Parameter.VAR_KEYWORD
@@ -3021,11 +3005,10 @@ def list_options(
                 finally:
                     LIST_RENDER_OPTIONS.reset(token)
 
-                # Auto-render if the command returns a Page or (Page, row_formatter)
                 if result is None:
                     return None
 
-                row_formatter: Optional[RowFormatter] = None
+                row_formatter: Optional[RowFormatter] = None  # type: ignore[type-arg]
                 if isinstance(result, tuple) and len(result) == 2:
                     result, row_formatter = result
 
@@ -3155,7 +3138,7 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
             if source != click.core.ParameterSource.DEFAULT:
                 return True
         return False
-    except Exception as e:  # pragma: no cover - best-effort safety
+    except Exception as e:
         logger.debug(
             f"There was a problem accessing the parameter source for "
             f'the "sort_by" option: {e}'
@@ -3275,8 +3258,6 @@ def get_default_output_format() -> str:
     Returns:
         The default output format, falling back to "table" if not configured.
     """
-    from zenml.constants import ENV_ZENML_DEFAULT_OUTPUT
-
     return os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
 
 
@@ -3321,7 +3302,7 @@ def render_list_output(
     page: Page[AnyResponse],
     output_format: OutputFormat,
     columns: str,
-    row_formatter: Optional[RowFormatter] = None,
+    row_formatter: Optional[RowFormatter] = None,  # type: ignore[type-arg]
 ) -> None:
     """Render a page of list results with consistent formatting.
 
@@ -3438,21 +3419,16 @@ def prepare_output(
     if not data:
         return ""
 
-    # Parse and normalize column names
     if columns:
         requested_cols = [c.strip() for c in columns.split(",")]
-        # Create mapping from normalized names to actual keys
-        # Support both "STACK ID" and "id" formats
         available_keys = list(data[0].keys())
         col_mapping = {}
 
         for req_col in requested_cols:
             req_normalized = req_col.lower().replace("_", " ")
-            # Try exact match first
             if req_col in available_keys:
                 col_mapping[req_col] = req_col
             else:
-                # Try case-insensitive match with normalization
                 for key in available_keys:
                     key_normalized = key.lower().replace("_", " ")
                     if req_normalized == key_normalized:
@@ -3598,20 +3574,15 @@ def _get_terminal_width() -> Optional[int]:
     Returns:
         Terminal width in characters, or None if cannot be determined
     """
-    # Check ZenML-specific CLI column width environment variable first
-    # Use handle_int_env_var with default=0 to indicate "not set"
     columns_env = handle_int_env_var(ENV_ZENML_CLI_COLUMN_WIDTH, default=0)
     if columns_env > 0:
         return columns_env
 
-    # Fall back to shutil.get_terminal_size
     try:
         size = shutil.get_terminal_size()
-        # Use a reasonable minimum width even if terminal reports smaller
-        return max(size.columns, 100)
+        return size.columns
     except (AttributeError, OSError):
-        # Default to a reasonable width if we can't detect terminal size
-        return 120
+        return None
 
 
 def _render_table(
@@ -3627,28 +3598,42 @@ def _render_table(
     """
     headers = list(data[0].keys())
 
-    # Get terminal width using robust detection
     terminal_width = _get_terminal_width()
     console_width = (
         max(80, min(terminal_width, 200)) if terminal_width else 150
     )
 
+    if terminal_width and terminal_width < 100:
+        logger.warning(
+            "Terminal width is narrow (%d chars). Some columns may be compressed. "
+            "For better readability, consider using --output=json or --output=yaml, "
+            "or increase your terminal width.",
+            terminal_width,
+        )
+
     def _column_cap(header: str) -> int:
         lower = header.lower()
-        if "id" in lower:
+        if _is_id_column(header):
             return ID_COLUMN_WIDTH
         if "url" in lower:
             return URL_COLUMN_WIDTH
         if "status" in lower:
             return STATUS_COLUMN_WIDTH
-        if "name" in lower:
+        if lower == "active":
+            return 3
+        if _is_name_column(header):
             return NAME_COLUMN_WIDTH
         return DEFAULT_COLUMN_WIDTH
 
     column_widths = {}
     for header in headers:
         content_lengths = [len(str(row.get(header, ""))) for row in data]
-        header_length = len(header)
+
+        if header.lower() == "active":
+            header_length = 1
+        else:
+            header_length = len(header)
+
         optimal_width = max(
             header_length, max(content_lengths) if content_lengths else 0
         )
@@ -3660,40 +3645,39 @@ def _render_table(
     total_content_width = sum(column_widths.values())
 
     if total_content_width > available_width:
-        # Identify protected columns (ID and URL columns should not be shrunk)
         protected_headers = set()
         protected_width = 0
         for header in headers:
-            if "id" in header.lower() or "url" in header.lower():
+            lower_h = header.lower()
+            if _is_id_column(header) or "url" in lower_h:
                 protected_headers.add(header)
                 protected_width += column_widths[header]
 
-        # Calculate remaining space for non-protected columns
         remaining_width = available_width - protected_width
         non_protected_headers = [
             h for h in headers if h not in protected_headers
         ]
 
-        # If protected columns alone don't exceed available width, scale only non-protected columns
         if protected_width <= available_width and non_protected_headers:
             non_protected_width = sum(
                 column_widths[h] for h in non_protected_headers
             )
 
             if non_protected_width > remaining_width:
-                # Scale non-protected columns to fit remaining space
                 scale_factor = remaining_width / non_protected_width
                 for header in non_protected_headers:
                     column_widths[header] = max(
                         6, int(column_widths[header] * scale_factor)
                     )
         else:
-            # Fall back to scaling all columns if protected columns exceed available width
             scale_factor = available_width / total_content_width
             for header in headers:
-                column_widths[header] = max(
-                    6, int(column_widths[header] * scale_factor)
-                )
+                if _is_id_column(header):
+                    column_widths[header] = ID_COLUMN_WIDTH
+                else:
+                    column_widths[header] = max(
+                        6, int(column_widths[header] * scale_factor)
+                    )
 
     rich_table = Table(
         box=None,
@@ -3703,15 +3687,27 @@ def _render_table(
         collapse_padding=False,
         expand=False,
         show_edge=False,
+        header_style="bold",
     )
 
     for header in headers:
-        # Clean header name: replace underscores with spaces and uppercase
-        header_display = header.replace("_", " ").upper()
+        lower = header.lower().strip()
+        if lower == "active":
+            header_display = ""
+        elif _is_id_column(header):
+            header_display = "ID"
+        elif _is_name_column(header):
+            header_display = "NAME"
+        else:
+            header_display = header.replace("_", " ").upper()
 
-        # Smart overflow strategy based on column type
-        if "id" in header.lower() or "url" in header.lower():
-            overflow: Literal["fold", "ellipsis", "crop", "ignore"] = "fold"
+        is_id_col = _is_id_column(header)
+
+        if is_id_col:
+            overflow: Literal["fold", "ellipsis", "crop", "ignore"] = "crop"
+            no_wrap = True
+        elif "url" in header.lower():
+            overflow = "fold"
             no_wrap = False
         elif "description" in header.lower():
             overflow = "fold"
@@ -3720,13 +3716,20 @@ def _render_table(
             overflow = "ellipsis"
             no_wrap = True  # Keep single line, truncate with ... if needed
 
+        if is_id_col:
+            min_col_width = ID_COLUMN_WIDTH
+        elif lower == "active":
+            min_col_width = 2
+        else:
+            min_col_width = 6
+
         rich_table.add_column(
             header_display,
             justify="left",
             overflow=overflow,
             no_wrap=no_wrap,
-            min_width=6,
-            max_width=column_widths[header],
+            min_width=min_col_width,
+            max_width=max(min_col_width, column_widths[header]),
         )
 
     for row in data:
@@ -3766,7 +3769,6 @@ def _colorize_value(column: str, value: str) -> str:
     Returns:
         Potentially colorized value with Rich markup
     """
-    # Status-like columns get color coding
     if any(
         keyword in column.lower() for keyword in ["status", "state", "health"]
     ):
@@ -3794,5 +3796,12 @@ def _colorize_value(column: str, value: str) -> str:
             "crashed",
         ]:
             return f"[red]{value}[/red]"
+
+        return value
+
+    stripped = value.strip()
+    if stripped in ("-", ""):
+        display = stripped or "·"
+        return f"[dim]{display}[/dim]"
 
     return value
