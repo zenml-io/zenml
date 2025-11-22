@@ -75,7 +75,7 @@ def deployment() -> None:
 @list_options(
     DeploymentFilter, default_columns=["id", "name", "url", "status"]
 )
-def list_deployments(**kwargs: Any) -> None:
+def list_deployments(**kwargs: Any) -> Any:
     """List all registered deployments for the filter.
 
     Args:
@@ -90,10 +90,9 @@ def list_deployments(**kwargs: Any) -> None:
     else:
         if not deployments.items:
             cli_utils.declare("No deployments found for this filter.")
-            return
+            return None
 
-        cli_utils.print_deployment_table(deployments=deployments.items)
-        cli_utils.print_page_info(deployments)
+        return deployments, cli_utils.generate_deployment_row
 
 
 @deployment.command("describe", help="Describe a deployment.")

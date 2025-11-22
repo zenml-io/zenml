@@ -52,7 +52,6 @@ from rich import table
 from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
-from rich.markup import escape
 from rich.prompt import Confirm, Prompt
 from rich.style import Style
 from rich.table import Table
@@ -89,6 +88,7 @@ from zenml.models import (
     ServiceConnectorRequirements,
     StrFilter,
     UserResponse,
+    UserScopedResponse,
     UUIDFilter,
 )
 from zenml.models.v2.base.filter import FilterGenerator
@@ -444,11 +444,7 @@ def print_table(
     caption: Optional[str] = None,
     **columns: table.Column,
 ) -> None:
-    """Prints the list of dicts in a table format.
-
-    The input object should be a List of Dicts. Each item in that list represent
-    a line in the Table. Each dict should have the same keys. The keys of the
-    dict will be used as headers of the resulting table.
+    """Prints a list of dicts as a table.
 
     Args:
         obj: A List containing dictionaries.
@@ -456,8 +452,6 @@ def print_table(
         caption: Caption of the table.
         columns: Optional column configurations to be used in the table.
     """
-    from rich.text import Text
-
     render_options = LIST_RENDER_OPTIONS.get()
     if render_options:
         columns_arg = render_options.get("columns", "")
@@ -472,45 +466,21 @@ def print_table(
         )
         return
 
-    column_keys = {key: None for dict_ in obj for key in dict_}
-    column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(
-        box=None,
-        show_lines=False,
-        title=title,
-        caption=caption,
-    )
-    for col_name in column_names:
-        if isinstance(col_name, str):
-            rich_table.add_column(str(col_name), overflow="fold")
-        else:
-            rich_table.add_column(
-                str(col_name.header).upper(), overflow="fold"
-            )
-    for dict_ in obj:
-        values = []
-        for key in column_keys:
-            if key is None:
-                values.append(None)
-            else:
-                v = dict_.get(key) or " "
-                if isinstance(v, str) and (
-                    v.startswith("http://") or v.startswith("https://")
-                ):
-                    # Display the URL as a hyperlink in a way that doesn't break
-                    # the URL when it needs to be wrapped over multiple lines
-                    value: Union[str, Text] = Text(v, style=f"link {v}")
-                else:
-                    value = str(v)
-                    # Escape text when square brackets are used, but allow
-                    # links to be decorated as rich style links
-                    if "[" in value and "[link=" not in value:
-                        value = escape(value)
-                values.append(value)
-        rich_table.add_row(*values)
-    for column in rich_table.columns:
-        column.justify = "left"
-    console.print(rich_table)
+    data = obj
+    if columns:
+        data = []
+        for row in obj:
+            new_row = {}
+            for k, v in row.items():
+                col_val = columns.get(k, k.upper())
+                header = getattr(col_val, "header", col_val)
+                new_row[str(header)] = v
+            data.append(new_row)
+
+    if not data:
+        return
+
+    print(_render_table(data, title=title, caption=caption), end="")
 
 
 def print_pydantic_models(
@@ -2469,7 +2439,7 @@ def get_deployment_status_emoji(
     return ":question:"
 
 
-def _generate_deployment_row(
+def generate_deployment_row(
     deployment: "DeploymentResponse", output_format: OutputFormat
 ) -> Dict[str, Any]:
     """Generate additional data for deployment display.
@@ -2555,7 +2525,7 @@ def print_deployment_table(
         page=page,
         output_format=output_format_literal,
         columns=columns,
-        row_formatter=_generate_deployment_row,
+        row_formatter=generate_deployment_row,
     )
 
 
@@ -3290,10 +3260,9 @@ def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
         body_data = item.body.model_dump(mode="json")
         item_data.update(body_data)
 
-    if item.resources is not None:
-        if user := getattr(item.resources, "user", None):
-            if isinstance(user, UserResponse):
-                item_data["user"] = user.name
+    if isinstance(item, UserScopedResponse):
+        if item.user:
+            item_data["user"] = item.user.name
 
     return item_data
 
@@ -3587,11 +3556,15 @@ def _get_terminal_width() -> Optional[int]:
 
 def _render_table(
     data: List[Dict[str, Any]],
+    title: Optional[str] = None,
+    caption: Optional[str] = None,
 ) -> str:
     """Render data as a formatted table following ZenML guidelines.
 
     Args:
         data: List of data dictionaries to render
+        title: Optional title for the table.
+        caption: Optional caption for the table.
 
     Returns:
         Formatted table string representation of the data
@@ -3611,74 +3584,6 @@ def _render_table(
             terminal_width,
         )
 
-    def _column_cap(header: str) -> int:
-        lower = header.lower()
-        if _is_id_column(header):
-            return ID_COLUMN_WIDTH
-        if "url" in lower:
-            return URL_COLUMN_WIDTH
-        if "status" in lower:
-            return STATUS_COLUMN_WIDTH
-        if lower == "active":
-            return 3
-        if _is_name_column(header):
-            return NAME_COLUMN_WIDTH
-        return DEFAULT_COLUMN_WIDTH
-
-    column_widths = {}
-    for header in headers:
-        content_lengths = [len(str(row.get(header, ""))) for row in data]
-
-        if header.lower() == "active":
-            header_length = 1
-        else:
-            header_length = len(header)
-
-        optimal_width = max(
-            header_length, max(content_lengths) if content_lengths else 0
-        )
-        column_widths[header] = min(
-            _column_cap(header), max(8, optimal_width + 2)
-        )
-
-    available_width = console_width - (len(headers) * 3)
-    total_content_width = sum(column_widths.values())
-
-    if total_content_width > available_width:
-        protected_headers = set()
-        protected_width = 0
-        for header in headers:
-            lower_h = header.lower()
-            if _is_id_column(header) or "url" in lower_h:
-                protected_headers.add(header)
-                protected_width += column_widths[header]
-
-        remaining_width = available_width - protected_width
-        non_protected_headers = [
-            h for h in headers if h not in protected_headers
-        ]
-
-        if protected_width <= available_width and non_protected_headers:
-            non_protected_width = sum(
-                column_widths[h] for h in non_protected_headers
-            )
-
-            if non_protected_width > remaining_width:
-                scale_factor = remaining_width / non_protected_width
-                for header in non_protected_headers:
-                    column_widths[header] = max(
-                        6, int(column_widths[header] * scale_factor)
-                    )
-        else:
-            scale_factor = available_width / total_content_width
-            for header in headers:
-                if _is_id_column(header):
-                    column_widths[header] = ID_COLUMN_WIDTH
-                else:
-                    column_widths[header] = max(
-                        6, int(column_widths[header] * scale_factor)
-                    )
-
     rich_table = Table(
         box=None,
         show_header=True,
@@ -3688,6 +3593,9 @@ def _render_table(
         expand=False,
         show_edge=False,
         header_style="bold",
+        width=console_width,
+        title=title,
+        caption=caption,
     )
 
     for header in headers:
@@ -3706,21 +3614,22 @@ def _render_table(
         if is_id_col:
             overflow: Literal["fold", "ellipsis", "crop", "ignore"] = "crop"
             no_wrap = True
+            min_col_width = ID_COLUMN_WIDTH
         elif "url" in header.lower():
             overflow = "fold"
             no_wrap = False
+            min_col_width = 6
         elif "description" in header.lower():
             overflow = "fold"
             no_wrap = False
-        else:
-            overflow = "ellipsis"
-            no_wrap = True  # Keep single line, truncate with ... if needed
-
-        if is_id_col:
-            min_col_width = ID_COLUMN_WIDTH
+            min_col_width = 6
         elif lower == "active":
+            overflow = "ellipsis"
+            no_wrap = True
             min_col_width = 2
         else:
+            overflow = "ellipsis"
+            no_wrap = True
             min_col_width = 6
 
         rich_table.add_column(
@@ -3729,7 +3638,6 @@ def _render_table(
             overflow=overflow,
             no_wrap=no_wrap,
             min_width=min_col_width,
-            max_width=max(min_col_width, column_widths[header]),
         )
 
     for row in data:
@@ -3739,6 +3647,8 @@ def _render_table(
 
             if not os.getenv("NO_COLOR"):
                 value = _colorize_value(header, value)
+                if value.startswith("http") and " " not in value:
+                    value = f"[link={value}]{value}[/link]"
 
             values.append(value)
 
@@ -3773,28 +3683,28 @@ def _colorize_value(column: str, value: str) -> str:
         keyword in column.lower() for keyword in ["status", "state", "health"]
     ):
         value_lower = value.lower()
-        if value_lower in [
+        if value_lower in {
             "active",
             "healthy",
             "succeeded",
             "completed",
-        ]:
+        }:
             return f"[green]{value}[/green]"
-        elif value_lower in [
+        elif value_lower in {
             "running",
             "pending",
             "initializing",
             "starting",
             "warning",
-        ]:
+        }:
             return f"[yellow]{value}[/yellow]"
-        elif value_lower in [
+        elif value_lower in {
             "failed",
             "error",
             "unhealthy",
             "stopped",
             "crashed",
-        ]:
+        }:
             return f"[red]{value}[/red]"
 
         return value
