@@ -21,7 +21,9 @@ from zenml.utils.env_utils import reconstruct_environment_variables
 SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT = 512
 
 
-class SagemakerEntrypointConfiguration(StepOperatorEntrypointConfiguration):
+class SagemakerStepOperatorEntrypointConfiguration(
+    StepOperatorEntrypointConfiguration
+):
     """Entrypoint configuration for ZenML Sagemaker step operator.
 
     The only purpose of this entrypoint configuration is to reconstruct the

@@ -16,6 +16,9 @@
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
+from zenml.pipelines.dynamic.entrypoint_configuration import (
+    DynamicPipelineEntrypointConfiguration,
+)
 from zenml.utils.env_utils import reconstruct_environment_variables
 
 SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT = 256
@@ -23,6 +26,26 @@ SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT = 256
 
 class SagemakerEntrypointConfiguration(StepEntrypointConfiguration):
     """Entrypoint configuration for ZenML Sagemaker pipeline steps.
+
+    The only purpose of this entrypoint configuration is to reconstruct the
+    environment variables that exceed the maximum length of 256 characters
+    allowed for Sagemaker Processor steps from their individual components.
+    """
+
+    def run(self) -> None:
+        """Runs the step."""
+        # Reconstruct the environment variables that exceed the maximum length
+        # of 256 characters from their individual chunks
+        reconstruct_environment_variables()
+
+        # Run the step
+        super().run()
+
+
+class SagemakerDynamicPipelineEntrypointConfiguration(
+    DynamicPipelineEntrypointConfiguration
+):
+    """Entrypoint configuration for ZenML Sagemaker dynamic pipelines.
 
     The only purpose of this entrypoint configuration is to reconstruct the
     environment variables that exceed the maximum length of 256 characters
