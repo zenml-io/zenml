@@ -3635,7 +3635,8 @@ def _render_table(
 
         is_id_col = _is_id_column(header)
         is_name_col = _is_name_column(header)
-        justify = "left"
+        justify: Literal["default", "left", "center", "right", "full"] = "left"
+        overflow: Literal["fold", "crop", "ellipsis", "ignore"] = "ellipsis"
         min_width: Optional[int] = None
         if is_id_col or is_name_col:
             overflow = "fold"
@@ -3647,7 +3648,6 @@ def _render_table(
             overflow = "crop"
             no_wrap = True
         else:
-            overflow = "ellipsis"
             no_wrap = False
         rich_table.add_column(
             header=header_display,
