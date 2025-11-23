@@ -48,7 +48,7 @@ from typing import (
 import click
 import yaml
 from pydantic import BaseModel, SecretStr
-from rich import table
+from rich import box, table
 from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
@@ -87,7 +87,6 @@ from zenml.models import (
     Page,
     ServiceConnectorRequirements,
     StrFilter,
-    UserResponse,
     UserScopedResponse,
     UUIDFilter,
 )
@@ -150,8 +149,7 @@ ALLOWED_OUTPUT_FORMATS: Tuple[str, ...] = (
 ID_COLUMN_WIDTH = 36  # Standard UUID length
 URL_COLUMN_WIDTH = 40  # Reasonable URL display length
 STATUS_COLUMN_WIDTH = 18  # Typical status string length
-NAME_COLUMN_WIDTH = 32  # Default name column width
-DEFAULT_COLUMN_WIDTH = 40  # Fallback for other columns
+NAME_COLUMN_WIDTH = 20  # Default name column width
 
 
 T = TypeVar("T", bound=BaseIdentifiedResponse[Any, Any, Any])
@@ -1533,49 +1531,71 @@ def print_stacks_table(
         stacks: List of stacks.
         show_active: Whether to highlight the active stack at the top.
     """
-    if len(stacks) == 0:
+    if not stacks:
         warning("No stacks found.")
         return
 
     stacks = list(stacks)
-    active_stack = client.active_stack_model
+    active_stack_id = client.active_stack_model.id
+
     if show_active:
-        if active_stack.id not in [s.id for s in stacks]:
-            stacks.append(active_stack)
+        if active_stack_id not in {s.id for s in stacks}:
+            stacks.append(client.active_stack_model)
+        stacks.sort(key=lambda s: s.id != active_stack_id)
 
-        stacks = [s for s in stacks if s.id == active_stack.id] + [
-            s for s in stacks if s.id != active_stack.id
-        ]
+    component_types = [
+        StackComponentType.ORCHESTRATOR,
+        StackComponentType.ARTIFACT_STORE,
+        StackComponentType.DEPLOYER,
+        StackComponentType.STEP_OPERATOR,
+        StackComponentType.CONTAINER_REGISTRY,
+        StackComponentType.EXPERIMENT_TRACKER,
+        StackComponentType.IMAGE_BUILDER,
+        StackComponentType.MODEL_REGISTRY,
+        StackComponentType.DATA_VALIDATOR,
+        StackComponentType.ALERTER,
+        StackComponentType.ANNOTATOR,
+        StackComponentType.MODEL_DEPLOYER,
+        StackComponentType.FEATURE_STORE,
+    ]
 
-    all_component_types: Set[StackComponentType] = set()
-    for stack in stacks:
-        all_component_types.update(stack.components.keys())
+    def _format_header(component_type: StackComponentType) -> str:
+        return component_type.value.upper().replace("_", " ")
 
-    active_stack_model_id = client.active_stack_model.id
     stack_dicts = []
     for stack in stacks:
-        is_active = stack.id == active_stack_model_id
-        user_name = _get_user_name(stack.user)
-
-        stack_config = {
-            "ACTIVE": ":green_circle:" if is_active else "",
+        is_active = stack.id == active_stack_id
+        row = {
+            "ACTIVE": "[green]●[/green]" if is_active else "",
             "STACK NAME": stack.name,
-            "STACK ID": stack.id,
-            "OWNER": user_name,
+            "STACK ID": str(stack.id),
+            "OWNER": _get_user_name(stack.user),
         }
 
-        for component_type in all_component_types:
-            component_name = component_type.value.upper().replace("_", " ")
-            if component_type in stack.components:
-                stack_config[component_name] = stack.components[
-                    component_type
-                ][0].name
-            else:
-                stack_config[component_name] = "-"
+        for component_type in component_types:
+            components = stack.components.get(component_type)
+            row[_format_header(component_type)] = (
+                components[0].name if components else "-"
+            )
 
-        stack_dicts.append(stack_config)
+        stack_dicts.append(row)
 
-    print_table(stack_dicts)
+    render_opts = LIST_RENDER_OPTIONS.get() or {}
+    if render_opts.get("user_provided_columns"):
+        columns_arg = render_opts.get("columns", "")
+    else:
+        base_columns = ["ACTIVE", "STACK NAME", "STACK ID"]
+        component_columns = [_format_header(t) for t in component_types]
+        columns_arg = ",".join(base_columns + component_columns)
+
+    handle_output(
+        data=stack_dicts,
+        pagination_info=None,
+        columns=columns_arg,
+        output_format=_normalize_output_format(
+            render_opts.get("output_format", get_default_output_format())
+        ),
+    )
 
 
 def print_components_table(
@@ -2507,7 +2527,7 @@ def print_deployment_table(
         columns
         or render_opts.get("columns")
         or render_opts.get("default_columns")
-        or "id,name,url,status"
+        or ""
     )
 
     if isinstance(deployments, Page):
@@ -3570,27 +3590,33 @@ def _render_table(
         Formatted table string representation of the data
     """
     headers = list(data[0].keys())
+    longest_values: Dict[str, int] = {}
+    for header in headers:
+        header_display = header.replace("_", " ").upper()
+        longest_values[header] = max(
+            len(header_display),
+            max(len(str(row.get(header, ""))) for row in data),
+        )
 
     terminal_width = _get_terminal_width()
     console_width = (
         max(80, min(terminal_width, 200)) if terminal_width else 150
     )
 
-    if terminal_width and terminal_width < 100:
-        logger.warning(
-            "Terminal width is narrow (%d chars). Some columns may be compressed. "
-            "For better readability, consider using --output=json or --output=yaml, "
-            "or increase your terminal width.",
-            terminal_width,
-        )
+    warning(
+        "Large tables may wrap, truncate, or hide columns depending on terminal "
+        "width.\n"
+        "- Use --output=json|yaml|csv|tsv for full data\n"
+        "- Or optionally limit visible columns with --columns\n"
+    )
 
     rich_table = Table(
-        box=None,
+        box=box.SIMPLE_HEAD,
         show_header=True,
         show_lines=False,
         pad_edge=False,
         collapse_padding=False,
-        expand=False,
+        expand=True,
         show_edge=False,
         header_style="bold",
         width=console_width,
@@ -3604,41 +3630,35 @@ def _render_table(
             header_display = ""
         elif _is_id_column(header):
             header_display = "ID"
-        elif _is_name_column(header):
-            header_display = "NAME"
         else:
             header_display = header.replace("_", " ").upper()
 
         is_id_col = _is_id_column(header)
-
-        if is_id_col:
-            overflow: Literal["fold", "ellipsis", "crop", "ignore"] = "crop"
-            no_wrap = True
-            min_col_width = ID_COLUMN_WIDTH
-        elif "url" in header.lower():
+        is_name_col = _is_name_column(header)
+        justify = "left"
+        min_width: Optional[int] = None
+        if is_id_col or is_name_col:
             overflow = "fold"
             no_wrap = False
-            min_col_width = 6
-        elif "description" in header.lower():
-            overflow = "fold"
-            no_wrap = False
-            min_col_width = 6
+            min_width = longest_values[header]
         elif lower == "active":
-            overflow = "ellipsis"
+            header_display = ""  # keep header empty
+            justify = "center"
+            overflow = "crop"
             no_wrap = True
-            min_col_width = 2
         else:
             overflow = "ellipsis"
-            no_wrap = True
-            min_col_width = 6
-
+            no_wrap = False
         rich_table.add_column(
-            header_display,
-            justify="left",
+            header=header_display,
+            justify=justify,
             overflow=overflow,
             no_wrap=no_wrap,
-            min_width=min_col_width,
+            min_width=min_width,
         )
+
+    if data:
+        rich_table.add_section()
 
     for row in data:
         values = []
@@ -3711,7 +3731,7 @@ def _colorize_value(column: str, value: str) -> str:
 
     stripped = value.strip()
     if stripped in ("-", ""):
-        display = stripped or "·"
+        display = stripped or "-"
         return f"[dim]{display}[/dim]"
 
     return value
