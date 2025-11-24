@@ -103,8 +103,8 @@ class DatadogLogExporter(LogExporter):
                     f"Datadog rejected logs: {response.status_code} - {response.text[:200]}"
                 )
                 return LogExportResult.FAILURE
-        except Exception as e:
-            logger.error(f"Failed to export logs to Datadog: {e}")
+        except Exception:
+            logger.exception("Failed to export logs to Datadog")
             return LogExportResult.FAILURE
 
     def shutdown(self) -> None:

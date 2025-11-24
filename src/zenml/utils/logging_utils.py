@@ -115,6 +115,7 @@ class LoggingContext:
         self.log_model = log_model
         self._lock = threading.Lock()
         self._previous_context: Optional[LoggingContext] = None
+        self._disabled = False
 
     @classmethod
     def emit(cls, record: logging.LogRecord) -> None:
@@ -128,9 +129,15 @@ class LoggingContext:
         """
         try:
             if context := active_logging_context.get():
-                message = record.getMessage()
-                if message and message.strip():
-                    Client().active_stack.log_store.emit(record, context)
+                if context._disabled:
+                    return
+                context._disabled = True
+                try:
+                    message = record.getMessage()
+                    if message and message.strip():
+                        Client().active_stack.log_store.emit(record, context)
+                finally:
+                    context._disabled = False
         except Exception:
             pass
 

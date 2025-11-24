@@ -91,8 +91,8 @@ class ArtifactLogExporter(LogExporter):
 
             return LogExportResult.SUCCESS
 
-        except Exception as e:
-            logger.error(f"Failed to export logs to artifact store: {e}")
+        except Exception:
+            logger.exception("Failed to export logs to artifact store")
             return LogExportResult.FAILURE
 
     def _otel_record_to_log_entries(
