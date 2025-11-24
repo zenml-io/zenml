@@ -140,7 +140,6 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
             StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
-            KeyboardInterrupt: Will capture, evaluate and reraise keyboard interrupts.
         """
         from zenml.deployers.server import runtime
 
@@ -292,7 +291,7 @@ class StepRunner:
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
                         )
-                    raise
+                    raise step_exception
                 finally:
                     heartbeat_worker.stop()
                     step_run_metadata = self._stack.get_step_run_metadata(

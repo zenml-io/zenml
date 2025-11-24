@@ -177,38 +177,6 @@ class Compiler:
 
         return snapshot
 
-    def compile_spec(self, pipeline: "Pipeline") -> PipelineSpec:
-        """Compiles a ZenML pipeline to a pipeline spec.
-
-        This method can be used when a pipeline spec is needed but the full
-        snapshot including stack information is not required.
-
-        Args:
-            pipeline: The pipeline to compile.
-
-        Returns:
-            The compiled pipeline spec.
-        """
-        logger.debug(
-            "Compiling pipeline spec for pipeline `%s`.", pipeline.name
-        )
-        # Copy the pipeline before we connect the steps, so we don't mess with
-        # the pipeline object/step objects in any way
-        pipeline = copy.deepcopy(pipeline)
-
-        invocations = [
-            self._get_step_spec(invocation=invocation, enable_heartbeat=False)
-            for _, invocation in self._get_sorted_invocations(
-                pipeline=pipeline
-            )
-        ]
-
-        pipeline_spec = self._compute_pipeline_spec(
-            pipeline=pipeline, step_specs=invocations
-        )
-        logger.debug("Compiled pipeline spec: %s", pipeline_spec)
-        return pipeline_spec
-
     def _apply_run_configuration(
         self, pipeline: "Pipeline", config: PipelineRunConfiguration
     ) -> None:
