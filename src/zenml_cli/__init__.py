@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Core CLI functionality for clean stdout/stderr separation."""
+"""Core CLI functionality."""
 
 import logging
 import sys
-from typing import Any, TextIO
+from typing import List
 
-_original_stdout: TextIO = sys.stdout
-_rerouted: bool = False
+# Global variable to store original stdout for CLI clean output
+_original_stdout = sys.stdout
 
 
 def reroute_stdout() -> None:
@@ -28,11 +28,9 @@ def reroute_stdout() -> None:
     output goes to stderr, while preserving the original stdout for clean
     output that can be piped.
     """
-    global _rerouted
+    modified_handlers: List[logging.StreamHandler] = []
 
-    if _rerouted:
-        return
-
+    # Reroute stdout to stderr
     sys.stdout = sys.stderr
 
     # Handle existing root logger handlers that hold references to original stdout
@@ -42,24 +40,18 @@ def reroute_stdout() -> None:
             and handler.stream is _original_stdout
         ):
             handler.stream = sys.stderr
+            modified_handlers.append(handler)
 
     # Handle ALL existing individual logger handlers that hold references to original stdout
-    for _, logger_obj in logging.Logger.manager.loggerDict.items():
-        if isinstance(logger_obj, logging.Logger):
-            for handler in logger_obj.handlers:
+    for _, logger in logging.Logger.manager.loggerDict.items():
+        if isinstance(logger, logging.Logger):
+            for handler in logger.handlers:
                 if (
                     isinstance(handler, logging.StreamHandler)
                     and handler.stream is _original_stdout
                 ):
                     handler.setStream(sys.stderr)
-
-    _rerouted = True
-
-
-def ensure_rerouted() -> None:
-    """Ensure stdout rerouting happens lazily and idempotently."""
-    if not _rerouted:
-        reroute_stdout()
+                    modified_handlers.append(handler)
 
 
 def clean_output(text: str) -> None:
@@ -73,27 +65,13 @@ def clean_output(text: str) -> None:
     Args:
         text: Text to output to stdout.
     """
-    ensure_rerouted()
     _original_stdout.write(text)
     if not text.endswith("\n"):
         _original_stdout.write("\n")
     _original_stdout.flush()
 
 
-def __getattr__(name: str) -> Any:
-    """Lazy import for cli to avoid circular imports.
+reroute_stdout()
 
-    Args:
-        name: The attribute name to look up.
-
-    Returns:
-        The requested attribute.
-
-    Raises:
-        AttributeError: If the attribute is not found.
-    """
-    if name == "cli":
-        from zenml.cli.cli import cli
-
-        return cli
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+# Import the cli only after rerouting stdout
+from zenml.cli.cli import cli  # noqa: E402, F401
