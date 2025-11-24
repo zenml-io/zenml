@@ -14,8 +14,10 @@
 """Utility functions for the CLI."""
 
 import contextlib
+import csv
 import functools
 import inspect
+import io
 import json
 import os
 import platform
@@ -146,10 +148,10 @@ ALLOWED_OUTPUT_FORMATS: Tuple[str, ...] = (
     "csv",
     "tsv",
 )
-ID_COLUMN_WIDTH = 36  # Standard UUID length
-URL_COLUMN_WIDTH = 40  # Reasonable URL display length
-STATUS_COLUMN_WIDTH = 18  # Typical status string length
-NAME_COLUMN_WIDTH = 20  # Default name column width
+ID_COLUMN_WIDTH = 36
+URL_COLUMN_WIDTH = 40
+STATUS_COLUMN_WIDTH = 18
+NAME_COLUMN_WIDTH = 20
 
 
 T = TypeVar("T", bound=BaseIdentifiedResponse[Any, Any, Any])
@@ -656,7 +658,6 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     for component_type, components in stack.components.items():
         rich_table.add_row(component_type, components[0].name)
 
-    # capitalize entries in first column
     rich_table.columns[0]._cells = [
         component.upper()  # type: ignore[union-attr]
         for component in rich_table.columns[0]._cells
@@ -1391,7 +1392,6 @@ def pretty_print_model_version_details(
     for item in model_version_info.items():
         rich_table.add_row(*[str(elem) for elem in item])
 
-    # capitalize entries in first column
     rich_table.columns[0]._cells = [
         component.upper()  # type: ignore[union-attr]
         for component in rich_table.columns[0]._cells
@@ -1438,7 +1438,6 @@ def print_served_model_configuration(
     for item in sorted_items.items():
         rich_table.add_row(*[str(elem) for elem in item])
 
-    # capitalize entries in first column
     rich_table.columns[0]._cells = [
         component.upper()  # type: ignore[union-attr]
         for component in rich_table.columns[0]._cells
@@ -1453,14 +1452,11 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
         schema_json: str, represents the schema of a Pydantic object, which
             can be obtained through BaseModelClass.schema_json()
     """
-    # Get the schema dict
-    # Extract values with defaults
     schema_title = schema_json["title"]
     required = schema_json.get("required", [])
     description = schema_json.get("description", "")
     properties = schema_json.get("properties", {})
 
-    # Pretty print the schema
     warning(f"Configuration class: {schema_title}\n", bold=True)
 
     if description:
@@ -1509,14 +1505,15 @@ def replace_emojis(text: str) -> str:
     Returns:
         Text with expanded emojis.
     """
-    emoji_pattern = r":(\w+):"
-    emojis = re.findall(emoji_pattern, text)
-    for emoji in emojis:
+
+    def _replace_emoji(match: re.Match[str]) -> str:
+        emoji_code = match.group(1)
         try:
-            text = text.replace(f":{emoji}:", str(Emoji(emoji)))
+            return str(Emoji(emoji_code))
         except NoEmoji:
-            pass
-    return text
+            return match.group(0)
+
+    return re.sub(r":(\w+):", _replace_emoji, text)
 
 
 def print_stacks_table(
@@ -3313,26 +3310,32 @@ def render_list_output(
     """
     item_list = []
 
+    formatter_with_format = None
+    formatter_without_format = None
+
+    if row_formatter:
+        sig = inspect.signature(row_formatter)
+        if len(sig.parameters) >= 2:
+            formatter_with_format = cast(
+                Callable[[AnyResponse, OutputFormat], Dict[str, Any]],
+                row_formatter,
+            )
+        else:
+            formatter_without_format = cast(
+                Callable[[AnyResponse], Dict[str, Any]], row_formatter
+            )
+
     for item in page.items:
         item_data = prepare_response_data(item)
 
-        if row_formatter:
-            sig = inspect.signature(row_formatter)
-            formatter_accepts_output_format = len(sig.parameters) >= 2
-            if formatter_accepts_output_format:
-                formatter_with_format = cast(
-                    Callable[[AnyResponse, OutputFormat], Dict[str, Any]],
-                    row_formatter,
-                )
-                additional_data = formatter_with_format(item, output_format)
-            else:
-                formatter_without_format = cast(
-                    Callable[[AnyResponse], Dict[str, Any]], row_formatter
-                )
-                additional_data = formatter_without_format(item)
+        additional_data = None
+        if formatter_with_format:
+            additional_data = formatter_with_format(item, output_format)
+        elif formatter_without_format:
+            additional_data = formatter_without_format(item)
 
-            if additional_data:
-                item_data.update(additional_data)
+        if additional_data:
+            item_data.update(additional_data)
 
         item_list.append(item_data)
 
@@ -3504,22 +3507,14 @@ def _render_tsv(
     if not data:
         return ""
 
+    output_buffer = io.StringIO()
     headers = list(data[0].keys())
-
-    lines = []
-    lines.append("\t".join(headers))
-
-    for row in data:
-        values = []
-        for header in headers:
-            value = str(row.get(header, ""))
-            value = (
-                value.replace("\t", " ").replace("\n", " ").replace("\r", " ")
-            )
-            values.append(value)
-        lines.append("\t".join(values))
-
-    return "\n".join(lines)
+    writer = csv.DictWriter(
+        output_buffer, fieldnames=headers, delimiter="\t", lineterminator="\n"
+    )
+    writer.writeheader()
+    writer.writerows(data)
+    return output_buffer.getvalue().strip()
 
 
 def _render_csv(
@@ -3533,25 +3528,17 @@ def _render_csv(
     Returns:
         CSV string representation of the data
     """
+    if not data:
+        return ""
+
+    output_buffer = io.StringIO()
     headers = list(data[0].keys())
-
-    lines = []
-
-    lines.append(",".join(headers))
-
-    for row in data:
-        values = []
-        for header in headers:
-            value = (
-                str(row.get(header, "")) if row.get(header) is not None else ""
-            )
-            if "," in value or '"' in value:
-                escaped_value = value.replace('"', '""')
-                value = f'"{escaped_value}"'
-            values.append(value)
-        lines.append(",".join(values))
-
-    return "\n".join(lines)
+    writer = csv.DictWriter(
+        output_buffer, fieldnames=headers, lineterminator="\n"
+    )
+    writer.writeheader()
+    writer.writerows(data)
+    return output_buffer.getvalue().strip()
 
 
 def _get_terminal_width() -> Optional[int]:
@@ -3602,7 +3589,6 @@ def _render_table(
     console_width = (
         max(80, min(terminal_width, 200)) if terminal_width else 150
     )
-
     warning(
         "Large tables may wrap, truncate, or hide columns depending on terminal "
         "width.\n"
@@ -3643,7 +3629,7 @@ def _render_table(
             no_wrap = False
             min_width = longest_values[header]
         elif lower == "active":
-            header_display = ""  # keep header empty
+            header_display = ""
             justify = "center"
             overflow = "crop"
             no_wrap = True
@@ -3703,28 +3689,36 @@ def _colorize_value(column: str, value: str) -> str:
         keyword in column.lower() for keyword in ["status", "state", "health"]
     ):
         value_lower = value.lower()
-        if value_lower in {
+        green_statuses = {
             "active",
             "healthy",
             "succeeded",
             "completed",
-        }:
-            return f"[green]{value}[/green]"
-        elif value_lower in {
+            "verified",
+        }
+        yellow_statuses = {
             "running",
             "pending",
             "initializing",
             "starting",
             "warning",
-        }:
-            return f"[yellow]{value}[/yellow]"
-        elif value_lower in {
+            "creating",
+            "updating",
+        }
+        red_statuses = {
             "failed",
             "error",
             "unhealthy",
             "stopped",
             "crashed",
-        }:
+            "deleted",
+        }
+
+        if value_lower in green_statuses:
+            return f"[green]{value}[/green]"
+        elif value_lower in yellow_statuses:
+            return f"[yellow]{value}[/yellow]"
+        elif value_lower in red_statuses:
             return f"[red]{value}[/red]"
 
         return value
