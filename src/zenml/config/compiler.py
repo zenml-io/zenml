@@ -38,6 +38,7 @@ from zenml.config.step_configurations import (
     StepConfigurationUpdate,
     StepSpec,
 )
+from zenml.enums import StepRuntime
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineSnapshotBase
@@ -493,7 +494,6 @@ class Compiler:
         else:
             # dynamic pipelines
             from zenml.execution.pipeline.dynamic.runner import (
-                StepRuntime,
                 get_step_runtime,
             )
 
