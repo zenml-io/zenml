@@ -151,7 +151,7 @@ class ZenFormatter(formatting.HelpFormatter):
                     continue
 
                 if term_len(first) <= first_col - col_spacing:
-                    self.write(" " * self.current_indent * 2)  # nosec
+                    self.write(" " * self.current_indent * 2)
                 else:
                     self.write("\n")
                     self.write(" " * (first_col + self.current_indent))
