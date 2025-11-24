@@ -2556,34 +2556,27 @@ def pretty_print_deployment(
 
         # cURL example
         declare("\n[bold]cURL example:[/bold]")
-        if not deployment.url:
-            console.print("No endpoint URL available.")
-        else:
-            base_url = deployment.url.rstrip("/")
+        curl_headers = []
+        if auth_key:
+            if show_secret:
+                curl_headers.append(f'-H "Authorization: Bearer {auth_key}"')
+            else:
+                curl_headers.append(
+                    '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
+                )
 
-            curl_headers = []
-            if auth_key:
-                if show_secret:
-                    curl_headers.append(
-                        f'-H "Authorization: Bearer {auth_key}"'
-                    )
-                else:
-                    curl_headers.append(
-                        '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
-                    )
+        curl_params = json.dumps(example, indent=2).replace("\n", "\n    ")
 
-            curl_params = json.dumps(example, indent=2).replace("\n", "\n    ")
+        curl_headers.append('-H "Content-Type: application/json"')
+        headers_str = "\\\n  ".join(curl_headers)
 
-            curl_headers.append('-H "Content-Type: application/json"')
-            headers_str = "\\\n  ".join(curl_headers)
-
-            curl_command = f"""curl -X POST {base_url}/invoke \\
+        curl_command = f"""curl -X POST {endpoint_url}/invoke \\
   {headers_str} \\
   -d '{{
     "parameters": {curl_params}
   }}'"""
 
-            console.print(curl_command)
+        console.print(curl_command)
 
     # JSON Schemas
     if show_schema:

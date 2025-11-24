@@ -164,3 +164,201 @@ def test_discover_urls_finds_ingress_url() -> None:
     assert (
         discovered["cluster_ip"] == "http://weather.ns.svc.cluster.local:8000"
     )
+
+
+def test_select_url_auto_prefers_node_port_when_configured() -> None:
+    """AUTO preference with NodePort service type prefers NodePort URLs."""
+    deployer = KubernetesDeployer.__new__(KubernetesDeployer)
+    settings = KubernetesDeployerSettings(
+        service_type=KubernetesServiceType.NODE_PORT
+    )
+    discovered = {
+        "gateway_api": None,
+        "ingress": None,
+        "load_balancer": "http://1.2.3.4:8000",
+        "node_port": "http://node:30000",
+        "cluster_ip": "http://svc.ns.svc.cluster.local:8000",
+    }
+
+    url = deployer._select_url(
+        discovered_urls=discovered,
+        settings=settings,
+        deployment_name="demo",
+    )
+
+    assert url == "http://node:30000"
+
+
+def test_select_url_auto_prefers_cluster_ip_when_configured() -> None:
+    """AUTO preference with ClusterIP service type prefers ClusterIP URLs."""
+    deployer = KubernetesDeployer.__new__(KubernetesDeployer)
+    settings = KubernetesDeployerSettings(
+        service_type=KubernetesServiceType.CLUSTER_IP
+    )
+    discovered = {
+        "gateway_api": None,
+        "ingress": None,
+        "load_balancer": "http://1.2.3.4:8000",
+        "node_port": "http://node:30000",
+        "cluster_ip": "http://svc.ns.svc.cluster.local:8000",
+    }
+
+    url = deployer._select_url(
+        discovered_urls=discovered,
+        settings=settings,
+        deployment_name="demo",
+    )
+
+    assert url == "http://svc.ns.svc.cluster.local:8000"
+
+
+def test_select_url_auto_falls_back_when_preferred_unavailable() -> None:
+    """AUTO preference falls back to next priority when preferred is missing."""
+    deployer = KubernetesDeployer.__new__(KubernetesDeployer)
+    settings = KubernetesDeployerSettings(
+        service_type=KubernetesServiceType.LOAD_BALANCER
+    )
+    discovered = {
+        "gateway_api": None,
+        "ingress": None,
+        "load_balancer": None,  # Not available
+        "node_port": "http://node:30000",
+        "cluster_ip": "http://svc.ns.svc.cluster.local:8000",
+    }
+
+    url = deployer._select_url(
+        discovered_urls=discovered,
+        settings=settings,
+        deployment_name="demo",
+    )
+
+    # Falls back to NodePort
+    assert url == "http://node:30000"
+
+
+def test_select_url_explicit_preference_returns_matching_url() -> None:
+    """Explicit preference returns the requested URL type."""
+    deployer = KubernetesDeployer.__new__(KubernetesDeployer)
+    settings = KubernetesDeployerSettings(
+        url_preference=KubernetesUrlPreference.CLUSTER_IP
+    )
+    discovered = {
+        "gateway_api": None,
+        "ingress": None,
+        "load_balancer": "http://1.2.3.4:8000",
+        "node_port": "http://node:30000",
+        "cluster_ip": "http://svc.ns.svc.cluster.local:8000",
+    }
+
+    url = deployer._select_url(
+        discovered_urls=discovered,
+        settings=settings,
+        deployment_name="demo",
+    )
+
+    assert url == "http://svc.ns.svc.cluster.local:8000"
+
+
+def test_discover_urls_finds_gateway_api_url() -> None:
+    """Gateway API discovery returns URL when HTTPRoute and Gateway are configured."""
+    service_inventory = ResourceInventoryItem(
+        kind="Service",
+        api_version="v1",
+        namespace="ns",
+        name="api-service",
+    )
+    gateway_inventory = ResourceInventoryItem(
+        kind="Gateway",
+        api_version="gateway.networking.k8s.io/v1beta1",
+        namespace="ns",
+        name="main-gateway",
+    )
+    httproute_inventory = ResourceInventoryItem(
+        kind="HTTPRoute",
+        api_version="gateway.networking.k8s.io/v1beta1",
+        namespace="ns",
+        name="api-route",
+    )
+
+    resources = {
+        ("Service", "v1", "api-service", "ns"): {
+            "metadata": {"name": "api-service"},
+            "spec": {
+                "type": "ClusterIP",
+                "ports": [{"port": 8000}],
+            },
+        },
+        (
+            "Gateway",
+            "gateway.networking.k8s.io/v1beta1",
+            "main-gateway",
+            "ns",
+        ): {
+            "status": {
+                "listeners": [
+                    {
+                        "name": "http",
+                        "protocol": "HTTP",
+                    }
+                ]
+            }
+        },
+        (
+            "HTTPRoute",
+            "gateway.networking.k8s.io/v1beta1",
+            "api-route",
+            "ns",
+        ): {
+            "spec": {
+                "hostnames": ["api.example.com"],
+                "parentRefs": [{"name": "main-gateway", "namespace": "ns"}],
+                "rules": [
+                    {
+                        "matches": [
+                            {"path": {"type": "PathPrefix", "value": "/"}}
+                        ],
+                        "backendRefs": [
+                            {"name": "api-service", "namespace": "ns"}
+                        ],
+                    }
+                ],
+            }
+        },
+    }
+    deployer = _make_deployer_with_resources(resources)
+
+    discovered = deployer._discover_urls(
+        inventory=[service_inventory, gateway_inventory, httproute_inventory],
+        namespace="ns",
+    )
+
+    assert discovered["gateway_api"] == "http://api.example.com/"
+    assert (
+        discovered["cluster_ip"]
+        == "http://api-service.ns.svc.cluster.local:8000"
+    )
+
+
+def test_discover_urls_returns_none_when_applier_returns_none() -> None:
+    """Discovery returns empty URLs when applier cannot find resources."""
+    service_inventory = ResourceInventoryItem(
+        kind="Service",
+        api_version="v1",
+        namespace="ns",
+        name="missing-service",
+    )
+
+    # Empty resources - applier will return None for everything
+    resources: Dict[Any, Any] = {}
+    deployer = _make_deployer_with_resources(resources)
+
+    discovered = deployer._discover_urls(
+        inventory=[service_inventory],
+        namespace="ns",
+    )
+
+    assert discovered["gateway_api"] is None
+    assert discovered["ingress"] is None
+    assert discovered["load_balancer"] is None
+    assert discovered["node_port"] is None
+    assert discovered["cluster_ip"] is None

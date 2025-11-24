@@ -1392,23 +1392,18 @@ def build_gateway_api_url(
     parent_refs = httproute_spec.get("parentRefs", [])
     if parent_refs:
         parent_ref = parent_refs[0]
-        listener_name = parent_ref.get("name")
         section_name = parent_ref.get("sectionName")
 
-        if listener_name:
-            for listener in gateway_listeners:
-                current_listener_name = listener.get("name")
-                listener_name_match = current_listener_name == listener_name
-                if section_name:
-                    listener_name_match = listener_name_match and (
-                        current_listener_name == section_name
-                    )
+        for listener in gateway_listeners:
+            current_listener_name = listener.get("name")
 
-                if listener_name_match:
-                    listener_protocol = listener.get("protocol", "").lower()
-                    if listener_protocol in ("https", "tls"):
-                        protocol = "https"
-                    break
+            if section_name and current_listener_name != section_name:
+                continue
+
+            listener_protocol = listener.get("protocol", "").lower()
+            if listener_protocol in ("https", "tls"):
+                protocol = "https"
+                break
 
     path = "/"
     if httproute_rules:

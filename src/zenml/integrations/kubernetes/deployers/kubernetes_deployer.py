@@ -91,6 +91,28 @@ logger = get_logger(__name__)
 MAX_LOAD_BALANCER_TIMEOUT = 600  # 10 minutes
 
 
+def _filter_inventory(
+    inventory: List[ResourceInventoryItem],
+    kind: str,
+    api_version: str,
+) -> List[ResourceInventoryItem]:
+    """Filter inventory items by kind and API version.
+
+    Args:
+        inventory: The resource inventory to filter.
+        kind: The Kubernetes resource kind to filter by.
+        api_version: The API version to filter by.
+
+    Returns:
+        Filtered list of inventory items matching the criteria.
+    """
+    return [
+        item
+        for item in inventory
+        if item.kind == kind and item.api_version == api_version
+    ]
+
+
 class _DeploymentCtx(BaseModel):
     """Deployment context."""
 
@@ -622,11 +644,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         if timeout <= 0:
             return
 
-        deployments = [
-            item
-            for item in inventory
-            if item.kind == "Deployment" and item.api_version == "apps/v1"
-        ]
+        deployments = _filter_inventory(inventory, "Deployment", "apps/v1")
 
         for deployment_item in deployments:
             try:
@@ -653,11 +671,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 ) from e
 
         if settings.wait_for_load_balancer_timeout > 0:
-            services = [
-                item
-                for item in inventory
-                if item.kind == "Service" and item.api_version == "v1"
-            ]
+            services = _filter_inventory(inventory, "Service", "v1")
 
             lb_timeout = min(
                 timeout,
@@ -1051,11 +1065,9 @@ class KubernetesDeployer(ContainerizedDeployer):
             all_ready = True
             any_exists = False
 
-            deployment_items = [
-                item
-                for item in inventory
-                if item.kind == "Deployment" and item.api_version == "apps/v1"
-            ]
+            deployment_items = _filter_inventory(
+                inventory, "Deployment", "apps/v1"
+            )
 
             for deployment_item in deployment_items:
                 k8s_deployment = self.k8s_applier.get_resource(
@@ -1161,29 +1173,16 @@ class KubernetesDeployer(ContainerizedDeployer):
             "cluster_ip": None,
         }
 
-        service_items = [
-            item
-            for item in inventory
-            if item.kind == "Service" and item.api_version == "v1"
-        ]
-        ingress_items = [
-            item
-            for item in inventory
-            if item.kind == "Ingress"
-            and item.api_version == "networking.k8s.io/v1"
-        ]
-        gateway_items = [
-            item
-            for item in inventory
-            if item.kind == "Gateway"
-            and item.api_version == "gateway.networking.k8s.io/v1beta1"
-        ]
-        httproute_items = [
-            item
-            for item in inventory
-            if item.kind == "HTTPRoute"
-            and item.api_version == "gateway.networking.k8s.io/v1beta1"
-        ]
+        service_items = _filter_inventory(inventory, "Service", "v1")
+        ingress_items = _filter_inventory(
+            inventory, "Ingress", "networking.k8s.io/v1"
+        )
+        gateway_items = _filter_inventory(
+            inventory, "Gateway", "gateway.networking.k8s.io/v1beta1"
+        )
+        httproute_items = _filter_inventory(
+            inventory, "HTTPRoute", "gateway.networking.k8s.io/v1beta1"
+        )
 
         for service_item in service_items:
             k8s_service = self.k8s_applier.get_resource(
@@ -1235,7 +1234,21 @@ class KubernetesDeployer(ContainerizedDeployer):
         httproute_items: List[ResourceInventoryItem],
         namespace: str,
     ) -> Optional[str]:
-        """Discover Gateway API URL for a service."""
+        """Discover Gateway API URL for a service.
+
+        Searches HTTPRoutes that reference the given service and finds the
+        corresponding Gateway to build the URL.
+
+        Args:
+            service_item: The service inventory item to find a URL for.
+            service_namespace: The namespace of the service.
+            gateway_items: List of Gateway resources in the inventory.
+            httproute_items: List of HTTPRoute resources in the inventory.
+            namespace: The default namespace for resources without explicit namespace.
+
+        Returns:
+            The Gateway API URL if found, None otherwise.
+        """
         for httproute_item in httproute_items:
             httproute_namespace = httproute_item.namespace or namespace
             if httproute_namespace != service_namespace:
@@ -1260,13 +1273,9 @@ class KubernetesDeployer(ContainerizedDeployer):
                 backend_refs = rule.get("backendRefs", [])
                 for backend_ref in backend_refs:
                     backend_service_name = backend_ref.get("name")
-                    backend_namespace = backend_ref.get("namespace")
-                    if backend_namespace:
-                        backend_namespace = (
-                            backend_namespace or httproute_namespace
-                        )
-                    else:
-                        backend_namespace = httproute_namespace
+                    backend_namespace = (
+                        backend_ref.get("namespace") or httproute_namespace
+                    )
 
                     if (
                         backend_service_name == service_item.name
@@ -1321,7 +1330,21 @@ class KubernetesDeployer(ContainerizedDeployer):
         namespace: str,
         k8s_service: Any,
     ) -> Optional[str]:
-        """Discover Ingress URL for a service."""
+        """Discover Ingress URL for a service.
+
+        Searches Ingress resources that route to the given service and builds
+        the URL from the Ingress host and path configuration.
+
+        Args:
+            service_item: The service inventory item to find a URL for.
+            service_namespace: The namespace of the service.
+            ingress_items: List of Ingress resources in the inventory.
+            namespace: The default namespace for resources without explicit namespace.
+            k8s_service: The Kubernetes Service resource object.
+
+        Returns:
+            The Ingress URL if found, None otherwise.
+        """
         matching_ingress: Optional[Any] = None
         for ingress_item in ingress_items:
             ingress_namespace = ingress_item.namespace or namespace
@@ -1373,7 +1396,17 @@ class KubernetesDeployer(ContainerizedDeployer):
         k8s_service: Any,
         discovered_urls: Dict[str, Optional[str]],
     ) -> None:
-        """Discover direct service URLs (LoadBalancer/NodePort/ClusterIP)."""
+        """Discover direct service URLs based on service type.
+
+        Populates the discovered_urls dict with LoadBalancer, NodePort, or
+        ClusterIP URLs based on the service type.
+
+        Args:
+            service_item: The service inventory item.
+            namespace: The default namespace.
+            k8s_service: The Kubernetes Service resource object.
+            discovered_urls: Dict to populate with discovered URLs (mutated in place).
+        """
         service_url = kube_utils.build_service_url(
             core_api=self.k8s_core_api,
             service=k8s_service,
@@ -1387,11 +1420,11 @@ class KubernetesDeployer(ContainerizedDeployer):
         service_dict = normalize_resource_to_dict(k8s_service)
         service_type = service_dict.get("spec", {}).get("type", "ClusterIP")
 
-        if service_type == "LoadBalancer":
+        if service_type == KubernetesServiceType.LOAD_BALANCER.value:
             discovered_urls["load_balancer"] = service_url
-        elif service_type == "NodePort":
+        elif service_type == KubernetesServiceType.NODE_PORT.value:
             discovered_urls["node_port"] = service_url
-        elif service_type == "ClusterIP":
+        elif service_type == KubernetesServiceType.CLUSTER_IP.value:
             discovered_urls["cluster_ip"] = service_url
 
     def _select_url(
