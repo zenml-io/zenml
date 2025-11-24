@@ -74,8 +74,9 @@ class EvidentlyIntegration(Integration):
         """
         from zenml.integrations.pandas import PandasIntegration
 
-        return cls.REQUIREMENTS + \
-            PandasIntegration.get_requirements(target_os=target_os, python_version=python_version)
+        return cls.REQUIREMENTS + PandasIntegration.get_requirements(
+            target_os=target_os, python_version=python_version
+        )
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
