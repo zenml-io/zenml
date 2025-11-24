@@ -38,22 +38,29 @@ def tag() -> None:
 
 
 @tag.command("list", help="List tags with filter.")
-@cli_utils.list_options(TagFilter)
-def list_tags(**kwargs: Any) -> None:
+@cli_utils.list_options(
+    TagFilter,
+    default_columns=["id", "name", "color", "exclusive", "user"],
+)
+def list_tags(
+    columns: str, output_format: cli_utils.OutputFormat, **kwargs: Any
+) -> None:
     """List tags with filter.
 
     Args:
-        **kwargs: Keyword arguments to filter models.
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
+        **kwargs: Keyword arguments to filter tags.
     """
     tags = Client().list_tags(**kwargs)
 
-    if not tags:
+    if not tags.items:
         cli_utils.declare("No tags found.")
         return
 
-    cli_utils.print_pydantic_models(
-        tags,
-        exclude_columns=["created"],
+    items = cli_utils.format_page_items(tags, output_format=output_format)
+    cli_utils.handle_output(
+        items, tags.pagination_info, columns, output_format
     )
 
 

@@ -19,7 +19,9 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import OutputFormat, list_options
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -78,22 +80,38 @@ def model() -> None:
 
 
 @model.command("list", help="List models with filter.")
-@cli_utils.list_options(ModelFilter)
-def list_models(**kwargs: Any) -> None:
+@list_options(
+    ModelFilter,
+    default_columns=[
+        "id",
+        "name",
+        "latest_version_name",
+        "description",
+        "tags",
+        "use_cases",
+    ],
+)
+def list_models(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List models with filter in the Model Control Plane.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter models.
     """
-    models = Client().list_models(**kwargs)
+    with console.status("Listing models...\n"):
+        models = Client().list_models(**kwargs)
 
-    if not models:
+    if not models.items:
         cli_utils.declare("No models found.")
         return
-    to_print = []
-    for model in models:
-        to_print.append(_model_to_print(model))
-    cli_utils.print_table(to_print)
+
+    items = cli_utils.format_page_items(models, output_format=output_format)
+    cli_utils.handle_output(
+        items, models.pagination_info, columns, output_format
+    )
 
 
 @model.command("register", help="Register a new model.")
@@ -391,24 +409,30 @@ def version() -> None:
 
 
 @version.command("list", help="List model versions with filter.")
-@cli_utils.list_options(ModelVersionFilter)
-def list_model_versions(**kwargs: Any) -> None:
+@list_options(ModelVersionFilter)
+def list_model_versions(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List model versions with filter in the Model Control Plane.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter models.
     """
-    model_versions = Client().list_model_versions(**kwargs)
+    with console.status("Listing model versions...\n"):
+        model_versions = Client().list_model_versions(**kwargs)
 
-    if not model_versions:
+    if not model_versions.items:
         cli_utils.declare("No model versions found.")
         return
 
-    to_print = []
-    for model_version in model_versions:
-        to_print.append(_model_version_to_print(model_version))
-
-    cli_utils.print_table(to_print)
+    items = cli_utils.format_page_items(
+        model_versions, output_format=output_format
+    )
+    cli_utils.handle_output(
+        items, model_versions.pagination_info, columns, output_format
+    )
 
 
 @version.command("update", help="Update an existing model version stage.")
@@ -567,6 +591,8 @@ def delete_model_version(
 
 def _print_artifacts_links_generic(
     model_name_or_id: str,
+    columns: str,
+    output_format: OutputFormat,
     model_version_name_or_number_or_id: Optional[str] = None,
     only_data_artifacts: bool = False,
     only_deployment_artifacts: bool = False,
@@ -577,6 +603,8 @@ def _print_artifacts_links_generic(
 
     Args:
         model_name_or_id: The ID or name of the model containing version.
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         model_version_name_or_number_or_id: The name, number or ID of the model version.
         only_data_artifacts: If set, only print data artifacts.
         only_deployment_artifacts: If set, only print deployment artifacts.
@@ -595,24 +623,25 @@ def _print_artifacts_links_generic(
         else "model artifacts"
     )
 
-    links = Client().list_model_version_artifact_links(
-        model_version_id=model_version.id,
-        only_data_artifacts=only_data_artifacts,
-        only_deployment_artifacts=only_deployment_artifacts,
-        only_model_artifacts=only_model_artifacts,
-        **kwargs,
-    )
+    with console.status(f"Listing {type_}...\n"):
+        links = Client().list_model_version_artifact_links(
+            model_version_id=model_version.id,
+            only_data_artifacts=only_data_artifacts,
+            only_deployment_artifacts=only_deployment_artifacts,
+            only_model_artifacts=only_model_artifacts,
+            **kwargs,
+        )
 
-    if not links:
+    if not links.items:
         cli_utils.declare(f"No {type_} linked to the model version found.")
         return
 
     cli_utils.title(
         f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
     )
-    cli_utils.print_pydantic_models(
-        links,
-        columns=["artifact_version", "created"],
+    items = cli_utils.format_page_items(links, output_format=output_format)
+    cli_utils.handle_output(
+        items, links.pagination_info, columns, output_format
     )
 
 
@@ -622,9 +651,11 @@ def _print_artifacts_links_generic(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@cli_utils.list_options(ModelVersionArtifactFilter)
+@list_options(ModelVersionArtifactFilter)
 def list_model_version_data_artifacts(
     model_name: str,
+    columns: str,
+    output_format: OutputFormat,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -632,12 +663,16 @@ def list_model_version_data_artifacts(
 
     Args:
         model_name: The ID or name of the model containing version.
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
         **kwargs: Keyword arguments to filter models.
     """
     _print_artifacts_links_generic(
         model_name_or_id=model_name,
+        columns=columns,
+        output_format=output_format,
         model_version_name_or_number_or_id=model_version,
         only_data_artifacts=True,
         **kwargs,
@@ -650,9 +685,11 @@ def list_model_version_data_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@cli_utils.list_options(ModelVersionArtifactFilter)
+@list_options(ModelVersionArtifactFilter)
 def list_model_version_model_artifacts(
     model_name: str,
+    columns: str,
+    output_format: OutputFormat,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -660,12 +697,16 @@ def list_model_version_model_artifacts(
 
     Args:
         model_name: The ID or name of the model containing version.
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
         **kwargs: Keyword arguments to filter models.
     """
     _print_artifacts_links_generic(
         model_name_or_id=model_name,
+        columns=columns,
+        output_format=output_format,
         model_version_name_or_number_or_id=model_version,
         only_model_artifacts=True,
         **kwargs,
@@ -678,9 +719,11 @@ def list_model_version_model_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@cli_utils.list_options(ModelVersionArtifactFilter)
+@list_options(ModelVersionArtifactFilter)
 def list_model_version_deployment_artifacts(
     model_name: str,
+    columns: str,
+    output_format: OutputFormat,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -688,12 +731,16 @@ def list_model_version_deployment_artifacts(
 
     Args:
         model_name: The ID or name of the model containing version.
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
         **kwargs: Keyword arguments to filter models.
     """
     _print_artifacts_links_generic(
         model_name_or_id=model_name,
+        columns=columns,
+        output_format=output_format,
         model_version_name_or_number_or_id=model_version,
         only_deployment_artifacts=True,
         **kwargs,
@@ -706,9 +753,11 @@ def list_model_version_deployment_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@cli_utils.list_options(ModelVersionPipelineRunFilter)
+@list_options(ModelVersionPipelineRunFilter)
 def list_model_version_pipeline_runs(
     model_name: str,
+    columns: str,
+    output_format: OutputFormat,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -716,6 +765,8 @@ def list_model_version_pipeline_runs(
 
     Args:
         model_name: The ID or name of the model containing version.
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
         **kwargs: Keyword arguments to filter runs.
@@ -725,16 +776,20 @@ def list_model_version_pipeline_runs(
         model_version_name_or_number_or_id=model_version,
     )
 
-    runs = Client().list_model_version_pipeline_run_links(
-        model_version_id=model_version_response_model.id,
-        **kwargs,
-    )
+    with console.status("Listing pipeline runs...\n"):
+        runs = Client().list_model_version_pipeline_run_links(
+            model_version_id=model_version_response_model.id,
+            **kwargs,
+        )
 
-    if not runs:
+    if not runs.items:
         cli_utils.declare("No pipeline runs attached to model version found.")
         return
 
     cli_utils.title(
         f"Pipeline runs linked to the model version `{model_version_response_model.name}[{model_version_response_model.number}]`:"
     )
-    cli_utils.print_pydantic_models(runs)
+    items = cli_utils.format_page_items(runs, output_format=output_format)
+    cli_utils.handle_output(
+        items, runs.pagination_info, columns, output_format
+    )

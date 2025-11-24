@@ -43,6 +43,7 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID
 
 import click
 import yaml
@@ -86,6 +87,7 @@ from zenml.models import (
     Page,
     ServiceConnectorRequirements,
     StrFilter,
+    UserResponse,
     UserScopedResponse,
     UUIDFilter,
 )
@@ -124,6 +126,7 @@ if TYPE_CHECKING:
         UserResponse,
     )
     from zenml.stack import Stack
+
 
 logger = get_logger(__name__)
 
@@ -2886,8 +2889,42 @@ def _normalize_output_format(output_format: str) -> OutputFormat:
     return cast(OutputFormat, output_format)
 
 
+def _simplify_value(value: Any) -> Any:
+    """Simplify complex values for CLI display.
+
+    Handles common patterns like:
+    - List of objects with 'name' field -> list of names
+    - Dict with 'name' field -> just the name
+    - Nested dicts/lists -> recursively simplified
+
+    Args:
+        value: The value to simplify
+
+    Returns:
+        Simplified value suitable for CLI display
+    """
+    if isinstance(value, list):
+        if not value:
+            return value
+        if isinstance(value[0], dict) and "name" in value[0]:
+            return [item["name"] for item in value]
+        return [_simplify_value(item) for item in value]
+
+    if isinstance(value, dict):
+        if "name" in value and "id" in value:
+            return value["name"]
+        return {k: _simplify_value(v) for k, v in value.items()}
+
+    return value
+
+
 def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
     """Prepare data from BaseResponse instances.
+
+    This function extracts data from body, metadata, and resources of a
+    response model to create a flat dictionary suitable for CLI display.
+    It automatically simplifies complex nested objects (like lists of tags
+    or related entities) to their name representations.
 
     Args:
         item: BaseResponse instance to format
@@ -2904,8 +2941,19 @@ def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
         body_data = item.body.model_dump(mode="json")
         item_data.update(body_data)
 
+    if item.metadata is not None:
+        metadata_data = item.metadata.model_dump(mode="json")
+        item_data.update(metadata_data)
+
+    if item.resources is not None:
+        resources_data = item.resources.model_dump(mode="json")
+        item_data.update(resources_data)
+
     if isinstance(item, UserScopedResponse) and item.user:
         item_data["user"] = item.user.name
+
+    for key, value in list(item_data.items()):
+        item_data[key] = _simplify_value(value)
 
     return item_data
 
