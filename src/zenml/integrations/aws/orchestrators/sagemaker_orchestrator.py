@@ -205,7 +205,9 @@ def dissect_pipeline_execution_arn(
 
 
 class SagemakerOrchestrator(ContainerizedOrchestrator):
-    """Orchestrator responsible for running pipelines on Sagemaker."""
+    """Orchestrator responsible for running pipelines or training/processing jobs on Sagemaker."""
+
+    _sagemaker_session: Optional[Session] = None
 
     @property
     def config(self) -> SagemakerOrchestratorConfig:
@@ -294,6 +296,20 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             The settings class.
         """
         return SagemakerOrchestratorSettings
+
+    @property
+    def sagemaker_session(self) -> Session:
+        """Returns the SageMaker session.
+
+        Returns:
+            The SageMaker session.
+        """
+        if self.connector_has_expired():
+            self._sagemaker_session = None
+
+        if self._sagemaker_session is None:
+            self._sagemaker_session = self._get_sagemaker_session()
+        return self._sagemaker_session
 
     def _get_sagemaker_session(self) -> Session:
         """Method to create the sagemaker session with proper authentication.
@@ -663,7 +679,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             r"[^a-zA-Z0-9\-]", "-", unsanitized_orchestrator_run_name
         )
 
-        session = self._get_sagemaker_session()
+        session = self.sagemaker_session
 
         sagemaker_steps = []
         for step_name, step in snapshot.step_configurations.items():
@@ -830,9 +846,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 except Exception:
                     raise RuntimeError(
                         "Failed to get current role ARN. This means the "
-                        "your client side credentials that you are "
-                        "is not configured correctly to schedule sagemaker "
-                        "pipelines. For more information, please check:"
+                        "your client side credentials are not configured "
+                        "correctly to schedule SageMaker pipelines. "
+                        "For more information, please check:"
                         "https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules"
                     )
             else:
@@ -948,7 +964,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "scheduling for dynamic pipelines."
             )
 
-        session = self._get_sagemaker_session()
+        session = self.sagemaker_session
 
         try:
             image = self.get_image(snapshot=snapshot)
@@ -1049,7 +1065,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             step_run_info.pipeline_step_name,
         )
 
-        session = self._get_sagemaker_session()
+        session = self.sagemaker_session
 
         image = self.get_image(
             snapshot=step_run_info.snapshot,
@@ -1120,6 +1136,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             AssertionError: If the run was not executed by to this orchestrator.
             ValueError: If it fetches an unknown state or if we can not fetch
                 the orchestrator run ID.
+            ValueError: If the orchestrator run ID cannot be used to identify
+                the pipeline type.
         """
         # Make sure that the stack exists and is accessible
         if run.stack is None:
@@ -1135,7 +1153,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         # Initialize the Sagemaker client
-        session = self._get_sagemaker_session()
+        session = self.sagemaker_session
         sagemaker_client = session.sagemaker_client
 
         # Fetch the status of the _PipelineExecution
@@ -1148,27 +1166,78 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "Can not find the orchestrator run ID, thus can not fetch "
                 "the status."
             )
-        status = sagemaker_client.describe_pipeline_execution(
-            PipelineExecutionArn=run_id
-        )["PipelineExecutionStatus"]
 
-        # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-        # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
-        if status == "Executing":
-            pipeline_status = ExecutionStatus.RUNNING
-        elif status == "Stopping":
-            pipeline_status = ExecutionStatus.STOPPING
-        elif status == "Stopped":
-            pipeline_status = ExecutionStatus.STOPPED
-        elif status == "Failed":
-            pipeline_status = ExecutionStatus.FAILED
-        elif status == "Succeeded":
-            pipeline_status = ExecutionStatus.COMPLETED
+        _, _, pipeline_type, pipeline_name, _ = dissect_pipeline_execution_arn(
+            str(run_id)
+        )
+
+        if pipeline_type == "pipeline":
+            status = sagemaker_client.describe_pipeline_execution(
+                PipelineExecutionArn=run_id
+            )["PipelineExecutionStatus"]
+
+            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
+            if status == "Executing":
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == "Stopping":
+                pipeline_status = ExecutionStatus.STOPPING
+            elif status == "Stopped":
+                pipeline_status = ExecutionStatus.STOPPED
+            elif status == "Failed":
+                pipeline_status = ExecutionStatus.FAILED
+            elif status == "Succeeded":
+                pipeline_status = ExecutionStatus.COMPLETED
+            else:
+                raise ValueError("Unknown status for the pipeline execution.")
+
+            # SageMaker doesn't support step-level status fetching yet
+            return pipeline_status, None
+
+        elif pipeline_type == "training":
+            status = sagemaker_client.describe_training_job(
+                TrainingJobName=pipeline_name
+            )["TrainingJobStatus"]
+
+            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeTrainingJob.html#sagemaker-DescribeTrainingJob-response-TrainingJobStatus
+            if status == "InProgress":
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == "Stopping":
+                pipeline_status = ExecutionStatus.STOPPING
+            elif status == "Completed":
+                pipeline_status = ExecutionStatus.COMPLETED
+            elif status == "Failed":
+                pipeline_status = ExecutionStatus.FAILED
+            elif status == "Stopped":
+                pipeline_status = ExecutionStatus.STOPPED
+            else:
+                raise ValueError("Unknown status for the training job.")
+
+            return pipeline_status, None
+
+        elif pipeline_type == "processing":
+            status = sagemaker_client.describe_processing_job(
+                ProcessingJobName=pipeline_name
+            )["ProcessingJobStatus"]
+
+            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeProcessingJob.html#sagemaker-DescribeProcessingJob-response-ProcessingJobStatus
+            if status == "InProgress":
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == "Stopping":
+                pipeline_status = ExecutionStatus.STOPPING
+            elif status == "Completed":
+                pipeline_status = ExecutionStatus.COMPLETED
+            elif status == "Failed":
+                pipeline_status = ExecutionStatus.FAILED
+            else:
+                raise ValueError("Unknown status for the processing job.")
+
+            return pipeline_status, None
+
         else:
-            raise ValueError("Unknown status for the pipeline execution.")
-
-        # SageMaker doesn't support step-level status fetching yet
-        return pipeline_status, None
+            raise ValueError("Unknown pipeline type.")
 
     def compute_metadata(
         self,
@@ -1238,7 +1307,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # Processing jobs are not supported in SageMaker Studio
             try:
                 # We try to get a SageMaker Studio URL if available
-                session = self._get_sagemaker_session()
+                session = self.sagemaker_session
 
                 # List the Studio domains and get the Studio Domain ID
                 domains_response = session.sagemaker_client.list_domains()
@@ -1292,7 +1361,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         (
             region_name,
-            account_id,
+            _,
             pipeline_type,
             pipeline_name,
             execution_id,
