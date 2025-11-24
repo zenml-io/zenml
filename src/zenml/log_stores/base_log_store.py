@@ -14,14 +14,15 @@
 """Base class for log stores."""
 
 import logging
+import threading
 from abc import abstractmethod
 from datetime import datetime
-from typing import List, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import LogsResponse
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-from zenml.utils.logging_utils import LogEntry, LoggingContext
+from zenml.utils.logging_utils import LogEntry
 
 MAX_ENTRIES_PER_REQUEST = 20000
 
@@ -38,6 +39,17 @@ class BaseLogStore(StackComponent):
     logs in different backends (artifact store, OpenTelemetry, Datadog, etc.).
     """
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the log store.
+
+        Args:
+            *args: Positional arguments for the base class.
+            **kwargs: Keyword arguments for the base class.
+        """
+        super().__init__(*args, **kwargs)
+        self._emitter_counter = 0
+        self._lock = threading.RLock()
+
     @property
     def config(self) -> BaseLogStoreConfig:
         """Returns the configuration of the log store.
@@ -51,13 +63,32 @@ class BaseLogStore(StackComponent):
     def emit(
         self,
         record: logging.LogRecord,
-        context: LoggingContext,
+        log_model: LogsResponse,
     ) -> None:
         """Process a log record from the logging system.
 
         Args:
             record: The Python logging.LogRecord to process.
-            context: The logging context containing the log_model.
+            log_model: The log model to emit the log record to.
+        """
+
+    def register_emitter(self) -> None:
+        """Register an emitter for the log store."""
+        with self._lock:
+            self._emitter_counter += 1
+
+    def deregister_emitter(self) -> None:
+        """Deregister an emitter for the log store."""
+        with self._lock:
+            self._emitter_counter -= 1
+            if self._emitter_counter == 0:
+                self.flush()
+
+    @abstractmethod
+    def flush(self) -> None:
+        """Flush the log store.
+
+        This method is called to ensure that all logs are flushed to the backend.
         """
 
     @abstractmethod

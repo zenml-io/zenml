@@ -116,6 +116,7 @@ class LoggingContext:
         self._lock = threading.Lock()
         self._previous_context: Optional[LoggingContext] = None
         self._disabled = False
+        self._log_store = Client().active_stack.log_store
 
     @classmethod
     def emit(cls, record: logging.LogRecord) -> None:
@@ -134,7 +135,7 @@ class LoggingContext:
             try:
                 message = record.getMessage()
                 if message and message.strip():
-                    Client().active_stack.log_store.emit(record, context)
+                    context._log_store.emit(record, context.log_model)
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
             finally:
@@ -149,6 +150,7 @@ class LoggingContext:
         with self._lock:
             self._previous_context = active_logging_context.get()
             active_logging_context.set(self)
+            self._log_store.register_emitter()
 
         return self
 
@@ -181,6 +183,7 @@ class LoggingContext:
 
         with self._lock:
             active_logging_context.set(self._previous_context)
+            self._log_store.deregister_emitter()
 
 
 def generate_logs_request(source: str) -> LogsRequest:

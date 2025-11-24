@@ -30,13 +30,13 @@ from zenml.log_stores.artifact.artifact_log_store import (
 )
 from zenml.log_stores.otel.otel_log_store import LOGGING_CONTEXT_KEY
 from zenml.logger import get_logger
+from zenml.models import LogsResponse
 from zenml.utils.logging_utils import LogEntry
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs import LogData
 
-    from zenml.utils.logging_utils import LoggingContext
 
 DEFAULT_MESSAGE_SIZE = 5 * 1024
 
@@ -64,20 +64,20 @@ class ArtifactLogExporter(LogExporter):
 
         try:
             logs_by_context: Dict[UUID, List[str]] = defaultdict(list)
-            context_metadata: Dict[UUID, "LoggingContext"] = {}
+            log_models: Dict[UUID, "LogsResponse"] = {}
 
             for log_data in batch:
                 if not log_data.log_record.context:
                     continue
 
-                context = otel_context.get_value(
+                log_model = otel_context.get_value(
                     LOGGING_CONTEXT_KEY, log_data.log_record.context
                 )
-                if not context:
+                if not log_model:
                     continue
 
-                log_id = context.log_model.id
-                context_metadata[log_id] = context
+                log_id = log_model.id
+                log_models[log_id] = log_model
 
                 entries = self._otel_record_to_log_entries(log_data.log_record)
                 for entry in entries:
@@ -86,8 +86,8 @@ class ArtifactLogExporter(LogExporter):
 
             for log_id, log_lines in logs_by_context.items():
                 if log_lines:
-                    context = context_metadata[log_id]
-                    self._write_to_artifact_store(log_lines, context, log_id)
+                    log_model = log_models[log_id]
+                    self._write_to_artifact_store(log_lines, log_model)
 
             return LogExportResult.SUCCESS
 
@@ -222,20 +222,18 @@ class ArtifactLogExporter(LogExporter):
     def _write_to_artifact_store(
         self,
         log_lines: List[str],
-        context: "LoggingContext",
-        log_id: UUID,
+        log_model: "LogsResponse",
     ) -> None:
         """Write log lines to the artifact store.
 
         Args:
             log_lines: List of JSON-serialized log entries.
-            context: The LoggingContext containing log_model metadata.
+            log_model: The log model.
             log_id: The log ID for tracking file counters.
         """
-        log_model = context.log_model
         if not log_model.uri or not log_model.artifact_store_id:
             logger.warning(
-                f"Skipping log write: missing uri or artifact_store_id for log {log_id}"
+                f"Skipping log write: missing uri or artifact_store_id for log {log_model.id}"
             )
             return
 
@@ -249,13 +247,13 @@ class ArtifactLogExporter(LogExporter):
 
             if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
                 timestamp = int(time.time() * 1000)
-                if log_id not in self.file_counters:
-                    self.file_counters[log_id] = 0
-                self.file_counters[log_id] += 1
+                if log_model.id not in self.file_counters:
+                    self.file_counters[log_model.id] = 0
+                self.file_counters[log_model.id] += 1
 
                 file_uri = os.path.join(
                     log_model.uri,
-                    f"{timestamp}_{self.file_counters[log_id]}.jsonl",
+                    f"{timestamp}_{self.file_counters[log_model.id]}.jsonl",
                 )
 
                 with artifact_store.open(file_uri, "w") as f:

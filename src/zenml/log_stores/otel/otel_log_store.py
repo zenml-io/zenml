@@ -14,7 +14,6 @@
 """OpenTelemetry log store implementation."""
 
 import logging
-import threading
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, cast
@@ -36,10 +35,9 @@ from zenml.models import LogsResponse
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogExporter
 
-    from zenml.utils.logging_utils import LogEntry, LoggingContext
+    from zenml.utils.logging_utils import LogEntry
 
 logger = get_logger(__name__)
-
 
 LOGGING_CONTEXT_KEY = otel_context.create_key("zenml.logging_context")
 
@@ -64,7 +62,6 @@ class OtelLogStore(BaseLogStore):
         self._exporter: Optional["LogExporter"] = None
         self._provider: Optional["LoggerProvider"] = None
         self._processor: Optional["BatchLogRecordProcessor"] = None
-        self._activation_lock = threading.Lock()
 
     @property
     def config(self) -> OtelLogStoreConfig:
@@ -104,60 +101,62 @@ class OtelLogStore(BaseLogStore):
     def emit(
         self,
         record: logging.LogRecord,
-        context: "LoggingContext",
+        log_model: "LogsResponse",
     ) -> None:
         """Process a log record by sending to OpenTelemetry.
 
         Args:
             record: The log record to process.
-            context: The logging context containing the log_model.
+            log_model: The log model to emit the log record to.
         """
-        with self._activation_lock:
+        with self._lock:
             if not self._provider:
                 self.activate()
 
-        try:
-            # Attach the LoggingContext to OTel's context so the exporter
-            # can access it in the background processor thread
-            ctx = otel_context.set_value(LOGGING_CONTEXT_KEY, context)
+        # Attach the LoggingContext to OTel's context so the exporter
+        # can access it in the background processor thread
+        ctx = otel_context.set_value(LOGGING_CONTEXT_KEY, log_model)
 
-            otel_logger = self._provider.get_logger(
-                record.name or "unknown",
-                schema_url=None,
-            )
+        otel_logger = self._provider.get_logger(
+            record.name or "unknown",
+            schema_url=None,
+        )
 
-            # Get the message and append formatted exception if present
-            message = record.getMessage()
-            if record.exc_info:
-                import traceback
+        # Get the message and append formatted exception if present
+        message = record.getMessage()
+        if record.exc_info:
+            import traceback
 
-                exc_text = "".join(
-                    traceback.format_exception(*record.exc_info)
-                )
-                # Append to message with separator if message exists
-                if message:
-                    message = f"{message}\n{exc_text}"
-                else:
-                    message = exc_text
+            exc_text = "".join(traceback.format_exception(*record.exc_info))
+            # Append to message with separator if message exists
+            if message:
+                message = f"{message}\n{exc_text}"
+            else:
+                message = exc_text
 
-            otel_logger.emit(
-                timestamp=int(record.created * 1e9),
-                observed_timestamp=int(record.created * 1e9),
-                severity_number=self._get_severity_number(record.levelno),
-                severity_text=record.levelname,
-                body=message,
-                attributes={
-                    "code.filepath": record.pathname,
-                    "code.lineno": record.lineno,
-                    "code.function": record.funcName,
-                    "log_id": str(context.log_model.id),
-                    "log_store_id": str(self.id),
-                },
-                context=ctx,
-            )
+        otel_logger.emit(
+            timestamp=int(record.created * 1e9),
+            observed_timestamp=int(record.created * 1e9),
+            severity_number=self._get_severity_number(record.levelno),
+            severity_text=record.levelname,
+            body=message,
+            attributes={
+                "code.filepath": record.pathname,
+                "code.lineno": record.lineno,
+                "code.function": record.funcName,
+                "log_id": str(log_model.id),
+                "log_store_id": str(self.id),
+            },
+            context=ctx,
+        )
 
-        except Exception:
-            pass
+    def flush(self) -> None:
+        """Flush the log store.
+
+        This method is called to ensure that all logs are flushed to the backend.
+        """
+        if self._processor:
+            self._processor.force_flush()
 
     def _get_severity_number(self, levelno: int) -> int:
         """Map Python log level to OTEL severity number.
