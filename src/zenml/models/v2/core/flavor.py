@@ -415,6 +415,10 @@ class FlavorFilter(UserScopedFilter):
         default=None,
         description="Name of the flavor",
     )
+    display_name: Optional[str] = Field(
+        default=None,
+        description="Display name of the flavor",
+    )
     type: Optional[str] = Field(
         default=None,
         description="Stack Component Type of the stack flavor",

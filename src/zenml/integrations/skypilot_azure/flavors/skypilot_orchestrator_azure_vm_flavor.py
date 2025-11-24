@@ -64,7 +64,7 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Display name of the orchestrator flavor.
         """
-        return "VM Azure"
+        return "Skypilot Azure"
 
     @property
     def service_connector_requirements(

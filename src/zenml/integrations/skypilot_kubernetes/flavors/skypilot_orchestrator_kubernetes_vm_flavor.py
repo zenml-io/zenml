@@ -65,7 +65,7 @@ class SkypilotKubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The display name of the flavor.
         """
-        return "VM Kubernetes"
+        return "Skypilot Kubernetes"
 
     @property
     def service_connector_requirements(

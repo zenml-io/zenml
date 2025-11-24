@@ -87,7 +87,7 @@ class SkypilotLambdaOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Display name of the orchestrator flavor.
         """
-        return "VM Lambda"
+        return "Skypilot Lambda"
 
     @property
     def docs_url(self) -> Optional[str]:

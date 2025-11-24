@@ -67,7 +67,7 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Display name of the orchestrator flavor.
         """
-        return "VM GCP"
+        return "Skypilot GCP"
 
     @property
     def service_connector_requirements(
