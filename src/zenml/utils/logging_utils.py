@@ -127,19 +127,18 @@ class LoggingContext:
         Args:
             record: The log record to emit.
         """
-        try:
-            if context := active_logging_context.get():
-                if context._disabled:
-                    return
-                context._disabled = True
-                try:
-                    message = record.getMessage()
-                    if message and message.strip():
-                        Client().active_stack.log_store.emit(record, context)
-                finally:
-                    context._disabled = False
-        except Exception:
-            pass
+        if context := active_logging_context.get():
+            if context._disabled:
+                return
+            context._disabled = True
+            try:
+                message = record.getMessage()
+                if message and message.strip():
+                    Client().active_stack.log_store.emit(record, context)
+            except Exception:
+                logger.debug("Failed to emit log record", exc_info=True)
+            finally:
+                context._disabled = False
 
     def __enter__(self) -> "LoggingContext":
         """Enter the context and set as active.
