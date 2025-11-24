@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Core CLI functionality."""
+"""Core CLI functionality for clean stdout/stderr separation."""
 
 import logging
 import sys
+from typing import Any, TextIO
 
-# Global variable to store original stdout for CLI clean output
-_original_stdout = sys.stdout
-_rerouted = False
+_original_stdout: TextIO = sys.stdout
+_rerouted: bool = False
 
 
 def reroute_stdout() -> None:
@@ -42,18 +42,16 @@ def reroute_stdout() -> None:
             and handler.stream is _original_stdout
         ):
             handler.stream = sys.stderr
-            continue
 
     # Handle ALL existing individual logger handlers that hold references to original stdout
-    for _, logger in logging.Logger.manager.loggerDict.items():
-        if isinstance(logger, logging.Logger):
-            for handler in logger.handlers:
+    for _, logger_obj in logging.Logger.manager.loggerDict.items():
+        if isinstance(logger_obj, logging.Logger):
+            for handler in logger_obj.handlers:
                 if (
                     isinstance(handler, logging.StreamHandler)
                     and handler.stream is _original_stdout
                 ):
                     handler.setStream(sys.stderr)
-                    continue
 
     _rerouted = True
 
@@ -81,4 +79,21 @@ def clean_output(text: str) -> None:
         _original_stdout.write("\n")
     _original_stdout.flush()
 
-from zenml.cli.cli import cli
+
+def __getattr__(name: str) -> Any:
+    """Lazy import for cli to avoid circular imports.
+
+    Args:
+        name: The attribute name to look up.
+
+    Returns:
+        The requested attribute.
+
+    Raises:
+        AttributeError: If the attribute is not found.
+    """
+    if name == "cli":
+        from zenml.cli.cli import cli
+
+        return cli
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -23,7 +23,6 @@ import re
 import shutil
 import subprocess
 import sys
-from contextvars import ContextVar
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -132,10 +131,6 @@ AnyResponse = TypeVar(
     "AnyResponse", bound=BaseIdentifiedResponse[Any, Any, Any]
 )
 OutputFormat = Literal["table", "json", "yaml", "csv", "tsv"]
-RowFormatter = Union[
-    Callable[[AnyResponse], Dict[str, Any]],
-    Callable[[AnyResponse, OutputFormat], Dict[str, Any]],
-]
 
 
 ENV_ZENML_DEFAULT_OUTPUT = "ZENML_DEFAULT_OUTPUT"
@@ -148,16 +143,9 @@ ALLOWED_OUTPUT_FORMATS: Tuple[str, ...] = (
     "csv",
     "tsv",
 )
-ID_COLUMN_WIDTH = 36
-URL_COLUMN_WIDTH = 40
-STATUS_COLUMN_WIDTH = 18
-NAME_COLUMN_WIDTH = 20
 
 
 T = TypeVar("T", bound=BaseIdentifiedResponse[Any, Any, Any])
-LIST_RENDER_OPTIONS: ContextVar[Optional[Dict[str, str]]] = ContextVar(
-    "list_render_options", default=None
-)
 
 
 def title(text: str) -> None:
@@ -300,20 +288,6 @@ def print_table(
         caption: Caption of the table.
         columns: Optional column configurations to be used in the table.
     """
-    render_options = LIST_RENDER_OPTIONS.get()
-    if render_options:
-        columns_arg = render_options.get("columns", "")
-        output_format_arg = _normalize_output_format(
-            render_options.get("output_format", get_default_output_format())
-        )
-        handle_output(
-            data=obj,
-            pagination_info=None,
-            columns=columns_arg,
-            output_format=output_format_arg,
-        )
-        return
-
     data = obj
     if columns:
         data = []
@@ -321,7 +295,9 @@ def print_table(
             new_row = {}
             for k, v in row.items():
                 col_val = columns.get(k, k.upper())
-                header = getattr(col_val, "header", col_val)
+                header = (
+                    col_val.header if hasattr(col_val, "header") else col_val
+                )
                 new_row[str(header)] = v
             data.append(new_row)
 
@@ -2862,8 +2838,7 @@ def multi_choice_prompt(
 
     if selected == "0" and allow_zero_be_a_new_object:
         return None
-    else:
-        return int(selected) - i_shift
+    return int(selected) - i_shift
 
 
 def requires_mac_env_var_warning() -> bool:
@@ -2922,16 +2897,15 @@ def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
     """
     item_data: Dict[str, Any] = {"id": item.id}
 
-    if hasattr(item, "name"):
+    if "name" in type(item).model_fields:
         item_data["name"] = getattr(item, "name")
 
     if item.body is not None:
         body_data = item.body.model_dump(mode="json")
         item_data.update(body_data)
 
-    if isinstance(item, UserScopedResponse):
-        if item.user:
-            item_data["user"] = item.user.name
+    if isinstance(item, UserScopedResponse) and item.user:
+        item_data["user"] = item.user.name
 
     return item_data
 
@@ -2939,7 +2913,7 @@ def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
 def format_page_items(
     page: Page[AnyResponse],
     row_formatter: Optional[
-        Callable[[AnyResponse, OutputFormat], Dict[str, Any]]
+        Callable[[Any, OutputFormat], Dict[str, Any]]
     ] = None,
     output_format: OutputFormat = "table",
 ) -> List[Dict[str, Any]]:
@@ -3002,7 +2976,7 @@ def handle_output(
 
         try:
             clean_output(cli_output)
-        except Exception as err:  # pragma: no cover - defensive logging
+        except (IOError, OSError) as err:
             logger.warning("Failed to write clean output: %s", err)
             print(cli_output)
 
@@ -3120,9 +3094,36 @@ def _render_yaml(
     return yaml.dump(output, default_flow_style=False)
 
 
-def _render_tsv(
+def _render_delimited(
     data: List[Dict[str, Any]],
+    delimiter: str = ",",
 ) -> str:
+    """Render data as delimited values (CSV/TSV).
+
+    Args:
+        data: List of data dictionaries to render
+        delimiter: Field delimiter character
+
+    Returns:
+        Delimited string representation of the data
+    """
+    if not data:
+        return ""
+
+    output_buffer = io.StringIO()
+    headers = list(data[0].keys())
+    writer = csv.DictWriter(
+        output_buffer,
+        fieldnames=headers,
+        delimiter=delimiter,
+        lineterminator="\n",
+    )
+    writer.writeheader()
+    writer.writerows(data)
+    return output_buffer.getvalue().strip()
+
+
+def _render_tsv(data: List[Dict[str, Any]]) -> str:
     """Render data as TSV (Tab-Separated Values).
 
     Args:
@@ -3131,22 +3132,10 @@ def _render_tsv(
     Returns:
         TSV string representation of the data
     """
-    if not data:
-        return ""
-
-    output_buffer = io.StringIO()
-    headers = list(data[0].keys())
-    writer = csv.DictWriter(
-        output_buffer, fieldnames=headers, delimiter="\t", lineterminator="\n"
-    )
-    writer.writeheader()
-    writer.writerows(data)
-    return output_buffer.getvalue().strip()
+    return _render_delimited(data, delimiter="\t")
 
 
-def _render_csv(
-    data: List[Dict[str, Any]],
-) -> str:
+def _render_csv(data: List[Dict[str, Any]]) -> str:
     """Render data as CSV (Comma-Separated Values).
 
     Args:
@@ -3155,17 +3144,7 @@ def _render_csv(
     Returns:
         CSV string representation of the data
     """
-    if not data:
-        return ""
-
-    output_buffer = io.StringIO()
-    headers = list(data[0].keys())
-    writer = csv.DictWriter(
-        output_buffer, fieldnames=headers, lineterminator="\n"
-    )
-    writer.writeheader()
-    writer.writerows(data)
-    return output_buffer.getvalue().strip()
+    return _render_delimited(data, delimiter=",")
 
 
 def _get_terminal_width() -> Optional[int]:
@@ -3242,29 +3221,25 @@ def _render_table(
 
     for header in headers:
         lower = header.lower().strip()
-        if lower == "active":
-            header_display = ""
-        elif _is_id_column(header):
-            header_display = header.replace("_", " ").upper()
-        else:
-            header_display = header.replace("_", " ").upper()
-
+        is_active_col = lower == "active"
         is_id_col = _is_id_column(header)
         is_name_col = _is_name_column(header)
+        header_display = (
+            "" if is_active_col else header.replace("_", " ").upper()
+        )
         justify: Literal["default", "left", "center", "right", "full"] = "left"
         overflow: Literal["fold", "crop", "ellipsis", "ignore"] = "ellipsis"
         min_width: Optional[int] = None
-        if is_id_col or is_name_col:
-            overflow = "fold"
-            no_wrap = False
-            min_width = longest_values[header]
-        elif lower == "active":
-            header_display = ""
+        no_wrap = False
+
+        if is_active_col:
             justify = "center"
             overflow = "crop"
             no_wrap = True
-        else:
-            no_wrap = False
+        elif is_id_col or is_name_col:
+            overflow = "fold"
+            min_width = longest_values[header]
+
         rich_table.add_column(
             header=header_display,
             justify=justify,
@@ -3290,10 +3265,7 @@ def _render_table(
 
         rich_table.add_row(*values)
 
-    from io import StringIO
-
-    output_buffer = StringIO()
-
+    output_buffer = io.StringIO()
     table_console = Console(
         width=console_width,
         force_terminal=not os.getenv("NO_COLOR"),
@@ -3389,8 +3361,8 @@ def _is_name_column(name: str) -> bool:
     )
 
 
-def _get_user_name(user: Any) -> str:
-    """Extract user name with fallback to "-" if unavailable.
+def _get_user_name(user: Union[UserResponse, UUID, None]) -> str:
+    """Get the name of a user.
 
     Args:
         user: User object (UserResponse, UUID, or None)
@@ -3401,7 +3373,7 @@ def _get_user_name(user: Any) -> str:
     if not user:
         return "-"
 
-    if hasattr(user, "name"):
+    if isinstance(user, UserResponse):
         return str(user.name)
 
     return str(user)
@@ -3464,8 +3436,8 @@ def _format_response_value(value: Any) -> Any:
         Formatted value (string or list of strings)
     """
     if isinstance(value, BaseIdentifiedResponse):
-        if "name" in type(value).model_fields and hasattr(value, "name"):
-            return str(value.name)
+        if "name" in type(value).model_fields:
+            return str(getattr(value, "name"))
         return str(value.id)
 
     if isinstance(value, list):
