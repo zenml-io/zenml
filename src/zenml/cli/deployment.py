@@ -81,6 +81,9 @@ def list_deployments(**kwargs: Any) -> Any:
 
     Args:
         **kwargs: Keyword arguments to filter deployments.
+    
+    Returns:
+        The deployments.
     """
     client = Client()
     try:

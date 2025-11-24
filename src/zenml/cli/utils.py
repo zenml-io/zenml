@@ -1744,7 +1744,15 @@ def print_service_connector_resource_table(
     """
 
     def _truncate_error(error_msg: str, max_length: int = 100) -> str:
-        """Truncate long error messages for better readability."""
+        """Truncate long error messages for better readability.
+        
+        Args:
+            error_msg: The error message to truncate.
+            max_length: The maximum length of the error message.
+
+        Returns:
+            The truncated error message.
+        """
         if len(error_msg) <= max_length:
             return error_msg
         truncated = error_msg[:max_length].rsplit(" ", 1)[0]
@@ -3249,7 +3257,14 @@ def get_default_output_format() -> str:
 
 
 def _normalize_output_format(output_format: str) -> OutputFormat:
-    """Validate and normalize output format values for typing."""
+    """Validate and normalize output format values for typing.
+    
+    Args:
+        output_format: The output format to normalize.
+
+    Returns:
+        The normalized output format.
+    """
     if output_format not in ALLOWED_OUTPUT_FORMATS:
         logger.warning(
             "Unsupported output format '%s', falling back to table.",
