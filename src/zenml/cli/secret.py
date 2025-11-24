@@ -20,16 +20,17 @@ import click
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
+    OutputFormat,
     confirmation,
     convert_structured_str_to_dict,
     declare,
     error,
     expand_argument_value_from_file,
+    format_page_items,
+    handle_output,
     list_options,
     parse_name_and_extra_arguments,
     pretty_print_secret,
-    print_page_info,
-    print_table,
     validate_keys,
     warning,
 )
@@ -165,11 +166,15 @@ def create_secret(
 @secret.command(
     "list", help="List all registered secrets that match the filter criteria."
 )
-@list_options(SecretFilter)
-def list_secrets(**kwargs: Any) -> None:
+@list_options(SecretFilter, default_columns=["id", "name"])
+def list_secrets(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all secrets that fulfill the filter criteria.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         kwargs: Keyword arguments to filter the secrets.
     """
     client = Client()
@@ -178,20 +183,13 @@ def list_secrets(**kwargs: Any) -> None:
             secrets = client.list_secrets(**kwargs)
         except NotImplementedError as e:
             error(f"Centralized secrets management is disabled: {str(e)}")
-        if not secrets.items:
-            warning("No secrets found for the given filters.")
-            return
 
-        secret_rows = [
-            dict(
-                name=secret.name,
-                id=str(secret.id),
-                private=secret.private,
-            )
-            for secret in secrets.items
-        ]
-        print_table(secret_rows)
-        print_page_info(secrets)
+    if not secrets.items:
+        warning("No secrets found for the given filters.")
+        return
+
+    items = format_page_items(secrets, output_format=output_format)
+    handle_output(items, secrets.pagination_info, columns, output_format)
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")

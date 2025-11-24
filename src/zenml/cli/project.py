@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
+from functools import partial
 from typing import Any, Optional
 
 import click
@@ -20,6 +21,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
+    OutputFormat,
     check_zenml_pro_project_availability,
     is_sorted_or_filtered,
     list_options,
@@ -36,32 +38,51 @@ def project() -> None:
 
 
 @project.command("list")
-@list_options(ProjectFilter)
+@list_options(ProjectFilter, default_columns=["active", "id", "name"])
 @click.pass_context
-def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
+def list_projects(
+    ctx: click.Context,
+    /,
+    columns: str,
+    output_format: OutputFormat,
+    **kwargs: Any,
+) -> None:
     """List all projects.
 
     Args:
         ctx: The click context object
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter the list of projects.
     """
     check_zenml_pro_project_availability()
     client = Client()
     with console.status("Listing projects...\n"):
         projects = client.list_projects(**kwargs)
-        if projects:
-            try:
-                active_project = [client.active_project]
-            except Exception:
-                active_project = []
-            cli_utils.print_pydantic_models(
-                projects,
-                exclude_columns=["id", "created", "updated"],
-                active_models=active_project,
-                show_active=not is_sorted_or_filtered(ctx),
-            )
-        else:
-            cli_utils.declare("No projects found for the given filter.")
+
+    if not projects.items:
+        cli_utils.declare("No projects found for the given filter.")
+        return
+
+    show_active = not is_sorted_or_filtered(ctx)
+    if show_active:
+        try:
+            active_project_id = client.active_project.id
+            if active_project_id not in {p.id for p in projects.items}:
+                projects.items.insert(0, client.active_project)
+            projects.items.sort(key=lambda p: p.id != active_project_id)
+        except Exception:
+            active_project_id = None
+    else:
+        active_project_id = None
+
+    row_formatter = partial(
+        cli_utils.generate_project_row, active_project_id=active_project_id
+    )
+    items = cli_utils.format_page_items(projects, row_formatter, output_format)
+    cli_utils.handle_output(
+        items, projects.pagination_info, columns, output_format
+    )
 
 
 @project.command("register")

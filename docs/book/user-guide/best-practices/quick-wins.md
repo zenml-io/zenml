@@ -25,6 +25,7 @@ micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 | [Model Control Plane](#id-12-register-models-in-the-model-control-plane) | Track models and their lifecycle | Central hub for model lineage and governance |
 | [Parent Docker images](#id-13-create-a-parent-docker-image-for-faster-builds) | Pre-configure your dependencies in a base image | Faster builds and consistent environments |
 | [ZenML docs via MCP](#id-14-enable-ide-ai-zenml-docs-via-mcp-server) | Connect your IDE assistant to live ZenML docs | Faster, grounded answers and doc lookups while coding |
+| [Export CLI data](#id-15-export-cli-data-in-multiple-formats) | Get machine-readable output from list commands | Perfect for scripting, automation, and data analysis |
 
 
 ## 1 Log rich metadata on every run
@@ -854,3 +855,61 @@ Using the zenmldocs MCP server, show me how to register an MLflow experiment tra
 - For bleeding-edge features on develop, consult the repo or develop docs directly
 
 Learn more: [Access ZenML documentation via llms.txt and MCP](https://docs.zenml.io/reference/llms-txt)
+
+## 15 Export CLI data in multiple formats
+
+**Why** -- pipe ZenML CLI output into scripts, CI/CD, or analysis tools with machine-readable formats. All `zenml list` commands support flexible output formatting, making it easy to automate workflows, analyze data in spreadsheets, or integrate with external tools.
+
+```bash
+# Get stack data as JSON for processing with jq
+zenml stack list --output=json | jq '.items[] | select(.name=="production")'
+
+# Export pipeline runs to CSV for analysis
+zenml pipeline runs list --output=csv > pipeline_runs.csv
+
+# Get deployment info as YAML for configuration management
+zenml deployment list --output=yaml
+
+# Filter columns to see only what you need
+zenml stack list --columns=id,name,orchestrator
+
+# Combine filtering with custom output formats
+zenml pipeline list --columns=id,name,num_runs --output=json
+```
+
+**Available formats**
+- **json** - Structured data with pagination info, perfect for programmatic processing
+- **yaml** - Human-readable structured format, great for configuration
+- **csv** - Comma-separated values for spreadsheets and data analysis
+- **tsv** - Tab-separated values for simpler parsing
+- **table** (default) - Formatted tables with colors and alignment
+
+**Key features**
+- **Column filtering** - Use `--columns` to show only the fields you need
+- **Scriptable** - Combine with tools like `jq`, `grep`, `awk` for powerful automation
+- **Environment control** - Set `ZENML_DEFAULT_OUTPUT` to change the default format
+- **Width control** - Override terminal width with `ZENML_CLI_COLUMN_WIDTH` for consistent formatting
+
+**Best practices**
+- Use JSON format for robust parsing in scripts (includes pagination metadata)
+- Use CSV/TSV for importing into spreadsheet tools or databases
+- Use `--columns` to reduce noise and focus on relevant data
+- Set default formats via environment variables in CI/CD environments
+
+**Example automation script**
+```bash
+#!/bin/bash
+# Export all production stacks to a report
+
+export ZENML_DEFAULT_OUTPUT=json
+
+# Get all stacks and filter for production
+zenml stack list | jq '.items[] | select(.name | contains("prod"))' > prod_stacks.json
+
+# Generate a summary CSV
+zenml stack list --output=csv --columns=name,orchestrator,artifact_store > stack_summary.csv
+
+echo "Reports generated: prod_stacks.json and stack_summary.csv"
+```
+
+Learn more: [Environment Variables](https://docs.zenml.io/reference/environment-variables#cli-output-formatting)

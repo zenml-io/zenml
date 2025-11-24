@@ -736,14 +736,6 @@ def server_list(
     cli_utils.print_pydantic_models(  # type: ignore[type-var]
         all_servers,
         columns=columns,
-        rename_columns={
-            "server_name_hyperlink": "name",
-            "server_id_hyperlink": "ID",
-            "organization_hyperlink": "organization",
-            "dashboard_url": "dashboard URL",
-            "api_hyperlink": "API URL",
-            "auth_status": "auth status",
-        },
         active_models=current_server,
         show_active=True,
     )

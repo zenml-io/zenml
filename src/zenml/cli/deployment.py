@@ -21,7 +21,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import fetch_snapshot, list_options
+from zenml.cli.utils import OutputFormat, fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.deployers.exceptions import DeploymentInvalidParametersError
@@ -74,16 +74,25 @@ def deployment() -> None:
 @deployment.command("list", help="List all registered deployments.")
 @list_options(
     DeploymentFilter,
-    default_columns=["id", "name", "url", "status", "pipeline", "stack"],
+    default_columns=[
+        "id",
+        "name",
+        "status",
+        "url",
+        "pipeline",
+        "stack",
+        "owner",
+    ],
 )
-def list_deployments(**kwargs: Any) -> Any:
+def list_deployments(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all registered deployments for the filter.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter deployments.
-    
-    Returns:
-        The deployments.
     """
     client = Client()
     try:
@@ -91,12 +100,18 @@ def list_deployments(**kwargs: Any) -> Any:
             deployments = client.list_deployments(**kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-    else:
-        if not deployments.items:
-            cli_utils.declare("No deployments found for this filter.")
-            return None
+        return
 
-        return deployments, cli_utils.generate_deployment_row
+    if not deployments.items:
+        cli_utils.declare("No deployments found for this filter.")
+        return
+
+    items = cli_utils.format_page_items(
+        deployments, cli_utils.generate_deployment_row, output_format
+    )
+    cli_utils.handle_output(
+        items, deployments.pagination_info, columns, output_format
+    )
 
 
 @deployment.command("describe", help="Describe a deployment.")
