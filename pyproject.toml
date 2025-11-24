@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "zenml"
-version = "0.91.1"
+version = "0.91.2"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -106,7 +106,7 @@ connectors-azure = [
     "requests>=2.27.11,<3.0.0",
 ]
 sagemaker = [
-    "sagemaker>=2.237.3",
+    "sagemaker>=2.237.3,<3.0.0",
 ]
 vertex = [
     "google-cloud-aiplatform>=1.34.0",

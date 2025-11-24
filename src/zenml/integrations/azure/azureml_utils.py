@@ -42,9 +42,10 @@ def check_settings_and_compute_configuration(
         settings: The AzureML orchestrator settings.
         compute: The compute instance or cluster from AzureML.
     """
-    # Check the compute size
     compute_value = getattr(compute, parameter)
-    settings_value = getattr(settings, parameter)
+    # Use None as default to gracefully handle optional settings fields that
+    # may not be set by the user
+    settings_value = getattr(settings, parameter, None)
 
     if settings_value is not None and settings_value != compute_value:
         logger.warning(
@@ -122,7 +123,7 @@ def create_or_get_compute(
                 compute=compute,
             )
 
-        elif compute_type == "amIcompute":  # Compute Cluster
+        elif compute_type == "amlcompute":  # Compute Cluster
             if settings.mode != AzureMLComputeTypes.COMPUTE_CLUSTER:
                 raise RuntimeError(
                     "The mode of operation for the compute target defined "
