@@ -165,7 +165,7 @@ Create a custom policy for the execution role that SageMaker will assume:
 
 ### Client Permissions (for pipeline submission)
 
-Create a custom policy for the client/user submitting pipelines:
+Create a custom policy for the client/user submitting pipelines and training/processing jobs:
 
 ```json
 {
@@ -183,6 +183,12 @@ Create a custom policy for the client/user submitting pipelines:
         "sagemaker:ListPipelineExecutionSteps",
         "sagemaker:UpdatePipeline",
         "sagemaker:DeletePipeline"
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:DescribeProcessingJob",
+        "sagemaker:StopProcessingJob",
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:DescribeTrainingJob",
+        "sagemaker:StopTrainingJob"        
       ],
       "Resource": "*"
     },
@@ -206,7 +212,7 @@ Replace `ACCOUNT-ID` and `EXECUTION-ROLE-NAME` with your actual values.
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Sagemaker. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
-You can now run any ZenML pipeline using the Sagemaker orchestrator:
+You can now run any ZenML static pipeline or dynamic pipeline using the Sagemaker orchestrator:
 
 ```shell
 python run.py
@@ -236,6 +242,8 @@ To access the Sagemaker Pipelines UI, you will have to launch Sagemaker Studio v
 Once the Studio UI has launched, click on the 'Pipeline' button on the left side. From there you can view the pipelines that have been launched via ZenML:
 
 ![Sagemaker Studio Pipelines](../../.gitbook/assets/sagemakerUI.png)
+
+If you are running dynamic pipelines, you can access the training/processing jobs in the SageMaker UI by clicking on the 'Jobs' button on the left side. From there you can view the jobs that have been launched via ZenML. A training job will be created for each dynamic pipeline run and for each step in the dynamic pipeline marked to run as an isolated step.
 
 ### Debugging SageMaker Pipelines
 
@@ -469,6 +477,10 @@ This approach allows for more granular tagging, giving you flexibility in how yo
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/user-guides/tutorial/distributed-training/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 ### Scheduling Pipelines
+
+{% hint style="warning" %}
+The SageMaker orchestrator does not support scheduling for dynamic pipelines yet.
+{% endhint %}
 
 The SageMaker orchestrator supports running pipelines on a schedule using SageMaker's native scheduling capabilities. You can configure schedules in three ways:
 
