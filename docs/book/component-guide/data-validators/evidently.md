@@ -545,9 +545,9 @@ from typing import Annotated
 from typing import Tuple
 import pandas as pd
 from evidently.legacy.report import Report
-from evidently.legacy import metric_preset
+from evidently.legacy.metric_preset import DataQualityPreset
 from evidently.legacy.test_suite import TestSuite
-from evidently.legacy import test_preset
+from evidently.legacy.test_preset import DataQualityTestPreset
 from evidently.legacy.pipeline.column_mapping import ColumnMapping
 from zenml.types import HTMLString
 from zenml import step
@@ -571,7 +571,7 @@ def data_profiler(
 
     # pre-processing (e.g. dataset preparation) can take place here
 
-    report = Report(metrics=[metric_preset.DataQualityPreset()])
+    report = Report(metrics=[DataQualityPreset()])
     report.run(
         current_data=dataset,
         reference_data=dataset,
@@ -600,8 +600,8 @@ def data_tester(
 
     # pre-processing (e.g. dataset preparation) can take place here
 
-    test_suite = TestSuite(metrics=[test_preset.DataQualityTestPreset()])
-    report.run(
+    test_suite = TestSuite(tests=[DataQualityTestPreset()])
+    test_suite.run(
         current_data=dataset,
         reference_data=dataset,
     )

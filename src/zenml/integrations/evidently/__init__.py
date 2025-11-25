@@ -54,7 +54,7 @@ class EvidentlyIntegration(Integration):
 
     NAME = EVIDENTLY
     REQUIREMENTS = [
-        "evidently>=0.5.0",
+        "evidently>=0.5.0,<1.0",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity", "pandas"]
