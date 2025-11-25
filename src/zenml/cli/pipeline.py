@@ -592,11 +592,12 @@ def list_pipelines(
     with console.status("Listing pipelines...\n"):
         pipelines = client.list_pipelines(**kwargs)
 
-    if not pipelines.items:
-        cli_utils.declare("No pipelines found for this filter.")
-        return
-
-    cli_utils.print_page(pipelines, columns, output_format)
+    cli_utils.print_page(
+        pipelines,
+        columns,
+        output_format,
+        empty_message="No pipelines found for this filter.",
+    )
 
 
 @pipeline.command("delete")
@@ -658,12 +659,12 @@ def list_schedules(
         **kwargs: Keyword arguments to filter schedules.
     """
     schedules = Client().list_schedules(**kwargs)
-
-    if not schedules.items:
-        cli_utils.declare("No schedules found for this filter.")
-        return
-
-    cli_utils.print_page(schedules, columns, output_format)
+    cli_utils.print_page(
+        schedules,
+        columns,
+        output_format,
+        empty_message="No schedules found for this filter.",
+    )
 
 
 @schedule.command("update", help="Update a pipeline schedule.")
@@ -759,15 +760,12 @@ def list_pipeline_runs(
         cli_utils.exception(err)
         return
 
-    if not pipeline_runs.items:
-        cli_utils.declare("No pipeline runs found for this filter.")
-        return
-
     cli_utils.print_page(
         pipeline_runs,
         columns,
         output_format,
         cli_utils.generate_pipeline_run_row,
+        empty_message="No pipeline runs found for this filter.",
     )
 
 
@@ -919,11 +917,12 @@ def list_pipeline_builds(
         cli_utils.exception(err)
         return
 
-    if not pipeline_builds.items:
-        cli_utils.declare("No pipeline builds found for this filter.")
-        return
-
-    cli_utils.print_page(pipeline_builds, columns, output_format)
+    cli_utils.print_page(
+        pipeline_builds,
+        columns,
+        output_format,
+        empty_message="No pipeline builds found for this filter.",
+    )
 
 
 @builds.command("delete")
@@ -1288,11 +1287,12 @@ def list_pipeline_snapshots(
         cli_utils.exception(err)
         return
 
-    if not pipeline_snapshots.items:
-        cli_utils.declare("No pipeline snapshots found for this filter.")
-        return
-
-    cli_utils.print_page(pipeline_snapshots, columns, output_format)
+    cli_utils.print_page(
+        pipeline_snapshots,
+        columns,
+        output_format,
+        empty_message="No pipeline snapshots found for this filter.",
+    )
 
 
 @snapshot.command("delete", help="Delete a pipeline snapshot.")

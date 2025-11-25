@@ -102,12 +102,12 @@ def list_deployments(
         cli_utils.exception(err)
         return
 
-    if not deployments.items:
-        cli_utils.declare("No deployments found for this filter.")
-        return
-
     cli_utils.print_page(
-        deployments, columns, output_format, cli_utils.generate_deployment_row
+        deployments,
+        columns,
+        output_format,
+        cli_utils.generate_deployment_row,
+        empty_message="No deployments found for this filter.",
     )
 
 

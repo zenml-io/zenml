@@ -17,7 +17,6 @@ import getpass
 import re
 import time
 import webbrowser
-from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1076,12 +1075,8 @@ def list_stacks(
     with console.status("Listing stacks...\n"):
         stacks = client.list_stacks(**kwargs)
 
-    if not stacks.items:
-        cli_utils.declare("No stacks found for the given filters.")
-        return
-
     show_active = not is_sorted_or_filtered(ctx)
-    if show_active:
+    if show_active and stacks.items:
         active_stack_id = client.active_stack_model.id
         if active_stack_id not in {s.id for s in stacks.items}:
             stacks.items.insert(0, client.active_stack_model)
@@ -1089,10 +1084,14 @@ def list_stacks(
     else:
         active_stack_id = None
 
-    row_formatter = partial(
-        cli_utils.generate_stack_row, active_stack_id=active_stack_id
+    cli_utils.print_page(
+        stacks,
+        columns,
+        output_format,
+        empty_message="No stacks found for the given filters.",
+        row_generator=cli_utils.generate_stack_row,
+        active_id=active_stack_id,
     )
-    cli_utils.print_page(stacks, columns, output_format, row_formatter)
 
 
 @stack.command(

@@ -14,7 +14,6 @@
 """Functionality to generate stack component CLI commands."""
 
 import time
-from functools import partial
 from importlib import import_module
 from typing import Any, Callable, List, Optional, Tuple, cast
 from uuid import UUID
@@ -177,12 +176,9 @@ def generate_stack_component_list_command(
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type
             components = client.list_stack_components(**kwargs)
-            if not components.items:
-                cli_utils.declare("No components found for the given filters.")
-                return
 
             show_active = not is_sorted_or_filtered(ctx)
-            if show_active:
+            if show_active and components.items:
                 active_stack = client.active_stack_model
                 active_component = None
                 if component_type in active_stack.components.keys():
@@ -204,12 +200,14 @@ def generate_stack_component_list_command(
                     active_component_id = None
             else:
                 active_component_id = None
-            row_formatter = partial(
-                cli_utils.generate_component_row,
-                active_component_id=active_component_id,
-            )
+
             cli_utils.print_page(
-                components, columns, output_format, row_formatter
+                components,
+                columns,
+                output_format,
+                empty_message="No components found for the given filters.",
+                row_generator=cli_utils.generate_component_row,
+                active_id=active_component_id,
             )
 
     return list_stack_components_command

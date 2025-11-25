@@ -206,11 +206,12 @@ def list_code_repositories(
     with console.status("Listing code repositories...\n"):
         repos = Client().list_code_repositories(**kwargs)
 
-    if not repos.items:
-        cli_utils.declare("No code repositories found for this filter.")
-        return
-
-    cli_utils.print_page(repos, columns, output_format)
+    cli_utils.print_page(
+        repos,
+        columns,
+        output_format,
+        empty_message="No code repositories found for this filter.",
+    )
 
 
 @code_repository.command(

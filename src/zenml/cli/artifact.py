@@ -55,11 +55,9 @@ def list_artifacts(
     with console.status("Listing artifacts...\n"):
         artifacts = Client().list_artifacts(**kwargs)
 
-    if not artifacts.items:
-        cli_utils.declare("No artifacts found.")
-        return
-
-    cli_utils.print_page(artifacts, columns, output_format)
+    cli_utils.print_page(
+        artifacts, columns, output_format, empty_message="No artifacts found."
+    )
 
 
 @artifact.command("update", help="Update an artifact.")
@@ -139,11 +137,12 @@ def list_artifact_versions(
     with console.status("Listing artifact versions...\n"):
         artifact_versions = Client().list_artifact_versions(**kwargs)
 
-    if not artifact_versions.items:
-        cli_utils.declare("No artifact versions found.")
-        return
-
-    cli_utils.print_page(artifact_versions, columns, output_format)
+    cli_utils.print_page(
+        artifact_versions,
+        columns,
+        output_format,
+        empty_message="No artifact versions found.",
+    )
 
 
 @version.command("describe", help="Show details about an artifact version.")

@@ -53,12 +53,9 @@ def list_tags(
         **kwargs: Keyword arguments to filter tags.
     """
     tags = Client().list_tags(**kwargs)
-
-    if not tags.items:
-        cli_utils.declare("No tags found.")
-        return
-
-    cli_utils.print_page(tags, columns, output_format)
+    cli_utils.print_page(
+        tags, columns, output_format, empty_message="No tags found."
+    )
 
 
 @tag.command("register", help="Register a new tag.")

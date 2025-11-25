@@ -1011,12 +1011,9 @@ def list_service_connectors(
         )
 
     connectors = client.list_service_connectors(**kwargs)
-    if not connectors.items:
-        cli_utils.declare("No service connectors found for the given filters.")
-        return
 
     show_active = not is_sorted_or_filtered(ctx)
-    if show_active:
+    if show_active and connectors.items:
         active_connectors: List["ServiceConnectorResponse"] = []
         for components in client.active_stack_model.components.values():
             for component in components:
@@ -1040,11 +1037,18 @@ def list_service_connectors(
         connectors.items.sort(key=lambda c: c.id not in active_connector_ids)
     else:
         active_connector_ids = None
+
     row_formatter = partial(
         cli_utils.generate_connector_row,
         active_connector_ids=active_connector_ids,
     )
-    cli_utils.print_page(connectors, columns, output_format, row_formatter)
+    cli_utils.print_page(
+        connectors,
+        columns,
+        output_format,
+        row_formatter,
+        empty_message="No service connectors found for the given filters.",
+    )
 
 
 @service_connector.command(

@@ -104,11 +104,9 @@ def list_models(
     with console.status("Listing models...\n"):
         models = Client().list_models(**kwargs)
 
-    if not models.items:
-        cli_utils.declare("No models found.")
-        return
-
-    cli_utils.print_page(models, columns, output_format)
+    cli_utils.print_page(
+        models, columns, output_format, empty_message="No models found."
+    )
 
 
 @model.command("register", help="Register a new model.")
@@ -422,11 +420,12 @@ def list_model_versions(
     with console.status("Listing model versions...\n"):
         model_versions = Client().list_model_versions(**kwargs)
 
-    if not model_versions.items:
-        cli_utils.declare("No model versions found.")
-        return
-
-    cli_utils.print_page(model_versions, columns, output_format)
+    cli_utils.print_page(
+        model_versions,
+        columns,
+        output_format,
+        empty_message="No model versions found.",
+    )
 
 
 @version.command("update", help="Update an existing model version stage.")

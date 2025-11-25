@@ -82,11 +82,12 @@ def list_authorized_devices(
     with console.status("Listing authorized devices...\n"):
         devices = Client().list_authorized_devices(**kwargs)
 
-    if not devices.items:
-        cli_utils.declare("No authorized devices found for this filter.")
-        return
-
-    cli_utils.print_page(devices, columns, output_format)
+    cli_utils.print_page(
+        devices,
+        columns,
+        output_format,
+        empty_message="No authorized devices found for this filter.",
+    )
 
 
 @authorized_device.command("lock")

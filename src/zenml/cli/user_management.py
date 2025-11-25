@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from functools import partial
 from typing import Any, Optional
 
 import click
@@ -105,13 +104,9 @@ def list_users(
     with console.status("Listing users...\n"):
         users = client.list_users(**kwargs)
 
-    if not users.items:
-        cli_utils.declare("No users found for the given filters.")
-        return
-
     # Handle active user highlighting (only if not filtered/sorted)
     show_active = not is_sorted_or_filtered(ctx)
-    if show_active:
+    if show_active and users.items:
         active_user_id = client.active_user.id
         if active_user_id not in {u.id for u in users.items}:
             users.items.insert(0, client.active_user)
@@ -119,10 +114,14 @@ def list_users(
     else:
         active_user_id = None
 
-    row_formatter = partial(
-        cli_utils.generate_user_row, active_user_id=active_user_id
+    cli_utils.print_page(
+        users,
+        columns,
+        output_format,
+        empty_message="No users found for the given filters.",
+        row_generator=cli_utils.generate_user_row,
+        active_id=active_user_id,
     )
-    cli_utils.print_page(users, columns, output_format, row_formatter)
 
 
 @user.command(

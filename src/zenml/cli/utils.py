@@ -23,6 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
+from functools import partial
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -2130,19 +2131,19 @@ def generate_deployment_row(
 def generate_stack_row(
     stack: "StackResponse",
     output_format: OutputFormat,
-    active_stack_id: Optional["UUID"] = None,
+    active_id: Optional["UUID"] = None,
 ) -> Dict[str, Any]:
     """Generate row data for stack display.
 
     Args:
         stack: The stack response.
         output_format: The output format.
-        active_stack_id: ID of the active stack for highlighting.
+        active_id: ID of the active stack for highlighting.
 
     Returns:
         Dict with stack data for display.
     """
-    is_active = active_stack_id and stack.id == active_stack_id
+    is_active = active_id is not None and stack.id == active_id
 
     row: Dict[str, Any] = {
         "active": "[green]●[/green]"
@@ -2161,19 +2162,19 @@ def generate_stack_row(
 def generate_project_row(
     project: "ProjectResponse",
     output_format: OutputFormat,
-    active_project_id: Optional["UUID"] = None,
+    active_id: Optional["UUID"] = None,
 ) -> Dict[str, Any]:
     """Generate row data for project display.
 
     Args:
         project: The project response.
         output_format: The output format.
-        active_project_id: ID of the active project for highlighting.
+        active_id: ID of the active project for highlighting.
 
     Returns:
         Dict with project data for display.
     """
-    is_active = active_project_id and project.id == active_project_id
+    is_active = active_id is not None and project.id == active_id
 
     return {
         "active": "[green]●[/green]"
@@ -2185,19 +2186,19 @@ def generate_project_row(
 def generate_user_row(
     user: "UserResponse",
     output_format: OutputFormat,
-    active_user_id: Optional["UUID"] = None,
+    active_id: Optional["UUID"] = None,
 ) -> Dict[str, Any]:
     """Generate row data for user display.
 
     Args:
         user: The user response.
         output_format: The output format.
-        active_user_id: ID of the active user for highlighting.
+        active_id: ID of the active user for highlighting.
 
     Returns:
         Dict with user data for display.
     """
-    is_active = active_user_id and user.id == active_user_id
+    is_active = active_id is not None and user.id == active_id
 
     return {
         "active": "[green]●[/green]"
@@ -2239,19 +2240,19 @@ def generate_pipeline_run_row(
 def generate_component_row(
     component: "ComponentResponse",
     output_format: OutputFormat,
-    active_component_id: Optional["UUID"] = None,
+    active_id: Optional["UUID"] = None,
 ) -> Dict[str, Any]:
     """Generate row data for component display.
 
     Args:
         component: The component response.
         output_format: The output format.
-        active_component_id: ID of the active component for highlighting.
+        active_id: ID of the active component for highlighting.
 
     Returns:
         Dict with component data for display.
     """
-    is_active = active_component_id and component.id == active_component_id
+    is_active = active_id is not None and component.id == active_id
 
     return {
         "active": "[green]●[/green]"
@@ -3118,21 +3119,40 @@ def print_page(
         Callable[[Any, OutputFormat], Dict[str, Any]]
     ] = None,
     column_aliases: Optional[Dict[str, str]] = None,
+    *,
+    empty_message: str = "No items found for this filter.",
+    row_generator: Optional[Callable[..., Dict[str, Any]]] = None,
+    active_id: Optional["UUID"] = None,
 ) -> None:
     """Format and print a page of response items.
 
     This is a convenience function that combines format_page_items and
     handle_output into a single call for cleaner CLI command implementations.
+    It also handles empty pages and active item highlighting automatically.
 
     Args:
         page: Page of response items to display.
         columns: Comma-separated column names. If empty, all columns are shown.
         output_format: Output format (table, json, yaml, tsv, csv).
         row_formatter: Optional function to add custom fields to each row.
-            Should accept (item, output_format) and return a dict of additional fields.
+            Should accept (item, output_format) and return a dict of additional
+            fields. Use this for complex row formatting logic.
         column_aliases: Optional mapping of original column names to display
             names. Use this to rename columns in the table output.
+        empty_message: Message to display when the page has no items.
+        row_generator: Optional row generator function that accepts active_id.
+            When provided with active_id, creates a row_formatter automatically.
+            Use this for simple active item highlighting.
+        active_id: ID of the active item for highlighting. Used together with
+            row_generator to create the row_formatter.
     """
+    if not page.total:
+        declare(empty_message)
+        return
+
+    if row_generator is not None:
+        row_formatter = partial(row_generator, active_id=active_id)
+
     items = format_page_items(page, row_formatter, output_format)
     handle_output(items, page, columns, output_format, column_aliases)
 

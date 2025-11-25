@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
-from functools import partial
 from typing import Any, Optional
 
 import click
@@ -62,12 +61,8 @@ def list_projects(
     with console.status("Listing projects...\n"):
         projects = client.list_projects(**kwargs)
 
-    if not projects.items:
-        cli_utils.declare("No projects found for the given filter.")
-        return
-
     show_active = not is_sorted_or_filtered(ctx)
-    if show_active:
+    if show_active and projects.items:
         try:
             active_project_id = client.active_project.id
             if active_project_id not in {p.id for p in projects.items}:
@@ -78,10 +73,14 @@ def list_projects(
     else:
         active_project_id = None
 
-    row_formatter = partial(
-        cli_utils.generate_project_row, active_project_id=active_project_id
+    cli_utils.print_page(
+        projects,
+        columns,
+        output_format,
+        empty_message="No projects found for the given filter.",
+        row_generator=cli_utils.generate_project_row,
+        active_id=active_project_id,
     )
-    cli_utils.print_page(projects, columns, output_format, row_formatter)
 
 
 @project.command("register")

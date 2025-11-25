@@ -206,11 +206,12 @@ def list_service_accounts(
     with console.status("Listing service accounts...\n"):
         service_accounts = client.list_service_accounts(**kwargs)
 
-    if not service_accounts.items:
-        cli_utils.declare("No service accounts found for the given filters.")
-        return
-
-    cli_utils.print_page(service_accounts, columns, output_format)
+    cli_utils.print_page(
+        service_accounts,
+        columns,
+        output_format,
+        empty_message="No service accounts found for the given filters.",
+    )
 
 
 @service_account.command(
@@ -411,11 +412,12 @@ def list_api_keys(
             cli_utils.exception(e)
             return
 
-    if not api_keys.items:
-        cli_utils.declare("No API keys found for this filter.")
-        return
-
-    cli_utils.print_page(api_keys, columns, output_format)
+    cli_utils.print_page(
+        api_keys,
+        columns,
+        output_format,
+        empty_message="No API keys found for this filter.",
+    )
 
 
 @api_key.command("update", help="Update an API key.")
