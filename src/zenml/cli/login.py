@@ -38,7 +38,6 @@ from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
     IllegalOperationError,
-    EntityNotFoundError,
 )
 from zenml.logger import get_logger
 from zenml.login.credentials import ServerType
@@ -304,10 +303,9 @@ def connect_to_server(
         except CredentialsNotValid as e:
             cli_utils.warning(f"Authorization error: {e}")
         else:
+            cli_utils.declare(f"Connected to SQL database '{url}'")
             if project:
                 _set_active_project(project)
-
-            cli_utils.declare(f"Connected to SQL database '{url}'")
 
 
 def connect_to_pro_server(
@@ -604,12 +602,12 @@ def _set_active_project(project_name_or_id: str) -> None:
 
     try:
         project = client.set_active_project(project_name_or_id)
-    except (KeyError, EntityNotFoundError):
+    except KeyError:
         cli_utils.error(
             f"No project named or with ID '{project_name_or_id}' exists on "
             "the connected ZenML server."
         )
-    except IllegalOperationError as exc:
+    except Exception as exc:
         cli_utils.error(
             f"Failed to set the active project to '{project_name_or_id}': {exc}"
         )
