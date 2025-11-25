@@ -277,6 +277,7 @@ def print_table(
     title: Optional[str] = None,
     caption: Optional[str] = None,
     columns: Optional[Dict[str, Union[table.Column, str]]] = None,
+    column_aliases: Optional[Dict[str, str]] = None,
     **kwargs: table.Column,
 ) -> None:
     """Prints a list of dicts as a table.
@@ -289,6 +290,8 @@ def print_table(
             Values can be either a rich Column object (uses .header for display)
             or a string (used directly as the header). Keys not in this mapping
             will use the uppercased key as the header.
+        column_aliases: Optional mapping of original column names to display
+            names. Use this to rename columns in the table output.
         **kwargs: Deprecated. Use `columns` dict instead. Kept for backward
             compatibility.
     """
@@ -315,7 +318,12 @@ def print_table(
     if not data:
         return
 
-    print(_render_table(data, title=title, caption=caption), end="")
+    print(
+        _render_table(
+            data, title=title, caption=caption, column_aliases=column_aliases
+        ),
+        end="",
+    )
 
 
 def print_pydantic_models(
@@ -324,6 +332,7 @@ def print_pydantic_models(
     exclude_columns: Optional[List[str]] = None,
     active_models: Optional[List[T]] = None,
     show_active: bool = False,
+    column_aliases: Optional[Dict[str, str]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -336,6 +345,8 @@ def print_pydantic_models(
         active_models: Optional list of active models of the given type T.
         show_active: Flag to decide whether to append the active model on the
             top of the list.
+        column_aliases: Optional mapping of original column names to display
+            names. Use this to rename columns in the table output.
     """
     if exclude_columns is None:
         exclude_columns = list()
@@ -373,9 +384,9 @@ def print_pydantic_models(
         if active_models is not None and show_active_column:
             return {
                 marker: (
-                    ":point_right:"
+                    "[green]●[/green]"
                     if any(model.id == a.id for a in active_models)
-                    else ""
+                    else "-"
                 ),
                 **items,
             }
@@ -395,7 +406,10 @@ def print_pydantic_models(
                 i for i in table_items if i.id not in active_ids
             ]
 
-        print_table([__dictify(model) for model in table_items])
+        print_table(
+            [__dictify(model) for model in table_items],
+            column_aliases=column_aliases,
+        )
         print_page_info(models)
     else:
         table_items = list(models)
@@ -409,7 +423,10 @@ def print_pydantic_models(
                 i for i in table_items if i.id not in active_ids
             ]
 
-        print_table([__dictify(model) for model in table_items])
+        print_table(
+            [__dictify(model) for model in table_items],
+            column_aliases=column_aliases,
+        )
 
 
 def print_pydantic_model(
@@ -2027,6 +2044,45 @@ def get_deployment_status_emoji(
     return ":question:"
 
 
+def _get_extra_columns_for_filter(filter_name: str) -> List[str]:
+    """Get extra columns added by row formatter functions.
+
+    These columns are added by generate_*_row functions and aren't part
+    of the Response model itself.
+
+    Args:
+        filter_name: Name of the filter class (e.g., "StackFilter").
+
+    Returns:
+        List of extra column names added by the row formatter.
+    """
+    extra_columns_map: Dict[str, List[str]] = {
+        "StackFilter": [ct.value.lower() for ct in StackComponentType],
+        "ComponentFilter": ["flavor", "owner"],
+        "DeploymentFilter": [
+            "pipeline",
+            "snapshot",
+            "url",
+            "status",
+            "stack",
+            "owner",
+        ],
+        "PipelineRunFilter": [
+            "pipeline",
+            "run_name",
+            "status",
+            "stack",
+            "owner",
+        ],
+        "ServiceConnectorFilter": [
+            "connector_type",
+            "resource_types",
+            "auth_method",
+        ],
+    }
+    return extra_columns_map.get(filter_name, [])
+
+
 def generate_deployment_row(
     deployment: "DeploymentResponse", output_format: OutputFormat
 ) -> Dict[str, Any]:
@@ -2086,8 +2142,6 @@ def generate_stack_row(
     Returns:
         Dict with stack data for display.
     """
-    from zenml.enums import StackComponentType
-
     is_active = active_stack_id and stack.id == active_stack_id
 
     row: Dict[str, Any] = {
@@ -2571,8 +2625,66 @@ def _is_list_field(field_info: Any) -> bool:
     )
 
 
+def _get_response_columns_for_filter(
+    filter_model: Type[BaseFilter],
+) -> List[str]:
+    """Get available column names by introspecting the Response model.
+
+    Derives the Response model name from the Filter model name and extracts
+    field names from its body, metadata, and resources classes. Also includes
+    extra columns added by generate_*_row functions.
+
+    Args:
+        filter_model: The filter model class.
+
+    Returns:
+        List of available column names, or empty list if derivation fails.
+    """
+    from typing import get_args as typing_get_args
+    from typing import get_origin as typing_get_origin
+
+    import zenml.models as models_module
+
+    filter_name = filter_model.__name__
+    if not filter_name.endswith("Filter"):
+        return []
+
+    response_name = filter_name.replace("Filter", "Response")
+    response_class = getattr(models_module, response_name, None)
+    if response_class is None:
+        return []
+
+    columns: Set[str] = {"id"}
+
+    if "name" in response_class.model_fields:
+        columns.add("name")
+
+    for attr_name in ["body", "metadata", "resources"]:
+        field_info = response_class.model_fields.get(attr_name)
+        if field_info is None:
+            continue
+        annotation = field_info.annotation
+        origin = typing_get_origin(annotation)
+        if origin is not None:
+            args = typing_get_args(annotation)
+            for arg in args:
+                if arg is not type(None) and hasattr(arg, "model_fields"):
+                    for field_name in arg.model_fields:
+                        columns.add(field_name.lower().replace(" ", "_"))
+                    break
+        elif hasattr(annotation, "model_fields"):
+            for field_name in annotation.model_fields:
+                columns.add(field_name.lower().replace(" ", "_"))
+
+    extra_columns = _get_extra_columns_for_filter(filter_name)
+    columns.update(extra_columns)
+
+    return sorted(columns)
+
+
 def list_options(
-    filter_model: Type[BaseFilter], default_columns: Optional[List[str]] = None
+    filter_model: Type[BaseFilter],
+    default_columns: Optional[List[str]] = None,
 ) -> Callable[[F], F]:
     """Add filter and output options to a list command.
 
@@ -2624,6 +2736,15 @@ def list_options(
         default_columns_list = default_columns or []
         default_columns_str = ",".join(default_columns_list)
 
+        derived_columns = _get_response_columns_for_filter(filter_model)
+        all_columns = sorted(set(derived_columns) | set(default_columns_list))
+        columns_help = (
+            "Comma-separated list of columns to display, or 'all' "
+            "for all columns."
+        )
+        if all_columns:
+            columns_help += f" Available: {', '.join(all_columns)}."
+
         options.extend(
             [
                 click.option(
@@ -2631,8 +2752,7 @@ def list_options(
                     "-c",
                     type=str,
                     default=default_columns_str,
-                    help="Comma-separated list of columns to display, or 'all' for all columns. "
-                    f"Available columns: {', '.join(default_columns_list)}.",
+                    help=columns_help,
                 ),
                 click.option(
                     "--output",
@@ -2997,6 +3117,7 @@ def print_page(
     row_formatter: Optional[
         Callable[[Any, OutputFormat], Dict[str, Any]]
     ] = None,
+    column_aliases: Optional[Dict[str, str]] = None,
 ) -> None:
     """Format and print a page of response items.
 
@@ -3009,9 +3130,11 @@ def print_page(
         output_format: Output format (table, json, yaml, tsv, csv).
         row_formatter: Optional function to add custom fields to each row.
             Should accept (item, output_format) and return a dict of additional fields.
+        column_aliases: Optional mapping of original column names to display
+            names. Use this to rename columns in the table output.
     """
     items = format_page_items(page, row_formatter, output_format)
-    handle_output(items, page, columns, output_format)
+    handle_output(items, page, columns, output_format, column_aliases)
 
 
 def handle_output(
@@ -3019,6 +3142,7 @@ def handle_output(
     page: Optional["Page[Any]"],
     columns: str,
     output_format: OutputFormat,
+    column_aliases: Optional[Dict[str, str]] = None,
 ) -> None:
     """Handle output formatting for CLI commands.
 
@@ -3030,12 +3154,15 @@ def handle_output(
         page: Page object containing pagination info
         output_format: Output format (table, json, yaml, tsv, csv).
         columns: Comma-separated column names. If empty, all columns are shown.
+        column_aliases: Optional mapping of original column names to display
+            names. Use this to rename columns in the table output.
     """
     cli_output = prepare_output(
         data=data,
         output_format=output_format,
         columns=columns,
         page=page,
+        column_aliases=column_aliases,
     )
     if cli_output:
         from zenml_cli import clean_output
@@ -3055,6 +3182,7 @@ def prepare_output(
     output_format: OutputFormat = "table",
     columns: Optional[str] = None,
     page: Optional["Page[Any]"] = None,
+    column_aliases: Optional[Dict[str, str]] = None,
 ) -> str:
     """Render data in specified format following ZenML CLI table guidelines.
 
@@ -3068,6 +3196,8 @@ def prepare_output(
         columns: Optional comma-separated list of column names to include.
             Unrecognized column names will trigger a warning.
         page: Optional page object for pagination metadata in JSON/YAML output.
+        column_aliases: Optional mapping of original column names to display
+            names. Use this to rename columns in the table output.
 
     Returns:
         The rendered output in the specified format, or empty string if
@@ -3104,7 +3234,10 @@ def prepare_output(
                     unmatched_cols.append(req_col)
 
         if unmatched_cols:
-            available_display = ", ".join(sorted(available_keys))
+            normalized_keys = [
+                key.lower().replace(" ", "_") for key in available_keys
+            ]
+            available_display = ", ".join(sorted(set(normalized_keys)))
             warning(
                 f"Unknown column(s) ignored: {', '.join(unmatched_cols)}. "
                 f"Available: {available_display}"
@@ -3138,7 +3271,7 @@ def prepare_output(
     elif output_format == "csv":
         return _render_csv(filtered_data)
     elif output_format == "table":
-        return _render_table(filtered_data)
+        return _render_table(filtered_data, column_aliases=column_aliases)
     else:
         raise ValueError(f"Unsupported output format: {output_format}")
 
@@ -3286,6 +3419,7 @@ def _render_table(
     data: List[Dict[str, Any]],
     title: Optional[str] = None,
     caption: Optional[str] = None,
+    column_aliases: Optional[Dict[str, str]] = None,
 ) -> str:
     """Render data as a formatted table following ZenML guidelines.
 
@@ -3293,14 +3427,18 @@ def _render_table(
         data: List of data dictionaries to render
         title: Optional title for the table.
         caption: Optional caption for the table.
+        column_aliases: Optional mapping of original column names to display
+            names. Use this to rename columns in the table output.
 
     Returns:
         Formatted table string representation of the data
     """
+    aliases = column_aliases or {}
     headers = list(data[0].keys())
     longest_values: Dict[str, int] = {}
     for header in headers:
-        header_display = header.replace("_", " ").upper()
+        display_name = aliases.get(header, header)
+        header_display = display_name.replace("_", " ").upper()
         longest_values[header] = max(
             len(header_display),
             max(len(str(row.get(header, ""))) for row in data),
@@ -3338,8 +3476,11 @@ def _render_table(
         is_active_col = lower == "active"
         is_id_col = _is_id_column(header)
         is_name_col = _is_name_column(header)
+        display_name = aliases.get(header, header)
         header_display = (
-            "" if is_active_col else header.replace("_", " ").upper()
+            "active"
+            if is_active_col
+            else display_name.replace("_", " ").upper()
         )
         justify: Literal["default", "left", "center", "right", "full"] = "left"
         overflow: Literal["fold", "crop", "ellipsis", "ignore"] = "ellipsis"

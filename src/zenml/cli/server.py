@@ -738,6 +738,11 @@ def server_list(
         columns=columns,
         active_models=current_server,
         show_active=True,
+        column_aliases={
+            "server_id_hyperlink": "server_id",
+            "server_name_hyperlink": "server_name",
+            "organization_hyperlink": "organization",
+        },
     )
 
 

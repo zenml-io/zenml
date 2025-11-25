@@ -155,7 +155,7 @@ def generate_stack_component_list_command(
 
     @list_options(
         ComponentFilter,
-        default_columns=["id", "active", "name", "flavor", "owner"],
+        default_columns=["active", "id", "name", "flavor", "owner"],
     )
     @click.pass_context
     def list_stack_components_command(

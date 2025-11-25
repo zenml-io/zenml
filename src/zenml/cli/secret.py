@@ -177,7 +177,7 @@ def list_secrets(
         kwargs: Keyword arguments to filter the secrets.
     """
     client = Client()
-    with console.status("Listing secrets..."):
+    with console.status("Listing secrets...\n"):
         try:
             secrets = client.list_secrets(**kwargs)
         except NotImplementedError as e:
