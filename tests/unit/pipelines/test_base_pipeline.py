@@ -22,6 +22,7 @@ from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
     StackValidationError,
@@ -31,7 +32,97 @@ from zenml.models import (
     PipelineBuildBase,
 )
 from zenml.pipelines import Schedule, pipeline
+from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.steps import step
+
+
+def _compile_spec(p: Pipeline) -> PipelineSpec:
+    """Compiles a ZenML pipeline to a pipeline spec.
+
+    This method can be used when a pipeline spec is needed but the full
+    snapshot including stack information is not required.
+
+    Args:
+        p: The pipeline to compile.
+
+    Returns:
+        The compiled pipeline spec.
+    """
+
+    compiler = Compiler()
+
+    # Copy the pipeline before we connect the steps, so we don't mess with
+    # the pipeline object/step objects in any way
+    import copy
+
+    p = copy.deepcopy(p)
+
+    invocations = [
+        compiler._get_step_spec(invocation=invocation, enable_heartbeat=False)
+        for _, invocation in compiler._get_sorted_invocations(pipeline=p)
+    ]
+
+    pipeline_spec = compiler._compute_pipeline_spec(
+        pipeline=p, step_specs=invocations
+    )
+    return pipeline_spec
+
+
+@step
+def s1() -> int:
+    return 1
+
+
+@step
+def s2(input: int) -> int:
+    return input + 1
+
+
+def test_spec_compilation(local_stack):
+    """Tests the compilation of the pipeline spec."""
+
+    @pipeline
+    def pipeline_instance():
+        s2(s1())
+
+    pipeline_instance.prepare()
+    spec = (
+        Compiler()
+        .compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+        .pipeline_spec
+    )
+    other_spec = _compile_spec(p=pipeline_instance)
+
+    expected_spec = PipelineSpec.model_validate(
+        {
+            "source": "tests.unit.pipelines.test_base_pipeline.pipeline_instance",
+            "steps": [
+                {
+                    "source": "tests.unit.pipelines.test_base_pipeline.s1",
+                    "upstream_steps": [],
+                    "invocation_id": "s1",
+                },
+                {
+                    "source": "tests.unit.pipelines.test_base_pipeline.s2",
+                    "upstream_steps": ["s1"],
+                    "inputs": {
+                        "input": {
+                            "step_name": "s1",
+                            "output_name": "output",
+                        }
+                    },
+                    "invocation_id": "s2",
+                },
+            ],
+        }
+    )
+
+    assert spec == expected_spec
+    assert other_spec == expected_spec
 
 
 def test_calling_a_pipeline_twice_raises_no_exception(
@@ -355,7 +446,7 @@ def test_unique_identifier_considers_spec(empty_step):
         empty_step(id="step_2", after="step_1")
 
     pipeline_instance.prepare()
-    spec = Compiler().compile_spec(pipeline=pipeline_instance)
+    spec = _compile_spec(p=pipeline_instance)
     id_ = pipeline_instance._compute_unique_identifier(spec)
 
     @pipeline
@@ -364,7 +455,7 @@ def test_unique_identifier_considers_spec(empty_step):
         step_with_cache_enabled(id="step_2", after="step_1")
 
     new_instance.prepare()
-    new_spec = Compiler().compile_spec(pipeline=new_instance)
+    new_spec = _compile_spec(p=new_instance)
     new_id = new_instance._compute_unique_identifier(new_spec)
 
     assert spec != new_spec
@@ -378,7 +469,7 @@ def test_unique_identifier_considers_step_source_code(
     pipeline_instance = one_step_pipeline(empty_step)
 
     pipeline_instance.prepare()
-    spec = Compiler().compile_spec(pipeline=pipeline_instance)
+    spec = _compile_spec(p=pipeline_instance)
     id_ = pipeline_instance._compute_unique_identifier(spec)
 
     # Change step source -> new ID
