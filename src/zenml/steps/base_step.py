@@ -406,8 +406,10 @@ class BaseStep:
                         "provided as artifact.",
                         key,
                     )
-            elif isinstance(value, list) and all(
-                isinstance(item, StepArtifact) for item in value
+            elif (
+                isinstance(value, list)
+                and value
+                and all(isinstance(item, StepArtifact) for item in value)
             ):
                 artifacts[key] = value
                 if key in self.configuration.parameters:

@@ -479,6 +479,7 @@ class StepRunner:
             elif arg in self.configuration.parameters:
                 function_params[arg] = self.configuration.parameters[arg]
             else:
+                breakpoint()
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
                 )

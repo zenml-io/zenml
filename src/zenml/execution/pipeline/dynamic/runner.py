@@ -368,8 +368,10 @@ def compile_dynamic_step_invocation(
         if isinstance(value, OutputArtifact):
             upstream_steps.add(value.step_name)
 
-        if isinstance(value, Sequence) and all(
-            isinstance(item, OutputArtifact) for item in value
+        if (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, OutputArtifact) for item in value)
         ):
             upstream_steps.update(item.step_name for item in value)
 
@@ -395,8 +397,10 @@ def compile_dynamic_step_invocation(
                     chunk_size=value.chunk_size,
                 )
             ]
-        elif isinstance(value, list) and all(
-            isinstance(item, OutputArtifact) for item in value
+        elif (
+            isinstance(value, list)
+            and value
+            and all(isinstance(item, OutputArtifact) for item in value)
         ):
             input_artifacts[name] = [
                 StepArtifact(
@@ -704,8 +708,10 @@ def await_step_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """
     result = {}
     for key, value in inputs.items():
-        if isinstance(value, Sequence) and all(
-            isinstance(item, StepRunOutputsFuture) for item in value
+        if (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, StepRunOutputsFuture) for item in value)
         ):
             if any(len(item._output_keys) != 1 for item in value):
                 raise RuntimeError(
@@ -723,8 +729,10 @@ def await_step_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
                 )
             value = value.artifacts()
 
-        if isinstance(value, Sequence) and all(
-            isinstance(item, ArtifactFuture) for item in value
+        if (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, ArtifactFuture) for item in value)
         ):
             value = [item.result() for item in value]
 
