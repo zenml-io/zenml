@@ -224,7 +224,9 @@ def update_heartbeat(
     """
     step = zen_store().get_run_step(step_run_id, hydrate=False)
 
-    if step.status.is_finished:
+    # Avoid using status.is_finished as it invalidates useful statuses for heartbeat
+    # such as STOPPED.
+    if step.status.is_failed or step.status.is_successful:
         raise HTTPException(
             status_code=422,
             detail=f"Step {step.id} is finished - can not update heartbeat.",

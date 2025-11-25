@@ -55,6 +55,10 @@ from zenml.orchestrators.publish_utils import (
 from zenml.orchestrators.utils import (
     is_setting_enabled,
 )
+from zenml.steps.heartbeat import (
+    StepHeartBeatTerminationException,
+    StepHeartbeatWorker,
+)
 from zenml.steps.step_context import (
     StepContext,
     get_step_context,
@@ -135,6 +139,7 @@ class StepRunner:
 
         Raises:
             BaseException: A general exception if the step fails.
+            StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
         """
         from zenml.deployers.server import runtime
 
@@ -206,7 +211,22 @@ class StepRunner:
                 step_environment.update(secret_environment)
 
                 step_failed = False
+
+                # To have a cross-platform compatible handling of main thread termination
+                # we use Python's interrupt_main instead of termination signals (not Windows supported).
+                # Since interrupt_main raises KeyboardInterrupt we want in this context to capture it
+                # and handle it as a custom exception.
+
+                heartbeat_worker = StepHeartbeatWorker(step_id=step_run.id)
+
                 try:
+                    if self._step.spec.enable_heartbeat:
+                        logger.info(
+                            "Initiating heartbeat for step: %s (%s)",
+                            step_run.name,
+                            step_run.id,
+                        )
+                        heartbeat_worker.start()
                     if (
                         # TODO: do we need to disable this for dynamic pipelines?
                         pipeline_run.snapshot
@@ -255,8 +275,16 @@ class StepRunner:
                                     failure_hook_source,
                                     step_exception=step_exception,
                                 )
-                    raise
+                    if (
+                        isinstance(step_exception, KeyboardInterrupt)
+                        and heartbeat_worker.is_terminated
+                    ):
+                        raise StepHeartBeatTerminationException(
+                            "Remotely stopped step - terminating execution."
+                        )
+                    raise step_exception
                 finally:
+                    heartbeat_worker.stop()
                     step_run_metadata = self._stack.get_step_run_metadata(
                         info=step_run_info,
                     )

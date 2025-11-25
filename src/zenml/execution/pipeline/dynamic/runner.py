@@ -34,7 +34,6 @@ from zenml import ExternalArtifact
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionMode, StepRuntime
 from zenml.execution.pipeline.dynamic.outputs import (
     ArtifactFuture,
@@ -68,7 +67,7 @@ from zenml.utils.logging_utils import setup_orchestrator_logging
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
-    from zenml.config.step_configurations import Step
+    from zenml.config.step_configurations import Step, StepConfiguration
     from zenml.steps import BaseStep
 
 
@@ -381,11 +380,12 @@ def compile_dynamic_step_invocation(
         model_artifacts_or_metadata={},
         client_lazy_loaders={},
     )
+
     return Compiler()._compile_step_invocation(
         invocation=pipeline.invocations[invocation_id],
         stack=Client().active_stack,
         step_config=None,
-        pipeline_configuration=pipeline.configuration,
+        pipeline=pipeline,
     )
 
 
@@ -437,7 +437,10 @@ def _should_retry_locally(
     if step.config.step_operator:
         return True
 
-    runtime = get_step_runtime(step, pipeline_docker_settings)
+    runtime = get_step_runtime(
+        step_config=step.config,
+        pipeline_docker_settings=pipeline_docker_settings,
+    )
     if runtime == StepRuntime.INLINE or step.config.step_operator:
         return True
     else:
@@ -448,29 +451,30 @@ def _should_retry_locally(
 
 
 def get_step_runtime(
-    step: "Step", pipeline_docker_settings: "DockerSettings"
+    step_config: "StepConfiguration",
+    pipeline_docker_settings: "DockerSettings",
 ) -> StepRuntime:
     """Determine if a step should be run in process.
 
     Args:
-        step: The step.
+        step_config: The step configuration.
         pipeline_docker_settings: The Docker settings of the parent pipeline.
 
     Returns:
         The runtime for the step.
     """
-    if step.config.step_operator:
+    if step_config.step_operator:
         return StepRuntime.ISOLATED
 
     if not Client().active_stack.orchestrator.can_run_isolated_steps:
         return StepRuntime.INLINE
 
-    runtime = step.config.runtime
+    runtime = step_config.runtime
 
     if runtime is None:
-        if not step.config.resource_settings.empty:
+        if not step_config.resource_settings.empty:
             runtime = StepRuntime.ISOLATED
-        elif step.config.docker_settings != pipeline_docker_settings:
+        elif step_config.docker_settings != pipeline_docker_settings:
             runtime = StepRuntime.ISOLATED
         else:
             runtime = StepRuntime.INLINE
