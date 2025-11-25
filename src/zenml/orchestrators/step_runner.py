@@ -528,10 +528,9 @@ class StepRunner:
                 # We need to skip the type compatibility check here because
                 # the annotation on the step input might not be something that
                 # the materializer can load.
-                return materializer.load_chunk(
+                return materializer.load_item(
                     data_type=data_type,
-                    chunk_index=artifact.chunk_index,
-                    chunk_size=artifact.chunk_size or 1,
+                    index=artifact.chunk_index,
                 )
             else:
                 materializer.validate_load_type_compatibility(data_type)

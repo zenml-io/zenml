@@ -569,46 +569,52 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             return len(data)
         return None
 
-    def load_chunk(
-        self, data_type: Type[Any], chunk_index: int, chunk_size: int
-    ) -> Any:
-        """Load a specific chunk of the data.
+    def load_item(self, data_type: Type[Any], index: int) -> Any:
+        """Load a specific item of the data.
 
         Args:
             data_type: The type of the data to load.
-            chunk_index: The index of the chunk to load.
-            chunk_size: The size of the chunk to load.
+            index: The index of the item to load.
 
         Raises:
             RuntimeError: If the metadata format is not supported.
 
         Returns:
-            The loaded chunk of the data.
+            The loaded item.
         """
         if self.artifact_store.exists(self.data_path):
-            outputs = yaml_utils.read_json(self.data_path)
-            outputs = outputs[chunk_index : chunk_index + chunk_size]
+            data = yaml_utils.read_json(self.data_path)
+            item = data[index]
         else:
             metadata = yaml_utils.read_json(self.metadata_path)
-            outputs = []
 
             if isinstance(metadata, list):
-                for entry in metadata[chunk_index : chunk_index + chunk_size]:
-                    path_ = entry["path"]
-                    type_ = source_utils.load(entry["type"])
-                    materializer_class = source_utils.load(
-                        entry["materializer"]
-                    )
-                    materializer = materializer_class(
-                        uri=path_, artifact_store=self.artifact_store
-                    )
-                    element = materializer.load(type_)
-                    outputs.append(element)
-
+                metadata_entry = metadata[index]
+                path_ = metadata_entry["path"]
+                type_ = source_utils.load(metadata_entry["type"])
+                materializer_class = source_utils.load(
+                    metadata_entry["materializer"]
+                )
+                materializer = materializer_class(
+                    uri=path_, artifact_store=self.artifact_store
+                )
+                item = materializer.load(type_)
             else:
                 raise RuntimeError(f"Unknown metadata format: {metadata}.")
 
-        if len(outputs) == 1:
-            return data_type(outputs[0])
+        if not isinstance(item, data_type):
+            try:
+                item = data_type(item)
+            except Exception as e:
+                # We only log an error here, potentially pydantic can handle the
+                # conversion when validating step function inputs.
+                logger.error(
+                    "Failed to convert item `%s` to expected type `%s`. This "
+                    "is most likely due to a mismatching type annotation on "
+                    "your step function input. Error: %s",
+                    item,
+                    data_type.__name__,
+                    e,
+                )
 
-        return data_type(outputs)
+        return item

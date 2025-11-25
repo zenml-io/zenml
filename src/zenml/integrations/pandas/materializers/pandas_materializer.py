@@ -341,26 +341,32 @@ class PandasMaterializer(BaseMaterializer):
             return int(data.shape[1])
         return None
 
-    def load_chunk(
-        self, data_type: Type[Any], chunk_index: int, chunk_size: int
-    ) -> Any:
-        """Load a specific chunk of the data.
+    def load_item(self, data_type: Type[Any], index: int) -> Any:
+        """Load a specific item of the data.
 
         Args:
             data_type: The type of the data to load.
-            chunk_index: The index of the chunk to load.
-            chunk_size: The size of the chunk to load.
+            index: The index of the item to load.
 
         Returns:
-            The loaded chunk of the data.
+            The loaded item.
         """
         data = self.load(data_type)
-        if chunk_size == 1:
-            chunk = data_type(data[chunk_index])
-        else:
-            chunk = data[chunk_index : chunk_index + chunk_size]
+        item = data[index]
 
-        if not isinstance(chunk, data_type):
-            chunk = data_type(chunk)
+        if not isinstance(item, data_type):
+            try:
+                item = data_type(item)
+            except Exception as e:
+                # We only log an error here, potentially pydantic can handle the
+                # conversion when validating step function inputs.
+                logger.error(
+                    "Failed to convert item `%s` to expected type `%s`. This "
+                    "is most likely due to a mismatching type annotation on "
+                    "your step function input. Error: %s",
+                    item,
+                    data_type.__name__,
+                    e,
+                )
 
-        return chunk
+        return item
