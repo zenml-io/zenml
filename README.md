@@ -152,6 +152,9 @@ The MCP (Model Context Protocol) integration transforms your ZenML metadata into
   <a href="https://www.amazon.com/-/en/Andrew-McMahon/dp/1837631964">
     <img src="docs/book/.gitbook/assets/ml_engineering_with_python.jpg" alt="Machine Learning Engineering with Python Cover" width="200"/>
   </a>
+  <a href="https://www.amazon.com/DeepSeek-Practice-fine-tuning-distillation-engineering/dp/1806020858">
+    <img src="docs/book/.gitbook/assets/deepseek-in-practice-thumb.jpg" alt="DeepSeek in Practice Cover" width="200"/>
+  </a>
 </div>
 
 [ZenML](https://zenml.io) is featured in these comprehensive guides to production AI systems.
