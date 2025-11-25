@@ -5,7 +5,7 @@ description: Write dynamic pipelines
 # Dynamic Pipelines (Experimental)
 
 {% hint style="warning" %}
-**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local` and `kubernetes` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
+**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local`, `kubernetes`, `sagemaker` and `vertex` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
 {% hint style="info" %}
@@ -265,25 +265,10 @@ When running multiple steps concurrently using `step.submit()`, a failure in one
 Dynamic pipelines are currently only supported by:
 - `local` orchestrator
 - `kubernetes` orchestrator
+- `sagemaker` orchestrator
+- `vertex` orchestrator
 
 Other orchestrators will raise an error if you try to run a dynamic pipeline with them.
-
-### Remote Execution Requirement
-
-When running dynamic pipelines remotely (e.g., with the `kubernetes` orchestrator), you **must** include `depends_on` for at least one step in your pipeline definition. This is currently required due to a bug in remote execution.
-
-{% hint style="warning" %}
-**Required for Remote Execution**: Without `depends_on`, remote execution will fail. This requirement does not apply when running locally with the `local` orchestrator.
-{% endhint %}
-
-For example:
-
-```python
-@pipeline(dynamic=True, depends_on=[some_step])
-def dynamic_pipeline():
-    some_step()
-    # ... rest of your pipeline
-```
 
 ### Artifact Loading
 
