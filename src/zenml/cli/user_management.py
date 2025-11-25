@@ -82,7 +82,9 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-@list_options(UserFilter, default_columns=["active", "id", "name"])
+@list_options(
+    UserFilter, default_columns=["active", "id", "name", "full_name"]
+)
 @click.pass_context
 def list_users(
     ctx: click.Context,

@@ -53,6 +53,7 @@ from rich import box, table
 from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
+from rich.padding import Padding
 from rich.prompt import Confirm, Prompt
 from rich.style import Style
 from rich.table import Table
@@ -394,7 +395,7 @@ def print_pydantic_models(
             ]
 
         print_table([__dictify(model) for model in table_items])
-        print_page_info(models.pagination_info)
+        print_page_info(models)
     else:
         table_items = list(models)
 
@@ -2444,20 +2445,15 @@ def check_zenml_pro_project_availability() -> None:
         )
 
 
-def print_page_info(
-    pagination_info: Union[Dict[str, Any], "Page[Any]"],
-) -> None:
+def print_page_info(page: "Page[Any]") -> None:
     """Print all page information showing the number of items and pages.
 
     Args:
-        pagination_info: The pagination information to print.
+        page: The page object containing pagination information.
     """
-    if isinstance(pagination_info, Page):
-        pagination_info = pagination_info.pagination_info
-
     declare(
-        f"Page `({pagination_info['index']}/{pagination_info['total_pages']})`, "
-        f"`{pagination_info['total']}` items found for the applied filters."
+        f"Page `({page.index}/{page.total_pages})`, "
+        f"`{page.total}` items found for the applied filters."
     )
 
 
@@ -2634,8 +2630,8 @@ def list_options(
                     "-c",
                     type=str,
                     default=default_columns_str,
-                    help="Comma-separated list of columns to display. Available columns: "
-                    f"{', '.join(default_columns_list)}.",
+                    help="Comma-separated list of columns to display, or 'all' for all columns. "
+                    f"Available columns: {', '.join(default_columns_list)}.",
                 ),
                 click.option(
                     "--output",
@@ -2979,7 +2975,7 @@ def format_page_items(
         # Use format_page_items() when you need to modify items before output:
         items = format_page_items(stacks_page, generate_stack_row, output_format)
         # ... modify items ...
-        handle_output(items, stacks_page.pagination_info, columns, output_format)
+        handle_output(items, stacks_page, columns, output_format)
         ```
     """
     result = []
@@ -3014,12 +3010,12 @@ def print_page(
             Should accept (item, output_format) and return a dict of additional fields.
     """
     items = format_page_items(page, row_formatter, output_format)
-    handle_output(items, page.pagination_info, columns, output_format)
+    handle_output(items, page, columns, output_format)
 
 
 def handle_output(
     data: List[Dict[str, Any]],
-    pagination_info: Optional[Dict[str, Any]],
+    page: Optional["Page[Any]"],
     columns: str,
     output_format: OutputFormat,
 ) -> None:
@@ -3030,7 +3026,7 @@ def handle_output(
 
     Args:
         data: List of dictionaries to render
-        pagination_info: Info about the pagination
+        page: Page object containing pagination info
         output_format: Output format (table, json, yaml, tsv, csv).
         columns: Comma-separated column names. If empty, all columns are shown.
     """
@@ -3038,7 +3034,7 @@ def handle_output(
         data=data,
         output_format=output_format,
         columns=columns,
-        pagination=pagination_info,
+        page=page,
     )
     if cli_output:
         from zenml_cli import clean_output
@@ -3049,15 +3045,15 @@ def handle_output(
             logger.warning("Failed to write clean output: %s", err)
             print(cli_output)
 
-    if pagination_info:
-        print_page_info(pagination_info)
+    if page:
+        print_page_info(page)
 
 
 def prepare_output(
     data: List[Dict[str, Any]],
     output_format: OutputFormat = "table",
     columns: Optional[str] = None,
-    pagination: Optional[Dict[str, Any]] = None,
+    page: Optional["Page[Any]"] = None,
 ) -> str:
     """Render data in specified format following ZenML CLI table guidelines.
 
@@ -3070,7 +3066,7 @@ def prepare_output(
         output_format: Output format (`table`, `json`, `yaml`, `tsv`, `csv`).
         columns: Optional comma-separated list of column names to include.
             Unrecognized column names will trigger a warning.
-        pagination: Optional pagination metadata for JSON/YAML output.
+        page: Optional page object for pagination metadata in JSON/YAML output.
 
     Returns:
         The rendered output in the specified format, or empty string if
@@ -3082,9 +3078,12 @@ def prepare_output(
     if not data:
         return ""
 
-    if columns:
+    available_keys = list(data[0].keys())
+
+    if columns and columns.strip().lower() == "all":
+        selected_columns = available_keys
+    elif columns:
         requested_cols = [c.strip() for c in columns.split(",")]
-        available_keys = list(data[0].keys())
         col_mapping: Dict[str, str] = {}
         unmatched_cols: List[str] = []
 
@@ -3118,10 +3117,21 @@ def prepare_output(
         {k: entry[k] for k in selected_columns if k in entry} for entry in data
     ]
 
+    pagination_dict = (
+        {
+            "index": page.index,
+            "max_size": page.max_size,
+            "total_pages": page.total_pages,
+            "total": page.total,
+        }
+        if page
+        else None
+    )
+
     if output_format == "json":
-        return _render_json(filtered_data, pagination=pagination)
+        return _render_json(filtered_data, pagination=pagination_dict)
     elif output_format == "yaml":
-        return _render_yaml(filtered_data, pagination=pagination)
+        return _render_yaml(filtered_data, pagination=pagination_dict)
     elif output_format == "tsv":
         return _render_tsv(filtered_data)
     elif output_format == "csv":
@@ -3351,7 +3361,8 @@ def _render_table(
         no_color=os.getenv("NO_COLOR") is not None,
         file=output_buffer,
     )
-    table_console.print(rich_table)
+    padded_table = Padding(rich_table, (0, 0, 1, 2))
+    table_console.print(padded_table)
 
     return output_buffer.getvalue()
 

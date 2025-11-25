@@ -67,8 +67,6 @@ def describe_authorized_device(id_or_prefix: str) -> None:
         "expires",
         "hostname",
         "os",
-        "zenml_version",
-        "python_version",
     ],
 )
 def list_authorized_devices(

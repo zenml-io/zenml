@@ -575,7 +575,8 @@ def create_run_template(
 
 @pipeline.command("list", help="List all registered pipelines.")
 @list_options(
-    PipelineFilter, default_columns=["id", "name", "user", "created"]
+    PipelineFilter,
+    default_columns=["id", "name", "user", "latest_run_status", "created"],
 )
 def list_pipelines(
     columns: str, output_format: OutputFormat, **kwargs: Any
@@ -642,7 +643,10 @@ def schedule() -> None:
 
 
 @schedule.command("list", help="List all pipeline schedules.")
-@list_options(ScheduleFilter, default_columns=["id", "name"])
+@list_options(
+    ScheduleFilter,
+    default_columns=["id", "name", "pipeline", "cron_expression"],
+)
 def list_schedules(
     columns: str, output_format: OutputFormat, **kwargs: Any
 ) -> None:

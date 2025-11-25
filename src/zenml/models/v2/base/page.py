@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Page model definitions."""
 
-from typing import Any, Dict, Generator, Generic, List, TypeVar
+from typing import Generator, Generic, List, TypeVar
 
 from pydantic import BaseModel
 from pydantic.types import NonNegativeInt, PositiveInt
@@ -42,20 +42,6 @@ class Page(BaseModel, Generic[B]):
             The amount of items in the page.
         """
         return len(self.items)
-
-    @property
-    def pagination_info(self) -> Dict[str, Any]:
-        """Return the pagination info.
-
-        Returns:
-            The pagination info.
-        """
-        return {
-            "index": self.index,
-            "max_size": self.max_size,
-            "total_pages": self.total_pages,
-            "total": self.total,
-        }
 
     def __len__(self) -> int:
         """Return the item count of the page.

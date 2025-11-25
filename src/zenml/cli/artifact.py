@@ -38,7 +38,10 @@ def artifact() -> None:
 
 
 @artifact.command("list", help="List all artifacts.")
-@list_options(ArtifactFilter)
+@list_options(
+    ArtifactFilter,
+    default_columns=["id", "name", "latest_version_name", "tags"],
+)
 def list_artifacts(
     columns: str, output_format: OutputFormat, **kwargs: Any
 ) -> None:
