@@ -56,6 +56,7 @@ from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.prompt import Confirm, Prompt
 from rich.style import Style
+from rich.syntax import Syntax
 from rich.table import Table
 
 from zenml.client import Client
@@ -3142,6 +3143,28 @@ def prepare_output(
         raise ValueError(f"Unsupported output format: {output_format}")
 
 
+def _syntax_highlight(content: str, lexer: str) -> str:
+    """Apply syntax highlighting to content if colors are enabled.
+
+    Args:
+        content: The text content to highlight
+        lexer: The lexer to use (e.g., "json", "yaml")
+
+    Returns:
+        Syntax-highlighted string if colors enabled, otherwise original content
+    """
+    if os.getenv("NO_COLOR"):
+        return content
+
+    syntax = Syntax(
+        content, lexer, theme="ansi_dark", background_color="default"
+    )
+    output_buffer = io.StringIO()
+    temp_console = Console(file=output_buffer, force_terminal=True)
+    temp_console.print(syntax)
+    return output_buffer.getvalue().rstrip()
+
+
 def _render_json(
     data: List[Dict[str, Any]],
     pagination: Optional[Dict[str, Any]] = None,
@@ -3160,7 +3183,8 @@ def _render_json(
     if pagination:
         output["pagination"] = pagination
 
-    return json.dumps(output, indent=2, default=str)
+    json_str = json.dumps(output, indent=2, default=str)
+    return _syntax_highlight(json_str, "json")
 
 
 def _render_yaml(
@@ -3181,7 +3205,8 @@ def _render_yaml(
     if pagination:
         output["pagination"] = pagination
 
-    return yaml.dump(output, default_flow_style=False)
+    yaml_str = yaml.dump(output, default_flow_style=False)
+    return _syntax_highlight(yaml_str, "yaml")
 
 
 def _render_delimited(
