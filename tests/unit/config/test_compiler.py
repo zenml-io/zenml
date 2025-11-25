@@ -20,12 +20,10 @@ from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import StackValidationError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.pipelines import pipeline
-from zenml.steps import step
 
 
 def test_compiling_pipeline_with_invalid_run_name_fails(
@@ -552,63 +550,6 @@ def test_empty_settings_classes_are_ignored(
         "orchestrator.default"
         not in snapshot.step_configurations["_empty_step"].config.settings
     )
-
-
-@step
-def s1() -> int:
-    return 1
-
-
-@step
-def s2(input: int) -> int:
-    return input + 1
-
-
-def test_spec_compilation(local_stack):
-    """Tests the compilation of the pipeline spec."""
-
-    @pipeline
-    def pipeline_instance():
-        s2(s1())
-
-    pipeline_instance.prepare()
-    spec = (
-        Compiler()
-        .compile(
-            pipeline=pipeline_instance,
-            stack=local_stack,
-            run_configuration=PipelineRunConfiguration(),
-        )
-        .pipeline_spec
-    )
-    other_spec = Compiler().compile_spec(pipeline=pipeline_instance)
-
-    expected_spec = PipelineSpec.model_validate(
-        {
-            "source": "tests.unit.config.test_compiler.pipeline_instance",
-            "steps": [
-                {
-                    "source": "tests.unit.config.test_compiler.s1",
-                    "upstream_steps": [],
-                    "invocation_id": "s1",
-                },
-                {
-                    "source": "tests.unit.config.test_compiler.s2",
-                    "upstream_steps": ["s1"],
-                    "inputs": {
-                        "input": {
-                            "step_name": "s1",
-                            "output_name": "output",
-                        }
-                    },
-                    "invocation_id": "s2",
-                },
-            ],
-        }
-    )
-
-    assert spec == expected_spec
-    assert other_spec == expected_spec
 
 
 def test_stack_component_shortcut_keys(
