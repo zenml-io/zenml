@@ -79,10 +79,7 @@ def list_projects(
     row_formatter = partial(
         cli_utils.generate_project_row, active_project_id=active_project_id
     )
-    items = cli_utils.format_page_items(projects, row_formatter, output_format)
-    cli_utils.handle_output(
-        items, projects.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(projects, columns, output_format, row_formatter)
 
 
 @project.command("register")

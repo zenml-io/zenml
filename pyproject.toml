@@ -51,7 +51,7 @@ Repository = "https://github.com/zenml-io/zenml"
 Issues = "https://github.com/zenml-io/zenml/issues"
 
 [project.scripts]
-zenml = "zenml.cli.cli:cli"
+zenml = "zenml_cli:cli"
 
 [project.optional-dependencies]
 local = [

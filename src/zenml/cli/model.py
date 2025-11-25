@@ -108,10 +108,7 @@ def list_models(
         cli_utils.declare("No models found.")
         return
 
-    items = cli_utils.format_page_items(models, output_format=output_format)
-    cli_utils.handle_output(
-        items, models.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(models, columns, output_format)
 
 
 @model.command("register", help="Register a new model.")
@@ -427,12 +424,7 @@ def list_model_versions(
         cli_utils.declare("No model versions found.")
         return
 
-    items = cli_utils.format_page_items(
-        model_versions, output_format=output_format
-    )
-    cli_utils.handle_output(
-        items, model_versions.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(model_versions, columns, output_format)
 
 
 @version.command("update", help="Update an existing model version stage.")
@@ -639,10 +631,7 @@ def _print_artifacts_links_generic(
     cli_utils.title(
         f"{type_} linked to the model version `{model_version.name}[{model_version.number}]`:"
     )
-    items = cli_utils.format_page_items(links, output_format=output_format)
-    cli_utils.handle_output(
-        items, links.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(links, columns, output_format)
 
 
 @model.command(
@@ -789,7 +778,4 @@ def list_model_version_pipeline_runs(
     cli_utils.title(
         f"Pipeline runs linked to the model version `{model_version_response_model.name}[{model_version_response_model.number}]`:"
     )
-    items = cli_utils.format_page_items(runs, output_format=output_format)
-    cli_utils.handle_output(
-        items, runs.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(runs, columns, output_format)

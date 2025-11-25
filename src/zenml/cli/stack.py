@@ -1041,7 +1041,9 @@ def rename_stack(
     print_model_url(get_stack_url(stack_))
 
 
-@stack.command("list")
+@stack.command(
+    "list", help="List all stacks that fulfill the filter requirements."
+)
 @list_options(
     StackFilter,
     default_columns=[
@@ -1099,10 +1101,7 @@ def list_stacks(
     row_formatter = partial(
         cli_utils.generate_stack_row, active_stack_id=active_stack_id
     )
-    items = cli_utils.format_page_items(stacks, row_formatter, output_format)
-    cli_utils.handle_output(
-        items, stacks.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(stacks, columns, output_format, row_formatter)
 
 
 @stack.command(

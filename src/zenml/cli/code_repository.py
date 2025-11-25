@@ -210,10 +210,7 @@ def list_code_repositories(
         cli_utils.declare("No code repositories found for this filter.")
         return
 
-    items = cli_utils.format_page_items(repos, output_format=output_format)
-    cli_utils.handle_output(
-        items, repos.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(repos, columns, output_format)
 
 
 @code_repository.command(

@@ -56,10 +56,7 @@ def list_artifacts(
         cli_utils.declare("No artifacts found.")
         return
 
-    items = cli_utils.format_page_items(artifacts, output_format=output_format)
-    cli_utils.handle_output(
-        items, artifacts.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(artifacts, columns, output_format)
 
 
 @artifact.command("update", help="Update an artifact.")
@@ -140,12 +137,7 @@ def list_artifact_versions(
         cli_utils.declare("No artifact versions found.")
         return
 
-    items = cli_utils.format_page_items(
-        artifact_versions, output_format=output_format
-    )
-    cli_utils.handle_output(
-        items, artifact_versions.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(artifact_versions, columns, output_format)
 
 
 @version.command("describe", help="Show details about an artifact version.")

@@ -210,12 +210,7 @@ def list_service_accounts(
         cli_utils.declare("No service accounts found for the given filters.")
         return
 
-    items = cli_utils.format_page_items(
-        service_accounts, output_format=output_format
-    )
-    cli_utils.handle_output(
-        items, service_accounts.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(service_accounts, columns, output_format)
 
 
 @service_account.command(
@@ -420,10 +415,7 @@ def list_api_keys(
         cli_utils.declare("No API keys found for this filter.")
         return
 
-    items = cli_utils.format_page_items(api_keys, output_format=output_format)
-    cli_utils.handle_output(
-        items, api_keys.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(api_keys, columns, output_format)
 
 
 @api_key.command("update", help="Update an API key.")

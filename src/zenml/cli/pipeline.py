@@ -574,7 +574,9 @@ def create_run_template(
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-@list_options(PipelineFilter, default_columns=["id", "name", "num_runs"])
+@list_options(
+    PipelineFilter, default_columns=["id", "name", "user", "created"]
+)
 def list_pipelines(
     columns: str, output_format: OutputFormat, **kwargs: Any
 ) -> None:
@@ -593,10 +595,7 @@ def list_pipelines(
         cli_utils.declare("No pipelines found for this filter.")
         return
 
-    items = cli_utils.format_page_items(pipelines, output_format=output_format)
-    cli_utils.handle_output(
-        items, pipelines.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(pipelines, columns, output_format)
 
 
 @pipeline.command("delete")
@@ -660,10 +659,7 @@ def list_schedules(
         cli_utils.declare("No schedules found for this filter.")
         return
 
-    items = cli_utils.format_page_items(schedules, output_format=output_format)
-    cli_utils.handle_output(
-        items, schedules.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(schedules, columns, output_format)
 
 
 @schedule.command("update", help="Update a pipeline schedule.")
@@ -763,11 +759,11 @@ def list_pipeline_runs(
         cli_utils.declare("No pipeline runs found for this filter.")
         return
 
-    items = cli_utils.format_page_items(
-        pipeline_runs, cli_utils.generate_pipeline_run_row, output_format
-    )
-    cli_utils.handle_output(
-        items, pipeline_runs.pagination_info, columns, output_format
+    cli_utils.print_page(
+        pipeline_runs,
+        columns,
+        output_format,
+        cli_utils.generate_pipeline_run_row,
     )
 
 
@@ -923,12 +919,7 @@ def list_pipeline_builds(
         cli_utils.declare("No pipeline builds found for this filter.")
         return
 
-    items = cli_utils.format_page_items(
-        pipeline_builds, output_format=output_format
-    )
-    cli_utils.handle_output(
-        items, pipeline_builds.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(pipeline_builds, columns, output_format)
 
 
 @builds.command("delete")
@@ -1297,12 +1288,7 @@ def list_pipeline_snapshots(
         cli_utils.declare("No pipeline snapshots found for this filter.")
         return
 
-    items = cli_utils.format_page_items(
-        pipeline_snapshots, output_format=output_format
-    )
-    cli_utils.handle_output(
-        items, pipeline_snapshots.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(pipeline_snapshots, columns, output_format)
 
 
 @snapshot.command("delete", help="Delete a pipeline snapshot.")

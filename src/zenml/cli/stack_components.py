@@ -14,6 +14,7 @@
 """Functionality to generate stack component CLI commands."""
 
 import time
+from functools import partial
 from importlib import import_module
 from typing import Any, Callable, List, Optional, Tuple, cast
 from uuid import UUID
@@ -203,18 +204,12 @@ def generate_stack_component_list_command(
                     active_component_id = None
             else:
                 active_component_id = None
-
-            from functools import partial
-
             row_formatter = partial(
                 cli_utils.generate_component_row,
                 active_component_id=active_component_id,
             )
-            items = cli_utils.format_page_items(
-                components, row_formatter, output_format
-            )
-            cli_utils.handle_output(
-                items, components.pagination_info, columns, output_format
+            cli_utils.print_page(
+                components, columns, output_format, row_formatter
             )
 
     return list_stack_components_command

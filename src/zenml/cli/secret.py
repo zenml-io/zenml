@@ -26,11 +26,10 @@ from zenml.cli.utils import (
     declare,
     error,
     expand_argument_value_from_file,
-    format_page_items,
-    handle_output,
     list_options,
     parse_name_and_extra_arguments,
     pretty_print_secret,
+    print_page,
     validate_keys,
     warning,
 )
@@ -188,8 +187,7 @@ def list_secrets(
         warning("No secrets found for the given filters.")
         return
 
-    items = format_page_items(secrets, output_format=output_format)
-    handle_output(items, secrets.pagination_info, columns, output_format)
+    print_page(secrets, columns, output_format)
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")

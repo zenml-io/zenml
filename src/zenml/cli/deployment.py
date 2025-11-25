@@ -106,11 +106,8 @@ def list_deployments(
         cli_utils.declare("No deployments found for this filter.")
         return
 
-    items = cli_utils.format_page_items(
-        deployments, cli_utils.generate_deployment_row, output_format
-    )
-    cli_utils.handle_output(
-        items, deployments.pagination_info, columns, output_format
+    cli_utils.print_page(
+        deployments, columns, output_format, cli_utils.generate_deployment_row
     )
 
 

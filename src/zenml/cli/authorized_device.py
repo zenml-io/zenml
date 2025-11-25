@@ -88,10 +88,7 @@ def list_authorized_devices(
         cli_utils.declare("No authorized devices found for this filter.")
         return
 
-    items = cli_utils.format_page_items(devices, output_format=output_format)
-    cli_utils.handle_output(
-        items, devices.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(devices, columns, output_format)
 
 
 @authorized_device.command("lock")

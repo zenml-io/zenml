@@ -2583,8 +2583,7 @@ def list_options(
     output formatting options (--columns, --output). The decorated function
     receives these as regular parameters - no magic interception!
 
-    The function should explicitly call format_page_items() and handle_output()
-    to render results.
+    The function should call print_page() to render results.
 
     Args:
         filter_model: The filter model to generate filter options from.
@@ -2601,8 +2600,7 @@ def list_options(
             if not stacks.items:
                 declare("No stacks found")
                 return
-            items = format_page_items(stacks, output_format=output_format)
-            handle_output(items, stacks.pagination_info, columns, output_format)
+            print_page(stacks, columns, output_format)
         ```
     """
 
@@ -2960,8 +2958,9 @@ def format_page_items(
 ) -> List[Dict[str, Any]]:
     """Convert a Page of response models to a list of dicts for display.
 
-    This is a convenience helper that combines prepare_response_data with
-    optional custom formatting. Use this to simplify list commands.
+    This is a lower-level helper that combines prepare_response_data with
+    optional custom formatting. For most use cases, prefer print_page() which
+    handles both formatting and output in a single call.
 
     Args:
         page: Page of response items to convert.
@@ -2974,7 +2973,12 @@ def format_page_items(
 
     Example:
         ```python
+        # Prefer print_page() for simple cases:
+        print_page(stacks_page, columns, output_format, generate_stack_row)
+
+        # Use format_page_items() when you need to modify items before output:
         items = format_page_items(stacks_page, generate_stack_row, output_format)
+        # ... modify items ...
         handle_output(items, stacks_page.pagination_info, columns, output_format)
         ```
     """
@@ -2987,6 +2991,30 @@ def format_page_items(
                 item_data.update(additional_data)
         result.append(item_data)
     return result
+
+
+def print_page(
+    page: Page[AnyResponse],
+    columns: str,
+    output_format: OutputFormat,
+    row_formatter: Optional[
+        Callable[[Any, OutputFormat], Dict[str, Any]]
+    ] = None,
+) -> None:
+    """Format and print a page of response items.
+
+    This is a convenience function that combines format_page_items and
+    handle_output into a single call for cleaner CLI command implementations.
+
+    Args:
+        page: Page of response items to display.
+        columns: Comma-separated column names. If empty, all columns are shown.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        row_formatter: Optional function to add custom fields to each row.
+            Should accept (item, output_format) and return a dict of additional fields.
+    """
+    items = format_page_items(page, row_formatter, output_format)
+    handle_output(items, page.pagination_info, columns, output_format)
 
 
 def handle_output(
@@ -3003,7 +3031,7 @@ def handle_output(
     Args:
         data: List of dictionaries to render
         pagination_info: Info about the pagination
-        output_format: Optional output format (table, json, yaml, tsv, csv).
+        output_format: Output format (table, json, yaml, tsv, csv).
         columns: Comma-separated column names. If empty, all columns are shown.
     """
     cli_output = prepare_output(

@@ -14,6 +14,7 @@
 """Service connector CLI commands."""
 
 from datetime import datetime
+from functools import partial
 from typing import Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
@@ -1039,19 +1040,11 @@ def list_service_connectors(
         connectors.items.sort(key=lambda c: c.id not in active_connector_ids)
     else:
         active_connector_ids = None
-
-    from functools import partial
-
     row_formatter = partial(
         cli_utils.generate_connector_row,
         active_connector_ids=active_connector_ids,
     )
-    items = cli_utils.format_page_items(
-        connectors, row_formatter, output_format
-    )
-    cli_utils.handle_output(
-        items, connectors.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(connectors, columns, output_format, row_formatter)
 
 
 @service_connector.command(

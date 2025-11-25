@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
+from functools import partial
 from typing import Any, Optional
 
 import click
@@ -116,16 +117,10 @@ def list_users(
     else:
         active_user_id = None
 
-    # Format and output
-    from functools import partial
-
     row_formatter = partial(
         cli_utils.generate_user_row, active_user_id=active_user_id
     )
-    items = cli_utils.format_page_items(users, row_formatter, output_format)
-    cli_utils.handle_output(
-        items, users.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(users, columns, output_format, row_formatter)
 
 
 @user.command(

@@ -58,10 +58,7 @@ def list_tags(
         cli_utils.declare("No tags found.")
         return
 
-    items = cli_utils.format_page_items(tags, output_format=output_format)
-    cli_utils.handle_output(
-        items, tags.pagination_info, columns, output_format
-    )
+    cli_utils.print_page(tags, columns, output_format)
 
 
 @tag.command("register", help="Register a new tag.")
