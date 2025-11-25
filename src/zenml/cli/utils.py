@@ -3278,10 +3278,10 @@ def _render_table(
     estimated_width = sum(longest_values.values()) + (len(headers) * 3)
 
     if estimated_width > console_width:
-        warning(
+        declare(
             "Large tables may wrap, truncate, or hide columns depending on terminal "
             "width.\n"
-            "- Use --output=json|yaml|csv|tsv for full data\n"
+            "- Use --output =json|yaml|csv|tsv for full data\n"
             "- Or optionally limit visible columns with --columns\n"
         )
 
@@ -3291,10 +3291,9 @@ def _render_table(
         show_lines=False,
         pad_edge=False,
         collapse_padding=False,
-        expand=True,
+        expand=False,
         show_edge=False,
         header_style="bold",
-        width=console_width,
         title=title,
         caption=caption,
     )

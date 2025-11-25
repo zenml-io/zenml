@@ -119,7 +119,10 @@ def version() -> None:
 
 
 @version.command("list", help="List all artifact versions.")
-@list_options(ArtifactVersionFilter)
+@list_options(
+    ArtifactVersionFilter,
+    default_columns=["id", "artifact", "version", "type"],
+)
 def list_artifact_versions(
     columns: str, output_format: OutputFormat, **kwargs: Any
 ) -> None:

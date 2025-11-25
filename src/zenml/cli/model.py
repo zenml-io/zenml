@@ -406,7 +406,9 @@ def version() -> None:
 
 
 @version.command("list", help="List model versions with filter.")
-@list_options(ModelVersionFilter)
+@list_options(
+    ModelVersionFilter, default_columns=["id", "model", "number", "stage"]
+)
 def list_model_versions(
     columns: str, output_format: OutputFormat, **kwargs: Any
 ) -> None:
