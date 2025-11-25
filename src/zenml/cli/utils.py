@@ -42,6 +42,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    get_args,
 )
 from uuid import UUID
 
@@ -59,6 +60,8 @@ from rich.table import Table
 from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
+    ENV_ZENML_CLI_COLUMN_WIDTH,
+    ENV_ZENML_DEFAULT_OUTPUT,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
     handle_int_env_var,
@@ -135,20 +138,10 @@ AnyResponse = TypeVar(
 )
 OutputFormat = Literal["table", "json", "yaml", "csv", "tsv"]
 
-
-ENV_ZENML_DEFAULT_OUTPUT = "ZENML_DEFAULT_OUTPUT"
-ENV_ZENML_CLI_COLUMN_WIDTH = "ZENML_CLI_COLUMN_WIDTH"
 MAX_ARGUMENT_VALUE_SIZE = 10240
-ALLOWED_OUTPUT_FORMATS: Tuple[str, ...] = (
-    "table",
-    "json",
-    "yaml",
-    "csv",
-    "tsv",
-)
 
 
-T = TypeVar("T", bound=BaseIdentifiedResponse[Any, Any, Any])
+T = TypeVar("T", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 
 
 def title(text: str) -> None:
@@ -281,7 +274,8 @@ def print_table(
     obj: List[Dict[str, Any]],
     title: Optional[str] = None,
     caption: Optional[str] = None,
-    **columns: table.Column,
+    columns: Optional[Dict[str, Union[table.Column, str]]] = None,
+    **kwargs: table.Column,
 ) -> None:
     """Prints a list of dicts as a table.
 
@@ -289,19 +283,31 @@ def print_table(
         obj: A List containing dictionaries.
         title: Title of the table.
         caption: Caption of the table.
-        columns: Optional column configurations to be used in the table.
+        columns: Optional mapping of data keys to column configurations.
+            Values can be either a rich Column object (uses .header for display)
+            or a string (used directly as the header). Keys not in this mapping
+            will use the uppercased key as the header.
+        **kwargs: Deprecated. Use `columns` dict instead. Kept for backward
+            compatibility.
     """
-    data = obj
+    all_columns: Dict[str, Union[table.Column, str]] = dict(kwargs)
     if columns:
+        all_columns.update(columns)
+
+    data = obj
+    if all_columns:
         data = []
         for row in obj:
             new_row = {}
             for k, v in row.items():
-                col_val = columns.get(k, k.upper())
-                header = (
-                    col_val.header if hasattr(col_val, "header") else col_val
-                )
-                new_row[str(header)] = v
+                col_config = all_columns.get(k)
+                if col_config is None:
+                    header = k.upper()
+                elif isinstance(col_config, table.Column):
+                    header = str(col_config.header)
+                else:
+                    header = str(col_config)
+                new_row[header] = v
             data.append(new_row)
 
     if not data:
@@ -2862,31 +2868,18 @@ def requires_mac_env_var_warning() -> bool:
     return False
 
 
-def get_default_output_format() -> str:
+def get_default_output_format() -> OutputFormat:
     """Get the default output format from environment variable.
 
     Returns:
-        The default output format, falling back to "table" if not configured.
+        The default output format, falling back to "table" if not configured
+        or if the configured value is invalid.
     """
-    return os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
-
-
-def _normalize_output_format(output_format: str) -> OutputFormat:
-    """Validate and normalize output format values for typing.
-
-    Args:
-        output_format: The output format to normalize.
-
-    Returns:
-        The normalized output format.
-    """
-    if output_format not in ALLOWED_OUTPUT_FORMATS:
-        logger.warning(
-            "Unsupported output format '%s', falling back to table.",
-            output_format,
-        )
-        return "table"
-    return cast(OutputFormat, output_format)
+    value = os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
+    valid_formats = get_args(OutputFormat)
+    if value in valid_formats:
+        return cast(OutputFormat, value)
+    return "table"
 
 
 def _simplify_value(value: Any) -> Any:
@@ -2906,7 +2899,7 @@ def _simplify_value(value: Any) -> Any:
     if isinstance(value, list):
         if not value:
             return value
-        if isinstance(value[0], dict) and "name" in value[0]:
+        if all(isinstance(item, dict) and "name" in item for item in value):
             return [item["name"] for item in value]
         return [_simplify_value(item) for item in value]
 
@@ -3037,7 +3030,7 @@ def prepare_output(
     output_format: OutputFormat = "table",
     columns: Optional[str] = None,
     pagination: Optional[Dict[str, Any]] = None,
-) -> Optional[str]:
+) -> str:
     """Render data in specified format following ZenML CLI table guidelines.
 
     This function provides a centralized way to render tabular data across
@@ -3048,10 +3041,11 @@ def prepare_output(
         data: List of dictionaries to render.
         output_format: Output format (`table`, `json`, `yaml`, `tsv`, `csv`).
         columns: Optional comma-separated list of column names to include.
+            Unrecognized column names will trigger a warning.
         pagination: Optional pagination metadata for JSON/YAML output.
 
     Returns:
-        The rendered output in the specified format or None/empty string if
+        The rendered output in the specified format, or empty string if
         no data is provided.
 
     Raises:
@@ -3063,28 +3057,38 @@ def prepare_output(
     if columns:
         requested_cols = [c.strip() for c in columns.split(",")]
         available_keys = list(data[0].keys())
-        col_mapping = {}
+        col_mapping: Dict[str, str] = {}
+        unmatched_cols: List[str] = []
 
         for req_col in requested_cols:
             req_normalized = req_col.lower().replace("_", " ")
             if req_col in available_keys:
                 col_mapping[req_col] = req_col
             else:
+                matched = False
                 for key in available_keys:
                     key_normalized = key.lower().replace("_", " ")
                     if req_normalized == key_normalized:
                         col_mapping[req_col] = key
+                        matched = True
                         break
+                if not matched:
+                    unmatched_cols.append(req_col)
+
+        if unmatched_cols:
+            available_display = ", ".join(sorted(available_keys))
+            warning(
+                f"Unknown column(s) ignored: {', '.join(unmatched_cols)}. "
+                f"Available: {available_display}"
+            )
 
         selected_columns = list(col_mapping.values())
     else:
         selected_columns = list(data[0].keys())
 
-    filtered_data = []
-    for entry in data:
-        filtered_data.append(
-            {k: entry[k] for k in selected_columns if k in entry}
-        )
+    filtered_data = [
+        {k: entry[k] for k in selected_columns if k in entry} for entry in data
+    ]
 
     if output_format == "json":
         return _render_json(filtered_data, pagination=pagination)
