@@ -7183,6 +7183,8 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if run_metadata.resources:
+                from zenml.utils.json_utils import pydantic_encoder
+
                 for key, value in run_metadata.values.items():
                     type_ = run_metadata.types[key]
 
@@ -7191,7 +7193,7 @@ class SqlZenStore(BaseZenStore):
                         user_id=run_metadata.user,
                         stack_component_id=run_metadata.stack_component_id,
                         key=key,
-                        value=json.dumps(value),
+                        value=json.dumps(value, default=pydantic_encoder),
                         type=type_,
                         publisher_step_id=run_metadata.publisher_step_id,
                     )
