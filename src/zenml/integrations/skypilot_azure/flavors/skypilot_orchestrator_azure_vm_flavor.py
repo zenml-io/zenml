@@ -58,6 +58,15 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
         return SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR
 
     @property
+    def display_name(self) -> str:
+        """Display name of the orchestrator flavor.
+
+        Returns:
+            Display name of the orchestrator flavor.
+        """
+        return "Skypilot Azure"
+
+    @property
     def service_connector_requirements(
         self,
     ) -> Optional[ServiceConnectorRequirements]:

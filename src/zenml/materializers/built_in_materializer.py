@@ -555,3 +555,66 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             return hash_.hexdigest()
 
         return None
+
+    def get_item_count(self, data: Any) -> Optional[int]:
+        """Get the number of items for the given data.
+
+        Args:
+            data: The data to get the number of items for.
+
+        Returns:
+            The number of items for the given data.
+        """
+        if isinstance(data, (list, tuple)):
+            return len(data)
+        return None
+
+    def load_item(self, data_type: Type[Any], index: int) -> Any:
+        """Load a specific item of the data.
+
+        Args:
+            data_type: The type of the data to load.
+            index: The index of the item to load.
+
+        Raises:
+            RuntimeError: If the metadata format is not supported.
+
+        Returns:
+            The loaded item.
+        """
+        if self.artifact_store.exists(self.data_path):
+            data = yaml_utils.read_json(self.data_path)
+            item = data[index]
+        else:
+            metadata = yaml_utils.read_json(self.metadata_path)
+
+            if isinstance(metadata, list):
+                metadata_entry = metadata[index]
+                path_ = metadata_entry["path"]
+                type_ = source_utils.load(metadata_entry["type"])
+                materializer_class = source_utils.load(
+                    metadata_entry["materializer"]
+                )
+                materializer = materializer_class(
+                    uri=path_, artifact_store=self.artifact_store
+                )
+                item = materializer.load(type_)
+            else:
+                raise RuntimeError(f"Unknown metadata format: {metadata}.")
+
+        if not isinstance(item, data_type):
+            try:
+                item = data_type(item)
+            except Exception as e:
+                # We only log an error here, potentially pydantic can handle the
+                # conversion when validating step function inputs.
+                logger.error(
+                    "Failed to convert item `%s` to expected type `%s`. This "
+                    "is most likely due to a mismatching type annotation on "
+                    "your step function input. Error: %s",
+                    item,
+                    data_type.__name__,
+                    e,
+                )
+
+        return item

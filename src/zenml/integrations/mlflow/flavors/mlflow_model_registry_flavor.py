@@ -44,6 +44,15 @@ class MLFlowModelRegistryFlavor(BaseModelRegistryFlavor):
         return MLFLOW_MODEL_REGISTRY_FLAVOR
 
     @property
+    def display_name(self) -> str:
+        """Display name of the flavor.
+
+        Returns:
+            The display name of the flavor.
+        """
+        return "MLflow"
+
+    @property
     def docs_url(self) -> Optional[str]:
         """A url to point at docs explaining this flavor.
 
