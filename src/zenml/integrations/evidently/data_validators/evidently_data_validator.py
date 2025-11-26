@@ -223,6 +223,7 @@ class EvidentlyDataValidator(BaseDataValidator):
             The Evidently Report as JSON object and as HTML.
         """
         from evidently.legacy.report import Report
+
         from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 
         self._set_nltk_data_path()
@@ -275,6 +276,7 @@ class EvidentlyDataValidator(BaseDataValidator):
             The Evidently Test Suite as JSON object and as HTML.
         """
         from evidently.legacy.test_suite import TestSuite
+
         from zenml.integrations.evidently.tests import EvidentlyTestConfig
 
         if download_nltk_data:
