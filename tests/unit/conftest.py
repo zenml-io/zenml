@@ -33,6 +33,7 @@ from zenml.enums import (
     ArtifactType,
     ExecutionStatus,
     ServiceState,
+    StepRunInputArtifactType,
 )
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
@@ -79,6 +80,7 @@ from zenml.models.v2.core.service import (
     ServiceResponseBody,
     ServiceResponseMetadata,
 )
+from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.models.v2.misc.service import ServiceType
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
@@ -512,6 +514,17 @@ def sample_artifact_version_model(
             save_type=ArtifactSaveType.STEP_OUTPUT,
         ),
         metadata=ArtifactVersionResponseMetadata(),
+    )
+
+
+@pytest.fixture
+def sample_step_run_input_response(
+    sample_artifact_version_model: ArtifactVersionResponse,
+) -> StepRunInputResponse:
+    """Return a sample step run input response model for testing purposes."""
+    return StepRunInputResponse(
+        input_type=StepRunInputArtifactType.STEP_OUTPUT,
+        **sample_artifact_version_model.model_dump(),
     )
 
 

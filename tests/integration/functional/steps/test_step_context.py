@@ -102,7 +102,7 @@ def output_metadata_logging_step() -> Annotated[int, "my_output"]:
 @step
 def step_context_metadata_reader_step(my_input: int) -> None:
     step_context = get_step_context()
-    my_input_metadata = step_context.inputs["my_input"].run_metadata
+    my_input_metadata = step_context.inputs["my_input"][0].run_metadata
     assert my_input_metadata["some_key"] == "some_value"
 
 

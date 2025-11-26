@@ -96,6 +96,90 @@ Use `runtime="inline"` when you need:
 - Shared resources with the orchestrator
 - Sequential execution
 
+### Map/Reduce over collections
+
+Dynamic pipelines support a high-level map/reduce pattern over sequence-like step outputs. This lets you fan out a step across items of a collection and then reduce the results without manually writing loops or loading data in the orchestration environment.
+
+```python
+from zenml import pipeline, step
+
+@step
+def producer() -> list[int]:
+    return [1, 2, 3]
+
+@step
+def worker(value: int) -> int:
+    return value * 2
+
+@step
+def reducer(values: list[int]) -> int:
+    return sum(values)
+
+@pipeline(dynamic=True, enable_cache=False)
+def map_reduce():
+    values = producer()
+    results = worker.map(values)   # fan out over collection
+    reducer(results)               # pass list of artifacts directly
+```
+
+Key points:
+- `step.map(...)` fans out a step over sequence-like inputs.
+- Steps can accept lists of artifacts directly as inputs (useful for reducers).
+- You can pass the mapped output directly to a downstream step without loading in the orchestration environment.
+
+#### Mapping semantics: map vs product
+
+- `step.map(...)`: If multiple sequence-like inputs are provided, all must have the same length `n`. ZenML creates `n` mapped steps where the i-th step receives the i-th element from each input.
+- `step.product(...)`: Creates a mapped step for each combination of elements across all input sequences (cartesian product).
+
+Example (cartesian product):
+
+```python
+from zenml import pipeline, step
+
+@step
+def int_values() -> list[int]:
+    return [1, 2]
+
+@step
+def str_values() -> list[str]:
+    return ["a", "b", "c"]
+
+@step
+def do_something(a: int, b: str) -> int:
+    ...
+
+@pipeline(dynamic=True)
+def cartesian_example():
+    a = int_values()
+    b = str_values()
+    # Produces 2 * 3 = 6 mapped steps
+    combine.product(a, b)
+```
+
+#### Broadcasting inputs with unmapped(...)
+
+If you want to pass a sequence-like artifact as a whole to each mapped invocation (i.e., avoid splitting), wrap it with `unmapped(...)`:
+
+```python
+from zenml import pipeline, step, unmapped
+
+@step
+def producer(length: int) -> list[int]:
+    return [1] * length
+
+@step
+def consumer(a: int, b: list[int]) -> None:
+    # `b` is the full list for every mapped call
+    ...
+
+@pipeline(dynamic=True)
+def unmapped_example():
+    a = producer(length=3)   # list of 3 ints
+    b = producer(length=4)   # list of 4 ints
+    consumer.map(a=a, b=unmapped(b))
+```
+
 ### Parallel Step Execution
 
 Dynamic pipelines support true parallel execution using `step.submit()`. This method returns a `StepRunFuture` that you can use to wait for results or pass to downstream steps:
@@ -204,6 +288,11 @@ def dynamic_pipeline():
 ### Artifact Loading
 
 When you call `.load()` on an artifact in a dynamic pipeline, it synchronously loads the data. For large artifacts or when you want to maintain parallelism, consider passing the step outputs (future or artifact) directly to downstream steps instead of loading them.
+
+### Mapping Limitations
+
+- Mapping is currently supported only over artifacts produced within the same pipeline run (mapping over raw data or external artifacts is not supported).
+- Chunk size for mapped collection loading defaults to 1 and is not yet configurable.
 
 ## Best Practices
 

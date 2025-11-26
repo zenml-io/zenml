@@ -407,6 +407,8 @@ class InputSpec(FrozenBaseModel):
 
     step_name: str
     output_name: str
+    chunk_index: Optional[int] = None
+    chunk_size: Optional[int] = None
 
 
 class StepSpec(FrozenBaseModel):
@@ -414,17 +416,43 @@ class StepSpec(FrozenBaseModel):
 
     source: SourceWithValidator
     upstream_steps: List[str]
-    inputs: Dict[str, InputSpec] = {}
+    # TODO: This should be `Dict[str, List[InputSpec]]`, but that would break
+    # client-server compatibility. In the next major release, change this and
+    # uncomment the code that migrates legacy specs.
+    inputs: Dict[str, Union[List[InputSpec], InputSpec]] = {}
     invocation_id: str
     enable_heartbeat: bool = False
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _migrate_invocation_id(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _migrate_legacy_fields(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         if "invocation_id" not in data:
             data["invocation_id"] = data.pop("pipeline_parameter_name", "")
+
+        # converted_inputs = {}
+        # for key, value in data.get("inputs", {}).items():
+        #     if isinstance(value, (InputSpec, dict)):
+        #         converted_inputs[key] = [value]
+        #     else:
+        #         converted_inputs[key] = value
+        # data["inputs"] = converted_inputs
+
         return data
+
+    # TODO: Remove this and use the `inputs` property once we change the type
+    # of the `inputs` field.
+    @property
+    def inputs_v2(self) -> Dict[str, List[InputSpec]]:
+        """Inputs of the step spec in v2 format.
+
+        Returns:
+            The inputs of the step spec in v2 format.
+        """
+        return {
+            key: [value] if isinstance(value, InputSpec) else value
+            for key, value in self.inputs.items()
+        }
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same step.
@@ -445,7 +473,7 @@ class StepSpec(FrozenBaseModel):
             if self.upstream_steps != other.upstream_steps:
                 return False
 
-            if self.inputs != other.inputs:
+            if self.inputs_v2 != other.inputs_v2:
                 return False
 
             if self.invocation_id != other.invocation_id:
