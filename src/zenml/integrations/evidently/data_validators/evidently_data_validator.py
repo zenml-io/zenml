@@ -25,11 +25,13 @@ from typing import (
 )
 
 import pandas as pd
-from evidently.legacy.pipeline.column_mapping import (
-    ColumnMapping,  # type: ignore
+from evidently.legacy.pipeline.column_mapping import (  # type: ignore[import-untyped]
+    ColumnMapping,
 )
-from evidently.legacy.report import Report  # type: ignore
-from evidently.legacy.test_suite import TestSuite  # type: ignore
+from evidently.legacy.report import Report  # type: ignore[import-untyped]
+from evidently.legacy.test_suite import (  # type: ignore[import-untyped]
+    TestSuite,
+)
 
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.integrations.evidently.flavors.evidently_data_validator_flavor import (
