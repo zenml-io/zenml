@@ -40,6 +40,7 @@ from zenml.exceptions import (
     IllegalOperationError,
 )
 from zenml.logger import get_logger
+from zenml.login.credentials_store import get_credentials_store
 from zenml.login.credentials import ServerType
 from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.web_login import web_login
@@ -48,6 +49,8 @@ from zenml.utils.server_utils import (
     connected_to_local_server,
     get_local_server,
 )
+from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
 
 logger = get_logger(__name__)
 
@@ -237,15 +240,10 @@ def connect_to_server(
         pro_server: Whether the server is a ZenML Pro server.
         project: Name or ID of the project to set active after connecting.
     """
-    from zenml.login.credentials_store import get_credentials_store
-    from zenml.zen_stores.base_zen_store import BaseZenStore
-
     url = url.rstrip("/")
 
     store_type = BaseZenStore.get_store_type(url)
     if store_type == StoreType.REST:
-        from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
-
         credentials_store = get_credentials_store()
         if api_key:
             cli_utils.declare(
@@ -333,7 +331,6 @@ def connect_to_pro_server(
         AuthorizationException: If the user does not have access to the ZenML
             Pro server.
     """
-    from zenml.login.credentials_store import get_credentials_store
     from zenml.login.pro.client import ZenMLProClient
     from zenml.login.pro.workspace.models import WorkspaceStatus
 
@@ -551,7 +548,6 @@ def is_pro_server(
         extracted pro API URL if the server is a ZenML Pro server, or None if
         no information could be extracted.
     """
-    from zenml.login.credentials_store import get_credentials_store
     from zenml.login.server_info import get_server_info
 
     url = url.rstrip("/")
@@ -1194,8 +1190,6 @@ def logout(
         pro: Log out from ZenML Pro.
         pro_api_url: Custom URL for the ZenML Pro API.
     """
-    from zenml.login.credentials_store import get_credentials_store
-
     _fail_if_authentication_environment_variables_set()
 
     credentials_store = get_credentials_store()

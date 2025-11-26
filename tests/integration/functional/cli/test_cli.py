@@ -12,13 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import importlib
 import os
 
 import click
 import pytest
 from click.testing import CliRunner
 
-from zenml.cli import login as login_module
 from zenml.cli.cli import ZenMLCLI, cli
 from zenml.cli.formatter import ZenFormatter
 from zenml.enums import StoreType
@@ -105,6 +105,7 @@ def _mock_rest_store_environment(mocker):
 def test_connect_to_server_sets_project_after_success(mocker):
     """Project flag should set the active project after connecting."""
     _mock_rest_store_environment(mocker)
+    login_module = importlib.import_module("zenml.cli.login")
     mock_gc = mocker.patch("zenml.cli.login.GlobalConfiguration")
     mock_gc.return_value.set_store.return_value = None
     mock_set_project = mocker.patch("zenml.cli.login._set_active_project")
@@ -120,6 +121,7 @@ def test_connect_to_server_sets_project_after_success(mocker):
 def test_connect_to_server_does_not_set_project_on_failure(mocker):
     """Project change should be skipped if connecting to the store fails."""
     _mock_rest_store_environment(mocker)
+    login_module = importlib.import_module("zenml.cli.login")
     mock_gc = mocker.patch("zenml.cli.login.GlobalConfiguration")
     mock_gc.return_value.set_store.side_effect = IllegalOperationError("boom")
     mock_set_project = mocker.patch("zenml.cli.login._set_active_project")
