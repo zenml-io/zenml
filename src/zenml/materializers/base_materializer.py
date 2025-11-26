@@ -240,6 +240,38 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         return None
 
+    def get_item_count(self, data: Any) -> Optional[int]:
+        """Get the number of items for the given data.
+
+        Note: The output value of this method is used when mapping over this
+        artifact. If a materializer implements this method, it must also
+        implement the `load_item` method to load specific items of the data.
+
+        Args:
+            data: The data to get the number of items for.
+
+        Returns:
+            The number of items for the given data.
+        """
+        return None
+
+    def load_item(self, data_type: Type[Any], index: int) -> Any:
+        """Load a specific item of the data.
+
+        Args:
+            data_type: The type of the data to load.
+            index: The index of the item to load.
+
+        Raises:
+            NotImplementedError: If the materializer does not support item
+                loading.
+        """
+        # TODO: Add a `load_slice` method once we add support for multi-item
+        # chunks.
+        raise NotImplementedError(
+            f"The {self.__class__.__name__} does not support loading items."
+        )
+
     # ================
     # Internal Methods
     # ================

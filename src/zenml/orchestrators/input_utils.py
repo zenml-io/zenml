@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -30,7 +30,7 @@ def resolve_step_inputs(
     step: "Step",
     pipeline_run: "PipelineRunResponse",
     step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
-) -> Dict[str, "StepRunInputResponse"]:
+) -> Dict[str, List["StepRunInputResponse"]]:
     """Resolves inputs for the current step.
 
     Args:
@@ -56,7 +56,9 @@ def resolve_step_inputs(
     step_runs = step_runs or {}
 
     steps_to_fetch = set(
-        input_.step_name for input_ in step.spec.inputs.values()
+        input_.step_name
+        for input_list in step.spec.inputs_v2.values()
+        for input_ in input_list
     )
     # Remove all the step runs that we've already fetched.
     steps_to_fetch.difference_update(step_runs.keys())
@@ -68,45 +70,56 @@ def resolve_step_inputs(
             )
         )
 
-    input_artifacts: Dict[str, StepRunInputResponse] = {}
-    for name, input_ in step.spec.inputs.items():
-        try:
-            step_run = step_runs[input_.step_name]
-        except KeyError:
-            raise InputResolutionError(
-                f"No step `{input_.step_name}` found in current run."
+    input_artifacts: Dict[str, List[StepRunInputResponse]] = {}
+    for name, input_list in step.spec.inputs_v2.items():
+        input_artifacts[name] = []
+        for index, input_ in enumerate(input_list):
+            try:
+                step_run = step_runs[input_.step_name]
+            except KeyError:
+                raise InputResolutionError(
+                    f"No step `{input_.step_name}` found in current run."
+                )
+
+            output_name = string_utils.format_name_template(
+                input_.output_name, substitutions=step_run.substitutions
             )
 
-        output_name = string_utils.format_name_template(
-            input_.output_name, substitutions=step_run.substitutions
-        )
+            try:
+                output = step_run.regular_outputs[output_name]
+            except KeyError:
+                raise InputResolutionError(
+                    f"No step output `{output_name}` found for step "
+                    f"`{input_.step_name}`."
+                )
+            except ValueError:
+                raise InputResolutionError(
+                    f"Expected 1 regular output artifact for {output_name}."
+                )
 
-        try:
-            output = step_run.regular_outputs[output_name]
-        except KeyError:
-            raise InputResolutionError(
-                f"No step output `{output_name}` found for step "
-                f"`{input_.step_name}`."
+            input_artifacts[name].append(
+                StepRunInputResponse(
+                    input_type=StepRunInputArtifactType.STEP_OUTPUT,
+                    index=index,
+                    chunk_index=input_.chunk_index,
+                    chunk_size=input_.chunk_size,
+                    **output.model_dump(),
+                )
             )
-        except ValueError:
-            raise InputResolutionError(
-                f"Expected 1 regular output artifact for {output_name}."
-            )
-
-        input_artifacts[name] = StepRunInputResponse(
-            input_type=StepRunInputArtifactType.STEP_OUTPUT,
-            **output.model_dump(),
-        )
 
     for (
         name,
         external_artifact,
     ) in step.config.external_input_artifacts.items():
         artifact_version_id = external_artifact.get_artifact_version_id()
-        input_artifacts[name] = StepRunInputResponse(
-            input_type=StepRunInputArtifactType.EXTERNAL,
-            **Client().get_artifact_version(artifact_version_id).model_dump(),
-        )
+        input_artifacts[name] = [
+            StepRunInputResponse(
+                input_type=StepRunInputArtifactType.EXTERNAL,
+                **Client()
+                .get_artifact_version(artifact_version_id)
+                .model_dump(),
+            )
+        ]
 
     for name, config_ in step.config.model_artifacts_or_metadata.items():
         err_msg = ""
@@ -136,10 +149,12 @@ def resolve_step_inputs(
                     config_.artifact_name, config_.artifact_version
                 ):
                     if config_.metadata_name is None:
-                        input_artifacts[name] = StepRunInputResponse(
-                            input_type=StepRunInputArtifactType.LAZY_LOADED,
-                            **artifact_.model_dump(),
-                        )
+                        input_artifacts[name] = [
+                            StepRunInputResponse(
+                                input_type=StepRunInputArtifactType.LAZY_LOADED,
+                                **artifact_.model_dump(),
+                            )
+                        ]
                     elif config_.metadata_name:
                         # metadata values should go directly in parameters, as primitive types
                         try:
@@ -166,10 +181,12 @@ def resolve_step_inputs(
     for name, cll_ in step.config.client_lazy_loaders.items():
         value_ = cll_.evaluate()
         if isinstance(value_, ArtifactVersionResponse):
-            input_artifacts[name] = StepRunInputResponse(
-                input_type=StepRunInputArtifactType.LAZY_LOADED,
-                **value_.model_dump(),
-            )
+            input_artifacts[name] = [
+                StepRunInputResponse(
+                    input_type=StepRunInputArtifactType.LAZY_LOADED,
+                    **value_.model_dump(),
+                )
+            ]
         else:
             step.config.parameters[name] = value_
 
