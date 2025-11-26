@@ -173,7 +173,7 @@ class EvidentlyMetricConfig(BaseModel):
         # Configure an Evidently Metric generator using a full Metric class
         # path
         config = EvidentlyMetric.metric_generator(
-            "evidently.metrics.ColumnSummaryMetric", columns=["age", "name"]
+            "evidently.legacy.metrics.ColumnSummaryMetric", columns=["age", "name"]
         )
         ```
 
@@ -256,7 +256,7 @@ class EvidentlyMetricConfig(BaseModel):
 
         # Configure an Evidently MetricPreset using its full class path
         config = EvidentlyMetric.metric(
-            "evidently.metric_preset.DataDriftPreset"
+            "evidently.legacy.metric_preset.DataDriftPreset"
         )
         ```
 

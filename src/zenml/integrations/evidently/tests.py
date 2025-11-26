@@ -166,7 +166,7 @@ class EvidentlyTestConfig(BaseModel):
         # Configure an Evidently Test generator using a full Test class
         # path
         config = EvidentlyTest.test_generator(
-            "evidently.tests.TestColumnShareOfMissingValues", columns=["age", "name"]
+            "evidently.legacy.tests.TestColumnShareOfMissingValues", columns=["age", "name"]
         )
         ```
 
@@ -246,7 +246,7 @@ class EvidentlyTestConfig(BaseModel):
 
         # Configure an Evidently TestPreset using its full class path
         config = EvidentlyTest.test(
-            "evidently.test_preset.DataDriftPreset"
+            "evidently.legacy.test_preset.DataDriftPreset"
         )
         ```
 

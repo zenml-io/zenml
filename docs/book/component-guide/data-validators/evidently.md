@@ -154,7 +154,7 @@ We configure the `evidently_report_step` using parameters that you would normall
 There are several ways you can reference the Evidently metrics when configuring `EvidentlyMetricConfig` items:
 
 * by class name: this is the easiest way to reference an Evidently metric. You can use the name of a metric or metric preset class as it appears in the Evidently documentation (e.g.`"DataQualityPreset"`, `"DatasetDriftMetric"`).
-* by full class path: you can also use the full Python class path of the metric or metric preset class ( e.g. `"evidently.metric_preset.DataQualityPreset"`, `"evidently.metrics.DatasetDriftMetric"`). This is useful if you want to use metrics or metric presets that are not included in Evidently library.
+* by full class path: you can also use the full Python class path of the metric or metric preset class ( e.g. `"evidently.legacy.metric_preset.DataQualityPreset"`, `"evidently.legacy.metrics.DatasetDriftMetric"`). This is useful if you want to use metrics or metric presets that are not included in Evidently library.
 *   by passing in the class itself: you can also import and pass in an Evidently metric or metric preset class itself, e.g.:
 
     ```python
@@ -342,7 +342,7 @@ We configure the `evidently_test_step` using parameters that you would normally 
 There are several ways you can reference the Evidently tests when configuring `EvidentlyTestConfig` items, similar to how you reference them in an `EvidentlyMetricConfig` object:
 
 * by class name: this is the easiest way to reference an Evidently test. You can use the name of a test or test preset class as it appears in the Evidently documentation (e.g.`"DataQualityTestPreset"`, `"TestColumnRegExp"`).
-* by full class path: you can also use the full Python class path of the test or test preset class ( e.g. `"evidently.test_preset.DataQualityTestPreset"`, `"evidently.tests.TestColumnRegExp"`). This is useful if you want to use tests or test presets that are not included in Evidently library.
+* by full class path: you can also use the full Python class path of the test or test preset class ( e.g. `"evidently.legacy.test_preset.DataQualityTestPreset"`, `"evidently.legacy.tests.TestColumnRegExp"`). This is useful if you want to use tests or test presets that are not included in Evidently library.
 *   by passing in the class itself: you can also import and pass in an Evidently test or test preset class itself, e.g.:
 
     ```python
