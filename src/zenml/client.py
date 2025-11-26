@@ -5498,12 +5498,16 @@ class Client(metaclass=ClientMetaClass):
                 this metadata automatically.
         """
         from zenml.metadata.metadata_types import get_metadata_type
+        from zenml.utils.json_utils import pydantic_encoder
 
         values: Dict[str, "MetadataType"] = {}
         types: Dict[str, "MetadataTypeEnum"] = {}
         for key, value in metadata.items():
             # Skip metadata that is too large to be stored in the database.
-            if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+            if (
+                len(json.dumps(value, default=pydantic_encoder))
+                > TEXT_FIELD_MAX_LENGTH
+            ):
                 logger.warning(
                     f"Metadata value for key '{key}' is too large to be "
                     "stored in the database. Skipping."
