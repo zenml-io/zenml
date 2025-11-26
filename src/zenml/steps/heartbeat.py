@@ -17,9 +17,14 @@ import _thread
 import logging
 import threading
 import time
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
+
+if TYPE_CHECKING:
+    from zenml.models import StepRunResponse
 
 logger = logging.getLogger(__name__)
 
@@ -161,8 +166,43 @@ class StepHeartbeatWorker:
 
         response = store.update_step_heartbeat(step_run_id=self.step_id)
 
-        if response.status in {
+        if response.pipeline_run_status in {
             ExecutionStatus.STOPPED,
             ExecutionStatus.STOPPING,
         }:
             self._terminated = True
+
+
+def is_heartbeat_unhealthy(step_run: "StepRunResponse") -> bool:
+    """Utility function - Checks if step heartbeats indicate un-healthy execution.
+
+    Args:
+        step_run: Information regarding a step run.
+
+    Returns:
+        True if the step heartbeat is unhealthy, False otherwise.
+    """
+    if not step_run.spec.enable_heartbeat:
+        return False
+
+    if not step_run.config.heartbeat_healthy_threshold:
+        return False
+
+    if step_run.status.is_finished:
+        heartbeat_diff = step_run.end_time - (
+            step_run.latest_heartbeat or step_run.start_time
+        )
+    else:
+        heartbeat_diff = datetime.now(tz=timezone.utc) - (
+            step_run.latest_heartbeat or step_run.start_time
+        )
+
+    logger.info("%s heartbeat diff=%s", step_run.name, heartbeat_diff)
+
+    if (
+        heartbeat_diff.total_seconds()
+        > step_run.config.heartbeat_healthy_threshold * 60
+    ):
+        return True
+
+    return False
