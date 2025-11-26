@@ -2998,42 +2998,13 @@ def get_default_output_format() -> OutputFormat:
     return "table"
 
 
-def _simplify_value(value: Any) -> Any:
-    """Simplify complex values for CLI display.
-
-    Handles common patterns like:
-    - List of objects with 'name' field -> list of names
-    - Dict with 'name' field -> just the name
-    - Nested dicts/lists -> recursively simplified
-
-    Args:
-        value: The value to simplify
-
-    Returns:
-        Simplified value suitable for CLI display
-    """
-    if isinstance(value, list):
-        if not value:
-            return value
-        if all(isinstance(item, dict) and "name" in item for item in value):
-            return [item["name"] for item in value]
-        return [_simplify_value(item) for item in value]
-
-    if isinstance(value, dict):
-        if "name" in value and "id" in value:
-            return value["name"]
-        return {k: _simplify_value(v) for k, v in value.items()}
-
-    return value
-
-
 def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
     """Prepare data from BaseResponse instances.
 
     This function extracts data from body, metadata, and resources of a
     response model to create a flat dictionary suitable for CLI display.
-    It automatically simplifies complex nested objects (like lists of tags
-    or related entities) to their name representations.
+    It simplifies known nested objects (tags, components, user) to their
+    name representations.
 
     Args:
         item: BaseResponse instance to format
@@ -3041,28 +3012,77 @@ def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
     Returns:
         Dictionary with the data
     """
-    item_data: Dict[str, Any] = {"id": item.id}
+
+    def _simplify_response(val: Any) -> Any:
+        """Simplify a value: Response -> name/id, list -> names, else as-is.
+
+        Args:
+            val: Value to simplify
+
+        Returns:
+            Simplified value
+        """
+        if isinstance(val, BaseIdentifiedResponse):
+            return val.name if hasattr(val, "name") else str(val.id)
+        if isinstance(val, list) and val:
+            if isinstance(val[0], BaseIdentifiedResponse):
+                return [
+                    v.name if hasattr(v, "name") else str(v.id) for v in val
+                ]
+        if isinstance(val, dict) and val:
+            first_val = next(iter(val.values()), None)
+            if isinstance(first_val, list) and first_val:
+                if isinstance(first_val[0], BaseIdentifiedResponse):
+                    return {
+                        (k.value if hasattr(k, "value") else k): [
+                            v.name if hasattr(v, "name") else str(v.id)
+                            for v in vs
+                        ]
+                        for k, vs in val.items()
+                    }
+        return None
+
+    def _process_model_fields(model: BaseModel) -> Dict[str, Any]:
+        """Extract fields, simplifying nested responses to names.
+
+        Args:
+            model: Pydantic model to extract fields from
+
+        Returns:
+            Dictionary with simplified field values
+        """
+        result: Dict[str, Any] = {}
+        for field_name in type(model).model_fields:
+            val = getattr(model, field_name)
+            simplified = _simplify_response(val)
+            if simplified is not None:
+                result[field_name] = simplified
+            elif isinstance(val, BaseModel):
+                result[field_name] = val.model_dump(mode="json")
+            elif isinstance(val, UUID):
+                result[field_name] = str(val)
+            elif hasattr(val, "value"):  # Enum
+                result[field_name] = val.value
+            else:
+                result[field_name] = val
+        return result
+
+    item_data: Dict[str, Any] = {"id": str(item.id)}
 
     if "name" in type(item).model_fields:
         item_data["name"] = getattr(item, "name")
 
     if item.body is not None:
-        body_data = item.body.model_dump(mode="json")
-        item_data.update(body_data)
+        item_data.update(_process_model_fields(item.body))
 
     if item.metadata is not None:
-        metadata_data = item.metadata.model_dump(mode="json")
-        item_data.update(metadata_data)
+        item_data.update(_process_model_fields(item.metadata))
 
     if item.resources is not None:
-        resources_data = item.resources.model_dump(mode="json")
-        item_data.update(resources_data)
+        item_data.update(_process_model_fields(item.resources))
 
     if isinstance(item, UserScopedResponse) and item.user:
         item_data["user"] = item.user.name
-
-    for key, value in list(item_data.items()):
-        item_data[key] = _simplify_value(value)
 
     return item_data
 

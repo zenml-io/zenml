@@ -81,7 +81,6 @@ def deployment() -> None:
         "url",
         "pipeline",
         "stack",
-        "owner",
     ],
 )
 def list_deployments(
