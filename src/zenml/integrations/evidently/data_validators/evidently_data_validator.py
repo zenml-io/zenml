@@ -15,6 +15,7 @@
 
 import os
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -25,13 +26,15 @@ from typing import (
 )
 
 import pandas as pd
-from evidently.legacy.pipeline.column_mapping import (  # type: ignore[import-untyped]
-    ColumnMapping,
-)
-from evidently.legacy.report import Report  # type: ignore[import-untyped]
-from evidently.legacy.test_suite import (  # type: ignore[import-untyped]
-    TestSuite,
-)
+
+if TYPE_CHECKING:
+    from evidently.legacy.pipeline.column_mapping import (  # type: ignore[import-untyped]
+        ColumnMapping,
+    )
+    from evidently.legacy.report import Report  # type: ignore[import-untyped]
+    from evidently.legacy.test_suite import (  # type: ignore[import-untyped]
+        TestSuite,
+    )
 
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.integrations.evidently.flavors.evidently_data_validator_flavor import (
@@ -73,7 +76,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         ```python
             options = [
                 (
-                    "evidently.options.ColorOptions",{
+                    "evidently.legacy.options.ColorOptions",{
                         "primary_color": "#5a86ad",
                         "fill_color": "#fff4f2",
                         "zero_line_color": "#016795",
@@ -171,11 +174,11 @@ class EvidentlyDataValidator(BaseDataValidator):
         dataset: pd.DataFrame,
         comparison_dataset: Optional[pd.DataFrame] = None,
         profile_list: Optional[Sequence[EvidentlyMetricConfig]] = None,
-        column_mapping: Optional[ColumnMapping] = None,
+        column_mapping: Optional["ColumnMapping"] = None,
         report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         download_nltk_data: bool = False,
         **kwargs: Any,
-    ) -> Report:
+    ) -> "Report":
         """Analyze a dataset and generate a data report with Evidently.
 
         The method takes in an optional list of Evidently options to be passed
@@ -187,7 +190,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         ```python
         options = [
             (
-                "evidently.options.ColorOptions",{
+                "evidently.legacy.options.ColorOptions",{
                     "primary_color": "#5a86ad",
                     "fill_color": "#fff4f2",
                     "zero_line_color": "#016795",
@@ -217,6 +220,8 @@ class EvidentlyDataValidator(BaseDataValidator):
         Returns:
             The Evidently Report as JSON object and as HTML.
         """
+        from evidently.legacy.report import Report
+
         self._set_nltk_data_path()
         if download_nltk_data:
             self._download_nltk_data()
@@ -242,10 +247,10 @@ class EvidentlyDataValidator(BaseDataValidator):
         comparison_dataset: Optional[Any] = None,
         check_list: Optional[Sequence[EvidentlyTestConfig]] = None,
         test_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
-        column_mapping: Optional[ColumnMapping] = None,
+        column_mapping: Optional["ColumnMapping"] = None,
         download_nltk_data: bool = False,
         **kwargs: Any,
-    ) -> TestSuite:
+    ) -> "TestSuite":
         """Validate a dataset with Evidently.
 
         Args:
@@ -266,6 +271,8 @@ class EvidentlyDataValidator(BaseDataValidator):
         Returns:
             The Evidently Test Suite as JSON object and as HTML.
         """
+        from evidently.legacy.test_suite import TestSuite
+
         if download_nltk_data:
             self._download_nltk_data()
 

@@ -221,7 +221,7 @@ text_data_report = evidently_report_step.with_options(
     parameters=dict(
         report_options = [
             (
-                "evidently.options.ColorOptions", {
+                "evidently.legacy.options.ColorOptions", {
                     "primary_color": "#5a86ad",
                     "fill_color": "#fff4f2",
                     "zero_line_color": "#016795",
@@ -398,7 +398,7 @@ text_data_test = evidently_test_step.with_options(
     parameters=dict(
         test_options = [
             (
-                "evidently.options.ColorOptions", {
+                "evidently.legacy.options.ColorOptions", {
                     "primary_color": "#5a86ad",
                     "fill_color": "#fff4f2",
                     "zero_line_color": "#016795",
