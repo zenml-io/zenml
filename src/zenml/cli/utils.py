@@ -499,9 +499,10 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     if active:
         stack_caption += " (ACTIVE)"
     rich_table = table.Table(
-        box=None,
+        box=box.ROUNDED,
         title="Stack Configuration",
         caption=stack_caption,
+        show_lines=True,
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
@@ -518,8 +519,9 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         declare("No labels are set for this stack.")
     else:
         rich_table = table.Table(
-            box=None,
+            box=box.ROUNDED,
             title="Labels",
+            show_lines=True,
         )
         rich_table.add_column("LABEL")
         rich_table.add_column("VALUE", overflow="fold")
@@ -590,9 +592,9 @@ def print_stack_component_configuration(
         if active_status:
             title_ += " (ACTIVE)"
         rich_table = table.Table(
-            box=None,
+            box=box.ROUNDED,
             title=title_,
-            show_lines=False,
+            show_lines=True,
         )
         rich_table.add_column("COMPONENT_PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -613,9 +615,9 @@ def print_stack_component_configuration(
         declare("No labels are set for this component.")
     else:
         rich_table = table.Table(
-            box=None,
+            box=box.ROUNDED,
             title="Labels",
-            show_lines=False,
+            show_lines=True,
         )
         rich_table.add_column("LABEL")
         rich_table.add_column("VALUE", overflow="fold")
@@ -629,9 +631,9 @@ def print_stack_component_configuration(
         declare("No connector is set for this component.")
     else:
         rich_table = table.Table(
-            box=None,
+            box=box.ROUNDED,
             title="Service Connector",
-            show_lines=False,
+            show_lines=True,
         )
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -1242,9 +1244,9 @@ def print_served_model_configuration(
     title_ = f"Properties of Served Model {model_service.uuid}"
 
     rich_table = table.Table(
-        box=None,
+        box=box.ROUNDED,
         title=title_,
-        show_lines=False,
+        show_lines=True,
     )
     rich_table.add_column("MODEL SERVICE PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1513,9 +1515,9 @@ def print_service_connector_configuration(
     if active_status:
         title_ += " (ACTIVE)"
     rich_table = table.Table(
-        box=None,
+        box=box.ROUNDED,
         title=title_,
-        show_lines=False,
+        show_lines=True,
     )
     rich_table.add_column("PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1587,9 +1589,9 @@ def print_service_connector_configuration(
 
     else:
         rich_table = table.Table(
-            box=None,
+            box=box.ROUNDED,
             title="Configuration",
-            show_lines=False,
+            show_lines=True,
         )
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -1615,9 +1617,9 @@ def print_service_connector_configuration(
         return
 
     rich_table = table.Table(
-        box=None,
+        box=box.ROUNDED,
         title="Labels",
-        show_lines=False,
+        show_lines=True,
     )
     rich_table.add_column("LABEL")
     rich_table.add_column("VALUE", overflow="fold")
