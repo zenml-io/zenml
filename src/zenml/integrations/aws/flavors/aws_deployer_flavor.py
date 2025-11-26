@@ -266,6 +266,15 @@ class AWSDeployerFlavor(BaseDeployerFlavor):
         return AWS_DEPLOYER_FLAVOR
 
     @property
+    def display_name(self) -> str:
+        """Display name of the deployer flavor.
+
+        Returns:
+            The display name of the deployer flavor.
+        """
+        return "AWS"
+
+    @property
     def service_connector_requirements(
         self,
     ) -> Optional[ServiceConnectorRequirements]:
