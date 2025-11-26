@@ -123,6 +123,12 @@ class ArtifactVersionRequest(ProjectScopedRequest):
     metadata: Optional[Dict[str, MetadataType]] = Field(
         default=None, title="Metadata of the artifact version."
     )
+    item_count: Optional[int] = Field(
+        title="The number of items in the artifact version if it is "
+        "sequence-like. This should only be set for artifacts that can be "
+        "split into parts, like lists or arrays.",
+        default=None,
+    )
 
     @field_validator("version")
     @classmethod
@@ -208,6 +214,12 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     )
     content_hash: Optional[str] = Field(
         title="The content hash of the artifact version.",
+        default=None,
+    )
+    item_count: Optional[int] = Field(
+        title="The number of items in the artifact version if it is "
+        "sequence-like. This should only be set for artifacts that can be "
+        "split into parts, like lists or arrays.",
         default=None,
     )
 
@@ -407,6 +419,15 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().data_type
+
+    @property
+    def item_count(self) -> Optional[int]:
+        """The `item_count` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().item_count
 
     # Helper methods
     @property

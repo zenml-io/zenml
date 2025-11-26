@@ -77,7 +77,7 @@ from zenml.utils import (
     string_utils,
     tag_utils,
 )
-from zenml.utils.typing_utils import get_origin, is_union
+from zenml.utils.typing_utils import get_args, get_origin, is_union
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
@@ -124,7 +124,7 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: "StepRunResponse",
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List["StepRunInputResponse"]],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
@@ -446,7 +446,7 @@ class StepRunner:
         self,
         args: List[str],
         annotations: Dict[str, Any],
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List["StepRunInputResponse"]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -455,11 +455,12 @@ class StepRunner:
             annotations: The annotations of the step entrypoint function.
             input_artifacts: The input artifact versions of the step.
 
-        Returns:
-            The parsed inputs for the step entrypoint function.
-
         Raises:
             RuntimeError: If a function argument value is missing.
+            StepInterfaceError: If the function argument annotation is invalid.
+
+        Returns:
+            The parsed inputs for the step entrypoint function.
         """
         function_params: Dict[str, Any] = {}
 
@@ -467,16 +468,46 @@ class StepRunner:
             args.pop(0)
 
         for arg in args:
-            arg_type = annotations.get(arg, None)
-            arg_type = resolve_type_annotation(arg_type)
+            annotation = annotations.get(arg, None)
+            arg_type = resolve_type_annotation(annotation)
 
             if arg in input_artifacts:
-                function_params[arg] = self._load_input_artifact(
-                    input_artifacts[arg], arg_type
-                )
+                artifact_list = input_artifacts[arg]
+
+                if len(artifact_list) == 1:
+                    function_params[arg] = self._load_input_artifact(
+                        artifact_list[0], arg_type
+                    )
+                else:
+                    item_arg_type = arg_type
+                    collection_type = list
+
+                    if arg_type == UnmaterializedArtifact:
+                        raise StepInterfaceError(
+                            "Passing multiple unmaterialized artifacts to a "
+                            "step is not allowed."
+                        )
+                    elif arg_type in (Any, None):
+                        pass
+                    elif issubclass(arg_type, (list, tuple)):
+                        assert annotation
+                        item_arg_type = get_args(annotation)[0]
+                        item_arg_type = resolve_type_annotation(item_arg_type)
+                        collection_type = arg_type
+                    else:
+                        raise StepInterfaceError(
+                            "Passing multiple artifacts to a step is only "
+                            "allowed if the argument type is a list or tuple."
+                        )
+
+                    function_params[arg] = collection_type(
+                        self._load_input_artifact(artifact, item_arg_type)
+                        for artifact in artifact_list
+                    )
             elif arg in self.configuration.parameters:
                 function_params[arg] = self.configuration.parameters[arg]
             else:
+                breakpoint()
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
                 )
@@ -484,7 +515,7 @@ class StepRunner:
         return function_params
 
     def _load_input_artifact(
-        self, artifact: "ArtifactVersionResponse", data_type: Type[Any]
+        self, artifact: "StepRunInputResponse", data_type: Type[Any]
     ) -> Any:
         """Loads an input artifact.
 
@@ -520,8 +551,18 @@ class StepRunner:
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
-            materializer.validate_load_type_compatibility(data_type)
-            return materializer.load(data_type=data_type)
+
+            if artifact.chunk_index is not None:
+                # We need to skip the type compatibility check here because
+                # the annotation on the step input might not be something that
+                # the materializer can load.
+                return materializer.load_item(
+                    data_type=data_type,
+                    index=artifact.chunk_index,
+                )
+            else:
+                materializer.validate_load_type_compatibility(data_type)
+                return materializer.load(data_type=data_type)
 
         if artifact.artifact_store_id == self._stack.artifact_store.id:
             # Register the artifact store of the active stack here to avoid
