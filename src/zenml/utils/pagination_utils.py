@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pagination utilities."""
 
-from typing import Any, Callable, List, TypeVar
+from typing import Any, Callable, Generator, List, TypeVar
 
 from zenml.models import BaseIdentifiedResponse, Page
 
@@ -40,3 +40,28 @@ def depaginate(
         items += list(page.items)
 
     return items
+
+
+def depaginate_stream(
+    list_method: Callable[..., Page[AnyResponse]], **kwargs: Any
+) -> Generator[AnyResponse, None, None]:
+    """Depaginate the results from a client or store method that returns pages.
+
+    Args:
+        list_method: The list method to depaginate.
+        **kwargs: Arguments for the list method.
+
+    Yields:
+        A generator of the corresponding Response Models.
+    """
+    page = list_method(**kwargs)
+
+    for item in page.items:
+        yield item
+
+    while page.index < page.total_pages:
+        kwargs["page"] = page.index + 1
+        page = list_method(**kwargs)
+
+        for item in page.items:
+            yield item

@@ -826,3 +826,4 @@ class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     id: UUID
     status: ExecutionStatus
     latest_heartbeat: datetime
+    pipeline_run_status: ExecutionStatus | None = None

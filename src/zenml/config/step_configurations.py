@@ -221,6 +221,13 @@ class StepConfigurationUpdate(FrozenBaseModel):
         "run inline unless a step operator or docker/resource settings "
         "are configured. This is only applicable for dynamic pipelines.",
     )
+    heartbeat_healthy_threshold: int | None = Field(
+        default=None,
+        description="The amount of time (in minutes) that a running step "
+        "has not received heartbeat and is considered healthy. Set null value"
+        "disable healthiness checks via heartbeat.",
+        ge=1,
+    )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
