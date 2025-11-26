@@ -40,8 +40,8 @@ from zenml.exceptions import (
     IllegalOperationError,
 )
 from zenml.logger import get_logger
-from zenml.login.credentials_store import get_credentials_store
 from zenml.login.credentials import ServerType
+from zenml.login.credentials_store import get_credentials_store
 from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.web_login import web_login
 from zenml.utils.dashboard_utils import show_dashboard
