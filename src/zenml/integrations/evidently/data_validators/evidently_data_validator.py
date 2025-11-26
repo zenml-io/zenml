@@ -40,10 +40,12 @@ from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.integrations.evidently.flavors.evidently_data_validator_flavor import (
     EvidentlyDataValidatorFlavor,
 )
-from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
-from zenml.integrations.evidently.tests import EvidentlyTestConfig
 from zenml.logger import get_logger
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
+    from zenml.integrations.evidently.tests import EvidentlyTestConfig
 
 logger = get_logger(__name__)
 
@@ -173,7 +175,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         self,
         dataset: pd.DataFrame,
         comparison_dataset: Optional[pd.DataFrame] = None,
-        profile_list: Optional[Sequence[EvidentlyMetricConfig]] = None,
+        profile_list: Optional[Sequence["EvidentlyMetricConfig"]] = None,
         column_mapping: Optional["ColumnMapping"] = None,
         report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         download_nltk_data: bool = False,
@@ -221,6 +223,7 @@ class EvidentlyDataValidator(BaseDataValidator):
             The Evidently Report as JSON object and as HTML.
         """
         from evidently.legacy.report import Report
+        from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 
         self._set_nltk_data_path()
         if download_nltk_data:
@@ -245,7 +248,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         self,
         dataset: Any,
         comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[EvidentlyTestConfig]] = None,
+        check_list: Optional[Sequence["EvidentlyTestConfig"]] = None,
         test_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         column_mapping: Optional["ColumnMapping"] = None,
         download_nltk_data: bool = False,
@@ -272,6 +275,7 @@ class EvidentlyDataValidator(BaseDataValidator):
             The Evidently Test Suite as JSON object and as HTML.
         """
         from evidently.legacy.test_suite import TestSuite
+        from zenml.integrations.evidently.tests import EvidentlyTestConfig
 
         if download_nltk_data:
             self._download_nltk_data()
