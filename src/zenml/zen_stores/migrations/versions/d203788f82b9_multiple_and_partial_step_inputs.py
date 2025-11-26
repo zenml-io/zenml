@@ -1,7 +1,7 @@
 """Multiple and partial step inputs [d203788f82b9].
 
 Revision ID: d203788f82b9
-Revises: 0.91.2
+Revises: bc6317491676
 Create Date: 2025-11-11 11:57:39.370022
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "d203788f82b9"
-down_revision = "0.91.2"
+down_revision = "bc6317491676"
 branch_labels = None
 depends_on = None
 
