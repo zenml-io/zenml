@@ -104,5 +104,5 @@ def evidently_test_step(
     )
     return (
         test_suite.json(),
-        HTMLString(test_suite.show(mode="inline").data),
+        HTMLString(test_suite.get_html()),
     )

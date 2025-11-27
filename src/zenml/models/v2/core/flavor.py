@@ -49,6 +49,11 @@ class FlavorRequest(UserScopedRequest):
         title="The name of the Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    display_name: Optional[str] = Field(
+        default=None,
+        title="The display name of the Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     type: StackComponentType = Field(title="The type of the Flavor.")
     config_schema: Dict[str, Any] = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
@@ -106,6 +111,11 @@ class FlavorUpdate(BaseUpdate):
 
     name: Optional[str] = Field(
         title="The name of the Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    display_name: Optional[str] = Field(
+        title="The display name of the Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
@@ -170,6 +180,10 @@ class FlavorResponseBody(UserScopedResponseBody):
     """Response body for stack component flavors."""
 
     type: StackComponentType = Field(title="The type of the Flavor.")
+    display_name: str = Field(
+        title="The display name of the Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     integration: Optional[str] = Field(
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -292,6 +306,15 @@ class FlavorResponse(
         return self.get_body().type
 
     @property
+    def display_name(self) -> str:
+        """The `display_name` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().display_name
+
+    @property
     def integration(self) -> Optional[str]:
         """The `integration` property.
 
@@ -391,6 +414,10 @@ class FlavorFilter(UserScopedFilter):
     name: Optional[str] = Field(
         default=None,
         description="Name of the flavor",
+    )
+    display_name: Optional[str] = Field(
+        default=None,
+        description="Display name of the flavor",
     )
     type: Optional[str] = Field(
         default=None,
