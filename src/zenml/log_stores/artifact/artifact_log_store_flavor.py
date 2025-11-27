@@ -25,10 +25,7 @@ if TYPE_CHECKING:
 
 
 class ArtifactLogStoreConfig(OtelLogStoreConfig):
-    """Configuration for the artifact log store.
-
-    This log store saves logs to the artifact store using OTEL infrastructure.
-    """
+    """Configuration for the artifact log store."""
 
 
 class ArtifactLogStoreFlavor(OtelLogStoreFlavor):

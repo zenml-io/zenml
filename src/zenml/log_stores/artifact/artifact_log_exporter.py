@@ -22,8 +22,7 @@ from uuid import UUID, uuid4
 from opentelemetry import context as otel_context
 from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
 
-from zenml.artifacts.utils import _load_artifact_store
-from zenml.client import Client
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import LoggingLevels
 from zenml.log_stores.artifact.artifact_log_store import (
     remove_ansi_escape_codes,
@@ -46,9 +45,10 @@ logger = get_logger(__name__)
 class ArtifactLogExporter(LogExporter):
     """OpenTelemetry exporter that writes logs to ZenML artifact store."""
 
-    def __init__(self) -> None:
+    def __init__(self, artifact_store: "BaseArtifactStore") -> None:
         """Initialize the exporter with file counters per context."""
         self.file_counters: Dict[UUID, int] = {}
+        self.artifact_store = artifact_store
 
     def export(self, batch: Sequence["LogData"]) -> LogExportResult:
         """Export a batch of logs to the artifact store.
@@ -237,15 +237,10 @@ class ArtifactLogExporter(LogExporter):
             )
             return
 
-        client = Client()
-        artifact_store = _load_artifact_store(
-            log_model.artifact_store_id, client.zen_store
-        )
-
         try:
             content = "\n".join(log_lines) + "\n"
 
-            if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+            if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
                 timestamp = int(time.time() * 1000)
                 if log_model.id not in self.file_counters:
                     self.file_counters[log_model.id] = 0
@@ -256,17 +251,18 @@ class ArtifactLogExporter(LogExporter):
                     f"{timestamp}_{self.file_counters[log_model.id]}.jsonl",
                 )
 
-                with artifact_store.open(file_uri, "w") as f:
+                with self.artifact_store.open(file_uri, "w") as f:
                     f.write(content)
             else:
-                with artifact_store.open(log_model.uri, "a") as f:
+                with self.artifact_store.open(log_model.uri, "a") as f:
                     f.write(content)
         except Exception as e:
             logger.error(f"Failed to write logs to {log_model.uri}: {e}")
             raise
         finally:
-            artifact_store.cleanup()
+            self.artifact_store.cleanup()
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""
+        # TODO: Merge
         pass

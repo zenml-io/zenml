@@ -246,11 +246,14 @@ class ArtifactLogStore(OtelLogStore):
         Returns:
             The ArtifactLogExporter instance.
         """
+        from zenml.client import Client
         from zenml.log_stores.artifact.artifact_log_exporter import (
             ArtifactLogExporter,
         )
 
-        return ArtifactLogExporter()
+        return ArtifactLogExporter(
+            artifact_store=Client().active_stack.artifact_store
+        )
 
     def fetch(
         self,
