@@ -57,6 +57,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     ZenML entrypoint command in it.
     """
 
+    _job_service_client: Optional[aiplatform.gapic.JobServiceClient] = None
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes the step operator and validates the accelerator type.
 
@@ -150,6 +152,25 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
         return builds
 
+    def get_job_service_client(self) -> aiplatform.gapic.JobServiceClient:
+        """Get the job service client.
+
+        Returns:
+            The job service client.
+        """
+        if self.connector_has_expired():
+            self._job_service_client = None
+
+        if self._job_service_client is None:
+            credentials, _ = self._get_authentication()
+            client_options = {
+                "api_endpoint": self.config.region + VERTEX_ENDPOINT_SUFFIX
+            }
+            self._job_service_client = aiplatform.gapic.JobServiceClient(
+                credentials=credentials, client_options=client_options
+            )
+        return self._job_service_client
+
     def launch(
         self,
         info: "StepRunInfo",
@@ -193,15 +214,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         )
         logger.debug("Vertex AI Job=%s", job_request)
 
-        credentials, project_id = self._get_authentication()
-        client_options = {
-            "api_endpoint": self.config.region + VERTEX_ENDPOINT_SUFFIX
-        }
-        client = aiplatform.gapic.JobServiceClient(
-            credentials=credentials, client_options=client_options
+        client = self.get_job_service_client()
+        parent = (
+            f"projects/{self.gcp_project_id}/locations/{self.config.region}"
         )
-
-        parent = f"projects/{project_id}/locations/{self.config.region}"
         logger.info(
             "Submitting custom job='%s', path='%s' to Vertex AI Training.",
             job_request["display_name"],
@@ -215,6 +231,5 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
         monitor_job(
             job_id=response.name,
-            credentials_source=self,
-            client_options=client_options,
+            get_client=self.get_job_service_client,
         )

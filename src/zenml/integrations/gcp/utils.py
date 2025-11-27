@@ -14,7 +14,7 @@
 """Vertex utilities."""
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from google.api_core.exceptions import ServerError
 from google.cloud import aiplatform
@@ -24,9 +24,6 @@ from zenml.integrations.gcp.constants import (
     POLLING_INTERVAL_IN_SECONDS,
     VERTEX_JOB_STATES_COMPLETED,
     VERTEX_JOB_STATES_FAILED,
-)
-from zenml.integrations.gcp.google_credentials_mixin import (
-    GoogleCredentialsMixin,
 )
 from zenml.integrations.gcp.vertex_custom_job_parameters import (
     VertexCustomJobParameters,
@@ -55,59 +52,33 @@ def validate_accelerator_type(accelerator_type: Optional[str] = None) -> None:
         )
 
 
-def get_job_service_client(
-    credentials_source: GoogleCredentialsMixin,
-    client_options: Optional[Dict[str, Any]] = None,
-) -> aiplatform.gapic.JobServiceClient:
-    """Gets a job service client.
-
-    Args:
-        credentials_source: The component that provides the credentials to
-            access the job.
-        client_options: The client options to use for the job service client.
-
-    Returns:
-        A job service client.
-    """
-    credentials, _ = credentials_source._get_authentication()
-    return aiplatform.gapic.JobServiceClient(
-        credentials=credentials, client_options=client_options
-    )
-
-
 def monitor_job(
     job_id: str,
-    credentials_source: GoogleCredentialsMixin,
-    client_options: Optional[Dict[str, Any]] = None,
+    get_client: Callable[[], aiplatform.gapic.JobServiceClient],
 ) -> None:
     """Monitors a job until it is completed.
 
     Args:
         job_id: The ID of the job to monitor.
-        credentials_source: The component that provides the credentials to
-            access the job.
-        client_options: The client options to use for the job service client.
+        get_client: A function that returns an authenticated job service client.
 
     Raises:
         RuntimeError: If the job fails.
     """
     retry_count = 0
-    client = get_job_service_client(
-        credentials_source=credentials_source, client_options=client_options
-    )
+    client = get_client()
 
     while True:
         time.sleep(POLLING_INTERVAL_IN_SECONDS)
-        if credentials_source.connector_has_expired():
-            client = get_job_service_client(
-                credentials_source=credentials_source,
-                client_options=client_options,
-            )
+        # Fetch a fresh client in case the credentials have expired
+        client = get_client()
 
         try:
             response = client.get_custom_job(name=job_id)
             retry_count = 0
         except (ConnectionError, ServerError) as err:
+            # Retry on connection errors, see also
+            # https://github.com/googleapis/google-api-python-client/issues/218
             if retry_count < CONNECTION_ERROR_RETRY_LIMIT:
                 retry_count += 1
                 logger.warning(

@@ -144,6 +144,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     """Orchestrator responsible for running pipelines on Vertex AI."""
 
     _pipeline_root: str
+    _job_service_client: Optional[aiplatform.gapic.JobServiceClient] = None
 
     @property
     def config(self) -> VertexOrchestratorConfig:
@@ -260,6 +261,25 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             Path to the pipeline directory.
         """
         return os.path.join(self.root_directory, "pipelines")
+
+    def get_job_service_client(self) -> aiplatform.gapic.JobServiceClient:
+        """Get the job service client.
+
+        Returns:
+            The job service client.
+        """
+        if self.connector_has_expired():
+            self._job_service_client = None
+
+        if self._job_service_client is None:
+            credentials, _ = self._get_authentication()
+            client_options = {
+                "api_endpoint": self.config.location + VERTEX_ENDPOINT_SUFFIX
+            }
+            self._job_service_client = aiplatform.gapic.JobServiceClient(
+                credentials=credentials, client_options=client_options
+            )
+        return self._job_service_client
 
     def _create_container_component(
         self,
@@ -696,34 +716,38 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             network=self.config.network,
         )
 
-        credentials, project_id = self._get_authentication()
-        client_options = {
-            "api_endpoint": self.config.location + VERTEX_ENDPOINT_SUFFIX
-        }
-        client = aiplatform.gapic.JobServiceClient(
-            credentials=credentials, client_options=client_options
+        client = self.get_job_service_client()
+        parent = (
+            f"projects/{self.gcp_project_id}/locations/{self.config.location}"
         )
-        parent = f"projects/{project_id}/locations/{self.config.location}"
         job_model = client.create_custom_job(
             parent=parent, custom_job=job_request
         )
 
-        wait_for_completion = None
+        _wait_for_completion = None
         if settings.synchronous:
-            wait_for_completion = lambda: monitor_job(
-                job_id=job_model.name,
-                credentials_source=self,
-                client_options=client_options,
-            )
 
-        self._initialize_vertex_client()
-        job = aiplatform.CustomJob.get(job_model.name)
+            def _wait_for_completion() -> None:
+                logger.info("Waiting for the VertexAI job to finish...")
+                monitor_job(
+                    job_id=job_model.name,
+                    get_client=self.get_job_service_client,
+                )
+                logger.info("VertexAI job completed successfully.")
+
+        credentials, project_id = self._get_authentication()
+        job = aiplatform.CustomJob.get(
+            job_model.name,
+            project=project_id,
+            location=self.config.location,
+            credentials=credentials,
+        )
         metadata = self.compute_metadata(job)
 
         logger.info("View the Vertex job at %s", job._dashboard_uri())
 
         return SubmissionResult(
-            wait_for_completion=wait_for_completion,
+            wait_for_completion=_wait_for_completion,
             metadata=metadata,
         )
 
@@ -765,14 +789,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             network=self.config.network,
         )
 
-        credentials, project_id = self._get_authentication()
-        client_options = {
-            "api_endpoint": self.config.location + VERTEX_ENDPOINT_SUFFIX
-        }
-        client = aiplatform.gapic.JobServiceClient(
-            credentials=credentials, client_options=client_options
+        client = self.get_job_service_client()
+        parent = (
+            f"projects/{self.gcp_project_id}/locations/{self.config.location}"
         )
-        parent = f"projects/{project_id}/locations/{self.config.location}"
         logger.info(
             "Submitting custom job='%s', path='%s' to Vertex AI Training.",
             job_request["display_name"],
@@ -781,8 +801,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         job = client.create_custom_job(parent=parent, custom_job=job_request)
         monitor_job(
             job_id=job.name,
-            credentials_source=self,
-            client_options=client_options,
+            get_client=self.get_job_service_client,
         )
 
     def _upload_and_run_pipeline(
@@ -1060,15 +1079,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         return dynamic_component
 
-    def _initialize_vertex_client(self) -> None:
-        """Initializes the Vertex client."""
-        credentials, project_id = self._get_authentication()
-        aiplatform.init(
-            project=project_id,
-            location=self.config.location,
-            credentials=credentials,
-        )
-
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
     ) -> Tuple[
@@ -1102,8 +1112,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
         )
 
-        self._initialize_vertex_client()
-
         # Fetch the status of the PipelineJob
         if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
             run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
@@ -1115,8 +1123,14 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 "the status."
             )
 
+        credentials, project_id = self._get_authentication()
         if run.snapshot and run.snapshot.is_dynamic:
-            status = aiplatform.CustomJob.get(run_id).state
+            status = aiplatform.CustomJob.get(
+                run_id,
+                project=project_id,
+                location=self.config.location,
+                credentials=credentials,
+            ).state
 
             if status in [
                 JobState.JOB_STATE_QUEUED,
@@ -1143,7 +1157,12 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             else:
                 pipeline_status = run.status
         else:
-            status = aiplatform.PipelineJob.get(run_id).state
+            status = aiplatform.PipelineJob.get(
+                run_id,
+                project=project_id,
+                location=self.config.location,
+                credentials=credentials,
+            ).state
 
             # Map the potential outputs to ZenML ExecutionStatus. Potential values:
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sagemaker/client/describe_pipeline_execution.html#
