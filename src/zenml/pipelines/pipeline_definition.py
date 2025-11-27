@@ -1350,7 +1350,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def add_step_invocation(
         self,
         step: "BaseStep",
-        input_artifacts: Dict[str, StepArtifact],
+        input_artifacts: Dict[str, List[StepArtifact]],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],
@@ -1399,13 +1399,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "A step invocation can only be added to an active pipeline."
             )
 
-        for artifact in input_artifacts.values():
-            if artifact.pipeline is not self:
-                raise RuntimeError(
-                    "Got invalid input artifact for invocation of step "
-                    f"{step.name}: The input artifact was produced by a step "
-                    f"inside a different pipeline {artifact.pipeline.name}."
-                )
+        for artifact_list in input_artifacts.values():
+            for artifact in artifact_list:
+                if artifact.pipeline is not self:
+                    raise RuntimeError(
+                        "Got invalid input artifact for invocation of step "
+                        f"{step.name}: The input artifact was produced by a step "
+                        f"inside a different pipeline {artifact.pipeline.name}."
+                    )
 
         invocation_id = self._compute_invocation_id(
             step=step, custom_id=custom_id, allow_suffix=allow_id_suffix

@@ -208,6 +208,7 @@ def _store_artifact_data_and_prepare_request(
         visualizations=visualizations,
         has_custom_name=has_custom_name,
         save_type=save_type,
+        item_count=materializer.get_item_count(data),
         metadata=validate_metadata(combined_metadata)
         if combined_metadata
         else None,

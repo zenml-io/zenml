@@ -100,11 +100,11 @@ text_data_report = evidently_report_step.with_options(
 The configuration shown in the example is the equivalent of running the following Evidently code inside the step:
 
 ```python
-from evidently.metrics import ColumnRegExpMetric
-from evidently.metric_preset import DataQualityPreset, TextOverviewPreset
-from evidently import ColumnMapping
-from evidently.report import Report
-from evidently.metrics.base_metric import generate_column_metrics
+from evidently.legacy.metrics import ColumnRegExpMetric
+from evidently.legacy.metric_preset import DataQualityPreset, TextOverviewPreset
+from evidently.legacy.pipeline.column_mapping import ColumnMapping
+from evidently.legacy.report import Report
+from evidently.legacy.metrics.base_metric import generate_column_metrics
 import nltk
 
 nltk.download("words")
@@ -154,11 +154,11 @@ We configure the `evidently_report_step` using parameters that you would normall
 There are several ways you can reference the Evidently metrics when configuring `EvidentlyMetricConfig` items:
 
 * by class name: this is the easiest way to reference an Evidently metric. You can use the name of a metric or metric preset class as it appears in the Evidently documentation (e.g.`"DataQualityPreset"`, `"DatasetDriftMetric"`).
-* by full class path: you can also use the full Python class path of the metric or metric preset class ( e.g. `"evidently.metric_preset.DataQualityPreset"`, `"evidently.metrics.DatasetDriftMetric"`). This is useful if you want to use metrics or metric presets that are not included in Evidently library.
+* by full class path: you can also use the full Python class path of the metric or metric preset class ( e.g. `"evidently.legacy.metric_preset.DataQualityPreset"`, `"evidently.legacy.metrics.DatasetDriftMetric"`). This is useful if you want to use metrics or metric presets that are not included in Evidently library.
 *   by passing in the class itself: you can also import and pass in an Evidently metric or metric preset class itself, e.g.:
 
     ```python
-    from evidently.metrics import DatasetDriftMetric
+    from evidently.legacy.metrics import DatasetDriftMetric
 
     ...
 
@@ -221,7 +221,7 @@ text_data_report = evidently_report_step.with_options(
     parameters=dict(
         report_options = [
             (
-                "evidently.options.ColorOptions", {
+                "evidently.legacy.options.ColorOptions", {
                     "primary_color": "#5a86ad",
                     "fill_color": "#fff4f2",
                     "zero_line_color": "#016795",
@@ -289,11 +289,11 @@ text_data_test = evidently_test_step.with_options(
 The configuration shown in the example is the equivalent of running the following Evidently code inside the step:
 
 ```python
-from evidently.tests import TestColumnRegExp
-from evidently.test_preset import DataQualityTestPreset
-from evidently import ColumnMapping
-from evidently.test_suite import TestSuite
-from evidently.tests.base_test import generate_column_tests
+from evidently.legacy.tests import TestColumnRegExp
+from evidently.legacy.test_preset import DataQualityTestPreset
+from evidently.legacy.pipeline.column_mapping import ColumnMapping
+from evidently.legacy.test_suite import TestSuite
+from evidently.legacy.tests.base_test import generate_column_tests
 import nltk
 
 nltk.download("words")
@@ -342,11 +342,11 @@ We configure the `evidently_test_step` using parameters that you would normally 
 There are several ways you can reference the Evidently tests when configuring `EvidentlyTestConfig` items, similar to how you reference them in an `EvidentlyMetricConfig` object:
 
 * by class name: this is the easiest way to reference an Evidently test. You can use the name of a test or test preset class as it appears in the Evidently documentation (e.g.`"DataQualityTestPreset"`, `"TestColumnRegExp"`).
-* by full class path: you can also use the full Python class path of the test or test preset class ( e.g. `"evidently.test_preset.DataQualityTestPreset"`, `"evidently.tests.TestColumnRegExp"`). This is useful if you want to use tests or test presets that are not included in Evidently library.
+* by full class path: you can also use the full Python class path of the test or test preset class ( e.g. `"evidently.legacy.test_preset.DataQualityTestPreset"`, `"evidently.legacy.tests.TestColumnRegExp"`). This is useful if you want to use tests or test presets that are not included in Evidently library.
 *   by passing in the class itself: you can also import and pass in an Evidently test or test preset class itself, e.g.:
 
     ```python
-    from evidently.tests import TestColumnRegExp
+    from evidently.legacy.tests import TestColumnRegExp
 
     ...
 
@@ -398,7 +398,7 @@ text_data_test = evidently_test_step.with_options(
     parameters=dict(
         test_options = [
             (
-                "evidently.options.ColorOptions", {
+                "evidently.legacy.options.ColorOptions", {
                     "primary_color": "#5a86ad",
                     "fill_color": "#fff4f2",
                     "zero_line_color": "#016795",
@@ -423,7 +423,7 @@ All you have to do is call the Evidently Data Validator methods when you need to
 from typing import Annotated
 from typing import Tuple
 import pandas as pd
-from evidently.pipeline.column_mapping import ColumnMapping
+from evidently.legacy.pipeline.column_mapping import ColumnMapping
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.tests import EvidentlyTestConfig
@@ -544,11 +544,11 @@ You can use the Evidently library directly in your custom pipeline steps, e.g.:
 from typing import Annotated
 from typing import Tuple
 import pandas as pd
-from evidently.report import Report
-import evidently.metric_preset as metric_preset
-from evidently.test_suite import TestSuite
-import evidently.test_preset as test_preset
-from evidently.pipeline.column_mapping import ColumnMapping
+from evidently.legacy.report import Report
+from evidently.legacy.metric_preset import DataQualityPreset
+from evidently.legacy.test_suite import TestSuite
+from evidently.legacy.test_preset import DataQualityTestPreset
+from evidently.legacy.pipeline.column_mapping import ColumnMapping
 from zenml.types import HTMLString
 from zenml import step
 
@@ -571,7 +571,7 @@ def data_profiler(
 
     # pre-processing (e.g. dataset preparation) can take place here
 
-    report = Report(metrics=[metric_preset.DataQualityPreset()])
+    report = Report(metrics=[DataQualityPreset()])
     report.run(
         current_data=dataset,
         reference_data=dataset,
@@ -600,8 +600,8 @@ def data_tester(
 
     # pre-processing (e.g. dataset preparation) can take place here
 
-    test_suite = TestSuite(metrics=[test_preset.DataQualityTestPreset()])
-    report.run(
+    test_suite = TestSuite(tests=[DataQualityTestPreset()])
+    test_suite.run(
         current_data=dataset,
         reference_data=dataset,
     )

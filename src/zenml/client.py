@@ -2295,6 +2295,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
         name: Optional[str] = None,
+        display_name: Optional[str] = None,
         type: Optional[str] = None,
         integration: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -2312,6 +2313,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             user: Filter by user name/ID.
             name: The name of the flavor to filter by.
+            display_name: The display name of the flavor to filter by.
             type: The type of the flavor to filter by.
             integration: The integration of the flavor to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -2327,6 +2329,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             user=user,
             name=name,
+            display_name=display_name,
             type=type,
             integration=integration,
             id=id,
@@ -5495,12 +5498,16 @@ class Client(metaclass=ClientMetaClass):
                 this metadata automatically.
         """
         from zenml.metadata.metadata_types import get_metadata_type
+        from zenml.utils.json_utils import pydantic_encoder
 
         values: Dict[str, "MetadataType"] = {}
         types: Dict[str, "MetadataTypeEnum"] = {}
         for key, value in metadata.items():
             # Skip metadata that is too large to be stored in the database.
-            if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+            if (
+                len(json.dumps(value, default=pydantic_encoder))
+                > TEXT_FIELD_MAX_LENGTH
+            ):
                 logger.warning(
                     f"Metadata value for key '{key}' is too large to be "
                     "stored in the database. Skipping."
