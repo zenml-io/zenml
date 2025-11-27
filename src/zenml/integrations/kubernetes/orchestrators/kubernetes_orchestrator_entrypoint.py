@@ -620,9 +620,7 @@ def main() -> None:
             )
 
             if sr_.items:
-                sr_ = sr_[0]
-
-                return is_heartbeat_unhealthy(step_run=sr_)
+                return is_heartbeat_unhealthy(step_run=sr_.items[0])
 
             return False
 

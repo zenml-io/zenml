@@ -189,13 +189,16 @@ def is_heartbeat_unhealthy(step_run: "StepRunResponse") -> bool:
         return False
 
     if step_run.status.is_finished:
-        heartbeat_diff = step_run.end_time - (
-            step_run.latest_heartbeat or step_run.start_time
+        return False
+
+    if step_run.latest_heartbeat:
+        heartbeat_diff = (
+            datetime.now(tz=timezone.utc) - step_run.latest_heartbeat
         )
+    elif step_run.start_time:
+        heartbeat_diff = datetime.now(tz=timezone.utc) - step_run.start_time
     else:
-        heartbeat_diff = datetime.now(tz=timezone.utc) - (
-            step_run.latest_heartbeat or step_run.start_time
-        )
+        return False
 
     logger.info("%s heartbeat diff=%s", step_run.name, heartbeat_diff)
 

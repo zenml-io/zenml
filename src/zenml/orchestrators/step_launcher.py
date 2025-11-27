@@ -43,6 +43,7 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
+from zenml.steps import StepHeartBeatTerminationException
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
@@ -361,13 +362,22 @@ class StepLauncher:
                 except RunStoppedException as e:
                     raise e
                 except BaseException as e:  # noqa: E722
-                    logger.error(
-                        "Failed to run step `%s`: %s",
-                        self._invocation_id,
-                        e,
-                    )
-                    publish_utils.publish_failed_step_run(step_run.id)
-                    raise
+                    step_run = Client().get_run_step(step_run_id=step_run.id)
+
+                    if (
+                        isinstance(e, StepHeartBeatTerminationException)
+                        or step_run.status == ExecutionStatus.STOPPING
+                    ):
+                        # Handle as a non-failure as exception is a propagation of graceful termination.
+                        publish_utils.publish_stopped_step_run(step_run.id)
+                    else:
+                        logger.error(
+                            "Failed to run step `%s`: %s",
+                            self._invocation_id,
+                            e,
+                        )
+                        publish_utils.publish_failed_step_run(step_run.id)
+                        raise
             else:
                 logger.info(
                     f"Using cached version of step `{self._invocation_id}`."
