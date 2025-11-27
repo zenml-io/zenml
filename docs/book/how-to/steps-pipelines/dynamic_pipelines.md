@@ -250,6 +250,17 @@ if __name__ == "__main__":
 
 The `depends_on` parameter tells ZenML which steps can be configured via the YAML file. This is particularly useful when you want to allow users to configure pipeline behavior without modifying code.
 
+### Pass pipeline parameters when running snapshots from the server
+
+When running a snapshot from the server (either via the UI or the SDK/Rest API), you can now pass pipeline parameters for your dynamic pipelines.
+
+For example:
+```python
+from zenml.client import Client
+
+Client().trigger_pipeline(snapshot_id=<ID>, run_configuration={"parameters": {"my_param": 3}})
+```
+
 ## Limitations and Known Issues
 
 ### Logging
