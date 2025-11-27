@@ -127,6 +127,26 @@ When updating integration dependencies in `pyproject.toml`:
 4. **Document breaking changes**: If the update requires code changes, mention this in the PR
 5. **Consider transitive dependencies**: Major version bumps may affect other integrations
 
+### Breaking Changes
+
+A dependency update is a **breaking change** if you bump to a new version **and no longer support the old one**. This affects users who may be pinned to older versions.
+
+| Scenario | Breaking? | Action Required |
+|----------|-----------|-----------------|
+| Add support for new version (keep old) | ❌ No | Just update upper bound |
+| Bump minimum version | ⚠️ Yes | Document in changelog, consider deprecation period |
+| Drop support for old version | ⚠️ Yes | Major version considerations, migration guide |
+
+### CI Coverage for Dependency Conflicts
+
+Most dependency incompatibility issues are caught automatically by CI:
+
+- **Cross-integration conflicts**: If a new version conflicts with another integration's dependencies, CI will break
+- **Python version compatibility**: CI tests across supported Python versions
+- **Transitive dependency issues**: Dependency resolution failures surface in CI
+
+This safety net helps catch issues before merge, but doesn't replace local testing with realistic integration scenarios.
+
 ### Version Constraint Guidelines
 
 ```toml
