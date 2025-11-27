@@ -228,6 +228,31 @@ zenml pipeline runs list --new_field=some_value
 | Client list methods | `src/zenml/client.py` |
 | CLI commands | `src/zenml/cli/*.py` |
 
+## Model Changes and Backwards Compatibility
+
+When modifying domain models, be aware of server/client compatibility implications:
+
+| Change Type | Compatibility Impact |
+|-------------|---------------------|
+| **Adding new properties** | Usually NOT a problem (extras are now allowed in Pydantic) |
+| **Deleting properties** | ⚠️ PROBLEMATIC — breaks server/client compatibility |
+| **Making required→optional** | ⚠️ PROBLEMATIC — similar to deletion |
+| **Renaming properties** | ⚠️ PROBLEMATIC — equivalent to delete + add |
+| **Changing property types** | ⚠️ PROBLEMATIC — may break serialization |
+
+### Why This Matters
+
+ZenML clients and servers may run different versions. When a newer server sends a response with a deleted field, older clients expecting that field will break. Similarly, when an older client sends a request missing a newly-required field, the server will reject it.
+
+### Safe Evolution Pattern
+
+1. **Add new optional fields** — always safe
+2. **Deprecate before removing** — mark fields as deprecated, keep them for 2+ minor versions
+3. **Use default values** — when adding required fields, provide sensible defaults
+4. **Version responses** — for major changes, consider response versioning
+
+---
+
 ## Client Method Patterns
 
 When adding or modifying client methods in `src/zenml/client.py`, follow existing patterns:

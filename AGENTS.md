@@ -276,12 +276,22 @@ ZenML documentation is available via a built-in GitBook MCP server: https://docs
 
 ### Database and Migration Guidelines
 - Database schema changes require Alembic migrations
+- ZenML uses **SQLModel** (SQLAlchemy-based) — no raw SQL unless absolutely necessary
 - Create migrations with descriptive names: `alembic revision -m "Add X to Y table"`
 - Test migrations both up and down: `alembic upgrade head` and `alembic downgrade -1`
 - Never modify existing migrations that are already on main/develop branches
 - Always consider backward compatibility for rolling deployments
 - Include both schema changes and data migrations when needed
 - Run `scripts/check-alembic-branches.sh` to verify migration consistency
+
+#### Migration Testing Workflow
+When testing database migrations locally:
+1. Check out `develop` branch (or relevant old release)
+2. Populate the database from that version (create runs, stacks, etc.)
+3. Switch to your current branch
+4. Test whether the migration works with `alembic upgrade head`
+
+This ensures migrations handle existing data correctly. CI does basic migration testing, but local testing with realistic data is recommended for complex migrations.
 
 ### Commit Message Guidelines
 - Write clear, descriptive commit messages explaining the "why" not just the "what"
