@@ -108,6 +108,47 @@ This method could be a global util, but it's placed on the class because:
 - `src/zenml/orchestrators/step_run_utils.py` — Step execution utilities
 - `src/zenml/orchestrators/publish_utils.py` — Status/metadata publishing
 
+### Private Methods and API Stability
+
+Methods and functions starting with `_` (underscore) are **private** and should NOT be called from outside their class or module.
+
+**The rule:**
+- `_method()` on a class → only call from within that class
+- `_function()` in a utils module → only call from within that module
+- This isn't always consistently applied in the codebase, but it's the intended convention
+
+**Backwards compatibility implications:**
+
+| Symbol type | Part of public API? | Breaking change if modified? |
+|-------------|---------------------|------------------------------|
+| `public_method()` | ✅ Yes | ⚠️ Yes — requires deprecation |
+| `_private_method()` | ❌ No | ✅ No — can change freely |
+
+**When changing private methods:**
+1. Search for usages **within the ZenML codebase** (grep/find references)
+2. Update all internal usages
+3. No need to worry about external user backwards compatibility
+
+**Critical rule for integrations:**
+
+> ⚠️ **Integrations should NEVER use ZenML private methods**
+
+When integrations move out of the main ZenML repo (external packages), mypy won't detect if a private method they depend on was changed. This leads to silent breakage. Always use public APIs in integration code.
+
+```python
+# Bad - integration code using private method
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+
+class MyOrchestrator(BaseOrchestrator):
+    def submit_pipeline(self, ...):
+        self._some_private_helper()  # ❌ Don't do this
+
+# Good - use only public methods or reimplement logic
+class MyOrchestrator(BaseOrchestrator):
+    def submit_pipeline(self, ...):
+        self.public_method()  # ✅ Safe
+```
+
 ### FastAPI Agent Profile
 - ZenML OSS FastAPI work expects senior-level API expertise covering FastAPI, SQLModel, SQLAlchemy 2.0, and modern Pydantic v2 features.
 - Default to object-oriented patterns—extend existing service classes or create cohesive new ones instead of scattering helpers or global functions.
