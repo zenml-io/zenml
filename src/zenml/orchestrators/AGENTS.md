@@ -176,4 +176,3 @@ When implementing a new orchestrator:
 ## Additional Resources
 
 - Custom orchestrator documentation: `docs/book/component-guide/orchestrators/custom.md`
-- Full worked example: https://github.com/zenml-io/zenml-plugins/tree/main/how_to_custom_orchestrator
