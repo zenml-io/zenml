@@ -160,3 +160,70 @@ class NewEntityFilter(WorkspaceScopedFilter):
   - Keep this guide and the canonical MDC rules synchronized.
 
 Remember: Consistency, type-safety, and parity with the ORM schema are critical for stable API and internal behavior.
+
+## ⚠️ Adding New Filter Fields — CLI-Client Coupling
+
+When adding a field to a filter model (e.g., `PipelineRunFilter`), **you must update THREE locations** or the CLI will break at runtime.
+
+### Why This Matters
+
+The CLI uses `@list_options(FilterModel)` (in `src/zenml/cli/utils.py`) to auto-generate CLI options from filter model fields. These options are passed as `**kwargs` to client methods, but client methods have **explicit parameter lists** that must match. If they don't match, users get:
+```
+TypeError: list_pipeline_runs() got an unexpected keyword argument 'new_field'
+```
+
+This error only occurs at runtime when the CLI option is used—there's no mypy or test coverage to catch it.
+
+### Three-Location Update Checklist
+
+When adding a new filter field:
+
+1. **Filter Model** (`src/zenml/models/v2/core/<entity>.py`)
+   ```python
+   class PipelineRunFilter(...):
+       new_field: Optional[str] = Field(default=None, description="...")
+   ```
+
+2. **Client Method Signature** (`src/zenml/client.py`)
+   ```python
+   def list_pipeline_runs(
+       self,
+       # ... existing params ...
+       new_field: Optional[str] = None,  # ← ADD THIS
+   ) -> Page[PipelineRunResponse]:
+   ```
+
+3. **Client Method Body** — filter model instantiation inside the same method:
+   ```python
+   runs_filter_model = PipelineRunFilter(
+       # ... existing params ...
+       new_field=new_field,  # ← ADD THIS
+   )
+   ```
+
+### Optional: Exclude from CLI
+
+If the field should NOT be a CLI option, add it to `CLI_EXCLUDE_FIELDS`:
+```python
+class PipelineRunFilter(...):
+    CLI_EXCLUDE_FIELDS = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        "new_field",  # Not exposed in CLI
+    ]
+```
+
+### Testing
+
+Always test the new filter via CLI after adding:
+```bash
+zenml pipeline runs list --new_field=some_value
+```
+
+### Related Files
+
+| Component | Location |
+|-----------|----------|
+| Filter models | `src/zenml/models/v2/core/*.py`, `src/zenml/models/v2/base/scoped.py` |
+| list_options decorator | `src/zenml/cli/utils.py:2798` |
+| Client list methods | `src/zenml/client.py` |
+| CLI commands | `src/zenml/cli/*.py` |
