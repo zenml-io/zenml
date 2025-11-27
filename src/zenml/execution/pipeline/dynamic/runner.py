@@ -56,6 +56,7 @@ from zenml.logging.step_logging import setup_pipeline_logging
 from zenml.models import (
     ArtifactVersionResponse,
     PipelineRunResponse,
+    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 from zenml.orchestrators.publish_utils import (
@@ -154,20 +155,23 @@ class DynamicPipelineRunner:
         with setup_pipeline_logging(
             source="orchestrator",
             snapshot=self._snapshot,
-            run_id=self._run.id if self._run else None,
         ) as logs_request:
-            with InMemoryArtifactCache():
-                run = self._run or create_placeholder_run(
+            if self._run:
+                run = Client().zen_store.update_run(
+                    run_id=self._run.id,
+                    run_update=PipelineRunUpdate(
+                        orchestrator_run_id=self._orchestrator_run_id,
+                        add_logs=[logs_request] if logs_request else None,
+                    ),
+                )
+            else:
+                run = create_placeholder_run(
                     snapshot=self._snapshot,
                     orchestrator_run_id=self._orchestrator_run_id,
                     logs=logs_request,
                 )
 
-                assert (
-                    self._snapshot.pipeline_spec
-                )  # Always exists for new snapshots
-                pipeline_parameters = self._snapshot.pipeline_spec.parameters
-
+            with InMemoryArtifactCache():
                 with DynamicPipelineRunContext(
                     pipeline=self.pipeline,
                     run=run,
@@ -180,7 +184,8 @@ class DynamicPipelineRunner:
                         # TODO: what should be allowed as pipeline returns?
                         #  (artifacts, json serializable, anything?)
                         #  how do we show it in the UI?
-                        self.pipeline._call_entrypoint(**pipeline_parameters)
+                        params = self.pipeline.configuration.parameters or {}
+                        self.pipeline._call_entrypoint(**params)
                         # The pipeline function finished successfully, but some
                         # steps might still be running. We now wait for all of
                         # them and raise any exceptions that occurred.
