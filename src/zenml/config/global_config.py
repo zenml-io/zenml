@@ -16,7 +16,7 @@
 import os
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, cast, overload
 from uuid import UUID
 
 from packaging import version
@@ -488,6 +488,20 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return environment_vars
 
+    @overload
+    def _get_store_configuration(
+        self,
+        baseline: Optional[StoreConfiguration] = ...,
+        allow_default: Literal[True] = ...,
+    ) -> StoreConfiguration: ...
+
+    @overload
+    def _get_store_configuration(
+        self,
+        baseline: Optional[StoreConfiguration] = ...,
+        allow_default: Literal[False] = ...,
+    ) -> Optional[StoreConfiguration]: ...
+
     def _get_store_configuration(
         self,
         baseline: Optional[StoreConfiguration] = None,
@@ -641,9 +655,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # configuration from there and disregard the global configuration.
         if self._zen_store is not None:
             return self._zen_store.config
-        store_config = self._get_store_configuration()
-        assert store_config is not None
-        return store_config
+        return self._get_store_configuration()
 
     def get_default_store(self) -> StoreConfiguration:
         """Get the default SQLite store configuration.
@@ -670,7 +682,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         default_store_cfg = self._get_store_configuration(
             baseline=self.get_default_store()
         )
-        assert default_store_cfg is not None
         self._configure_store(default_store_cfg)
         logger.debug("Using the default store for the global config.")
 
@@ -711,7 +722,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         # Apply the environment variables to the custom store configuration
         resolved_config = self._get_store_configuration(baseline=config)
-        assert resolved_config is not None
         self._configure_store(
             resolved_config, skip_default_registrations, **kwargs
         )
