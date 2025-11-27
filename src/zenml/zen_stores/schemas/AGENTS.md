@@ -6,6 +6,14 @@ Guidance for agents working with ZenML's data storage layer, including ORM schem
 
 ZenML uses **SQLModel** (SQLAlchemy-based) for all database operations. No raw SQL unless absolutely necessary.
 
+### Database Column Limits
+
+General string column limit: **~250 characters** (MySQL constraint). This affects:
+- Orchestrator run IDs and similar identifier fields
+- Any string field that might receive external system identifiers
+
+When designing schemas, ensure string fields that store external IDs have appropriate length constraints.
+
 ---
 
 ## ⚠️ CRITICAL: Import Restriction for `zen_stores/`

@@ -401,6 +401,19 @@ When tackling complex tasks:
 - Centralize FastAPI request logging, tracing, and unexpected error handling inside middleware so route handlers stay lean.
 - Evaluate latency/throughput for every new endpoint; cache static data, lazy-load heavyweight resources, and document serialization trade-offs to protect performance budgets.
 
+### Summary Checklist for PR Reviewers
+
+Quick reference for common review concerns. Detailed explanations live in the nested AGENTS.md files.
+
+- [ ] **Integration PRs:** No library imports in flavor files (`integrations/AGENTS.md`)
+- [ ] **Orchestrator PRs:** Verify `get_orchestrator_run_id` is unique per run but same for all steps (`orchestrators/AGENTS.md`)
+- [ ] **Filter model changes:** Check corresponding client method is updated (`models/AGENTS.md`)
+- [ ] **Private method changes:** Check all internal usages (see "Private Methods" above)
+- [ ] **Import checking:** No `zen_server` imports from outside `zen_server` (`zen_server/AGENTS.md`)
+- [ ] **Import checking:** No direct SQL imports from outside `zen_stores` (`zen_stores/schemas/AGENTS.md`)
+- [ ] **Model changes:** Adding properties OK, deleting/making optional is breaking (`models/AGENTS.md`)
+- [ ] **Dependency bumps:** If dropping old version support, it's a breaking change (`integrations/AGENTS.md`)
+
 ## Documentation Guidelines
 
 ### Structure
