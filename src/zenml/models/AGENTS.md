@@ -227,3 +227,36 @@ zenml pipeline runs list --new_field=some_value
 | list_options decorator | `src/zenml/cli/utils.py:2798` |
 | Client list methods | `src/zenml/client.py` |
 | CLI commands | `src/zenml/cli/*.py` |
+
+## Client Method Patterns
+
+When adding or modifying client methods in `src/zenml/client.py`, follow existing patterns:
+
+### Get Methods
+```python
+def get_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> PipelineResponse:
+    """Get a pipeline by name, ID, or prefix."""
+    # If it looks like a UUID, fetch directly
+    # If it's a name, list + filter to find it
+    # Follow what other get_* methods do
+```
+
+### List Methods
+```python
+def list_pipelines(
+    self,
+    # All filter model fields as explicit parameters
+    name: Optional[str] = None,
+    size: int = PAGE_SIZE_DEFAULT,
+    # ... etc
+) -> Page[PipelineResponse]:
+    """List pipelines with filtering."""
+    filter_model = PipelineFilter(name=name, ...)
+    return self.zen_store.list_pipelines(filter_model)
+```
+
+### Key Conventions
+- **Get by name or ID**: Most `get_*` methods accept either a name or UUID
+- **Explicit parameters**: List methods have explicit parameters matching filter fields (see CLI coupling above)
+- **Consistent return types**: Get returns single Response, List returns `Page[Response]`
+- **Follow existing patterns**: When in doubt, look at similar methods in the same file
