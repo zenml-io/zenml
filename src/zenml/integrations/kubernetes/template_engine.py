@@ -17,7 +17,13 @@ import json
 from typing import Any, Dict, List
 
 import yaml
-from jinja2 import Environment, StrictUndefined, TemplateError, Undefined
+from jinja2 import (
+    Environment,
+    StrictUndefined,
+    TemplateError,
+    Undefined,
+    select_autoescape,
+)
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -69,9 +75,17 @@ class KubernetesTemplateEngine:
             strict_undefined: If True, raise an error for undefined template
                 variables. If False, undefined variables are silently ignored.
         """
+        # autoescape must be disabled for YAML manifests rendered from plain
+        # strings because select_autoescape defaults to escaping string-based
+        # templates as HTML. That would turn `"foo"` into `&#34;foo&#34;`, making
+        # the rendered YAML invalid.
         self.env = Environment(
             undefined=StrictUndefined if strict_undefined else Undefined,
-            autoescape=False,
+            autoescape=select_autoescape(
+                enabled_extensions=("html", "htm", "xml"),
+                default=False,
+                default_for_string=False,
+            ),
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
