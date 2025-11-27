@@ -97,6 +97,87 @@ def shutdown(h: Closable) -> None:
     h.close()
 ```
 
+### Util Function Placement
+
+When deciding whether to place a helper function in a utils file or on a class, follow these guidelines:
+
+1. **If a method only makes sense within the context of a class** → Put it on the class
+2. **If a static/util method is heavily used by subclasses** → Put it on the parent class
+
+**Rationale for placing methods on classes:**
+- Saves imports for users and subclasses
+- Subclasses can simply call `self.something()` instead of finding and importing from a util file
+- Keeps related functionality co-located
+
+**Example:** `requires_resources_in_orchestration_environment` in `base_orchestrator.py:495-514`
+
+```python
+# This is a @staticmethod on BaseOrchestrator, not a standalone util
+@staticmethod
+def requires_resources_in_orchestration_environment(step: "Step") -> bool:
+    """Checks if the orchestrator should run this step on special resources."""
+    if step.config.step_operator:
+        return False
+    return not step.config.resource_settings.empty
+```
+
+This method could be a global util, but it's placed on the class because:
+- All orchestrator subclasses frequently need it
+- Subclasses can call `self.requires_resources_in_orchestration_environment(step)` without imports
+- It's conceptually tied to orchestrator behavior
+
+**When to use utils files:**
+- Truly generic functions used across unrelated modules
+- Functions that don't logically belong to any class
+- Pure utility functions (string manipulation, date formatting, etc.)
+
+**Key utils locations:**
+- `src/zenml/utils/` — General utilities
+- `src/zenml/orchestrators/utils.py` — Orchestrator-specific utilities
+- `src/zenml/orchestrators/step_run_utils.py` — Step execution utilities
+- `src/zenml/orchestrators/publish_utils.py` — Status/metadata publishing
+
+### Private Methods and API Stability
+
+Methods and functions starting with `_` (underscore) are **private** and should NOT be called from outside their class or module.
+
+**The rule:**
+- `_method()` on a class → only call from within that class
+- `_function()` in a utils module → only call from within that module
+- This isn't always consistently applied in the codebase, but it's the intended convention
+
+**Backwards compatibility implications:**
+
+| Symbol type | Part of public API? | Breaking change if modified? |
+|-------------|---------------------|------------------------------|
+| `public_method()` | ✅ Yes | ⚠️ Yes — requires deprecation |
+| `_private_method()` | ❌ No | ✅ No — can change freely |
+
+**When changing private methods:**
+1. Search for usages **within the ZenML codebase** (grep/find references)
+2. Update all internal usages
+3. No need to worry about external user backwards compatibility
+
+**Critical rule for integrations:**
+
+> ⚠️ **Integrations should NEVER use ZenML private methods**
+
+When integrations move out of the main ZenML repo (external packages), mypy won't detect if a private method they depend on was changed. This leads to silent breakage. Always use public APIs in integration code.
+
+```python
+# Bad - integration code using private method
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+
+class MyOrchestrator(BaseOrchestrator):
+    def submit_pipeline(self, ...):
+        self._some_private_helper()  # ❌ Don't do this
+
+# Good - use only public methods or reimplement logic
+class MyOrchestrator(BaseOrchestrator):
+    def submit_pipeline(self, ...):
+        self.public_method()  # ✅ Safe
+```
+
 ### FastAPI Agent Profile
 - ZenML OSS FastAPI work demands senior-level proficiency across FastAPI, SQLModel, SQLAlchemy 2.0, and modern Pydantic v2 patterns; study existing routers and services before proposing changes.
 - Favor object-oriented extensions over scattering helpers—extend service/repository classes or introduce cohesive new ones, and rely on dependency injection rather than module-level singletons.
@@ -350,6 +431,19 @@ When tackling complex tasks:
 - Review similar PRs for implementation patterns
 - Pipeline execution is complex - test thoroughly when modifying
 - Centralize FastAPI logging, tracing, and unexpected error handling inside middleware; measure latency/throughput for new endpoints, cache static payloads, lazy-load heavyweight resources, and articulate serialization trade-offs in PR notes.
+
+### Summary Checklist for PR Reviewers
+
+Quick reference for common review concerns. Detailed explanations live in the nested AGENTS.md files.
+
+- [ ] **Integration PRs:** No library imports in flavor files (`src/zenml/integrations/AGENTS.md`)
+- [ ] **Orchestrator PRs:** Verify `get_orchestrator_run_id` is unique per run but same for all steps (`src/zenml/orchestrators/AGENTS.md`)
+- [ ] **Filter model changes:** Check corresponding client method is updated (`src/zenml/models/AGENTS.md`)
+- [ ] **Private method changes:** Check all internal usages (see "Private Methods" above)
+- [ ] **Import checking:** No `zen_server` imports from outside `zen_server` (`src/zenml/zen_server/AGENTS.md`)
+- [ ] **Import checking:** No direct SQL imports from outside `zen_stores` (`src/zenml/zen_stores/schemas/AGENTS.md`)
+- [ ] **Model changes:** Adding properties OK, deleting/making optional is breaking (`src/zenml/models/AGENTS.md`)
+- [ ] **Dependency bumps:** If dropping old version support, it's a breaking change (`src/zenml/integrations/AGENTS.md`)
 
 ## Documentation Guidelines
 
