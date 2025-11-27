@@ -657,6 +657,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             return self._zen_store.config
         return self._get_store_configuration()
 
+    @property
+    def store_configuration_no_default(self) -> Optional[StoreConfiguration]:
+        """Get the store configuration without falling back to the default.
+
+        Returns:
+            The configured store configuration, or `None` if no configuration is set.
+        """
+        return self._get_store_configuration(allow_default=False)
+
     def get_default_store(self) -> StoreConfiguration:
         """Get the default SQLite store configuration.
 

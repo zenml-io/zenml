@@ -952,7 +952,7 @@ def login(
     # Get the server that the client is currently connected to, if any
     current_non_local_server: Optional[str] = None
     gc = GlobalConfiguration()
-    store_cfg = gc._get_store_configuration(allow_default=False)
+    store_cfg = gc.store_configuration_no_default
     if store_cfg and store_cfg.type == StoreType.REST:
         if not connected_to_local_server():
             current_non_local_server = store_cfg.url
