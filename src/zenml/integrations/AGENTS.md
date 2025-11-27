@@ -139,3 +139,31 @@ When updating integration dependencies in `pyproject.toml`:
 # Avoid: Overly tight constraints
 "sagemaker==2.117.0"
 ```
+
+## General Import Restrictions
+
+Beyond the flavor file rule, integrations should also respect these import boundaries:
+
+### Never Import From
+
+| Directory | Why |
+|-----------|-----|
+| `zen_server/` | Server dependencies are optional; not installed on client machines |
+| `zen_stores/` (schemas directly) | SQL dependencies may not be installed; use `Client` instead |
+
+### Correct Pattern for Store Access
+
+```python
+# ❌ Bad - direct SQL import
+from zenml.zen_stores.schemas import ArtifactSchema
+
+# ✅ Good - use the Client
+from zenml.client import Client
+client = Client()
+artifacts = client.list_artifacts()
+
+# ✅ If you need store access (rare, and only in implementation files)
+client.zen_store.get_artifact(artifact_id)
+```
+
+This ensures proper dependency checking and clear error messages when dependencies are missing.

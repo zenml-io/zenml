@@ -45,7 +45,16 @@ class EntityFilter(...):
     CLI_EXCLUDE_FIELDS = [..., "internal_field"]
 ```
 
-## Integration Imports
+## Import Considerations
+
+### Core ZenML Imports
+
+The CLI does import most of ZenML core when used, because it needs to import models which import many other modules. This is acceptable because:
+- ZenML itself is not that large
+- Core imports are fast and always available
+- The real problem is integration libraries (see below)
+
+### Integration Imports — NEVER at Module Level
 
 Never import integration libraries at module level in CLI files. Integrations may not be installed, and module-level imports would break the entire CLI.
 
@@ -56,4 +65,24 @@ from sklearn import metrics
 # Good - import inside function when needed
 def some_command():
     from sklearn import metrics
+```
+
+**Why this matters especially for CLI:**
+- Integration libraries can be massive (Evidently, Great Expectations = millions of lines of code)
+- Users expect `zenml --help` to work instantly, not after loading heavy dependencies
+- A single bad import can break the entire CLI for all users
+
+### Server and SQL Imports
+
+The CLI should also avoid importing from:
+- `zen_server/` — Server dependencies are optional
+- `zen_stores/` schemas directly — Use the Client abstraction instead
+
+```python
+# Bad
+from zenml.zen_stores.schemas import PipelineSchema
+
+# Good
+from zenml.client import Client
+client = Client()
 ```

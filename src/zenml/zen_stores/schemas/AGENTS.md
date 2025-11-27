@@ -1,5 +1,39 @@
 # ZenML ORM Schemas — Concise Guide
 
+## ⚠️ CRITICAL: Import Restriction for `zen_stores/`
+
+**Rule:** Code outside `zen_stores/` should **NOT** import SQL-related code directly from this directory.
+
+### Why This Matters
+
+1. **Optional SQL dependencies**: SQL dependencies (SQLAlchemy, SQLModel) may not be installed in all environments
+2. **Import check bypass**: Direct imports skip ZenML's dependency checking, leading to misleading error messages
+3. **Abstraction violation**: External code should use the Client abstraction, not raw database access
+
+### Correct Access Pattern
+
+```python
+# ❌ Bad - direct import from zen_stores
+from zenml.zen_stores.schemas import PipelineRunSchema
+from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+# ✅ Good - use the Client
+from zenml.client import Client
+client = Client()
+runs = client.list_pipeline_runs()
+
+# ✅ If you need lower-level access (rare)
+client.zen_store  # Gives you access to the store with proper checks
+```
+
+### Why `client.zen_store` Is Better
+
+- Import checks run properly before accessing the store
+- Correct warnings are raised for missing dependencies
+- The client handles connection management and authentication
+
+---
+
 Scope and Location
 - Applies to all ORM schemas in src/zenml/zen_stores/schemas and their exports in __init__.py.
 - File naming: <concept>_schemas.py (e.g., stack_schemas.py). Prefer a single schema class per file unless multiple are needed for the same concept.
