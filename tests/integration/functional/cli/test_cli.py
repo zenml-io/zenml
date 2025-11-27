@@ -89,7 +89,8 @@ def _mock_rest_store_environment(mocker):
     credentials_store = mocker.Mock()
     credentials_store.has_valid_credentials.return_value = True
     mocker.patch(
-        "zenml.cli.login.get_credentials_store", return_value=credentials_store
+        "zenml.login.credentials_store.get_credentials_store",
+        return_value=credentials_store,
     )
     mocker.patch(
         "zenml.cli.login.BaseZenStore.get_store_type",
