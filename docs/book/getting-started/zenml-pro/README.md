@@ -25,7 +25,7 @@ The [Pro version of ZenML](https://zenml.io/pro) extends the Open Source product
 ![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp-walkthrough.gif)
 
 {% hint style="info" %}
-Try ZenML Pro with a [free account](https://zenml.io/pro?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link).
+To try ZenML Pro or to learn more [book a call](https://www.zenml.io/book-your-demo).
 {% endhint %}
 
 ## ZenML OSS vs Pro Feature Comparison
