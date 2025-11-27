@@ -236,7 +236,8 @@ def generate_config_schema(
     all_steps: Dict[str, Any] = {}
     all_steps_required = False
     for step_name, step in step_configurations.items():
-        step_fields = generic_step_fields.copy()
+        step_fields: Dict[str, Any] = {}
+
         if step.config.parameters:
             parameter_fields: Dict[str, Any] = {}
 
@@ -259,6 +260,7 @@ def generate_config_schema(
                 FieldInfo(default=...),
             )
 
+        step_fields.update(generic_step_fields)
         step_model = create_model(step_name, **step_fields)
 
         # Pydantic doesn't allow field names to start with an underscore
@@ -285,6 +287,28 @@ def generate_config_schema(
 
     top_level_fields: Dict[str, Any] = {}
 
+    if snapshot.is_dynamic:
+        pipeline_parameter_fields: Dict[str, Any] = {}
+
+        for parameter_name in pipeline_configuration.parameters or {}:
+            # Pydantic doesn't allow field names to start with an underscore
+            sanitized_parameter_name = parameter_name.lstrip("_")
+            while sanitized_parameter_name in pipeline_parameter_fields:
+                sanitized_parameter_name = sanitized_parameter_name + "_"
+
+            pipeline_parameter_fields[sanitized_parameter_name] = (
+                Any,
+                FieldInfo(default=..., validation_alias=parameter_name),
+            )
+
+        parameters_class = create_model(
+            "Parameters", **pipeline_parameter_fields
+        )
+        top_level_fields["parameters"] = (
+            parameters_class,
+            FieldInfo(default=None),
+        )
+
     for key, field_info in PipelineRunConfiguration.model_fields.items():
         if key in ["schedule", "build", "steps", "settings", "parameters"]:
             continue
@@ -301,28 +325,6 @@ def generate_config_schema(
     else:
         top_level_fields["steps"] = (
             Optional[all_steps_model],
-            FieldInfo(default=None),
-        )
-
-    if snapshot.is_dynamic:
-        pipeline_parameter_fields: Dict[str, Any] = {}
-
-        for parameter_name in pipeline_configuration.parameters or {}:
-            # Pydantic doesn't allow field names to start with an underscore
-            sanitized_parameter_name = parameter_name.lstrip("_")
-            while sanitized_parameter_name in parameter_fields:
-                sanitized_parameter_name = sanitized_parameter_name + "_"
-
-            pipeline_parameter_fields[sanitized_parameter_name] = (
-                Any,
-                FieldInfo(default=..., validation_alias=parameter_name),
-            )
-
-        parameters_class = create_model(
-            "Parameters", **pipeline_parameter_fields
-        )
-        top_level_fields["parameters"] = (
-            parameters_class,
             FieldInfo(default=None),
         )
 
