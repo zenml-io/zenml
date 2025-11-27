@@ -489,20 +489,20 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return environment_vars
 
     @overload
-    def _get_store_configuration(
+    def get_store_configuration(
         self,
         baseline: Optional[StoreConfiguration] = ...,
         allow_default: Literal[True] = ...,
     ) -> StoreConfiguration: ...
 
     @overload
-    def _get_store_configuration(
+    def get_store_configuration(
         self,
         baseline: Optional[StoreConfiguration] = ...,
         allow_default: Literal[False] = ...,
     ) -> Optional[StoreConfiguration]: ...
 
-    def _get_store_configuration(
+    def get_store_configuration(
         self,
         baseline: Optional[StoreConfiguration] = None,
         allow_default: bool = True,
@@ -655,16 +655,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # configuration from there and disregard the global configuration.
         if self._zen_store is not None:
             return self._zen_store.config
-        return self._get_store_configuration()
-
-    @property
-    def store_configuration_no_default(self) -> Optional[StoreConfiguration]:
-        """Get the store configuration without falling back to the default.
-
-        Returns:
-            The configured store configuration, or `None` if no configuration is set.
-        """
-        return self._get_store_configuration(allow_default=False)
+        return self.get_store_configuration()
 
     def get_default_store(self) -> StoreConfiguration:
         """Get the default SQLite store configuration.
@@ -688,7 +679,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         default store.
         """
         # Apply the environment variables to the default store configuration
-        default_store_cfg = self._get_store_configuration(
+        default_store_cfg = self.get_store_configuration(
             baseline=self.get_default_store()
         )
         self._configure_store(default_store_cfg)
@@ -730,7 +721,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 constructor.
         """
         # Apply the environment variables to the custom store configuration
-        resolved_config = self._get_store_configuration(baseline=config)
+        resolved_config = self.get_store_configuration(baseline=config)
         self._configure_store(
             resolved_config, skip_default_registrations, **kwargs
         )
