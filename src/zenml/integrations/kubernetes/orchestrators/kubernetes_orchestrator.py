@@ -525,6 +525,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         annotations: Dict[str, str],
         settings: KubernetesOrchestratorSettings,
         pod_settings: Optional[KubernetesPodSettings] = None,
+        backoff_limit: Optional[int] = None,
     ) -> k8s_client.V1Job:
         """Prepares the job manifest for a Kubernetes job.
 
@@ -538,6 +539,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             annotations: The annotations to add to the job.
             settings: Component settings for the orchestrator.
             pod_settings: Optional settings for the pod.
+            backoff_limit: The backoff limit for the job.
 
         Returns:
             The job manifest.
@@ -602,7 +604,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return build_job_manifest(
             job_name=name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
-            backoff_limit=settings.orchestrator_job_backoff_limit,
+            backoff_limit=backoff_limit,
             ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
             active_deadline_seconds=settings.active_deadline_seconds,
             pod_failure_policy=pod_failure_policy,
@@ -773,6 +775,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 annotations=annotations,
                 settings=settings,
                 pod_settings=orchestrator_pod_settings,
+                backoff_limit=settings.orchestrator_job_backoff_limit,
             )
 
             if snapshot.schedule:
@@ -891,6 +894,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_name=step_run_info.pipeline_step_name,
         )
 
+        retry_config = step_run_info.config.retry
+        backoff_limit = (
+            retry_config.max_retries if retry_config else 0
+        ) + settings.backoff_limit_margin
+
         job_manifest = self._prepare_job_manifest(
             name=job_name,
             command=command,
@@ -901,6 +909,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             annotations=annotations,
             settings=settings,
             pod_settings=settings.pod_settings,
+            backoff_limit=backoff_limit,
         )
 
         kube_utils.create_job(
