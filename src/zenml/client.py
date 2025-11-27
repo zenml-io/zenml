@@ -3618,14 +3618,16 @@ class Client(metaclass=ClientMetaClass):
                 run_configuration
             )
 
-        if run_configuration:
-            validate_run_config_is_runnable_from_server(run_configuration)
-
         if template_id:
             logger.warning(
                 "Triggering a run template is deprecated. Use "
                 "`Client().trigger_pipeline(snapshot_id=...)` instead."
             )
+            if run_configuration:
+                validate_run_config_is_runnable_from_server(
+                    run_configuration, is_dynamic=False
+                )
+
             run = self.zen_store.run_template(
                 template_id=template_id,
                 run_configuration=run_configuration,
@@ -3638,13 +3640,13 @@ class Client(metaclass=ClientMetaClass):
                         "using stack associated with the snapshot instead."
                     )
 
-                snapshot_id = self.get_snapshot(
+                snapshot = self.get_snapshot(
                     name_id_or_prefix=snapshot_name_or_id,
                     pipeline_name_or_id=pipeline_name_or_id,
                     project=project,
                     allow_prefix_match=False,
                     hydrate=False,
-                ).id
+                )
             else:
                 if not pipeline_name_or_id:
                     raise RuntimeError(
@@ -3692,7 +3694,6 @@ class Client(metaclass=ClientMetaClass):
                     except ValueError:
                         continue
 
-                    snapshot_id = snapshot.id
                     break
                 else:
                     raise RuntimeError(
@@ -3708,8 +3709,13 @@ class Client(metaclass=ClientMetaClass):
             except RuntimeError:
                 pass
 
+            if run_configuration:
+                validate_run_config_is_runnable_from_server(
+                    run_configuration, is_dynamic=snapshot.is_dynamic
+                )
+
             run = self.zen_store.run_snapshot(
-                snapshot_id=snapshot_id,
+                snapshot_id=snapshot.id,
                 run_request=PipelineSnapshotRunRequest(
                     run_configuration=run_configuration,
                     step_run=step_run_id,
