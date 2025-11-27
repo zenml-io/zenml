@@ -68,6 +68,46 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 - Use descriptive variable names and documentation
 - Keep function size manageable (aim for < 50 lines) though there are exceptions
 
+### Util Function Placement
+
+When deciding whether to place a helper function in a utils file or on a class, follow these guidelines:
+
+1. **If a method only makes sense within the context of a class** → Put it on the class
+2. **If a static/util method is heavily used by subclasses** → Put it on the parent class
+
+**Rationale for placing methods on classes:**
+- Saves imports for users and subclasses
+- Subclasses can simply call `self.something()` instead of finding and importing from a util file
+- Keeps related functionality co-located
+
+**Example:** `requires_resources_in_orchestration_environment` in `base_orchestrator.py:495-514`
+
+```python
+# This is a @staticmethod on BaseOrchestrator, not a standalone util
+@staticmethod
+def requires_resources_in_orchestration_environment(step: "Step") -> bool:
+    """Checks if the orchestrator should run this step on special resources."""
+    if step.config.step_operator:
+        return False
+    return not step.config.resource_settings.empty
+```
+
+This method could be a global util, but it's placed on the class because:
+- All orchestrator subclasses frequently need it
+- Subclasses can call `self.requires_resources_in_orchestration_environment(step)` without imports
+- It's conceptually tied to orchestrator behavior
+
+**When to use utils files:**
+- Truly generic functions used across unrelated modules
+- Functions that don't logically belong to any class
+- Pure utility functions (string manipulation, date formatting, etc.)
+
+**Key utils locations:**
+- `src/zenml/utils/` — General utilities
+- `src/zenml/orchestrators/utils.py` — Orchestrator-specific utilities
+- `src/zenml/orchestrators/step_run_utils.py` — Step execution utilities
+- `src/zenml/orchestrators/publish_utils.py` — Status/metadata publishing
+
 ### FastAPI Agent Profile
 - ZenML OSS FastAPI work expects senior-level API expertise covering FastAPI, SQLModel, SQLAlchemy 2.0, and modern Pydantic v2 features.
 - Default to object-oriented patterns—extend existing service classes or create cohesive new ones instead of scattering helpers or global functions.
