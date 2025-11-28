@@ -40,6 +40,7 @@ from zenml.config.compiler import Compiler
 from zenml.enums import ExecutionMode, StepRuntime
 from zenml.execution.pipeline.dynamic.outputs import (
     ArtifactFuture,
+    MapResultsFuture,
     OutputArtifact,
     StepRunFuture,
     StepRunOutputs,
@@ -274,7 +275,6 @@ class DynamicPipelineRunner:
         if concurrent:
             ctx = contextvars.copy_context()
             future = self._executor.submit(ctx.run, _launch)
-            compiled_step.config.outputs
             step_run_future = StepRunOutputsFuture(
                 wrapped=future,
                 invocation_id=compiled_step.spec.invocation_id,
@@ -292,7 +292,7 @@ class DynamicPipelineRunner:
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         product: bool = False,
-    ) -> List["StepRunOutputsFuture"]:
+    ) -> "MapResultsFuture":
         """Map over step inputs.
 
         Args:
@@ -305,13 +305,13 @@ class DynamicPipelineRunner:
                 inputs.
 
         Returns:
-            The step run output futures.
+            A future that represents the map results.
         """
         kwargs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
         kwargs = await_step_inputs(kwargs)
         step_inputs = expand_mapped_inputs(kwargs, product=product)
 
-        return [
+        step_run_futures = [
             self.launch_step(
                 step,
                 id=None,
@@ -322,6 +322,8 @@ class DynamicPipelineRunner:
             )
             for inputs in step_inputs
         ]
+
+        return MapResultsFuture(futures=step_run_futures)
 
     def await_all_step_run_futures(self) -> None:
         """Await all step run output futures."""
@@ -361,10 +363,19 @@ def compile_dynamic_step_invocation(
     if isinstance(after, _BaseStepRunFuture):
         after._wait()
         upstream_steps.add(after.invocation_id)
+    elif isinstance(after, MapResultsFuture):
+        for future in after:
+            future._wait()
+            upstream_steps.add(future.invocation_id)
     elif isinstance(after, Sequence):
         for item in after:
-            item._wait()
-            upstream_steps.add(item.invocation_id)
+            if isinstance(item, _BaseStepRunFuture):
+                item._wait()
+                upstream_steps.add(item.invocation_id)
+            elif isinstance(item, MapResultsFuture):
+                for future in item:
+                    future._wait()
+                    upstream_steps.add(future.invocation_id)
 
     inputs = await_step_inputs(inputs)
 
@@ -505,7 +516,7 @@ def _should_retry_locally(
         step_config=step.config,
         pipeline_docker_settings=pipeline_docker_settings,
     )
-    if runtime == StepRuntime.INLINE or step.config.step_operator:
+    if runtime == StepRuntime.INLINE:
         return True
     else:
         # Running in isolated mode with the orchestrator
@@ -717,6 +728,9 @@ def await_step_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """
     result = {}
     for key, value in inputs.items():
+        if isinstance(value, MapResultsFuture):
+            value = value.futures
+
         if (
             isinstance(value, Sequence)
             and value

@@ -180,6 +180,39 @@ def unmapped_example():
     consumer.map(a=a, b=unmapped(b))
 ```
 
+#### Unpacking mapped outputs
+
+If a mapped step returns multiple outputs, you can split them into separate lists (one per output) using `unpack()`. This returns a tuple of lists of artifact futures, aligned by mapped invocation.
+
+```python
+from zenml import pipeline, step
+
+@step
+def create_int_list() -> list[int]:
+    return [1, 2]
+
+@step
+def compute(a: int) -> tuple[int, int]:
+    return a * 2, a * 3
+
+@pipeline(dynamic=True)
+def map_pipeline():
+    ints = create_int_list()
+    results = compute.map(a=ints)  # Map over [1, 2]
+
+    # Unpack per-output across all mapped invocations
+    double, triple = results.unpack()
+
+    # Each element is an ArtifactFuture; load to get concrete values
+    doubles = [f.load() for f in double]  # [2, 4]
+    triples = [f.load() for f in triple]  # [3, 6]
+```
+
+Notes:
+- `results` is a future that refers to all outputs of all steps, and `unpack()` works for both `.map(...)` and `.product(...)`.
+- Each list contains future objects that refer to a single artifact.
+
+
 ### Parallel Step Execution
 
 Dynamic pipelines support true parallel execution using `step.submit()`. This method returns a `StepRunFuture` that you can use to wait for results or pass to downstream steps:
