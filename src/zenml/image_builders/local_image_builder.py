@@ -16,7 +16,7 @@
 import shutil
 import subprocess
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Optional, Type, cast
 
 from pydantic import Field
 
@@ -28,6 +28,7 @@ from zenml.image_builders import (
 from zenml.utils import docker_utils
 
 if TYPE_CHECKING:
+    from zenml.config.docker_settings import DockerBuildOptions
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
 
@@ -102,7 +103,7 @@ class LocalImageBuilder(BaseImageBuilder):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Optional[Dict[str, Any]] = None,
+        docker_build_options: Optional["DockerBuildOptions"] = None,
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and optionally pushes an image using the local Docker client.
@@ -141,7 +142,7 @@ class LocalImageBuilder(BaseImageBuilder):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Optional[Dict[str, Any]] = None,
+        docker_build_options: Optional["DockerBuildOptions"] = None,
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> None:
         """Builds an image using the Python Docker SDK.
@@ -159,6 +160,12 @@ class LocalImageBuilder(BaseImageBuilder):
         else:
             docker_client = docker_utils._try_get_docker_client_from_env()
 
+        build_options = (
+            docker_build_options.to_docker_python_sdk_options()
+            if docker_build_options
+            else {}
+        )
+
         with tempfile.TemporaryFile(mode="w+b") as f:
             build_context.write_archive(f)
 
@@ -167,7 +174,7 @@ class LocalImageBuilder(BaseImageBuilder):
                 fileobj=f,
                 custom_context=True,
                 tag=image_name,
-                **(docker_build_options or {}),
+                **build_options,
             )
         docker_utils._process_stream(output_stream)
 
@@ -175,7 +182,7 @@ class LocalImageBuilder(BaseImageBuilder):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Optional[Dict[str, Any]] = None,
+        docker_build_options: Optional["DockerBuildOptions"] = None,
     ) -> None:
         """Builds an image using a subprocess `docker build` call.
 
@@ -194,31 +201,8 @@ class LocalImageBuilder(BaseImageBuilder):
             # file to stdin
             command = ["docker", "build", "-", "-t", image_name]
 
-            docker_build_options = docker_build_options or {}
-            if docker_build_options.pop("pull", False):
-                command.append("--pull")
-
-            build_args = docker_build_options.pop("buildargs", None) or {}
-            for key, value in build_args.items():
-                command.extend(["--build-arg", f"{key}={value}"])
-
-            labels = docker_build_options.pop("labels", None) or {}
-            for key, value in labels.items():
-                command.extend(["--label", f"{key}={value}"])
-
-            cache_from = docker_build_options.pop("cache_from", None) or []
-            for value in cache_from:
-                command.extend(["--cache-from", value])
-
-            for key, value in docker_build_options.items():
-                if isinstance(value, list):
-                    for val in value:
-                        command.extend([f"--{key}", str(val)])
-                elif isinstance(value, bool):
-                    if value:
-                        command.append(f"--{key}")
-                else:
-                    command.extend([f"--{key}", str(value)])
+            if docker_build_options:
+                command.extend(docker_build_options.to_docker_cli_options())
 
             process = subprocess.Popen(command, stdin=f)
 
