@@ -134,6 +134,7 @@ class BaseStep:
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
+        heartbeat_healthy_threshold: Optional[int] = None,
     ) -> None:
         """Initializes a step.
 
@@ -171,6 +172,9 @@ class BaseStep:
                 run inline unless a step operator or docker/resource settings
                 are configured. This is only applicable for dynamic
                 pipelines.
+            heartbeat_healthy_threshold: The amount of time (in minutes) that a
+                running step has not received heartbeat and is considered healthy.
+                By default, set to the maximum value (30 minutes).",
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -238,6 +242,7 @@ class BaseStep:
             substitutions=substitutions,
             cache_policy=cache_policy,
             runtime=runtime,
+            heartbeat_healthy_threshold=heartbeat_healthy_threshold,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -877,6 +882,7 @@ class BaseStep:
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
         merge: bool = True,
+        heartbeat_healthy_threshold: Optional[int] = None,
     ) -> T:
         """Configures the step.
 
@@ -926,6 +932,9 @@ class BaseStep:
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            heartbeat_healthy_threshold: The amount of time (in minutes) that a
+                running step has not received heartbeat and is considered healthy.
+                By default, set to the maximum value (30 minutes).",
 
         Returns:
             The step instance that this method was called on.
@@ -1000,6 +1009,7 @@ class BaseStep:
                 "substitutions": substitutions,
                 "cache_policy": cache_policy,
                 "runtime": runtime,
+                "heartbeat_healthy_threshold": heartbeat_healthy_threshold,
             }
         )
         config = StepConfigurationUpdate(**values)

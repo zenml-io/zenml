@@ -188,15 +188,6 @@ def test_heartbeat_healthiness_check(monkeypatch):
         step_run.body.latest_heartbeat = None
         assert not heartbeat.is_heartbeat_unhealthy(step_run)
 
-        # if no threshold set = healthy (default response)
-        step_run.body.start_time = non_passable_diff_time
-        step_run.body.latest_heartbeat = None
-        assert heartbeat.is_heartbeat_unhealthy(step_run)
-        step_run.metadata.config = StepConfiguration(
-            name="test", heartbeat_healthy_threshold=None
-        )
-        assert not heartbeat.is_heartbeat_unhealthy(step_run)
-
         # if step heartbeat not enabled = healthy (default response)
         step_run.metadata.config = StepConfiguration(
             name="test", heartbeat_healthy_threshold=5

@@ -185,9 +185,6 @@ def is_heartbeat_unhealthy(step_run: "StepRunResponse") -> bool:
     if not step_run.spec.enable_heartbeat:
         return False
 
-    if not step_run.config.heartbeat_healthy_threshold:
-        return False
-
     if step_run.status.is_finished:
         return False
 
