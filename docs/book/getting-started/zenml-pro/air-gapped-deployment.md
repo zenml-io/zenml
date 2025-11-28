@@ -62,7 +62,6 @@ flowchart TB
   note[/"⚠️ No External Communication Required"/]
   infra --- note
 ```
-```
 
 {% hint style="success" %}
 **Complete data sovereignty**: Zero data leaves your environment. All components, metadata, and ML artifacts remain within your infrastructure boundaries.
