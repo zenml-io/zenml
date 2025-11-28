@@ -242,9 +242,7 @@ For mission-critical deployments:
 - **Backup sites** for disaster recovery
 - **Monitoring and alerting** for all components
 
-## Setup Process
-
-### 1. Pre-requisites
+## Pre-requisites
 
 Before deployment, ensure you have:
 
@@ -280,256 +278,20 @@ Database:
   Storage: 500GB (scalable)
 ```
 
-### 2. Obtain ZenML Pro License
-
-[Contact us](https://www.zenml.io/book-your-demo) to:
-- Discuss your requirements
-- Obtain air-gapped deployment license
-- Receive deployment packages
-- Schedule deployment support
-
-### 3. Transfer Software Packages
-
-ZenML provides all required components:
-
-```bash
-# Provided as offline bundle
-zenml-pro-airgap-bundle/
-├── docker-images/
-│   ├── zenml-server.tar
-│   ├── zenml-pro-control-plane.tar
-│   ├── zenml-dashboard.tar
-│   └── dependencies/
-├── helm-charts/
-│   ├── zenml-pro-control-plane/
-│   └── zenml-workspace/
-├── documentation/
-├── sbom/
-└── security-reports/
-```
-
-Transfer this bundle to your air-gapped environment using:
-- Physical media (USB, portable drives)
-- Approved file transfer mechanisms
-- Your organization's software intake process
-
-### 4. Load Docker Images
-
-```bash
-# Load images into your container registry
-docker load < docker-images/zenml-server.tar
-docker load < docker-images/zenml-pro-control-plane.tar
-docker load < docker-images/zenml-dashboard.tar
-
-# Tag for your internal registry
-docker tag zenml-server your-registry.internal/zenml-server:latest
-docker push your-registry.internal/zenml-server:latest
-```
-
-### 5. Deploy Control Plane
-
-```bash
-# Deploy using Helm
-helm install zenml-pro-control-plane ./helm-charts/zenml-pro-control-plane \
-  --set database.host=postgres.internal \
-  --set database.name=zenml_pro \
-  --set identityProvider.type=oidc \
-  --set identityProvider.url=https://auth.internal \
-  --set license.key=<your-license-key>
-```
-
-### 6. Configure Identity Provider
-
-Integrate with your existing authentication:
-
-```yaml
-# OIDC Configuration
-identityProvider:
-  type: oidc
-  issuerUrl: https://auth.internal
-  clientId: zenml-pro
-  clientSecret: <secret>
-
-# LDAP Configuration
-identityProvider:
-  type: ldap
-  server: ldap://ldap.internal
-  baseDN: dc=company,dc=com
-
-# SAML Configuration
-identityProvider:
-  type: saml
-  metadataUrl: https://idp.internal/metadata
-```
-
-### 7. Deploy Workspaces
-
-```bash
-# Deploy workspace for each team
-helm install workspace-team-a ./helm-charts/zenml-workspace \
-  --set controlPlane.url=https://control-plane.internal \
-  --set controlPlane.token=<workspace-token> \
-  --set database.host=postgres.internal \
-  --set image.repository=your-registry.internal/zenml-server
-```
-
-### 8. Deploy Dashboard
-
-```bash
-# Deploy Pro Dashboard
-helm install zenml-dashboard ./helm-charts/zenml-dashboard \
-  --set controlPlane.url=https://control-plane.internal \
-  --set ingress.host=zenml.internal
-```
-
-### 9. Verify Deployment
-
-```bash
-# Check all components
-kubectl get pods -n zenml-pro
-
-# Verify control plane health
-curl https://control-plane.internal/health
-
-# Verify workspace connectivity
-curl https://workspace-team-a.internal/health
-
-# Test authentication
-zenml connect --url https://zenml.internal
-```
-
-## Configuration Management
-
-### Database Configuration
-
-Each component requires PostgreSQL:
-
-```yaml
-# Control Plane Database
-controlPlane:
-  database:
-    host: postgres-cp.internal
-    port: 5432
-    name: zenml_pro_control
-    user: zenml_cp
-    password: <secret>
-    sslMode: require
-
-# Workspace Database (per workspace)
-workspace:
-  database:
-    host: postgres-ws.internal
-    port: 5432
-    name: zenml_workspace_team_a
-    user: zenml_ws
-    password: <secret>
-    sslMode: require
-```
-
-### Secret Management
-
-Configure your secrets backend:
-
-```yaml
-# AWS Secrets Manager (in VPC)
-secretsStore:
-  type: aws
-  region: us-east-1
-  endpoint: https://secretsmanager.vpc.internal
-
-# HashiCorp Vault
-secretsStore:
-  type: vault
-  url: https://vault.internal
-  namespace: zenml
-
-# Kubernetes Secrets
-secretsStore:
-  type: kubernetes
-  namespace: zenml-secrets
-```
-
-### Artifact Storage
-
-Configure artifact storage:
-
-```yaml
-# S3-compatible (MinIO, Ceph)
-artifactStore:
-  type: s3
-  endpoint: https://s3.internal
-  bucket: zenml-artifacts
-
-# NFS
-artifactStore:
-  type: nfs
-  server: nfs.internal
-  path: /mnt/zenml-artifacts
-
-# Azure Blob (in private network)
-artifactStore:
-  type: azure
-  account: storageaccount
-  container: artifacts
-  endpoint: https://storage.internal
-```
-
 ## Operations & Maintenance
 
 ### Updates & Upgrades
 
 ZenML provides new versions as offline bundles:
 
-1. **Receive new bundle**: Via your approved transfer method
-2. **Review release notes**: Included in bundle documentation
+1. **Receive new bundle**: Typically by pulling our Docker images via your approved transfer method 
+2. **Review release notes and compatibility notes**: Carefully review the release notes and any migration instructions included in the offline bundle to understand all changes, requirements, and potential impacts. Assess required infrastructure or configuration updates and note any changes in CI/CD actions or deployment processes before proceeding.
 3. **Test in staging**: Deploy to test environment first
 4. **Backup current state**: Database and configuration backups
-5. **Apply updates**: Using Helm upgrade commands
+5. **Apply updates**: Using Helm upgrade commands, or update your deployment using Terraform or other Infrastructure-as-Code (IaC) tools.
 6. **Verify functionality**: Run health checks and tests
 7. **Monitor**: Watch for any issues post-upgrade
 
-### Backup Strategy
-
-Implement comprehensive backups:
-
-```bash
-# Database backups (automated)
-pg_dump -h postgres.internal zenml_pro_control > control-plane-backup.sql
-pg_dump -h postgres.internal zenml_workspace_team_a > workspace-a-backup.sql
-
-# Configuration backups
-kubectl get configmap -n zenml-pro -o yaml > configmaps-backup.yaml
-kubectl get secret -n zenml-pro -o yaml > secrets-backup.yaml
-
-# Artifact store backups
-# Implement per your storage solution
-```
-
-### Monitoring
-
-Set up comprehensive monitoring:
-
-```yaml
-# Prometheus metrics
-metrics:
-  enabled: true
-  endpoint: /metrics
-  scrapeInterval: 30s
-
-# Health checks
-healthChecks:
-  - name: control-plane
-    url: https://control-plane.internal/health
-    interval: 60s
-  - name: workspace-team-a
-    url: https://workspace-team-a.internal/health
-    interval: 60s
-
-# Log aggregation
-logging:
-  backend: elasticsearch
-  endpoint: https://elastic.internal
-```
 
 ### Disaster Recovery
 
@@ -550,11 +312,11 @@ Plan for disaster scenarios:
 - **TLS everywhere**: Encrypt all communication
 - **Certificate management**: Use internal CA for certificate issuance
 
+
 ### Access Control
 
 - **Principle of least privilege**: Grant minimal required permissions
-- **MFA required**: Enforce multi-factor authentication
-- **Service accounts**: Use dedicated accounts for automation
+- **Service accounts**: Use dedicated service accounts for automation
 - **Audit logging**: Log all authentication and authorization events
 
 ### Container Security
@@ -595,11 +357,7 @@ Contact [cloud@zenml.io](mailto:cloud@zenml.io) for:
 
 ## Licensing
 
-Air-gapped deployments use node-locked licenses:
-- **License key**: Tied to your infrastructure
-- **Offline activation**: No internet required
-- **Flexible sizing**: License based on usage
-- **Annual renewals**: Receive new license keys securely
+Air-gapped deployments are provided under commercial software license agreements, with license fees and terms defined on a per-customer basis. Each contract includes detailed license terms and conditions appropriate to the deployment.
 
 ## Security Documentation
 
@@ -630,24 +388,27 @@ Available on request for compliance and security reviews:
 
 ### From ZenML OSS to Air-gapped Pro
 
-1. **Plan migration**: Assess current usage and requirements
-2. **Deploy Pro**: Set up air-gapped environment
-3. **Migrate metadata**: Export from OSS, import to Pro
-4. **Migrate pipelines**: Update connection configurations
-5. **Train users**: On new Pro features
-6. **Cutover**: Switch production traffic
+If you're interested in migrating from ZenML OSS to an air-gapped Pro deployment, we're here to help guide you through every step of the process. Migration paths are highly dependent on your specific customer environment, infrastructure setup, and current ZenML OSS deployment configuration.
+
+It's possible to migrate existing stacks or even existing metadata from existing OSS deployments. We can figure out how and what to migrate together in a call.
+
+**Next steps:**
+
+- [Book a migration consultation →](https://www.zenml.io/book-your-demo)
+- Or email us at [cloud@zenml.io](mailto:cloud@zenml.io)
+
+Your ZenML representative will work with you to assess your current setup, understand your air-gapped requirements, and provide a tailored migration plan that fits your environment.
 
 ### From Other Pro Deployments
 
-If moving from SaaS or Hybrid to Air-gapped:
-1. Export all metadata and artifacts
-2. Transfer to air-gapped environment
-3. Deploy air-gapped infrastructure
-4. Import data
-5. Reconfigure pipelines
-6. Validate functionality
+If you're moving from SaaS or Hybrid to Air-gapped, migration paths can vary significantly depending on your organization's size, data residency requirements, and current ZenML setup. We recommend discussing your plans with a ZenML solutions architect.
 
-ZenML support team assists with migration planning and execution.
+**Next steps:**
+
+- [Book a migration consultation →](https://www.zenml.io/book-your-demo)
+- Or email us at [cloud@zenml.io](mailto:cloud@zenml.io)
+
+Your ZenML representative will provide you with a tailored migration checklist, technical documentation, and direct support to ensure a smooth transition with minimal downtime.
 
 ## Detailed Architecture Diagram
 
