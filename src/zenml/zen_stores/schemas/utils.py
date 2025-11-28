@@ -127,7 +127,7 @@ class RunMetadataInterface:
                 and the values represent the latest entry with this key.
         """
         metadata_collection = self.fetch_metadata_collection(**kwargs)
-        metadata = {}
+        metadata: Dict[str, MetadataType] = {}
 
         for key, values in metadata_collection.items():
             values = sorted(values, key=lambda x: x.created, reverse=False)
@@ -136,7 +136,9 @@ class RunMetadataInterface:
                 # All metadata values for this key are dictionaries, so we can
                 # merge them into a single dictionary
                 metadata[key] = {
-                    k: v for item in values for k, v in item.value.items()
+                    k: v
+                    for item in values
+                    for k, v in item.value.items()  # type: ignore[union-attr]
                 }
             else:
                 metadata[key] = values[-1].value
