@@ -68,7 +68,7 @@ The ZenML-managed SaaS deployment provides the fastest path to production with z
 
 **Ideal for:** Teams that want to get started immediately without managing infrastructure, while keeping sensitive ML data in their own environment.
 
-[Learn more about SaaS architecture →](../system-architectures.md#zenml-pro-saas-architecture)
+[Learn more about SaaS deployment →](saas-deployment.md)
 
 ### Hybrid SaaS Deployment
 
@@ -83,7 +83,7 @@ The Hybrid deployment balances control with convenience. The ZenML control plane
 
 **Ideal for:** Organizations with security or compliance requirements that mandate keeping metadata and credentials within their infrastructure, while benefiting from centralized user management.
 
-[Learn more about Hybrid architecture →](../system-architectures.md#zenml-pro-hybrid-saas)
+[Learn more about Hybrid deployment →](hybrid-deployment.md)
 
 ### Air-gapped Deployment
 
@@ -94,7 +94,7 @@ The fully self-hosted, air-gapped deployment gives you complete control and data
 
 **Ideal for:** Organizations with the strictest security requirements, regulated industries, or environments that must operate without external network access.
 
-[Learn more about self-hosted architecture →](../system-architectures.md#zenml-pro-self-hosted-architecture) | [Self-hosting setup guide →](self-hosted.md)
+[Learn more about Air-gapped deployment →](air-gapped-deployment.md)
 
 ## Security & Compliance
 

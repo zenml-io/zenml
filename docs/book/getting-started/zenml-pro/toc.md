@@ -4,7 +4,10 @@
 
 ## Deployments
 
-* [Self-hosted deployment](self-hosted.md)
+* [SaaS Deployment](saas-deployment.md)
+* [Hybrid SaaS Deployment](hybrid-deployment.md)
+* [Air-gapped Deployment](air-gapped-deployment.md)
+* [Self-hosted deployment guide](self-hosted.md)
 
 ## Core Concepts
 
