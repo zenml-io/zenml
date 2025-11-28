@@ -318,6 +318,7 @@ class RunTemplateSchema(NamedSchema, table=True):
                     )
                     config_schema = template_utils.generate_config_schema(
                         snapshot=self.source_snapshot,
+                        pipeline_configuration=source_snapshot_model.pipeline_configuration,
                         step_configurations=source_snapshot_model.step_configurations,
                     )
 

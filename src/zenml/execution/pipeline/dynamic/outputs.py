@@ -84,13 +84,13 @@ class ArtifactFuture(_BaseStepRunFuture):
         self._index = index
 
     def result(self) -> OutputArtifact:
-        """Get the step run output artifact.
+        """Get the output artifact this future represents.
 
         Raises:
             RuntimeError: If the future returned an invalid output.
 
         Returns:
-            The step run output artifact.
+            The output artifact.
         """
         result = self._wrapped.result()
         if isinstance(result, OutputArtifact):
@@ -163,6 +163,14 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
 
         Returns:
             The step run output artifacts.
+        """
+        return self._wrapped.result()
+
+    def result(self) -> StepRunOutputs:
+        """Get the step run outputs this future represents.
+
+        Returns:
+            The step run outputs.
         """
         return self._wrapped.result()
 
