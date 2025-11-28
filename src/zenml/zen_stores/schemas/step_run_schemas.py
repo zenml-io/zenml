@@ -117,7 +117,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             nullable=True,
         )
     )
-
+    cached_heartbeat_threshold: Optional[int] = Field(nullable=True)
     # Foreign keys
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -427,6 +427,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             start_time=self.start_time,
             end_time=self.end_time,
             latest_heartbeat=self.latest_heartbeat,
+            cached_heartbeat_threshold=self.cached_heartbeat_threshold,
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
