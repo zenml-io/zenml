@@ -161,7 +161,8 @@ When implementing a new orchestrator:
 - [ ] Implement `get_orchestrator_run_id()` following the static/dynamic patterns above
 - [ ] Implement `submit_pipeline()` for static pipelines
 - [ ] Optionally implement `submit_dynamic_pipeline()` for dynamic pipeline support
-- [ ] Handle `deployment.schedule` if your backend supports scheduling
+- [ ] Handle `snapshot.schedule` if your backend supports scheduling
+- [ ] Handle resource settings from step configurations appropriately (CPU, memory, GPU, etc.)
 - [ ] Return `SubmissionResult` with `wait_for_completion` for synchronous execution
 - [ ] Use `self.get_image(deployment, step_name)` to get the Docker image for each step
 - [ ] Use `StepEntrypointConfiguration.get_entrypoint_command/arguments()` for container commands

@@ -117,23 +117,28 @@ Methods and functions starting with `_` (underscore) are **private** and should 
 - `_function()` in a utils module → only call from within that module
 - This isn't always consistently applied in the codebase, but it's the intended convention
 
-**Backwards compatibility implications:**
+**Backwards compatibility — case-by-case judgment:**
+
+There are no strict written rules; evaluate each change individually:
 
 | Symbol type | Part of public API? | Breaking change if modified? |
 |-------------|---------------------|------------------------------|
-| `public_method()` | ✅ Yes | ⚠️ Yes — requires deprecation |
+| Classes/functions exported in `zenml.__init__` | ✅ Definitely public | ⚠️ Yes — requires deprecation |
+| Public methods on those classes | ✅ Public | ⚠️ Yes — requires deprecation |
+| Internal methods deep in the codebase (no underscore) | ❌ Not intended for users | ✅ No — update all internal usages |
 | `_private_method()` | ❌ No | ✅ No — can change freely |
 
-**When changing private methods:**
-1. Search for usages **within the ZenML codebase** (grep/find references)
-2. Update all internal usages
-3. No need to worry about external user backwards compatibility
+**When changing any non-underscore method:**
+1. Check if the class/function is exported in `zenml.__init__` — if so, it's public API
+2. Search for usages **within the ZenML codebase** (grep/find references)
+3. Update all internal usages
+4. For truly internal code not exported at the root, no deprecation needed
 
-**Critical rule for integrations:**
+**Best practice for integrations (future-proofing):**
 
-> ⚠️ **Integrations should NEVER use ZenML private methods**
+> ⚠️ **Integrations should avoid using ZenML private methods**
 
-When integrations move out of the main ZenML repo (external packages), mypy won't detect if a private method they depend on was changed. This leads to silent breakage. Always use public APIs in integration code.
+This is primarily a future concern: when integrations eventually move out of the main ZenML repo (external packages), mypy won't detect if a private method they depend on was changed, leading to silent breakage. Even while integrations live in-repo, using only public APIs is good practice and prepares for this transition.
 
 ```python
 # Bad - integration code using private method

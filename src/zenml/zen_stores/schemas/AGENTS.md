@@ -66,7 +66,7 @@ When testing database migrations, follow this workflow:
 ### Migration Best Practices
 
 - Create migrations with descriptive names: `alembic revision -m "Add X to Y table"`
-- Test both upgrade and downgrade: `alembic upgrade head` and `alembic downgrade -1`
+- Test upgrade path: `alembic upgrade head` (downgrade testing is optional—ZenML doesn't support downgrades in most cases)
 - Never modify existing migrations that are already on main/develop branches
 - Consider backward compatibility for rolling deployments
 - Include both schema changes and data migrations when needed
