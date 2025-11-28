@@ -38,6 +38,11 @@ To use the Google Cloud image builder, we need:
   * the Docker image used by Google Cloud Build to execute the steps to build and push the Docker image. By default, the builder image will be `'gcr.io/cloud-builders/docker'`.
   * The network to which the container used to build the ZenML pipeline Docker image will be attached. More information: [Cloud build network](https://cloud.google.com/build/docs/build-config-file-schema#network).
   * The build timeout for the build, and for the blocking operation waiting for the build to finish. More information: [Build Timeout](https://cloud.google.com/build/docs/build-config-file-schema#timeout_2).
+  * The location to run Cloud Build (e.g., `us-central1`, `europe-west1`) when you need regional data residency, lower latency to nearby GCS buckets or Artifact Registry, or to use Cloud Build private pools.
+
+{% hint style="info" %}
+Even if your GCP Service Connector is scoped to a specific region, the GCP Image Builder uses the **global** Cloud Build endpoint by default. To run builds in a specific region, set the `location` parameter on the Image Builder. The Service Connector only supplies authentication and does not influence which Cloud Build region is used.
+{% endhint %}
 
 We can register the image builder and use it in our active stack:
 
@@ -46,7 +51,8 @@ zenml image-builder register <IMAGE_BUILDER_NAME> \
     --flavor=gcp \
     --cloud_builder_image=<BUILDER_IMAGE_NAME> \
     --network=<DOCKER_NETWORK> \
-    --build_timeout=<BUILD_TIMEOUT_IN_SECONDS>
+    --build_timeout=<BUILD_TIMEOUT_IN_SECONDS> \
+    --location=<GCP_REGION>
 
 # Register and activate a stack with the new image builder
 zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
@@ -127,7 +133,8 @@ zenml image-builder register <IMAGE_BUILDER_NAME> \
     --flavor=gcp \
     --cloud_builder_image=<BUILDER_IMAGE_NAME> \
     --network=<DOCKER_NETWORK> \
-    --build_timeout=<BUILD_TIMEOUT_IN_SECONDS>
+    --build_timeout=<BUILD_TIMEOUT_IN_SECONDS> \
+    --location=<GCP_REGION>
 
 # Connect the GCP Image Builder to GCP via a GCP Service Connector
 zenml image-builder connect <IMAGE_BUILDER_NAME> -i
@@ -175,6 +182,7 @@ zenml image-builder register <IMAGE_BUILDER_NAME> \
     --service_account_path=<PATH_TO_SERVICE_ACCOUNT_KEY> \
     --cloud_builder_image=<BUILDER_IMAGE_NAME> \
     --network=<DOCKER_NETWORK> \
+    --location=<GCP_REGION> \
     --build_timeout=<BUILD_TIMEOUT_IN_SECONDS>
 
 # Register and set a stack with the new image builder
