@@ -10142,6 +10142,13 @@ class SqlZenStore(BaseZenStore):
                 is_retriable=is_retriable,
             )
 
+            # cached top-level heartbeat config property (for fast validation).
+            step_schema.cached_heartbeat_threshold = (
+                step_config.config.heartbeat_healthy_threshold
+                if step_config.spec.enable_heartbeat
+                else None
+            )
+
             session.add(step_schema)
             try:
                 session.commit()

@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
+from zenml.utils.time_utils import to_local_tz
 
 if TYPE_CHECKING:
     from zenml.models import StepRunResponse
@@ -173,6 +174,51 @@ class StepHeartbeatWorker:
             self._terminated = True
 
 
+def cached_is_heartbeat_unhealthy(
+    step_run_id: UUID,
+    status: ExecutionStatus,
+    latest_heartbeat: datetime | None,
+    start_time: datetime | None = None,
+    heartbeat_threshold: int | None = None,
+) -> bool:
+    """Utility function - Checks if step heartbeats indicate un-healthy execution.
+
+    Args:
+        step_run_id: The run step id.
+        status: The run step status.
+        latest_heartbeat: The run step latest heartbeat.
+        start_time: The run step start time.
+        heartbeat_threshold: If heartbeat enabled the max minutes without heartbeat
+            for healthy, running tasks.
+
+    Returns:
+        True if the step heartbeat is unhealthy, False otherwise.
+    """
+    if not heartbeat_threshold:
+        return False
+
+    if status.is_finished:
+        return False
+
+    if latest_heartbeat:
+        heartbeat_diff = datetime.now(tz=timezone.utc) - to_local_tz(
+            latest_heartbeat
+        )
+    elif start_time:
+        heartbeat_diff = datetime.now(tz=timezone.utc) - to_local_tz(
+            start_time
+        )
+    else:
+        return False
+
+    logger.debug("Step %s heartbeat diff=%s", step_run_id, heartbeat_diff)
+
+    if heartbeat_diff.total_seconds() > heartbeat_threshold * 60:
+        return True
+
+    return False
+
+
 def is_heartbeat_unhealthy(step_run: "StepRunResponse") -> bool:
     """Utility function - Checks if step heartbeats indicate un-healthy execution.
 
@@ -182,27 +228,10 @@ def is_heartbeat_unhealthy(step_run: "StepRunResponse") -> bool:
     Returns:
         True if the step heartbeat is unhealthy, False otherwise.
     """
-    if not step_run.spec.enable_heartbeat:
-        return False
-
-    if step_run.status.is_finished:
-        return False
-
-    if step_run.latest_heartbeat:
-        heartbeat_diff = (
-            datetime.now(tz=timezone.utc) - step_run.latest_heartbeat
-        )
-    elif step_run.start_time:
-        heartbeat_diff = datetime.now(tz=timezone.utc) - step_run.start_time
-    else:
-        return False
-
-    logger.info("%s heartbeat diff=%s", step_run.name, heartbeat_diff)
-
-    if (
-        heartbeat_diff.total_seconds()
-        > step_run.config.heartbeat_healthy_threshold * 60
-    ):
-        return True
-
-    return False
+    return cached_is_heartbeat_unhealthy(
+        step_run_id=step_run.id,
+        status=step_run.status,
+        start_time=step_run.start_time,
+        heartbeat_threshold=step_run.cached_heartbeat_threshold,
+        latest_heartbeat=step_run.latest_heartbeat,
+    )
