@@ -180,7 +180,8 @@ class FlavorResponseBody(UserScopedResponseBody):
     """Response body for stack component flavors."""
 
     type: StackComponentType = Field(title="The type of the Flavor.")
-    display_name: str = Field(
+    display_name: Optional[str] = Field(
+        default=None,
         title="The display name of the Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -310,9 +311,10 @@ class FlavorResponse(
         """The `display_name` property.
 
         Returns:
-            the value of the property.
+            the value of the property. Falls back to the flavor name if
+            display_name is not set.
         """
-        return self.get_body().display_name
+        return self.get_body().display_name or self.name
 
     @property
     def integration(self) -> Optional[str]:
