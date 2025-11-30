@@ -17,6 +17,7 @@ import os
 import re
 from datetime import datetime
 from typing import (
+    Any,
     Iterator,
     List,
     Optional,
@@ -231,6 +232,19 @@ class ArtifactLogStore(OtelLogStore):
     including shared BatchLogRecordProcessor and routing.
     """
 
+    def __init__(
+        self, artifact_store: "BaseArtifactStore", *args: Any, **kwargs: Any
+    ) -> None:
+        """Initialize the artifact log store.
+
+        Args:
+            artifact_store: The artifact store to use for logging.
+            *args: Positional arguments for the base class.
+            **kwargs: Keyword arguments for the base class.
+        """
+        super().__init__(*args, **kwargs)
+        self._artifact_store = artifact_store
+
     @property
     def config(self) -> ArtifactLogStoreConfig:
         """Returns the configuration of the artifact log store.
@@ -246,14 +260,11 @@ class ArtifactLogStore(OtelLogStore):
         Returns:
             The ArtifactLogExporter instance.
         """
-        from zenml.client import Client
         from zenml.log_stores.artifact.artifact_log_exporter import (
             ArtifactLogExporter,
         )
 
-        return ArtifactLogExporter(
-            artifact_store=Client().active_stack.artifact_store
-        )
+        return ArtifactLogExporter(artifact_store=self._artifact_store)
 
     def fetch(
         self,
@@ -286,6 +297,12 @@ class ArtifactLogStore(OtelLogStore):
             raise ValueError(
                 "logs_model.artifact_store_id is required "
                 "for ArtifactLogStore.fetch()"
+            )
+
+        if logs_model.artifact_store_id != self._artifact_store.id:
+            raise ValueError(
+                "logs_model.artifact_store_id does not match the artifact store "
+                "id of the log store."
             )
 
         if start_time or end_time:

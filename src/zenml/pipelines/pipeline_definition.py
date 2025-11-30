@@ -52,10 +52,6 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.constants import (
-    ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
-    handle_bool_env_var,
-)
 from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.execution.pipeline.utils import (
@@ -100,7 +96,10 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
-from zenml.utils.logging_utils import LoggingContext, generate_logs_request
+from zenml.utils.logging_utils import (
+    is_pipeline_logging_enabled,
+    setup_run_logging,
+)
 from zenml.utils.string_utils import format_name_template
 from zenml.utils.tag_utils import Tag
 
@@ -1026,39 +1025,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
 
-            # Enable or disable pipeline run logs storage
-            if self._run_args.get("schedule"):
-                # Pipeline runs scheduled to run in the future are not logged
-                # via the client.
-                logging_enabled = False
-            elif handle_bool_env_var(
-                ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
-            ):
-                logging_enabled = False
-            else:
-                logging_enabled = self._run_args.get(
-                    "enable_pipeline_logs",
-                    self.configuration.enable_pipeline_logs
-                    if self.configuration.enable_pipeline_logs is not None
-                    else True,
-                )
-
             snapshot = self._create_snapshot(**self._run_args)
             self.log_pipeline_snapshot_metadata(snapshot)
 
-            logs_request = None
-            if logging_enabled:
-                logs_request = generate_logs_request(source="client")
-
             run = (
-                create_placeholder_run(snapshot=snapshot, logs=logs_request)
+                create_placeholder_run(snapshot=snapshot)
                 if not snapshot.schedule
                 else None
             )
 
             logs_context = nullcontext()
-            if logging_enabled and run and run.logs:
-                logs_context = LoggingContext(log_model=run.logs)
+            if run and is_pipeline_logging_enabled(
+                snapshot.pipeline_configuration
+            ):
+                logs_context = setup_run_logging(
+                    pipeline_run=run, source="client"
+                )
 
             with logs_context:
                 analytics_handler.metadata = (

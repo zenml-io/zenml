@@ -26,8 +26,10 @@ from pydantic import BaseModel, Field
 
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.step_configurations import StepConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
+    ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels, StackComponentType
@@ -38,8 +40,10 @@ from zenml.models import (
     LogsResponse,
     PipelineRunResponse,
     PipelineRunUpdate,
-    PipelineSnapshotResponse,
+    StepRunResponse,
+    StepRunUpdate,
 )
+from zenml.orchestrators.utils import is_setting_enabled
 from zenml.stack import StackComponent
 from zenml.utils.time_utils import utc_now
 
@@ -52,6 +56,8 @@ logger = get_logger(__name__)
 active_logging_context: ContextVar[Optional["LoggingContext"]] = ContextVar(
     "active_logging_context", default=None
 )
+
+ZENML_LOGGING_CONTEXT_EXIT_TOKEN = "__ZENML_LOGGING_CONTEXT_EXIT__"
 
 
 class LogEntry(BaseModel):
@@ -181,6 +187,18 @@ class LoggingContext:
                 )
             )
 
+        LoggingContext.emit(
+            logging.LogRecord(
+                name="",
+                level=logging.INFO,
+                msg=ZENML_LOGGING_CONTEXT_EXIT_TOKEN,
+                args=(),
+                exc_info=None,
+                pathname="",
+                lineno=0,
+            )
+        )
+
         with self._lock:
             active_logging_context.set(self._previous_context)
             self._log_store.deregister_emitter()
@@ -223,7 +241,9 @@ def generate_logs_request(source: str) -> LogsRequest:
         )
 
 
-def is_logging_enabled(pipeline_configuration: PipelineConfiguration) -> bool:
+def is_pipeline_logging_enabled(
+    pipeline_configuration: PipelineConfiguration,
+) -> bool:
     """Check if logging is enabled for a pipeline configuration.
 
     Args:
@@ -238,6 +258,27 @@ def is_logging_enabled(pipeline_configuration: PipelineConfiguration) -> bool:
         return pipeline_configuration.enable_pipeline_logs
     else:
         return True
+
+
+def is_step_logging_enabled(
+    step_configuration: StepConfiguration,
+    pipeline_configuration: PipelineConfiguration,
+) -> bool:
+    """Check if logging is enabled for a step configuration.
+
+    Args:
+        step_configuration: The step configuration.
+        pipeline_configuration: The pipeline configuration.
+
+    Returns:
+        True if logging is enabled, False if disabled.
+    """
+    if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
+        return False
+    else:
+        is_enabled_on_step = step_configuration.enable_step_logs
+        is_enabled_on_pipeline = pipeline_configuration.enable_step_logs
+        return is_setting_enabled(is_enabled_on_step, is_enabled_on_pipeline)
 
 
 def search_logs_by_source(
@@ -258,33 +299,28 @@ def search_logs_by_source(
     return None
 
 
-def setup_orchestrator_logging(
+def setup_run_logging(
     pipeline_run: "PipelineRunResponse",
-    snapshot: "PipelineSnapshotResponse",
+    source: str,
 ) -> Any:
-    """Set up logging for an orchestrator environment.
+    """Set up logging for a pipeline run.
 
-    This function can be reused by different orchestrators to set up
-    consistent logging behavior.
+    Searches for existing logs by source, updates the run if needed.
 
     Args:
         pipeline_run: The pipeline run.
         snapshot: The snapshot of the pipeline run.
+        source: The source of the logs.
 
     Returns:
-        The logs context or nullcontext if logging is disabled.
+        The logs context.
     """
-    logging_enabled = is_logging_enabled(snapshot.pipeline_configuration)
-
-    if not logging_enabled:
-        return nullcontext()
-
     if orchestrator_logs := search_logs_by_source(
-        pipeline_run.log_collection, "orchestrator"
+        pipeline_run.log_collection, source
     ):
         return LoggingContext(log_model=orchestrator_logs)
 
-    logs_request = generate_logs_request(source="orchestrator")
+    logs_request = generate_logs_request(source=source)
     try:
         client = Client()
         run_update = PipelineRunUpdate(add_logs=[logs_request])
@@ -295,9 +331,43 @@ def setup_orchestrator_logging(
         logger.error(f"Failed to add logs to the run {pipeline_run.id}: {e}")
 
     if orchestrator_logs := search_logs_by_source(
-        pipeline_run.log_collection, "orchestrator"
+        pipeline_run.log_collection, source
     ):
         return LoggingContext(log_model=orchestrator_logs)
+
+    return nullcontext()
+
+
+def setup_step_logging(
+    step_run: "StepRunResponse",
+    source: str,
+) -> Any:
+    """Set up logging for a step run.
+
+    Searches for existing logs by source, updates the step if needed.
+
+    Args:
+        step_run: The step run.
+        source: The source of the logs.
+
+    Returns:
+        The logs context.
+    """
+    if step_logs := search_logs_by_source(step_run.log_collection, source):
+        return LoggingContext(log_model=step_logs)
+
+    logs_request = generate_logs_request(source=source)
+    try:
+        client = Client()
+        step_run_update = StepRunUpdate(add_logs=[logs_request])
+        step_run = client.zen_store.update_run_step(
+            step_run_id=step_run.id, step_run_update=step_run_update
+        )
+    except Exception as e:
+        logger.error(f"Failed to add logs to the step run {step_run.id}: {e}")
+
+    if step_logs := search_logs_by_source(step_run.log_collection, source):
+        return LoggingContext(log_model=step_logs)
 
     return nullcontext()
 
@@ -353,6 +423,7 @@ def fetch_logs(
                 "instantiated."
             )
     else:
+        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.log_stores.artifact.artifact_log_store import (
             ArtifactLogStore,
         )
@@ -361,6 +432,17 @@ def fetch_logs(
         )
 
         current_time = utc_now()
+
+        artifact_store = zen_store.get_stack_component(logs.artifact_store_id)
+        if not artifact_store.type == StackComponentType.ARTIFACT_STORE:
+            raise DoesNotExistException(
+                f"Stack component '{logs.artifact_store_id}' is not an artifact store."
+            )
+
+        artifact_store = cast(
+            "BaseArtifactStore",
+            StackComponent.from_model(artifact_store),
+        )
         log_store = ArtifactLogStore(
             name="default_artifact_log_store",
             id=uuid4(),
@@ -370,6 +452,8 @@ def fetch_logs(
             user=uuid4(),
             created=current_time,
             updated=current_time,
+            # Here, we tie the artifact log store to the artifact store
+            artifact_store=artifact_store,
         )
 
     return log_store.fetch(logs_model=logs, limit=limit)

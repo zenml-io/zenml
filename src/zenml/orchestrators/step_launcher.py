@@ -43,8 +43,9 @@ from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
-    LoggingContext,
     generate_logs_request,
+    is_step_logging_enabled,
+    setup_step_logging,
 )
 from zenml.utils.time_utils import utc_now
 
@@ -320,13 +321,18 @@ class StepLauncher:
                 logger.info(f"Step `{self._invocation_id}` has started.")
 
                 logs_context = nullcontext()
-                if step_run.logs:
-                    logs_context = LoggingContext(log_model=step_run.logs)
+                if is_step_logging_enabled(
+                    step_configuration=step_run.config,
+                    pipeline_configuration=pipeline_run.config,
+                ):
+                    logs_context = setup_step_logging(
+                        step_run=step_run,
+                        source="step",
+                    )
 
                 start_time = time.time()
                 with logs_context:
                     try:
-                        # TODO: We still need to apply the fix for step operators here
                         self._run_step(
                             pipeline_run=pipeline_run,
                             step_run=step_run,

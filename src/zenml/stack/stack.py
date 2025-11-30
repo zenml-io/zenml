@@ -563,6 +563,8 @@ class Stack:
                 created=now,
                 updated=now,
                 secrets=[],
+                # Here, we tie the artifact log store to the artifact store
+                artifact_store=self.artifact_store,
             )
             return self._log_store
 

@@ -39,7 +39,9 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-LOGGING_CONTEXT_KEY = otel_context.create_key("zenml.logging_context")
+ZENML_OTEL_LOG_STORE_CONTEXT_KEY = otel_context.create_key(
+    "zenml.logging_context"
+)
 
 
 class OtelLogStore(BaseLogStore):
@@ -113,9 +115,11 @@ class OtelLogStore(BaseLogStore):
             if not self._provider:
                 self.activate()
 
-        # Attach the LoggingContext to OTel's context so the exporter
+        # Attach the log_model to OTel's context so the exporter
         # can access it in the background processor thread
-        ctx = otel_context.set_value(LOGGING_CONTEXT_KEY, log_model)
+        ctx = otel_context.set_value(
+            ZENML_OTEL_LOG_STORE_CONTEXT_KEY, log_model
+        )
 
         otel_logger = self._provider.get_logger(
             record.name or "unknown",

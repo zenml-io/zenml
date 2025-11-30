@@ -18,6 +18,7 @@ import random
 import socket
 import threading
 import time
+from contextlib import nullcontext
 from typing import List, Optional, Tuple, cast
 from uuid import UUID
 
@@ -71,7 +72,10 @@ from zenml.orchestrators.utils import (
 )
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.utils import env_utils
-from zenml.utils.logging_utils import setup_orchestrator_logging
+from zenml.utils.logging_utils import (
+    is_pipeline_logging_enabled,
+    setup_run_logging,
+)
 
 logger = get_logger(__name__)
 
@@ -281,10 +285,13 @@ def main() -> None:
             for step_name, step in snapshot.step_configurations.items()
         ]
 
-    logs_context = setup_orchestrator_logging(
-        pipeline_run=pipeline_run,
-        snapshot=snapshot,
-    )
+    logs_context = nullcontext()
+    if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
+        logs_context = setup_run_logging(
+            pipeline_run=pipeline_run,
+            source="orchestrator",
+        )
+
     with logs_context:
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local

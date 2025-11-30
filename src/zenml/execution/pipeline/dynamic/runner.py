@@ -18,6 +18,7 @@ import copy
 import inspect
 import itertools
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -67,7 +68,10 @@ from zenml.stack import Stack
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.utils import OutputSignature
 from zenml.utils import source_utils
-from zenml.utils.logging_utils import setup_orchestrator_logging
+from zenml.utils.logging_utils import (
+    is_pipeline_logging_enabled,
+    setup_run_logging,
+)
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -157,9 +161,16 @@ class DynamicPipelineRunner:
                 orchestrator_run_id=self._orchestrator_run_id,
             )
 
-            logging_context = setup_orchestrator_logging(
-                pipeline_run=run, snapshot=self._snapshot
-            )
+            logging_context = nullcontext()
+            if is_pipeline_logging_enabled(
+                self._snapshot.pipeline_configuration
+            ):
+                logging_context = setup_run_logging(
+                    pipeline_run=run,
+                    snapshot=self._snapshot,
+                    source="orchestrator",
+                )
+
             with logging_context:
                 assert (
                     self._snapshot.pipeline_spec

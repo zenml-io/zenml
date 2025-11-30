@@ -27,7 +27,10 @@ from zenml.enums import LoggingLevels
 from zenml.log_stores.artifact.artifact_log_store import (
     remove_ansi_escape_codes,
 )
-from zenml.log_stores.otel.otel_log_store import LOGGING_CONTEXT_KEY
+from zenml.log_stores.otel.otel_log_store import (
+    ZENML_LOGGING_CONTEXT_EXIT_TOKEN,
+    ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
+)
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.logging_utils import LogEntry
@@ -38,6 +41,7 @@ if TYPE_CHECKING:
 
 
 DEFAULT_MESSAGE_SIZE = 5 * 1024
+LOGS_EXTENSION = ".log"
 
 logger = get_logger(__name__)
 
@@ -46,8 +50,11 @@ class ArtifactLogExporter(LogExporter):
     """OpenTelemetry exporter that writes logs to ZenML artifact store."""
 
     def __init__(self, artifact_store: "BaseArtifactStore") -> None:
-        """Initialize the exporter with file counters per context."""
-        self.file_counters: Dict[UUID, int] = {}
+        """Initialize the exporter.
+
+        Args:
+            artifact_store: The artifact store to write logs to.
+        """
         self.artifact_store = artifact_store
 
     def export(self, batch: Sequence["LogData"]) -> LogExportResult:
@@ -63,31 +70,34 @@ class ArtifactLogExporter(LogExporter):
             return LogExportResult.SUCCESS
 
         try:
-            logs_by_context: Dict[UUID, List[str]] = defaultdict(list)
-            log_models: Dict[UUID, "LogsResponse"] = {}
+            entries_by_id: Dict[UUID, List[str]] = defaultdict(list)
+            responses_by_id: Dict[UUID, "LogsResponse"] = {}
 
             for log_data in batch:
-                if not log_data.log_record.context:
-                    continue
-
                 log_model = otel_context.get_value(
-                    LOGGING_CONTEXT_KEY, log_data.log_record.context
+                    key=ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
+                    context=log_data.log_record.context,
                 )
                 if not log_model:
                     continue
 
-                log_id = log_model.id
-                log_models[log_id] = log_model
+                responses_by_id[log_model.id] = log_model
 
                 entries = self._otel_record_to_log_entries(log_data.log_record)
                 for entry in entries:
                     json_line = entry.model_dump_json(exclude_none=True)
-                    logs_by_context[log_id].append(json_line)
+                    entries_by_id[log_model.id].append(json_line)
 
-            for log_id, log_lines in logs_by_context.items():
+            for log_id, log_lines in entries_by_id.items():
                 if log_lines:
-                    log_model = log_models[log_id]
-                    self._write_to_artifact_store(log_lines, log_model)
+                    log_model = responses_by_id[log_id]
+
+                    last = False
+                    if ZENML_LOGGING_CONTEXT_EXIT_TOKEN in log_lines:
+                        last = True
+                        log_lines.pop(-1)
+
+                    self._write(log_lines, log_model, last=last)
 
             return LogExportResult.SUCCESS
 
@@ -219,17 +229,18 @@ class ArtifactLogExporter(LogExporter):
 
         return chunks
 
-    def _write_to_artifact_store(
+    def _write(
         self,
         log_lines: List[str],
         log_model: "LogsResponse",
+        last: bool = False,
     ) -> None:
         """Write log lines to the artifact store.
 
         Args:
             log_lines: List of JSON-serialized log entries.
             log_model: The log model.
-            log_id: The log ID for tracking file counters.
+            last: Whether this is the last batch of log lines.
         """
         if not log_model.uri or not log_model.artifact_store_id:
             logger.warning(
@@ -241,26 +252,80 @@ class ArtifactLogExporter(LogExporter):
             content = "\n".join(log_lines) + "\n"
 
             if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-                timestamp = int(time.time() * 1000)
-                if log_model.id not in self.file_counters:
-                    self.file_counters[log_model.id] = 0
-                self.file_counters[log_model.id] += 1
-
+                timestamp = time.time()
                 file_uri = os.path.join(
                     log_model.uri,
-                    f"{timestamp}_{self.file_counters[log_model.id]}.jsonl",
+                    f"{timestamp}{LOGS_EXTENSION}",
                 )
 
                 with self.artifact_store.open(file_uri, "w") as f:
                     f.write(content)
+
+                if last:
+                    self._merge(log_model)
             else:
                 with self.artifact_store.open(log_model.uri, "a") as f:
                     f.write(content)
+
+                if last:
+                    self.artifact_store._remove_previous_file_versions(
+                        log_model.uri
+                    )
+
         except Exception as e:
             logger.error(f"Failed to write logs to {log_model.uri}: {e}")
             raise
         finally:
             self.artifact_store.cleanup()
+
+    def _merge(self, log_model: "LogsResponse"):
+        """Merges all log files into one in the given URI.
+
+        Called on the logging context exit.
+
+        Args:
+            log_model: The log model.
+        """
+        # If the artifact store is immutable, merge the log files
+        if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+            from zenml.artifacts.utils import _load_file_from_artifact_store
+            from zenml.exceptions import DoesNotExistException
+
+            files_ = self.artifact_store.listdir(log_model.uri)
+            if len(files_) > 1:
+                files_.sort()
+
+                missing_files = set()
+                # dump all logs to a local file first
+                with self.artifact_store.open(
+                    os.path.join(
+                        log_model.uri, f"{time.time()}_merged{LOGS_EXTENSION}"
+                    ),
+                    "w",
+                ) as merged_file:
+                    for file in files_:
+                        try:
+                            merged_file.write(
+                                str(
+                                    _load_file_from_artifact_store(
+                                        os.path.join(self.logs_uri, str(file)),
+                                        artifact_store=self.artifact_store,
+                                        mode="r",
+                                    )
+                                )
+                            )
+                        except DoesNotExistException:
+                            missing_files.add(file)
+
+                # clean up left over files
+                for file in files_:
+                    if file not in missing_files:
+                        self.artifact_store.remove(
+                            os.path.join(self.logs_uri, str(file))
+                        )
+
+            # Update the last merge time
+            self.last_merge_time = time.time()
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""
