@@ -40,6 +40,7 @@ from zenml.config.compiler import Compiler
 from zenml.enums import ExecutionMode, StepRuntime
 from zenml.execution.pipeline.dynamic.outputs import (
     ArtifactFuture,
+    MapResultsFuture,
     OutputArtifact,
     StepRunFuture,
     StepRunOutputs,
@@ -56,6 +57,7 @@ from zenml.logging.step_logging import setup_pipeline_logging
 from zenml.models import (
     ArtifactVersionResponse,
     PipelineRunResponse,
+    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 from zenml.orchestrators.publish_utils import (
@@ -154,20 +156,23 @@ class DynamicPipelineRunner:
         with setup_pipeline_logging(
             source="orchestrator",
             snapshot=self._snapshot,
-            run_id=self._run.id if self._run else None,
         ) as logs_request:
-            with InMemoryArtifactCache():
-                run = self._run or create_placeholder_run(
+            if self._run:
+                run = Client().zen_store.update_run(
+                    run_id=self._run.id,
+                    run_update=PipelineRunUpdate(
+                        orchestrator_run_id=self._orchestrator_run_id,
+                        add_logs=[logs_request] if logs_request else None,
+                    ),
+                )
+            else:
+                run = create_placeholder_run(
                     snapshot=self._snapshot,
                     orchestrator_run_id=self._orchestrator_run_id,
                     logs=logs_request,
                 )
 
-                assert (
-                    self._snapshot.pipeline_spec
-                )  # Always exists for new snapshots
-                pipeline_parameters = self._snapshot.pipeline_spec.parameters
-
+            with InMemoryArtifactCache():
                 with DynamicPipelineRunContext(
                     pipeline=self.pipeline,
                     run=run,
@@ -180,7 +185,8 @@ class DynamicPipelineRunner:
                         # TODO: what should be allowed as pipeline returns?
                         #  (artifacts, json serializable, anything?)
                         #  how do we show it in the UI?
-                        self.pipeline._call_entrypoint(**pipeline_parameters)
+                        params = self.pipeline.configuration.parameters or {}
+                        self.pipeline._call_entrypoint(**params)
                         # The pipeline function finished successfully, but some
                         # steps might still be running. We now wait for all of
                         # them and raise any exceptions that occurred.
@@ -269,7 +275,6 @@ class DynamicPipelineRunner:
         if concurrent:
             ctx = contextvars.copy_context()
             future = self._executor.submit(ctx.run, _launch)
-            compiled_step.config.outputs
             step_run_future = StepRunOutputsFuture(
                 wrapped=future,
                 invocation_id=compiled_step.spec.invocation_id,
@@ -287,7 +292,7 @@ class DynamicPipelineRunner:
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         product: bool = False,
-    ) -> List["StepRunOutputsFuture"]:
+    ) -> "MapResultsFuture":
         """Map over step inputs.
 
         Args:
@@ -300,13 +305,13 @@ class DynamicPipelineRunner:
                 inputs.
 
         Returns:
-            The step run output futures.
+            A future that represents the map results.
         """
         kwargs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
         kwargs = await_step_inputs(kwargs)
         step_inputs = expand_mapped_inputs(kwargs, product=product)
 
-        return [
+        step_run_futures = [
             self.launch_step(
                 step,
                 id=None,
@@ -317,6 +322,8 @@ class DynamicPipelineRunner:
             )
             for inputs in step_inputs
         ]
+
+        return MapResultsFuture(futures=step_run_futures)
 
     def await_all_step_run_futures(self) -> None:
         """Await all step run output futures."""
@@ -356,10 +363,19 @@ def compile_dynamic_step_invocation(
     if isinstance(after, _BaseStepRunFuture):
         after._wait()
         upstream_steps.add(after.invocation_id)
+    elif isinstance(after, MapResultsFuture):
+        for future in after:
+            future._wait()
+            upstream_steps.add(future.invocation_id)
     elif isinstance(after, Sequence):
         for item in after:
-            item._wait()
-            upstream_steps.add(item.invocation_id)
+            if isinstance(item, _BaseStepRunFuture):
+                item._wait()
+                upstream_steps.add(item.invocation_id)
+            elif isinstance(item, MapResultsFuture):
+                for future in item:
+                    future._wait()
+                    upstream_steps.add(future.invocation_id)
 
     inputs = await_step_inputs(inputs)
 
@@ -500,7 +516,7 @@ def _should_retry_locally(
         step_config=step.config,
         pipeline_docker_settings=pipeline_docker_settings,
     )
-    if runtime == StepRuntime.INLINE or step.config.step_operator:
+    if runtime == StepRuntime.INLINE:
         return True
     else:
         # Running in isolated mode with the orchestrator
@@ -712,6 +728,9 @@ def await_step_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """
     result = {}
     for key, value in inputs.items():
+        if isinstance(value, MapResultsFuture):
+            value = value.futures
+
         if (
             isinstance(value, Sequence)
             and value

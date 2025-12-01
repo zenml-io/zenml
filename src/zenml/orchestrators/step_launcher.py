@@ -574,6 +574,7 @@ class StepLauncher:
         Args:
             step_run_info: Additional information needed to run the step.
         """
+        # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
         )
