@@ -55,20 +55,129 @@ class PythonPackageInstaller(Enum):
     UV = "uv"
 
 
+# (docker_sdk_argument, attribute_name)
+BUILD_OPTION_CONVERSIONS = [
+    ("buildargs", "build_args"),
+    ("cachefrom", "cache_from"),
+    ("nocache", "no_cache"),
+    ("shmsize", "shm_size"),
+]
+
+
+class DockerBuildOptions(BaseModel):
+    """Docker build options.
+
+    This class only specifies a subset of the options which require explicit
+    conversion as they require different names in the Docker CLI and Python SDK.
+    However, you can still specify any other options as extra model attributes
+    which will be passed unmodified to the build method of the image builder.
+    """
+
+    pull: Optional[bool] = None
+    rm: Optional[bool] = None
+    no_cache: Optional[bool] = None
+    shm_size: Optional[int] = None
+    labels: Optional[Dict[str, Any]] = None
+    build_args: Optional[Dict[str, Any]] = None
+    cache_from: Optional[List[str]] = None
+
+    model_config = ConfigDict(extra="allow")
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _migrate_sdk_arguments(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Migrate Docker SDK arguments to attributes.
+
+        Args:
+            data: The model data.
+
+        Returns:
+            The migrated data.
+        """
+        for sdk_argument, attribute_name in BUILD_OPTION_CONVERSIONS:
+            if sdk_argument in data and attribute_name not in data:
+                data[attribute_name] = data.pop(sdk_argument)
+
+        return data
+
+    def to_docker_cli_options(self) -> List[str]:
+        """Convert the build options to a list of Docker CLI options.
+
+        https://docs.docker.com/reference/cli/docker/buildx/build/#options
+
+        Returns:
+            A list of Docker CLI options.
+        """
+        options = []
+        if self.pull:
+            options.append("--pull")
+        if self.rm:
+            options.append("--rm")
+        if self.no_cache:
+            options.append("--no-cache")
+        if self.shm_size:
+            options.extend(["--shm-size", str(self.shm_size)])
+        if self.labels:
+            for key, value in self.labels.items():
+                options.extend(["--label", f"{key}={value}"])
+        if self.build_args:
+            for key, value in self.build_args.items():
+                options.extend(["--build-arg", f"{key}={value}"])
+        if self.cache_from:
+            for value in self.cache_from:
+                options.extend(["--cache-from", value])
+
+        if self.model_extra:
+            for key, value in self.model_extra.items():
+                option = f"--{key.replace('_', '-')}"
+                if isinstance(value, Dict):
+                    for key, value in value.items():
+                        options.extend([option, f"{key}={value}"])
+                elif isinstance(value, List):
+                    for val in value:
+                        options.extend([option, str(val)])
+                elif value in (True, None):
+                    options.extend([option])
+                elif value is False:
+                    pass
+                else:
+                    options.extend([option, str(value)])
+
+        return options
+
+    def to_docker_python_sdk_options(self) -> Dict[str, Any]:
+        """Get the build options as a dictionary of Docker Python SDK options.
+
+        https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
+
+        Returns:
+            A dictionary of Docker Python SDK options.
+        """
+        options = self.model_dump(exclude_unset=True)
+        for sdk_argument, attribute_name in BUILD_OPTION_CONVERSIONS:
+            if attribute_name in options:
+                options[sdk_argument] = options.pop(attribute_name)
+
+        return options
+
+
 class DockerBuildConfig(BaseModel):
     """Configuration for a Docker build.
 
     Attributes:
-        build_options: Additional options that will be passed unmodified to the
-            Docker build call when building an image. You can use this to for
-            example specify build args or a target stage. See
-            https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
-            for a full list of available options.
+        build_options: Additional options that will be passed when building an
+            image. Depending on the image builder that is used, different
+            options are available.
+            For image builders that use the Docker CLI:
+            - https://docs.docker.com/reference/cli/docker/buildx/build/#options
+            For image builders that use the Docker Python SDK:
+            - https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
         dockerignore: Path to a dockerignore file to use when building the
             Docker image.
     """
 
-    build_options: Dict[str, Any] = {}
+    build_options: Optional[DockerBuildOptions] = None
     dockerignore: Optional[str] = None
 
 

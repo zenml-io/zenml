@@ -14,7 +14,7 @@
 """Dynamic pipeline execution outputs."""
 
 from concurrent.futures import Future
-from typing import Any, List, Optional, Tuple, Union, overload
+from typing import Any, Iterator, List, Optional, Tuple, Union, overload
 
 from zenml.logger import get_logger
 from zenml.models import ArtifactVersionResponse
@@ -270,4 +270,92 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         return len(self._output_keys)
 
 
-StepRunFuture = Union[ArtifactFuture, StepRunOutputsFuture]
+class MapResultsFuture:
+    """Future that represents the results of a `step.map/product(...)` call."""
+
+    def __init__(self, futures: List[StepRunOutputsFuture]) -> None:
+        """Initialize the map results future.
+
+        Args:
+            futures: The step run futures.
+        """
+        self.futures = futures
+
+    def result(self) -> List[StepRunOutputs]:
+        """Get the step run outputs this future represents.
+
+        Returns:
+            The step run outputs.
+        """
+        return [future.result() for future in self.futures]
+
+    def unpack(self) -> Tuple[List[ArtifactFuture], ...]:
+        """Unpack the map results future.
+
+        This method can be used to get lists of artifact futures that represent
+        the outputs of all the step runs that are part of this map result.
+
+        Example:
+        ```python
+        from zenml import pipeline, step
+
+        @step
+        def create_int_list() -> list[int]:
+            return [1, 2]
+
+        @step
+        def do_something(a: int) -> Tuple[int, int]:
+            return a * 2, a * 3
+
+        @pipeline
+        def map_pipeline():
+            int_list = create_int_list()
+            results = do_something.map(a=int_list)
+            double, triple = results.unpack()
+
+            # [future.load() for future in double] will return [2, 4]
+            # [future.load() for future in triple] will return [3, 6]
+        ```
+
+        Returns:
+            The unpacked map results.
+        """
+        return tuple(map(list, zip(*self.futures)))
+
+    @overload
+    def __getitem__(self, key: int) -> StepRunOutputsFuture: ...
+
+    @overload
+    def __getitem__(self, key: slice) -> List[StepRunOutputsFuture]: ...
+
+    def __getitem__(
+        self, key: Union[int, slice]
+    ) -> Union[StepRunOutputsFuture, List[StepRunOutputsFuture]]:
+        """Get a step run future.
+
+        Args:
+            key: The index or slice of the step run futures.
+
+        Returns:
+            The step run futures.
+        """
+        return self.futures[key]
+
+    def __iter__(self) -> Iterator[StepRunOutputsFuture]:
+        """Iterate over the step run futures.
+
+        Yields:
+            The step run futures.
+        """
+        yield from self.futures
+
+    def __len__(self) -> int:
+        """Get the number of step run futures.
+
+        Returns:
+            The number of step run futures.
+        """
+        return len(self.futures)
+
+
+StepRunFuture = Union[ArtifactFuture, StepRunOutputsFuture, MapResultsFuture]
