@@ -822,6 +822,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     @staticmethod
     def _step_in_progress(step_id: UUID, session: Session) -> bool:
         from zenml.steps.heartbeat import cached_is_heartbeat_unhealthy
+        from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
         step_run = session.execute(
             select(StepRunSchema).where(StepRunSchema.id == step_id)
@@ -903,16 +904,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
                         steps_statuses = {
                             name: ExecutionStatus(status)
-                            for name, status in step_run_statuses
+                            for _, name, status in step_run_statuses
                         }
 
                         for step_name, _ in step_dict.items():
                             if step_name in steps_to_skip:
                                 # failed steps downstream
-                                continue
-
-                            if steps_statuses[step_name].is_finished:
-                                # completed steps
                                 continue
 
                             if step_name not in steps_statuses:
