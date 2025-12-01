@@ -16,7 +16,6 @@
 import time
 import traceback
 from abc import ABC, abstractmethod
-from contextlib import nullcontext
 from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
@@ -64,7 +63,7 @@ from zenml.orchestrators.local.local_orchestrator import (
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
-from zenml.utils.logging_utils import LoggingContext, generate_logs_request
+from zenml.utils.logging_utils import setup_run_logging
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
@@ -521,11 +520,9 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         deployment_snapshot = self._client.zen_store.create_snapshot(
             deployment_snapshot_request
         )
-        logs_request = generate_logs_request(source="deployment")
         # Create a placeholder run using the new deployment snapshot
         placeholder_run = run_utils.create_placeholder_run(
             snapshot=deployment_snapshot,
-            logs=logs_request,
             trigger_info=PipelineRunTriggerInfo(
                 deployment_id=self.deployment.id,
             ),
@@ -580,9 +577,10 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         )
 
         captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
-        logging_context = nullcontext()
-        if placeholder_run.logs:
-            logging_context = LoggingContext(log_model=placeholder_run.logs)
+        logging_context = setup_run_logging(
+            pipeline_run=placeholder_run,
+            source="deployment",
+        )
 
         with logging_context:
             try:

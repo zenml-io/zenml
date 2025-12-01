@@ -314,10 +314,8 @@ def setup_run_logging(
     Returns:
         The logs context.
     """
-    if orchestrator_logs := search_logs_by_source(
-        pipeline_run.log_collection, source
-    ):
-        return LoggingContext(log_model=orchestrator_logs)
+    if run_logs := search_logs_by_source(pipeline_run.log_collection, source):
+        return LoggingContext(log_model=run_logs)
 
     logs_request = generate_logs_request(source=source)
     try:
@@ -329,10 +327,8 @@ def setup_run_logging(
     except Exception as e:
         logger.error(f"Failed to add logs to the run {pipeline_run.id}: {e}")
 
-    if orchestrator_logs := search_logs_by_source(
-        pipeline_run.log_collection, source
-    ):
-        return LoggingContext(log_model=orchestrator_logs)
+    if run_logs := search_logs_by_source(pipeline_run.log_collection, source):
+        return LoggingContext(log_model=run_logs)
 
     return nullcontext()
 
