@@ -4,10 +4,13 @@
 
 ## Deployments
 
+* [Deployment Scenarios Overview](deployments-overview.md)
 * [SaaS Deployment](saas-deployment.md)
 * [Hybrid SaaS Deployment](hybrid-deployment.md)
+  * [Kubernetes with Helm](hybrid-deployment-helm.md)
+  * [AWS ECS](hybrid-deployment-ecs.md)
 * [Air-gapped Deployment](air-gapped-deployment.md)
-* [Self-hosted deployment guide](self-hosted.md)
+  * [Kubernetes with Helm](air-gapped-deployment-helm.md)
 
 ## Core Concepts
 

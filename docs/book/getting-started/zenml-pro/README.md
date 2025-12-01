@@ -44,57 +44,11 @@ To try ZenML Pro or to learn more [book a call](https://www.zenml.io/book-your-d
 | **Reporting** | Basic run tracking | Advanced usage reports and analytics |
 | **Core Features** | ✅ Run pipelines on stacks<br>✅ Full observability over runs<br>✅ Artifact tracking<br>✅ Model versioning | ✅ All OSS features<br>✅ [Run Snapshots](https://docs.zenml.io/concepts/snapshots)<br>✅ Enhanced filtering and search |
 
-## Deployment Scenarios Comparison
+## Deployment Scenarios
 
-| Deployment Aspect | SaaS | Hybrid SaaS | Air-gapped |
-|-------------------|------|-------------|------------|
-| **ZenML Server** | ZenML infrastructure | Customer infrastructure | Customer infrastructure |
-| **Control Plane** | ZenML infrastructure | ZenML infrastructure | Customer infrastructure |
-| **Metadata & RBAC** | ZenML infrastructure | RBAC: ZenML infrastructure<br>Run metadata: Customer infrastructure | Customer infrastructure |
-| **Compute & Data** | Customer infrastructure | Customer infrastructure | Customer infrastructure |
-| **Setup Time** | ⚡ Fastest (minutes) | Moderate | Longer (requires full deployment) |
-| **Maintenance** | ✅ Fully managed | Partially managed (workspace maintenance required) | Customer managed |
-| **Production Ready** | ✅ Day 1 | ✅ Day 1 | ✅ Day 1 |
-| **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and air-gapped environments |
+ZenML Pro offers three flexible deployment options to match your organization's needs: **SaaS**, **Hybrid**, and **Air-gapped**.
 
-### SaaS Deployment
-
-The ZenML-managed SaaS deployment provides the fastest path to production with zero infrastructure overhead. All ZenML server components run on ZenML infrastructure, while your compute resources and data remain in your environment.
-
-**What runs where:**
-- ZenML Server: ZenML infrastructure
-- Metadata and RBAC: ZenML infrastructure
-- Compute and Data: Customer infrastructure
-
-**Ideal for:** Teams that want to get started immediately without managing infrastructure, while keeping sensitive ML data in their own environment.
-
-[Learn more about SaaS deployment →](saas-deployment.md)
-
-### Hybrid SaaS Deployment
-
-The Hybrid deployment balances control with convenience. The ZenML control plane (handling user management, authentication, and RBAC) runs on ZenML infrastructure, while the ZenML server and all metadata run in your environment.
-
-**What runs where:**
-- ZenML Management Plane: ZenML infrastructure
-- ZenML Server: Customer infrastructure
-- RBAC: ZenML infrastructure
-- Run metadata: Customer infrastructure
-- Compute and Data: Customer infrastructure
-
-**Ideal for:** Organizations with security or compliance requirements that mandate keeping metadata and credentials within their infrastructure, while benefiting from centralized user management.
-
-[Learn more about Hybrid deployment →](hybrid-deployment.md)
-
-### Air-gapped Deployment
-
-The fully self-hosted, air-gapped deployment gives you complete control and data sovereignty. All ZenML components run entirely within your infrastructure with no external dependencies.
-
-**What runs where:**
-- All components: Customer infrastructure (completely isolated)
-
-**Ideal for:** Organizations with the strictest security requirements, regulated industries, or environments that must operate without external network access.
-
-[Learn more about Air-gapped deployment →](air-gapped-deployment.md)
+[Explore all deployment scenarios →](deployments-overview.md)
 
 ## Security & Compliance
 
