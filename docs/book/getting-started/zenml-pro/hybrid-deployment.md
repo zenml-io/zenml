@@ -417,8 +417,10 @@ A workspace deep copy feature for migrating pipelines and artifacts between work
 ## Related Resources
 
 - [System Architecture Overview](../system-architectures.md#zenml-pro-hybrid-saas)
+- [Deployment Scenarios Overview](deployments-overview.md)
 - [SaaS Deployment](saas-deployment.md)
 - [Air-gapped Deployment](air-gapped-deployment.md)
+- [Workload Managers](workload-managers.md)
 - [Self-hosted Deployment Guide](self-hosted.md)
 - [Workspaces](workspaces.md)
 - [Organizations](organization.md)

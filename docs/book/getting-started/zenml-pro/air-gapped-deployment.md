@@ -423,9 +423,11 @@ Your ZenML representative will provide you with a tailored migration checklist, 
 ## Related Resources
 
 - [System Architecture Overview](../system-architectures.md#zenml-pro-self-hosted-architecture)
-- [Self-hosted Deployment Guide](self-hosted.md)
+- [Deployment Scenarios Overview](deployments-overview.md)
 - [SaaS Deployment](saas-deployment.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
+- [Workload Managers](workload-managers.md)
+- [Self-hosted Deployment Guide](self-hosted.md)
 - [Security & Compliance](README.md#security--compliance)
 
 ## Get Started

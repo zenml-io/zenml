@@ -19,6 +19,7 @@
 * [Workspaces](workspaces.md)
 * [Projects](projects.md)
 * [Teams](teams.md)
+* [Workload Managers](workload-managers.md)
 
 ## Access Management
 

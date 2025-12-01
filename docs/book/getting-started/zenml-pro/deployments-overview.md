@@ -124,12 +124,19 @@ All ZenML Pro deployments include:
 
 For software deployed on customer infrastructure (Hybrid and Air-gapped scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
 
+## Running Pipelines from the Dashboard
+
+All deployment scenarios support running pipeline snapshots from the dashboard through [workload managers](workload-managers.md). Workload managers are built into the ZenML Pro server and can be configured to orchestrate pipeline execution on your Kubernetes cluster, AWS ECS, or GCP infrastructure.
+
+Learn more: [Understanding Workload Managers](workload-managers.md)
+
 ## Next Steps
 
 - **Ready to start?** [Choose SaaS Deployment](saas-deployment.md)
 - **Need metadata control?** [Set up Hybrid Deployment](hybrid-deployment.md)
 - **Require complete isolation?** [Configure Air-gapped Deployment](air-gapped-deployment.md)
 - **Deploying on your own infrastructure?** [See Self-hosted Deployment Guide](self-hosted.md)
+- **Want to run pipelines from the dashboard?** [Configure Workload Managers](workload-managers.md)
 
 {% hint style="info" %}
 Not sure which option is right for you? [Book a call](https://www.zenml.io/book-your-demo) with our team to discuss your specific requirements.

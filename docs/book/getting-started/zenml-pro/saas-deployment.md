@@ -236,8 +236,10 @@ Need help with migration? Our support team can assist.
 ## Related Resources
 
 - [System Architecture Overview](../system-architectures.md#zenml-pro-saas-architecture)
+- [Deployment Scenarios Overview](deployments-overview.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
 - [Air-gapped Deployment](air-gapped-deployment.md)
+- [Workload Managers](workload-managers.md)
 - [Security & Compliance](README.md#security--compliance)
 
 ## Get Started
