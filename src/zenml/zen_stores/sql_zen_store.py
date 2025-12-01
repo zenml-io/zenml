@@ -10514,6 +10514,43 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            # Add logs if specified
+            if step_run_update.add_logs:
+                try:
+                    for log_request in step_run_update.add_logs:
+                        # Validate the artifact store exists
+                        self._get_reference_schema_by_id(
+                            resource=log_request,
+                            reference_schema=StackComponentSchema,
+                            reference_id=log_request.artifact_store_id,
+                            session=session,
+                            reference_type="logs artifact store",
+                        )
+
+                        # Create the log entry
+                        log_entry = LogsSchema(
+                            id=log_request.id,
+                            uri=log_request.uri,
+                            # TODO: Remove fallback when not supporting
+                            # clients <0.84.0 anymore
+                            source=log_request.source or "execution",
+                            step_run_id=existing_step_run.id,
+                            artifact_store_id=log_request.artifact_store_id,
+                            log_store_id=log_request.log_store_id,
+                        )
+                        session.add(log_entry)
+
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+                    raise EntityExistsError(
+                        "Unable to create log entry: One of the provided sources "
+                        f"({', '.join(log.source for log in step_run_update.add_logs)}) "
+                        "already exists within the scope of the same step "
+                        f"'{step_run_id}'. Existing entry sources: "
+                        f"{', '.join(log.source for log in existing_step_run.logs)}"
+                    )
+
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
             )

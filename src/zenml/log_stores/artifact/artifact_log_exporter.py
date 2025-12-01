@@ -16,7 +16,7 @@
 import os
 import time
 from collections import defaultdict
-from typing import TYPE_CHECKING, Dict, List, Sequence, Set
+from typing import TYPE_CHECKING, Dict, List, Sequence
 from uuid import UUID, uuid4
 
 from opentelemetry import context as otel_context
@@ -72,7 +72,7 @@ class ArtifactLogExporter(LogExporter):
         try:
             entries_by_id: Dict[UUID, List[str]] = defaultdict(list)
             responses_by_id: Dict[UUID, "LogsResponse"] = {}
-            finalized_ids: Set[UUID] = set()
+            finalized_log_streams: List["LogsResponse"] = []
 
             for log_data in batch:
                 log_model = otel_context.get_value(
@@ -87,7 +87,7 @@ class ArtifactLogExporter(LogExporter):
                     continue
 
                 if flush:
-                    finalized_ids.add(log_model.id)
+                    finalized_log_streams.append(log_model)
                     continue
 
                 responses_by_id[log_model.id] = log_model
@@ -102,8 +102,7 @@ class ArtifactLogExporter(LogExporter):
                     log_model = responses_by_id[log_id]
                     self._write(log_lines, log_model)
 
-            for log_id in finalized_ids:
-                log_model = responses_by_id[log_id]
+            for log_model in finalized_log_streams:
                 self._finalize(log_model)
 
             return LogExportResult.SUCCESS

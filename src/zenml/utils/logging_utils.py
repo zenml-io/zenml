@@ -43,8 +43,6 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.orchestrators.utils import is_setting_enabled
-from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -260,6 +258,8 @@ def is_step_logging_enabled(
     Returns:
         True if logging is enabled, False if disabled.
     """
+    from zenml.orchestrators.utils import is_setting_enabled
+
     if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
         return False
     else:
@@ -380,6 +380,7 @@ def fetch_logs(
     """
     from zenml.artifacts.utils import load_artifact_store
     from zenml.log_stores.base_log_store import BaseLogStore
+    from zenml.stack import StackComponent
 
     log_store: Optional[BaseLogStore] = None
 
