@@ -1946,6 +1946,24 @@ def _component_display_name(
     return name.replace("_", " ")
 
 
+def _active_status(
+    is_active: bool, output_format: OutputFormat
+) -> Union[str, bool]:
+    """Format active status based on output format.
+
+    Args:
+        is_active: Whether the item is active.
+        output_format: The output format.
+
+    Returns:
+        For table format: green dot if active, empty string if not.
+        For other formats: boolean value.
+    """
+    if output_format == "table":
+        return "[green]●[/green]" if is_active else ""
+    return is_active
+
+
 def get_execution_status_emoji(status: "ExecutionStatus") -> str:
     """Returns an emoji representing the given execution status.
 
@@ -2148,14 +2166,15 @@ def generate_stack_row(
     is_active = active_id is not None and stack.id == active_id
 
     row: Dict[str, Any] = {
-        "active": "[green]●[/green]"
-        if is_active and output_format == "table"
-        else ("Yes" if is_active else ""),
+        "active": _active_status(is_active, output_format),
     }
 
     for component_type in StackComponentType:
         components = stack.components.get(component_type)
-        header = component_type.value.upper().replace("_", " ")
+        if output_format == "table":
+            header = component_type.value.upper().replace("_", " ")
+        else:
+            header = component_type.value
         row[header] = components[0].name if components else "-"
 
     return row
@@ -2179,9 +2198,7 @@ def generate_project_row(
     is_active = active_id is not None and project.id == active_id
 
     return {
-        "active": "[green]●[/green]"
-        if is_active and output_format == "table"
-        else ("Yes" if is_active else ""),
+        "active": _active_status(is_active, output_format),
     }
 
 
@@ -2203,9 +2220,7 @@ def generate_user_row(
     is_active = active_id is not None and user.id == active_id
 
     return {
-        "active": "[green]●[/green]"
-        if is_active and output_format == "table"
-        else ("Yes" if is_active else ""),
+        "active": _active_status(is_active, output_format),
     }
 
 
@@ -2257,9 +2272,7 @@ def generate_component_row(
     is_active = active_id is not None and component.id == active_id
 
     return {
-        "active": "[green]●[/green]"
-        if is_active and output_format == "table"
-        else ("Yes" if is_active else ""),
+        "active": _active_status(is_active, output_format),
         "name": component.name,
         "component_id": component.id,
         "flavor": component.flavor_name,
@@ -2282,15 +2295,15 @@ def generate_connector_row(
     Returns:
         Dict with connector data for display.
     """
-    is_active = active_connector_ids and connector.id in active_connector_ids
+    is_active = bool(
+        active_connector_ids and connector.id in active_connector_ids
+    )
     labels = [f"{label}:{value}" for label, value in connector.labels.items()]
     resource_name = connector.resource_id or "<multiple>"
     resource_types_str = "\n".join(connector.emojified_resource_types)
 
     return {
-        "active": "[green]●[/green]"
-        if is_active and output_format == "table"
-        else ("Yes" if is_active else ""),
+        "active": _active_status(is_active, output_format),
         "name": connector.name,
         "id": connector.id,
         "type": connector.emojified_connector_type,
@@ -2868,8 +2881,11 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
     Returns:
         True if any parameter source differs from default, else False.
     """
+    display_options = {"output_format", "columns"}
     try:
-        for _, source in ctx._parameter_source.items():
+        for param, source in ctx._parameter_source.items():
+            if param in display_options:
+                continue
             if source != click.core.ParameterSource.DEFAULT:
                 return True
         return False

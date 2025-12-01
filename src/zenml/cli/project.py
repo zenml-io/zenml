@@ -37,9 +37,7 @@ def project() -> None:
 
 
 @project.command("list")
-@list_options(
-    ProjectFilter, default_columns=["active", "id", "name", "description"]
-)
+@list_options(ProjectFilter, default_columns=["active", "id", "name"])
 @click.pass_context
 def list_projects(
     ctx: click.Context,

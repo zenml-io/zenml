@@ -86,9 +86,7 @@ def model() -> None:
         "id",
         "name",
         "latest_version_name",
-        "description",
         "tags",
-        "use_cases",
     ],
 )
 def list_models(
