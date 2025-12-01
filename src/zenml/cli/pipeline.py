@@ -898,7 +898,18 @@ def builds() -> None:
 
 
 @builds.command("list", help="List all pipeline builds.")
-@list_options(PipelineBuildFilter, default_columns=["id"])
+@list_options(
+    PipelineBuildFilter,
+    default_columns=[
+        "id",
+        "pipeline",
+        "stack",
+        "zenml_version",
+        "python_version",
+        "checksum",
+        "is_local",
+    ],
+)
 def list_pipeline_builds(
     columns: str, output_format: OutputFormat, **kwargs: Any
 ) -> None:

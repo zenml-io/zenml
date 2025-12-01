@@ -37,7 +37,9 @@ def project() -> None:
 
 
 @project.command("list")
-@list_options(ProjectFilter, default_columns=["active", "id", "name"])
+@list_options(
+    ProjectFilter, default_columns=["active", "id", "name", "description"]
+)
 @click.pass_context
 def list_projects(
     ctx: click.Context,
@@ -57,7 +59,7 @@ def list_projects(
     check_zenml_pro_project_availability()
     client = Client()
     with console.status("Listing projects...\n"):
-        projects = client.list_projects(**kwargs)
+        projects = client.list_projects(**kwargs, hydrate=True)
 
     show_active = not is_sorted_or_filtered(ctx)
     if show_active and projects.items:
