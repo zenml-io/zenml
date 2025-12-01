@@ -71,6 +71,20 @@ def clean_output(text: str) -> None:
     _original_stdout.flush()
 
 
+def is_terminal_output() -> bool:
+    """Check if the CLI output is going to an interactive terminal.
+
+    This checks the original stdout (before CLI rerouting to stderr) to
+    determine if output will be displayed interactively or redirected
+    to a file/pipe.
+
+    Returns:
+        True if output goes to an interactive terminal (TTY), False if
+        redirected to a file or piped to another program.
+    """
+    return _original_stdout.isatty()
+
+
 reroute_stdout()
 
 # Import the cli only after rerouting stdout

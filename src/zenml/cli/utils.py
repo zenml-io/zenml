@@ -3215,7 +3215,7 @@ def handle_output(
             logger.warning("Failed to write clean output: %s", err)
             print(cli_output)
 
-    if page:
+    if page and output_format == "table":
         print_page_info(page)
 
 
@@ -3321,14 +3321,25 @@ def prepare_output(
 def _syntax_highlight(content: str, lexer: str) -> str:
     """Apply syntax highlighting to content if colors are enabled.
 
+    Syntax highlighting is only applied when output goes to an interactive
+    terminal (TTY). When output is redirected to a file or piped to another
+    program, plain text is returned to ensure machine-readable output.
+
     Args:
         content: The text content to highlight
         lexer: The lexer to use (e.g., "json", "yaml")
 
     Returns:
-        Syntax-highlighted string if colors enabled, otherwise original content
+        Syntax-highlighted string if colors enabled and output is a TTY,
+        otherwise the original content unchanged.
     """
     if os.getenv("NO_COLOR"):
+        return content
+
+    # Import here to avoid circular imports at module load time
+    from zenml_cli import is_terminal_output
+
+    if not is_terminal_output():
         return content
 
     syntax = Syntax(
