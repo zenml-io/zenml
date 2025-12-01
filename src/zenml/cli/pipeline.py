@@ -1293,7 +1293,7 @@ def list_pipeline_snapshots(
     client = Client()
     try:
         with console.status("Listing pipeline snapshots...\n"):
-            pipeline_snapshots = client.list_snapshots(hydrate=True, **kwargs)
+            pipeline_snapshots = client.list_snapshots(**kwargs)
     except KeyError as err:
         cli_utils.exception(err)
         return
