@@ -93,10 +93,10 @@ Choose **Air-gapped** if you need complete control with no external dependencies
 
 Consider these factors when deciding:
 
-1. **Data Sensitivity**: How sensitive is your ML metadata and run data?
-   - Non-sensitive → **SaaS**
-   - Sensitive metadata → **Hybrid**
-   - Highly regulated → **Air-gapped**
+1. **Data Location Requirements**: Where must your ML metadata and run data reside?
+   - Cloud-hosted is acceptable → **SaaS**
+   - Must stay in your infrastructure → **Hybrid**
+   - Must be completely isolated/air-gapped → **Air-gapped**
 
 2. **Infrastructure Complexity**: How much infrastructure control do you want?
    - Minimal → **SaaS**
