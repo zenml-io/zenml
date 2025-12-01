@@ -22,9 +22,7 @@ from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
-    ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
     ENV_ZENML_STEP_OPERATOR,
-    handle_bool_env_var,
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
 from zenml.environment import get_run_environment_dict
@@ -43,7 +41,6 @@ from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
-    generate_logs_request,
     is_step_logging_enabled,
     setup_step_logging,
 )
@@ -261,19 +258,6 @@ class StepLauncher:
         publish_utils.step_exception_info.set(None)
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
-        # Enable or disable step logs storage
-        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
-            step_logging_enabled = False
-        else:
-            step_logging_enabled = orchestrator_utils.is_setting_enabled(
-                is_enabled_on_step=self._step.config.enable_step_logs,
-                is_enabled_on_pipeline=self._snapshot.pipeline_configuration.enable_step_logs,
-            )
-
-        logs_request = None
-        if step_logging_enabled:
-            logs_request = generate_logs_request(source="step")
-
         if run_was_created:
             pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
                 run_id=pipeline_run.id
@@ -297,7 +281,6 @@ class StepLauncher:
             invocation_id=self._invocation_id,
             dynamic_config=dynamic_config,
         )
-        step_run_request.logs = logs_request
 
         try:
             request_factory.populate_request(request=step_run_request)
@@ -327,7 +310,7 @@ class StepLauncher:
                 ):
                     logs_context = setup_step_logging(
                         step_run=step_run,
-                        source="step",
+                        source="prepare_step",
                     )
 
                 start_time = time.time()

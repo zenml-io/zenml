@@ -45,7 +45,6 @@ from zenml.models import (
 )
 from zenml.orchestrators.utils import is_setting_enabled
 from zenml.stack import StackComponent
-from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -395,6 +394,7 @@ def fetch_logs(
         DoesNotExistException: If the log store doesn't exist or is not the right type.
         NotImplementedError: If the log store's dependencies are not installed.
     """
+    from zenml.artifacts.utils import load_artifact_store
     from zenml.log_stores.base_log_store import BaseLogStore
 
     log_store: Optional[BaseLogStore] = None
@@ -422,38 +422,15 @@ def fetch_logs(
                 f"Log store '{log_store_model.name}' could not be "
                 "instantiated."
             )
-    else:
-        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    elif logs.artifact_store_id:
         from zenml.log_stores.artifact.artifact_log_store import (
             ArtifactLogStore,
         )
-        from zenml.log_stores.artifact.artifact_log_store_flavor import (
-            ArtifactLogStoreConfig,
-        )
 
-        current_time = utc_now()
+        artifact_store = load_artifact_store(logs.artifact_store_id, zen_store)
+        log_store = ArtifactLogStore.from_artifact_store(artifact_store)
 
-        artifact_store = zen_store.get_stack_component(logs.artifact_store_id)
-        if not artifact_store.type == StackComponentType.ARTIFACT_STORE:
-            raise DoesNotExistException(
-                f"Stack component '{logs.artifact_store_id}' is not an artifact store."
-            )
-
-        artifact_store = cast(
-            "BaseArtifactStore",
-            StackComponent.from_model(artifact_store),
-        )
-        log_store = ArtifactLogStore(
-            name="default_artifact_log_store",
-            id=uuid4(),
-            config=ArtifactLogStoreConfig(),
-            flavor="artifact",
-            type=StackComponentType.LOG_STORE,
-            user=uuid4(),
-            created=current_time,
-            updated=current_time,
-            # Here, we tie the artifact log store to the artifact store
-            artifact_store=artifact_store,
-        )
+    else:
+        return []
 
     return log_store.fetch(logs_model=logs, limit=limit)

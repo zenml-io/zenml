@@ -532,41 +532,14 @@ class Stack:
     def log_store(self) -> "BaseLogStore":
         """The log store of the stack.
 
-        If no log store is configured, returns a temporary default
-        ArtifactLogStore.
-
         Returns:
             The log store of the stack.
         """
-        if self._log_store:
-            return self._log_store
-        else:
-            from uuid import uuid4
+        if not self._log_store:
+            self.validate_log_store()
 
-            from zenml.log_stores import (
-                ArtifactLogStore,
-                ArtifactLogStoreConfig,
-                ArtifactLogStoreFlavor,
-            )
-
-            flavor = ArtifactLogStoreFlavor()
-            now = utc_now()
-
-            self._log_store = ArtifactLogStore(
-                id=uuid4(),
-                name="default",
-                flavor=flavor.name,
-                type=flavor.type,
-                config=ArtifactLogStoreConfig(),
-                environment={},
-                user=Client().active_user.id,
-                created=now,
-                updated=now,
-                secrets=[],
-                # Here, we tie the artifact log store to the artifact store
-                artifact_store=self.artifact_store,
-            )
-            return self._log_store
+        assert self._log_store is not None
+        return self._log_store
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
@@ -820,6 +793,7 @@ class Stack:
             return
 
         self.validate_image_builder()
+        self.validate_log_store()
         for component in self.components.values():
             if component.validator:
                 component.validator.validate(stack=self)
@@ -872,6 +846,17 @@ class Stack:
             )
 
             self._image_builder = image_builder
+
+    def validate_log_store(self) -> None:
+        """Validates that the stack has a log store."""
+        from zenml.log_stores import ArtifactLogStore
+
+        if self._log_store:
+            return
+
+        self._log_store = ArtifactLogStore.from_artifact_store(
+            self.artifact_store
+        )
 
     def prepare_pipeline_submission(
         self, snapshot: "PipelineSnapshotResponse"

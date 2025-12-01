@@ -29,9 +29,9 @@ from uuid import UUID
 from opentelemetry.sdk._logs.export import LogExporter
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.artifacts.utils import _load_artifact_store
+from zenml.artifacts.utils import load_artifact_store
 from zenml.client import Client
-from zenml.enums import LoggingLevels
+from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.log_stores.artifact.artifact_log_store_flavor import (
     ArtifactLogStoreConfig,
@@ -67,25 +67,10 @@ def prepare_logs_uri(
     """
     logs_base_uri = os.path.join(artifact_store.path, "logs")
 
-    if not artifact_store.exists(logs_base_uri):
-        artifact_store.makedirs(logs_base_uri)
-
     if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-        logs_uri = os.path.join(logs_base_uri, log_id)
-        if artifact_store.exists(logs_uri):
-            logger.warning(
-                f"Logs directory {logs_uri} already exists! Removing old log directory..."
-            )
-            artifact_store.rmtree(logs_uri)
-
-        artifact_store.makedirs(logs_uri)
+        logs_uri = os.path.join(logs_base_uri, str(log_id))
     else:
         logs_uri = os.path.join(logs_base_uri, f"{log_id}{LOGS_EXTENSION}")
-        if artifact_store.exists(logs_uri):
-            logger.warning(
-                f"Logs file {logs_uri} already exists! Removing old log file..."
-            )
-            artifact_store.remove(logs_uri)
 
     return sanitize_remote_path(logs_uri)
 
@@ -152,7 +137,7 @@ def _stream_logs_line_by_line(
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
     """
-    artifact_store = _load_artifact_store(artifact_store_id, zen_store)
+    artifact_store = load_artifact_store(artifact_store_id, zen_store)
 
     try:
         if not artifact_store.isdir(logs_uri):
@@ -244,6 +229,30 @@ class ArtifactLogStore(OtelLogStore):
         """
         super().__init__(*args, **kwargs)
         self._artifact_store = artifact_store
+
+    @classmethod
+    def from_artifact_store(
+        cls, artifact_store: "BaseArtifactStore"
+    ) -> "ArtifactLogStore":
+        """Creates an artifact log store from an artifact store.
+
+        Args:
+            artifact_store: The artifact store to create the log store from.
+
+        Returns:
+            The created artifact log store.
+        """
+        return cls(
+            artifact_store=artifact_store,
+            id=artifact_store.id,
+            name="default",
+            config=ArtifactLogStoreConfig(),
+            flavor="artifact",
+            type=StackComponentType.LOG_STORE,
+            user=artifact_store.user,
+            created=artifact_store.created,
+            updated=artifact_store.updated,
+        )
 
     @property
     def config(self) -> ArtifactLogStoreConfig:

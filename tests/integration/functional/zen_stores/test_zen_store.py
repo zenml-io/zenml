@@ -50,7 +50,7 @@ from tests.unit.pipelines.test_build_utils import (
 )
 from zenml import Model, Tag, add_tags, log_metadata, pipeline, step
 from zenml.artifacts.utils import (
-    _load_artifact_store,
+    load_artifact_store,
 )
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
@@ -3280,7 +3280,7 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
         artifact_store_id = steps[0].output.artifact_store_id
         assert artifact_store_id
 
-        artifact_store = _load_artifact_store(artifact_store_id, store)
+        artifact_store = load_artifact_store(artifact_store_id, store)
 
         logs_uri_1 = prepare_logs_uri(
             artifact_store=artifact_store,

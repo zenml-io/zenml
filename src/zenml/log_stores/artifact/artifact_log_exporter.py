@@ -252,6 +252,9 @@ class ArtifactLogExporter(LogExporter):
             content = "\n".join(log_lines) + "\n"
 
             if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+                if not self.artifact_store.exists(log_model.uri):
+                    self.artifact_store.makedirs(log_model.uri)
+
                 timestamp = time.time()
                 file_uri = os.path.join(
                     log_model.uri,
@@ -264,6 +267,10 @@ class ArtifactLogExporter(LogExporter):
                 if last:
                     self._merge(log_model)
             else:
+                logs_base_uri = os.path.dirname(log_model.uri)
+                if not self.artifact_store.exists(logs_base_uri):
+                    self.artifact_store.makedirs(logs_base_uri)
+
                 with self.artifact_store.open(log_model.uri, "a") as f:
                     f.write(content)
 
@@ -275,8 +282,6 @@ class ArtifactLogExporter(LogExporter):
         except Exception as e:
             logger.error(f"Failed to write logs to {log_model.uri}: {e}")
             raise
-        finally:
-            self.artifact_store.cleanup()
 
     def _merge(self, log_model: "LogsResponse"):
         """Merges all log files into one in the given URI.
