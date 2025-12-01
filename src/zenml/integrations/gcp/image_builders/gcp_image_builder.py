@@ -226,8 +226,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         credentials, project_id = self._get_authentication()
         client_options = None
         if self.config.location:
-            location = self.config.location.strip()
-            endpoint = f"{location}-cloudbuild.googleapis.com"
+            endpoint = f"{self.config.location}-cloudbuild.googleapis.com"
             client_options = ClientOptions(api_endpoint=endpoint)
             logger.info(
                 "Using regional Cloud Build endpoint `%s`.",

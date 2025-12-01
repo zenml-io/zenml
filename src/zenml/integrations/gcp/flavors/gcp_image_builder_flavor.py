@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field, PositiveInt
+from pydantic import Field, PositiveInt, field_validator
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.gcp import (
@@ -71,6 +71,16 @@ class GCPImageBuilderConfig(
             "endpoint is used."
         ),
     )
+
+    @field_validator("location", mode="before")
+    @classmethod
+    def validate_location(cls, v: Optional[str]) -> Optional[str]:
+        """Normalize location field, treating empty strings as unset."""
+        if v is not None:
+            v = v.strip()
+            if not v:
+                return None
+        return v
 
 
 class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
