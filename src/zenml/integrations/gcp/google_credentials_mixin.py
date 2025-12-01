@@ -48,6 +48,9 @@ class GoogleCredentialsConfigMixin(StackComponentConfig):
 class GoogleCredentialsMixin(StackComponent):
     """StackComponent mixin to get Google Cloud Platform credentials."""
 
+    _gcp_credentials: Optional["Credentials"] = None
+    _gcp_project_id: Optional[str] = None
+
     @property
     def config(self) -> GoogleCredentialsConfigMixin:
         """Returns the `GoogleCredentialsConfigMixin` config.
@@ -56,6 +59,18 @@ class GoogleCredentialsMixin(StackComponent):
             The configuration.
         """
         return cast(GoogleCredentialsConfigMixin, self._config)
+
+    @property
+    def gcp_project_id(self) -> str:
+        """Get the GCP project ID.
+
+        Returns:
+            The GCP project ID.
+        """
+        if self._gcp_project_id is None:
+            _, self._gcp_project_id = self._get_authentication()
+
+        return self._gcp_project_id
 
     def _get_authentication(self) -> Tuple["Credentials", str]:
         """Get GCP credentials and the project ID associated with the credentials.
@@ -79,6 +94,12 @@ class GoogleCredentialsMixin(StackComponent):
             GCPServiceConnector,
         )
 
+        if self.connector_has_expired():
+            self._gcp_credentials = None
+
+        if self._gcp_credentials and self._gcp_project_id:
+            return self._gcp_credentials, self._gcp_project_id
+
         connector = self.get_connector()
         if connector:
             credentials = connector.connect()
@@ -90,6 +111,8 @@ class GoogleCredentialsMixin(StackComponent):
                     "trying to use the linked connector, but got "
                     f"{type(credentials)}."
                 )
+            self._gcp_credentials = credentials
+            self._gcp_project_id = connector.config.gcp_project_id
             return credentials, connector.config.gcp_project_id
 
         if self.config.service_account_path:
@@ -111,4 +134,6 @@ class GoogleCredentialsMixin(StackComponent):
         # If the project was set in the configuration, use it. Otherwise, use
         # the project that was used to authenticate.
         project_id = self.config.project if self.config.project else project_id
+        self._gcp_credentials = credentials
+        self._gcp_project_id = project_id
         return credentials, project_id
