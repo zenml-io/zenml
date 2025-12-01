@@ -228,8 +228,8 @@ and `and` keywords.
 Output formats
 --------------
 
-All ``list`` commands support multiple output formats, making it easy to
-pipe ZenML CLI output into scripts, CI/CD pipelines, or analysis tools.
+All ``list`` commands support multiple output formats for scripting,
+CI/CD integration, and data analysis.
 
 Use the ``--output`` (or ``-o``) option to specify the format:
 

@@ -858,7 +858,7 @@ Learn more: [Access ZenML documentation via llms.txt and MCP](https://docs.zenml
 
 ## 15 Export CLI data in multiple formats
 
-**Why** -- pipe ZenML CLI output into scripts, CI/CD, or analysis tools with machine-readable formats. All `zenml list` commands support flexible output formatting, making it easy to automate workflows, analyze data in spreadsheets, or integrate with external tools.
+All `zenml list` commands support multiple output formats for scripting, CI/CD integration, and data analysis.
 
 ```bash
 # Get stack data as JSON for processing with jq
