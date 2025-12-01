@@ -370,6 +370,7 @@ class StepLauncher:
                     ):
                         # Handle as a non-failure as exception is a propagation of graceful termination.
                         publish_utils.publish_stopped_step_run(step_run.id)
+
                     else:
                         logger.error(
                             "Failed to run step `%s`: %s",
@@ -377,7 +378,7 @@ class StepLauncher:
                             e,
                         )
                         publish_utils.publish_failed_step_run(step_run.id)
-                        raise
+                    raise
             else:
                 logger.info(
                     f"Using cached version of step `{self._invocation_id}`."
