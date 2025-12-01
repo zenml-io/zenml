@@ -48,7 +48,7 @@ Using the default local database.
 ```
 
 {% hint style="info" %}
-The output format can be customized with `--output` (json, yaml, csv, tsv) and `--columns` flags. See [environment variables](environment-variables.md#cli-output-formatting) for details.
+The output can be customized with an `--output` (json, yaml, csv, tsv, table) option and a `--columns` selection. See [environment variables](environment-variables.md#cli-output-formatting) for more details.
 {% endhint %}
 
 The following is an example of the layout of the global config directory immediately after initialization:
