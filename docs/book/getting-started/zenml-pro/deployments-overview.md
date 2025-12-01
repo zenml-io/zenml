@@ -25,9 +25,9 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 | **Control Plane** | ZenML infrastructure | ZenML infrastructure | Customer infrastructure |
 | **Metadata & RBAC** | ZenML infrastructure | RBAC: ZenML infrastructure<br>Run metadata: Customer infrastructure | Customer infrastructure |
 | **Compute & Data** | Customer infrastructure | Customer infrastructure | Customer infrastructure |
-| **Setup Time** | ⚡ Fastest (minutes) | Moderate | Longer (requires full deployment) |
+| **Setup Time** | ⚡ ~1 hour | ~4 hours | ~8 hours |
 | **Maintenance** | ✅ Fully managed | Partially managed (workspace maintenance required) | Customer managed |
-| **Production Ready** | ✅ Day 1 | ✅ Day 1 | ✅ Day 1 |
+| **Production Ready** | Minutes | Hours | Hours |
 | **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and air-gapped environments |
 
 ## Which Scenario is Right for You?
@@ -104,9 +104,9 @@ Consider these factors when deciding:
    - Full control → **Air-gapped**
 
 3. **Time to Value**: How quickly do you need to be productive?
-   - ASAP → **SaaS**
-   - Few days → **Hybrid**
-   - Flexible → **Air-gapped**
+   - Within 1 hour → **SaaS**
+   - Within 4 hours → **Hybrid**
+   - Within 8 hours (or longer planning period) → **Air-gapped**
 
 4. **Compliance Requirements**: What regulations apply to your organization?
    - General business → **SaaS**
