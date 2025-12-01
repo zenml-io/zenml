@@ -43,6 +43,26 @@ zenml image-builder register <NAME> --flavor=local
 zenml stack register <STACK_NAME> -i <NAME> ... --set
 ```
 
+#### Use the Docker CLI for builds (subprocess mode)
+
+By default, the local image builder uses the Docker Python SDK to run builds. You can alternatively configure it to call the Docker CLI (`docker build`) via a subprocess. This can help if you require some options that are only available for Docker BuildKit, which is not supported in the Python SDK yet.
+
+Enable subprocess mode when registering or updating the component:
+
+```shell
+# Register with subprocess mode enabled
+zenml image-builder register <NAME> --flavor=local --use_subprocess_call=true
+
+# Or update an existing local image builder
+zenml image-builder update <NAME> --use_subprocess_call=true
+```
+
+In subprocess mode, the build options passed via `DockerSettings` are handled in the following way:
+- The `buildargs`, `labels` dictionaries are passed as `--build-arg KEY=VALUE` and `--label KEY=VALUE` respectively
+- Lists will pass multiple command line arguments with the same name for all values
+- `True` boolean values means the argument will be passed without any value (`--KEY`)
+- All other values are converted to a string and passed as `--KEY VALUE`
+
 For more information and a full list of configurable attributes of the local image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-image_builders.html#zenml.image_builders.local_image_builder) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

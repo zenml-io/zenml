@@ -482,12 +482,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             The response.
         """
         runnable = False
-        if (
-            not self.is_dynamic
-            and self.build
-            and not self.build.is_local
-            and self.build.stack_id
-        ):
+        if self.build and not self.build.is_local and self.build.stack_id:
             runnable = True
 
         deployable = False
@@ -553,6 +548,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 )
                 config_schema = template_utils.generate_config_schema(
                     snapshot=self,
+                    pipeline_configuration=pipeline_configuration,
                     step_configurations=all_step_configurations,
                 )
 

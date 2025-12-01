@@ -325,3 +325,48 @@ class PandasMaterializer(BaseMaterializer):
                 }
 
         return pandas_metadata
+
+    def get_item_count(self, data: Any) -> Optional[int]:
+        """Get the number of items for the given data.
+
+        Args:
+            data: The data to get the number of items for.
+
+        Returns:
+            The number of items for the given data.
+        """
+        if isinstance(data, pd.Series):
+            return len(data)
+        elif isinstance(data, pd.DataFrame):
+            return int(data.shape[1])
+        return None
+
+    def load_item(self, data_type: Type[Any], index: int) -> Any:
+        """Load a specific item of the data.
+
+        Args:
+            data_type: The type of the data to load.
+            index: The index of the item to load.
+
+        Returns:
+            The loaded item.
+        """
+        data = self.load(data_type)
+        item = data[index]
+
+        if not isinstance(item, data_type):
+            try:
+                item = data_type(item)
+            except Exception as e:
+                # We only log an error here, potentially pydantic can handle the
+                # conversion when validating step function inputs.
+                logger.error(
+                    "Failed to convert item `%s` to expected type `%s`. This "
+                    "is most likely due to a mismatching type annotation on "
+                    "your step function input. Error: %s",
+                    item,
+                    data_type.__name__,
+                    e,
+                )
+
+        return item

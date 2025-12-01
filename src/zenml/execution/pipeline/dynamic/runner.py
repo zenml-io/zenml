@@ -14,11 +14,14 @@
 """Dynamic pipeline runner."""
 
 import contextvars
+import copy
 import inspect
+import itertools
 from concurrent.futures import ThreadPoolExecutor
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     List,
     Literal,
@@ -34,10 +37,10 @@ from zenml import ExternalArtifact
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionMode, StepRuntime
 from zenml.execution.pipeline.dynamic.outputs import (
     ArtifactFuture,
+    MapResultsFuture,
     OutputArtifact,
     StepRunFuture,
     StepRunOutputs,
@@ -47,12 +50,14 @@ from zenml.execution.pipeline.dynamic.outputs import (
 from zenml.execution.pipeline.dynamic.run_context import (
     DynamicPipelineRunContext,
 )
+from zenml.execution.pipeline.dynamic.utils import _Unmapped
 from zenml.execution.step.utils import launch_step
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_pipeline_logging
 from zenml.models import (
     ArtifactVersionResponse,
     PipelineRunResponse,
+    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 from zenml.orchestrators.publish_utils import (
@@ -68,7 +73,7 @@ from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
-    from zenml.config.step_configurations import Step
+    from zenml.config.step_configurations import Step, StepConfiguration
     from zenml.steps import BaseStep
 
 
@@ -151,20 +156,23 @@ class DynamicPipelineRunner:
         with setup_pipeline_logging(
             source="orchestrator",
             snapshot=self._snapshot,
-            run_id=self._run.id if self._run else None,
         ) as logs_request:
-            with InMemoryArtifactCache():
-                run = self._run or create_placeholder_run(
+            if self._run:
+                run = Client().zen_store.update_run(
+                    run_id=self._run.id,
+                    run_update=PipelineRunUpdate(
+                        orchestrator_run_id=self._orchestrator_run_id,
+                        add_logs=[logs_request] if logs_request else None,
+                    ),
+                )
+            else:
+                run = create_placeholder_run(
                     snapshot=self._snapshot,
                     orchestrator_run_id=self._orchestrator_run_id,
                     logs=logs_request,
                 )
 
-                assert (
-                    self._snapshot.pipeline_spec
-                )  # Always exists for new snapshots
-                pipeline_parameters = self._snapshot.pipeline_spec.parameters
-
+            with InMemoryArtifactCache():
                 with DynamicPipelineRunContext(
                     pipeline=self.pipeline,
                     run=run,
@@ -177,7 +185,8 @@ class DynamicPipelineRunner:
                         # TODO: what should be allowed as pipeline returns?
                         #  (artifacts, json serializable, anything?)
                         #  how do we show it in the UI?
-                        self.pipeline._call_entrypoint(**pipeline_parameters)
+                        params = self.pipeline.configuration.parameters or {}
+                        self.pipeline._call_entrypoint(**params)
                         # The pipeline function finished successfully, but some
                         # steps might still be running. We now wait for all of
                         # them and raise any exceptions that occurred.
@@ -202,7 +211,7 @@ class DynamicPipelineRunner:
         self,
         step: "BaseStep",
         id: Optional[str],
-        args: Tuple[Any],
+        args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: Literal[False] = False,
@@ -213,7 +222,7 @@ class DynamicPipelineRunner:
         self,
         step: "BaseStep",
         id: Optional[str],
-        args: Tuple[Any],
+        args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: Literal[True] = True,
@@ -223,7 +232,7 @@ class DynamicPipelineRunner:
         self,
         step: "BaseStep",
         id: Optional[str],
-        args: Tuple[Any],
+        args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: bool = False,
@@ -247,8 +256,7 @@ class DynamicPipelineRunner:
             pipeline=self.pipeline,
             step=step,
             id=id,
-            args=args,
-            kwargs=kwargs,
+            inputs=convert_to_keyword_arguments(step.entrypoint, args, kwargs),
             after=after,
         )
 
@@ -267,7 +275,6 @@ class DynamicPipelineRunner:
         if concurrent:
             ctx = contextvars.copy_context()
             future = self._executor.submit(ctx.run, _launch)
-            compiled_step.config.outputs
             step_run_future = StepRunOutputsFuture(
                 wrapped=future,
                 invocation_id=compiled_step.spec.invocation_id,
@@ -277,6 +284,46 @@ class DynamicPipelineRunner:
             return step_run_future
         else:
             return _launch()
+
+    def map(
+        self,
+        step: "BaseStep",
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        product: bool = False,
+    ) -> "MapResultsFuture":
+        """Map over step inputs.
+
+        Args:
+            step: The step to run.
+            args: The arguments for the step function.
+            kwargs: The keyword arguments for the step function.
+            after: The step run output futures to wait for before executing the
+                steps.
+            product: Whether to produce a cartesian product of the mapped
+                inputs.
+
+        Returns:
+            A future that represents the map results.
+        """
+        kwargs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
+        kwargs = await_step_inputs(kwargs)
+        step_inputs = expand_mapped_inputs(kwargs, product=product)
+
+        step_run_futures = [
+            self.launch_step(
+                step,
+                id=None,
+                args=(),
+                kwargs=inputs,
+                after=after,
+                concurrent=True,
+            )
+            for inputs in step_inputs
+        ]
+
+        return MapResultsFuture(futures=step_run_futures)
 
     def await_all_step_run_futures(self) -> None:
         """Await all step run output futures."""
@@ -289,10 +336,14 @@ def compile_dynamic_step_invocation(
     snapshot: "PipelineSnapshotResponse",
     pipeline: "DynamicPipeline",
     step: "BaseStep",
-    id: Optional[str],
-    args: Tuple[Any],
-    kwargs: Dict[str, Any],
-    after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+    inputs: Dict[str, Any],
+    after: Union[
+        "StepRunFuture",
+        "ArtifactFuture",
+        Sequence[Union["StepRunFuture", "ArtifactFuture"]],
+        None,
+    ] = None,
+    id: Optional[str] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.
 
@@ -301,8 +352,7 @@ def compile_dynamic_step_invocation(
         pipeline: The dynamic pipeline.
         step: The step to compile.
         id: Custom invocation ID.
-        args: The arguments for the step function.
-        kwargs: The keyword arguments for the step function.
+        inputs: The inputs for the step function.
         after: The step run output futures to wait for.
 
     Returns:
@@ -313,54 +363,71 @@ def compile_dynamic_step_invocation(
     if isinstance(after, _BaseStepRunFuture):
         after._wait()
         upstream_steps.add(after.invocation_id)
+    elif isinstance(after, MapResultsFuture):
+        for future in after:
+            future._wait()
+            upstream_steps.add(future.invocation_id)
     elif isinstance(after, Sequence):
         for item in after:
-            item._wait()
-            upstream_steps.add(item.invocation_id)
+            if isinstance(item, _BaseStepRunFuture):
+                item._wait()
+                upstream_steps.add(item.invocation_id)
+            elif isinstance(item, MapResultsFuture):
+                for future in item:
+                    future._wait()
+                    upstream_steps.add(future.invocation_id)
 
-    def _await_and_validate_input(input: Any) -> Any:
-        if isinstance(input, StepRunOutputsFuture):
-            if len(input._output_keys) != 1:
-                raise ValueError(
-                    "Passing multiple step run outputs to another step is not "
-                    "allowed."
-                )
-            input = input.artifacts()
+    inputs = await_step_inputs(inputs)
 
-        if isinstance(input, ArtifactFuture):
-            input = input.result()
+    for value in inputs.values():
+        if isinstance(value, OutputArtifact):
+            upstream_steps.add(value.step_name)
 
-        if isinstance(input, OutputArtifact):
-            upstream_steps.add(input.step_name)
+        if (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, OutputArtifact) for item in value)
+        ):
+            upstream_steps.update(item.step_name for item in value)
 
-        return input
-
-    args = tuple(_await_and_validate_input(arg) for arg in args)
-    kwargs = {
-        key: _await_and_validate_input(value) for key, value in kwargs.items()
-    }
-
-    # TODO: we can validate the type of the inputs that are passed as raw data
-    signature = inspect.signature(step.entrypoint, follow_wrapped=True)
-    bound_args = signature.bind_partial(*args, **kwargs)
-    validated_args = bound_args.arguments
-    bound_args.apply_defaults()
     default_parameters = {
         key: value
-        for key, value in bound_args.arguments.items()
-        if key not in validated_args
+        for key, value in convert_to_keyword_arguments(
+            step.entrypoint, (), inputs, apply_defaults=True
+        ).items()
+        if key not in inputs
     }
 
     input_artifacts = {}
     external_artifacts = {}
-    for name, value in validated_args.items():
+    for name, value in inputs.items():
         if isinstance(value, OutputArtifact):
-            input_artifacts[name] = StepArtifact(
-                invocation_id=value.step_name,
-                output_name=value.output_name,
-                annotation=OutputSignature(resolved_annotation=Any),
-                pipeline=pipeline,
-            )
+            input_artifacts[name] = [
+                StepArtifact(
+                    invocation_id=value.step_name,
+                    output_name=value.output_name,
+                    annotation=OutputSignature(resolved_annotation=Any),
+                    pipeline=pipeline,
+                    chunk_index=value.chunk_index,
+                    chunk_size=value.chunk_size,
+                )
+            ]
+        elif (
+            isinstance(value, list)
+            and value
+            and all(isinstance(item, OutputArtifact) for item in value)
+        ):
+            input_artifacts[name] = [
+                StepArtifact(
+                    invocation_id=item.step_name,
+                    output_name=item.output_name,
+                    annotation=OutputSignature(resolved_annotation=Any),
+                    pipeline=pipeline,
+                    chunk_index=item.chunk_index,
+                    chunk_size=item.chunk_size,
+                )
+                for item in value
+            ]
         elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
             external_artifacts[name] = value
         else:
@@ -384,11 +451,12 @@ def compile_dynamic_step_invocation(
         model_artifacts_or_metadata={},
         client_lazy_loaders={},
     )
+
     return Compiler()._compile_step_invocation(
         invocation=pipeline.invocations[invocation_id],
         stack=Client().active_stack,
         step_config=None,
-        pipeline_configuration=pipeline.configuration,
+        pipeline=pipeline,
     )
 
 
@@ -419,9 +487,13 @@ def _load_step_run_outputs(step_run_id: UUID) -> StepRunOutputs:
         name, artifact = next(iter(output_artifacts.items()))
         return _convert_output_artifact(output_name=name, artifact=artifact)
     else:
+        # Make sure we return them in the same order as they're defined in the
+        # step configuration, as we don't enforce any ordering in the DB.
         return tuple(
-            _convert_output_artifact(output_name=name, artifact=artifact)
-            for name, artifact in output_artifacts.items()
+            _convert_output_artifact(
+                output_name=name, artifact=output_artifacts[name]
+            )
+            for name in step_run.config.outputs.keys()
         )
 
 
@@ -440,8 +512,11 @@ def _should_retry_locally(
     if step.config.step_operator:
         return True
 
-    runtime = get_step_runtime(step, pipeline_docker_settings)
-    if runtime == StepRuntime.INLINE or step.config.step_operator:
+    runtime = get_step_runtime(
+        step_config=step.config,
+        pipeline_docker_settings=pipeline_docker_settings,
+    )
+    if runtime == StepRuntime.INLINE:
         return True
     else:
         # Running in isolated mode with the orchestrator
@@ -451,29 +526,30 @@ def _should_retry_locally(
 
 
 def get_step_runtime(
-    step: "Step", pipeline_docker_settings: "DockerSettings"
+    step_config: "StepConfiguration",
+    pipeline_docker_settings: "DockerSettings",
 ) -> StepRuntime:
     """Determine if a step should be run in process.
 
     Args:
-        step: The step.
+        step_config: The step configuration.
         pipeline_docker_settings: The Docker settings of the parent pipeline.
 
     Returns:
         The runtime for the step.
     """
-    if step.config.step_operator:
+    if step_config.step_operator:
         return StepRuntime.ISOLATED
 
     if not Client().active_stack.orchestrator.can_run_isolated_steps:
         return StepRuntime.INLINE
 
-    runtime = step.config.runtime
+    runtime = step_config.runtime
 
     if runtime is None:
-        if not step.config.resource_settings.empty:
+        if not step_config.resource_settings.empty:
             runtime = StepRuntime.ISOLATED
-        elif step.config.docker_settings != pipeline_docker_settings:
+        elif step_config.docker_settings != pipeline_docker_settings:
             runtime = StepRuntime.ISOLATED
         else:
             runtime = StepRuntime.INLINE
@@ -503,3 +579,189 @@ def get_config_template(
         return None
 
     return list(snapshot.step_configurations.values())[index]
+
+
+def expand_mapped_inputs(
+    inputs: Dict[str, Any],
+    product: bool = False,
+) -> List[Dict[str, Any]]:
+    """Find the mapped and unmapped inputs of a step.
+
+    Args:
+        inputs: The step function inputs.
+        product: Whether to produce a cartesian product of the mapped inputs.
+
+    Raises:
+        RuntimeError: If no mapped inputs are found or the input combinations
+            are not valid.
+
+    Returns:
+        The step inputs.
+    """
+    static_inputs: Dict[str, Any] = {}
+    mapped_input_names: List[str] = []
+    mapped_inputs: List[Tuple[OutputArtifact, ...]] = []
+
+    for key, value in inputs.items():
+        if isinstance(value, _Unmapped):
+            static_inputs[key] = value.value
+        elif isinstance(value, OutputArtifact):
+            if value.item_count is None:
+                static_inputs[key] = value
+            elif value.item_count == 0:
+                raise RuntimeError(
+                    f"Artifact `{value.id}` has 0 items and cannot be mapped "
+                    "over. Wrap it with the `unmapped(...)` function to pass "
+                    "the artifact without mapping over it."
+                )
+            else:
+                mapped_input_names.append(key)
+                mapped_inputs.append(
+                    tuple(
+                        value.model_copy(
+                            update={"chunk_index": i, "chunk_size": 1}
+                        )
+                        for i in range(value.item_count)
+                    )
+                )
+        elif (
+            isinstance(value, ArtifactVersionResponse)
+            and value.item_count is not None
+        ):
+            static_inputs[key] = value
+            logger.warning(
+                "Received sequence-like artifact for step input `%s`. Mapping "
+                "over artifacts that are not step output artifacts is "
+                "currently not supported, and the complete artifact will be "
+                "passed to all steps. If you want to silence this warning, "
+                "wrap your input with the `unmapped(...)` function.",
+                key,
+            )
+        elif isinstance(value, Sequence):
+            logger.warning(
+                "Received sequence-like data for step input `%s`. Mapping over "
+                "data that is not a step output artifact is currently not "
+                "supported, and the complete data will be passed to all steps. "
+                "If you want to silence this warning, wrap your input with the "
+                "`unmapped(...)` function.",
+                key,
+            )
+            static_inputs[key] = value
+        else:
+            static_inputs[key] = value
+
+    if len(mapped_inputs) == 0:
+        raise RuntimeError(
+            "No inputs to map over found. When calling `.map(...)` or "
+            "`.product(...)` on a step, you need to pass at least one "
+            "sequence-like step output of a previous step as input."
+        )
+
+    step_inputs = []
+
+    if product:
+        for input_combination in itertools.product(*mapped_inputs):
+            all_inputs = copy.deepcopy(static_inputs)
+            for name, value in zip(mapped_input_names, input_combination):
+                all_inputs[name] = value
+            step_inputs.append(all_inputs)
+    else:
+        item_counts = [len(inputs) for inputs in mapped_inputs]
+        if not all(count == item_counts[0] for count in item_counts):
+            raise RuntimeError(
+                f"All mapped input artifacts must have the same "
+                "item counts, but you passed artifacts with item counts "
+                f"{item_counts}. If you want "
+                "to pass sequence-like artifacts without mapping over "
+                "them, wrap them with the `unmapped(...)` function."
+            )
+
+        for i in range(item_counts[0]):
+            all_inputs = copy.deepcopy(static_inputs)
+            for name, artifact in zip(
+                mapped_input_names,
+                [artifact_list[i] for artifact_list in mapped_inputs],
+            ):
+                all_inputs[name] = artifact
+            step_inputs.append(all_inputs)
+
+    return step_inputs
+
+
+def convert_to_keyword_arguments(
+    func: Callable[..., Any],
+    args: Tuple[Any, ...],
+    kwargs: Dict[str, Any],
+    apply_defaults: bool = False,
+) -> Dict[str, Any]:
+    """Convert function arguments to keyword arguments.
+
+    Args:
+        func: The function to convert the arguments to keyword arguments for.
+        args: The arguments to convert to keyword arguments.
+        kwargs: The keyword arguments to convert to keyword arguments.
+        apply_defaults: Whether to apply the function default values.
+
+    Returns:
+        The keyword arguments.
+    """
+    signature = inspect.signature(func, follow_wrapped=True)
+    bound_args = signature.bind_partial(*args, **kwargs)
+    if apply_defaults:
+        bound_args.apply_defaults()
+
+    return bound_args.arguments
+
+
+def await_step_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
+    """Await the inputs of a step.
+
+    Args:
+        inputs: The inputs of the step.
+
+    Raises:
+        RuntimeError: If a step run future with multiple output artifacts is
+            passed as an input.
+
+    Returns:
+        The awaited inputs.
+    """
+    result = {}
+    for key, value in inputs.items():
+        if isinstance(value, MapResultsFuture):
+            value = value.futures
+
+        if (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, StepRunOutputsFuture) for item in value)
+        ):
+            if any(len(item._output_keys) != 1 for item in value):
+                raise RuntimeError(
+                    f"Invalid step input `{key}`: Passing a future that refers "
+                    "to multiple output artifacts as an input to another step "
+                    "is not allowed."
+                )
+            value = [item.artifacts() for item in value]
+        elif isinstance(value, StepRunOutputsFuture):
+            if len(value._output_keys) != 1:
+                raise RuntimeError(
+                    f"Invalid step input `{key}`: Passing a future that refers "
+                    "to multiple output artifacts as an input to another step "
+                    "is not allowed."
+                )
+            value = value.artifacts()
+
+        if (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, ArtifactFuture) for item in value)
+        ):
+            value = [item.result() for item in value]
+
+        if isinstance(value, ArtifactFuture):
+            value = value.result()
+
+        result[key] = value
+
+    return result
