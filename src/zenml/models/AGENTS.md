@@ -160,3 +160,128 @@ class NewEntityFilter(WorkspaceScopedFilter):
   - Keep this guide and the canonical MDC rules synchronized.
 
 Remember: Consistency, type-safety, and parity with the ORM schema are critical for stable API and internal behavior.
+
+## ⚠️ Adding New Filter Fields — CLI-Client Coupling
+
+When adding a field to a filter model (e.g., `PipelineRunFilter`), **you must update THREE locations** or the CLI will break at runtime.
+
+### Why This Matters
+
+The CLI uses `@list_options(FilterModel)` (in `src/zenml/cli/utils.py`) to auto-generate CLI options from filter model fields. These options are passed as `**kwargs` to client methods, but client methods have **explicit parameter lists** that must match. If they don't match, users get:
+```
+TypeError: list_pipeline_runs() got an unexpected keyword argument 'new_field'
+```
+
+This error only occurs at runtime when the CLI option is used—there's no mypy or test coverage to catch it.
+
+### Three-Location Update Checklist
+
+When adding a new filter field:
+
+1. **Filter Model** (`src/zenml/models/v2/core/<entity>.py`)
+   ```python
+   class PipelineRunFilter(...):
+       new_field: Optional[str] = Field(default=None, description="...")
+   ```
+
+2. **Client Method Signature** (`src/zenml/client.py`)
+   ```python
+   def list_pipeline_runs(
+       self,
+       # ... existing params ...
+       new_field: Optional[str] = None,  # ← ADD THIS
+   ) -> Page[PipelineRunResponse]:
+   ```
+
+3. **Client Method Body** — filter model instantiation inside the same method:
+   ```python
+   runs_filter_model = PipelineRunFilter(
+       # ... existing params ...
+       new_field=new_field,  # ← ADD THIS
+   )
+   ```
+
+### Optional: Exclude from CLI
+
+If the field should NOT be a CLI option, add it to `CLI_EXCLUDE_FIELDS`:
+```python
+class PipelineRunFilter(...):
+    CLI_EXCLUDE_FIELDS = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        "new_field",  # Not exposed in CLI
+    ]
+```
+
+### Testing
+
+Always test the new filter via CLI after adding:
+```bash
+zenml pipeline runs list --new_field=some_value
+```
+
+### Related Files
+
+| Component | Location |
+|-----------|----------|
+| Filter models | `src/zenml/models/v2/core/*.py`, `src/zenml/models/v2/base/scoped.py` |
+| list_options decorator | `src/zenml/cli/utils.py:2798` |
+| Client list methods | `src/zenml/client.py` |
+| CLI commands | `src/zenml/cli/*.py` |
+
+## Model Changes and Backwards Compatibility
+
+When modifying domain models, be aware of server/client compatibility implications:
+
+| Change Type | Compatibility Impact |
+|-------------|---------------------|
+| **Adding new properties** | Usually NOT a problem (extras are now allowed in Pydantic) |
+| **Deleting properties** | ⚠️ PROBLEMATIC — breaks server/client compatibility |
+| **Making required→optional** | ⚠️ PROBLEMATIC — similar to deletion |
+| **Renaming properties** | ⚠️ PROBLEMATIC — equivalent to delete + add |
+| **Changing property types** | ⚠️ PROBLEMATIC — may break serialization |
+
+### Why This Matters
+
+ZenML clients and servers may run different versions. When a newer server sends a response with a deleted field, older clients expecting that field will break. Similarly, when an older client sends a request missing a newly-required field, the server will reject it.
+
+### Safe Evolution Pattern
+
+1. **Add new optional fields** — always safe
+2. **Deprecate before removing** — mark fields as deprecated, keep them for 2+ minor versions
+3. **Use default values** — when adding required fields, provide sensible defaults
+4. **Version responses** — for major changes, consider response versioning
+
+---
+
+## Client Method Patterns
+
+When adding or modifying client methods in `src/zenml/client.py`, follow existing patterns:
+
+### Get Methods
+```python
+def get_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> PipelineResponse:
+    """Get a pipeline by name, ID, or prefix."""
+    # If it looks like a UUID, fetch directly
+    # If it's a name, list + filter to find it
+    # Follow what other get_* methods do
+```
+
+### List Methods
+```python
+def list_pipelines(
+    self,
+    # All filter model fields as explicit parameters
+    name: Optional[str] = None,
+    size: int = PAGE_SIZE_DEFAULT,
+    # ... etc
+) -> Page[PipelineResponse]:
+    """List pipelines with filtering."""
+    filter_model = PipelineFilter(name=name, ...)
+    return self.zen_store.list_pipelines(filter_model)
+```
+
+### Key Conventions
+- **Get by name or ID**: Most `get_*` methods accept either a name or UUID
+- **Explicit parameters**: List methods have explicit parameters matching filter fields (see CLI coupling above)
+- **Consistent return types**: Get returns single Response, List returns `Page[Response]`
+- **Follow existing patterns**: When in doubt, look at similar methods in the same file

@@ -84,31 +84,43 @@ def test_cli_does_not_set_custom_source_root_if_inside_repository(
     mock_set_custom_source_root.assert_not_called()
 
 
-def _mock_rest_store_environment(mocker):
-    """Mock dependencies needed for connect_to_server REST flow."""
+def _mock_rest_store_environment(mocker, login_module):
+    """Mock dependencies needed for connect_to_server REST flow.
+
+    Args:
+        mocker: pytest-mock fixture.
+        login_module: The imported zenml.cli.login module. We pass this
+            explicitly and use patch.object() because string-based patches
+            like "zenml.cli.login.web_login" fail on Python 3.10 due to
+            the star import in zenml/cli/__init__.py shadowing the submodule.
+    """
     credentials_store = mocker.Mock()
     credentials_store.has_valid_credentials.return_value = True
     mocker.patch(
-        "zenml.cli.login.get_credentials_store", return_value=credentials_store
+        "zenml.login.credentials_store.get_credentials_store",
+        return_value=credentials_store,
     )
-    mocker.patch(
-        "zenml.cli.login.BaseZenStore.get_store_type",
+    mocker.patch.object(
+        login_module.BaseZenStore,
+        "get_store_type",
         return_value=StoreType.REST,
     )
-    mocker.patch(
-        "zenml.cli.login.RestZenStoreConfiguration", return_value="rest-config"
+    mocker.patch.object(
+        login_module,
+        "RestZenStoreConfiguration",
+        return_value="rest-config",
     )
-    mocker.patch("zenml.cli.login.cli_utils.declare")
-    mocker.patch("zenml.cli.login.web_login")
+    mocker.patch.object(login_module.cli_utils, "declare")
+    mocker.patch.object(login_module, "web_login")
 
 
 def test_connect_to_server_sets_project_after_success(mocker):
     """Project flag should set the active project after connecting."""
-    _mock_rest_store_environment(mocker)
     login_module = importlib.import_module("zenml.cli.login")
-    mock_gc = mocker.patch("zenml.cli.login.GlobalConfiguration")
+    _mock_rest_store_environment(mocker, login_module)
+    mock_gc = mocker.patch.object(login_module, "GlobalConfiguration")
     mock_gc.return_value.set_store.return_value = None
-    mock_set_project = mocker.patch("zenml.cli.login._set_active_project")
+    mock_set_project = mocker.patch.object(login_module, "_set_active_project")
 
     login_module.connect_to_server(
         url="https://example.com",
@@ -120,13 +132,15 @@ def test_connect_to_server_sets_project_after_success(mocker):
 
 def test_connect_to_server_does_not_set_project_on_failure(mocker):
     """Project change should be skipped if connecting to the store fails."""
-    _mock_rest_store_environment(mocker)
     login_module = importlib.import_module("zenml.cli.login")
-    mock_gc = mocker.patch("zenml.cli.login.GlobalConfiguration")
+    _mock_rest_store_environment(mocker, login_module)
+    mock_gc = mocker.patch.object(login_module, "GlobalConfiguration")
     mock_gc.return_value.set_store.side_effect = IllegalOperationError("boom")
-    mock_set_project = mocker.patch("zenml.cli.login._set_active_project")
-    mocker.patch(
-        "zenml.cli.login.cli_utils.error", side_effect=RuntimeError("exit")
+    mock_set_project = mocker.patch.object(login_module, "_set_active_project")
+    mocker.patch.object(
+        login_module.cli_utils,
+        "error",
+        side_effect=RuntimeError("exit"),
     )
 
     with pytest.raises(RuntimeError):
