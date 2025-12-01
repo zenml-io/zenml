@@ -56,8 +56,6 @@ active_logging_context: ContextVar[Optional["LoggingContext"]] = ContextVar(
     "active_logging_context", default=None
 )
 
-ZENML_LOGGING_CONTEXT_EXIT_TOKEN = "__ZENML_LOGGING_CONTEXT_EXIT__"
-
 
 class LogEntry(BaseModel):
     """A structured log entry with parsed information.
@@ -186,17 +184,7 @@ class LoggingContext:
                 )
             )
 
-        LoggingContext.emit(
-            logging.LogRecord(
-                name="",
-                level=logging.INFO,
-                msg=ZENML_LOGGING_CONTEXT_EXIT_TOKEN,
-                args=(),
-                exc_info=None,
-                pathname="",
-                lineno=0,
-            )
-        )
+        self._log_store.finalize(self.log_model)
 
         with self._lock:
             active_logging_context.set(self._previous_context)

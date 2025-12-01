@@ -16,7 +16,7 @@
 import os
 import time
 from collections import defaultdict
-from typing import TYPE_CHECKING, Dict, List, Sequence
+from typing import TYPE_CHECKING, Dict, List, Sequence, Set
 from uuid import UUID, uuid4
 
 from opentelemetry import context as otel_context
@@ -28,8 +28,8 @@ from zenml.log_stores.artifact.artifact_log_store import (
     remove_ansi_escape_codes,
 )
 from zenml.log_stores.otel.otel_log_store import (
-    ZENML_LOGGING_CONTEXT_EXIT_TOKEN,
     ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
+    ZENML_OTEL_LOG_STORE_FLUSH_KEY,
 )
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
@@ -72,13 +72,22 @@ class ArtifactLogExporter(LogExporter):
         try:
             entries_by_id: Dict[UUID, List[str]] = defaultdict(list)
             responses_by_id: Dict[UUID, "LogsResponse"] = {}
+            finalized_ids: Set[UUID] = set()
 
             for log_data in batch:
                 log_model = otel_context.get_value(
                     key=ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
                     context=log_data.log_record.context,
                 )
+                flush = otel_context.get_value(
+                    key=ZENML_OTEL_LOG_STORE_FLUSH_KEY,
+                    context=log_data.log_record.context,
+                )
                 if not log_model:
+                    continue
+
+                if flush:
+                    finalized_ids.add(log_model.id)
                     continue
 
                 responses_by_id[log_model.id] = log_model
@@ -91,13 +100,11 @@ class ArtifactLogExporter(LogExporter):
             for log_id, log_lines in entries_by_id.items():
                 if log_lines:
                     log_model = responses_by_id[log_id]
+                    self._write(log_lines, log_model)
 
-                    last = False
-                    if ZENML_LOGGING_CONTEXT_EXIT_TOKEN in log_lines:
-                        last = True
-                        log_lines.pop(-1)
-
-                    self._write(log_lines, log_model, last=last)
+            for log_id in finalized_ids:
+                log_model = responses_by_id[log_id]
+                self._finalize(log_model)
 
             return LogExportResult.SUCCESS
 
@@ -233,14 +240,12 @@ class ArtifactLogExporter(LogExporter):
         self,
         log_lines: List[str],
         log_model: "LogsResponse",
-        last: bool = False,
     ) -> None:
         """Write log lines to the artifact store.
 
         Args:
             log_lines: List of JSON-serialized log entries.
             log_model: The log model.
-            last: Whether this is the last batch of log lines.
         """
         if not log_model.uri or not log_model.artifact_store_id:
             logger.warning(
@@ -263,9 +268,6 @@ class ArtifactLogExporter(LogExporter):
 
                 with self.artifact_store.open(file_uri, "w") as f:
                     f.write(content)
-
-                if last:
-                    self._merge(log_model)
             else:
                 logs_base_uri = os.path.dirname(log_model.uri)
                 if not self.artifact_store.exists(logs_base_uri):
@@ -274,13 +276,35 @@ class ArtifactLogExporter(LogExporter):
                 with self.artifact_store.open(log_model.uri, "a") as f:
                     f.write(content)
 
-                if last:
-                    self.artifact_store._remove_previous_file_versions(
-                        log_model.uri
-                    )
-
         except Exception as e:
             logger.error(f"Failed to write logs to {log_model.uri}: {e}")
+            raise
+
+    def _finalize(
+        self,
+        log_model: "LogsResponse",
+    ) -> None:
+        """Finalize the logs for a given log model by merging all log files into one.
+
+        Args:
+            log_model: The log model.
+        """
+        if not log_model.uri or not log_model.artifact_store_id:
+            logger.warning(
+                f"Skipping log finalize: missing uri or artifact_store_id for log {log_model.id}"
+            )
+            return
+
+        try:
+            if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+                self._merge(log_model)
+            else:
+                self.artifact_store._remove_previous_file_versions(
+                    log_model.uri
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to finalize logs for {log_model.uri}: {e}")
             raise
 
     def _merge(self, log_model: "LogsResponse"):
@@ -313,7 +337,7 @@ class ArtifactLogExporter(LogExporter):
                             merged_file.write(
                                 str(
                                     _load_file_from_artifact_store(
-                                        os.path.join(self.logs_uri, str(file)),
+                                        os.path.join(log_model.uri, str(file)),
                                         artifact_store=self.artifact_store,
                                         mode="r",
                                     )
@@ -326,13 +350,9 @@ class ArtifactLogExporter(LogExporter):
                 for file in files_:
                     if file not in missing_files:
                         self.artifact_store.remove(
-                            os.path.join(self.logs_uri, str(file))
+                            os.path.join(log_model.uri, str(file))
                         )
-
-            # Update the last merge time
-            self.last_merge_time = time.time()
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""
-        # TODO: Merge
-        pass
+        self.artifact_store.cleanup()

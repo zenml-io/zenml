@@ -72,6 +72,24 @@ class BaseLogStore(StackComponent):
             log_model: The log model to emit the log record to.
         """
 
+    @abstractmethod
+    def finalize(
+        self,
+        log_model: LogsResponse,
+    ) -> None:
+        """Finalize the stream of log records associated with a log model.
+
+        This is used to announce the end of the stream of log records associated
+        with a log model and that no more log records will be emitted.
+
+        The implementation should ensure that all log records associated with
+        the log model are flushed to the backend and any resources (clients,
+        connections, file descriptors, etc.) are released.
+
+        Args:
+            log_model: The log model to finalize.
+        """
+
     def register_emitter(self) -> None:
         """Register an emitter for the log store."""
         with self._lock:

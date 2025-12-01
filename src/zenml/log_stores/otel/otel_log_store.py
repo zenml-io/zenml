@@ -42,6 +42,9 @@ logger = get_logger(__name__)
 ZENML_OTEL_LOG_STORE_CONTEXT_KEY = otel_context.create_key(
     "zenml.logging_context"
 )
+ZENML_OTEL_LOG_STORE_FLUSH_KEY = otel_context.create_key(
+    "zenml.log_store_flush"
+)
 
 
 class OtelLogStore(BaseLogStore):
@@ -151,6 +154,36 @@ class OtelLogStore(BaseLogStore):
                 "log_id": str(log_model.id),
                 "log_store_id": str(self.id),
             },
+            context=ctx,
+        )
+
+    def finalize(
+        self,
+        log_model: LogsResponse,
+    ) -> None:
+        """Finalize the stream of log records associated with a log model.
+
+        Args:
+            log_model: The log model to finalize.
+        """
+        with self._lock:
+            if not self._provider:
+                return
+
+        # Attach the log_model to OTel's context so the exporter
+        # can access it in the background processor thread
+        ctx = otel_context.set_value(
+            ZENML_OTEL_LOG_STORE_CONTEXT_KEY, log_model
+        )
+        ctx = otel_context.set_value(
+            ZENML_OTEL_LOG_STORE_FLUSH_KEY, True, context=ctx
+        )
+
+        otel_logger = self._provider.get_logger(
+            "zenml.log_store.flush",
+            schema_url=None,
+        )
+        otel_logger.emit(
             context=ctx,
         )
 
