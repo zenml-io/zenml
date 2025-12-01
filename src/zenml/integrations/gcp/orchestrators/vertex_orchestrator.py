@@ -41,6 +41,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    Union,
     cast,
 )
 from uuid import UUID
@@ -51,7 +52,7 @@ from google.cloud.aiplatform.compat.services import (
     pipeline_service_client_v1beta1,
 )
 from google.cloud.aiplatform.compat.types import pipeline_job_v1beta1
-from google.cloud.aiplatform_v1.types import PipelineState
+from google.cloud.aiplatform_v1.types import JobState, PipelineState
 from google.cloud.aiplatform_v1beta1.types.service_networking import (
     PscInterfaceConfig,
 )
@@ -63,17 +64,20 @@ from kfp import dsl
 from kfp.compiler import Compiler
 from kfp.dsl.base_component import BaseComponent
 
+from zenml import __version__
 from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_LOGS_URL,
     METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp.constants import (
     GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+    VERTEX_ENDPOINT_SUFFIX,
 )
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
@@ -81,6 +85,10 @@ from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
+)
+from zenml.integrations.gcp.utils import (
+    build_job_request,
+    monitor_job,
 )
 from zenml.integrations.gcp.vertex_custom_job_parameters import (
     VertexCustomJobParameters,
@@ -90,11 +98,18 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.pipelines.dynamic.entrypoint_configuration import (
+    DynamicPipelineEntrypointConfiguration,
+)
 from zenml.stack.stack_validator import StackValidator
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
+)
 from zenml.utils.io_utils import get_global_config_directory
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
@@ -129,6 +144,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     """Orchestrator responsible for running pipelines on Vertex AI."""
 
     _pipeline_root: str
+    _job_service_client: Optional[aiplatform.gapic.JobServiceClient] = None
 
     @property
     def config(self) -> VertexOrchestratorConfig:
@@ -245,6 +261,25 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             Path to the pipeline directory.
         """
         return os.path.join(self.root_directory, "pipelines")
+
+    def get_job_service_client(self) -> aiplatform.gapic.JobServiceClient:
+        """Get the job service client.
+
+        Returns:
+            The job service client.
+        """
+        if self.connector_has_expired():
+            self._job_service_client = None
+
+        if self._job_service_client is None:
+            credentials, _ = self._get_authentication()
+            client_options = {
+                "api_endpoint": self.config.location + VERTEX_ENDPOINT_SUFFIX
+            }
+            self._job_service_client = aiplatform.gapic.JobServiceClient(
+                credentials=credentials, client_options=client_options
+            )
+        return self._job_service_client
 
     def _create_container_component(
         self,
@@ -621,6 +656,154 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             schedule=snapshot.schedule,
         )
 
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+            placeholder_run: An optional placeholder run.
+
+        Raises:
+            RuntimeError: If the snapshot contains a schedule.
+
+        Returns:
+            Optional submission result.
+        """
+        if snapshot.schedule:
+            raise RuntimeError(
+                "Scheduling dynamic pipelines is not supported for the "
+                "Vertex orchestrator yet."
+            )
+
+        settings = cast(
+            VertexOrchestratorSettings, self.get_settings(snapshot)
+        )
+
+        command = (
+            DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+        )
+        args = DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+            snapshot_id=snapshot.id,
+            run_id=placeholder_run.id if placeholder_run else None,
+        )
+
+        image = self.get_image(snapshot=snapshot)
+        labels = settings.labels.copy()
+        labels["source"] = f"zenml-{__version__.replace('.', '_')}"
+
+        job_request = build_job_request(
+            display_name=get_orchestrator_run_name(
+                pipeline_name=snapshot.pipeline_configuration.name
+            ),
+            image=image,
+            entrypoint_command=command + args,
+            custom_job_settings=settings.custom_job_parameters
+            or VertexCustomJobParameters(),
+            resource_settings=snapshot.pipeline_configuration.resource_settings,
+            environment=environment,
+            labels=labels,
+            encryption_spec_key_name=self.config.encryption_spec_key_name,
+            service_account=self.config.workload_service_account,
+            network=self.config.network,
+        )
+
+        client = self.get_job_service_client()
+        parent = (
+            f"projects/{self.gcp_project_id}/locations/{self.config.location}"
+        )
+        job_model = client.create_custom_job(
+            parent=parent, custom_job=job_request
+        )
+
+        _wait_for_completion = None
+        if settings.synchronous:
+
+            def _wait_for_completion() -> None:
+                logger.info("Waiting for the VertexAI job to finish...")
+                monitor_job(
+                    job_id=job_model.name,
+                    get_client=self.get_job_service_client,
+                )
+                logger.info("VertexAI job completed successfully.")
+
+        credentials, project_id = self._get_authentication()
+        job = aiplatform.CustomJob.get(
+            job_model.name,
+            project=project_id,
+            location=self.config.location,
+            credentials=credentials,
+        )
+        metadata = self.compute_metadata(job)
+
+        logger.info("View the Vertex job at %s", job._dashboard_uri())
+
+        return SubmissionResult(
+            wait_for_completion=_wait_for_completion,
+            metadata=metadata,
+        )
+
+    def run_isolated_step(
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    ) -> None:
+        """Runs an isolated step on Vertex.
+
+        Args:
+            step_run_info: The step run information.
+            environment: The environment variables to set.
+        """
+        settings = cast(
+            VertexOrchestratorSettings, self.get_settings(step_run_info)
+        )
+
+        image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
+        command = StepOperatorEntrypointConfiguration.get_entrypoint_command()
+        args = StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
+            step_name=step_run_info.pipeline_step_name,
+            snapshot_id=(step_run_info.snapshot.id),
+            step_run_id=str(step_run_info.step_run_id),
+        )
+
+        labels = settings.labels.copy()
+        labels["source"] = f"zenml-{__version__.replace('.', '_')}"
+
+        job_request = build_job_request(
+            display_name=f"{step_run_info.run_name}-{step_run_info.pipeline_step_name}",
+            image=image,
+            entrypoint_command=command + args,
+            custom_job_settings=settings.custom_job_parameters
+            or VertexCustomJobParameters(),
+            resource_settings=step_run_info.config.resource_settings,
+            environment=environment,
+            labels=labels,
+            encryption_spec_key_name=self.config.encryption_spec_key_name,
+            service_account=self.config.workload_service_account,
+            network=self.config.network,
+        )
+
+        client = self.get_job_service_client()
+        parent = (
+            f"projects/{self.gcp_project_id}/locations/{self.config.location}"
+        )
+        logger.info(
+            "Submitting custom job='%s', path='%s' to Vertex AI Training.",
+            job_request["display_name"],
+            parent,
+        )
+        job = client.create_custom_job(parent=parent, custom_job=job_request)
+        monitor_job(
+            job_id=job.name,
+            get_client=self.get_job_service_client,
+        )
+
     def _upload_and_run_pipeline(
         self,
         pipeline_name: str,
@@ -786,19 +969,19 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         """Returns the active orchestrator run id.
 
         Raises:
-            RuntimeError: If the environment variable specifying the run id
-                is not set.
+            RuntimeError: If the orchestrator run id cannot be read from the
+                environment.
 
         Returns:
             The orchestrator run id.
         """
-        try:
-            return os.environ[ENV_ZENML_VERTEX_RUN_ID]
-        except KeyError:
-            raise RuntimeError(
-                "Unable to read run id from environment variable "
-                f"{ENV_ZENML_VERTEX_RUN_ID}."
-            )
+        for env in [ENV_ZENML_VERTEX_RUN_ID, "CLOUD_ML_JOB_ID"]:
+            if env in os.environ:
+                return os.environ[env]
+
+        raise RuntimeError(
+            "Unable to get orchestrator run id from environment."
+        )
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -811,14 +994,26 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Returns:
             A dictionary of metadata.
         """
-        run_url = (
-            f"https://console.cloud.google.com/vertex-ai/locations/"
-            f"{self.config.location}/pipelines/runs/"
-            f"{self.get_orchestrator_run_id()}"
-        )
+        if ENV_ZENML_VERTEX_RUN_ID in os.environ:
+            # Static pipeline -> Pipeline job
+            run_url = (
+                f"https://console.cloud.google.com/vertex-ai/locations/"
+                f"{self.config.location}/pipelines/runs/"
+                f"{self.get_orchestrator_run_id()}"
+            )
+        else:
+            # Dynamic pipeline -> Custom job
+            run_url = (
+                f"https://console.cloud.google.com/vertex-ai/locations/"
+                f"{self.config.location}/training/"
+                f"{self.get_orchestrator_run_id()}"
+            )
+
         if self.config.project:
             run_url += f"?project={self.config.project}"
+
         return {
+            METADATA_ORCHESTRATOR_RUN_ID: self.get_orchestrator_run_id(),
             METADATA_ORCHESTRATOR_URL: Uri(run_url),
         }
 
@@ -917,14 +1112,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
         )
 
-        # Initialize the Vertex client
-        credentials, project_id = self._get_authentication()
-        aiplatform.init(
-            project=project_id,
-            location=self.config.location,
-            credentials=credentials,
-        )
-
         # Fetch the status of the PipelineJob
         if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
             run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
@@ -935,58 +1122,95 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 "Can not find the orchestrator run ID, thus can not fetch "
                 "the status."
             )
-        status = aiplatform.PipelineJob.get(run_id).state
 
-        # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sagemaker/client/describe_pipeline_execution.html#
-        if status == PipelineState.PIPELINE_STATE_UNSPECIFIED:
-            pipeline_status = run.status
-        elif status in [
-            PipelineState.PIPELINE_STATE_QUEUED,
-            PipelineState.PIPELINE_STATE_PENDING,
-        ]:
-            pipeline_status = ExecutionStatus.INITIALIZING
-        elif status in [
-            PipelineState.PIPELINE_STATE_RUNNING,
-            PipelineState.PIPELINE_STATE_PAUSED,
-        ]:
-            pipeline_status = ExecutionStatus.RUNNING
-        elif status == PipelineState.PIPELINE_STATE_SUCCEEDED:
-            pipeline_status = ExecutionStatus.COMPLETED
-        elif status == PipelineState.PIPELINE_STATE_CANCELLING:
-            pipeline_status = ExecutionStatus.STOPPING
-        elif status == PipelineState.PIPELINE_STATE_CANCELLED:
-            pipeline_status = ExecutionStatus.STOPPED
-        elif status == PipelineState.PIPELINE_STATE_FAILED:
-            pipeline_status = ExecutionStatus.FAILED
+        credentials, project_id = self._get_authentication()
+        if run.snapshot and run.snapshot.is_dynamic:
+            status = aiplatform.CustomJob.get(
+                run_id,
+                project=project_id,
+                location=self.config.location,
+                credentials=credentials,
+            ).state
+
+            if status in [
+                JobState.JOB_STATE_QUEUED,
+                JobState.JOB_STATE_PENDING,
+            ]:
+                pipeline_status = ExecutionStatus.PROVISIONING
+            elif status in [
+                JobState.JOB_STATE_RUNNING,
+                JobState.JOB_STATE_PAUSED,
+                JobState.JOB_STATE_UPDATING,
+            ]:
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == JobState.JOB_STATE_SUCCEEDED:
+                pipeline_status = ExecutionStatus.COMPLETED
+            elif status == JobState.JOB_STATE_CANCELLING:
+                pipeline_status = ExecutionStatus.STOPPING
+            elif status == JobState.JOB_STATE_CANCELLED:
+                pipeline_status = ExecutionStatus.STOPPED
+            elif status in [
+                JobState.JOB_STATE_FAILED,
+                JobState.JOB_STATE_EXPIRED,
+            ]:
+                pipeline_status = ExecutionStatus.FAILED
+            else:
+                pipeline_status = run.status
         else:
-            raise ValueError("Unknown status for the pipeline job.")
+            status = aiplatform.PipelineJob.get(
+                run_id,
+                project=project_id,
+                location=self.config.location,
+                credentials=credentials,
+            ).state
+
+            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sagemaker/client/describe_pipeline_execution.html#
+            if status == PipelineState.PIPELINE_STATE_UNSPECIFIED:
+                pipeline_status = run.status
+            elif status in [
+                PipelineState.PIPELINE_STATE_QUEUED,
+                PipelineState.PIPELINE_STATE_PENDING,
+            ]:
+                pipeline_status = ExecutionStatus.PROVISIONING
+            elif status in [
+                PipelineState.PIPELINE_STATE_RUNNING,
+                PipelineState.PIPELINE_STATE_PAUSED,
+            ]:
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == PipelineState.PIPELINE_STATE_SUCCEEDED:
+                pipeline_status = ExecutionStatus.COMPLETED
+            elif status == PipelineState.PIPELINE_STATE_CANCELLING:
+                pipeline_status = ExecutionStatus.STOPPING
+            elif status == PipelineState.PIPELINE_STATE_CANCELLED:
+                pipeline_status = ExecutionStatus.STOPPED
+            elif status == PipelineState.PIPELINE_STATE_FAILED:
+                pipeline_status = ExecutionStatus.FAILED
+            else:
+                raise ValueError("Unknown status for the pipeline job.")
 
         # Vertex doesn't support step-level status fetching yet
         return pipeline_status, None
 
     def compute_metadata(
-        self, job: aiplatform.PipelineJob
+        self, job: Union[aiplatform.PipelineJob, aiplatform.CustomJob]
     ) -> Dict[str, MetadataType]:
-        """Generate run metadata based on the corresponding Vertex PipelineJob.
+        """Generate run metadata based on the Vertex job.
 
         Args:
-            job: The corresponding PipelineJob object.
+            job: The job.
 
         Returns:
             A dictionary of metadata related to the pipeline run.
         """
         metadata: Dict[str, MetadataType] = {}
 
-        # Orchestrator Run ID
         if run_id := self._compute_orchestrator_run_id(job):
             metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
 
-        # URL to the Vertex's pipeline view
         if orchestrator_url := self._compute_orchestrator_url(job):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
-        # URL to the corresponding Logs Explorer page
         if logs_url := self._compute_orchestrator_logs_url(job):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
@@ -994,70 +1218,76 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     @staticmethod
     def _compute_orchestrator_url(
-        job: aiplatform.PipelineJob,
+        job: Union[aiplatform.PipelineJob, aiplatform.CustomJob],
     ) -> Optional[str]:
-        """Generate the Orchestrator Dashboard URL upon pipeline execution.
+        """Generate the Orchestrator Dashboard URL.
 
         Args:
-            job: The corresponding PipelineJob object.
+            job: The job.
 
         Returns:
-             the URL to the dashboard view in Vertex.
+            The Vertex Dashboard URL for the job.
         """
         try:
-            return str(job._dashboard_uri())
+            if uri := job._dashboard_uri():
+                return Uri(uri)
         except Exception as e:
             logger.warning(
-                f"There was an issue while extracting the pipeline url: {e}"
+                "There was an issue while extracting the job dashboard URL: %s",
+                e,
             )
-            return None
+        return None
 
     @staticmethod
     def _compute_orchestrator_logs_url(
-        job: aiplatform.PipelineJob,
+        job: Union[aiplatform.PipelineJob, aiplatform.CustomJob],
     ) -> Optional[str]:
-        """Generate the Logs Explorer URL upon pipeline execution.
+        """Generate the Logs Explorer URL.
 
         Args:
-            job: The corresponding PipelineJob object.
+            job: The job.
 
         Returns:
-            the URL querying the pipeline logs in Logs Explorer on GCP.
+            The Logs Explorer URL for the job.
         """
         try:
-            base_url = "https://console.cloud.google.com/logs/query"
-            query = f"""
-             resource.type="aiplatform.googleapis.com/PipelineJob"
-             resource.labels.pipeline_job_id="{job.job_id}"
-             """
-            encoded_query = urllib.parse.quote(query)
-            return f"{base_url}?project={job.project}&query={encoded_query}"
+            if isinstance(job, aiplatform.PipelineJob):
+                query = f"""
+                resource.type="aiplatform.googleapis.com/PipelineJob"
+                resource.labels.pipeline_job_id="{job.job_id}"
+                """
+            else:
+                query = f'resource.labels.job_id="{job.name}"'
 
+            query = urllib.parse.quote(query)
         except Exception as e:
             logger.warning(
                 f"There was an issue while extracting the logs url: {e}"
             )
             return None
+        else:
+            return f"https://console.cloud.google.com/logs/query?project={job.project}&query={query}"
 
     @staticmethod
     def _compute_orchestrator_run_id(
-        job: aiplatform.PipelineJob,
+        job: Union[aiplatform.PipelineJob, aiplatform.CustomJob],
     ) -> Optional[str]:
-        """Fetch the Orchestrator Run ID upon pipeline execution.
+        """Fetch the orchestrator run ID.
 
         Args:
-            job: The corresponding PipelineJob object.
+            job: The job.
 
         Returns:
-            the Execution ID of the run in Vertex.
+            The orchestrator run ID.
         """
         try:
-            if job.job_id:
+            if isinstance(job, aiplatform.PipelineJob):
                 return str(job.job_id)
-
-            return None
+            else:
+                return str(job.name)
         except Exception as e:
             logger.warning(
-                f"There was an issue while extracting the pipeline run ID: {e}"
+                "There was an issue while extracting the orchestrator run ID: %s",
+                e,
             )
             return None

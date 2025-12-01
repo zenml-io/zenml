@@ -17,7 +17,7 @@ import hashlib
 import os
 import tempfile
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Optional, Type, cast
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -28,6 +28,7 @@ from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils.archivable import ArchiveType
 
 if TYPE_CHECKING:
+    from zenml.config.docker_settings import DockerBuildOptions
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
 
@@ -79,7 +80,7 @@ class BaseImageBuilder(StackComponent, ABC):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Dict[str, Any],
+        docker_build_options: Optional["DockerBuildOptions"] = None,
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds a Docker image.
