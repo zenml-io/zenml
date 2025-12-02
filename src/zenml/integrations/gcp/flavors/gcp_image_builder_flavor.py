@@ -75,7 +75,14 @@ class GCPImageBuilderConfig(
     @field_validator("location", mode="before")
     @classmethod
     def validate_location(cls, v: Optional[str]) -> Optional[str]:
-        """Normalize location field, treating empty strings as unset."""
+        """Normalize location field, treating empty strings as unset.
+        
+        Args:
+            v: The location to validate.
+
+        Returns:
+            The validated location.
+        """
         if v is not None:
             v = v.strip()
             if not v:
