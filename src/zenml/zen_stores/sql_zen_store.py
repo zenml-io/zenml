@@ -10436,6 +10436,7 @@ class SqlZenStore(BaseZenStore):
             step_run_update: The update to be applied to the step.
 
         Raises:
+            EntityExistsError: If the log entry already exists.
             ValueError: If trying to update the step status to retried.
 
         Returns:

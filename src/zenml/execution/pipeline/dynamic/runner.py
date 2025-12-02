@@ -168,7 +168,6 @@ class DynamicPipelineRunner:
             ):
                 logging_context = setup_run_logging(
                     pipeline_run=run,
-                    snapshot=self._snapshot,
                     source="orchestrator",
                 )
 

@@ -113,10 +113,16 @@ class OtelLogStore(BaseLogStore):
         Args:
             record: The log record to process.
             log_model: The log model to emit the log record to.
+
+        Raises:
+            RuntimeError: If the OpenTelemetry provider is not initialized.
         """
         with self._lock:
             if not self._provider:
                 self.activate()
+
+        if self._provider is None:
+            raise RuntimeError("OpenTelemetry provider is not initialized")
 
         # Attach the log_model to OTel's context so the exporter
         # can access it in the background processor thread
@@ -195,7 +201,7 @@ class OtelLogStore(BaseLogStore):
         if self._processor:
             self._processor.force_flush()
 
-    def _get_severity_number(self, levelno: int) -> int:
+    def _get_severity_number(self, levelno: int) -> SeverityNumber:
         """Map Python log level to OTEL severity number.
 
         Args:
@@ -205,17 +211,17 @@ class OtelLogStore(BaseLogStore):
             OTEL severity number.
         """
         if levelno >= logging.CRITICAL:
-            return SeverityNumber.FATAL.value
+            return SeverityNumber.FATAL
         elif levelno >= logging.ERROR:
-            return SeverityNumber.ERROR.value
+            return SeverityNumber.ERROR
         elif levelno >= logging.WARNING:
-            return SeverityNumber.WARN.value
+            return SeverityNumber.WARN
         elif levelno >= logging.INFO:
-            return SeverityNumber.INFO.value
+            return SeverityNumber.INFO
         elif levelno >= logging.DEBUG:
-            return SeverityNumber.DEBUG.value
+            return SeverityNumber.DEBUG
         else:
-            return SeverityNumber.UNSPECIFIED.value
+            return SeverityNumber.UNSPECIFIED
 
     def deactivate(self) -> None:
         """Deactivate log collection and shut down the processor.
@@ -231,7 +237,7 @@ class OtelLogStore(BaseLogStore):
                 logger.warning(f"Error flushing logs: {e}")
 
             try:
-                self._processor.shutdown()
+                self._processor.shutdown()  # type: ignore[no-untyped-call]
                 logger.debug("Shut down log processor and background thread")
             except Exception as e:
                 logger.warning(f"Error shutting down processor: {e}")
@@ -257,7 +263,6 @@ class OtelLogStore(BaseLogStore):
             start_time: Filter logs after this time.
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
-            message_size: Maximum size of a single log message in bytes.
 
         Returns:
             List of log entries from the backend.

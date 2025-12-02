@@ -296,14 +296,16 @@ def setup_run_logging(
 
     Args:
         pipeline_run: The pipeline run.
-        snapshot: The snapshot of the pipeline run.
         source: The source of the logs.
 
     Returns:
         The logs context.
     """
-    if run_logs := search_logs_by_source(pipeline_run.log_collection, source):
-        return LoggingContext(log_model=run_logs)
+    if pipeline_run.log_collection is not None:
+        if run_logs := search_logs_by_source(
+            pipeline_run.log_collection, source
+        ):
+            return LoggingContext(log_model=run_logs)
 
     logs_request = generate_logs_request(source=source)
     try:
@@ -315,8 +317,11 @@ def setup_run_logging(
     except Exception as e:
         logger.error(f"Failed to add logs to the run {pipeline_run.id}: {e}")
 
-    if run_logs := search_logs_by_source(pipeline_run.log_collection, source):
-        return LoggingContext(log_model=run_logs)
+    if pipeline_run.log_collection is not None:
+        if run_logs := search_logs_by_source(
+            pipeline_run.log_collection, source
+        ):
+            return LoggingContext(log_model=run_logs)
 
     return nullcontext()
 
@@ -336,8 +341,9 @@ def setup_step_logging(
     Returns:
         The logs context.
     """
-    if step_logs := search_logs_by_source(step_run.log_collection, source):
-        return LoggingContext(log_model=step_logs)
+    if step_run.log_collection is not None:
+        if step_logs := search_logs_by_source(step_run.log_collection, source):
+            return LoggingContext(log_model=step_logs)
 
     logs_request = generate_logs_request(source=source)
     try:
@@ -349,8 +355,9 @@ def setup_step_logging(
     except Exception as e:
         logger.error(f"Failed to add logs to the step run {step_run.id}: {e}")
 
-    if step_logs := search_logs_by_source(step_run.log_collection, source):
-        return LoggingContext(log_model=step_logs)
+    if step_run.log_collection is not None:
+        if step_logs := search_logs_by_source(step_run.log_collection, source):
+            return LoggingContext(log_model=step_logs)
 
     return nullcontext()
 

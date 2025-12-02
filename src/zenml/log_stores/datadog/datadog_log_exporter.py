@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """OpenTelemetry exporter that sends logs to Datadog."""
 
-from typing import Any, List
+from typing import Sequence
 
 import requests
 from opentelemetry.sdk._logs import LogData
@@ -48,7 +48,7 @@ class DatadogLogExporter(LogExporter):
             "Content-Type": "application/json",
         }
 
-    def export(self, batch: List[LogData]) -> Any:
+    def export(self, batch: Sequence["LogData"]) -> LogExportResult:
         """Export a batch of log records to Datadog.
 
         Args:
@@ -79,7 +79,9 @@ class DatadogLogExporter(LogExporter):
                 log_entry["status"] = log_record.severity_text.lower()
 
             if log_record.timestamp:
-                log_entry["timestamp"] = int(log_record.timestamp / 1_000_000)
+                log_entry["timestamp"] = str(
+                    int(log_record.timestamp / 1_000_000)
+                )
 
             if all_attrs:
                 tags = [f"{k}:{v}" for k, v in all_attrs.items()]

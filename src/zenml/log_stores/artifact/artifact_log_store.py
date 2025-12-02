@@ -289,7 +289,6 @@ class ArtifactLogStore(OtelLogStore):
             start_time: Filter logs after this time.
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
-            message_size: Maximum size of a single log message in bytes.
 
         Returns:
             List of log entries from the artifact store.

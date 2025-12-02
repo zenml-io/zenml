@@ -16,7 +16,7 @@
 import os
 import time
 from collections import defaultdict
-from typing import TYPE_CHECKING, Dict, List, Sequence
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, cast
 from uuid import UUID, uuid4
 
 from opentelemetry import context as otel_context
@@ -75,9 +75,12 @@ class ArtifactLogExporter(LogExporter):
             finalized_log_streams: List["LogsResponse"] = []
 
             for log_data in batch:
-                log_model = otel_context.get_value(
-                    key=ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
-                    context=log_data.log_record.context,
+                log_model = cast(
+                    Optional["LogsResponse"],
+                    otel_context.get_value(
+                        key=ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
+                        context=log_data.log_record.context,
+                    ),
                 )
                 flush = otel_context.get_value(
                     key=ZENML_OTEL_LOG_STORE_FLUSH_KEY,
@@ -92,7 +95,7 @@ class ArtifactLogExporter(LogExporter):
 
                 responses_by_id[log_model.id] = log_model
 
-                entries = self._otel_record_to_log_entries(log_data.log_record)
+                entries = self._otel_record_to_log_entries(log_data)
                 for entry in entries:
                     json_line = entry.model_dump_json(exclude_none=True)
                     entries_by_id[log_model.id].append(json_line)
@@ -112,20 +115,25 @@ class ArtifactLogExporter(LogExporter):
             return LogExportResult.FAILURE
 
     def _otel_record_to_log_entries(
-        self, log_record: "LogData"
+        self, log_data: "LogData"
     ) -> List[LogEntry]:
         """Convert an OTEL log record to ZenML LogEntry objects.
 
         Args:
-            log_record: The OpenTelemetry log record.
+            log_data: The OpenTelemetry log data.
 
         Returns:
             List of LogEntry objects (multiple if message was chunked).
         """
+        log_record = log_data.log_record
         message = str(log_record.body) if log_record.body else ""
         message = remove_ansi_escape_codes(message).rstrip()
 
-        level = self._map_severity_to_level(log_record.severity_text)
+        level = (
+            self._map_severity_to_level(log_record.severity_text)
+            if log_record.severity_text
+            else None
+        )
 
         name = "unknown"
         module = None
@@ -245,6 +253,9 @@ class ArtifactLogExporter(LogExporter):
         Args:
             log_lines: List of JSON-serialized log entries.
             log_model: The log model.
+
+        Raises:
+            Exception: If the log lines cannot be written to the artifact store.
         """
         if not log_model.uri or not log_model.artifact_store_id:
             logger.warning(
@@ -287,6 +298,9 @@ class ArtifactLogExporter(LogExporter):
 
         Args:
             log_model: The log model.
+
+        Raises:
+            Exception: If the logs cannot be finalized.
         """
         if not log_model.uri or not log_model.artifact_store_id:
             logger.warning(
@@ -306,7 +320,7 @@ class ArtifactLogExporter(LogExporter):
             logger.error(f"Failed to finalize logs for {log_model.uri}: {e}")
             raise
 
-    def _merge(self, log_model: "LogsResponse"):
+    def _merge(self, log_model: "LogsResponse") -> None:
         """Merges all log files into one in the given URI.
 
         Called on the logging context exit.
@@ -318,6 +332,9 @@ class ArtifactLogExporter(LogExporter):
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
             from zenml.artifacts.utils import _load_file_from_artifact_store
             from zenml.exceptions import DoesNotExistException
+
+            if not log_model.uri:
+                raise ValueError("Log model has no URI, cannot merge logs.")
 
             files_ = self.artifact_store.listdir(log_model.uri)
             if len(files_) > 1:

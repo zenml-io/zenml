@@ -52,7 +52,7 @@ class _ZenMLStdoutStream:
     preventing duplicate log entries in stored logs.
     """
 
-    def write(self, text: str) -> int:
+    def write(self, text: str) -> Any:
         """Write text to the original stdout.
 
         Args:
@@ -246,10 +246,25 @@ def set_root_verbosity() -> None:
 
 
 def _wrapped_write(original_write: Any, stream_name: str) -> Any:
-    """Wrap stdout/stderr write method to route logs to LoggingContext."""
+    """Wrap stdout/stderr write method to route logs to LoggingContext.
 
-    def wrapped_write(text: str) -> int:
-        """Write method that routes logs through LoggingContext."""
+    Args:
+        original_write: The original write method.
+        stream_name: The name of the stream.
+
+    Returns:
+        The wrapped write method.
+    """
+
+    def wrapped_write(text: str) -> Any:
+        """Write method that routes logs through LoggingContext.
+
+        Args:
+            text: The text to write.
+
+        Returns:
+            The result of the original write method.
+        """
         from zenml.utils.logging_utils import LoggingContext
 
         level_int = logging.INFO if stream_name == "stdout" else logging.ERROR
