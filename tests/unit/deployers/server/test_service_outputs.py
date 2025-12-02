@@ -77,6 +77,7 @@ class _DummyRun:
     def __init__(self) -> None:
         self.id = uuid4()
         self.name = "test-run"
+        self.log_collection = None
 
 
 class _DummyDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
