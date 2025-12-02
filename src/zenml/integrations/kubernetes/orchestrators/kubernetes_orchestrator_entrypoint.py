@@ -59,6 +59,7 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import 
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
+    PipelineRunUpdate,
     PipelineSnapshotResponse,
     RunMetadataResource,
 )
@@ -263,7 +264,12 @@ def main() -> None:
         orchestrator_run_id = orchestrator_pod_name
 
         if args.run_id:
-            pipeline_run = client.get_pipeline_run(args.run_id)
+            pipeline_run = client.zen_store.update_run(
+                run_id=args.run_id,
+                run_update=PipelineRunUpdate(
+                    orchestrator_run_id=orchestrator_run_id
+                ),
+            )
         else:
             pipeline_run = create_placeholder_run(
                 snapshot=snapshot,

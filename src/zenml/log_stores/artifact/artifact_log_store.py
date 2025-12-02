@@ -88,15 +88,14 @@ def remove_ansi_escape_codes(text: str) -> str:
 
 
 def fetch_log_records(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
+    artifact_store: "BaseArtifactStore",
     logs_uri: str,
 ) -> List[LogEntry]:
     """Fetches log entries.
 
     Args:
         zen_store: The store in which the artifact is stored.
-        artifact_store_id: The ID of the artifact store.
+        artifact_store: The artifact store.
         logs_uri: The URI of the artifact (file or directory).
 
     Returns:
@@ -104,9 +103,7 @@ def fetch_log_records(
     """
     log_entries = []
 
-    for line in _stream_logs_line_by_line(
-        zen_store, artifact_store_id, logs_uri
-    ):
+    for line in _stream_logs_line_by_line(artifact_store, logs_uri):
         if log_entry := parse_log_entry(line):
             log_entries.append(log_entry)
 
@@ -117,8 +114,7 @@ def fetch_log_records(
 
 
 def _stream_logs_line_by_line(
-    zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
+    artifact_store: "BaseArtifactStore",
     logs_uri: str,
 ) -> Iterator[str]:
     """Stream logs line by line without loading the entire file into memory.
@@ -127,8 +123,7 @@ def _stream_logs_line_by_line(
     and directories with multiple log files.
 
     Args:
-        zen_store: The store in which the artifact is stored.
-        artifact_store_id: The ID of the artifact store.
+        artifact_store: The artifact store.
         logs_uri: The URI of the log file or directory.
 
     Yields:
@@ -137,33 +132,28 @@ def _stream_logs_line_by_line(
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
     """
-    artifact_store = load_artifact_store(artifact_store_id, zen_store)
+    if not artifact_store.isdir(logs_uri):
+        # Single file case
+        with artifact_store.open(logs_uri, "r") as file:
+            for line in file:
+                yield line.rstrip("\n\r")
+    else:
+        # Directory case - may contain multiple log files
+        files = artifact_store.listdir(logs_uri)
+        if not files:
+            raise DoesNotExistException(
+                f"Folder '{logs_uri}' is empty in artifact store "
+                f"'{artifact_store.name}'."
+            )
 
-    try:
-        if not artifact_store.isdir(logs_uri):
-            # Single file case
-            with artifact_store.open(logs_uri, "r") as file:
-                for line in file:
+        # Sort files to read them in order
+        files.sort()
+
+        for file in files:
+            file_path = os.path.join(logs_uri, str(file))
+            with artifact_store.open(file_path, "r") as f:
+                for line in f:
                     yield line.rstrip("\n\r")
-        else:
-            # Directory case - may contain multiple log files
-            files = artifact_store.listdir(logs_uri)
-            if not files:
-                raise DoesNotExistException(
-                    f"Folder '{logs_uri}' is empty in artifact store "
-                    f"'{artifact_store.name}'."
-                )
-
-            # Sort files to read them in order
-            files.sort()
-
-            for file in files:
-                file_path = os.path.join(logs_uri, str(file))
-                with artifact_store.open(file_path, "r") as f:
-                    for line in f:
-                        yield line.rstrip("\n\r")
-    finally:
-        artifact_store.cleanup()
 
 
 def parse_log_entry(log_line: str) -> Optional[LogEntry]:
@@ -319,10 +309,8 @@ class ArtifactLogStore(OtelLogStore):
                 "ArtifactLogStore.fetch(). Both parameters will be ignored."
             )
 
-        client = Client()
         log_entries = fetch_log_records(
-            zen_store=client.zen_store,
-            artifact_store_id=logs_model.artifact_store_id,
+            artifact_store=self._artifact_store,
             logs_uri=logs_model.uri,
         )
 
