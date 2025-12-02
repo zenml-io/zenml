@@ -57,7 +57,6 @@ from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
     PipelineRunResponse,
-    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 from zenml.orchestrators.publish_utils import (
