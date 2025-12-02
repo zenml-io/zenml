@@ -13,14 +13,10 @@
 #  permissions and limitations under the License.
 """OpenTelemetry log store flavor."""
 
-from typing import Type
-
 from pydantic import Field
 
 from zenml import __version__
-from zenml.enums import StackComponentType
-from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
-from zenml.stack.flavor import Flavor
+from zenml.log_stores import BaseLogStoreConfig
 
 
 class OtelLogStoreConfig(BaseLogStoreConfig):
@@ -53,73 +49,3 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
         default=512,
         description="Maximum batch size for exports",
     )
-
-
-class OtelLogStoreFlavor(Flavor):
-    """OpenTelemetry log store flavor."""
-
-    @property
-    def name(self) -> str:
-        """Name of the flavor.
-
-        Returns:
-            The name of the flavor.
-        """
-        return "otel"
-
-    @property
-    def docs_url(self) -> str:
-        """URL to the flavor documentation.
-
-        Returns:
-            The URL to the flavor documentation.
-        """
-        return "https://docs.zenml.io/stack-components/log-stores/otel"
-
-    @property
-    def sdk_docs_url(self) -> str:
-        """URL to the SDK docs for this flavor.
-
-        Returns:
-            The URL to the SDK docs for this flavor.
-        """
-        return self.docs_url
-
-    @property
-    def logo_url(self) -> str:
-        """URL to the flavor logo.
-
-        Returns:
-            The URL to the flavor logo.
-        """
-        # TODO: Add a logo for the OpenTelemetry log store
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/log_store/otel.png"
-
-    @property
-    def type(self) -> StackComponentType:
-        """Stack component type.
-
-        Returns:
-            The stack component type.
-        """
-        return StackComponentType.LOG_STORE
-
-    @property
-    def config_class(self) -> Type[BaseLogStoreConfig]:
-        """Returns `OtelLogStoreConfig` config class.
-
-        Returns:
-            The config class.
-        """
-        return OtelLogStoreConfig
-
-    @property
-    def implementation_class(self) -> Type[BaseLogStore]:
-        """Implementation class for this flavor.
-
-        Returns:
-            The implementation class.
-        """
-        from zenml.log_stores.otel.otel_log_store import OtelLogStore
-
-        return OtelLogStore

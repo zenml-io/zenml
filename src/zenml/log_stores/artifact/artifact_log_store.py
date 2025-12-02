@@ -21,7 +21,6 @@ from typing import (
     Iterator,
     List,
     Optional,
-    Union,
     cast,
 )
 from uuid import UUID
@@ -29,20 +28,15 @@ from uuid import UUID
 from opentelemetry.sdk._logs.export import LogExporter
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.artifacts.utils import load_artifact_store
-from zenml.client import Client
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
-from zenml.log_stores.artifact.artifact_log_store_flavor import (
-    ArtifactLogStoreConfig,
-)
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
+from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.logging_utils import LogEntry
-from zenml.zen_stores.base_zen_store import BaseZenStore
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -199,6 +193,10 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
     )
 
 
+class ArtifactLogStoreConfig(OtelLogStoreConfig):
+    """Configuration for the artifact log store."""
+
+
 class ArtifactLogStore(OtelLogStore):
     """Log store that saves logs to the artifact store.
 
@@ -315,3 +313,10 @@ class ArtifactLogStore(OtelLogStore):
         )
 
         return log_entries[:limit]
+
+    def cleanup(self) -> None:
+        """Cleanup the artifact log store.
+
+        This method is called to ensure that the artifact log store is cleaned up.
+        """
+        self._artifact_store.cleanup()

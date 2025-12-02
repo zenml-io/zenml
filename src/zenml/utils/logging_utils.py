@@ -14,6 +14,7 @@
 """Utility functions for logging."""
 
 import logging
+import os
 import threading
 from contextlib import nullcontext
 from contextvars import ContextVar
@@ -22,7 +23,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -30,6 +31,7 @@ from zenml.config.step_configurations import StepConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_SERVER,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels, StackComponentType
@@ -98,6 +100,11 @@ class LogEntry(BaseModel):
     id: UUID = Field(
         default_factory=uuid4,
         description="The unique identifier of the log entry",
+    )
+
+    model_config = ConfigDict(
+        # ignore extra attributes during model initialization
+        extra="ignore",
     )
 
 
@@ -384,10 +391,19 @@ def fetch_logs(
     Raises:
         DoesNotExistException: If the log store doesn't exist or is not the right type.
         NotImplementedError: If the log store's dependencies are not installed.
+        RuntimeError: If the function is called from the client environment.
     """
     from zenml.artifacts.utils import load_artifact_store
     from zenml.log_stores.base_log_store import BaseLogStore
     from zenml.stack import StackComponent
+
+    if ENV_ZENML_SERVER not in os.environ:
+        # This utility function should not be called from the client environment
+        # because it would cause instantiating the active log store again.
+        raise RuntimeError(
+            "This utility function is only supported in the server "
+            "environment. Use the log store directly instead."
+        )
 
     log_store: Optional[BaseLogStore] = None
 
@@ -425,4 +441,7 @@ def fetch_logs(
     else:
         return []
 
-    return log_store.fetch(logs_model=logs, limit=limit)
+    try:
+        return log_store.fetch(logs_model=logs, limit=limit)
+    finally:
+        log_store.cleanup()

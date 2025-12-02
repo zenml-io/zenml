@@ -138,7 +138,6 @@ from zenml.models import (
 )
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.logging_utils import fetch_logs
 from zenml.zen_stores.rest_zen_store import RestZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -3239,13 +3238,14 @@ def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
 def test_logs_are_recorded_properly(clean_client):
     """Tests if logs are stored in the artifact store."""
     client = Client()
-    store = client.zen_store
 
     run_context = PipelineRunContext(1)
     with run_context:
         steps = run_context.steps
         step1_logs = steps[0].logs
-        step1_logs_content = fetch_logs(step1_logs, store, limit=100)
+        step1_logs_content = client.active_stack.log_store.fetch(
+            step1_logs, limit=100
+        )
 
         # Step 1 has the word log! Defined in PipelineRunContext
         assert any("log" in record.message for record in step1_logs_content)
