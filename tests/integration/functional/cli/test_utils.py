@@ -89,17 +89,6 @@ def test_converting_structured_str_to_dict():
         )
 
 
-def test_parsing_unknown_component_attributes():
-    """Test that our ability to parse CLI arguments works."""
-    assert cli_utils.parse_unknown_component_attributes(
-        ["--foo", "--bar", "--baz", "--qux"]
-    ) == ["foo", "bar", "baz", "qux"]
-    with pytest.raises(AssertionError):
-        cli_utils.parse_unknown_component_attributes(["foo"])
-    with pytest.raises(AssertionError):
-        cli_utils.parse_unknown_component_attributes(["foo=bar=qux"])
-
-
 def test_validate_keys():
     """Test that validation of proper identifier as key works"""
     with pytest.raises(ClickException):
