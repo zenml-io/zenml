@@ -327,6 +327,9 @@ class ArtifactLogExporter(LogExporter):
 
         Args:
             log_model: The log model.
+
+        Raises:
+            RuntimeError: If the log model has no URI, cannot merge logs.
         """
         # If the artifact store is immutable, merge the log files
         if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
@@ -334,7 +337,7 @@ class ArtifactLogExporter(LogExporter):
             from zenml.exceptions import DoesNotExistException
 
             if not log_model.uri:
-                raise ValueError("Log model has no URI, cannot merge logs.")
+                raise RuntimeError("Log model has no URI, cannot merge logs.")
 
             files_ = self.artifact_store.listdir(log_model.uri)
             if len(files_) > 1:
