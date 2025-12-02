@@ -486,12 +486,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             runnable = True
 
         deployable = False
-        if (
-            not self.is_dynamic
-            and self.build
-            and self.stack
-            and self.stack.has_deployer
-        ):
+        if self.build and self.stack and self.stack.has_deployer:
             deployable = True
 
         body = PipelineSnapshotResponseBody(

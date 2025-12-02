@@ -444,6 +444,7 @@ class StepLauncher:
                 step_runtime = get_step_runtime(
                     step_config=self._step.config,
                     pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+                    orchestrator=self._stack.orchestrator,
                 )
 
                 if step_runtime == StepRuntime.INLINE:

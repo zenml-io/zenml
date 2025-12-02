@@ -410,6 +410,7 @@ def deployment_snapshot_request_from_source_snapshot(
         source_snapshot=source_snapshot_id,
         pipeline_version_hash=source_snapshot.pipeline_version_hash,
         pipeline_spec=updated_pipeline_spec,
+        is_dynamic=source_snapshot.is_dynamic,
     )
 
 
