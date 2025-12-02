@@ -31,6 +31,7 @@ from zenml.stack import StackValidator
 from zenml.utils.archivable import ArchiveType
 
 if TYPE_CHECKING:
+    from zenml.config.docker_settings import DockerBuildOptions
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
     from zenml.stack import Stack
@@ -126,7 +127,7 @@ class AWSImageBuilder(BaseImageBuilder):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Dict[str, Any],
+        docker_build_options: Optional["DockerBuildOptions"] = None,
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and pushes a Docker image.
@@ -189,17 +190,11 @@ class AWSImageBuilder(BaseImageBuilder):
                 f"aws ecr get-login-password --region {self.code_build_client._client_config.region_name} | docker login --username AWS --password-stdin {container_registry.config.uri}",
             ]
 
-        # Convert the docker_build_options dictionary to a list of strings
         docker_build_args = ""
-        for key, value in docker_build_options.items():
-            option = f"--{key}"
-            if isinstance(value, list):
-                for val in value:
-                    docker_build_args += f"{option} {val} "
-            elif value is not None and not isinstance(value, bool):
-                docker_build_args += f"{option} {value} "
-            elif value is not False:
-                docker_build_args += f"{option} "
+        if docker_build_options:
+            docker_build_args = " ".join(
+                docker_build_options.to_docker_cli_options()
+            )
 
         pre_build_commands_str = "\n".join(
             [f"            - {command}" for command in pre_build_commands]

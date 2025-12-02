@@ -1050,10 +1050,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             metadata=metadata,
         )
 
-    def launch_dynamic_step(
+    def run_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Launch a dynamic step.
+        """Runs an isolated step on Sagemaker.
 
         Args:
             step_run_info: The step run information.

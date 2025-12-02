@@ -202,7 +202,9 @@ def run_snapshot(
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
     if request.run_configuration:
-        validate_run_config_is_runnable_from_server(request.run_configuration)
+        validate_run_config_is_runnable_from_server(
+            request.run_configuration, is_dynamic=snapshot.is_dynamic
+        )
 
     snapshot_request = snapshot_request_from_source_snapshot(
         source_snapshot=snapshot,
@@ -494,9 +496,13 @@ def snapshot_request_from_source_snapshot(
     Returns:
         The generated snapshot request.
     """
+    pipeline_update_exclude = {"name"}
+    if not source_snapshot.is_dynamic:
+        pipeline_update_exclude.add("parameters")
+
     pipeline_update = config.model_dump(
         include=set(PipelineConfiguration.model_fields),
-        exclude={"name", "parameters"},
+        exclude=pipeline_update_exclude,
         exclude_unset=True,
         exclude_none=True,
     )
@@ -508,6 +514,14 @@ def snapshot_request_from_source_snapshot(
     pipeline_configuration = pydantic_utils.update_model(
         source_snapshot.pipeline_configuration, pipeline_update
     )
+
+    pipeline_spec = source_snapshot.pipeline_spec
+    if pipeline_spec and pipeline_configuration.parameters:
+        # Also include the updated pipeline parameters in the pipeline spec, as
+        # the frontend and some other code still relies on the parameters in it
+        pipeline_spec = pipeline_spec.model_copy(
+            update={"parameters": pipeline_configuration.parameters}
+        )
 
     steps = {}
     step_config_updates = config.steps or {}
@@ -586,6 +600,7 @@ def snapshot_request_from_source_snapshot(
 
     return PipelineSnapshotRequest(
         project=source_snapshot.project_id,
+        is_dynamic=source_snapshot.is_dynamic,
         run_name_template=config.run_name or source_snapshot.run_name_template,
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
@@ -603,7 +618,7 @@ def snapshot_request_from_source_snapshot(
         template=template_id,
         source_snapshot=source_snapshot_id,
         pipeline_version_hash=source_snapshot.pipeline_version_hash,
-        pipeline_spec=source_snapshot.pipeline_spec,
+        pipeline_spec=pipeline_spec,
     )
 
 

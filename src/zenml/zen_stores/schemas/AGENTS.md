@@ -1,4 +1,80 @@
-# ZenML ORM Schemas — Concise Guide
+# ZenML Zen Stores — Agent Guidelines
+
+Guidance for agents working with ZenML's data storage layer, including ORM schemas and database migrations.
+
+## ORM Usage
+
+ZenML uses **SQLModel** (SQLAlchemy-based) for all database operations. No raw SQL unless absolutely necessary.
+
+### Database Column Limits
+
+General string column limit: **~250 characters** (MySQL constraint). This affects:
+- Orchestrator run IDs and similar identifier fields
+- Any string field that might receive external system identifiers
+
+When designing schemas, ensure string fields that store external IDs have appropriate length constraints.
+
+---
+
+## ⚠️ CRITICAL: Import Restriction for `zen_stores/`
+
+**Rule:** Code outside `zen_stores/` should **NOT** import SQL-related code directly from this directory.
+
+### Why This Matters
+
+1. **Optional SQL dependencies**: SQL dependencies (SQLAlchemy, SQLModel) may not be installed in all environments
+2. **Import check bypass**: Direct imports skip ZenML's dependency checking, leading to misleading error messages
+3. **Abstraction violation**: External code should use the Client abstraction, not raw database access
+
+### Correct Access Pattern
+
+```python
+# ❌ Bad - direct import from zen_stores
+from zenml.zen_stores.schemas import PipelineRunSchema
+from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+# ✅ Good - use the Client
+from zenml.client import Client
+client = Client()
+runs = client.list_pipeline_runs()
+
+# ✅ If you need lower-level access (rare)
+client.zen_store  # Gives you access to the store with proper checks
+```
+
+### Why `client.zen_store` Is Better
+
+- Import checks run properly before accessing the store
+- Correct warnings are raised for missing dependencies
+- The client handles connection management and authentication
+
+---
+
+## Migration Testing Workflow
+
+When testing database migrations, follow this workflow:
+
+1. **Check out `develop` branch** (or the relevant old release)
+2. **Populate the database** from that version (create runs, stacks, etc.)
+3. **Switch to your current branch**
+4. **Test whether the migration works** — run `alembic upgrade head`
+
+**Why this matters:** Migrations must handle existing data from older versions. Testing only with fresh databases misses edge cases.
+
+**Note:** CI performs basic migration testing by creating runs on all versions, but local testing with realistic data is still recommended for complex migrations.
+
+### Migration Best Practices
+
+- Create migrations with descriptive names: `alembic revision -m "Add X to Y table"`
+- Test upgrade path: `alembic upgrade head` (downgrade testing is optional—ZenML doesn't support downgrades in most cases)
+- Never modify existing migrations that are already on main/develop branches
+- Consider backward compatibility for rolling deployments
+- Include both schema changes and data migrations when needed
+- Run `scripts/check-alembic-branches.sh` to verify migration consistency
+
+---
+
+## ORM Schemas — Concise Guide
 
 Scope and Location
 - Applies to all ORM schemas in src/zenml/zen_stores/schemas and their exports in __init__.py.

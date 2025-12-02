@@ -538,6 +538,56 @@ def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
     assert rm["axel"] == "is awesome"
 
 
+def test_create_run_metadata_overwrite(clean_client_with_run: Client):
+    """Test creating run metadata with the same key but different value."""
+    pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
+
+    clean_client_with_run.create_run_metadata(
+        metadata={"axel": "is not awesome"},
+        resources=[
+            RunMetadataResource(
+                id=pipeline_run.id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        ],
+    )
+    clean_client_with_run.create_run_metadata(
+        metadata={"axel": "is awesome"},
+        resources=[
+            RunMetadataResource(
+                id=pipeline_run.id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        ],
+    )
+
+    rm = clean_client_with_run.get_pipeline_run(pipeline_run.id).run_metadata
+    assert rm["axel"] == "is awesome"
+
+
+def test_create_run_metadata_dict_merge(clean_client_with_run: Client):
+    """Test creating run metadata with the same key merges dictionaries."""
+    pipeline_run = clean_client_with_run.list_pipeline_runs()[0]
+
+    clean_client_with_run.create_run_metadata(
+        metadata={"key": {"a": 1}},
+        resources=[
+            RunMetadataResource(
+                id=pipeline_run.id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        ],
+    )
+    clean_client_with_run.create_run_metadata(
+        metadata={"key": {"a": 2, "b": 2}},
+        resources=[
+            RunMetadataResource(
+                id=pipeline_run.id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        ],
+    )
+
+    rm = clean_client_with_run.get_pipeline_run(pipeline_run.id).run_metadata
+    assert rm["key"] == {"a": 2, "b": 2}
+
+
 # .---------.
 # | SECRETS |
 # '---------'

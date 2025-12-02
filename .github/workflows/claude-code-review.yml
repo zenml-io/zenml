@@ -30,7 +30,7 @@ jobs:
       needs.check-team-member.outputs.is-team-member == 'true' &&
       github.actor != 'github-actions[bot]' &&
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/claude /full-review')
+      contains(github.event.comment.body, '@claude /full-review')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:

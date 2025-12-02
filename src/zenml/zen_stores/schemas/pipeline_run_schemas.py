@@ -694,6 +694,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             run_update: The `PipelineRunUpdate` to update with.
 
+        Raises:
+            ValueError: When trying to update the orchestrator run ID of a
+                run that already has a different one.
+
         Returns:
             The updated `PipelineRunSchema`.
         """
@@ -723,6 +727,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.in_progress = self._check_if_run_in_progress()
 
         if run_update.orchestrator_run_id:
+            if (
+                self.orchestrator_run_id
+                and self.orchestrator_run_id != run_update.orchestrator_run_id
+            ):
+                raise ValueError(
+                    "Updating the orchestrator run ID of a run with an "
+                    "existing orchestrator run ID "
+                    f"({self.orchestrator_run_id}) is not allowed."
+                )
             self.orchestrator_run_id = run_update.orchestrator_run_id
 
         self.updated = utc_now()

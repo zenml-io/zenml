@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Google Cloud Builder image builder implementation."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, Tuple, cast
 from urllib.parse import urlparse
 
+from google.api_core.client_options import ClientOptions
 from google.cloud.devtools import cloudbuild_v1
 
 from zenml.enums import StackComponentType
@@ -29,6 +30,7 @@ from zenml.logger import get_logger
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
+    from zenml.config.docker_settings import DockerBuildOptions
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
     from zenml.stack import Stack
@@ -98,7 +100,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Dict[str, Any],
+        docker_build_options: Optional["DockerBuildOptions"] = None,
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and pushes a Docker image.
@@ -141,7 +143,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         self,
         image_name: str,
         cloud_build_context: str,
-        build_options: Dict[str, Any],
+        build_options: Optional["DockerBuildOptions"] = None,
     ) -> cloudbuild_v1.Build:
         """Configures the build to be run to generate the Docker image.
 
@@ -171,17 +173,9 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             cloud_builder_network_option,
         )
 
-        # Convert the docker_build_options dictionary to a list of strings
-        docker_build_args = []
-        for key, value in build_options.items():
-            option = f"--{key}"
-            if isinstance(value, list):
-                for val in value:
-                    docker_build_args.extend([option, val])
-            elif value is not None and not isinstance(value, bool):
-                docker_build_args.extend([option, value])
-            elif value is not False:
-                docker_build_args.extend([option])
+        docker_build_args = (
+            build_options.to_docker_cli_options() if build_options else []
+        )
 
         return cloudbuild_v1.Build(
             source=cloudbuild_v1.Source(
@@ -223,7 +217,20 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             RuntimeError: If the Cloud Build run has failed.
         """
         credentials, project_id = self._get_authentication()
-        client = cloudbuild_v1.CloudBuildClient(credentials=credentials)
+        client_options = None
+        if self.config.location:
+            endpoint = f"{self.config.location}-cloudbuild.googleapis.com"
+            client_options = ClientOptions(api_endpoint=endpoint)
+            logger.info(
+                "Using regional Cloud Build endpoint `%s`.",
+                endpoint,
+            )
+        else:
+            logger.info("Using global Cloud Build endpoint.")
+
+        client = cloudbuild_v1.CloudBuildClient(
+            credentials=credentials, client_options=client_options
+        )
 
         operation = client.create_build(project_id=project_id, build=build)
         log_url = operation.metadata.build.log_url

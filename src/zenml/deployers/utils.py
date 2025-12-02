@@ -343,8 +343,10 @@ def deployment_snapshot_request_from_source_snapshot(
             pipeline_configuration
         )
 
+        step_spec = step.spec.model_copy(update={"enable_heartbeat": False})
+
         steps[invocation_id] = Step(
-            spec=step.spec,
+            spec=step_spec,
             config=merged_step_config,
             step_config_overrides=step_config,
         )
