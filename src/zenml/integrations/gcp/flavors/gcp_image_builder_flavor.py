@@ -76,7 +76,7 @@ class GCPImageBuilderConfig(
     @classmethod
     def validate_location(cls, v: Optional[str]) -> Optional[str]:
         """Normalize location field, treating empty strings as unset.
-        
+
         Args:
             v: The location to validate.
 
