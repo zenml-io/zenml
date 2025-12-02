@@ -1,12 +1,13 @@
 ---
 description: Understand workload managers and how they enable running pipelines from the dashboard.
+icon: microchip
 ---
 
 # Workload Managers
 
 Workload managers are built into the ZenML Pro server container. They enable you to run pipeline snapshots directly from the dashboard by allowing the server to orchestrate pipeline execution on your infrastructure. Without a workload manager configured, your workspace can only be used for monitoring and analyzing completed pipeline runs. With one configured, you gain the ability to trigger and execute pipelines interactively.
 
-This feature is available in [all ZenML Pro deployment scenarios](deployments-overview.md) (SaaS, Hybrid, and Air-gapped).
+This feature is available in [all ZenML Pro deployment scenarios](deployments-overview.md) (SaaS, Hybrid, and Full On-Prem).
 
 ## Architecture
 
@@ -15,7 +16,7 @@ The ZenML Pro server container includes workload manager implementations. You co
 ### Execution Flow
 
 1. **User triggers a snapshot from the dashboard**: You select a pipeline snapshot and click "Run" in the ZenML Cloud interface.
-2. **ZenML server receives the request**: Your ZenML Pro server (running in your workspace, whether SaaS, Hybrid, or Air-gapped) receives the execution request.
+2. **ZenML server receives the request**: Your ZenML Pro server (running in your workspace, whether SaaS, Hybrid, or Full On-Prem) receives the execution request.
 3. **Workload manager implementation handles orchestration**: The configured workload manager implementation (Kubernetes, AWS, or GCP) translates the request into infrastructure-specific commands.
 4. **Runner pod/task is created**: The workload manager creates a Kubernetes pod, ECS task, or equivalent compute unit on your infrastructure.
 5. **Pipeline executes**: The runner pulls the pipeline code, executes the steps, and streams logs back to the workspace.
@@ -64,7 +65,7 @@ ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 5
 - Completed pods are automatically cleaned up after the TTL expires
 
 **Use cases:**
-- Self-managed ZenML servers on Kubernetes (Hybrid or Air-gapped)
+- Self-managed ZenML servers on Kubernetes (Hybrid or Full On-Prem)
 - Teams already running Kubernetes infrastructure
 - Minimal setup complexity
 
@@ -281,12 +282,12 @@ When configuring workload managers, keep these factors in mind:
 ### Network Connectivity
 
 - **Egress from server to Kubernetes API**: The ZenML Pro server must have network access to your Kubernetes cluster's API server (port 6443 by default)
-- **Egress from runners to server**: Runner pods must have network access to your ZenML server (cloud.zenml.io for SaaS, your custom domain for Hybrid/Air-gapped, port 443)
+- **Egress from runners to server**: Runner pods must have network access to your ZenML server (cloud.zenml.io for SaaS, your custom domain for Hybrid/Full On-Prem, port 443)
 - **Artifact storage access**: Runners need network access to your artifact store (S3, GCS, Azure Blob, local NFS, etc.)
 - **Metadata backend access**: Runners need to reach your database for metadata operations
 - **Container registry access**: Runners need to pull images from your container registry
 
-For air-gapped deployments, ensure all dependencies are available internally:
+For Full On-Prem deployments, ensure all dependencies are available internally:
 - Private container registry with runner images
 - Internal artifact storage accessible from runners
 - Internal database (no external connectivity required)
@@ -308,7 +309,7 @@ The `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES` environment variable contr
 Runner pods need access to container images:
 
 - **Pre-built images**: ZenML provides official runner images in its public ECR registry (715803424590.dkr.ecr.eu-central-1.amazonaws.com)
-- **Custom images**: For air-gapped setups, pull images into your private registry before deployment
+- **Custom images**: For Full On-Prem setups, pull images into your private registry before deployment
 - **Image pull secrets**: Configure if your registry requires authentication
 - **Regular updates**: Keep runner images up-to-date for security and compatibility
 - **Image building**: For AWS and GCP implementations, set `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"` to allow the server to build custom images
@@ -369,15 +370,15 @@ Configure limits to prevent resource exhaustion:
 ## Next Steps
 
 - [Set up workload managers in Hybrid deployments](hybrid-deployment-helm.md#step-7-optional-enable-snapshot-support--workload-manager)
-- [Configure workload managers in Air-gapped environments](air-gapped-deployment-helm.md#step-13-optional-enable-snapshot-support--workload-manager)
+- [Configure workload managers in Full On-Prem environments](air-gapped-deployment-helm.md#step-13-optional-enable-snapshot-support--workload-manager)
 - [Learn about pipeline snapshots](https://docs.zenml.io/concepts/snapshots)
 
 ## Related Resources
 
 **Deployment & Infrastructure:**
-- [Deployment Scenarios Overview](deployments-overview.md) - Compare SaaS, Hybrid, and Air-gapped options
+- [Deployment Scenarios Overview](deployments-overview.md) - Compare SaaS, Hybrid, and Full On-Prem options
 - [Hybrid SaaS Deployment](hybrid-deployment.md) - Balance control with convenience
-- [Air-gapped Deployment](air-gapped-deployment.md) - Complete control and data sovereignty
+- [Full On-Prem Deployment](air-gapped-deployment.md) - Complete control and data sovereignty
 - [Self-hosted Deployment Guide](self-hosted.md) - Comprehensive deployment reference
 
 **Core Concepts:**

@@ -194,7 +194,7 @@ ZenML Pro SaaS includes:
 
 ## Comparison with Other Deployments
 
-| Feature | SaaS | Hybrid SaaS | Air-gapped |
+| Feature | SaaS | Hybrid SaaS | Full On-Prem |
 |---------|------|-------------|------------|
 | Setup Time | ⚡ Minutes | Hours | Days |
 | Maintenance | Zero | Workspace only | Full stack |
@@ -238,7 +238,7 @@ Need help with migration? Our support team can assist.
 - [System Architecture Overview](../system-architectures.md#zenml-pro-saas-architecture)
 - [Deployment Scenarios Overview](deployments-overview.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
-- [Air-gapped Deployment](air-gapped-deployment.md)
+- [Full On-Prem Deployment](air-gapped-deployment.md)
 - [Workload Managers](workload-managers.md)
 - [Security & Compliance](README.md#security--compliance)
 

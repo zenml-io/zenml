@@ -1,19 +1,19 @@
 ---
-description: Learn about ZenML Pro Air-gapped deployment - complete control and data sovereignty for the strictest security requirements.
+description: Learn about ZenML Pro Full On-Prem deployment - complete control and data sovereignty for the strictest security requirements.
 icon: shield-halved
 ---
 
-# Air-gapped Deployment
+# Full On-Prem Deployment
 
-ZenML Pro Air-gapped deployment provides complete control and data sovereignty for organizations with the strictest security, compliance, or regulatory requirements. All ZenML components run entirely within your infrastructure with no external dependencies or internet connectivity required.
+ZenML Pro Full On-Prem deployment provides complete control and data sovereignty for organizations with the strictest security, compliance, or regulatory requirements. All ZenML components run entirely within your infrastructure with no external dependencies or internet connectivity required.
 
 {% hint style="info" %}
-To learn more about Air-gapped deployment, [book a call](https://www.zenml.io/book-your-demo).
+To learn more about Full On-Prem deployment, [book a call](https://www.zenml.io/book-your-demo).
 {% endhint %}
 
 ## Overview
 
-In an air-gapped deployment, every component of ZenML Pro runs within your isolated network environment. This architecture is designed for organizations that must operate in completely disconnected environments or have regulatory requirements preventing any external communication.
+In a Full On-Prem deployment, every component of ZenML Pro runs within your isolated network environment. This architecture is designed for organizations that must operate in completely disconnected environments or have regulatory requirements preventing any external communication.
 
 ![ZenML Pro self-hosted deployment architecture](../../.gitbook/assets/cloud_architecture_scenario_2.png)
 
@@ -37,7 +37,7 @@ In an air-gapped deployment, every component of ZenML Pro runs within your isola
 
 ```mermaid
 flowchart TB
-  subgraph infra["Your Infrastructure (Air-gapped)"]
+  subgraph infra["Your Infrastructure (Full On-Prem)"]
     direction TB
 
     control_plane["<b>ZenML Pro Control Plane</b><br/>- Authentication & Authorization<br/>- RBAC Management<br/>- Workspace Coordination<br/>- Pro Metadata Store"]
@@ -130,7 +130,7 @@ flowchart TB
 
 ## Ideal Use Cases
 
-Air-gapped deployment is essential for:
+Full On-Prem deployment is essential for:
 
 - **Government and defense** organizations with classified data requirements
 - **Regulated industries** (healthcare, finance) with strict data residency requirements
@@ -179,9 +179,9 @@ Deploy at edge locations:
 
 ### Architecture Diagram
 
-![Air-gapped deployment architecture](../../.gitbook/assets/air-gapped-architecture.png)
+![Full On-Prem deployment architecture](../../.gitbook/assets/air-gapped-architecture.png)
 
-The diagram above illustrates a complete air-gapped ZenML Pro deployment with all components running within your organization's VPC. This architecture ensures zero external communication while providing full enterprise MLOps capabilities.
+The diagram above illustrates a complete Full On-Prem ZenML Pro deployment with all components running within your organization's VPC. This architecture ensures zero external communication while providing full enterprise MLOps capabilities.
 
 ### Architecture Components
 
@@ -371,7 +371,7 @@ Available on request for compliance and security reviews:
 
 ## Comparison with Other Deployments
 
-| Feature | SaaS | Hybrid SaaS | Air-gapped |
+| Feature | SaaS | Hybrid SaaS | Full On-Prem |
 |---------|------|-------------|------------|
 | Internet Required | Yes (metadata) | Yes (control plane) | **No** |
 | Setup Time | Minutes | Hours/Days | Days/Weeks |
@@ -386,9 +386,9 @@ Available on request for compliance and security reviews:
 
 ## Migration Path
 
-### From ZenML OSS to Air-gapped Pro
+### From ZenML OSS to Full On-Prem Pro
 
-If you're interested in migrating from ZenML OSS to an air-gapped Pro deployment, we're here to help guide you through every step of the process. Migration paths are highly dependent on your specific customer environment, infrastructure setup, and current ZenML OSS deployment configuration.
+If you're interested in migrating from ZenML OSS to a Full On-Prem Pro deployment, we're here to help guide you through every step of the process. Migration paths are highly dependent on your specific environment, infrastructure setup, and current ZenML OSS deployment configuration.
 
 It's possible to migrate existing stacks or even existing metadata from existing OSS deployments. We can figure out how and what to migrate together in a call.
 
@@ -397,11 +397,11 @@ It's possible to migrate existing stacks or even existing metadata from existing
 - [Book a migration consultation →](https://www.zenml.io/book-your-demo)
 - Or email us at [cloud@zenml.io](mailto:cloud@zenml.io)
 
-Your ZenML representative will work with you to assess your current setup, understand your air-gapped requirements, and provide a tailored migration plan that fits your environment.
+Your ZenML representative will work with you to assess your current setup, understand your Full On-Prem requirements, and provide a tailored migration plan that fits your environment.
 
 ### From Other Pro Deployments
 
-If you're moving from SaaS or Hybrid to Air-gapped, migration paths can vary significantly depending on your organization's size, data residency requirements, and current ZenML setup. We recommend discussing your plans with a ZenML solutions architect.
+If you're moving from SaaS or Hybrid to Full On-Prem, migration paths can vary significantly depending on your organization's size, data residency requirements, and current ZenML setup. We recommend discussing your plans with a ZenML solutions architect.
 
 **Next steps:**
 
@@ -414,7 +414,7 @@ Your ZenML representative will provide you with a tailored migration checklist, 
 
 <details>
 
-<summary>Detailed Air-gapped Deployment Architecture</summary>
+<summary>Detailed Full On-Prem Deployment Architecture</summary>
 
 <img src="../../.gitbook/assets/cloud_architecture_self_hosted_detailed (1).png" alt="ZenML Pro self-hosted deployment details" data-size="original">
 
@@ -432,7 +432,7 @@ Your ZenML representative will provide you with a tailored migration checklist, 
 
 ## Get Started
 
-Ready to deploy ZenML Pro in an air-gapped environment?
+Ready to deploy ZenML Pro in a Full On-Prem environment?
 
 [Book a Demo](https://www.zenml.io/book-your-demo){ .md-button .md-button--primary }
 

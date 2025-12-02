@@ -68,7 +68,7 @@ By default, the ZenML OSS Helm chart uses the same container image tags as the h
 
 #### ZenML Pro Client Artifacts
 
-If you're planning on running containerized ZenML pipelines, or using other containerization related ZenML features, you'll also need to access the public ZenML client container image located [in Docker Hub at `zenmldocker/zenml`](https://hub.docker.com/r/zenmldocker/zenml). This isn't a problem unless you're deploying ZenML Pro in an air-gapped environment, in which case you'll also have to copy the client container image into your own container registry. You'll also have to configure your code to use the correct base container registry via DockerSettings (see the [DockerSettings documentation](https://docs.zenml.io/how-to/customize-docker-builds) for more information).
+If you're planning on running containerized ZenML pipelines, or using other containerization related ZenML features, you'll also need to access the public ZenML client container image located [in Docker Hub at `zenmldocker/zenml`](https://hub.docker.com/r/zenmldocker/zenml). This isn't a problem unless you're deploying ZenML Pro in a Full On-Prem environment, in which case you'll also have to copy the client container image into your own container registry. You'll also have to configure your code to use the correct base container registry via DockerSettings (see the [DockerSettings documentation](https://docs.zenml.io/how-to/customize-docker-builds) for more information).
 
 ### Accessing the ZenML Pro Container Images
 

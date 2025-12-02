@@ -9,7 +9,7 @@
 * [Hybrid SaaS Deployment](hybrid-deployment.md)
   * [Kubernetes with Helm](hybrid-deployment-helm.md)
   * [AWS ECS](hybrid-deployment-ecs.md)
-* [Air-gapped Deployment](air-gapped-deployment.md)
+* [Full On-Prem Deployment](air-gapped-deployment.md)
   * [Kubernetes with Helm](air-gapped-deployment-helm.md)
 
 ## Core Concepts

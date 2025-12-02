@@ -1,5 +1,6 @@
 ---
 description: Compare ZenML Pro deployment scenarios to find the right fit for your organization.
+icon: code-merge
 layout:
   title:
     visible: true
@@ -19,7 +20,7 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 
 ## Quick Comparison
 
-| Deployment Aspect | SaaS | Hybrid SaaS | Air-gapped |
+| Deployment Aspect | SaaS | Hybrid SaaS | Full On-Prem |
 |-------------------|------|-------------|------------|
 | **ZenML Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
 | **Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
@@ -27,7 +28,7 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 | **Compute & Data** | [Your infrastructure](https://docs.zenml.io/stacks) | [Your infrastructure](https://docs.zenml.io/stacks) | [Your infrastructure](https://docs.zenml.io/stacks) |
 | **Setup Time** | ⚡ ~1 hour | ~4 hours | ~8 hours |
 | **Maintenance** | ✅ Fully managed | Partially managed (workspace maintenance required) | Customer managed |
-| **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and air-gapped environments |
+| **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and on-premises control |
 
 ## Which Scenario is Right for You?
 
@@ -46,7 +47,7 @@ Choose **SaaS** if you want to get started immediately with zero infrastructure 
 - 🚀 Immediate production readiness
 - 💰 Minimal operational overhead
 
-**Ideal for:** Startups, teams with high trust in ZenML infrastructure, organizations prioritizing speed-to-value over infrastructure control.
+**Ideal for:** Startups, teams prioritizing time-to-value and operational simplicity, organizations comfortable leveraging managed cloud services.
 
 [Learn more about SaaS deployment →](saas-deployment.md)
 
@@ -71,9 +72,9 @@ Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure 
 
 [Learn more about Hybrid deployment →](hybrid-deployment.md)
 
-### Air-gapped Deployment
+### Full On-Prem Deployment
 
-Choose **Air-gapped** if you need complete control with no external dependencies.
+Choose **Full On-Prem** if you need complete control with no external dependencies.
 
 **What runs where:**
 - All components: [Your infrastructure](https://docs.zenml.io/stacks) (completely isolated)
@@ -86,7 +87,7 @@ Choose **Air-gapped** if you need complete control with no external dependencies
 
 **Ideal for:** Regulated industries (healthcare, finance), government organizations, enterprises with strict data residency requirements, environments requiring offline operation.
 
-[Learn more about Air-gapped deployment →](air-gapped-deployment.md)
+[Learn more about Full On-Prem deployment →](air-gapped-deployment.md)
 
 ## Making Your Choice
 
@@ -95,22 +96,22 @@ Consider these factors when deciding:
 1. **Data Location Requirements**: Where must your ML metadata and run data reside?
    - Cloud-hosted is acceptable → **SaaS**
    - Must stay in your infrastructure → **Hybrid**
-   - Must be completely isolated/air-gapped → **Air-gapped**
+   - Must be completely isolated on-premises → **Full On-Prem**
 
 2. **Infrastructure Complexity**: How much infrastructure control do you want?
    - Minimal → **SaaS**
    - Moderate → **Hybrid**
-   - Full control → **Air-gapped**
+   - Full control → **Full On-Prem**
 
 3. **Time to Value**: How quickly do you need to be productive?
    - Within 1 hour → **SaaS**
    - Within 4 hours → **Hybrid**
-   - Within 8 hours (or longer planning period) → **Air-gapped**
+   - Within 8 hours (or longer planning period) → **Full On-Prem**
 
 4. **Compliance Requirements**: What regulations apply to your organization?
    - General business → **SaaS**
    - Data residency rules → **Hybrid**
-   - Strict isolation requirements → **Air-gapped**
+   - Strict isolation requirements → **Full On-Prem**
 
 ## Security & Compliance
 
@@ -121,7 +122,7 @@ All ZenML Pro deployments include:
 - ✅ **Vulnerability Assessment Reports** available on request
 - ✅ **Software Bill of Materials (SBOM)** available on request
 
-For software deployed on your infrastructure (Hybrid and Air-gapped scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
+For software deployed on your infrastructure (Hybrid and Full On-Prem scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
 
 ## Running Pipelines from the Dashboard
 
@@ -133,7 +134,7 @@ Learn more: [Understanding Workload Managers](workload-managers.md)
 
 - **Ready to start?** [Choose SaaS Deployment](saas-deployment.md)
 - **Need metadata control?** [Set up Hybrid Deployment](hybrid-deployment.md)
-- **Require complete isolation?** [Configure Air-gapped Deployment](air-gapped-deployment.md)
+- **Require complete isolation?** [Configure Full On-Prem Deployment](air-gapped-deployment.md)
 - **Deploying on your own infrastructure?** [See Self-hosted Deployment Guide](self-hosted.md)
 - **Want to run pipelines from the dashboard?** [Configure Workload Managers](workload-managers.md)
 

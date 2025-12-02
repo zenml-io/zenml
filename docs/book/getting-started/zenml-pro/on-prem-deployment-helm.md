@@ -13,7 +13,7 @@ layout:
     visible: true
 ---
 
-# Air-gapped Deployment on Kubernetes with Helm
+# Self-hosted Deployment on Kubernetes with Helm
 
 This guide provides step-by-step instructions for deploying ZenML Pro in a fully air-gapped setup on Kubernetes using Helm charts. In an air-gapped deployment, all components run within your infrastructure with zero external dependencies.
 
