@@ -2,6 +2,11 @@
 description: Store embeddings in a vector database for efficient retrieval.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Storing embeddings in a vector database
 
 The process of generating the embeddings doesn't take too long, especially if the machine on which the step is running has a GPU, but it's still not something we want to do every time we need to retrieve a document. Instead, we can store the embeddings in a vector database, which allows us to quickly retrieve the most relevant chunks based on their similarity to the query.
