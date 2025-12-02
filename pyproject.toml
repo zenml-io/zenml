@@ -2,6 +2,9 @@
 requires = ["uv_build >= 0.8.17, <0.9.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = ["zenml", "zenml_cli"]
+
 [project]
 name = "zenml"
 version = "0.92.0"
@@ -51,7 +54,7 @@ Repository = "https://github.com/zenml-io/zenml"
 Issues = "https://github.com/zenml-io/zenml/issues"
 
 [project.scripts]
-zenml = "zenml.cli.cli:cli"
+zenml = "zenml_cli:cli"
 
 [project.optional-dependencies]
 local = [

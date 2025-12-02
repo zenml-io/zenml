@@ -659,7 +659,11 @@ def info(
         write_yaml(file, user_info)
         declare(f"Wrote user debug info to file at '{file_write_path}'.")
     else:
-        cli_utils.print_user_info(user_info)
+        for key, value in user_info.items():
+            if key in ["packages", "query_packages"] and not bool(value):
+                continue
+
+            declare(f"{key.upper()}: {value}")
 
     if stack:
         try:
