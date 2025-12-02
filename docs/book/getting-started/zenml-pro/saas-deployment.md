@@ -27,8 +27,8 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
 | **Pro Control Plane** | ZenML Infrastructure | Handles authentication, RBAC, and workspace management |
 | **Metadata Store** | ZenML Infrastructure | Stores pipeline runs, model metadata, and tracking information |
 | **Secrets Store** | ZenML Infrastructure (default) | Stores credentials for accessing your infrastructure |
-| **Compute Resources** | Your Infrastructure | Executes pipeline steps and training jobs |
-| **Data & Artifacts** | Your Infrastructure | Stores datasets, models, and pipeline artifacts |
+| **Compute Resources** | [Your Infrastructure](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
+| **Data & Artifacts** | [Your Infrastructure](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
 
 ### Data Flow
 
@@ -46,7 +46,7 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
    - The relevant pipeline/step code is executed
 5. **Runtime Data Flow**: During execution:
    - Pipeline and step run metadata is logged to the ZenML workspace and persisted there
-   - Logs are streamed to your customer log backend
+   - Logs are streamed to your log backend
    - Artifacts are written to your artifact store
    - Metadata pointing to these artifacts is persisted in the ZenML workspace
 6. **Observability**: The ZenML dashboard connects to the ZenML server and uses all persisted metadata to provide you with a complete observability plane
@@ -173,7 +173,7 @@ View your pipeline runs, artifacts, and models in the ZenML Pro dashboard with f
 
 ## Security Documentation
 
-For software deployed on customer infrastructure, ZenML provides:
+For software deployed on your infrastructure, ZenML provides:
 
 - **Vulnerability Assessment Reports**: Comprehensive security analysis available on request
 - **Software Bill of Materials (SBOM)**: Complete dependency inventory for compliance

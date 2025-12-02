@@ -59,7 +59,7 @@ All ZenML Pro deployments include:
 - ✅ **Vulnerability Assessment Reports** available on request
 - ✅ **Software Bill of Materials (SBOM)** available on request
 
-For software deployed on customer infrastructure (Hybrid and Air-gapped scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
+For software deployed on your infrastructure (Hybrid and Air-gapped scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
 
 ## Pro Feature Details
 

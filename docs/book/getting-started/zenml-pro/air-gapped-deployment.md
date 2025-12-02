@@ -30,8 +30,8 @@ In an air-gapped deployment, every component of ZenML Pro runs within your isola
 | **Secrets Store** | Your Infrastructure | Stores all credentials and sensitive configuration |
 | **Identity Provider** | Your Infrastructure | Handles authentication (OIDC/LDAP/SAML) |
 | **Pro Dashboard** | Your Infrastructure | Web interface for all ZenML Pro features |
-| **Compute Resources** | Your Infrastructure | Executes pipeline steps and training jobs |
-| **Data & Artifacts** | Your Infrastructure | Stores datasets, models, and pipeline artifacts |
+| **Compute Resources** | [Your Infrastructure](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
+| **Data & Artifacts** | [Your Infrastructure](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
 
 ### Complete Isolation
 

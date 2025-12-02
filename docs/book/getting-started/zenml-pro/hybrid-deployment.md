@@ -27,8 +27,8 @@ The Hybrid deployment model is designed for organizations that need to keep sens
 | **ZenML Server (Workspaces)** | Your Infrastructure | Handles pipeline orchestration and execution |
 | **Metadata Store** | Your Infrastructure | Stores all pipeline runs, model metadata, and tracking information |
 | **Secrets Store** | Your Infrastructure | Stores all credentials and sensitive configuration |
-| **Compute Resources** | Your Infrastructure | Executes pipeline steps and training jobs |
-| **Data & Artifacts** | Your Infrastructure | Stores datasets, models, and pipeline artifacts |
+| **Compute Resources** | [Your Infrastructure](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
+| **Data & Artifacts** | [Your Infrastructure](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
 
 ### Data Flow
 
@@ -341,7 +341,7 @@ ZenML provides:
 
 ## Security Documentation
 
-For software deployed on customer infrastructure, ZenML provides:
+For software deployed on your infrastructure, ZenML provides:
 
 - **Vulnerability Assessment Reports**: Comprehensive security analysis available on request
 - **Software Bill of Materials (SBOM)**: Complete dependency inventory for compliance

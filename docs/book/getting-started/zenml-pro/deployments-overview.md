@@ -21,13 +21,12 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 
 | Deployment Aspect | SaaS | Hybrid SaaS | Air-gapped |
 |-------------------|------|-------------|------------|
-| **ZenML Server** | ZenML infrastructure | Customer infrastructure | Customer infrastructure |
-| **Control Plane** | ZenML infrastructure | ZenML infrastructure | Customer infrastructure |
-| **Metadata & RBAC** | ZenML infrastructure | RBAC: ZenML infrastructure<br>Run metadata: Customer infrastructure | Customer infrastructure |
-| **Compute & Data** | Customer infrastructure | Customer infrastructure | Customer infrastructure |
+| **ZenML Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
+| **Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
+| **Metadata & RBAC** | ZenML infrastructure | RBAC: ZenML infrastructure<br>Run metadata: Your infrastructure | Your infrastructure |
+| **Compute & Data** | [Your infrastructure](https://docs.zenml.io/stacks) | [Your infrastructure](https://docs.zenml.io/stacks) | [Your infrastructure](https://docs.zenml.io/stacks) |
 | **Setup Time** | ⚡ ~1 hour | ~4 hours | ~8 hours |
 | **Maintenance** | ✅ Fully managed | Partially managed (workspace maintenance required) | Customer managed |
-| **Production Ready** | Minutes | Hours | Hours |
 | **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and air-gapped environments |
 
 ## Which Scenario is Right for You?
@@ -39,7 +38,7 @@ Choose **SaaS** if you want to get started immediately with zero infrastructure 
 **What runs where:**
 - ZenML Server: ZenML infrastructure
 - Metadata and RBAC: ZenML infrastructure
-- Compute and Data: Customer infrastructure
+- Compute and Data: [Your infrastructure](https://docs.zenml.io/stacks)
 
 **Key Benefits:**
 - ⚡ Fastest setup (minutes)
@@ -57,10 +56,10 @@ Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure 
 
 **What runs where:**
 - ZenML Management Plane: ZenML infrastructure
-- ZenML Server: Customer infrastructure
+- ZenML Server: Your infrastructure
 - RBAC: ZenML infrastructure
-- Run metadata: Customer infrastructure
-- Compute and Data: Customer infrastructure
+- Run metadata: Your infrastructure
+- Compute and Data: [Your infrastructure](https://docs.zenml.io/stacks)
 
 **Key Benefits:**
 - 🔐 Metadata stays in your infrastructure
@@ -77,7 +76,7 @@ Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure 
 Choose **Air-gapped** if you need complete control with no external dependencies.
 
 **What runs where:**
-- All components: Customer infrastructure (completely isolated)
+- All components: [Your infrastructure](https://docs.zenml.io/stacks) (completely isolated)
 
 **Key Benefits:**
 - 🔒 Complete data sovereignty
@@ -122,7 +121,7 @@ All ZenML Pro deployments include:
 - ✅ **Vulnerability Assessment Reports** available on request
 - ✅ **Software Bill of Materials (SBOM)** available on request
 
-For software deployed on customer infrastructure (Hybrid and Air-gapped scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
+For software deployed on your infrastructure (Hybrid and Air-gapped scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
 
 ## Running Pipelines from the Dashboard
 
