@@ -2,6 +2,22 @@
 
 # 0.92.0
 
+## ⚠️ Breaking Changes
+
+* `StepRunResponse.regular_inputs` and `StepContext.inputs` are now of type `Dict[str, List[ArtifactVersionResponse]]` instead of `Dict[str, ArtifactVersionResponse]`.
+
+## New Features
+
+* The local image builder can now use the Docker CLI instead of the Python SDK, enabling BuildKit options that the Python SDK does not support.
+* The Evidently integration has been updated and now supports NumPy 2.0.
+* The active project can now be specified during login using the `--project` flag (for example, `zenml login ... --project ...`).
+* The GCP Image Builder now supports configuring the region in which the build should happen.
+
+## Bugfixes
+* Run metadata can now store sets and tuples.
+* An error that occurred when connecting to a ZenML server without the `local` extra installed has been fixed.
+* Weave import side effects when `enable_weave=False` is configured for the Weights & Biases experiment tracker have been fixed.
+
 ## What's Changed
 * Add version 0.91.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4213
 * Add 0.91.2 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4215
