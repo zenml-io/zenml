@@ -8,7 +8,7 @@ icon: cloud
 ZenML Pro SaaS is the fastest and easiest way to get started with enterprise-grade MLOps. With zero infrastructure setup required, you can be running production pipelines within minutes while maintaining full control over your data and compute resources.
 
 {% hint style="info" %}
-To try ZenML Pro SaaS or to learn more, [book a call](https://www.zenml.io/book-your-demo).
+To get access to ZenML Pro, [book a call](https://www.zenml.io/book-your-demo).
 {% endhint %}
 
 ## Overview
