@@ -1,20 +1,20 @@
+---
 name: Notify Changelog Repo
-
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag (e.g., 0.92.0)'
+        description: Release tag (e.g., 0.92.0)
         required: true
         type: string
-
 jobs:
   notify:
     runs-on: ubuntu-latest
     # Only trigger for non-prerelease, non-draft releases (auto) or manual dispatch
-    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !github.event.release.draft)
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease
+      && !github.event.release.draft)
     steps:
       - name: Get release info
         id: release_info
@@ -35,21 +35,19 @@ jobs:
               // Automatic trigger: use event payload
               release = context.payload.release;
             }
-            
             core.setOutput('tag', release.tag_name);
             core.setOutput('name', release.name || release.tag_name);
             core.setOutput('url', release.html_url);
             core.setOutput('body', JSON.stringify(release.body || ''));
             core.setOutput('published_at', release.published_at);
             core.setOutput('prerelease', release.prerelease);
-
       - name: Send repository dispatch
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CHANGELOG_DISPATCH_TOKEN }}
           repository: zenml-io/zenml-changelog
           event-type: release-published
-          client-payload: |
+          client-payload: |-
             {
               "repo": "${{ github.repository }}",
               "repo_name": "${{ github.event.repository.name }}",
