@@ -88,14 +88,8 @@ class DatadogLogStore(OtelLogStore):
         # Build query
         query_parts = [
             f"service:{self.config.service_name}",
-            f"zenml.pipeline_run_id:{logs_model.pipeline_run_id}",
+            f"@zenml.log_id:{logs_model.id}",
         ]
-
-        if logs_model.step_run_id:
-            query_parts.append(f"zenml.step_id:{logs_model.step_run_id}")
-
-        if logs_model.source:
-            query_parts.append(f"zenml.source:{logs_model.source}")
 
         query = " ".join(query_parts)
 
@@ -105,6 +99,7 @@ class DatadogLogStore(OtelLogStore):
         )
         headers = {
             "DD-API-KEY": self.config.api_key.get_secret_value(),
+            "DD-APPLICATION-KEY": self.config.application_key.get_secret_value(),
             "Content-Type": "application/json",
         }
 

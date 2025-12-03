@@ -29,11 +29,15 @@ class DatadogLogStoreConfig(OtelLogStoreConfig):
 
     Attributes:
         api_key: Datadog API key for log ingestion.
+        application_key: Datadog application key for log extraction.
         site: Datadog site (e.g., "datadoghq.com", "datadoghq.eu").
     """
 
     api_key: PlainSerializedSecretStr = Field(
         description="Datadog API key for log ingestion",
+    )
+    application_key: PlainSerializedSecretStr = Field(
+        description="Datadog application key for log extraction",
     )
     site: str = Field(
         default="datadoghq.com",
