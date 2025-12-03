@@ -25,9 +25,9 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 | **ZenML Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
 | **Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
 | **Metadata & RBAC** | ZenML infrastructure | RBAC: ZenML infrastructure<br>Run metadata: Your infrastructure | Your infrastructure |
-| **Compute & Data** | [Your infrastructure](https://docs.zenml.io/stacks) | [Your infrastructure](https://docs.zenml.io/stacks) | [Your infrastructure](https://docs.zenml.io/stacks) |
+| **Compute & Data** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Your infrastructure through [stacks](https://docs.zenml.io/stacks) |
 | **Setup Time** | ⚡ ~1 hour | ~4 hours | ~8 hours |
-| **Maintenance** | ✅ Fully managed | Partially managed (workspace maintenance required) | Customer managed |
+| **Maintenance** | Fully managed | Partially managed (workspace maintenance required) | Customer managed |
 | **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and on-premises control |
 
 ## Which Scenario is Right for You?
