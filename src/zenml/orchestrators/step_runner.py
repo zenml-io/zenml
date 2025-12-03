@@ -148,6 +148,7 @@ class StepRunner:
         if is_step_logging_enabled(step_run.config, pipeline_run.config):
             logs_context = setup_step_logging(
                 step_run=step_run,
+                pipeline_run=pipeline_run,
                 source="step",
             )
 

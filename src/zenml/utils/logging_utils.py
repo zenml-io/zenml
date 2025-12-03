@@ -20,7 +20,7 @@ from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -114,17 +114,20 @@ class LoggingContext:
     def __init__(
         self,
         log_model: "LogsResponse",
+        **metadata: Any,
     ) -> None:
         """Initialize the logging context.
 
         Args:
             log_model: The logs response model for this context.
+            **metadata: Additional metadata to attach to the log entry.
         """
         self.log_model = log_model
         self._lock = threading.Lock()
         self._previous_context: Optional[LoggingContext] = None
         self._disabled = False
         self._log_store = Client().active_stack.log_store
+        self._metadata = metadata
 
     @classmethod
     def emit(cls, record: logging.LogRecord) -> None:
@@ -143,7 +146,9 @@ class LoggingContext:
             try:
                 message = record.getMessage()
                 if message and message.strip():
-                    context._log_store.emit(record, context.log_model)
+                    context._log_store.emit(
+                        record, context.log_model, context._metadata
+                    )
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
             finally:
@@ -293,6 +298,51 @@ def search_logs_by_source(
     return None
 
 
+def get_run_log_metadata(
+    pipeline_run: "PipelineRunResponse",
+) -> Dict[str, Any]:
+    """Get the log metadata for a pipeline run.
+
+    Args:
+        pipeline_run: The pipeline run.
+
+    Returns:
+        The log metadata.
+    """
+    log_metadata = dict(
+        pipeline_run_id=str(pipeline_run.id),
+        pipeline_run_name=pipeline_run.name,
+        project_id=str(pipeline_run.project.id),
+        project_name=pipeline_run.project.name,
+    )
+
+    if pipeline_run.pipeline is not None:
+        log_metadata.update(
+            dict(
+                pipeline_id=str(pipeline_run.pipeline.id),
+                pipeline_name=pipeline_run.pipeline.name,
+            )
+        )
+
+    if pipeline_run.stack is not None:
+        log_metadata.update(
+            dict(
+                stack_id=str(pipeline_run.stack.id),
+                stack_name=pipeline_run.stack.name,
+            )
+        )
+
+    if pipeline_run.user is not None:
+        log_metadata.update(
+            dict(
+                user_id=str(pipeline_run.user.id),
+                user_name=pipeline_run.user.name,
+            )
+        )
+
+    return log_metadata
+
+
 def setup_run_logging(
     pipeline_run: "PipelineRunResponse",
     source: str,
@@ -308,11 +358,17 @@ def setup_run_logging(
     Returns:
         The logs context.
     """
+    log_metadata = get_run_log_metadata(pipeline_run)
+    log_metadata.update(dict(source=source))
+
     if pipeline_run.log_collection is not None:
         if run_logs := search_logs_by_source(
             pipeline_run.log_collection, source
         ):
-            return LoggingContext(log_model=run_logs)
+            return LoggingContext(
+                log_model=run_logs,
+                **log_metadata,
+            )
 
     logs_request = generate_logs_request(source=source)
     try:
@@ -328,13 +384,39 @@ def setup_run_logging(
         if run_logs := search_logs_by_source(
             pipeline_run.log_collection, source
         ):
-            return LoggingContext(log_model=run_logs)
+            return LoggingContext(
+                log_model=run_logs,
+                **log_metadata,
+            )
 
     return nullcontext()
 
 
+def get_step_log_metadata(
+    step_run: "StepRunResponse", pipeline_run: "PipelineRunResponse"
+) -> Dict[str, Any]:
+    """Get the log metadata for a step run.
+
+    Args:
+        step_run: The step run.
+        pipeline_run: The pipeline run.
+
+    Returns:
+        The log metadata.
+    """
+    log_metadata = get_run_log_metadata(pipeline_run)
+    log_metadata.update(
+        dict(
+            step_run_id=str(step_run.id),
+            step_run_name=step_run.name,
+        )
+    )
+    return log_metadata
+
+
 def setup_step_logging(
     step_run: "StepRunResponse",
+    pipeline_run: "PipelineRunResponse",
     source: str,
 ) -> Any:
     """Set up logging for a step run.
@@ -343,14 +425,27 @@ def setup_step_logging(
 
     Args:
         step_run: The step run.
+        pipeline_run: The pipeline run.
         source: The source of the logs.
 
     Returns:
         The logs context.
     """
+    log_metadata = get_step_log_metadata(step_run, pipeline_run)
+    log_metadata.update(dict(source=source))
+
+    if pipeline_run.log_collection is not None:
+        if run_logs := search_logs_by_source(
+            pipeline_run.log_collection, source
+        ):
+            return LoggingContext(
+                log_model=run_logs,
+                **log_metadata,
+            )
+
     if step_run.log_collection is not None:
         if step_logs := search_logs_by_source(step_run.log_collection, source):
-            return LoggingContext(log_model=step_logs)
+            return LoggingContext(log_model=step_logs, **log_metadata)
 
     logs_request = generate_logs_request(source=source)
     try:
@@ -364,7 +459,7 @@ def setup_step_logging(
 
     if step_run.log_collection is not None:
         if step_logs := search_logs_by_source(step_run.log_collection, source):
-            return LoggingContext(log_model=step_logs)
+            return LoggingContext(log_model=step_logs, **log_metadata)
 
     return nullcontext()
 

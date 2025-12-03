@@ -25,6 +25,7 @@ from typing import (
 )
 from uuid import UUID
 
+from opentelemetry import context as otel_context
 from opentelemetry.sdk._logs.export import LogExporter
 
 from zenml.artifact_stores import BaseArtifactStore
@@ -32,7 +33,10 @@ from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
-from zenml.log_stores.otel.otel_log_store import OtelLogStore
+from zenml.log_stores.otel.otel_log_store import (
+    ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
+    OtelLogStore,
+)
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
@@ -44,6 +48,9 @@ logger = get_logger(__name__)
 
 
 LOGS_EXTENSION = ".log"
+ZENML_OTEL_LOG_STORE_FLUSH_KEY = otel_context.create_key(
+    "zenml.log_store_flush"
+)
 
 
 def prepare_logs_uri(
@@ -262,6 +269,36 @@ class ArtifactLogStore(OtelLogStore):
         )
 
         return ArtifactLogExporter(artifact_store=self._artifact_store)
+
+    def finalize(
+        self,
+        log_model: LogsResponse,
+    ) -> None:
+        """Finalize the stream of log records associated with a log model.
+
+        Args:
+            log_model: The log model to finalize.
+        """
+        with self._lock:
+            if not self._provider:
+                return
+
+        # Attach the log_model to OTel's context so the exporter
+        # can access it in the background processor thread
+        ctx = otel_context.set_value(
+            ZENML_OTEL_LOG_STORE_CONTEXT_KEY, log_model
+        )
+        ctx = otel_context.set_value(
+            ZENML_OTEL_LOG_STORE_FLUSH_KEY, True, context=ctx
+        )
+
+        otel_logger = self._provider.get_logger(
+            "zenml.log_store.flush",
+            schema_url=None,
+        )
+        otel_logger.emit(
+            context=ctx,
+        )
 
     def fetch(
         self,

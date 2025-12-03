@@ -16,11 +16,11 @@
 import logging
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from opentelemetry import context as otel_context
-from opentelemetry._logs.severity import SeverityNumber
 from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs._internal import std_to_otel
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
@@ -41,9 +41,6 @@ logger = get_logger(__name__)
 
 ZENML_OTEL_LOG_STORE_CONTEXT_KEY = otel_context.create_key(
     "zenml.logging_context"
-)
-ZENML_OTEL_LOG_STORE_FLUSH_KEY = otel_context.create_key(
-    "zenml.log_store_flush"
 )
 
 
@@ -107,12 +104,14 @@ class OtelLogStore(BaseLogStore):
         self,
         record: logging.LogRecord,
         log_model: "LogsResponse",
+        metadata: Dict[str, Any],
     ) -> None:
         """Process a log record by sending to OpenTelemetry.
 
         Args:
             record: The log record to process.
             log_model: The log model to emit the log record to.
+            metadata: Additional metadata to attach to the log entry.
 
         Raises:
             RuntimeError: If the OpenTelemetry provider is not initialized.
@@ -147,18 +146,25 @@ class OtelLogStore(BaseLogStore):
             else:
                 message = exc_text
 
+        zenml_log_metadata = {
+            f"zenml.{key}": value for key, value in metadata.items()
+        }
+
         otel_logger.emit(
             timestamp=int(record.created * 1e9),
             observed_timestamp=int(record.created * 1e9),
-            severity_number=self._get_severity_number(record.levelno),
-            severity_text=record.levelname,
+            severity_number=std_to_otel(record.levelno),
+            severity_text="WARN"
+            if record.levelname == "WARNING"
+            else record.levelname,
             body=message,
             attributes={
                 "code.filepath": record.pathname,
                 "code.lineno": record.lineno,
                 "code.function": record.funcName,
-                "log_id": str(log_model.id),
-                "log_store_id": str(self.id),
+                "zenml.log_id": str(log_model.id),
+                "zenml.log_store_id": str(self.id),
+                **zenml_log_metadata,
             },
             context=ctx,
         )
@@ -172,26 +178,7 @@ class OtelLogStore(BaseLogStore):
         Args:
             log_model: The log model to finalize.
         """
-        with self._lock:
-            if not self._provider:
-                return
-
-        # Attach the log_model to OTel's context so the exporter
-        # can access it in the background processor thread
-        ctx = otel_context.set_value(
-            ZENML_OTEL_LOG_STORE_CONTEXT_KEY, log_model
-        )
-        ctx = otel_context.set_value(
-            ZENML_OTEL_LOG_STORE_FLUSH_KEY, True, context=ctx
-        )
-
-        otel_logger = self._provider.get_logger(
-            "zenml.log_store.flush",
-            schema_url=None,
-        )
-        otel_logger.emit(
-            context=ctx,
-        )
+        pass
 
     def flush(self) -> None:
         """Flush the log store.
@@ -200,28 +187,6 @@ class OtelLogStore(BaseLogStore):
         """
         if self._processor:
             self._processor.force_flush()
-
-    def _get_severity_number(self, levelno: int) -> SeverityNumber:
-        """Map Python log level to OTEL severity number.
-
-        Args:
-            levelno: Python logging level number.
-
-        Returns:
-            OTEL severity number.
-        """
-        if levelno >= logging.CRITICAL:
-            return SeverityNumber.FATAL
-        elif levelno >= logging.ERROR:
-            return SeverityNumber.ERROR
-        elif levelno >= logging.WARNING:
-            return SeverityNumber.WARN
-        elif levelno >= logging.INFO:
-            return SeverityNumber.INFO
-        elif levelno >= logging.DEBUG:
-            return SeverityNumber.DEBUG
-        else:
-            return SeverityNumber.UNSPECIFIED
 
     def deactivate(self) -> None:
         """Deactivate log collection and shut down the processor.

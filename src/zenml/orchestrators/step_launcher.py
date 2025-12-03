@@ -310,6 +310,7 @@ class StepLauncher:
                 ):
                     logs_context = setup_step_logging(
                         step_run=step_run,
+                        pipeline_run=pipeline_run,
                         source="prepare_step",
                     )
 

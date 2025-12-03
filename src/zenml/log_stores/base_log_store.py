@@ -17,7 +17,7 @@ import logging
 import threading
 from abc import abstractmethod
 from datetime import datetime
-from typing import Any, List, Optional, Type, cast
+from typing import Any, Dict, List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import LogsResponse
@@ -64,12 +64,14 @@ class BaseLogStore(StackComponent):
         self,
         record: logging.LogRecord,
         log_model: LogsResponse,
+        metadata: Dict[str, Any],
     ) -> None:
         """Process a log record from the logging system.
 
         Args:
             record: The Python logging.LogRecord to process.
             log_model: The log model to emit the log record to.
+            metadata: Additional metadata to attach to the log entry.
         """
 
     @abstractmethod

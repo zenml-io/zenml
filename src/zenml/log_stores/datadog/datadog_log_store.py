@@ -17,7 +17,9 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, cast
 
 import requests
-from opentelemetry.sdk._logs.export import LogExporter
+from opentelemetry.exporter.otlp.proto.http._log_exporter import (
+    OTLPLogExporter,
+)
 
 from zenml.enums import LoggingLevels
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
@@ -37,6 +39,8 @@ class DatadogLogStore(OtelLogStore):
     to Datadog's HTTP intake API.
     """
 
+    _otlp_exporter: Optional[OTLPLogExporter] = None
+
     @property
     def config(self) -> DatadogLogStoreConfig:
         """Returns the configuration of the Datadog log store.
@@ -46,20 +50,18 @@ class DatadogLogStore(OtelLogStore):
         """
         return cast(DatadogLogStoreConfig, self._config)
 
-    def get_exporter(self) -> "LogExporter":
+    def get_exporter(self) -> OTLPLogExporter:
         """Get the Datadog log exporter.
 
         Returns:
             DatadogLogExporter configured with API key and site.
         """
-        from zenml.log_stores.datadog.datadog_log_exporter import (
-            DatadogLogExporter,
-        )
-
-        return DatadogLogExporter(
-            api_key=self.config.api_key.get_secret_value(),
-            site=self.config.site,
-        )
+        if not self._otlp_exporter:
+            self._otlp_exporter = OTLPLogExporter(
+                endpoint=f"https://http-intake.logs.{self.config.site}/v1/logs",
+                headers={"dd-api-key": self.config.api_key.get_secret_value()},
+            )
+        return self._otlp_exporter
 
     def fetch(
         self,
@@ -191,3 +193,12 @@ class DatadogLogStore(OtelLogStore):
             return LoggingLevels.CRITICAL
         else:
             return LoggingLevels.INFO
+
+    def cleanup(self) -> None:
+        """Cleanup the Datadog log store.
+
+        This method is called when the log store is no longer needed.
+        """
+        if self._otlp_exporter:
+            self._otlp_exporter.shutdown()  # type: ignore[no-untyped-call]
+            self._otlp_exporter = None

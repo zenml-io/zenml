@@ -25,11 +25,11 @@ from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import LoggingLevels
 from zenml.log_stores.artifact.artifact_log_store import (
+    ZENML_OTEL_LOG_STORE_FLUSH_KEY,
     remove_ansi_escape_codes,
 )
 from zenml.log_stores.otel.otel_log_store import (
     ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
-    ZENML_OTEL_LOG_STORE_FLUSH_KEY,
 )
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
