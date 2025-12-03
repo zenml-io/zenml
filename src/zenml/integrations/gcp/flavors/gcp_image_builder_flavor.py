@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import PositiveInt
+from pydantic import Field, PositiveInt, field_validator
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.gcp import (
@@ -53,11 +53,41 @@ class GCPImageBuilderConfig(
             about this parameter:
             https://cloud.google.com/build/docs/build-config-file-schema#timeout_2
             Defaults to `3600`.
+        location: Optional GCP region for running Cloud Build (e.g.,
+            'us-central1', 'europe-west1'). Controls data residency and latency
+            and is required when using Cloud Build private pools. If not set,
+            the global endpoint is used.
     """
 
     cloud_builder_image: str = DEFAULT_CLOUD_BUILDER_IMAGE
     network: str = DEFAULT_CLOUD_BUILDER_NETWORK
     build_timeout: PositiveInt = DEFAULT_CLOUD_BUILD_TIMEOUT
+    location: Optional[str] = Field(
+        default=None,
+        description=(
+            "GCP region for Cloud Build execution to control data residency and "
+            "latency. Examples: 'us-central1', 'europe-west1'. Required when "
+            "using Cloud Build private pools. If omitted, the global Cloud Build "
+            "endpoint is used."
+        ),
+    )
+
+    @field_validator("location", mode="before")
+    @classmethod
+    def validate_location(cls, v: Optional[str]) -> Optional[str]:
+        """Normalize location field, treating empty strings as unset.
+
+        Args:
+            v: The location to validate.
+
+        Returns:
+            The validated location.
+        """
+        if v is not None:
+            v = v.strip()
+            if not v:
+                return None
+        return v
 
 
 class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
@@ -71,6 +101,15 @@ class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
             The name of the flavor.
         """
         return GCP_IMAGE_BUILDER_FLAVOR
+
+    @property
+    def display_name(self) -> str:
+        """Display name of the flavor.
+
+        Returns:
+            The display name of the flavor.
+        """
+        return "GCP"
 
     @property
     def service_connector_requirements(

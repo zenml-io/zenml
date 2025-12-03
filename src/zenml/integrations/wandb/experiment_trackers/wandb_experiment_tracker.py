@@ -180,12 +180,3 @@ class WandbExperimentTracker(BaseExperimentTracker):
                     "Weave enabled but no project_name specified. "
                     "Skipping weave initialization."
                 )
-        else:
-            import weave
-
-            if self.config.project_name:
-                logger.info("Disabling weave")
-                weave.init(
-                    project_name=self.config.project_name,
-                    settings={"disabled": True},
-                )

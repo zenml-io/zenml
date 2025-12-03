@@ -467,9 +467,15 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     input_artifacts[input_artifact.name] = []
                 step_run_input = StepRunInputResponse(
                     input_type=StepRunInputArtifactType(input_artifact.type),
+                    index=input_artifact.input_index,
+                    chunk_index=input_artifact.chunk_index,
+                    chunk_size=input_artifact.chunk_size,
                     **input_artifact.artifact_version.to_model().model_dump(),
                 )
                 input_artifacts[input_artifact.name].append(step_run_input)
+
+            for artifact_list in input_artifacts.values():
+                artifact_list.sort(key=lambda a: a.index or 0)
 
             output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
             for output_artifact in self.output_artifacts:
@@ -554,6 +560,9 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     # Fields
     name: str = Field(nullable=False, primary_key=True)
     type: str
+    input_index: int = Field(nullable=False, primary_key=True)
+    chunk_index: Optional[int] = None
+    chunk_size: Optional[int] = None
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(

@@ -318,24 +318,21 @@ class KubernetesDeployer(ContainerizedDeployer):
                             "  `kubectl config get-contexts`\n"
                         )
                     if kubernetes_context != active_context:
-                        logger.warning(
-                            f"{msg}the Kubernetes context "
-                            f"'{kubernetes_context}' configured for the "
-                            f"Kubernetes deployer is not the same as the "
-                            f"active context in the local Kubernetes "
-                            f"configuration. If this is not deliberate, you "
-                            f"should update the deployer's "
-                            f"`kubernetes_context` field by running:\n\n"
-                            f"  `zenml deployer update {self.name} "
-                            f"--kubernetes_context={active_context}`\n"
-                            f"To list all configured contexts, run:\n\n"
-                            f"  `kubectl config get-contexts`\n"
-                            f"To set the active context to be the same as the "
-                            f"one configured in the Kubernetes deployer "
-                            f"and silence this warning, run:\n\n"
-                            f"  `kubectl config use-context "
-                            f"{kubernetes_context}`\n"
+                        warning_msg = "".join(
+                            [
+                                f"{msg}the Kubernetes context '{kubernetes_context}' configured for the ",
+                                "Kubernetes deployer is not the same as the active context in the local ",
+                                "Kubernetes configuration. If this is not deliberate, you should update the ",
+                                "deployer's `kubernetes_context` field by running:\n\n",
+                                f"  `zenml deployer update {self.name} --kubernetes_context={active_context}`\n",
+                                "To list all configured contexts, run:\n\n",
+                                "  `kubectl config get-contexts`\n",
+                                "To set the active context to be the same as the one configured in the ",
+                                "Kubernetes deployer and silence this warning, run:\n\n",
+                                f"  `kubectl config use-context {kubernetes_context}`\n",
+                            ]
                         )
+                        logger.warning(warning_msg)
                 else:
                     return False, (
                         f"{msg}you must either link this deployer to a "

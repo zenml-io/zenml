@@ -22,15 +22,18 @@ from typing import (
     Union,
 )
 
-from evidently import metric_preset, metrics  # type: ignore[import-untyped]
-from evidently.metric_preset.metric_preset import (  # type: ignore[import-untyped]
+from evidently.legacy import (  # type: ignore[import-untyped]
+    metric_preset,
+    metrics,
+)
+from evidently.legacy.metric_preset.metric_preset import (  # type: ignore[import-untyped]
     MetricPreset,
 )
-from evidently.metrics.base_metric import (  # type: ignore[import-untyped]
+from evidently.legacy.metrics.base_metric import (  # type: ignore[import-untyped]
     Metric,
     generate_column_metrics,
 )
-from evidently.utils.generators import (  # type: ignore[import-untyped]
+from evidently.legacy.utils.generators import (  # type: ignore[import-untyped]
     BaseGenerator,
 )
 from pydantic import BaseModel, ConfigDict, Field
@@ -170,7 +173,7 @@ class EvidentlyMetricConfig(BaseModel):
         # Configure an Evidently Metric generator using a full Metric class
         # path
         config = EvidentlyMetric.metric_generator(
-            "evidently.metrics.ColumnSummaryMetric", columns=["age", "name"]
+            "evidently.legacy.metrics.ColumnSummaryMetric", columns=["age", "name"]
         )
         ```
 
@@ -178,7 +181,7 @@ class EvidentlyMetricConfig(BaseModel):
         from zenml.integrations.evidently.data_validators import EvidentlyMetric
 
         # Configure an Evidently Metric generator using a Metric class
-        from evidently.metrics import ColumnDriftMetric
+        from evidently.legacy.metrics import ColumnDriftMetric
         config = EvidentlyMetric.metric_generator(
             ColumnDriftMetric, columns="all", skip_id_column=True
         )
@@ -253,7 +256,7 @@ class EvidentlyMetricConfig(BaseModel):
 
         # Configure an Evidently MetricPreset using its full class path
         config = EvidentlyMetric.metric(
-            "evidently.metric_preset.DataDriftPreset"
+            "evidently.legacy.metric_preset.DataDriftPreset"
         )
         ```
 
@@ -262,7 +265,7 @@ class EvidentlyMetricConfig(BaseModel):
 
         # Configure an Evidently Metric using its class and pass additional
         # parameters
-        from evidently.metrics import ColumnSummaryMetric
+        from evidently.legacy.metrics import ColumnSummaryMetric
         config = EvidentlyMetric.metric(
             ColumnSummaryMetric, column_name="age"
         )

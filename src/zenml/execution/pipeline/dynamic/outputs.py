@@ -14,12 +14,10 @@
 """Dynamic pipeline execution outputs."""
 
 from concurrent.futures import Future
-from typing import Any, List, Tuple, Union
+from typing import Any, Iterator, List, Optional, Tuple, Union, overload
 
 from zenml.logger import get_logger
-from zenml.models import (
-    ArtifactVersionResponse,
-)
+from zenml.models import ArtifactVersionResponse
 
 logger = get_logger(__name__)
 
@@ -29,6 +27,8 @@ class OutputArtifact(ArtifactVersionResponse):
 
     output_name: str
     step_name: str
+    chunk_index: Optional[int] = None
+    chunk_size: Optional[int] = None
 
 
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
@@ -84,13 +84,13 @@ class ArtifactFuture(_BaseStepRunFuture):
         self._index = index
 
     def result(self) -> OutputArtifact:
-        """Get the step run output artifact.
+        """Get the output artifact this future represents.
 
         Raises:
             RuntimeError: If the future returned an invalid output.
 
         Returns:
-            The step run output artifact.
+            The output artifact.
         """
         result = self._wrapped.result()
         if isinstance(result, OutputArtifact):
@@ -166,6 +166,14 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         """
         return self._wrapped.result()
 
+    def result(self) -> StepRunOutputs:
+        """Get the step run outputs this future represents.
+
+        Returns:
+            The step run outputs.
+        """
+        return self._wrapped.result()
+
     def load(self, disable_cache: bool = False) -> Any:
         """Get the step run output artifact data.
 
@@ -191,34 +199,46 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         else:
             raise ValueError(f"Invalid step run output: {result}")
 
-    def __getitem__(self, key: Any) -> ArtifactFuture:
-        """Get an artifact future by key or index.
+    @overload
+    def __getitem__(self, key: int) -> ArtifactFuture: ...
+
+    @overload
+    def __getitem__(self, key: slice) -> Tuple[ArtifactFuture, ...]: ...
+
+    def __getitem__(
+        self, key: Union[int, slice]
+    ) -> Union[ArtifactFuture, Tuple[ArtifactFuture, ...]]:
+        """Get an artifact future.
 
         Args:
-            key: The key or index of the artifact future.
+            key: The index or slice of the artifact futures.
 
         Raises:
-            TypeError: If the key is not an integer.
-            IndexError: If the index is out of range.
+            TypeError: If the key is not an integer or slice.
 
         Returns:
-            The artifact future.
+            The artifact futures.
         """
-        if not isinstance(key, int):
+        if isinstance(key, int):
+            output_key = self._output_keys[key]
+
+            return ArtifactFuture(
+                wrapped=self._wrapped,
+                invocation_id=self._invocation_id,
+                index=self._output_keys.index(output_key),
+            )
+        elif isinstance(key, slice):
+            output_keys = self._output_keys[key]
+            return tuple(
+                ArtifactFuture(
+                    wrapped=self._wrapped,
+                    invocation_id=self._invocation_id,
+                    index=self._output_keys.index(output_key),
+                )
+                for output_key in output_keys
+            )
+        else:
             raise TypeError(f"Invalid key type: {type(key)}")
-
-        # Convert to positive index if necessary
-        if key < 0:
-            key += len(self._output_keys)
-
-        if key > len(self._output_keys):
-            raise IndexError(f"Index out of range: {key}")
-
-        return ArtifactFuture(
-            wrapped=self._wrapped,
-            invocation_id=self._invocation_id,
-            index=key,
-        )
 
     def __iter__(self) -> Any:
         """Iterate over the artifact futures.
@@ -250,4 +270,92 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         return len(self._output_keys)
 
 
-StepRunFuture = Union[ArtifactFuture, StepRunOutputsFuture]
+class MapResultsFuture:
+    """Future that represents the results of a `step.map/product(...)` call."""
+
+    def __init__(self, futures: List[StepRunOutputsFuture]) -> None:
+        """Initialize the map results future.
+
+        Args:
+            futures: The step run futures.
+        """
+        self.futures = futures
+
+    def result(self) -> List[StepRunOutputs]:
+        """Get the step run outputs this future represents.
+
+        Returns:
+            The step run outputs.
+        """
+        return [future.result() for future in self.futures]
+
+    def unpack(self) -> Tuple[List[ArtifactFuture], ...]:
+        """Unpack the map results future.
+
+        This method can be used to get lists of artifact futures that represent
+        the outputs of all the step runs that are part of this map result.
+
+        Example:
+        ```python
+        from zenml import pipeline, step
+
+        @step
+        def create_int_list() -> list[int]:
+            return [1, 2]
+
+        @step
+        def do_something(a: int) -> Tuple[int, int]:
+            return a * 2, a * 3
+
+        @pipeline
+        def map_pipeline():
+            int_list = create_int_list()
+            results = do_something.map(a=int_list)
+            double, triple = results.unpack()
+
+            # [future.load() for future in double] will return [2, 4]
+            # [future.load() for future in triple] will return [3, 6]
+        ```
+
+        Returns:
+            The unpacked map results.
+        """
+        return tuple(map(list, zip(*self.futures)))
+
+    @overload
+    def __getitem__(self, key: int) -> StepRunOutputsFuture: ...
+
+    @overload
+    def __getitem__(self, key: slice) -> List[StepRunOutputsFuture]: ...
+
+    def __getitem__(
+        self, key: Union[int, slice]
+    ) -> Union[StepRunOutputsFuture, List[StepRunOutputsFuture]]:
+        """Get a step run future.
+
+        Args:
+            key: The index or slice of the step run futures.
+
+        Returns:
+            The step run futures.
+        """
+        return self.futures[key]
+
+    def __iter__(self) -> Iterator[StepRunOutputsFuture]:
+        """Iterate over the step run futures.
+
+        Yields:
+            The step run futures.
+        """
+        yield from self.futures
+
+    def __len__(self) -> int:
+        """Get the number of step run futures.
+
+        Returns:
+            The number of step run futures.
+        """
+        return len(self.futures)
+
+
+StepRunFuture = Union[ArtifactFuture, StepRunOutputsFuture, MapResultsFuture]

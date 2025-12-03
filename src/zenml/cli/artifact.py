@@ -19,7 +19,9 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import OutputFormat, list_options
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import ArtifactFilter, ArtifactVersionFilter
@@ -35,25 +37,27 @@ def artifact() -> None:
     """Commands for interacting with artifacts."""
 
 
-@cli_utils.list_options(ArtifactFilter)
 @artifact.command("list", help="List all artifacts.")
-def list_artifacts(**kwargs: Any) -> None:
+@list_options(
+    ArtifactFilter,
+    default_columns=["id", "name", "latest_version_name", "tags"],
+)
+def list_artifacts(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all artifacts.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter artifacts by.
     """
-    artifacts = Client().list_artifacts(**kwargs)
+    with console.status("Listing artifacts...\n"):
+        artifacts = Client().list_artifacts(**kwargs)
 
-    if not artifacts:
-        cli_utils.declare("No artifacts found.")
-        return
-
-    to_print = []
-    for artifact in artifacts:
-        to_print.append(_artifact_to_print(artifact))
-
-    cli_utils.print_table(to_print)
+    cli_utils.print_page(
+        artifacts, columns, output_format, empty_message="No artifacts found."
+    )
 
 
 @artifact.command("update", help="Update an artifact.")
@@ -115,25 +119,30 @@ def version() -> None:
     """Commands for interacting with artifact versions."""
 
 
-@cli_utils.list_options(ArtifactVersionFilter)
 @version.command("list", help="List all artifact versions.")
-def list_artifact_versions(**kwargs: Any) -> None:
+@list_options(
+    ArtifactVersionFilter,
+    default_columns=["id", "artifact", "version", "type"],
+)
+def list_artifact_versions(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all artifact versions.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter artifact versions by.
     """
-    artifact_versions = Client().list_artifact_versions(**kwargs)
+    with console.status("Listing artifact versions...\n"):
+        artifact_versions = Client().list_artifact_versions(**kwargs)
 
-    if not artifact_versions:
-        cli_utils.declare("No artifact versions found.")
-        return
-
-    to_print = []
-    for artifact_version in artifact_versions:
-        to_print.append(_artifact_version_to_print(artifact_version))
-
-    cli_utils.print_table(to_print)
+    cli_utils.print_page(
+        artifact_versions,
+        columns,
+        output_format,
+        empty_message="No artifact versions found.",
+    )
 
 
 @version.command("describe", help="Show details about an artifact version.")

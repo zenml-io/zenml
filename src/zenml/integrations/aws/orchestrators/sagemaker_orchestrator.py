@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the SageMaker orchestrator."""
 
+import json
 import os
 import re
 from typing import (
@@ -37,6 +38,7 @@ from sagemaker.processing import ProcessingInput, ProcessingOutput, Processor
 from sagemaker.session import Session
 from sagemaker.workflow.entities import PipelineVariable
 from sagemaker.workflow.execution_variables import (
+    ExecutionVariable,
     ExecutionVariables,
 )
 from sagemaker.workflow.pipeline import Pipeline
@@ -52,6 +54,7 @@ from sagemaker.workflow.triggers import PipelineSchedule
 
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
+from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     METADATA_ORCHESTRATOR_LOGS_URL,
     METADATA_ORCHESTRATOR_RUN_ID,
@@ -67,7 +70,11 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 )
 from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_config import (
     SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+    SagemakerDynamicPipelineEntrypointConfiguration,
     SagemakerEntrypointConfiguration,
+)
+from zenml.integrations.aws.step_operators.sagemaker_step_operator_entrypoint_config import (
+    SagemakerStepOperatorEntrypointConfiguration,
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
@@ -118,36 +125,89 @@ def dissect_schedule_arn(
     return region, name
 
 
-def dissect_pipeline_execution_arn(
-    pipeline_execution_arn: str,
-) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Extract region name, pipeline name, and execution id from the ARN.
+def construct_pipeline_execution_arn(
+    session: Session,
+    job_name: str,
+    is_training_job: bool = True,
+) -> str:
+    """Construct the pipeline execution ARN.
 
     Args:
-        pipeline_execution_arn: the pipeline execution ARN
+        session: The SageMaker session.
+        job_name: The name of the job.
+        is_training_job: Whether the job is a training job or a processing job.
 
     Returns:
-        Region Name, Pipeline Name, Execution ID in order
+        The pipeline execution ARN.
     """
-    # Extract region_name
-    region_match = re.search(r"sagemaker:(.*?):", pipeline_execution_arn)
-    region_name = region_match.group(1) if region_match else None
+    account_id = session.boto_session.client("sts").get_caller_identity()[
+        "Account"
+    ]
+    region_name = session.boto_session.region_name
+    job_type = "training" if is_training_job else "processing"
 
-    # Extract pipeline_name
-    pipeline_match = re.search(
-        r"pipeline/(.*?)/execution", pipeline_execution_arn
+    return f"arn:aws:sagemaker:{region_name}:{account_id}:{job_type}-job/{job_name}"
+
+
+def dissect_pipeline_execution_arn(
+    pipeline_execution_arn: str,
+) -> Tuple[
+    Optional[str], Optional[str], Optional[str], Optional[str], Optional[str]
+]:
+    """Extract region name, pipeline name, type and execution id from the ARN.
+
+    Args:
+        pipeline_execution_arn: the pipeline or training/processing job
+            execution ARN
+
+    Returns:
+        Region Name, Account ID, Pipeline Type, Pipeline Name, Execution ID in order
+    """
+    match = re.search(
+        r"sagemaker:(.*?):(.*?):pipeline/(.*?)/execution/(.*)",
+        pipeline_execution_arn,
     )
-    pipeline_name = pipeline_match.group(1) if pipeline_match else None
 
-    # Extract execution_id
-    execution_match = re.search(r"execution/(.*)", pipeline_execution_arn)
-    execution_id = execution_match.group(1) if execution_match else None
+    if match:
+        return (
+            match.group(1),
+            match.group(2),
+            "pipeline",
+            match.group(3),
+            match.group(4),
+        )
 
-    return region_name, pipeline_name, execution_id
+    match = re.search(
+        r"sagemaker:(.*?):(.*?):training-job/(.*)", pipeline_execution_arn
+    )
+    if match:
+        return match.group(1), match.group(2), "training", match.group(3), None
+
+    match = re.search(
+        r"sagemaker:(.*?):(.*?):processing-job/(.*)",
+        pipeline_execution_arn,
+    )
+    if match:
+        return (
+            match.group(1),
+            match.group(2),
+            "processing",
+            match.group(3),
+            None,
+        )
+
+    logger.warning(
+        f"Unable to extract information from the execution ARN: "
+        f"{pipeline_execution_arn}"
+    )
+
+    return None, None, None, None, None
 
 
 class SagemakerOrchestrator(ContainerizedOrchestrator):
-    """Orchestrator responsible for running pipelines on Sagemaker."""
+    """Orchestrator responsible for running pipelines or training/processing jobs on Sagemaker."""
+
+    _sagemaker_session: Optional[Session] = None
 
     @property
     def config(self) -> SagemakerOrchestratorConfig:
@@ -207,13 +267,26 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If the run id cannot be read from the environment.
         """
-        try:
-            return os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
-        except KeyError:
-            raise RuntimeError(
-                "Unable to read run id from environment variable "
-                f"{ENV_ZENML_SAGEMAKER_RUN_ID}."
-            )
+        for env in [ENV_ZENML_SAGEMAKER_RUN_ID, "TRAINING_JOB_ARN"]:
+            if env in os.environ:
+                return os.environ[env]
+
+        config_file_path = "/opt/ml/config/processingjobconfig.json"
+
+        if os.path.exists(config_file_path):
+            try:
+                with open(config_file_path, "r") as f:
+                    config = json.load(f)
+
+                processing_job_arn = config.get("ProcessingJobArn")
+                if isinstance(processing_job_arn, str):
+                    return processing_job_arn
+            except Exception as e:
+                logger.exception(
+                    f"Error reading processing job config file: {e}"
+                )
+
+        raise RuntimeError("Unable to read run id from environment.")
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -223,6 +296,20 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             The settings class.
         """
         return SagemakerOrchestratorSettings
+
+    @property
+    def sagemaker_session(self) -> Session:
+        """Returns the SageMaker session.
+
+        Returns:
+            The SageMaker session.
+        """
+        if self.connector_has_expired():
+            self._sagemaker_session = None
+
+        if self._sagemaker_session is None:
+            self._sagemaker_session = self._get_sagemaker_session()
+        return self._sagemaker_session
 
     def _get_sagemaker_session(self) -> Session:
         """Method to create the sagemaker session with proper authentication.
@@ -271,6 +358,285 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             boto_session=boto_session, default_bucket=self.config.bucket
         )
 
+    def _create_job_or_step(
+        self,
+        session: Session,
+        base_job_name: str,
+        environment: Dict[str, str],
+        image: str,
+        settings: SagemakerOrchestratorSettings,
+        command: List[str],
+        arguments: List[str],
+        run_id_variable: Optional[ExecutionVariable] = None,
+        create_step: bool = False,
+        step_name: Optional[str] = None,
+        upstream_steps: Optional[List[str]] = None,
+        wait: bool = True,
+    ) -> Tuple[
+        Union[Estimator, Processor, Step],
+        Optional[str],
+    ]:
+        """Create and optionally run a SageMaker training or processing job or step.
+
+        Args:
+            session: The SageMaker session.
+            base_job_name: The suffix used to construct the job name.
+            environment: The environment variables to set in the execution
+                environment.
+            image: The image to use for the job.
+            settings: The settings for the job.
+            command: The command to use for the job.
+            arguments: The arguments to use for the job.
+            run_id_variable: The execution variable to use for the job run id.
+                If not provided, the variable used for the training or
+                processing job name will be used.
+            create_step: Whether to create a pipeline step instead of a job.
+            step_name: The name of the pipeline step.
+            upstream_steps: The upstream steps of the pipeline step.
+            wait: Whether to wait for the job to complete.
+
+        Returns:
+            The estimator or processor object or pipeline step object and the
+            job name.
+
+        Raises:
+            TypeError: If the network_config passed is not compatible with the
+                AWS SageMaker NetworkConfig class.
+        """
+        # Sagemaker does not allow environment variables longer than 256
+        # characters to be passed to Processor steps. If an environment variable
+        # is longer than 256 characters, we split it into multiple environment
+        # variables (chunks) and re-construct it on the other side using the
+        # custom entrypoint configuration.
+        split_environment_variables(
+            size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+            env=environment,
+        )
+
+        # Sagemaker requires the base job name to use alphanum and hyphens only
+        base_job_name = re.sub(r"[^a-zA-Z0-9\-]", "-", base_job_name)
+
+        use_training_step = (
+            settings.use_training_step
+            if settings.use_training_step is not None
+            else (
+                self.config.use_training_step
+                if self.config.use_training_step is not None
+                else True
+            )
+        )
+
+        if use_training_step:
+            job_args = settings.estimator_args.copy() or {}
+            job_args.setdefault("volume_size", settings.volume_size_in_gb)
+            job_args.setdefault("max_run", settings.max_runtime_in_seconds)
+        else:
+            job_args = settings.processor_args.copy() or {}
+            job_args.setdefault(
+                "volume_size_in_gb", settings.volume_size_in_gb
+            )
+            job_args.setdefault(
+                "max_runtime_in_seconds",
+                settings.max_runtime_in_seconds,
+            )
+
+        job_args.setdefault(
+            "role",
+            settings.execution_role or self.config.execution_role,
+        )
+
+        tags = settings.tags
+        job_args.setdefault(
+            "tags",
+            (
+                [{"Key": key, "Value": value} for key, value in tags.items()]
+                if tags
+                else None
+            ),
+        )
+
+        job_args.setdefault(
+            "instance_type", settings.instance_type or "ml.m5.large"
+        )
+
+        job_args["image_uri"] = image
+        job_args["instance_count"] = 1
+        job_args["sagemaker_session"] = session
+
+        # Convert network_config to sagemaker.network.NetworkConfig if
+        # present
+        network_config = job_args.get("network_config")
+
+        if network_config and isinstance(network_config, dict):
+            try:
+                job_args["network_config"] = NetworkConfig(**network_config)
+            except TypeError:
+                # If the network_config passed is not compatible with the
+                # NetworkConfig class, raise a more informative error.
+                raise TypeError(
+                    "Expected a sagemaker.network.NetworkConfig "
+                    "compatible object for the network_config argument, "
+                    "but the network_config processor argument is invalid."
+                    "See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
+                    "for more information about the NetworkConfig class."
+                )
+
+        # Construct S3 inputs to container for step
+        training_inputs: Optional[
+            Union[TrainingInput, Dict[str, TrainingInput]]
+        ] = None
+        processing_inputs: Optional[List[ProcessingInput]] = None
+
+        if settings.input_data_s3_uri is None:
+            pass
+        elif isinstance(settings.input_data_s3_uri, str):
+            if use_training_step:
+                training_inputs = TrainingInput(
+                    s3_data=settings.input_data_s3_uri,
+                    input_mode=settings.input_data_s3_mode,
+                )
+            else:
+                processing_inputs = [
+                    ProcessingInput(
+                        source=settings.input_data_s3_uri,
+                        destination="/opt/ml/processing/input/data",
+                        s3_input_mode=settings.input_data_s3_mode,
+                    )
+                ]
+        elif isinstance(settings.input_data_s3_uri, dict):
+            if use_training_step:
+                training_inputs = {}
+                for (
+                    channel,
+                    s3_uri,
+                ) in settings.input_data_s3_uri.items():
+                    training_inputs[channel] = TrainingInput(
+                        s3_data=s3_uri,
+                        input_mode=settings.input_data_s3_mode,
+                    )
+            else:
+                processing_inputs = []
+                for (
+                    channel,
+                    s3_uri,
+                ) in settings.input_data_s3_uri.items():
+                    processing_inputs.append(
+                        ProcessingInput(
+                            source=s3_uri,
+                            destination=f"/opt/ml/processing/input/data/{channel}",
+                            s3_input_mode=settings.input_data_s3_mode,
+                        )
+                    )
+
+        # Construct S3 outputs from container for step
+        outputs = None
+        output_path = None
+
+        if settings.output_data_s3_uri is None:
+            pass
+        elif isinstance(settings.output_data_s3_uri, str):
+            if use_training_step:
+                output_path = settings.output_data_s3_uri
+            else:
+                outputs = [
+                    ProcessingOutput(
+                        source="/opt/ml/processing/output/data",
+                        destination=settings.output_data_s3_uri,
+                        s3_upload_mode=settings.output_data_s3_mode,
+                    )
+                ]
+        elif isinstance(settings.output_data_s3_uri, dict):
+            outputs = []
+            for (
+                channel,
+                s3_uri,
+            ) in settings.output_data_s3_uri.items():
+                outputs.append(
+                    ProcessingOutput(
+                        source=f"/opt/ml/processing/output/data/{channel}",
+                        destination=s3_uri,
+                        s3_upload_mode=settings.output_data_s3_mode,
+                    )
+                )
+
+        final_environment: Dict[str, Union[str, PipelineVariable]] = {
+            key: str(value) for key, value in environment.items()
+        }
+
+        if run_id_variable:
+            final_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = run_id_variable
+
+        if use_training_step:
+            estimator = Estimator(
+                base_job_name=base_job_name,
+                keep_alive_period_in_seconds=settings.keep_alive_period_in_seconds,
+                output_path=output_path,
+                environment=final_environment,
+                container_entry_point=command,
+                container_arguments=arguments,
+                **job_args,
+            )
+
+            if create_step:
+                assert step_name is not None, "Step name is required"
+                return TrainingStep(
+                    name=step_name,
+                    depends_on=cast(
+                        Optional[List[Union[str, Step, StepCollection]]],
+                        upstream_steps,
+                    ),
+                    inputs=training_inputs,
+                    estimator=estimator,
+                ), None
+
+            estimator.fit(
+                wait=wait,
+                inputs=training_inputs,
+            )
+
+            assert estimator.latest_training_job is not None, (
+                "No training job found"
+            )
+            job_name = estimator.latest_training_job.job_name
+
+            return estimator, job_name
+
+        else:
+            processor = Processor(
+                base_job_name=base_job_name,
+                entrypoint=cast(
+                    Optional[List[Union[str, PipelineVariable]]],
+                    command + arguments,
+                ),
+                env=final_environment,
+                **job_args,
+            )
+
+            if create_step:
+                assert step_name is not None, "Step name is required"
+                return ProcessingStep(
+                    name=step_name,
+                    processor=processor,
+                    depends_on=cast(
+                        Optional[List[Union[str, Step, StepCollection]]],
+                        upstream_steps,
+                    ),
+                    inputs=processing_inputs,
+                    outputs=outputs,
+                ), None
+
+            processor.run(
+                wait=wait,
+                logs=wait,
+                inputs=processing_inputs,
+                outputs=outputs,
+            )
+
+            assert processor.latest_job is not None, "No processing job found"
+            job_name = processor.latest_job.job_name
+
+            return processor, job_name
+
     def submit_pipeline(
         self,
         snapshot: "PipelineSnapshotResponse",
@@ -299,8 +665,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If there is an error creating or scheduling the
                 pipeline.
-            TypeError: If the network_config passed is not compatible with the
-                AWS SageMaker NetworkConfig class.
             ValueError: If the schedule is not valid.
 
         Returns:
@@ -315,21 +679,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             r"[^a-zA-Z0-9\-]", "-", unsanitized_orchestrator_run_name
         )
 
-        session = self._get_sagemaker_session()
+        session = self.sagemaker_session
 
         sagemaker_steps = []
         for step_name, step in snapshot.step_configurations.items():
             step_environment = step_environments[step_name]
-
-            # Sagemaker does not allow environment variables longer than 256
-            # characters to be passed to Processor steps. If an environment variable
-            # is longer than 256 characters, we split it into multiple environment
-            # variables (chunks) and re-construct it on the other side using the
-            # custom entrypoint configuration.
-            split_environment_variables(
-                size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
-                env=step_environment,
-            )
 
             image = self.get_image(snapshot=snapshot, step_name=step_name)
             command = SagemakerEntrypointConfiguration.get_entrypoint_command()
@@ -338,230 +692,28 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     step_name=step_name, snapshot_id=snapshot.id
                 )
             )
-            entrypoint = command + arguments
 
             step_settings = cast(
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
 
             if step_settings.environment:
-                split_environment = step_settings.environment.copy()
-                # Sagemaker does not allow environment variables longer than 256
-                # characters to be passed to Processor steps. If an environment variable
-                # is longer than 256 characters, we split it into multiple environment
-                # variables (chunks) and re-construct it on the other side using the
-                # custom entrypoint configuration.
-                split_environment_variables(
-                    size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
-                    env=split_environment,
-                )
-                step_environment.update(split_environment)
+                step_environment.update(step_settings.environment)
 
-            use_training_step = (
-                step_settings.use_training_step
-                if step_settings.use_training_step is not None
-                else (
-                    self.config.use_training_step
-                    if self.config.use_training_step is not None
-                    else True
-                )
+            sagemaker_step, _ = self._create_job_or_step(
+                session=session,
+                base_job_name=f"{snapshot.pipeline_configuration.name}-{step_name}",
+                environment=step_environment,
+                image=image,
+                settings=step_settings,
+                command=command,
+                arguments=arguments,
+                run_id_variable=ExecutionVariables.PIPELINE_EXECUTION_ARN,
+                create_step=True,
+                step_name=step_name,
+                upstream_steps=step.spec.upstream_steps,
+                wait=False,
             )
-
-            # Retrieve Executor arguments provided in the Step settings.
-            if use_training_step:
-                args_for_step_executor = step_settings.estimator_args or {}
-                args_for_step_executor.setdefault(
-                    "volume_size", step_settings.volume_size_in_gb
-                )
-                args_for_step_executor.setdefault(
-                    "max_run", step_settings.max_runtime_in_seconds
-                )
-            else:
-                args_for_step_executor = step_settings.processor_args or {}
-                args_for_step_executor.setdefault(
-                    "volume_size_in_gb", step_settings.volume_size_in_gb
-                )
-                args_for_step_executor.setdefault(
-                    "max_runtime_in_seconds",
-                    step_settings.max_runtime_in_seconds,
-                )
-
-            # Set default values from configured orchestrator Component to
-            # arguments to be used when they are not present in processor_args.
-            args_for_step_executor.setdefault(
-                "role",
-                step_settings.execution_role or self.config.execution_role,
-            )
-
-            tags = step_settings.tags
-            args_for_step_executor.setdefault(
-                "tags",
-                (
-                    [
-                        {"Key": key, "Value": value}
-                        for key, value in tags.items()
-                    ]
-                    if tags
-                    else None
-                ),
-            )
-
-            args_for_step_executor.setdefault(
-                "instance_type", step_settings.instance_type
-            )
-
-            # Set values that cannot be overwritten
-            args_for_step_executor["image_uri"] = image
-            args_for_step_executor["instance_count"] = 1
-            args_for_step_executor["sagemaker_session"] = session
-            args_for_step_executor["base_job_name"] = orchestrator_run_name
-
-            # Convert network_config to sagemaker.network.NetworkConfig if
-            # present
-            network_config = args_for_step_executor.get("network_config")
-
-            if network_config and isinstance(network_config, dict):
-                try:
-                    args_for_step_executor["network_config"] = NetworkConfig(
-                        **network_config
-                    )
-                except TypeError:
-                    # If the network_config passed is not compatible with the
-                    # NetworkConfig class, raise a more informative error.
-                    raise TypeError(
-                        "Expected a sagemaker.network.NetworkConfig "
-                        "compatible object for the network_config argument, "
-                        "but the network_config processor argument is invalid."
-                        "See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
-                        "for more information about the NetworkConfig class."
-                    )
-
-            # Construct S3 inputs to container for step
-            training_inputs: Optional[
-                Union[TrainingInput, Dict[str, TrainingInput]]
-            ] = None
-            processing_inputs: Optional[List[ProcessingInput]] = None
-
-            if step_settings.input_data_s3_uri is None:
-                pass
-            elif isinstance(step_settings.input_data_s3_uri, str):
-                if use_training_step:
-                    training_inputs = TrainingInput(
-                        s3_data=step_settings.input_data_s3_uri,
-                        input_mode=step_settings.input_data_s3_mode,
-                    )
-                else:
-                    processing_inputs = [
-                        ProcessingInput(
-                            source=step_settings.input_data_s3_uri,
-                            destination="/opt/ml/processing/input/data",
-                            s3_input_mode=step_settings.input_data_s3_mode,
-                        )
-                    ]
-            elif isinstance(step_settings.input_data_s3_uri, dict):
-                if use_training_step:
-                    training_inputs = {}
-                    for (
-                        channel,
-                        s3_uri,
-                    ) in step_settings.input_data_s3_uri.items():
-                        training_inputs[channel] = TrainingInput(
-                            s3_data=s3_uri,
-                            input_mode=step_settings.input_data_s3_mode,
-                        )
-                else:
-                    processing_inputs = []
-                    for (
-                        channel,
-                        s3_uri,
-                    ) in step_settings.input_data_s3_uri.items():
-                        processing_inputs.append(
-                            ProcessingInput(
-                                source=s3_uri,
-                                destination=f"/opt/ml/processing/input/data/{channel}",
-                                s3_input_mode=step_settings.input_data_s3_mode,
-                            )
-                        )
-
-            # Construct S3 outputs from container for step
-            outputs = None
-            output_path = None
-
-            if step_settings.output_data_s3_uri is None:
-                pass
-            elif isinstance(step_settings.output_data_s3_uri, str):
-                if use_training_step:
-                    output_path = step_settings.output_data_s3_uri
-                else:
-                    outputs = [
-                        ProcessingOutput(
-                            source="/opt/ml/processing/output/data",
-                            destination=step_settings.output_data_s3_uri,
-                            s3_upload_mode=step_settings.output_data_s3_mode,
-                        )
-                    ]
-            elif isinstance(step_settings.output_data_s3_uri, dict):
-                outputs = []
-                for (
-                    channel,
-                    s3_uri,
-                ) in step_settings.output_data_s3_uri.items():
-                    outputs.append(
-                        ProcessingOutput(
-                            source=f"/opt/ml/processing/output/data/{channel}",
-                            destination=s3_uri,
-                            s3_upload_mode=step_settings.output_data_s3_mode,
-                        )
-                    )
-
-            final_step_environment: Dict[str, Union[str, PipelineVariable]] = {
-                key: str(value) for key, value in step_environment.items()
-            }
-            final_step_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
-                ExecutionVariables.PIPELINE_EXECUTION_ARN
-            )
-
-            sagemaker_step: Step
-            if use_training_step:
-                # Create Estimator and TrainingStep
-                estimator = Estimator(
-                    keep_alive_period_in_seconds=step_settings.keep_alive_period_in_seconds,
-                    output_path=output_path,
-                    environment=final_step_environment,
-                    container_entry_point=entrypoint,
-                    **args_for_step_executor,
-                )
-
-                sagemaker_step = TrainingStep(
-                    name=step_name,
-                    depends_on=cast(
-                        Optional[List[Union[str, Step, StepCollection]]],
-                        step.spec.upstream_steps,
-                    ),
-                    inputs=training_inputs,
-                    estimator=estimator,
-                )
-            else:
-                # Create Processor and ProcessingStep
-                processor = Processor(
-                    entrypoint=cast(
-                        Optional[List[Union[str, PipelineVariable]]],
-                        entrypoint,
-                    ),
-                    env=final_step_environment,
-                    **args_for_step_executor,
-                )
-
-                sagemaker_step = ProcessingStep(
-                    name=step_name,
-                    processor=processor,
-                    depends_on=cast(
-                        Optional[List[Union[str, Step, StepCollection]]],
-                        step.spec.upstream_steps,
-                    ),
-                    inputs=processing_inputs,
-                    outputs=outputs,
-                )
 
             sagemaker_steps.append(sagemaker_step)
 
@@ -694,9 +846,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 except Exception:
                     raise RuntimeError(
                         "Failed to get current role ARN. This means the "
-                        "your client side credentials that you are "
-                        "is not configured correctly to schedule sagemaker "
-                        "pipelines. For more information, please check:"
+                        "your client side credentials are not configured "
+                        "correctly to schedule SageMaker pipelines. "
+                        "For more information, please check:"
                         "https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules"
                     )
             else:
@@ -785,6 +937,163 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 metadata=run_metadata,
             )
 
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The snapshot of the pipeline.
+            stack: The stack to use for the pipeline.
+            environment: The environment variables to set in the pipeline.
+            placeholder_run: The placeholder run for the pipeline.
+
+        Returns:
+            Optional submission result.
+
+        Raises:
+            NotImplementedError: If the pipeline is scheduled.
+        """
+        if snapshot.schedule:
+            raise NotImplementedError(
+                "The AWS SageMaker Orchestrator does not currently support "
+                "scheduling for dynamic pipelines."
+            )
+
+        session = self.sagemaker_session
+
+        try:
+            image = self.get_image(snapshot=snapshot)
+        except KeyError:
+            # If no generic pipeline image exists (which means all steps of a
+            # static pipeline have custom builds) we use a random step image as
+            # all of them include dependencies for the active stack
+            invocation_id = next(iter(snapshot.step_configurations))
+            image = self.get_image(snapshot=snapshot, step_name=invocation_id)
+
+        settings = cast(
+            SagemakerOrchestratorSettings, self.get_settings(snapshot)
+        )
+
+        command = SagemakerDynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+        arguments = SagemakerDynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+            snapshot_id=snapshot.id,
+            run_id=placeholder_run.id if placeholder_run else None,
+        )
+
+        job, job_name = self._create_job_or_step(
+            session=session,
+            base_job_name=snapshot.pipeline_configuration.name,
+            environment=environment,
+            image=image,
+            settings=settings,
+            command=command,
+            arguments=arguments,
+            wait=False,
+        )
+
+        assert job_name is not None, "Job name is not set"
+
+        is_training_job = isinstance(job, Estimator)
+
+        _wait_for_completion = None
+        if settings.synchronous:
+
+            def _wait_for_completion() -> None:
+                logger.info(
+                    "Executing synchronously. Waiting for pipeline to "
+                    "finish... \n"
+                    "At this point you can `Ctrl-C` out without cancelling the "
+                    "execution."
+                )
+                try:
+                    if is_training_job:
+                        session.logs_for_job(
+                            job_name,
+                            wait=True,
+                            poll=POLLING_DELAY,
+                            timeout=POLLING_DELAY * MAX_POLLING_ATTEMPTS,
+                        )
+                    else:
+                        session.logs_for_processing_job(
+                            job_name,
+                            wait=True,
+                            poll=POLLING_DELAY,
+                        )
+
+                    logger.info("Pipeline completed successfully.")
+                except WaiterError:
+                    raise RuntimeError(
+                        "Timed out while waiting for pipeline execution to "
+                        "finish. For long-running pipelines we recommend "
+                        "configuring your orchestrator for asynchronous "
+                        "execution. The following command does this for you: \n"
+                        f"`zenml orchestrator update {self.name} "
+                        f"--synchronous=False`"
+                    )
+
+        metadata = self.compute_metadata(
+            execution_arn=construct_pipeline_execution_arn(
+                session=session,
+                job_name=job_name,
+                is_training_job=is_training_job,
+            ),
+            settings=settings,
+        )
+
+        return SubmissionResult(
+            wait_for_completion=_wait_for_completion,
+            metadata=metadata,
+        )
+
+    def run_isolated_step(
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    ) -> None:
+        """Runs an isolated step on Sagemaker.
+
+        Args:
+            step_run_info: The step run information.
+            environment: The environment variables to set in the execution
+                environment.
+        """
+        logger.info(
+            "Launching job for step `%s`.",
+            step_run_info.pipeline_step_name,
+        )
+
+        session = self.sagemaker_session
+
+        image = self.get_image(
+            snapshot=step_run_info.snapshot,
+            step_name=step_run_info.pipeline_step_name,
+        )
+
+        settings = cast(
+            SagemakerOrchestratorSettings, self.get_settings(step_run_info)
+        )
+
+        command = SagemakerStepOperatorEntrypointConfiguration.get_entrypoint_command()
+        arguments = SagemakerStepOperatorEntrypointConfiguration.get_entrypoint_arguments(
+            step_name=step_run_info.pipeline_step_name,
+            snapshot_id=step_run_info.snapshot.id,
+            step_run_id=str(step_run_info.step_run_id),
+        )
+
+        self._create_job_or_step(
+            session=session,
+            base_job_name=f"{step_run_info.pipeline.name}-{step_run_info.pipeline_step_name}",
+            environment=environment,
+            image=image,
+            settings=settings,
+            command=command,
+            arguments=arguments,
+            wait=True,
+        )
+
     def get_pipeline_run_metadata(
         self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:
@@ -796,7 +1105,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+        execution_arn = self.get_orchestrator_run_id()
 
         settings = cast(
             SagemakerOrchestratorSettings,
@@ -827,6 +1136,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             AssertionError: If the run was not executed by to this orchestrator.
             ValueError: If it fetches an unknown state or if we can not fetch
                 the orchestrator run ID.
+            ValueError: If the orchestrator run ID cannot be used to identify
+                the pipeline type.
         """
         # Make sure that the stack exists and is accessible
         if run.stack is None:
@@ -842,7 +1153,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         )
 
         # Initialize the Sagemaker client
-        session = self._get_sagemaker_session()
+        session = self.sagemaker_session
         sagemaker_client = session.sagemaker_client
 
         # Fetch the status of the _PipelineExecution
@@ -855,27 +1166,78 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "Can not find the orchestrator run ID, thus can not fetch "
                 "the status."
             )
-        status = sagemaker_client.describe_pipeline_execution(
-            PipelineExecutionArn=run_id
-        )["PipelineExecutionStatus"]
 
-        # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-        # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
-        if status == "Executing":
-            pipeline_status = ExecutionStatus.RUNNING
-        elif status == "Stopping":
-            pipeline_status = ExecutionStatus.STOPPING
-        elif status == "Stopped":
-            pipeline_status = ExecutionStatus.STOPPED
-        elif status == "Failed":
-            pipeline_status = ExecutionStatus.FAILED
-        elif status == "Succeeded":
-            pipeline_status = ExecutionStatus.COMPLETED
+        _, _, pipeline_type, pipeline_name, _ = dissect_pipeline_execution_arn(
+            str(run_id)
+        )
+
+        if pipeline_type == "pipeline":
+            status = sagemaker_client.describe_pipeline_execution(
+                PipelineExecutionArn=run_id
+            )["PipelineExecutionStatus"]
+
+            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribePipelineExecution.html
+            if status == "Executing":
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == "Stopping":
+                pipeline_status = ExecutionStatus.STOPPING
+            elif status == "Stopped":
+                pipeline_status = ExecutionStatus.STOPPED
+            elif status == "Failed":
+                pipeline_status = ExecutionStatus.FAILED
+            elif status == "Succeeded":
+                pipeline_status = ExecutionStatus.COMPLETED
+            else:
+                raise ValueError("Unknown status for the pipeline execution.")
+
+            # SageMaker doesn't support step-level status fetching yet
+            return pipeline_status, None
+
+        elif pipeline_type == "training":
+            status = sagemaker_client.describe_training_job(
+                TrainingJobName=pipeline_name
+            )["TrainingJobStatus"]
+
+            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeTrainingJob.html#sagemaker-DescribeTrainingJob-response-TrainingJobStatus
+            if status == "InProgress":
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == "Stopping":
+                pipeline_status = ExecutionStatus.STOPPING
+            elif status == "Completed":
+                pipeline_status = ExecutionStatus.COMPLETED
+            elif status == "Failed":
+                pipeline_status = ExecutionStatus.FAILED
+            elif status == "Stopped":
+                pipeline_status = ExecutionStatus.STOPPED
+            else:
+                raise ValueError("Unknown status for the training job.")
+
+            return pipeline_status, None
+
+        elif pipeline_type == "processing":
+            status = sagemaker_client.describe_processing_job(
+                ProcessingJobName=pipeline_name
+            )["ProcessingJobStatus"]
+
+            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeProcessingJob.html#sagemaker-DescribeProcessingJob-response-ProcessingJobStatus
+            if status == "InProgress":
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == "Stopping":
+                pipeline_status = ExecutionStatus.STOPPING
+            elif status == "Completed":
+                pipeline_status = ExecutionStatus.COMPLETED
+            elif status == "Failed":
+                pipeline_status = ExecutionStatus.FAILED
+            else:
+                raise ValueError("Unknown status for the processing job.")
+
+            return pipeline_status, None
+
         else:
-            raise ValueError("Unknown status for the pipeline execution.")
-
-        # SageMaker doesn't support step-level status fetching yet
-        return pipeline_status, None
+            raise ValueError("Unknown pipeline type.")
 
     def compute_metadata(
         self,
@@ -891,6 +1253,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata related to the pipeline run.
         """
+        use_training_job = True
+        if settings.use_training_step is not None:
+            use_training_job = settings.use_training_step
+
         # Orchestrator Run ID
         metadata: Dict[str, MetadataType] = {
             "pipeline_execution_arn": execution_arn,
@@ -899,13 +1265,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         # URL to the Sagemaker's pipeline view
         if orchestrator_url := self._compute_orchestrator_url(
-            execution_arn=execution_arn
+            execution_arn=execution_arn, use_training_job=use_training_job
         ):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
         # URL to the corresponding CloudWatch page
         if logs_url := self._compute_orchestrator_logs_url(
-            execution_arn=execution_arn, settings=settings
+            execution_arn=execution_arn, use_training_job=use_training_job
         ):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
@@ -914,77 +1280,109 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
     def _compute_orchestrator_url(
         self,
         execution_arn: Any,
+        use_training_job: bool,
     ) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
             execution_arn: The ARN of the pipeline execution.
+            use_training_job: Whether the pipeline uses the training job type or
+                the processing job type.
 
         Returns:
-             the URL to the dashboard view in SageMaker.
+            The URL to the dashboard view in SageMaker.
         """
-        try:
-            (
-                region_name,
-                pipeline_name,
-                execution_id,
-            ) = dissect_pipeline_execution_arn(execution_arn)
+        (
+            region_name,
+            account_id,
+            pipeline_type,
+            pipeline_name,
+            execution_id,
+        ) = dissect_pipeline_execution_arn(execution_arn)
 
-            # Get the Sagemaker session
-            session = self._get_sagemaker_session()
-
-            # List the Studio domains and get the Studio Domain ID
-            domains_response = session.sagemaker_client.list_domains()
-            studio_domain_id = domains_response["Domains"][0]["DomainId"]
-
-            return (
-                f"https://studio-{studio_domain_id}.studio.{region_name}."
-                f"sagemaker.aws/pipelines/view/{pipeline_name}/executions"
-                f"/{execution_id}/graph"
-            )
-
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the pipeline url: {e}"
-            )
+        if pipeline_type is None:
             return None
+
+        if pipeline_type != "processing":
+            # Processing jobs are not supported in SageMaker Studio
+            try:
+                # We try to get a SageMaker Studio URL if available
+                session = self.sagemaker_session
+
+                # List the Studio domains and get the Studio Domain ID
+                domains_response = session.sagemaker_client.list_domains()
+                studio_domain_id = domains_response["Domains"][0]["DomainId"]
+
+                if pipeline_type == "pipeline":
+                    return (
+                        f"https://studio-{studio_domain_id}.studio.{region_name}."
+                        f"sagemaker.aws/pipelines/view/{pipeline_name}/executions"
+                        f"/{execution_id}/graph"
+                    )
+                else:  # training:
+                    return (
+                        f"https://studio-{studio_domain_id}.studio.{region_name}."
+                        f"sagemaker.aws/jobs/train/{pipeline_name}"
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"There was an issue while extracting the SageMaker Studio "
+                    f"URL: {e}"
+                )
+
+        if pipeline_type == "pipeline":
+            job_type = "jobs" if use_training_job else "processing-jobs"
+            return (
+                f"https://{account_id}.{region_name}.console.aws.amazon.com"
+                f"/sagemaker/home?region={region_name}#/{job_type}"
+            )
+
+        job_type = "jobs" if pipeline_type == "training" else "processing-jobs"
+        return (
+            f"https://{account_id}.{region_name}.console.aws.amazon.com"
+            f"/sagemaker/home?region={region_name}#/{job_type}"
+            f"/{pipeline_name}"
+        )
 
     @staticmethod
     def _compute_orchestrator_logs_url(
         execution_arn: Any,
-        settings: SagemakerOrchestratorSettings,
+        use_training_job: bool,
     ) -> Optional[str]:
         """Generate the CloudWatch URL upon pipeline execution.
 
         Args:
             execution_arn: The ARN of the pipeline execution.
-            settings: The Sagemaker orchestrator settings.
+            use_training_job: Whether the pipeline uses the training job type or
+                the processing job type.
 
         Returns:
             the URL querying the pipeline logs in CloudWatch on AWS.
         """
-        try:
-            region_name, _, execution_id = dissect_pipeline_execution_arn(
-                execution_arn
-            )
+        (
+            region_name,
+            _,
+            pipeline_type,
+            pipeline_name,
+            execution_id,
+        ) = dissect_pipeline_execution_arn(execution_arn)
 
-            use_training_jobs = True
-            if settings.use_training_step is not None:
-                use_training_jobs = settings.use_training_step
-
-            job_type = "Training" if use_training_jobs else "Processing"
-
-            return (
-                f"https://{region_name}.console.aws.amazon.com/"
-                f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
-                f"/$252Faws$252Fsagemaker$252F{job_type}Jobs$3FlogStreamNameFilter"
-                f"$3Dpipelines-{execution_id}-"
-            )
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the logs url: {e}"
-            )
+        if pipeline_type is None:
             return None
+
+        job_type = "Training" if use_training_job else "Processing"
+
+        if pipeline_type == "pipeline":
+            log_filter = f"pipelines-{execution_id}"
+        else:
+            log_filter = f"{pipeline_name}"
+
+        return (
+            f"https://{region_name}.console.aws.amazon.com/"
+            f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
+            f"/$252Faws$252Fsagemaker$252F{job_type}Jobs$3FlogStreamNameFilter"
+            f"$3D{log_filter}"
+        )
 
     @staticmethod
     def generate_schedule_metadata(

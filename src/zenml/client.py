@@ -2295,6 +2295,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
         name: Optional[str] = None,
+        display_name: Optional[str] = None,
         type: Optional[str] = None,
         integration: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -2312,6 +2313,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             user: Filter by user name/ID.
             name: The name of the flavor to filter by.
+            display_name: The display name of the flavor to filter by.
             type: The type of the flavor to filter by.
             integration: The integration of the flavor to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -2327,6 +2329,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             user=user,
             name=name,
+            display_name=display_name,
             type=type,
             integration=integration,
             id=id,
@@ -3615,14 +3618,16 @@ class Client(metaclass=ClientMetaClass):
                 run_configuration
             )
 
-        if run_configuration:
-            validate_run_config_is_runnable_from_server(run_configuration)
-
         if template_id:
             logger.warning(
                 "Triggering a run template is deprecated. Use "
                 "`Client().trigger_pipeline(snapshot_id=...)` instead."
             )
+            if run_configuration:
+                validate_run_config_is_runnable_from_server(
+                    run_configuration, is_dynamic=False
+                )
+
             run = self.zen_store.run_template(
                 template_id=template_id,
                 run_configuration=run_configuration,
@@ -3635,13 +3640,13 @@ class Client(metaclass=ClientMetaClass):
                         "using stack associated with the snapshot instead."
                     )
 
-                snapshot_id = self.get_snapshot(
+                snapshot = self.get_snapshot(
                     name_id_or_prefix=snapshot_name_or_id,
                     pipeline_name_or_id=pipeline_name_or_id,
                     project=project,
                     allow_prefix_match=False,
                     hydrate=False,
-                ).id
+                )
             else:
                 if not pipeline_name_or_id:
                     raise RuntimeError(
@@ -3689,7 +3694,6 @@ class Client(metaclass=ClientMetaClass):
                     except ValueError:
                         continue
 
-                    snapshot_id = snapshot.id
                     break
                 else:
                     raise RuntimeError(
@@ -3705,8 +3709,13 @@ class Client(metaclass=ClientMetaClass):
             except RuntimeError:
                 pass
 
+            if run_configuration:
+                validate_run_config_is_runnable_from_server(
+                    run_configuration, is_dynamic=snapshot.is_dynamic
+                )
+
             run = self.zen_store.run_snapshot(
-                snapshot_id=snapshot_id,
+                snapshot_id=snapshot.id,
                 run_request=PipelineSnapshotRunRequest(
                     run_configuration=run_configuration,
                     step_run=step_run_id,
@@ -5495,12 +5504,16 @@ class Client(metaclass=ClientMetaClass):
                 this metadata automatically.
         """
         from zenml.metadata.metadata_types import get_metadata_type
+        from zenml.utils.json_utils import pydantic_encoder
 
         values: Dict[str, "MetadataType"] = {}
         types: Dict[str, "MetadataTypeEnum"] = {}
         for key, value in metadata.items():
             # Skip metadata that is too large to be stored in the database.
-            if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+            if (
+                len(json.dumps(value, default=pydantic_encoder))
+                > TEXT_FIELD_MAX_LENGTH
+            ):
                 logger.warning(
                     f"Metadata value for key '{key}' is too large to be "
                     "stored in the database. Skipping."
@@ -8212,6 +8225,7 @@ class Client(metaclass=ClientMetaClass):
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
         id: Optional[Union[UUID, str]] = None,
+        external_user_id: Optional[Union[UUID, str]] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
@@ -8227,6 +8241,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
             id: Use the id of stacks to filter by.
+            external_user_id: Use the external user id for filtering.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the service account name for filtering
@@ -8245,6 +8260,7 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 id=id,
+                external_user_id=external_user_id,
                 created=created,
                 updated=updated,
                 name=name,

@@ -49,10 +49,12 @@ def test_input_resolution(
                 "source": "module.step_class",
                 "upstream_steps": ["upstream_step"],
                 "inputs": {
-                    "input_name": {
-                        "step_name": "upstream_step",
-                        "output_name": "output_name",
-                    }
+                    "input_name": [
+                        {
+                            "step_name": "upstream_step",
+                            "output_name": "output_name",
+                        }
+                    ]
                 },
             },
             "config": {"name": "step_name", "enable_cache": True},
@@ -63,10 +65,12 @@ def test_input_resolution(
         step=step, pipeline_run=sample_pipeline_run
     )
     assert input_artifacts == {
-        "input_name": StepRunInputResponse(
-            input_type=StepRunInputArtifactType.STEP_OUTPUT,
-            **sample_artifact_version_model.model_dump(),
-        )
+        "input_name": [
+            StepRunInputResponse(
+                input_type=StepRunInputArtifactType.STEP_OUTPUT,
+                **sample_artifact_version_model.model_dump(),
+            )
+        ]
     }
 
 

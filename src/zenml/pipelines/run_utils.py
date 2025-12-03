@@ -186,27 +186,32 @@ def validate_stack_is_runnable_from_server(
 
 def validate_run_config_is_runnable_from_server(
     run_configuration: "PipelineRunConfiguration",
+    is_dynamic: bool,
 ) -> None:
     """Validates that the run configuration can be used to run from the server.
 
     Args:
         run_configuration: The run configuration to validate.
+        is_dynamic: Whether the snapshot to run is dynamic.
 
     Raises:
         ValueError: If there are values in the run configuration that are not
             allowed when running a pipeline from the server.
     """
-    if run_configuration.parameters:
+    if run_configuration.parameters and not is_dynamic:
         raise ValueError(
-            "Can't set pipeline parameters when running pipeline via Rest API. "
-            "This likely requires refactoring your pipeline code to use step parameters "
-            "instead of pipeline parameters. For example, instead of: "
+            "Can't set pipeline parameters when running a static pipeline via "
+            "the REST API. You can either use dynamic pipelines for which you "
+            "can pass pipeline parameters, or refactore your pipeline code to "
+            "use step parameters instead of pipeline parameters. For example, "
+            "instead of: "
             "```yaml "
             "parameters: "
             "  param1: 1 "
             "  param2: 2 "
             "``` "
-            "You'll need to modify your pipeline code to pass parameters directly to steps: "
+            "You'll need to modify your pipeline code to pass parameters "
+            "directly to steps: "
             "```yaml "
             "steps: "
             "  step1: "

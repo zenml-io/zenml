@@ -313,3 +313,44 @@ class NumpyMaterializer(BaseMaterializer):
             "most_common_count": most_common_count,
         }
         return text_metadata
+
+    def get_item_count(self, data: Any) -> Optional[int]:
+        """Get the number of items for the given data.
+
+        Args:
+            data: The data to get the number of items for.
+
+        Returns:
+            The number of items for the given data.
+        """
+        return len(data)
+
+    def load_item(self, data_type: Type[Any], index: int) -> Any:
+        """Load a specific item of the data.
+
+        Args:
+            data_type: The type of the data to load.
+            index: The index of the item to load.
+
+        Returns:
+            The loaded item.
+        """
+        data = self.load(data_type)
+        item = data[index]
+
+        if not isinstance(item, data_type):
+            try:
+                item = data_type(item)
+            except Exception as e:
+                # We only log an error here, potentially pydantic can handle the
+                # conversion when validating step function inputs.
+                logger.error(
+                    "Failed to convert item `%s` to expected type `%s`. This "
+                    "is most likely due to a mismatching type annotation on "
+                    "your step function input. Error: %s",
+                    item,
+                    data_type.__name__,
+                    e,
+                )
+
+        return item

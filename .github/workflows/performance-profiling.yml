@@ -69,12 +69,6 @@ jobs:
           chmod +x scripts/profile-cli.sh
           ./scripts/profile-cli.sh -o $TARGET_RESULTS_FILE -v -t $COMMAND_TIMEOUT -s $SLOW_THRESHOLD
 
-      # Delete local files so we start with a fresh DB. This might otherwise fail the profiling
-      # of the current branch if the target branch contains DB migrations that are not yet applied.
-      - name: Cleanup
-        run: |
-          zenml clean -y
-
       # Profile current branch with isolated environment
       - name: Checkout current branch
         run: |
@@ -91,6 +85,12 @@ jobs:
           ./scripts/install-zenml-dev.sh --system
           # Verify installation
           zenml --version
+
+      # Delete local files so we start with a fresh DB. This might otherwise fail the profiling
+      # of the current branch if the target branch contains DB migrations that are not yet applied.
+      - name: Cleanup
+        run: |
+          zenml clean -y
       - name: Profile current branch
         id: profile-current
         run: |

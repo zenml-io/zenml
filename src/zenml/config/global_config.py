@@ -16,7 +16,7 @@
 import os
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, cast, overload
 from uuid import UUID
 
 from packaging import version
@@ -488,9 +488,25 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return environment_vars
 
-    def _get_store_configuration(
-        self, baseline: Optional[StoreConfiguration] = None
-    ) -> StoreConfiguration:
+    @overload
+    def get_store_configuration(
+        self,
+        baseline: Optional[StoreConfiguration] = ...,
+        allow_default: Literal[True] = ...,
+    ) -> StoreConfiguration: ...
+
+    @overload
+    def get_store_configuration(
+        self,
+        baseline: Optional[StoreConfiguration] = ...,
+        allow_default: Literal[False] = ...,
+    ) -> Optional[StoreConfiguration]: ...
+
+    def get_store_configuration(
+        self,
+        baseline: Optional[StoreConfiguration] = None,
+        allow_default: bool = True,
+    ) -> Optional[StoreConfiguration]:
         """Get the store configuration.
 
         This method computes a store configuration starting from a baseline and
@@ -504,9 +520,12 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         Args:
             baseline: Optional baseline store configuration to use.
+            allow_default: Whether to fall back to the default store
+                configuration if none is set.
 
         Returns:
-            The store configuration.
+            The store configuration or `None` if defaults are disallowed and no
+            configuration is available.
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -555,15 +574,20 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 logger.debug(
                     "Using environment variables to update store config"
                 )
-                if not store:
+                if not store and allow_default:
                     store = self.get_default_store()
-                store = store.model_copy(update=env_store_config, deep=True)
+                if store:
+                    store = store.model_copy(
+                        update=env_store_config, deep=True
+                    )
 
         # Step 2: Only after we've applied the environment variables, we
         # fallback to the default store if no store configuration is set. This
         # is to avoid importing the SQL store config in cases where a rest store
         # is configured with environment variables.
         if not store:
+            if not allow_default:
+                return None
             store = self.get_default_store()
 
         # Step 3: Replace or update the baseline secrets store configuration
@@ -631,7 +655,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # configuration from there and disregard the global configuration.
         if self._zen_store is not None:
             return self._zen_store.config
-        return self._get_store_configuration()
+        return self.get_store_configuration()
 
     def get_default_store(self) -> StoreConfiguration:
         """Get the default SQLite store configuration.
@@ -655,7 +679,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         default store.
         """
         # Apply the environment variables to the default store configuration
-        default_store_cfg = self._get_store_configuration(
+        default_store_cfg = self.get_store_configuration(
             baseline=self.get_default_store()
         )
         self._configure_store(default_store_cfg)
@@ -697,8 +721,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 constructor.
         """
         # Apply the environment variables to the custom store configuration
-        config = self._get_store_configuration(baseline=config)
-        self._configure_store(config, skip_default_registrations, **kwargs)
+        resolved_config = self.get_store_configuration(baseline=config)
+        self._configure_store(
+            resolved_config, skip_default_registrations, **kwargs
+        )
         logger.info("Updated the global store configuration.")
 
     @property
