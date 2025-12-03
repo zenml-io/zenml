@@ -376,9 +376,6 @@ class StepLauncher:
             orchestrator_run_id=self._orchestrator_run_id,
             project=client.active_project.id,
             snapshot=self._snapshot.id,
-            pipeline=(
-                self._snapshot.pipeline.id if self._snapshot.pipeline else None
-            ),
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
             start_time=start_time,

@@ -117,6 +117,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
+    index: int = Field(nullable=False)
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -343,12 +344,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def from_request(
-        cls, request: "PipelineRunRequest"
+        cls, request: "PipelineRunRequest", pipeline_id: UUID, index: int
     ) -> "PipelineRunSchema":
         """Convert a `PipelineRunRequest` to a `PipelineRunSchema`.
 
         Args:
             request: The request to convert.
+            pipeline_id: The ID of the pipeline.
+            index: The index of the pipeline run.
 
         Returns:
             The created `PipelineRunSchema`.
@@ -379,9 +382,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             status=request.status.value,
+            index=index,
             in_progress=not request.status.is_finished,
             status_reason=request.status_reason,
-            pipeline_id=request.pipeline,
+            pipeline_id=pipeline_id,
             snapshot_id=request.snapshot,
             trigger_execution_id=request.trigger_execution_id,
             triggered_by=triggered_by,
@@ -547,6 +551,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             created=self.created,
             updated=self.updated,
             in_progress=self.in_progress,
+            index=self.index,
         )
         metadata = None
         if include_metadata:
@@ -771,11 +776,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         if (
             self.snapshot_id != request.snapshot
-            or self.pipeline_id != request.pipeline
             or self.project_id != request.project
         ):
             raise ValueError(
-                "Snapshot, project or pipeline ID of placeholder run "
+                "Snapshot or project ID of placeholder run "
                 "do not match the IDs of the run request."
             )
 

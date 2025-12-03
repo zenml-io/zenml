@@ -6504,6 +6504,31 @@ class SqlZenStore(BaseZenStore):
             f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
         )
 
+    def _get_next_run_index(self, pipeline_id: UUID, session: Session) -> int:
+        """Get the next run index for a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get the next run index for.
+            session: SQLAlchemy session.
+
+        Returns:
+            The next run index for the pipeline.
+        """
+        # Commit before acquiring the exclusive lock on the pipeline
+        session.commit()
+        session.execute(
+            update(PipelineSchema)
+            .where(col(PipelineSchema.id) == pipeline_id)
+            .values(run_count=col(PipelineSchema.run_count) + 1)
+        )
+        index = session.exec(
+            select(PipelineSchema.run_count).where(
+                col(PipelineSchema.id) == pipeline_id
+            )
+        ).one()
+        session.commit()
+        return index
+
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -6524,21 +6549,19 @@ class SqlZenStore(BaseZenStore):
                 can not be created.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
-        self._get_reference_schema_by_id(
+        snapshot = self._get_reference_schema_by_id(
             resource=pipeline_run,
             reference_schema=PipelineSnapshotSchema,
             reference_id=pipeline_run.snapshot,
             session=session,
         )
 
-        self._get_reference_schema_by_id(
-            resource=pipeline_run,
-            reference_schema=PipelineSchema,
-            reference_id=pipeline_run.pipeline,
-            session=session,
+        index = self._get_next_run_index(
+            pipeline_id=snapshot.pipeline_id, session=session
         )
-
-        new_run = PipelineRunSchema.from_request(pipeline_run)
+        new_run = PipelineRunSchema.from_request(
+            pipeline_run, pipeline_id=snapshot.pipeline_id, index=index
+        )
 
         session.add(new_run)
 
