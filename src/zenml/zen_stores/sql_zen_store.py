@@ -10827,6 +10827,7 @@ class SqlZenStore(BaseZenStore):
                         "%Y-%m-%dT%H:%M:%S.%fZ"
                     ),
                     "duration_seconds": duration_seconds,
+                    "dynamic": pipeline_run.snapshot.is_dynamic,
                     **stack_metadata,
                 }
 
