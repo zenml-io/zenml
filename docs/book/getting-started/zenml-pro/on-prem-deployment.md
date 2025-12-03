@@ -24,7 +24,7 @@ In a Full On-Prem deployment, every component of ZenML Pro runs within your isol
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | **Pro Control Plane** | Your Infrastructure | Manages authentication, RBAC, and workspace coordination |
-| **ZenML Server (Workspaces)** | Your Infrastructure | Handles pipeline orchestration and execution |
+| **ZenML Pro Server(s)** | Your Infrastructure | Handles pipeline orchestration and execution |
 | **Pro Metadata Store** | Your Infrastructure | Stores user management, RBAC, and organizational data |
 | **Workspace Metadata Store** | Your Infrastructure | Stores pipeline runs, model metadata, and tracking information |
 | **Secrets Store** | Your Infrastructure | Stores all credentials and sensitive configuration |

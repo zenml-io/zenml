@@ -23,7 +23,7 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| **ZenML Server** | ZenML Infrastructure | Manages pipeline orchestration and metadata |
+| **ZenML Pro Server** | ZenML Infrastructure | Manages pipeline orchestration and metadata |
 | **Pro Control Plane** | ZenML Infrastructure | Handles authentication, RBAC, and workspace management |
 | **Metadata Store** | ZenML Infrastructure | Stores pipeline runs, model metadata, and tracking information |
 | **Secrets Store** | ZenML Infrastructure (default) | Stores credentials for accessing your infrastructure |

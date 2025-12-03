@@ -24,7 +24,7 @@ The Hybrid deployment model is designed for organizations that need to keep sens
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | **Pro Control Plane** | ZenML Infrastructure | Manages authentication, RBAC, and global workspace coordination |
-| **ZenML Server (Workspaces)** | Your Infrastructure | Handles pipeline orchestration and execution |
+| **ZenML Pro Server(s)** | Your Infrastructure | Handles pipeline orchestration and execution |
 | **Metadata Store** | Your Infrastructure | Stores all pipeline runs, model metadata, and tracking information |
 | **Secrets Store** | Your Infrastructure | Stores all credentials and sensitive configuration |
 | **Compute Resources** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
