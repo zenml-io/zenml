@@ -16,23 +16,18 @@
 import os
 import time
 from collections import defaultdict
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, cast
-from uuid import UUID, uuid4
+from typing import TYPE_CHECKING, Dict, List, Sequence
+from uuid import uuid4
 
-from opentelemetry import context as otel_context
 from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import LoggingLevels
 from zenml.log_stores.artifact.artifact_log_store import (
-    ZENML_OTEL_LOG_STORE_FLUSH_KEY,
+    END_OF_STREAM_MESSAGE,
     remove_ansi_escape_codes,
 )
-from zenml.log_stores.otel.otel_log_store import (
-    ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
-)
 from zenml.logger import get_logger
-from zenml.models import LogsResponse
 from zenml.utils.logging_utils import LogEntry
 from zenml.utils.time_utils import utc_now
 
@@ -70,43 +65,32 @@ class ArtifactLogExporter(LogExporter):
             return LogExportResult.SUCCESS
 
         try:
-            entries_by_id: Dict[UUID, List[str]] = defaultdict(list)
-            responses_by_id: Dict[UUID, "LogsResponse"] = {}
-            finalized_log_streams: List["LogsResponse"] = []
+            logs_by_uri: Dict[str, List[str]] = defaultdict(list)
+            finalized_log_streams: List[str] = []
 
             for log_data in batch:
-                log_model = cast(
-                    Optional["LogsResponse"],
-                    otel_context.get_value(
-                        key=ZENML_OTEL_LOG_STORE_CONTEXT_KEY,
-                        context=log_data.log_record.context,
-                    ),
-                )
-                if not log_model:
+                attrs = log_data.log_record.attributes
+                if not attrs:
                     continue
-                flush = otel_context.get_value(
-                    key=ZENML_OTEL_LOG_STORE_FLUSH_KEY,
-                    context=log_data.log_record.context,
-                )
-
-                if flush:
-                    finalized_log_streams.append(log_model)
+                log_uri = attrs.get("zenml.log_uri")
+                if not log_uri or not isinstance(log_uri, str):
                     continue
 
-                responses_by_id[log_model.id] = log_model
+                if log_data.log_record.body is END_OF_STREAM_MESSAGE:
+                    finalized_log_streams.append(log_uri)
+                    continue
 
                 entries = self._otel_record_to_log_entries(log_data)
                 for entry in entries:
                     json_line = entry.model_dump_json(exclude_none=True)
-                    entries_by_id[log_model.id].append(json_line)
+                    logs_by_uri[log_uri].append(json_line)
 
-            for log_id, log_lines in entries_by_id.items():
+            for log_uri, log_lines in logs_by_uri.items():
                 if log_lines:
-                    log_model = responses_by_id[log_id]
-                    self._write(log_lines, log_model)
+                    self._write(log_lines, log_uri)
 
-            for log_model in finalized_log_streams:
-                self._finalize(log_model)
+            for log_uri in finalized_log_streams:
+                self._finalize(log_uri)
 
             return LogExportResult.SUCCESS
 
@@ -127,6 +111,14 @@ class ArtifactLogExporter(LogExporter):
         """
         log_record = log_data.log_record
         message = str(log_record.body) if log_record.body else ""
+        if log_record.attributes and log_record.attributes.get(
+            "exception.message"
+        ):
+            exc_message = log_record.attributes.get("exception.message")
+            exc_type = log_record.attributes.get("exception.type")
+            exc_stacktrace = log_record.attributes.get("exception.stacktrace")
+            message += f"\n{exc_type}: {exc_message}\n{exc_stacktrace}"
+
         message = remove_ansi_escape_codes(message).rstrip()
 
         level = (
@@ -246,131 +238,110 @@ class ArtifactLogExporter(LogExporter):
     def _write(
         self,
         log_lines: List[str],
-        log_model: "LogsResponse",
+        log_uri: str,
     ) -> None:
         """Write log lines to the artifact store.
 
         Args:
             log_lines: List of JSON-serialized log entries.
-            log_model: The log model.
+            log_uri: The URI of the log files to write.
 
         Raises:
             Exception: If the log lines cannot be written to the artifact store.
         """
-        if not log_model.uri or not log_model.artifact_store_id:
-            logger.warning(
-                f"Skipping log write: missing uri or artifact_store_id for log {log_model.id}"
-            )
-            return
-
         try:
             content = "\n".join(log_lines) + "\n"
 
             if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-                if not self.artifact_store.exists(log_model.uri):
-                    self.artifact_store.makedirs(log_model.uri)
+                if not self.artifact_store.exists(log_uri):
+                    self.artifact_store.makedirs(log_uri)
 
                 timestamp = time.time()
                 file_uri = os.path.join(
-                    log_model.uri,
+                    log_uri,
                     f"{timestamp}{LOGS_EXTENSION}",
                 )
 
                 with self.artifact_store.open(file_uri, "w") as f:
                     f.write(content)
             else:
-                logs_base_uri = os.path.dirname(log_model.uri)
+                logs_base_uri = os.path.dirname(log_uri)
                 if not self.artifact_store.exists(logs_base_uri):
                     self.artifact_store.makedirs(logs_base_uri)
 
-                with self.artifact_store.open(log_model.uri, "a") as f:
+                with self.artifact_store.open(log_uri, "a") as f:
                     f.write(content)
 
         except Exception as e:
-            logger.error(f"Failed to write logs to {log_model.uri}: {e}")
+            logger.error(f"Failed to write logs to {log_uri}: {e}")
             raise
 
     def _finalize(
         self,
-        log_model: "LogsResponse",
+        log_uri: str,
     ) -> None:
         """Finalize the logs for a given log model by merging all log files into one.
 
         Args:
-            log_model: The log model.
+            log_uri: The URI of the log files to finalize.
 
         Raises:
             Exception: If the logs cannot be finalized.
         """
-        if not log_model.uri or not log_model.artifact_store_id:
-            logger.warning(
-                f"Skipping log finalize: missing uri or artifact_store_id for log {log_model.id}"
-            )
-            return
-
         try:
             if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-                self._merge(log_model)
+                self._merge(log_uri)
             else:
-                self.artifact_store._remove_previous_file_versions(
-                    log_model.uri
-                )
+                self.artifact_store._remove_previous_file_versions(log_uri)
 
         except Exception as e:
-            logger.error(f"Failed to finalize logs for {log_model.uri}: {e}")
+            logger.error(f"Failed to finalize logs for {log_uri}: {e}")
             raise
 
-    def _merge(self, log_model: "LogsResponse") -> None:
+    def _merge(self, log_uri: str) -> None:
         """Merges all log files into one in the given URI.
 
         Called on the logging context exit.
 
         Args:
-            log_model: The log model.
+            log_uri: The URI of the log files to merge.
 
         Raises:
             RuntimeError: If the log model has no URI, cannot merge logs.
         """
-        # If the artifact store is immutable, merge the log files
-        if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-            from zenml.artifacts.utils import _load_file_from_artifact_store
-            from zenml.exceptions import DoesNotExistException
+        from zenml.artifacts.utils import _load_file_from_artifact_store
+        from zenml.exceptions import DoesNotExistException
 
-            if not log_model.uri:
-                raise RuntimeError("Log model has no URI, cannot merge logs.")
+        files_ = self.artifact_store.listdir(log_uri)
+        if len(files_) > 1:
+            files_.sort()
 
-            files_ = self.artifact_store.listdir(log_model.uri)
-            if len(files_) > 1:
-                files_.sort()
-
-                missing_files = set()
-                # dump all logs to a local file first
-                with self.artifact_store.open(
-                    os.path.join(
-                        log_model.uri, f"{time.time()}_merged{LOGS_EXTENSION}"
-                    ),
-                    "w",
-                ) as merged_file:
-                    for file in files_:
-                        try:
-                            merged_file.write(
-                                str(
-                                    _load_file_from_artifact_store(
-                                        os.path.join(log_model.uri, str(file)),
-                                        artifact_store=self.artifact_store,
-                                        mode="r",
-                                    )
+            missing_files = set()
+            # dump all logs to a local file first
+            with self.artifact_store.open(
+                os.path.join(log_uri, f"{time.time()}_merged{LOGS_EXTENSION}"),
+                "w",
+            ) as merged_file:
+                for file in files_:
+                    try:
+                        merged_file.write(
+                            str(
+                                _load_file_from_artifact_store(
+                                    os.path.join(log_uri, str(file)),
+                                    artifact_store=self.artifact_store,
+                                    mode="r",
                                 )
                             )
-                        except DoesNotExistException:
-                            missing_files.add(file)
-
-                # clean up left over files
-                for file in files_:
-                    if file not in missing_files:
-                        self.artifact_store.remove(
-                            os.path.join(log_model.uri, str(file))
                         )
+                    except DoesNotExistException:
+                        missing_files.add(file)
+
+            # clean up left over files
+            for file in files_:
+                if file not in missing_files:
+                    self.artifact_store.remove(
+                        os.path.join(log_uri, str(file))
+                    )
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""

@@ -18,9 +18,11 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-from opentelemetry import context as otel_context
-from opentelemetry.sdk._logs import LoggerProvider
-from opentelemetry.sdk._logs._internal import std_to_otel
+from opentelemetry.sdk._logs import (
+    Logger,
+    LoggerProvider,
+    LoggingHandler,
+)
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
@@ -38,10 +40,6 @@ if TYPE_CHECKING:
     from zenml.utils.logging_utils import LogEntry
 
 logger = get_logger(__name__)
-
-ZENML_OTEL_LOG_STORE_CONTEXT_KEY = otel_context.create_key(
-    "zenml.logging_context"
-)
 
 
 class OtelLogStore(BaseLogStore):
@@ -64,6 +62,8 @@ class OtelLogStore(BaseLogStore):
         self._exporter: Optional["LogExporter"] = None
         self._provider: Optional["LoggerProvider"] = None
         self._processor: Optional["BatchLogRecordProcessor"] = None
+        self._logger: Optional["Logger"] = None
+        self._handler: Optional["LoggingHandler"] = None
 
     @property
     def config(self) -> OtelLogStoreConfig:
@@ -100,6 +100,11 @@ class OtelLogStore(BaseLogStore):
         self._provider = LoggerProvider(resource=self._resource)
         self._provider.add_log_record_processor(self._processor)
 
+        self._logger = self._provider.get_logger(
+            "zenml.log_store.emit",
+        )
+        self._handler = LoggingHandler(logger_provider=self._provider)
+
     def emit(
         self,
         record: logging.LogRecord,
@@ -120,54 +125,33 @@ class OtelLogStore(BaseLogStore):
             if not self._provider:
                 self.activate()
 
-        if self._provider is None:
+        if (
+            self._provider is None
+            or self._logger is None
+            or self._handler is None
+        ):
             raise RuntimeError("OpenTelemetry provider is not initialized")
 
-        # Attach the log_model to OTel's context so the exporter
-        # can access it in the background processor thread
-        ctx = otel_context.set_value(
-            ZENML_OTEL_LOG_STORE_CONTEXT_KEY, log_model
-        )
+        emit_kwargs = self._handler._translate(record)
 
-        otel_logger = self._provider.get_logger(
-            record.name or "unknown",
-            schema_url=None,
-        )
-
-        # Get the message and append formatted exception if present
-        message = record.getMessage()
-        if record.exc_info:
-            import traceback
-
-            exc_text = "".join(traceback.format_exception(*record.exc_info))
-            # Append to message with separator if message exists
-            if message:
-                message = f"{message}\n{exc_text}"
-            else:
-                message = exc_text
+        attributes = emit_kwargs.get("attributes", {})
 
         zenml_log_metadata = {
             f"zenml.{key}": value for key, value in metadata.items()
         }
 
-        otel_logger.emit(
-            timestamp=int(record.created * 1e9),
-            observed_timestamp=int(record.created * 1e9),
-            severity_number=std_to_otel(record.levelno),
-            severity_text="WARN"
-            if record.levelname == "WARNING"
-            else record.levelname,
-            body=message,
-            attributes={
-                "code.filepath": record.pathname,
-                "code.lineno": record.lineno,
-                "code.function": record.funcName,
+        attributes.update(
+            {
                 "zenml.log_id": str(log_model.id),
                 "zenml.log_store_id": str(self.id),
                 **zenml_log_metadata,
-            },
-            context=ctx,
+            }
         )
+
+        if log_model.uri:
+            attributes["zenml.log_uri"] = log_model.uri
+
+        self._logger.emit(**emit_kwargs)
 
     def finalize(
         self,

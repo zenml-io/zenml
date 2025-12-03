@@ -106,18 +106,22 @@ class DatadogLogStore(OtelLogStore):
         body: Dict[str, Any] = {
             "filter": {
                 "query": query,
+                "from": (
+                    start_time.isoformat()
+                    if start_time
+                    else logs_model.created.isoformat()
+                ),
+                "to": (
+                    end_time.isoformat()
+                    if end_time
+                    else datetime.now().astimezone().isoformat()
+                ),
             },
             "page": {
                 "limit": min(limit, 1000),  # Datadog API limit
             },
             "sort": "timestamp",
         }
-
-        # Add time filters if provided
-        if start_time:
-            body["filter"]["from"] = start_time.isoformat()
-        if end_time:
-            body["filter"]["to"] = end_time.isoformat()
 
         try:
             response = requests.post(
@@ -137,16 +141,23 @@ class DatadogLogStore(OtelLogStore):
             log_entries = []
 
             for log in data.get("data", []):
-                attributes = log.get("attributes", {})
+                log_fields = log.get("attributes", {})
+                message = log_fields.get("message", "")
+                attributes = log_fields.get("attributes", {})
+                if exc_info := attributes.get("exception"):
+                    exc_message = exc_info.get("message")
+                    exc_type = exc_info.get("type")
+                    exc_stacktrace = exc_info.get("stacktrace")
+                    message += f"\n{exc_type}: {exc_message}\n{exc_stacktrace}"
 
                 # Parse log entry
                 entry = LogEntry(
-                    message=attributes.get("message", ""),
-                    level=self._parse_log_level(attributes.get("status")),
+                    message=message,
+                    level=self._parse_log_level(log_fields.get("status")),
                     timestamp=datetime.fromisoformat(
-                        attributes["timestamp"].replace("Z", "+00:00")
+                        log_fields["timestamp"].replace("Z", "+00:00")
                     )
-                    if "timestamp" in attributes
+                    if "timestamp" in log_fields
                     else None,
                 )
 
