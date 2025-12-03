@@ -82,12 +82,12 @@ class ArtifactLogExporter(LogExporter):
                         context=log_data.log_record.context,
                     ),
                 )
+                if not log_model:
+                    continue
                 flush = otel_context.get_value(
                     key=ZENML_OTEL_LOG_STORE_FLUSH_KEY,
                     context=log_data.log_record.context,
                 )
-                if not log_model:
-                    continue
 
                 if flush:
                     finalized_log_streams.append(log_model)
