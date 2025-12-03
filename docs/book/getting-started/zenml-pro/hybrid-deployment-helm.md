@@ -46,12 +46,13 @@ kubectl create namespace zenml-hybrid
 
 ## Step 3: Create Secrets for Credentials
 
-Create a secret for your Pro OAuth2 credentials:
+Create a secret for your Pro OAuth2 credentials. Ask you ZenML Solutions Architect to send you this secret.:
 
 ```bash
 kubectl -n zenml-hybrid create secret generic zenml-pro-credentials \
   --from-literal=ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET=<your-client-secret>
 ```
+
 
 If using a custom TLS certificate (self-signed or from a CA), create a secret:
 
@@ -108,7 +109,7 @@ zenml:
   # Image Configuration
   image:
     repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
-    tag: "0.73.0"  # Match your ZenML version
+    tag: "0.92.0"  # Match your ZenML version
     pullPolicy: IfNotPresent
 
   # Ingress Configuration
