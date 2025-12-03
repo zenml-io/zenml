@@ -740,7 +740,15 @@ def runs() -> None:
 @runs.command("list", help="List all registered pipeline runs.")
 @list_options(
     PipelineRunFilter,
-    default_columns=["id", "run_name", "pipeline", "status", "stack", "owner"],
+    default_columns=[
+        "id",
+        "index",
+        "run_name",
+        "pipeline",
+        "status",
+        "stack",
+        "owner",
+    ],
 )
 def list_pipeline_runs(
     columns: str, output_format: OutputFormat, **kwargs: Any

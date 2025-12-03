@@ -101,10 +101,6 @@ class PipelineRunRequest(ProjectScopedRequest):
     snapshot: UUID = Field(
         title="The snapshot associated with the pipeline run."
     )
-    pipeline: Optional[UUID] = Field(
-        title="The pipeline associated with the pipeline run.",
-        default=None,
-    )
     orchestrator_run_id: Optional[str] = Field(
         title="The orchestrator run ID.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -213,6 +209,9 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     status_reason: Optional[str] = Field(
         default=None,
         title="The reason for the status of the pipeline run.",
+    )
+    index: int = Field(
+        title="The unique index of the run within the pipeline."
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -390,6 +389,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().status
+
+    @property
+    def index(self) -> int:
+        """The `index` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().index
 
     @property
     def run_metadata(self) -> Dict[str, MetadataType]:
@@ -671,6 +679,10 @@ class PipelineRunFilter(
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
+    )
+    index: Optional[int] = Field(
+        default=None,
+        description="The unique index of the run within the pipeline.",
     )
     orchestrator_run_id: Optional[str] = Field(
         default=None,

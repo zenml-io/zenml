@@ -83,6 +83,7 @@ class PipelineSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    run_count: int = Field(nullable=False)
 
     # Relationships
     user: Optional["UserSchema"] = Relationship(back_populates="pipelines")
@@ -198,6 +199,7 @@ class PipelineSchema(NamedSchema, table=True):
             description=pipeline_request.description,
             project_id=pipeline_request.project,
             user_id=pipeline_request.user,
+            run_count=0,
         )
 
     def to_model(
