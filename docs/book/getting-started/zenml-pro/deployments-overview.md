@@ -23,8 +23,8 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 | Deployment Aspect | SaaS | Hybrid SaaS | Full On-Prem |
 |-------------------|------|-------------|------------|
 | **ZenML Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
+| **Pipeline/ Artifact Metadata** | ZenML infrastructure | Your infrastructure | Your infrastructure |
 | **Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
-| **Metadata** | ZenML infrastructure | Your infrastructure | Your infrastructure |
 | **RBAC** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
 | **Compute & Data** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Your infrastructure through [stacks](https://docs.zenml.io/stacks) |
 | **Setup Time** | ⚡ ~1 hour | ~4 hours | ~8 hours |
@@ -86,9 +86,47 @@ Choose **Full On-Prem** if you need complete control with no external dependenci
 - 🛡️ Maximum security posture
 - 📋 Full audit trail control
 
-**Ideal for:** Regulated industries (healthcare, finance), government organizations, enterprises with strict data residency requirements, environments requiring offline operation.
+**Ideal for:** Regulated industries (healthcare, finance, defense), government organizations, enterprises with strict data residency requirements, environments requiring offline operation.
 
 [Learn more about Full On-Prem deployment →](air-gapped-deployment.md)
+
+## Common Pipeline Execution Data Flow
+
+All three deployment scenarios follow a similar pipeline execution pattern, with differences in where authentication happens and where data resides:
+
+### Standard Data Flow Steps
+
+1. **Code Execution**: You write code and run pipelines with your client SDK using Python
+
+2. **Token Acquisition**: The ZenML client fetches short-lived tokens from your ZenML workspace for:
+   - Pushing Docker images to your container registry
+   - Communicating with your artifact store
+   - Submitting workloads to your orchestrator
+   - *Note: Your local Python environment needs the client libraries for your stack components*
+
+3. **Image & Workload Submission**: The client automatically builds and pushes Docker images (and optionally code if no code repository is configured) to your container registry, then submits the workload to your orchestrator
+
+4. **Orchestrator Execution**: In the orchestrator environment:
+   - The Docker image is pulled from your container registry
+   - The necessary code is pulled in
+   - A connection to your ZenML workspace is established
+   - The relevant pipeline/step code is executed
+
+5. **Runtime Data Flow**: During execution:
+   - Pipeline and step run metadata is logged to your ZenML workspace
+   - Logs are streamed to your log backend
+   - Artifacts are written to your artifact store
+   - Metadata pointing to these artifacts is persisted
+
+6. **Observability**: The ZenML dashboard connects to your workspace and uses all persisted metadata to provide you with a complete observability plane
+
+### Deployment-Specific Differences
+
+**SaaS**: Metadata is stored in ZenML infrastructure. Your ML data and compute remain in your infrastructure.
+
+**Hybrid**: Metadata and control plane are split — authentication/RBAC happens at ZenML control plane, but all run metadata, artifacts, and compute stay in your infrastructure.
+
+**Full On-Prem**: All components (control plane, metadata, authentication, compute) run entirely within your infrastructure with zero external dependencies.
 
 ## Making Your Choice
 

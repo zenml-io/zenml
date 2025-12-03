@@ -30,8 +30,8 @@ In a Full On-Prem deployment, every component of ZenML Pro runs within your isol
 | **Secrets Store** | Your Infrastructure | Stores all credentials and sensitive configuration |
 | **Identity Provider** | Your Infrastructure | Handles authentication (OIDC/LDAP/SAML) |
 | **Pro Dashboard** | Your Infrastructure | Web interface for all ZenML Pro features |
-| **Compute Resources** | [Your Infrastructure](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
-| **Data & Artifacts** | [Your Infrastructure](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
+| **Compute Resources** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
+| **Data & Artifacts** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
 
 ### Complete Isolation
 
@@ -69,30 +69,9 @@ flowchart TB
 
 ### Data Flow
 
-1. **Code Execution**: You write code and run pipelines with your client SDK using Python
-2. **Authentication & Token Acquisition**:
-   - Users authenticate via your internal identity provider (LDAP/AD/OIDC)
-   - The ZenML Pro control plane (running in your infrastructure) handles authentication and RBAC
-   - The ZenML client fetches short-lived tokens from your ZenML workspace for:
-     - Pushing Docker images to your container registry
-     - Communicating with your artifact store
-     - Submitting workloads to your orchestrator
-   - *Note: Your local Python environment needs the client libraries for your stack components*
-3. **Authorization**: RBAC policies enforced by your control plane before token issuance
-4. **Image & Workload Submission**: The client pushes Docker images (and optionally code if no code repository is configured) to your container registry, then submits the workload to your orchestrator
-5. **Orchestrator Execution**: In the orchestrator environment within your infrastructure:
-   - The Docker image is pulled from your container registry
-   - Within the pipeline/step entrypoint, the necessary code is pulled in
-   - A connection to your ZenML workspace is established
-   - The relevant pipeline/step code is executed
-6. **Runtime Data Flow**: During execution (all within your infrastructure):
-   - Pipeline and step run metadata is logged to your ZenML workspace
-   - Logs are streamed to your log backend
-   - Artifacts are written to your artifact store
-   - Metadata pointing to these artifacts is persisted in your workspace
-7. **Observability**: The ZenML Pro dashboard (running in your infrastructure) connects to your workspace and uses all persisted metadata to provide you with a complete observability plane
+For a detailed explanation of the common pipeline execution data flow across all deployment scenarios, see [Common Pipeline Execution Data Flow](deployments-overview.md#common-pipeline-execution-data-flow) in the Deployment Scenarios Overview.
 
-**Key difference from other deployments**: All communication happens entirely within your infrastructure boundary with zero external dependencies or internet connectivity required.
+In Full On-Prem deployment, users authenticate via your internal identity provider (LDAP/AD/OIDC), and the control plane (running in your infrastructure) handles both authentication and RBAC. All communication happens entirely within your infrastructure boundary with zero external dependencies or internet connectivity required.
 
 ## Key Benefits
 

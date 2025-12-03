@@ -27,32 +27,14 @@ The Hybrid deployment model is designed for organizations that need to keep sens
 | **ZenML Server (Workspaces)** | Your Infrastructure | Handles pipeline orchestration and execution |
 | **Metadata Store** | Your Infrastructure | Stores all pipeline runs, model metadata, and tracking information |
 | **Secrets Store** | Your Infrastructure | Stores all credentials and sensitive configuration |
-| **Compute Resources** | [Your Infrastructure](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
-| **Data & Artifacts** | [Your Infrastructure](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
+| **Compute Resources** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
+| **Data & Artifacts** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
 
 ### Data Flow
 
-1. **Code Execution**: You write code and run pipelines with your client SDK using Python
-2. **Authentication & Token Acquisition**:
-   - Users authenticate via ZenML-hosted control plane (SSO)
-   - The ZenML client fetches short-lived tokens from your ZenML workspace for:
-     - Pushing Docker images to your container registry (ECR, GCR, etc.)
-     - Communicating with your artifact store
-     - Submitting workloads to your orchestrator
-   - *Note: Your local Python environment needs the client libraries for your stack components*
-3. **Authorization**: RBAC policies enforced by control plane before token issuance
-4. **Image & Workload Submission**: The client pushes Docker images (and optionally code if no code repository is configured) to your container registry, then submits the workload to your orchestrator
-5. **Orchestrator Execution**: In the orchestrator environment within your infrastructure:
-   - The Docker image is pulled from your container registry
-   - Within the pipeline/step entrypoint, the necessary code is pulled in
-   - A connection to your ZenML workspace is established
-   - The relevant pipeline/step code is executed
-6. **Runtime Data Flow**: During execution:
-   - Pipeline and step run metadata is logged to your ZenML workspace and persisted in your infrastructure
-   - Logs are streamed to your log backend (within your infrastructure)
-   - Artifacts are written to your artifact store (within your infrastructure)
-   - Metadata pointing to these artifacts is persisted in your workspace
-7. **Observability**: The ZenML Pro dashboard connects to your workspace and uses all persisted metadata to provide you with a complete observability plane
+For a detailed explanation of the common pipeline execution data flow across all deployment scenarios, see [Common Pipeline Execution Data Flow](deployments-overview.md#common-pipeline-execution-data-flow) in the Deployment Scenarios Overview.
+
+In Hybrid deployment, users authenticate via ZenML-hosted control plane (SSO), and RBAC policies are enforced there before token issuance.
 
 {% hint style="success" %}
 **Complete data sovereignty**: All metadata, secrets, and ML artifacts remain within your infrastructure. Only authentication and authorization data flows to ZenML control plane.
@@ -110,13 +92,11 @@ Hybrid SaaS is perfect for:
 Workspaces initiate outbound-only connections to the control plane:
 - No inbound connections required to your infrastructure
 - Compatible with strict firewall policies
-- Secure WebSocket communication for real-time updates
-- Optional VPN tunnel support
 
 #### Multi-Workspace Isolation
 Each workspace can be:
 - Deployed in separate VPCs/networks
-- Isolated per team or department
+- Isolated per team or department or customer
 - Configured with different security policies
 - Managed independently by different teams
 
@@ -229,9 +209,9 @@ Deploy workspaces across different regions while maintaining centralized control
 ### 1. Initial Configuration
 
 [Book a demo](https://www.zenml.io/book-your-demo) to get started. The ZenML team will:
-- Set up your organization in the control plane
-- Configure SSO integration
+- Help set up your organization in the control plane
 - Establish secure communication channels
+- (optional) Configure SSO integration
 
 ### 2. Workspace Deployment
 
@@ -251,7 +231,6 @@ Deploy ZenML workspaces in your infrastructure. Workspaces can be deployed on:
 - **Kubernetes**: We provide officially supported Helm charts
 - **Non-Kubernetes environments**: We recommend using infrastructure-as-code tools like Terraform, Pulumi, or CloudFormation to manage server lifecycle
 
-See the [self-hosted deployment guide](self-hosted.md) for detailed step-by-step instructions, infrastructure requirements, and configuration examples.
 
 ### 3. Configure Infrastructure Access
 

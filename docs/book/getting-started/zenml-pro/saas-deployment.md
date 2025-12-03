@@ -27,29 +27,12 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
 | **Pro Control Plane** | ZenML Infrastructure | Handles authentication, RBAC, and workspace management |
 | **Metadata Store** | ZenML Infrastructure | Stores pipeline runs, model metadata, and tracking information |
 | **Secrets Store** | ZenML Infrastructure (default) | Stores credentials for accessing your infrastructure |
-| **Compute Resources** | [Your Infrastructure](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
-| **Data & Artifacts** | [Your Infrastructure](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
+| **Compute Resources** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
+| **Data & Artifacts** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
 
 ### Data Flow
 
-1. **Code Execution**: You write code and run pipelines with your client SDK using Python
-2. **Token Acquisition**: The ZenML client fetches short-lived tokens from the ZenML server for:
-   - Pushing Docker images to your container registry (ECR, GCR, etc.)
-   - Communicating with your artifact store
-   - Submitting workloads to your orchestrator
-   - *Note: Your local Python environment needs the client libraries for your stack components*
-3. **Image & Workload Submission**: The client pushes Docker images (and optionally code if no code repository is configured) to your container registry, then submits the workload to your orchestrator
-4. **Orchestrator Execution**: In the orchestrator environment:
-   - The Docker image is pulled from your container registry
-   - Within the pipeline/step entrypoint, the necessary code is pulled in
-   - A connection to the ZenML server is established
-   - The relevant pipeline/step code is executed
-5. **Runtime Data Flow**: During execution:
-   - Pipeline and step run metadata is logged to the ZenML workspace and persisted there
-   - Logs are streamed to your log backend
-   - Artifacts are written to your artifact store
-   - Metadata pointing to these artifacts is persisted in the ZenML workspace
-6. **Observability**: The ZenML dashboard connects to the ZenML server and uses all persisted metadata to provide you with a complete observability plane
+For a detailed explanation of the common pipeline execution data flow across all deployment scenarios, see [Common Pipeline Execution Data Flow](deployments-overview.md#common-pipeline-execution-data-flow) in the Deployment Scenarios Overview.
 
 {% hint style="success" %}
 **Your ML data never leaves your infrastructure.** Only metadata about runs and pipelines is stored on ZenML infrastructure.
@@ -111,7 +94,7 @@ For organizations with strict security requirements, you can configure ZenML to 
 
 ![SaaS with customer secret store](../../.gitbook/assets/cloud_architecture_saas_detailed_2.png)
 
-This keeps all credentials within your infrastructure while still benefiting from managed ZenML services.
+This keeps all credentials within your infrastructure while still benefiting from managed ZenML services - [Book a call](https://www.zenml.io/book-your-demo) with us if you want this set up.
 
 ## Network Architecture
 
