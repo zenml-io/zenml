@@ -391,13 +391,8 @@ Your ZenML representative will provide you with a tailored migration checklist, 
 
 ## Detailed Architecture Diagram
 
-<details>
-
-<summary>Detailed Full On-Prem Deployment Architecture</summary>
-
 <img src="../../.gitbook/assets/cloud_architecture_self_hosted_detailed (1).png" alt="ZenML Pro self-hosted deployment details" data-size="original">
 
-</details>
 
 ## Related Resources
 

@@ -191,6 +191,6 @@ Need help with migration? Our support team can assist.
 
 Ready to get started with ZenML Pro SaaS?
 
-[Book a Demo](https://www.zenml.io/book-your-demo){ .md-button .md-button--primary }
+[Book a Demo](https://www.zenml.io/book-your-demo)
 
 Have questions? [Contact us](mailto:cloud@zenml.io) or check out our [documentation](https://docs.zenml.io).
