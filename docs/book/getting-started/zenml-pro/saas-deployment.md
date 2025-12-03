@@ -128,31 +128,7 @@ Configure access to your cloud infrastructure:
 - Configure compute resources (AWS, GCP, Azure, or Kubernetes)
 - Provide necessary credentials via secrets
 
-### 3. Create Your First Pipeline
-
-```python
-from zenml import pipeline, step
-
-@step
-def load_data() -> dict:
-    return {"data": [1, 2, 3, 4, 5]}
-
-@step
-def train_model(data: dict) -> str:
-    return f"Model trained on {len(data['data'])} samples"
-
-@pipeline
-def training_pipeline():
-    data = load_data()
-    train_model(data)
-
-if __name__ == "__main__":
-    training_pipeline()
-```
-
-### 4. Monitor in Dashboard
-
-View your pipeline runs, artifacts, and models in the ZenML Pro dashboard with full observability.
+### 3. You're ready to run your pipelines and monitor them through the Frontend
 
 ## Security Documentation
 
@@ -198,23 +174,9 @@ Already running ZenML OSS? Migrating to SaaS is straightforward:
 
 Need help with migration? Our support team can assist.
 
-## Detailed Architecture Diagrams
-
-<details>
-
-<summary>Full SaaS Architecture with ZenML Secret Store</summary>
+## Detailed Architecture Diagram
 
 <img src="../../.gitbook/assets/cloud_architecture_saas_detailed.png" alt="ZenML Pro Full SaaS deployment with ZenML secret store" data-size="original">
-
-</details>
-
-<details>
-
-<summary>SaaS Architecture with Customer Secret Store</summary>
-
-<img src="../../.gitbook/assets/cloud_architecture_saas_detailed_2.png" alt="ZenML Pro Full SaaS deployment with customer secret store" data-size="original">
-
-</details>
 
 ## Related Resources
 

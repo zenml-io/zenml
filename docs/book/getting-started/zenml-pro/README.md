@@ -25,7 +25,7 @@ The [Pro version of ZenML](https://zenml.io/pro) extends the Open Source product
 ![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp-walkthrough.gif)
 
 {% hint style="info" %}
-To try ZenML Pro or to learn more [book a call](https://www.zenml.io/book-your-demo).
+To get access to ZenML Pro, [book a call](https://www.zenml.io/book-your-demo).
 {% endhint %}
 
 ## ZenML OSS vs Pro Feature Comparison
@@ -35,7 +35,7 @@ To try ZenML Pro or to learn more [book a call](https://www.zenml.io/book-your-d
 | **User Management** | Single-user mode | Multi-user support with [SSO](self-hosted.md#identity-provider), [organizations](organization.md), and [teams](teams.md) |
 | **Access Control** | No RBAC | Full [role-based access control](roles.md) with customizable permissions |
 | **Multi-tenancy** | No workspaces/projects | [Workspaces](workspaces.md) and [projects](projects.md) for team and resource isolation |
-| **Dashboard** | Basic pipeline and run visualization | Pro dashboard with [Model Control Plane](https://docs.zenml.io/user-guides/starter-guide/track-ml-models), [Artifact Control Plane](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts), and comparison views |
+| **Dashboard** | Basic pipeline and run visualization | Pro dashboard with [Model Control Plane](https://docs.zenml.io/concepts/models), [Artifact Control Plane](https://docs.zenml.io/concepts/artifacts), and comparison views |
 | **Pipeline Execution** | Run pipelines via SDK/CLI | Run pipelines from the dashboard, manage schedules via UI, [triggers](https://docs.zenml.io/concepts/triggers) |
 | **Stack Configuration** | User-managed stacks | Advanced stack configurations with workspace/project-level restrictions for platform teams |
 | **Security** | Community updates | Prioritized security patches, SOC 2 and ISO 27001 certification |
