@@ -1255,6 +1255,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             "custom_materializer": custom_materializer,
             "own_stack": own_stack,
             "pipeline_run_id": str(run_id) if run_id else None,
+            "dynamic": self.is_dynamic,
         }
 
     def _compile(
