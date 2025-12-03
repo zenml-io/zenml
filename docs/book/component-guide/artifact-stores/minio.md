@@ -53,19 +53,6 @@ zenml artifact-store register minio_store -f s3 \
     --client_kwargs='{"endpoint_url": "http://minio.example.com:9000"}'
 ```
 {% endtab %}
-
-{% tab title="Inline credentials" %}
-
-You can also provide credentials directly (not recommended for production):
-
-```shell
-zenml artifact-store register minio_store -f s3 \
-    --path='s3://your-bucket-name' \
-    --aws_access_key_id='<YOUR_MINIO_ACCESS_KEY>' \
-    --aws_secret_access_key='<YOUR_MINIO_SECRET_KEY>' \
-    --client_kwargs='{"endpoint_url": "http://minio.example.com:9000"}'
-```
-{% endtab %}
 {% endtabs %}
 
 Replace `http://minio.example.com:9000` with your actual MinIO endpoint. If you're running MinIO locally for development, this might be `http://localhost:9000`.

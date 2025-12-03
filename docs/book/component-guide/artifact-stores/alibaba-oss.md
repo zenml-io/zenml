@@ -4,7 +4,17 @@ description: Storing artifacts in Alibaba Cloud Object Storage Service (OSS).
 
 # Alibaba Cloud OSS
 
-Alibaba Cloud Object Storage Service (OSS) is an S3-compatible object storage service. Since OSS provides an S3-compatible API, you can use ZenML's S3 Artifact Store integration to connect to Alibaba Cloud OSS.
+[Alibaba Cloud Object Storage Service (OSS)](https://www.alibabacloud.com/product/object-storage-service) is an S3-compatible object storage service. Since OSS provides an S3-compatible API, you can use ZenML's S3 Artifact Store integration to connect to [Alibaba Cloud](https://www.alibabacloud.com) OSS.
+
+{% hint style="warning" %}
+**Important:** When using Alibaba Cloud OSS, you must set the following `config_kwargs`:
+
+```json
+{"signature_version": "s3", "s3": {"addressing_style": "virtual"}}
+```
+
+This is required for proper compatibility with Alibaba Cloud OSS's S3 API implementation.
+{% endhint %}
 
 ### When would you want to use it?
 
@@ -49,31 +59,7 @@ zenml artifact-store register alibaba_store -f s3 \
     --config_kwargs='{"signature_version": "s3", "s3": {"addressing_style": "virtual"}}'
 ```
 {% endtab %}
-
-{% tab title="Inline credentials" %}
-
-You can also provide credentials directly (not recommended for production):
-
-```shell
-zenml artifact-store register alibaba_store -f s3 \
-    --path='s3://your-bucket-name' \
-    --aws_access_key_id='<YOUR_ALIBABA_ACCESS_KEY_ID>' \
-    --aws_secret_access_key='<YOUR_ALIBABA_SECRET_ACCESS_KEY>' \
-    --client_kwargs='{"endpoint_url": "https://oss-<region>.aliyuncs.com"}' \
-    --config_kwargs='{"signature_version": "s3", "s3": {"addressing_style": "virtual"}}'
-```
-{% endtab %}
 {% endtabs %}
-
-{% hint style="warning" %}
-**Important:** When using Alibaba Cloud OSS, you must set the following `config_kwargs`:
-
-```json
-{"signature_version": "s3", "s3": {"addressing_style": "virtual"}}
-```
-
-This is required for proper compatibility with Alibaba Cloud OSS's S3 API implementation.
-{% endhint %}
 
 Replace `<region>` with your OSS region (e.g., `eu-central-1`, `cn-hangzhou`, `ap-southeast-1`). You can find the list of available regions and their endpoints in the [Alibaba Cloud OSS documentation](https://www.alibabacloud.com/help/en/oss/user-guide/regions-and-endpoints).
 
