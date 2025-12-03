@@ -95,7 +95,6 @@ def fetch_log_records(
     """Fetches log entries.
 
     Args:
-        zen_store: The store in which the artifact is stored.
         artifact_store: The artifact store.
         logs_uri: The URI of the artifact (file or directory).
 
