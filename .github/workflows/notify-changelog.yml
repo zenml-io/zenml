@@ -1,0 +1,62 @@
+name: Notify Changelog Repo
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g., 0.92.0)'
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # Only trigger for non-prerelease, non-draft releases (auto) or manual dispatch
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !github.event.release.draft)
+    steps:
+      - name: Get release info
+        id: release_info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let release;
+            if (context.eventName === 'workflow_dispatch') {
+              // Manual trigger: fetch release by tag
+              const tag = '${{ inputs.release_tag }}';
+              release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              release = release.data;
+            } else {
+              // Automatic trigger: use event payload
+              release = context.payload.release;
+            }
+            
+            core.setOutput('tag', release.tag_name);
+            core.setOutput('name', release.name || release.tag_name);
+            core.setOutput('url', release.html_url);
+            core.setOutput('body', JSON.stringify(release.body || ''));
+            core.setOutput('published_at', release.published_at);
+            core.setOutput('prerelease', release.prerelease);
+
+      - name: Send repository dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CHANGELOG_DISPATCH_TOKEN }}
+          repository: zenml-io/zenml-changelog
+          event-type: release-published
+          client-payload: |
+            {
+              "repo": "${{ github.repository }}",
+              "repo_name": "${{ github.event.repository.name }}",
+              "release_tag": "${{ steps.release_info.outputs.tag }}",
+              "release_name": "${{ steps.release_info.outputs.name }}",
+              "release_url": "${{ steps.release_info.outputs.url }}",
+              "release_body": ${{ steps.release_info.outputs.body }},
+              "published_at": "${{ steps.release_info.outputs.published_at }}",
+              "is_prerelease": ${{ steps.release_info.outputs.prerelease }}
+            }
