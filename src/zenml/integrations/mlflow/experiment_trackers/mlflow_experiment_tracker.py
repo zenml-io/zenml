@@ -199,7 +199,13 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         # Validate that the run exists before attempting to resume it
         if run_id:
             try:
-                mlflow.get_run(run_id)
+                run = mlflow.get_run(run_id)
+                if run.info.lifecycle_stage == "deleted":
+                    logger.warning(
+                        f"Run with id {run_id} is in 'deleted' state. "
+                        "Creating a new run instead."
+                    )
+                    run_id = None
             except MlflowException as e:
                 # Run doesn't exist on the MLflow server, create a new one
                 logger.warning(
