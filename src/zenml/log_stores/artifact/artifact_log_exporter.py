@@ -305,9 +305,6 @@ class ArtifactLogExporter(LogExporter):
 
         Args:
             log_uri: The URI of the log files to merge.
-
-        Raises:
-            RuntimeError: If the log model has no URI, cannot merge logs.
         """
         from zenml.artifacts.utils import _load_file_from_artifact_store
         from zenml.exceptions import DoesNotExistException

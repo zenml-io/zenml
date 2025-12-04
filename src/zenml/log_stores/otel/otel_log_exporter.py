@@ -74,7 +74,7 @@ class OTLPLogExporter(LogExporter):
             timeout: The timeout to use for the export.
             compression: The compression to use for the export.
         """
-        self._shutdown_is_occuring = threading.Event()
+        self._shutdown_is_occurring = threading.Event()
         self._endpoint = endpoint
         self._certificate_file = certificate_file
         self._client_key_file = client_key_file
@@ -386,5 +386,5 @@ class OTLPLogExporter(LogExporter):
             logger.warning("Exporter already shutdown, ignoring call")
             return
         self._shutdown = True
-        self._shutdown_is_occuring.set()
+        self._shutdown_is_occurring.set()
         self._session.close()
