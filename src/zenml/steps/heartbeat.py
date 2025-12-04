@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
-from zenml.utils.time_utils import to_local_tz
+from zenml.utils.time_utils import to_utc_timezone
 
 if TYPE_CHECKING:
     from zenml.models import StepRunResponse
@@ -174,7 +174,7 @@ class StepHeartbeatWorker:
             self._terminated = True
 
 
-def cached_is_heartbeat_unhealthy(
+def is_heartbeat_unhealthy(
     step_run_id: UUID,
     status: ExecutionStatus,
     latest_heartbeat: datetime | None,
@@ -201,11 +201,11 @@ def cached_is_heartbeat_unhealthy(
         return False
 
     if latest_heartbeat:
-        heartbeat_diff = datetime.now(tz=timezone.utc) - to_local_tz(
+        heartbeat_diff = datetime.now(tz=timezone.utc) - to_utc_timezone(
             latest_heartbeat
         )
     elif start_time:
-        heartbeat_diff = datetime.now(tz=timezone.utc) - to_local_tz(
+        heartbeat_diff = datetime.now(tz=timezone.utc) - to_utc_timezone(
             start_time
         )
     else:
@@ -219,7 +219,7 @@ def cached_is_heartbeat_unhealthy(
     return False
 
 
-def is_heartbeat_unhealthy(step_run: "StepRunResponse") -> bool:
+def is_step_run_heartbeat_unhealthy(step_run: "StepRunResponse") -> bool:
     """Utility function - Checks if step heartbeats indicate un-healthy execution.
 
     Args:
@@ -228,10 +228,10 @@ def is_heartbeat_unhealthy(step_run: "StepRunResponse") -> bool:
     Returns:
         True if the step heartbeat is unhealthy, False otherwise.
     """
-    return cached_is_heartbeat_unhealthy(
+    return is_heartbeat_unhealthy(
         step_run_id=step_run.id,
         status=step_run.status,
         start_time=step_run.start_time,
-        heartbeat_threshold=step_run.cached_heartbeat_threshold,
+        heartbeat_threshold=step_run.heartbeat_threshold,
         latest_heartbeat=step_run.latest_heartbeat,
     )
