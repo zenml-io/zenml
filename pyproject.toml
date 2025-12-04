@@ -65,6 +65,7 @@ local = [
     "sqlalchemy>=2.0.0,<3.0.0",
     "sqlalchemy_utils",
     "sqlmodel==0.0.18",
+    "croniter>=6.0.0",
 ]
 server = [
     "zenml[local]",  # Includes all the DB dependencies

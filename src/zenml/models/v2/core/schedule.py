@@ -31,7 +31,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
 )
-from zenml.utils.time_utils import to_utc_timezone
+from zenml.utils.time_utils import to_utc_timezone, validate_cron_expression
 
 logger = get_logger(__name__)
 
@@ -75,6 +75,16 @@ class ScheduleRequest(ProjectScopedRequest):
             value = value.replace(tzinfo=None)
 
         return value
+
+    @field_validator("cron_expression", mode="before")
+    @classmethod
+    def _validate_cron_expression(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        elif validate_cron_expression(expr=value):
+            return value
+        else:
+            raise ValueError(f"Cron expression {value} is not valid.")
 
     @model_validator(mode="after")
     def _ensure_cron_or_periodic_schedule_configured(
@@ -128,6 +138,16 @@ class ScheduleUpdate(BaseUpdate):
 
     name: Optional[str] = None
     cron_expression: Optional[str] = None
+
+    @field_validator("cron_expression", mode="before")
+    @classmethod
+    def _validate_cron_expression(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        elif validate_cron_expression(expr=value):
+            return value
+        else:
+            raise ValueError(f"Cron expression {value} is not valid.")
 
 
 # ------------------ Response Model ------------------

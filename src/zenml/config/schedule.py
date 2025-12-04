@@ -24,6 +24,7 @@ from pydantic import (
 )
 
 from zenml.logger import get_logger
+from zenml.utils.time_utils import validate_cron_expression
 
 logger = get_logger(__name__)
 
@@ -91,6 +92,16 @@ class Schedule(BaseModel):
             value = value.astimezone()
 
         return value
+
+    @field_validator("cron_expression", mode="before")
+    @classmethod
+    def _validate_cron_expression(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        elif validate_cron_expression(expr=value):
+            return value
+        else:
+            raise ValueError(f"Cron expression {value} is not valid.")
 
     @model_validator(mode="after")
     def _ensure_cron_or_periodic_schedule_configured(self) -> "Schedule":
