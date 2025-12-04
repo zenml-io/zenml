@@ -40,7 +40,7 @@
     <a href="https://docs.zenml.io/">Docs</a>
     <br />
     <br />
-    🎉 For the latest release, see the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
+    🎉 For the latest release, see the <a href="https://docs.zenml.io/changelog">changelog</a>.
 </p>
 </div>
 
