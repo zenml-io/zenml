@@ -6566,13 +6566,22 @@ class SqlZenStore(BaseZenStore):
 
         # Add logs entry for the run if exists
         if pipeline_run.logs is not None:
-            self._get_reference_schema_by_id(
-                resource=pipeline_run,
-                reference_schema=StackComponentSchema,
-                reference_id=pipeline_run.logs.artifact_store_id,
-                session=session,
-                reference_type="logs artifact store",
-            )
+            if pipeline_run.logs.artifact_store_id:
+                self._get_reference_schema_by_id(
+                    resource=pipeline_run,
+                    reference_schema=StackComponentSchema,
+                    reference_id=pipeline_run.logs.artifact_store_id,
+                    session=session,
+                    reference_type="logs artifact store",
+                )
+            else: 
+                self._get_reference_schema_by_id(
+                    resource=pipeline_run,
+                    reference_schema=StackComponentSchema,
+                    reference_id=pipeline_run.logs.log_store_id,
+                    session=session,
+                    reference_type="logs log store",
+                )
 
             log_entry = LogsSchema(
                 id=pipeline_run.logs.id,
@@ -7051,13 +7060,22 @@ class SqlZenStore(BaseZenStore):
                 try:
                     for log_request in run_update.add_logs:
                         # Validate the artifact store exists
-                        self._get_reference_schema_by_id(
-                            resource=log_request,
-                            reference_schema=StackComponentSchema,
-                            reference_id=log_request.artifact_store_id,
-                            session=session,
-                            reference_type="logs artifact store",
-                        )
+                        if log_request.artifact_store_id:
+                            self._get_reference_schema_by_id(
+                                resource=log_request,
+                                reference_schema=StackComponentSchema,
+                                reference_id=log_request.artifact_store_id,
+                                session=session,
+                                reference_type="logs artifact store",
+                            )
+                        else:
+                            self._get_reference_schema_by_id(
+                                resource=log_request,
+                                reference_schema=StackComponentSchema,
+                                reference_id=log_request.log_store_id,
+                                session=session,
+                                reference_type="logs log store",
+                            )
 
                         # Create the log entry
                         log_entry = LogsSchema(
@@ -10111,20 +10129,29 @@ class SqlZenStore(BaseZenStore):
 
             # Add logs entry for the step if exists
             if step_run.logs is not None:
-                self._get_reference_schema_by_id(
-                    resource=step_run,
-                    reference_schema=StackComponentSchema,
-                    reference_id=step_run.logs.artifact_store_id,
-                    session=session,
-                    reference_type="logs artifact store",
-                )
+                if step_run.logs.artifact_store_id:
+                    self._get_reference_schema_by_id(
+                        resource=step_run,
+                        reference_schema=StackComponentSchema,
+                        reference_id=step_run.logs.artifact_store_id,
+                        session=session,
+                        reference_type="logs artifact store",
+                    )
+                else:
+                    self._get_reference_schema_by_id(
+                        resource=step_run,
+                        reference_schema=StackComponentSchema,
+                        reference_id=step_run.logs.log_store_id,
+                        session=session,
+                        reference_type="logs log store",
+                    )
 
                 log_entry = LogsSchema(
                     id=step_run.logs.id,
                     uri=step_run.logs.uri,
                     # TODO: Remove fallback when not supporting
-                    # clients <0.84.0 anymore
-                    source=step_run.logs.source or "execution",
+                    # clients <0.93.0 anymore
+                    source=step_run.logs.source or "step",
                     step_run_id=step_schema.id,
                     artifact_store_id=step_run.logs.artifact_store_id,
                     log_store_id=step_run.logs.log_store_id,
@@ -10520,21 +10547,30 @@ class SqlZenStore(BaseZenStore):
                 try:
                     for log_request in step_run_update.add_logs:
                         # Validate the artifact store exists
-                        self._get_reference_schema_by_id(
-                            resource=log_request,
-                            reference_schema=StackComponentSchema,
-                            reference_id=log_request.artifact_store_id,
-                            session=session,
-                            reference_type="logs artifact store",
-                        )
+                        if log_request.artifact_store_id:
+                            self._get_reference_schema_by_id(
+                                resource=log_request,
+                                reference_schema=StackComponentSchema,
+                                reference_id=log_request.artifact_store_id,
+                                session=session,
+                                reference_type="logs artifact store",
+                            )
+                        else:
+                            self._get_reference_schema_by_id(
+                                resource=log_request,
+                                reference_schema=StackComponentSchema,
+                                reference_id=log_request.log_store_id,
+                                session=session,
+                                reference_type="logs log store",
+                            )
 
                         # Create the log entry
                         log_entry = LogsSchema(
                             id=log_request.id,
                             uri=log_request.uri,
                             # TODO: Remove fallback when not supporting
-                            # clients <0.84.0 anymore
-                            source=log_request.source or "execution",
+                            # clients <0.93.0 anymore
+                            source=log_request.source or "step",
                             step_run_id=existing_step_run.id,
                             artifact_store_id=log_request.artifact_store_id,
                             log_store_id=log_request.log_store_id,
