@@ -63,7 +63,9 @@ def test_running_a_successful_step(
     )
     mocker.patch(
         "zenml.orchestrators.step_runner.setup_step_logging",
-        return_value=mocker.MagicMock(__enter__=lambda s: None, __exit__=lambda s, *a: None),
+        return_value=mocker.MagicMock(
+            __enter__=lambda s: None, __exit__=lambda s, *a: None
+        ),
     )
 
     step = Step.model_validate(
@@ -126,7 +128,9 @@ def test_running_a_failing_step(
     )
     mocker.patch(
         "zenml.orchestrators.step_runner.setup_step_logging",
-        return_value=mocker.MagicMock(__enter__=lambda s: None, __exit__=lambda s, *a: None),
+        return_value=mocker.MagicMock(
+            __enter__=lambda s: None, __exit__=lambda s, *a: None
+        ),
     )
 
     step = Step.model_validate(
