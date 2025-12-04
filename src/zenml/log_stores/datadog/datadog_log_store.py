@@ -17,13 +17,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, cast
 
 import requests
-from opentelemetry.exporter.otlp.proto.http._log_exporter import (
-    OTLPLogExporter,
-)
 
 from zenml.enums import LoggingLevels
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
+from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
@@ -54,7 +52,7 @@ class DatadogLogStore(OtelLogStore):
         """Get the Datadog log exporter.
 
         Returns:
-            DatadogLogExporter configured with API key and site.
+            OTLPLogExporter configured with API key and site.
         """
         if not self._otlp_exporter:
             self._otlp_exporter = OTLPLogExporter(
@@ -206,5 +204,5 @@ class DatadogLogStore(OtelLogStore):
         This method is called when the log store is no longer needed.
         """
         if self._otlp_exporter:
-            self._otlp_exporter.shutdown()  # type: ignore[no-untyped-call]
+            self._otlp_exporter.shutdown()
             self._otlp_exporter = None
