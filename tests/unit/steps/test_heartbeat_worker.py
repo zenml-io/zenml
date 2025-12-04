@@ -140,7 +140,6 @@ def test_heartbeat_healthiness_check(monkeypatch):
             is_retriable=False,
             start_time=None,
             latest_heartbeat=None,
-            cached_heartbeat_threshold=5,
         ),
         metadata=StepRunResponseMetadata(
             config=StepConfiguration(
@@ -173,22 +172,59 @@ def test_heartbeat_healthiness_check(monkeypatch):
         m.setattr(heartbeat, "datetime", FixedDateTime)
         # based on start-time is unhealthy
         step_run.body.start_time = non_passable_diff_time
-        assert heartbeat.is_heartbeat_unhealthy(step_run)
+        assert heartbeat.is_heartbeat_unhealthy(
+            step_run_id=step_run.id,
+            status=step_run.status,
+            start_time=step_run.start_time,
+            heartbeat_threshold=step_run.heartbeat_threshold,
+            latest_heartbeat=step_run.latest_heartbeat,
+        )
 
         # based on start-time is healthy
         step_run.body.start_time = passable_diff_time
-        assert not heartbeat.is_heartbeat_unhealthy(step_run)
+        assert not heartbeat.is_heartbeat_unhealthy(
+            step_run_id=step_run.id,
+            status=step_run.status,
+            start_time=step_run.start_time,
+            heartbeat_threshold=step_run.heartbeat_threshold,
+            latest_heartbeat=step_run.latest_heartbeat,
+        )
 
         # based on heartbeat is healthy
         step_run.body.start_time = non_passable_diff_time
         step_run.body.latest_heartbeat = passable_diff_time
-        assert not heartbeat.is_heartbeat_unhealthy(step_run)
+        assert not heartbeat.is_heartbeat_unhealthy(
+            step_run_id=step_run.id,
+            status=step_run.status,
+            start_time=step_run.start_time,
+            heartbeat_threshold=step_run.heartbeat_threshold,
+            latest_heartbeat=step_run.latest_heartbeat,
+        )
 
         # edge-case where both values null = healthy (default response)
         step_run.body.start_time = None
         step_run.body.latest_heartbeat = None
-        assert not heartbeat.is_heartbeat_unhealthy(step_run)
+        assert not heartbeat.is_heartbeat_unhealthy(
+            step_run_id=step_run.id,
+            status=step_run.status,
+            start_time=step_run.start_time,
+            heartbeat_threshold=step_run.heartbeat_threshold,
+            latest_heartbeat=step_run.latest_heartbeat,
+        )
 
         # if step heartbeat not enabled = healthy (default response)
-        step_run.body.cached_heartbeat_threshold = None
-        assert not heartbeat.is_heartbeat_unhealthy(step_run)
+        step_run.body.start_time = non_passable_diff_time
+        step_run.metadata.spec = StepSpec(
+            enable_heartbeat=False,
+            source=Source(module="test", type=SourceType.BUILTIN),
+            upstream_steps=["test"],
+            inputs={"test": InputSpec(step_name="test", output_name="test")},
+            invocation_id="test",
+        )
+        assert not heartbeat.is_heartbeat_unhealthy(
+            step_run_id=step_run.id,
+            status=step_run.status,
+            start_time=step_run.start_time,
+            heartbeat_threshold=step_run.heartbeat_threshold,
+            latest_heartbeat=step_run.latest_heartbeat,
+        )

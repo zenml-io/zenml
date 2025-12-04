@@ -1039,6 +1039,7 @@ class BaseStep:
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
+        heartbeat_healthy_threshold: Optional[int] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -1074,6 +1075,9 @@ class BaseStep:
             cache_policy: Cache policy for this step.
             runtime: The step runtime. This is only applicable for dynamic
                 pipelines.
+            heartbeat_healthy_threshold: The amount of time (in minutes) that a
+                running step has not received heartbeat and is considered healthy.
+                By default, set to the maximum value (30 minutes).",
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -1104,6 +1108,7 @@ class BaseStep:
             substitutions=substitutions,
             cache_policy=cache_policy,
             runtime=runtime,
+            heartbeat_healthy_threshold=heartbeat_healthy_threshold,
             merge=merge,
         )
         return step_copy

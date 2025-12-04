@@ -620,7 +620,13 @@ def main() -> None:
             )
 
             if sr_.items:
-                return is_heartbeat_unhealthy(step_run=sr_.items[0])
+                return is_heartbeat_unhealthy(
+                    step_run_id=sr_.items[0].id,
+                    status=sr_.items[0].status,
+                    start_time=sr_.items[0].start_time,
+                    heartbeat_threshold=sr_.items[0].heartbeat_threshold,
+                    latest_heartbeat=sr_.items[0].latest_heartbeat,
+                )
 
             return False
 
@@ -669,6 +675,7 @@ def main() -> None:
                     "Heartbeat for step `%s` indicates unhealthy status.",
                     step_name,
                 )
+                stop_step(node=node)
                 return NodeStatus.FAILED
             else:
                 return NodeStatus.RUNNING

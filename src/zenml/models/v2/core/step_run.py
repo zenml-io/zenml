@@ -242,7 +242,6 @@ class StepRunResponseBody(ProjectScopedResponseBody):
         title="The substitutions of the step run.",
         default={},
     )
-    cached_heartbeat_threshold: Optional[int] = Field(title="", default=None)
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -619,13 +618,15 @@ class StepRunResponse(
         return self.get_body().latest_heartbeat
 
     @property
-    def cached_heartbeat_threshold(self) -> Optional[int]:
-        """The `cached_heartbeat_threshold` property.
+    def heartbeat_threshold(self) -> Optional[int]:
+        """The `heartbeat_threshold` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().cached_heartbeat_threshold
+        if self.get_metadata().spec.enable_heartbeat:
+            return self.get_metadata().config.heartbeat_healthy_threshold
+        return None
 
     @property
     def snapshot_id(self) -> UUID:

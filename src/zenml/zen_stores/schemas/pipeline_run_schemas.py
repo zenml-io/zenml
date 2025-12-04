@@ -821,7 +821,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @staticmethod
     def _step_in_progress(step_id: UUID, session: Session) -> bool:
-        from zenml.steps.heartbeat import cached_is_heartbeat_unhealthy
+        from zenml.steps.heartbeat import is_heartbeat_unhealthy
         from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
         step_run = session.execute(
@@ -835,10 +835,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return not (
             status.is_finished
-            or cached_is_heartbeat_unhealthy(
+            or is_heartbeat_unhealthy(
                 step_run_id=step_run.id,
                 status=status,
-                heartbeat_threshold=step_run.cached_heartbeat_threshold,
+                heartbeat_threshold=step_run.heartbeat_threshold,
                 start_time=step_run.start_time,
                 latest_heartbeat=step_run.latest_heartbeat,
             )
