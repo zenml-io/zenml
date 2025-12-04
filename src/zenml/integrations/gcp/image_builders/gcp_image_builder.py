@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Optional, Tuple, cast
 from urllib.parse import urlparse
 
+from google.api_core.client_options import ClientOptions
 from google.cloud.devtools import cloudbuild_v1
 
 from zenml.enums import StackComponentType
@@ -216,7 +217,20 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             RuntimeError: If the Cloud Build run has failed.
         """
         credentials, project_id = self._get_authentication()
-        client = cloudbuild_v1.CloudBuildClient(credentials=credentials)
+        client_options = None
+        if self.config.location:
+            endpoint = f"{self.config.location}-cloudbuild.googleapis.com"
+            client_options = ClientOptions(api_endpoint=endpoint)
+            logger.info(
+                "Using regional Cloud Build endpoint `%s`.",
+                endpoint,
+            )
+        else:
+            logger.info("Using global Cloud Build endpoint.")
+
+        client = cloudbuild_v1.CloudBuildClient(
+            credentials=credentials, client_options=client_options
+        )
 
         operation = client.create_build(project_id=project_id, build=build)
         log_url = operation.metadata.build.log_url
