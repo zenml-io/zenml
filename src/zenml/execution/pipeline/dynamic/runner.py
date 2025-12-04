@@ -157,30 +157,28 @@ class DynamicPipelineRunner:
 
     def run_pipeline(self) -> None:
         """Run the pipeline."""
-        with InMemoryArtifactCache():
-            if self._run:
-                run = Client().zen_store.update_run(
-                    run_id=self._run.id,
-                    run_update=PipelineRunUpdate(
-                        orchestrator_run_id=self._orchestrator_run_id,
-                    ),
-                )
-            else:
-                run = create_placeholder_run(
-                    snapshot=self._snapshot,
+        if self._run:
+            run = Client().zen_store.update_run(
+                run_id=self._run.id,
+                run_update=PipelineRunUpdate(
                     orchestrator_run_id=self._orchestrator_run_id,
-                )
+                ),
+            )
+        else:
+            run = create_placeholder_run(
+                snapshot=self._snapshot,
+                orchestrator_run_id=self._orchestrator_run_id,
+            )
 
-            logging_context = nullcontext()
-            if is_pipeline_logging_enabled(
-                self._snapshot.pipeline_configuration
-            ):
-                logging_context = setup_run_logging(
-                    pipeline_run=run,
-                    source="orchestrator",
-                )
+        logging_context = nullcontext()
+        if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
+            logging_context = setup_run_logging(
+                pipeline_run=run,
+                source="orchestrator",
+            )
 
-            with logging_context:
+        with logging_context:
+            with InMemoryArtifactCache():
                 with DynamicPipelineRunContext(
                     pipeline=self.pipeline,
                     run=run,
