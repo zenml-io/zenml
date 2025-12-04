@@ -27,6 +27,7 @@ from zenml.constants import (
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
+    ZENML_STORAGE_LOGGING_VERBOSITY,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
@@ -225,6 +226,13 @@ def get_logging_level() -> LoggingLevels:
         raise KeyError(
             f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
         )
+
+    if ZENML_STORAGE_LOGGING_VERBOSITY is not None:
+        get_logger(__name__).warning(
+            "The ZENML_STORAGE_LOGGING_VERBOSITY is no longer supported. "
+            "Please use the ZENML_LOGGING_VERBOSITY instead."
+        )
+
     return LoggingLevels[verbosity]
 
 

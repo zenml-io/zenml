@@ -280,8 +280,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         # if include_metadata:
         #     options.extend(
         #         [
-        #             # joinedload(jl_arg(StepRunSchema.parents)),
-        #             # joinedload(jl_arg(StepRunSchema.run_metadata)),
+        #             joinedload(jl_arg(StepRunSchema.parents)),
+        #             joinedload(jl_arg(StepRunSchema.run_metadata)),
         #         ]
         #     )
 
@@ -485,7 +485,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
 
             # Add the step logs as "logs" if they exist, for backwards compatibility
-            # TODO: This will be safe to remove in future releases (>0.84.0).
+            # TODO: This will be safe to remove in future releases (>0.93.0).
             step_logs = [
                 log_entry
                 for log_entry in self.logs

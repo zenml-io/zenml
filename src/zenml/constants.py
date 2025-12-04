@@ -228,14 +228,14 @@ if IS_DEBUG_ENV:
         ENV_ZENML_LOGGING_VERBOSITY, default="DEBUG"
     ).upper()
     ZENML_STORAGE_LOGGING_VERBOSITY = os.getenv(
-        ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default="DEBUG"
+        ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default=None
     ).upper()
 else:
     ZENML_LOGGING_VERBOSITY = os.getenv(
         ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
     ).upper()
     ZENML_STORAGE_LOGGING_VERBOSITY = os.getenv(
-        ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default="INFO"
+        ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default=None
     ).upper()
 
 INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
