@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from uuid import uuid4
 
 from docker.errors import ContainerError
+from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
@@ -277,6 +278,122 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         )
         return None
 
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+            placeholder_run: An optional placeholder run.
+
+        Raises:
+            RuntimeError: If the pipeline run fails.
+
+        Returns:
+            Optional submission result.
+        """
+        from zenml.pipelines.dynamic.entrypoint_configuration import (
+            DynamicPipelineEntrypointConfiguration,
+        )
+
+        docker_client = docker_utils._try_get_docker_client_from_env()
+
+        settings = cast(
+            LocalDockerOrchestratorSettings,
+            self.get_settings(snapshot),
+        )
+
+        command = (
+            DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+        )
+        arguments = (
+            DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+                snapshot_id=snapshot.id,
+                run_id=placeholder_run.id if placeholder_run else None,
+            )
+        )
+        stack.check_local_paths()
+        local_stores_path = GlobalConfiguration().local_stores_path
+        volumes = {
+            local_stores_path: {
+                "bind": local_stores_path,
+                "mode": "rw",
+            }
+        }
+        orchestrator_run_id = str(uuid4())
+
+        environment[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
+        environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
+
+        image = self.get_image(snapshot=snapshot)
+        image = settings.run_args.pop("image", image)
+
+        user = None
+        if sys.platform != "win32":
+            user = os.getuid()
+        user = settings.run_args.pop("user", user)
+
+        run_args = copy.deepcopy(settings.run_args)
+        docker_environment = run_args.pop("environment", {})
+        docker_environment.update(environment)
+
+        docker_volumes = run_args.pop("volumes", {})
+        docker_volumes.update(volumes)
+
+        extra_hosts = run_args.pop("extra_hosts", {})
+        extra_hosts["host.docker.internal"] = "host-gateway"
+
+        start_time = time.time()
+        try:
+            container = docker_client.containers.run(
+                detach=True,
+                image=image,
+                entrypoint=command,
+                command=arguments,
+                user=user,
+                volumes=docker_volumes,
+                environment=docker_environment,
+                extra_hosts=extra_hosts,
+                **run_args,
+            )
+        except ContainerError as e:
+            error_message = e.stderr.decode()
+            raise RuntimeError(error_message)
+
+        logger.info(
+            "Pipeline run started in container `%s`.", container.short_id
+        )
+
+        if settings.synchronous:
+
+            def _wait_for_run_to_finish() -> None:
+                try:
+                    for line in container.logs(stream=True):
+                        logger.info(line.strip().decode())
+                except ContainerError as e:
+                    error_message = e.stderr.decode()
+                    raise RuntimeError(error_message)
+
+                run_duration = time.time() - start_time
+                logger.info(
+                    "Pipeline run has finished in `%s`.",
+                    string_utils.get_human_readable_time(run_duration),
+                )
+
+            return SubmissionResult(
+                wait_for_completion=_wait_for_run_to_finish,
+            )
+        else:
+            return None
+
     @property
     def supported_execution_modes(self) -> List[ExecutionMode]:
         """Supported execution modes for this orchestrator.
@@ -292,15 +409,18 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
 
 class LocalDockerOrchestratorSettings(BaseSettings):
-    """Local Docker orchestrator settings.
+    """Local Docker orchestrator settings."""
 
-    Attributes:
-        run_args: Arguments to pass to the `docker run` call. (See
-            https://docker-py.readthedocs.io/en/stable/containers.html for a list
-            of what can be passed.)
-    """
-
-    run_args: Dict[str, Any] = {}
+    synchronous: bool = Field(
+        default=True,
+        description="Whether to run pipelines synchronously or asynchronously.",
+    )
+    run_args: Dict[str, Any] = Field(
+        default={},
+        description="Arguments to pass to the `docker run` call. "
+        "(See https://docker-py.readthedocs.io/en/stable/containers.html for "
+        "a list of what can be passed)",
+    )
 
 
 class LocalDockerOrchestratorConfig(
@@ -324,7 +444,7 @@ class LocalDockerOrchestratorConfig(
         Returns:
             Whether the orchestrator runs synchronous or not.
         """
-        return True
+        return self.synchronous
 
 
 class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
