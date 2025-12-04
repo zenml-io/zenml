@@ -16,7 +16,6 @@
 import json
 import threading
 from collections import defaultdict
-from enum import StrEnum
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence
 
@@ -28,6 +27,7 @@ from urllib3 import Retry
 
 from zenml import __version__ as zenml_version
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.json_utils import pydantic_encoder
 
 DEFAULT_TIMEOUT = 10
