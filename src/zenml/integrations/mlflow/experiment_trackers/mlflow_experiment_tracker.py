@@ -18,7 +18,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import mlflow
-from mlflow.entities import Experiment, Run
+from mlflow.entities import Experiment, LifecycleStage, Run
 from mlflow.exceptions import MlflowException
 from mlflow.store.db.db_types import DATABASE_ENGINES
 
@@ -200,7 +200,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         if run_id:
             try:
                 run = mlflow.get_run(run_id)
-                if run.info.lifecycle_stage == "deleted":
+                if run.info.lifecycle_stage == LifecycleStage.DELETED:
                     logger.warning(
                         f"Run with id {run_id} is in 'deleted' state. "
                         "Creating a new run instead."
