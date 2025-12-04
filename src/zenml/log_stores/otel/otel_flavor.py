@@ -24,6 +24,7 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
 
     Attributes:
         service_name: Name of the service (defaults to "zenml").
+        service_version: Version of the service (defaults to the ZenML version).
         max_queue_size: Maximum queue size for batch processor.
         schedule_delay_millis: Delay between batch exports in milliseconds.
         max_export_batch_size: Maximum batch size for exports.

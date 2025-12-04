@@ -32,9 +32,7 @@ from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
-from zenml.log_stores.otel.otel_log_store import (
-    OtelLogStore,
-)
+from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path

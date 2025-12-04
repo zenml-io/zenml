@@ -6574,7 +6574,7 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                     reference_type="logs artifact store",
                 )
-            else: 
+            else:
                 self._get_reference_schema_by_id(
                     resource=pipeline_run,
                     reference_schema=StackComponentSchema,
