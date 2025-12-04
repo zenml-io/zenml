@@ -78,6 +78,10 @@ class _DummyRun:
         self.id = uuid4()
         self.name = "test-run"
         self.log_collection = None
+        self.project = SimpleNamespace(id=uuid4(), name="test-project")
+        self.pipeline = None
+        self.stack = None
+        self.user = None
 
 
 class _DummyDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
