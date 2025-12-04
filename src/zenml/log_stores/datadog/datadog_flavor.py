@@ -75,7 +75,6 @@ class DatadogLogStoreFlavor(Flavor):
         """
         return self.docs_url
 
-    # TODO: Add logo for the Datadog log store
     @property
     def logo_url(self) -> str:
         """URL to the flavor logo.
