@@ -17,6 +17,7 @@ import json
 import threading
 from collections import defaultdict
 from io import BytesIO
+from time import time_ns
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence
 
 import requests
@@ -265,7 +266,7 @@ class OTLPLogExporter(LogExporter):
         body = log_data.log_record.body
         log_record = dict(
             time_unix_nano=log_data.log_record.timestamp,
-            observed_time_unix_nano=log_data.log_record.observed_timestamp,
+            observed_time_unix_nano=time_ns(),
             span_id=span_id,
             trace_id=trace_id,
             flags=int(log_data.log_record.trace_flags),
@@ -363,7 +364,6 @@ class OTLPLogExporter(LogExporter):
         if self._shutdown:
             logger.warning("Exporter already shutdown, ignoring batch")
             return LogExportResult.FAILURE
-
         encoded_logs = self._encode_logs(batch)
 
         serialized_data = json.dumps(

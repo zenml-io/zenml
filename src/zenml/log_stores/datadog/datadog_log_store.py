@@ -56,7 +56,7 @@ class DatadogLogStore(OtelLogStore):
         """
         if not self._otlp_exporter:
             self._otlp_exporter = OTLPLogExporter(
-                endpoint=f"https://http-intake.logs.{self.config.site}/v1/logs",
+                endpoint=f"https://otlp.{self.config.site}/v1/logs",
                 headers={"dd-api-key": self.config.api_key.get_secret_value()},
             )
         return self._otlp_exporter
@@ -148,15 +148,21 @@ class DatadogLogStore(OtelLogStore):
                     exc_stacktrace = exc_info.get("stacktrace")
                     message += f"\n{exc_type}: {exc_message}\n{exc_stacktrace}"
 
+                timestamp = datetime.fromisoformat(
+                    log_fields["timestamp"].replace("Z", "+00:00")
+                )
+                severity = log_fields.get("status", "info").upper()
+                log_severity = (
+                    LoggingLevels[severity]
+                    if severity in LoggingLevels.__members__
+                    else LoggingLevels.INFO
+                )
+
                 # Parse log entry
                 entry = LogEntry(
                     message=message,
-                    level=self._parse_log_level(log_fields.get("status")),
-                    timestamp=datetime.fromisoformat(
-                        log_fields["timestamp"].replace("Z", "+00:00")
-                    )
-                    if "timestamp" in log_fields
-                    else None,
+                    level=log_severity,
+                    timestamp=timestamp,
                 )
 
                 log_entries.append(entry)
@@ -165,38 +171,8 @@ class DatadogLogStore(OtelLogStore):
             return log_entries
 
         except Exception as e:
-            logger.error(f"Error fetching logs from Datadog: {e}")
+            logger.exception(f"Error fetching logs from Datadog: {e}")
             return []
-
-    def _parse_log_level(
-        self, status: Optional[str]
-    ) -> Optional["LoggingLevels"]:
-        """Parse Datadog log status to ZenML log level.
-
-        Args:
-            status: Datadog log status string.
-
-        Returns:
-            ZenML LoggingLevels enum value.
-        """
-        from zenml.enums import LoggingLevels
-
-        if not status:
-            return None
-
-        status_upper = status.upper()
-        if status_upper in ["DEBUG", "TRACE"]:
-            return LoggingLevels.DEBUG
-        elif status_upper in ["INFO", "INFORMATION"]:
-            return LoggingLevels.INFO
-        elif status_upper in ["WARN", "WARNING"]:
-            return LoggingLevels.WARN
-        elif status_upper == "ERROR":
-            return LoggingLevels.ERROR
-        elif status_upper in ["CRITICAL", "FATAL", "EMERGENCY"]:
-            return LoggingLevels.CRITICAL
-        else:
-            return LoggingLevels.INFO
 
     def cleanup(self) -> None:
         """Cleanup the Datadog log store.
