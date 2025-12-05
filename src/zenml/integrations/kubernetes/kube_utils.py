@@ -1396,6 +1396,8 @@ def build_gateway_api_url(
 
         for listener in gateway_listeners:
             current_listener_name = listener.get("name")
+            if not current_listener_name:
+                continue
 
             if section_name and current_listener_name != section_name:
                 continue
