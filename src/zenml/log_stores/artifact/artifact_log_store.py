@@ -32,7 +32,10 @@ from opentelemetry.sdk._logs.export import LogExporter
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
-from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
+from zenml.log_stores.base_log_store import (
+    MAX_ENTRIES_PER_REQUEST,
+    BaseLogStoreEmitter,
+)
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import (
     OtelLogStore,
@@ -297,13 +300,14 @@ class ArtifactLogStore(OtelLogStore):
 
     def _finalize(
         self,
-        emitter: OtelLogStoreEmitter,
+        emitter: BaseLogStoreEmitter,
     ) -> None:
         """Finalize the stream of log records associated with an emitter.
 
         Args:
             emitter: The emitter to finalize.
         """
+        assert isinstance(emitter, ArtifactLogStoreEmitter)
         with self._lock:
             emitter.logger.emit(
                 body=END_OF_STREAM_MESSAGE,

@@ -204,7 +204,7 @@ class OtelLogStore(BaseLogStore):
 
     def _emit(
         self,
-        emitter: OtelLogStoreEmitter,
+        emitter: BaseLogStoreEmitter,
         record: logging.LogRecord,
     ) -> None:
         """Process a log record by sending to OpenTelemetry.
@@ -216,6 +216,7 @@ class OtelLogStore(BaseLogStore):
         Raises:
             RuntimeError: If the OpenTelemetry provider is not initialized.
         """
+        assert isinstance(emitter, OtelLogStoreEmitter)
         with self._lock:
             if not self._provider:
                 self._activate()
@@ -229,7 +230,7 @@ class OtelLogStore(BaseLogStore):
 
     def _finalize(
         self,
-        emitter: OtelLogStoreEmitter,
+        emitter: BaseLogStoreEmitter,
     ) -> None:
         """Finalize the stream of log records associated with an emitter.
 

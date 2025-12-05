@@ -284,14 +284,14 @@ class OTLPLogExporter(LogExporter):
 
         return {k: v for k, v in log_record.items() if v is not None}
 
-    def _encode_logs(self, logs: Sequence["LogData"]) -> Dict[str, Any]:
+    def _encode_logs(self, logs: Sequence["LogData"]) -> Any:
         """Encode a sequence of log data objects to a list of dictionaries.
 
         Args:
             logs: The sequence of log data objects to encode.
 
         Returns:
-            A dictionary representing the log data.
+            The log data.
         """
         resource_logs: Dict[Any, Dict[Any, List[Any]]] = defaultdict(
             lambda: defaultdict(list)
