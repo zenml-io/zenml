@@ -15,7 +15,7 @@
 
 import logging
 import threading
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, cast
 
@@ -90,14 +90,14 @@ class BaseLogStoreEmitter:
         Args:
             record: The log record to emit.
         """
-        self._log_store._emit(self, record)
+        self._log_store._emit(self, record, metadata=self._metadata)
 
     def deregister(self) -> None:
         """Deregister the emitter from the log store."""
         self._log_store.deregister_emitter(self)
 
 
-class BaseLogStore(StackComponent):
+class BaseLogStore(StackComponent, ABC):
     """Base class for all ZenML log stores.
 
     A log store is responsible for collecting, storing, and retrieving logs
@@ -171,12 +171,14 @@ class BaseLogStore(StackComponent):
         self,
         emitter: BaseLogStoreEmitter,
         record: logging.LogRecord,
+        metadata: Dict[str, Any],
     ) -> None:
         """Process a log record from the logging system.
 
         Args:
             emitter: The emitter to emit the log record to.
             record: The Python logging.LogRecord to process.
+            metadata: Additional metadata to attach to the log entry.
         """
 
     @abstractmethod

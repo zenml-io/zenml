@@ -14,7 +14,6 @@
 """OpenTelemetry log store implementation."""
 
 import logging
-from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
@@ -88,32 +87,21 @@ class OtelLogStoreEmitter(BaseLogStoreEmitter):
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this emitter.
         """
+        metadata = {f"zenml.{key}": value for key, value in metadata.items()}
+
+        metadata.update(
+            {
+                "zenml.log.id": str(log_model.id),
+                "zenml.log.source": log_model.source,
+                "zenml.log_store.id": str(log_store.id),
+                "zenml.log_store.name": log_store.name,
+            }
+        )
+
         super().__init__(name, log_store, log_model, metadata)
         assert isinstance(log_store, OtelLogStore)
 
-        self._logger = log_store.provider.get_logger(
-            name, attributes=self._get_logger_attributes()
-        )
-
-    def _get_logger_attributes(self) -> Dict[str, Any]:
-        """Get the attributes for the logger.
-
-        Returns:
-            The attributes for the logger.
-        """
-        attributes = {
-            f"zenml.{key}": value for key, value in self._metadata.items()
-        }
-
-        attributes.update(
-            {
-                "zenml.log.id": str(self._log_model.id),
-                "zenml.log.source": self._log_model.source,
-                "zenml.log_store.id": str(self._log_store.id),
-                "zenml.log_store.name": self._log_store.name,
-            }
-        )
-        return attributes
+        self._logger = log_store.provider.get_logger(name)
 
     @property
     def logger(self) -> "Logger":
@@ -241,12 +229,14 @@ class OtelLogStore(BaseLogStore):
         self,
         emitter: BaseLogStoreEmitter,
         record: logging.LogRecord,
+        metadata: Dict[str, Any],
     ) -> None:
         """Process a log record by sending to OpenTelemetry.
 
         Args:
             emitter: The emitter to emit the log record to.
             record: The log record to process.
+            metadata: Additional metadata to attach to the log entry.
 
         Raises:
             RuntimeError: If the OpenTelemetry provider is not initialized.
@@ -260,6 +250,7 @@ class OtelLogStore(BaseLogStore):
                 raise RuntimeError("OpenTelemetry provider is not initialized")
 
             emit_kwargs = self._handler._translate(record)
+            emit_kwargs["attributes"].update(metadata)
 
             emitter.logger.emit(**emit_kwargs)
 
@@ -316,7 +307,6 @@ class OtelLogStore(BaseLogStore):
 
         logger.debug("OtelLogStore deactivated")
 
-    @abstractmethod
     def fetch(
         self,
         logs_model: "LogsResponse",
@@ -339,3 +329,6 @@ class OtelLogStore(BaseLogStore):
         Returns:
             List of log entries from the backend.
         """
+        raise NotImplementedError(
+            "Log fetching is not supported by the OTEL log store."
+        )

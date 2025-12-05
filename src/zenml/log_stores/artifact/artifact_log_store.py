@@ -32,6 +32,7 @@ from opentelemetry.sdk._logs.export import LogExporter
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
+from zenml.log_stores import BaseLogStore
 from zenml.log_stores.base_log_store import (
     MAX_ENTRIES_PER_REQUEST,
     BaseLogStoreEmitter,
@@ -136,6 +137,9 @@ def _stream_logs_line_by_line(
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
     """
+    if not artifact_store.exists(logs_uri):
+        return []
+
     if not artifact_store.isdir(logs_uri):
         # Single file case
         with artifact_store.open(logs_uri, "r") as file:
@@ -210,17 +214,26 @@ class ArtifactLogStoreConfig(OtelLogStoreConfig):
 class ArtifactLogStoreEmitter(OtelLogStoreEmitter):
     """Artifact log store emitter."""
 
-    def _get_logger_attributes(self) -> Dict[str, Any]:
-        """Get the attributes for the logger.
+    def __init__(
+        self,
+        name: str,
+        log_store: "BaseLogStore",
+        log_model: LogsResponse,
+        metadata: Dict[str, Any],
+    ) -> None:
+        """Initialize a log store emitter.
 
-        Returns:
-            The attributes for the logger.
+        Args:
+            name: The name of the emitter.
+            log_store: The log store to emit logs to.
+            log_model: The log model associated with the emitter.
+            metadata: Additional metadata to attach to all log entries that will
+                be emitted by this emitter.
         """
-        attributes = super()._get_logger_attributes()
+        super().__init__(name, log_store, log_model, metadata)
 
-        if self._log_model.uri:
-            attributes["zenml.log.uri"] = self._log_model.uri
-        return attributes
+        if log_model.uri:
+            self._metadata["zenml.log.uri"] = log_model.uri
 
 
 class ArtifactLogStore(OtelLogStore):

@@ -69,7 +69,7 @@ class ArtifactLogExporter(LogExporter):
             finalized_log_streams: List[str] = []
 
             for log_data in batch:
-                attrs = log_data.instrumentation_scope.attributes
+                attrs = log_data.log_record.attributes
                 if not attrs:
                     continue
 
