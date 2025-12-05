@@ -25,7 +25,7 @@ The [Pro version of ZenML](https://zenml.io/pro) extends the Open Source product
 ![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp-walkthrough.gif)
 
 {% hint style="info" %}
-To try ZenML Pro or to learn more [book a call](https://www.zenml.io/book-your-demo).
+To get access to ZenML Pro, [book a call](https://www.zenml.io/book-your-demo).
 {% endhint %}
 
 ## ZenML OSS vs Pro Feature Comparison
@@ -35,66 +35,20 @@ To try ZenML Pro or to learn more [book a call](https://www.zenml.io/book-your-d
 | **User Management** | Single-user mode | Multi-user support with [SSO](self-hosted.md#identity-provider), [organizations](organization.md), and [teams](teams.md) |
 | **Access Control** | No RBAC | Full [role-based access control](roles.md) with customizable permissions |
 | **Multi-tenancy** | No workspaces/projects | [Workspaces](workspaces.md) and [projects](projects.md) for team and resource isolation |
-| **Dashboard** | Basic pipeline and run visualization | Pro dashboard with [Model Control Plane](https://docs.zenml.io/user-guides/starter-guide/track-ml-models), [Artifact Control Plane](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts), and comparison views |
-| **Pipeline Execution** | Run pipelines via SDK/CLI | Run pipelines from the dashboard, manage schedules via UI, [triggers](https://docs.zenml.io/concepts/triggers) |
+| **ZenML Web UI** | Basic pipeline and run visualization | Pro UI with [Model Control Plane](https://docs.zenml.io/concepts/models), [Artifact Control Plane](https://docs.zenml.io/concepts/artifacts), and comparison views |
+| **Pipeline Execution** | Run pipelines via SDK/CLI | Run pipelines from the UI, manage schedules through the UI, [triggers](https://docs.zenml.io/concepts/triggers) |
 | **Stack Configuration** | User-managed stacks | Advanced stack configurations with workspace/project-level restrictions for platform teams |
 | **Security** | Community updates | Prioritized security patches, SOC 2 and ISO 27001 certification |
-| **Deployment** | Self-hosted only | [SaaS](#saas-deployment), [Hybrid SaaS](#hybrid-saas-deployment), or [Air-gapped](#air-gapped-deployment) options |
+| **Deployment** | Self-hosted only | [SaaS](#saas-deployment), [Hybrid SaaS](#hybrid-saas-deployment), or [Self-hosted](#self-hosted-deployment) options |
 | **Support** | Community support | Professional support included (SaaS deployments) |
 | **Reporting** | Basic run tracking | Advanced usage reports and analytics |
 | **Core Features** | ✅ Run pipelines on stacks<br>✅ Full observability over runs<br>✅ Artifact tracking<br>✅ Model versioning | ✅ All OSS features<br>✅ [Run Snapshots](https://docs.zenml.io/concepts/snapshots)<br>✅ Enhanced filtering and search |
 
-## Deployment Scenarios Comparison
+## Deployment Scenarios
 
-| Deployment Aspect | SaaS | Hybrid SaaS | Air-gapped |
-|-------------------|------|-------------|------------|
-| **ZenML Server** | ZenML infrastructure | Customer infrastructure | Customer infrastructure |
-| **Control Plane** | ZenML infrastructure | ZenML infrastructure | Customer infrastructure |
-| **Metadata & RBAC** | ZenML infrastructure | RBAC: ZenML infrastructure<br>Run metadata: Customer infrastructure | Customer infrastructure |
-| **Compute & Data** | Customer infrastructure | Customer infrastructure | Customer infrastructure |
-| **Setup Time** | ⚡ Fastest (minutes) | Moderate | Longer (requires full deployment) |
-| **Maintenance** | ✅ Fully managed | Partially managed (workspace maintenance required) | Customer managed |
-| **Production Ready** | ✅ Day 1 | ✅ Day 1 | ✅ Day 1 |
-| **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and air-gapped environments |
+ZenML Pro offers three flexible deployment options to match your organization's needs: **SaaS**, **Hybrid**, and **Self-hosted**.
 
-### SaaS Deployment
-
-The ZenML-managed SaaS deployment provides the fastest path to production with zero infrastructure overhead. All ZenML server components run on ZenML infrastructure, while your compute resources and data remain in your environment.
-
-**What runs where:**
-- ZenML Server: ZenML infrastructure
-- Metadata and RBAC: ZenML infrastructure
-- Compute and Data: Customer infrastructure
-
-**Ideal for:** Teams that want to get started immediately without managing infrastructure, while keeping sensitive ML data in their own environment.
-
-[Learn more about SaaS architecture →](../system-architectures.md#zenml-pro-saas-architecture)
-
-### Hybrid SaaS Deployment
-
-The Hybrid deployment balances control with convenience. The ZenML control plane (handling user management, authentication, and RBAC) runs on ZenML infrastructure, while the ZenML server and all metadata run in your environment.
-
-**What runs where:**
-- ZenML Management Plane: ZenML infrastructure
-- ZenML Server: Customer infrastructure
-- RBAC: ZenML infrastructure
-- Run metadata: Customer infrastructure
-- Compute and Data: Customer infrastructure
-
-**Ideal for:** Organizations with security or compliance requirements that mandate keeping metadata and credentials within their infrastructure, while benefiting from centralized user management.
-
-[Learn more about Hybrid architecture →](../system-architectures.md#zenml-pro-hybrid-saas)
-
-### Air-gapped Deployment
-
-The fully self-hosted, air-gapped deployment gives you complete control and data sovereignty. All ZenML components run entirely within your infrastructure with no external dependencies.
-
-**What runs where:**
-- All components: Customer infrastructure (completely isolated)
-
-**Ideal for:** Organizations with the strictest security requirements, regulated industries, or environments that must operate without external network access.
-
-[Learn more about self-hosted architecture →](../system-architectures.md#zenml-pro-self-hosted-architecture) | [Self-hosting setup guide →](self-hosted.md)
+[Explore all deployment scenarios →](deployments-overview.md)
 
 ## Security & Compliance
 
@@ -105,8 +59,8 @@ All ZenML Pro deployments include:
 - ✅ **Vulnerability Assessment Reports** available on request
 - ✅ **Software Bill of Materials (SBOM)** available on request
 
-For software deployed on customer infrastructure (Hybrid and Air-gapped scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
+For software deployed on your infrastructure (Hybrid and Self-hosted scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
 
 ## Pro Feature Details
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Workspaces</strong></td><td>Isolated environments for teams and projects</td><td><a href=".gitbook/assets/pro-workspaces.png">pro-workspaces.png</a></td><td></td><td></td><td><a href="workspaces.md">workspaces.md</a></td></tr><tr><td><strong>Organizations</strong></td><td>Top-level entity for managing users and teams</td><td><a href=".gitbook/assets/pro-organizations.png">pro-organizations.png</a></td><td></td><td></td><td><a href="organization.md">organization.md</a></td></tr><tr><td><strong>Teams</strong></td><td>Group users for simplified access management</td><td><a href=".gitbook/assets/pro-teams.png">pro-teams.png</a></td><td></td><td></td><td><a href="teams.md">teams.md</a></td></tr><tr><td><strong>Roles</strong></td><td>Customizable role-based access control</td><td><a href=".gitbook/assets/pro-roles.png">pro-roles.png</a></td><td></td><td></td><td><a href="roles.md">roles.md</a></td></tr><tr><td><strong>Projects</strong></td><td>Organize work within workspaces</td><td></td><td></td><td></td><td><a href="projects.md">projects.md</a></td></tr><tr><td><strong>Deployment Options</strong></td><td>SaaS, Hybrid, or Air-gapped deployments</td><td><a href=".gitbook/assets/pro-self-host.png">pro-self-host.png</a></td><td></td><td></td><td><a href="self-hosted.md">self-hosted.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden></th><th data-hidden data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Workspaces</strong></td><td>Isolated environments for teams and projects</td><td><a href=".gitbook/assets/pro-workspaces.png">pro-workspaces.png</a></td><td></td><td></td><td><a href="workspaces.md">workspaces.md</a></td></tr><tr><td><strong>Organizations</strong></td><td>Top-level entity for managing users and teams</td><td><a href=".gitbook/assets/pro-organizations.png">pro-organizations.png</a></td><td></td><td></td><td><a href="organization.md">organization.md</a></td></tr><tr><td><strong>Teams</strong></td><td>Group users for simplified access management</td><td><a href=".gitbook/assets/pro-teams.png">pro-teams.png</a></td><td></td><td></td><td><a href="teams.md">teams.md</a></td></tr><tr><td><strong>Roles</strong></td><td>Customizable role-based access control</td><td><a href=".gitbook/assets/pro-roles.png">pro-roles.png</a></td><td></td><td></td><td><a href="roles.md">roles.md</a></td></tr><tr><td><strong>Projects</strong></td><td>Organize work within workspaces</td><td><a href=".gitbook/assets/pro-projects.png">pro-projects.png</a></td><td></td><td></td><td><a href="projects.md">projects.md</a></td></tr><tr><td><strong>Workload Managers</strong></td><td>Enable running pipelines from the ZenML Pro UI</td><td><a href=".gitbook/assets/pro-workload-managers.png">pro-workload-managers.png</a></td><td></td><td></td><td><a href="workload-managers.md">workload-managers.md</a></td></tr><tr><td><strong>Deployment Options</strong></td><td>SaaS, Hybrid, or Full On-Prem deployments</td><td><a href=".gitbook/assets/pro-self-host.png">pro-self-host.png</a></td><td></td><td></td><td><a href="self-hosted.md">self-hosted.md</a></td></tr></tbody></table>
