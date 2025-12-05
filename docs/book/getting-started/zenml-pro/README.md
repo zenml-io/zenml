@@ -35,7 +35,7 @@ To get access to ZenML Pro, [book a call](https://www.zenml.io/book-your-demo).
 | **User Management** | Single-user mode | Multi-user support with [SSO](self-hosted.md#identity-provider), [organizations](organization.md), and [teams](teams.md) |
 | **Access Control** | No RBAC | Full [role-based access control](roles.md) with customizable permissions |
 | **Multi-tenancy** | No workspaces/projects | [Workspaces](workspaces.md) and [projects](projects.md) for team and resource isolation |
-| **ZenML Pro UI** | Basic pipeline and run visualization | Pro UI with [Model Control Plane](https://docs.zenml.io/concepts/models), [Artifact Control Plane](https://docs.zenml.io/concepts/artifacts), and comparison views |
+| **ZenML Web UI** | Basic pipeline and run visualization | Pro UI with [Model Control Plane](https://docs.zenml.io/concepts/models), [Artifact Control Plane](https://docs.zenml.io/concepts/artifacts), and comparison views |
 | **Pipeline Execution** | Run pipelines via SDK/CLI | Run pipelines from the UI, manage schedules through the UI, [triggers](https://docs.zenml.io/concepts/triggers) |
 | **Stack Configuration** | User-managed stacks | Advanced stack configurations with workspace/project-level restrictions for platform teams |
 | **Security** | Community updates | Prioritized security patches, SOC 2 and ISO 27001 certification |

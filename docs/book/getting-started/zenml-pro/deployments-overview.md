@@ -170,7 +170,7 @@ All ZenML Pro deployments include:
 
 For software deployed on your infrastructure (Hybrid and Full On-Prem scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
 
-## Running Pipelines from the Dashboard
+## Running Pipelines from the web UI
 
 All deployment scenarios support running pipeline snapshots from the dashboard through [workload managers](workload-managers.md). Workload managers are built into the ZenML Pro server and can be configured to orchestrate pipeline execution on your Kubernetes cluster, AWS ECS, or GCP infrastructure.
 

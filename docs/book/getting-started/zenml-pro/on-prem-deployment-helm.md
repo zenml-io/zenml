@@ -100,12 +100,20 @@ On a machine with internet access and access to the ZenML Pro container registri
 
 2. Pull all required images:
    - **Pro Control Plane images:**
-     - `zenml-pro-api:<version>`
-     - `zenml-pro-dashboard:<version>`
+     - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version>`
+     - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<version>`
    - **Workspace Server image:**
-     - `zenml-pro-server:<version>`
+     - `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>`
    - **Client image (for pipelines):**
      - `zenmldocker/zenml:<version>`
+
+   Example pull commands:
+   ```bash
+   docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version>
+   docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<version>
+   docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>
+   docker pull zenmldocker/zenml:<version>
+   ```
 
 3. Tag images with your internal registry:
    ```
@@ -116,8 +124,11 @@ On a machine with internet access and access to the ZenML Pro container registri
    ```
 
 4. Save images to tar files for transfer:
-   ```
-   docker save <image> > zenml-image.tar
+   ```bash
+   docker save 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version> > zenml-pro-api.tar
+   docker save 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<version> > zenml-pro-dashboard.tar
+   docker save 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version> > zenml-pro-server.tar
+   docker save zenmldocker/zenml:<version> > zenml-client.tar
    ```
 
 ### 1.2 Download Helm Charts
@@ -173,10 +184,10 @@ In your air-gapped environment, load the images:
 
 2. Tag images for your internal registry:
    ```
-   docker tag zenml-pro-api:version internal-registry.mycompany.com/zenml/zenml-pro-api:version
-   docker tag zenml-pro-dashboard:version internal-registry.mycompany.com/zenml/zenml-pro-dashboard:version
-   docker tag zenml-pro-server:version internal-registry.mycompany.com/zenml/zenml-pro-server:version
-   docker tag zenml:version internal-registry.mycompany.com/zenml/zenml:version
+   docker tag 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:version internal-registry.mycompany.com/zenml/zenml-pro-api:version
+   docker tag 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:version internal-registry.mycompany.com/zenml/zenml-pro-dashboard:version
+   docker tag 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:version internal-registry.mycompany.com/zenml/zenml-pro-server:version
+   docker tag zenmldocker/zenml:version internal-registry.mycompany.com/zenml/zenml:version
    ```
 
 3. Push images to your internal registry:
