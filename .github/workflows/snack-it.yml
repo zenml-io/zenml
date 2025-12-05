@@ -5,7 +5,9 @@ name: Snack-it - Create Issue from PR
 # The PR branch is linked to the issue for easy tracking
 # The PR author is assigned to the issue
 #
-# Can also be triggered manually via workflow_dispatch with a PR number for testing
+# Can also be triggered manually via workflow_dispatch with a PR number for testing.
+# Note: even when triggered manually, the target PR must have the "snack-it" label
+# unless override_label_check is set to true.
 # 
 # REQUIREMENTS:
 # - GH_PAT_TOKEN_FOR_SNACK_IT: Personal Access Token with repo, project, and org:read scopes
@@ -19,6 +21,11 @@ on:
         description: PR number to create snack issue from
         required: true
         type: number
+      override_label_check:
+        description: Run snack-it even if the PR does not have the snack-it label
+        required: false
+        type: boolean
+        default: false
 permissions:
   issues: write  # creating issues + comments
   pull-requests: read  # reading PR data
@@ -31,25 +38,31 @@ jobs:
         id: check-label
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           script: |
             let hasSnackItLabel = false;
             if (context.eventName === 'workflow_dispatch') {
               const prNumber = parseInt(context.payload.inputs.pr_number, 10);
+              const overrideLabelCheck = context.payload.inputs.override_label_check === 'true';
               console.log('Manual trigger detected for PR  #' + prNumber + ' - checking labels');
-              try {
-                const prData = await github.rest.pulls.get({
+              if (overrideLabelCheck) {
+                console.log('override_label_check is true - skipping label check and forcing hasSnackItLabel = true');
+                hasSnackItLabel = true;
+              } else {
+                try {
+                  const prData = await github.rest.pulls.get({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   pull_number: prNumber
                 });
-                const labels = prData.data.labels || [];
-                hasSnackItLabel = labels.some(label => label.name === 'snack-it');
-                console.log('PR labels:', labels.map(l => l.name).join(', '));
-                console.log('Has snack-it label:', hasSnackItLabel);
-              } catch (error) {
-                console.log(`Error fetching PR  #${prNumber} to check labels: ${error.message}`);
-                hasSnackItLabel = false;
+                  const labels = prData.data.labels || [];
+                  hasSnackItLabel = labels.some(label => label.name === 'snack-it');
+                  console.log('PR labels:', labels.map(l => l.name).join(', '));
+                  console.log('Has snack-it label:', hasSnackItLabel);
+                } catch (error) {
+                  console.log(`Error fetching PR  #${prNumber} to check labels: ${error.message}`);
+                  hasSnackItLabel = false;
+                }
               }
             } else if (context.payload.pull_request) {
               // Check if PR has snack-it label
@@ -75,7 +88,7 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           script: |
             // Get PR details (handle both workflow_dispatch and pull_request events)
             let pr;
@@ -106,6 +119,7 @@ jobs:
               core.setOutput('issue_number', existing.number);
               core.setOutput('issue_node_id', existing.node_id);
               core.setOutput('pr_number', pr.number);
+              core.setOutput('issue_reused', 'true');
               return existing.number;
             }
             // Create simple issue from PR
@@ -152,6 +166,7 @@ jobs:
             core.setOutput('issue_number', issue.data.number);
             core.setOutput('issue_node_id', issue.data.node_id);
             core.setOutput('pr_number', pr.number);
+            core.setOutput('issue_reused', 'false');
             console.log(`✅ Created issue  #${issue.data.number}`);
             return issue.data.number;
       - name: Add issue to project and set status
@@ -190,7 +205,7 @@ jobs:
                 organization(login: $org) {
                   projectV2(number: $number) {
                     id
-                    fields(first: 20) {
+                    fields(first: 50) {
                       nodes {
                         ... on ProjectV2SingleSelectField {
                           id
@@ -218,12 +233,12 @@ jobs:
               console.log('Status field not found in project');
               console.log('Available fields:', project.fields.nodes.map(f => f.name));
             }
-            const inReviewOption = statusField?.options.find(opt => 
+            const inReviewOption = statusField?.options?.find(opt =>
               opt.name === 'In Review' || opt.name === 'In review'
             );
             if (!inReviewOption) {
               console.log('In Review option not found');
-              console.log('Available options:', statusField?.options.map(o => o.name));
+              console.log('Available options:', statusField?.options?.map(o => o.name));
             }
             // Add the issue to the project
             const addToProjectMutation = `
@@ -328,10 +343,11 @@ jobs:
               // The issue was still created successfully
             }
       - name: Comment on PR
-        if: steps.check-label.outputs.snack_it == 'true'
+        if: steps.check-label.outputs.snack_it == 'true' && steps.create-issue.outputs.issue_reused
+          == 'false'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           script: |-
             const issueNumber = '${{ steps.create-issue.outputs.issue_number }}';
             const prNumber = '${{ steps.create-issue.outputs.pr_number }}';
