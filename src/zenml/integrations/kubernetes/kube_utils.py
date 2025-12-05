@@ -1355,3 +1355,66 @@ def build_service_url(
         return f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
 
     return None
+
+
+def build_gateway_api_url(
+    gateway: Union[Dict[str, Any], Any],
+    httproute: Union[Dict[str, Any], Any],
+) -> Optional[str]:
+    """Build URL from Gateway API Gateway and HTTPRoute resources.
+
+    Gateway API is the newer Kubernetes standard for ingress/routing.
+    It uses Gateway (entry point) + HTTPRoute (routing rules) instead of Ingress.
+
+    Args:
+        gateway: Gateway resource (gateway.networking.k8s.io/v1beta1).
+        httproute: HTTPRoute resource (gateway.networking.k8s.io/v1beta1).
+
+    Returns:
+        Service URL from Gateway API, or None if URL cannot be determined.
+    """
+    gateway_dict = normalize_resource_to_dict(gateway)
+    httproute_dict = normalize_resource_to_dict(httproute)
+
+    gateway_status = gateway_dict.get("status", {})
+    gateway_listeners = gateway_status.get("listeners", [])
+
+    httproute_spec = httproute_dict.get("spec", {})
+    httproute_hostnames = httproute_spec.get("hostnames", [])
+    httproute_rules = httproute_spec.get("rules", [])
+
+    if not httproute_hostnames or not httproute_rules:
+        return None
+
+    hostname = httproute_hostnames[0]
+
+    protocol = "http"
+    parent_refs = httproute_spec.get("parentRefs", [])
+    if parent_refs:
+        parent_ref = parent_refs[0]
+        section_name = parent_ref.get("sectionName")
+
+        for listener in gateway_listeners:
+            current_listener_name = listener.get("name")
+            if not current_listener_name:
+                continue
+
+            if section_name and current_listener_name != section_name:
+                continue
+
+            listener_protocol = listener.get("protocol", "").lower()
+            if listener_protocol in ("https", "tls"):
+                protocol = "https"
+                break
+
+    path = "/"
+    if httproute_rules:
+        first_rule = httproute_rules[0]
+        matches = first_rule.get("matches", [])
+        if matches:
+            first_match = matches[0]
+            match_path = first_match.get("path")
+            if match_path:
+                path = match_path.get("value", "/")
+
+    return f"{protocol}://{hostname}{path}"

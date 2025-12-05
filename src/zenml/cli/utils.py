@@ -2363,10 +2363,9 @@ def pretty_print_deployment(
     if deployment.url:
         declare("\n[bold]Connection information:[/bold]")
 
-        declare(f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]")
-        declare(
-            f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]"
-        )
+        endpoint_url = deployment.url.rstrip("/")
+        declare(f"\n[bold]Endpoint URL:[/bold] [link]{endpoint_url}[/link]")
+        declare(f"[bold]Swagger URL:[/bold] [link]{endpoint_url}/docs[/link]")
 
         # Auth key handling with proper security
         auth_key = deployment.auth_key
@@ -2417,7 +2416,7 @@ def pretty_print_deployment(
         curl_headers.append('-H "Content-Type: application/json"')
         headers_str = "\\\n  ".join(curl_headers)
 
-        curl_command = f"""curl -X POST {deployment.url}/invoke \\
+        curl_command = f"""curl -X POST {endpoint_url}/invoke \\
   {headers_str} \\
   -d '{{
     "parameters": {curl_params}
