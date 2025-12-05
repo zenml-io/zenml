@@ -1,19 +1,19 @@
 ---
-description: Learn about ZenML Pro Full On-Prem deployment - complete control and data sovereignty for the strictest security requirements.
+description: Learn about ZenML Pro Self-hosted deployment - complete control and data sovereignty for the strictest security requirements.
 icon: shield-halved
 ---
 
-# Full On-Prem Deployment
+# Self-hosted Deployment
 
-ZenML Pro Full On-Prem deployment provides complete control and data sovereignty for organizations with the strictest security, compliance, or regulatory requirements. All ZenML components run entirely within your infrastructure with no external dependencies or internet connectivity required.
+ZenML Pro Self-hosted deployment provides complete control and data sovereignty for organizations with the strictest security, compliance, or regulatory requirements. All ZenML components run entirely within your infrastructure with no external dependencies or internet connectivity required.
 
 {% hint style="info" %}
-To learn more about Full On-Prem deployment, [book a call](https://www.zenml.io/book-your-demo).
+To learn more about Self-hosted deployment, [book a call](https://www.zenml.io/book-your-demo).
 {% endhint %}
 
 ## Overview
 
-In a Full On-Prem deployment, every component of ZenML Pro runs within your isolated network environment. This architecture is designed for organizations that must operate in completely disconnected environments or have regulatory requirements preventing any external communication.
+In a Self-hosted deployment, every component of ZenML Pro runs within your isolated network environment. This architecture is designed for organizations that must operate in completely disconnected environments or have regulatory requirements preventing any external communication.
 
 ![ZenML Pro self-hosted deployment architecture](../../.gitbook/assets/cloud_architecture_scenario_2.png)
 
@@ -37,7 +37,7 @@ In a Full On-Prem deployment, every component of ZenML Pro runs within your isol
 
 ```mermaid
 flowchart TB
-  subgraph infra["Your Infrastructure (Full On-Prem)"]
+  subgraph infra["Your Infrastructure (Self-hosted)"]
     direction TB
 
     control_plane["<b>ZenML Pro Control Plane</b><br/>- Authentication & Authorization<br/>- RBAC Management<br/>- Workspace Coordination<br/>- Pro Metadata Store"]
@@ -71,7 +71,7 @@ flowchart TB
 
 For a detailed explanation of the common pipeline execution data flow across all deployment scenarios, see [Common Pipeline Execution Data Flow](deployments-overview.md#common-pipeline-execution-data-flow) in the Deployment Scenarios Overview.
 
-In Full On-Prem deployment, users authenticate via your internal identity provider (LDAP/AD/OIDC), and the control plane (running in your infrastructure) handles both authentication and RBAC. All communication happens entirely within your infrastructure boundary with zero external dependencies or internet connectivity required.
+In Self-hosted deployment, users authenticate via your internal identity provider (LDAP/AD/OIDC), and the control plane (running in your infrastructure) handles both authentication and RBAC. All communication happens entirely within your infrastructure boundary with zero external dependencies or internet connectivity required.
 
 ## Key Benefits
 
@@ -109,7 +109,7 @@ In Full On-Prem deployment, users authenticate via your internal identity provid
 
 ## Ideal Use Cases
 
-Full On-Prem deployment is essential for:
+Self-hosted deployment is essential for:
 
 - **Government and defense** organizations with classified data requirements
 - **Regulated industries** (healthcare, finance) with strict data residency requirements
@@ -158,9 +158,9 @@ Deploy at edge locations:
 
 ### Architecture Diagram
 
-![Full On-Prem deployment architecture](../../.gitbook/assets/air-gapped-architecture.png)
+![Self-hosted deployment architecture](../../.gitbook/assets/air-gapped-architecture.png)
 
-The diagram above illustrates a complete Full On-Prem ZenML Pro deployment with all components running within your organization's VPC. This architecture ensures zero external communication while providing full enterprise MLOps capabilities.
+The diagram above illustrates a complete Self-hosted ZenML Pro deployment with all components running within your organization's VPC. This architecture ensures zero external communication while providing full enterprise MLOps capabilities.
 
 ### Architecture Components
 
@@ -350,7 +350,7 @@ Available on request for compliance and security reviews:
 
 ## Comparison with Other Deployments
 
-| Feature | SaaS | Hybrid SaaS | Full On-Prem |
+| Feature | SaaS | Hybrid SaaS | Self-hosted |
 |---------|------|-------------|------------|
 | Internet Required | Yes (metadata) | Yes (control plane) | **No** |
 | Setup Time | Minutes | Hours/Days | Days/Weeks |
@@ -361,13 +361,13 @@ Available on request for compliance and security reviews:
 | Customization | Limited | Moderate | **Complete** |
 | Best For | Fast start | Balance | **Max security** |
 
-[Compare all deployment options →](README.md#deployment-scenarios-comparison)
+[Compare all deployment options →](README.md#deployment-scenarios)
 
 ## Migration Path
 
-### From ZenML OSS to Full On-Prem Pro
+### From ZenML OSS to Self-hosted Pro
 
-If you're interested in migrating from ZenML OSS to a Full On-Prem Pro deployment, we're here to help guide you through every step of the process. Migration paths are highly dependent on your specific environment, infrastructure setup, and current ZenML OSS deployment configuration.
+If you're interested in migrating from ZenML OSS to a Self-hosted Pro deployment, we're here to help guide you through every step of the process. Migration paths are highly dependent on your specific environment, infrastructure setup, and current ZenML OSS deployment configuration.
 
 It's possible to migrate existing stacks or even existing metadata from existing OSS deployments. We can figure out how and what to migrate together in a call.
 
@@ -376,11 +376,11 @@ It's possible to migrate existing stacks or even existing metadata from existing
 - [Book a migration consultation →](https://www.zenml.io/book-your-demo)
 - Or email us at [cloud@zenml.io](mailto:cloud@zenml.io)
 
-Your ZenML representative will work with you to assess your current setup, understand your Full On-Prem requirements, and provide a tailored migration plan that fits your environment.
+Your ZenML representative will work with you to assess your current setup, understand your Self-hosted requirements, and provide a tailored migration plan that fits your environment.
 
 ### From Other Pro Deployments
 
-If you're moving from SaaS or Hybrid to Full On-Prem, migration paths can vary significantly depending on your organization's size, data residency requirements, and current ZenML setup. We recommend discussing your plans with a ZenML solutions architect.
+If you're moving from SaaS or Hybrid to Self-hosted, migration paths can vary significantly depending on your organization's size, data residency requirements, and current ZenML setup. We recommend discussing your plans with a ZenML solutions architect.
 
 **Next steps:**
 
@@ -406,7 +406,7 @@ Your ZenML representative will provide you with a tailored migration checklist, 
 
 ## Get Started
 
-Ready to deploy ZenML Pro in a Full On-Prem environment?
+Ready to deploy ZenML Pro in a Self-hosted environment?
 
 [Book a Demo](https://www.zenml.io/book-your-demo){ .md-button .md-button--primary }
 

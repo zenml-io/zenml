@@ -1,5 +1,5 @@
 ---
-description: Deploy ZenML Pro Air-gapped on Kubernetes with Helm - complete self-hosted setup with no external dependencies.
+description: Deploy ZenML Pro Self-hosted on Kubernetes with Helm - complete self-hosted setup with no external dependencies.
 layout:
   title:
     visible: true

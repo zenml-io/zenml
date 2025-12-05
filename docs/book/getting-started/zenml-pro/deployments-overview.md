@@ -20,7 +20,7 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 
 ## Quick Comparison
 
-| Deployment Aspect | SaaS | Hybrid SaaS | Full On-Prem |
+| Deployment Aspect | SaaS | Hybrid SaaS | Self-hosted |
 |-------------------|------|-------------|------------|
 | **ZenML Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
 | **Pipeline/ Artifact Metadata** | ZenML infrastructure | Your infrastructure | Your infrastructure |
@@ -80,9 +80,9 @@ Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure 
 
 [Learn more about Hybrid deployment →](hybrid-deployment.md)
 
-### Full On-Prem Deployment
+### Self-hosted Deployment
 
-Choose **Full On-Prem** if you need complete control with no external dependencies.
+Choose **Self-hosted** if you need complete control with no external dependencies.
 
 **What runs where:**
 - All components: [Your infrastructure](https://docs.zenml.io/stacks) (completely isolated)
@@ -95,7 +95,7 @@ Choose **Full On-Prem** if you need complete control with no external dependenci
 
 **Ideal for:** Regulated industries (healthcare, finance, defense), government organizations, enterprises with strict data residency requirements, environments requiring offline operation.
 
-[Learn more about Full On-Prem deployment →](air-gapped-deployment.md)
+[Learn more about Self-hosted deployment →](self-hosted-deployment.md)
 
 ## Common Pipeline Execution Data Flow
 
@@ -133,7 +133,7 @@ All three deployment scenarios follow a similar pipeline execution pattern, with
 
 **Hybrid**: Metadata and control plane are split — authentication/RBAC happens at ZenML control plane, but all run metadata, artifacts, and compute stay in your infrastructure.
 
-**Full On-Prem**: All components (control plane, metadata, authentication, compute) run entirely within your infrastructure with zero external dependencies.
+**Self-hosted**: All components (control plane, metadata, authentication, compute) run entirely within your infrastructure with zero external dependencies.
 
 ## Making Your Choice
 
@@ -142,22 +142,22 @@ Consider these factors when deciding:
 1. **Data Location Requirements**: Where must your ML metadata and run data reside?
    - Cloud-hosted is acceptable → **SaaS**
    - Must stay in your infrastructure → **Hybrid**
-   - Must be completely isolated on-premises → **Full On-Prem**
+   - Must be completely isolated on-premises → **Self-hosted**
 
 2. **Infrastructure Complexity**: How much infrastructure control do you want?
    - Minimal → **SaaS**
    - Moderate → **Hybrid**
-   - Full control → **Full On-Prem**
+   - Full control → **Self-hosted**
 
 3. **Time to Value**: How quickly do you need to be productive?
    - Within 1 hour → **SaaS**
    - Within 4 hours → **Hybrid**
-   - Within 8 hours (or longer planning period) → **Full On-Prem**
+   - Within 8 hours (or longer planning period) → **Self-hosted**
 
 4. **Compliance Requirements**: What regulations apply to your organization?
    - General business → **SaaS**
    - Data residency rules → **Hybrid**
-   - Strict isolation requirements → **Full On-Prem**
+   - Strict isolation requirements → **Self-hosted**
 
 ## Security & Compliance
 
@@ -168,7 +168,7 @@ All ZenML Pro deployments include:
 - ✅ **Vulnerability Assessment Reports** available on request
 - ✅ **Software Bill of Materials (SBOM)** available on request
 
-For software deployed on your infrastructure (Hybrid and Full On-Prem scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
+For software deployed on your infrastructure (Hybrid and Self-hosted scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
 
 ## Running Pipelines from the web UI
 
@@ -180,7 +180,7 @@ Learn more: [Understanding Workload Managers](workload-managers.md)
 
 - **Ready to start?** [Choose SaaS Deployment](saas-deployment.md)
 - **Need metadata control?** [Set up Hybrid Deployment](hybrid-deployment.md)
-- **Require complete isolation?** [Configure Full On-Prem Deployment](air-gapped-deployment.md)
+- **Require complete isolation?** [Configure Self-hosted Deployment](self-hosted-deployment.md)
 - **Deploying on your own infrastructure?** [See Self-hosted Deployment Guide](self-hosted.md)
 - **Want to run pipelines from the dashboard?** [Configure Workload Managers](workload-managers.md)
 

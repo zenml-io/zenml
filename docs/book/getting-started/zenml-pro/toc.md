@@ -9,8 +9,8 @@
 * [Hybrid SaaS Deployment](hybrid-deployment.md)
   * [Kubernetes with Helm](hybrid-deployment-helm.md)
   * [AWS ECS](hybrid-deployment-ecs.md)
-* [Full On-Prem Deployment](on-prem-deployment.md)
-  * [Kubernetes with Helm](on-prem-deployment-helm.md)
+* [Self-hosted Deployment](self-hosted-deployment.md)
+  * [Kubernetes with Helm](self-hosted-deployment-helm.md)
 
 ## Core Concepts
 

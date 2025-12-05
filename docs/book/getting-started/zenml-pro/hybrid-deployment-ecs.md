@@ -56,10 +56,10 @@ Create three security groups:
 2. **ECS Security Group**
    - Inbound: HTTP (8000) from the ALB security group
    - Outbound: HTTPS (443) to `0.0.0.0/0` (for ZenML Cloud access)
-   - Outbound: TCP (3306 for MySQL or 5432 for PostgreSQL) to the RDS security group
+   - Outbound: TCP (3306 for MySQL) to the RDS security group
 
 3. **RDS Security Group**
-   - Inbound: TCP (3306 for MySQL or 5432 for PostgreSQL) from the ECS security group
+   - Inbound: TCP (3306 for MySQL) from the ECS security group
    - Outbound: Not restricted
 
 ### NAT Gateway
@@ -79,10 +79,10 @@ For your private subnets (where ECS tasks run):
 
 ## Step 2: Set Up RDS Database
 
-Create an RDS database instance (MySQL or PostgreSQL):
+Create an RDS database instance. **Important**: Workspace servers only support MySQL, not PostgreSQL.
 
 **Configuration:**
-- **DB Engine**: MySQL 8.0+ or PostgreSQL 12+
+- **DB Engine**: MySQL 8.0+ (PostgreSQL is not supported for workspace servers)
 - **Instance Class**: `db.t3.micro` or larger depending on expected load
 - **Storage**: 100 GB initial (with automatic scaling enabled)
 - **Multi-AZ**: Enable for production deployments
@@ -143,7 +143,7 @@ In the AWS Console or using AWS CLI/Terraform, create a task definition with:
 - **Task Role**: Task role created above
 
 **Container Configuration:**
-- **Image**: `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:0.73.0`
+- **Image**: `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<ZENML_OSS_VERSION>`
 - **Port Mapping**: Container port 8000 to port 8000
 - **Essential**: Yes
 
@@ -162,7 +162,7 @@ Set these in the task definition:
 | `ZENML_SERVER_PRO_WORKSPACE_NAME` | Your workspace name |
 | `ZENML_SERVER_PRO_OAUTH2_AUDIENCE` | `https://cloudapi.zenml.io` |
 | `ZENML_SERVER_SERVER_URL` | `https://zenml.mycompany.com` |
-| `ZENML_DATABASE_URL` | `mysql://user:password@hostname:3306/zenml_hybrid` |
+| `ZENML_DATABASE_URL` | `mysql://user:password@hostname:3306/zenml_hybrid` (MySQL only - PostgreSQL not supported) |
 | `ZENML_SERVER_HOSTNAME` | `0.0.0.0` |
 | `ZENML_SERVER_PORT` | `8000` |
 | `ZENML_LOGGING_LEVEL` | `INFO` |
@@ -289,7 +289,7 @@ This is enabled by the ALB and ALB security group configuration.
 ### Database Access
 
 ECS tasks need TCP access to:
-- Your RDS instance on port 3306 (MySQL) or 5432 (PostgreSQL)
+- Your RDS instance on port 3306 (MySQL)
 
 This is enabled by the ECS security group egress rule and RDS security group ingress rule.
 
@@ -437,7 +437,7 @@ Check ECS task logs in CloudWatch:
 1. Verify database is running and accessible
 2. Check ECS security group allows outbound to RDS security group
 3. Verify `ZENML_DATABASE_URL` has correct hostname, port, and credentials
-4. Test connectivity from an ECS task using a MySQL/PostgreSQL client
+4. Test connectivity from an ECS task using a MySQL client
 
 ### Can't Reach Server via HTTPS
 

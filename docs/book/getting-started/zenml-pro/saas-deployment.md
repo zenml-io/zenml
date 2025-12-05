@@ -153,7 +153,7 @@ ZenML Pro SaaS includes:
 
 ## Comparison with Other Deployments
 
-| Feature | SaaS | Hybrid SaaS | Full On-Prem |
+| Feature | SaaS | Hybrid SaaS | Self-hosted |
 |---------|------|-------------|------------|
 | Setup Time | ⚡ Minutes | Hours | Days |
 | Maintenance | Zero | Workspace only | Full stack |
@@ -161,7 +161,7 @@ ZenML Pro SaaS includes:
 | Data Sovereignty | Metadata on ZenML | Full | Full |
 | Best For | Fast time-to-value | Security requirements | Strictest compliance |
 
-[Compare all deployment options →](README.md#deployment-scenarios-comparison)
+[Compare all deployment options →](README.md#deployment-scenarios)
 
 ## Migration Path
 
@@ -183,7 +183,7 @@ Need help with migration? Our support team can assist.
 - [System Architecture Overview](../system-architectures.md#zenml-pro-saas-architecture)
 - [Deployment Scenarios Overview](deployments-overview.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
-- [Full On-Prem Deployment](air-gapped-deployment.md)
+- [Self-hosted Deployment](self-hosted-deployment.md)
 - [Workload Managers](workload-managers.md)
 - [Security & Compliance](README.md#security--compliance)
 

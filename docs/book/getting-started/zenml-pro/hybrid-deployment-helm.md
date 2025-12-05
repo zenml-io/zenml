@@ -31,12 +31,15 @@ Before starting, complete the setup described in [Hybrid Deployment Overview](hy
 - Step 2: Configure your infrastructure (database, networking, TLS)
 - Step 3: Obtain Pro credentials from ZenML Support
 
-## Step 1: Add ZenML Helm Repository
+## Step 1: Prepare Helm Chart
+
+For OCI-based Helm charts, you can either pull the chart or install directly. To pull the chart first:
 
 ```bash
-helm repo add zenml oci://public.ecr.aws/zenml
-helm repo update
+helm pull oci://public.ecr.aws/zenml/zenml --version <ZENML_OSS_VERSION>
 ```
+
+Alternatively, you can install directly from OCI (see Step 5 below).
 
 ## Step 2: Create Kubernetes Namespace
 
@@ -97,9 +100,10 @@ zenml:
         key: ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET
 
   # Database Configuration
+  # Note: Workspace servers only support MySQL, not PostgreSQL
   database:
     external:
-      type: mysql  # or postgresql
+      type: mysql
       host: mysql.mycompany.com
       port: 3306
       username: zenml_user
@@ -109,7 +113,7 @@ zenml:
   # Image Configuration
   image:
     repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
-    tag: "0.92.0"  # Match your ZenML version
+    tag: "<ZENML_OSS_VERSION>"  # e.g., "0.73.0" - Match your ZenML OSS version
     pullPolicy: IfNotPresent
 
   # Ingress Configuration
@@ -170,13 +174,21 @@ securityContext:
 
 ## Step 5: Deploy with Helm
 
-Install the ZenML chart:
+Install the ZenML chart directly from OCI:
 
 ```bash
-helm install zenml zenml/zenml \
+helm install zenml oci://public.ecr.aws/zenml/zenml \
   --namespace zenml-hybrid \
   --values zenml-hybrid-values.yaml \
-  --version 0.73.0
+  --version <ZENML_OSS_VERSION>
+```
+
+Or if you pulled the chart in Step 1, install from the local file:
+
+```bash
+helm install zenml ./zenml-<ZENML_OSS_VERSION>.tgz \
+  --namespace zenml-hybrid \
+  --values zenml-hybrid-values.yaml
 ```
 
 Monitor the deployment:
@@ -250,7 +262,7 @@ zenml:
     ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
     ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
     ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:0.73.0
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<ZENML_OSS_VERSION>
 ```
 
 **Option B: AWS-based (if running on EKS)**
@@ -326,29 +338,29 @@ zenml:
       database: zenml_hybrid
 ```
 
-### Google Cloud SQL PostgreSQL
+### Google Cloud SQL MySQL
 
 ```yaml
 zenml:
   database:
     external:
-      type: postgresql
+      type: mysql
       host: 34.123.45.67
-      port: 5432
-      username: postgres
+      port: 3306
+      username: root
       password: <your-cloud-sql-password>
       database: zenml_hybrid
 ```
 
-### Self-Managed PostgreSQL
+### Self-Managed MySQL
 
 ```yaml
 zenml:
   database:
     external:
-      type: postgresql
-      host: postgres.internal.mycompany.com
-      port: 5432
+      type: mysql
+      host: mysql.internal.mycompany.com
+      port: 3306
       username: zenml_user
       password: <your-password>
       database: zenml_hybrid
@@ -584,19 +596,17 @@ kubectl -n zenml-hybrid logs deployment/zenml -f
 2. Upgrade with Helm:
 
 ```bash
-helm upgrade zenml zenml/zenml \
+helm upgrade zenml oci://public.ecr.aws/zenml/zenml \
   --namespace zenml-hybrid \
   --values zenml-hybrid-values.yaml \
-  --version 0.73.0
+  --version <ZENML_OSS_VERSION>
 ```
 
 ### Upgrade ZenML Version
 
 1. Check available versions:
 
-```bash
-helm search repo zenml/zenml --versions
-```
+For OCI charts, you can check available versions by attempting to pull different versions, or contact ZenML Support for the latest version information.
 
 2. Update values file with new version
 3. Upgrade:

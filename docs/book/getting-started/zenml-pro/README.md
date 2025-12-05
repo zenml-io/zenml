@@ -39,14 +39,14 @@ To get access to ZenML Pro, [book a call](https://www.zenml.io/book-your-demo).
 | **Pipeline Execution** | Run pipelines via SDK/CLI | Run pipelines from the UI, manage schedules through the UI, [triggers](https://docs.zenml.io/concepts/triggers) |
 | **Stack Configuration** | User-managed stacks | Advanced stack configurations with workspace/project-level restrictions for platform teams |
 | **Security** | Community updates | Prioritized security patches, SOC 2 and ISO 27001 certification |
-| **Deployment** | Self-hosted only | [SaaS](#saas-deployment), [Hybrid SaaS](#hybrid-saas-deployment), or [Full On-Prem](#full-on-prem-deployment) options |
+| **Deployment** | Self-hosted only | [SaaS](#saas-deployment), [Hybrid SaaS](#hybrid-saas-deployment), or [Self-hosted](#self-hosted-deployment) options |
 | **Support** | Community support | Professional support included (SaaS deployments) |
 | **Reporting** | Basic run tracking | Advanced usage reports and analytics |
 | **Core Features** | ✅ Run pipelines on stacks<br>✅ Full observability over runs<br>✅ Artifact tracking<br>✅ Model versioning | ✅ All OSS features<br>✅ [Run Snapshots](https://docs.zenml.io/concepts/snapshots)<br>✅ Enhanced filtering and search |
 
 ## Deployment Scenarios
 
-ZenML Pro offers three flexible deployment options to match your organization's needs: **SaaS**, **Hybrid**, and **Full On-Prem**.
+ZenML Pro offers three flexible deployment options to match your organization's needs: **SaaS**, **Hybrid**, and **Self-hosted**.
 
 [Explore all deployment scenarios →](deployments-overview.md)
 
@@ -59,7 +59,7 @@ All ZenML Pro deployments include:
 - ✅ **Vulnerability Assessment Reports** available on request
 - ✅ **Software Bill of Materials (SBOM)** available on request
 
-For software deployed on your infrastructure (Hybrid and Full On-Prem scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
+For software deployed on your infrastructure (Hybrid and Self-hosted scenarios), ZenML provides comprehensive security documentation to support your compliance requirements.
 
 ## Pro Feature Details
 

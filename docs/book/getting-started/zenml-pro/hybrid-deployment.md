@@ -351,7 +351,7 @@ Contact [cloud@zenml.io](mailto:cloud@zenml.io) to request security documentatio
 
 ## Comparison with Other Deployments
 
-| Feature | SaaS | Hybrid SaaS | Full On-Prem |
+| Feature | SaaS | Hybrid SaaS | Self-hosted |
 |---------|------|-------------|------------|
 | Setup Time | Minutes | Hours to Days | Days to Weeks |
 | Metadata Location | ZenML Infra | Your Infra | Your Infra |
@@ -361,7 +361,7 @@ Contact [cloud@zenml.io](mailto:cloud@zenml.io) to request security documentatio
 | Control | Minimal | Moderate | Complete |
 | Best For | Fast start | Security + Convenience | Strictest compliance |
 
-[Compare all deployment options →](README.md#deployment-scenarios-comparison)
+[Compare all deployment options →](README.md#deployment-scenarios)
 
 ## Migration Paths
 
@@ -398,7 +398,7 @@ A workspace deep copy feature for migrating pipelines and artifacts between work
 - [System Architecture Overview](../system-architectures.md#zenml-pro-hybrid-saas)
 - [Deployment Scenarios Overview](deployments-overview.md)
 - [SaaS Deployment](saas-deployment.md)
-- [Full On-Prem Deployment](air-gapped-deployment.md)
+- [Self-hosted Deployment](self-hosted-deployment.md)
 - [Workload Managers](workload-managers.md)
 - [Self-hosted Deployment Guide](self-hosted.md)
 - [Workspaces](workspaces.md)
