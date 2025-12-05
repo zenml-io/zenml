@@ -83,15 +83,14 @@ class DatadogLogStore(OtelLogStore):
         Returns:
             List of log entries from Datadog.
         """
-        # Build query
         query_parts = [
             f"service:{self.config.service_name}",
-            f"@zenml.log_id:{logs_model.id}",
+            f"service.version:{self.config.service_version}",
+            f"@zenml.log_model.id:{logs_model.id}",
         ]
 
         query = " ".join(query_parts)
 
-        # Build API request
         api_endpoint = (
             f"https://api.{self.config.site}/api/v2/logs/events/search"
         )

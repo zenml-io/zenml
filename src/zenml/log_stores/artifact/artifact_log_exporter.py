@@ -72,7 +72,8 @@ class ArtifactLogExporter(LogExporter):
                 attrs = log_data.log_record.attributes
                 if not attrs:
                     continue
-                log_uri = attrs.get("zenml.log_uri")
+
+                log_uri = attrs.get("zenml.log_model.uri")
                 if not log_uri or not isinstance(log_uri, str):
                     continue
 
@@ -110,13 +111,13 @@ class ArtifactLogExporter(LogExporter):
             List of LogEntry objects (multiple if message was chunked).
         """
         log_record = log_data.log_record
+        attributes = log_record.attributes
+
         message = str(log_record.body) if log_record.body else ""
-        if log_record.attributes and log_record.attributes.get(
-            "exception.message"
-        ):
-            exc_message = log_record.attributes.get("exception.message")
-            exc_type = log_record.attributes.get("exception.type")
-            exc_stacktrace = log_record.attributes.get("exception.stacktrace")
+        if attributes and attributes.get("exception.message"):
+            exc_message = attributes.get("exception.message")
+            exc_type = attributes.get("exception.type")
+            exc_stacktrace = attributes.get("exception.stacktrace")
             message += f"\n{exc_type}: {exc_message}\n{exc_stacktrace}"
 
         message = remove_ansi_escape_codes(message).rstrip()

@@ -64,7 +64,7 @@ class DatadogLogStoreFlavor(Flavor):
         Returns:
             The URL to the flavor documentation.
         """
-        return "https://docs.zenml.io/stack-components/log-stores/datadog"
+        return self.generate_default_docs_url()
 
     @property
     def sdk_docs_url(self) -> str:
@@ -73,7 +73,7 @@ class DatadogLogStoreFlavor(Flavor):
         Returns:
             The URL to the SDK docs for this flavor.
         """
-        return self.docs_url
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

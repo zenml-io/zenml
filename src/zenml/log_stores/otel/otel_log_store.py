@@ -136,20 +136,18 @@ class OtelLogStore(BaseLogStore):
 
         attributes = emit_kwargs.get("attributes", {})
 
-        zenml_log_metadata = {
-            f"zenml.{key}": value for key, value in metadata.items()
-        }
-
         attributes.update(
             {
-                "zenml.log_id": str(log_model.id),
                 "zenml.log_store_id": str(self.id),
-                **zenml_log_metadata,
+                "zenml.log_model.id": str(log_model.id),
+                "zenml.log_model.uri": str(log_model.uri),
+                "zenml.log_model.artifact_store_id": str(
+                    log_model.artifact_store_id
+                ),
+                "zenml.log_model.source": log_model.source,
+                **{f"zenml.{key}": value for key, value in metadata.items()},
             }
         )
-
-        if log_model.uri:
-            attributes["zenml.log_uri"] = log_model.uri
 
         self._logger.emit(**emit_kwargs)
 

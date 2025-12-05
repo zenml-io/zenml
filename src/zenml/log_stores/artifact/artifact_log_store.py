@@ -85,12 +85,14 @@ def remove_ansi_escape_codes(text: str) -> str:
 def fetch_log_records(
     artifact_store: "BaseArtifactStore",
     logs_uri: str,
+    limit: int = MAX_ENTRIES_PER_REQUEST,
 ) -> List[LogEntry]:
     """Fetches log entries.
 
     Args:
         artifact_store: The artifact store.
         logs_uri: The URI of the artifact (file or directory).
+        limit: Maximum number of log entries to return.
 
     Returns:
         List of log entries.
@@ -101,7 +103,7 @@ def fetch_log_records(
         if log_entry := parse_log_entry(line):
             log_entries.append(log_entry)
 
-        if len(log_entries) >= MAX_ENTRIES_PER_REQUEST:
+        if len(log_entries) >= limit:
             break
 
     return log_entries
@@ -279,8 +281,8 @@ class ArtifactLogStore(OtelLogStore):
         self._logger.emit(
             body=END_OF_STREAM_MESSAGE,
             attributes={
-                "zenml.log_id": str(log_model.id),
-                "zenml.log_uri": str(log_model.uri),
+                "zenml.log_model.id": str(log_model.id),
+                "zenml.log_model.uri": str(log_model.uri),
             },
         )
 
@@ -331,9 +333,10 @@ class ArtifactLogStore(OtelLogStore):
         log_entries = fetch_log_records(
             artifact_store=self._artifact_store,
             logs_uri=logs_model.uri,
+            limit=limit,
         )
 
-        return log_entries[:limit]
+        return log_entries
 
     def cleanup(self) -> None:
         """Cleanup the artifact log store.
