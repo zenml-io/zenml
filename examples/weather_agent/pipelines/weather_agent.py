@@ -19,7 +19,7 @@ from pipelines.hooks import (
     init_hook,
 )
 from starlette.middleware.gzip import GZipMiddleware
-from steps import analyze_weather_with_llm, get_weather
+from steps import analyze_weather_with_llm, compare_city_trends, get_weather
 
 from zenml import pipeline
 from zenml.config import (
@@ -266,7 +266,7 @@ if os.getenv("OPENAI_API_KEY"):
 )
 def weather_agent(
     city: str = "London",
-) -> tuple[Dict[str, float], str]:
+) -> tuple[Dict[str, float], str, str]:
     """Weather agent pipeline.
 
     Args:
@@ -277,4 +277,5 @@ def weather_agent(
     """
     weather_data = get_weather(city=city)
     result = analyze_weather_with_llm(weather_data=weather_data, city=city)
-    return weather_data, result
+    comparison = compare_city_trends(analysis=result)
+    return weather_data, result, comparison

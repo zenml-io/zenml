@@ -291,3 +291,55 @@ class TestDeploymentRuntimeContext:
         with pytest.raises(KeyError):
             runtime.get_in_memory_data("memory://artifact/1")
         assert runtime.should_skip_artifact_materialization() is False
+
+    def test_session_context_lifecycle(self):
+        """Test session state management during active runtime."""
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
+
+        # Start runtime with session context
+        runtime.start(
+            request_id="test-request",
+            snapshot=snapshot,
+            parameters={},
+            session_id="session-123",
+            session_state={"history": []},
+        )
+
+        # Verify session ID and state are accessible
+        assert runtime.get_session_id() == "session-123"
+        session_state = runtime.get_session_state()
+        assert session_state == {"history": []}
+
+        # Mutate the state via the returned dict (should be live)
+        session_state["history"].append("event1")
+        session_state["counter"] = 1
+
+        # Verify mutations are reflected
+        updated_state = runtime.get_session_state()
+        assert updated_state["history"] == ["event1"]
+        assert updated_state["counter"] == 1
+
+        # Replace state entirely
+        runtime.set_session_state({"foo": "bar"})
+        replaced_state = runtime.get_session_state()
+        assert replaced_state == {"foo": "bar"}
+        assert "history" not in replaced_state
+
+        # Stop runtime and verify reset
+        runtime.stop()
+        assert runtime.get_session_id() is None
+        assert runtime.get_session_state() == {}
+
+    def test_session_helpers_when_inactive(self):
+        """Test session helpers behave safely when runtime is inactive."""
+        # Without starting runtime, verify safe defaults
+        assert runtime.get_session_id() is None
+        assert runtime.get_session_state() == {}
+
+        # Attempt to set state while inactive (should be no-op)
+        runtime.set_session_state({"ignored": True})
+
+        # Verify state remains empty
+        assert runtime.get_session_state() == {}
+        assert runtime.get_session_id() is None

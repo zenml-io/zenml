@@ -148,6 +148,84 @@ curl -X POST http://localhost:8000/invoke \
   -d '{"parameters": {"city": "London", "temperature": 20}}'
 ```
 
+### Session-aware Invocations
+
+Deployments support session-aware execution so that multiple `/invoke` calls can share context, which is critical for:
+- LLM chat and tool-using agents
+- Multi-step decision flows
+- User-specific short-term state
+
+#### Session Basics
+
+- Each request may include a `session_id`.
+- If no `session_id` is provided, the deployment can generate one and echo it back in `metadata.session_id`.
+- Reusing the same `session_id` lets your steps read/write session-scoped state across invocations.
+- Session state is stored separately from the LLM context window: it's your authoritative server-side memory.
+
+**Key separation**: LLMs have a model context window (tokens in a single prompt). Session state is your durable, structured memory you choose to feed into prompts. Keeping this state compact and curated is standard best practice across frameworks like LangChain/LangGraph.
+
+#### Configuring Sessions
+
+Sessions are controlled via the `deployment_settings.sessions` block:
+
+```yaml
+deployment_settings:
+  sessions:
+    enabled: true           # enable/disable session support
+    ttl_seconds: 3600       # inactivity timeout before a session expires
+    max_state_bytes: 65536  # soft limit for serialized session state
+```
+
+**Fields:**
+
+- `enabled`
+  - `true` (default recommended for LLM/agent-style deployments)
+  - `false` for fully stateless APIs
+- `ttl_seconds`
+  - Per-session inactivity timeout. After this, the session is expired and its state can be garbage-collected.
+  - Choose based on your use case (e.g. 15–30 min for chats, hours for workflows)
+- `max_state_bytes`
+  - A guardrail on how large the serialized `session_state` can get
+  - Prevents unbounded growth, DoS-style misuse, and huge payloads when reloading/saving state
+
+#### Using Session State in Steps
+
+Within a deployed pipeline, steps access session state via `get_step_context()`:
+
+```python
+from zenml import step, get_step_context
+
+@step
+def chat_step(message: str) -> str:
+    ctx = get_step_context()
+    session_state = ctx.session_state  # session dict; persisted if sessions enabled
+
+    history = session_state.setdefault("history", [])
+    history.append({"role": "user", "content": message})
+
+    reply = f"Echo {len(history)}: {message}"
+    history.append({"role": "assistant", "content": reply})
+
+    session_state["last_reply"] = reply
+    return reply
+```
+
+If sessions are disabled, `session_state` behaves as an empty, non-persisted dict so the same code is safe to run.
+
+**Example flow:**
+
+```bash
+# 1st call – server may generate a session_id
+zenml deployment invoke my_deployment --city="London"
+
+# 2nd call – reusing the session
+zenml deployment invoke my_deployment \
+  --city="Berlin" \
+  --session-id="session-12345"
+```
+
+The [weather agent example](https://github.com/zenml-io/zenml/tree/develop/examples/weather_agent) shows how a real pipeline uses `session_state` to keep a running history of weather analyses across turns.
+
 ## Deployment Lifecycle
 
 Once a Deployment is created, it is tied to the specific **Deployer** stack component that was used to provision it and can be managed independently of the active stack as a standalone entity with its own lifecycle.
@@ -415,7 +493,7 @@ curl -X POST http://localhost:8000/invoke \
 
 ## Deployment Initialization, Cleanup and State
 
-It often happens that the HTTP requests made to the same deployment share some type of initialization or cleanup or need to share the same global state or. For example:
+It often happens that the HTTP requests made to the same deployment share some type of initialization or cleanup or need to share the same global state. For example:
 
 * a machine learning model needs to be loaded in memory, initialized and then shared between all the HTTP requests made to the deployment in order to be used by the deployed pipeline to make predictions
 
@@ -460,6 +538,17 @@ The following happens when the pipeline is deployed and then later invoked:
 3. The on_cleanup hook is executed only once, when the deployment is stopped
 
 This mechanism can be used to initialize and share global state between all the HTTP requests made to the deployment or to execute long-running initialization or cleanup operations when the deployment is started or stopped rather than on each HTTP request.
+
+{% hint style="info" %}
+**Deployment State vs Session State**
+
+ZenML deployments support two types of state:
+
+- **`pipeline_state`**: Deployment-global state shared across all invocations (e.g., loaded models, DB clients, caches). Set via `on_init` hook, accessed via `get_step_context().pipeline_state`.
+- **`session_state`**: Per-session state that persists across multiple invocations with the same `session_id` (e.g., conversation history, user context). Accessed via `get_step_context().session_state`.
+
+Use `pipeline_state` for expensive resources you want to load once and reuse, and `session_state` for conversational or multi-turn workflows where each session needs its own memory.
+{% endhint %}
 
 ## Deployment Configuration
 
@@ -510,8 +599,9 @@ For more detailed information on deployment options, see the [deployment setting
 3. **Return Useful Data**: Design pipeline outputs to provide meaningful responses
 4. **Use Type Annotations**: Leverage Pydantic models for complex parameter types
 5. **Use Global Initialization and State**: Use the `on_init` and `on_cleanup` hooks along with the `pipeline_state` step context property to initialize and share global state between all the HTTP requests made to the deployment. Also use these hooks to execute long-running initialization or cleanup operations when the deployment is started or stopped rather than on each HTTP request.
-5. **Handle Errors Gracefully**: Implement proper error handling in your steps
-6. **Test Locally First**: Validate your deployable pipeline locally before deploying to production
+6. **Keep Session State Small**: For session-aware deployments, store only compact summaries, IDs, and essential context in `session_state`. Move large artifacts (documents, embeddings, full histories) to external storage (vector stores, databases, object storage) and keep only references in session state. This matches best practices from frameworks like LangChain/LangGraph.
+7. **Handle Errors Gracefully**: Implement proper error handling in your steps
+8. **Test Locally First**: Validate your deployable pipeline locally before deploying to production
 
 ## Conclusion
 
