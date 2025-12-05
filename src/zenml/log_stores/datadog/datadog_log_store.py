@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Datadog log store implementation."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, cast
 
 import requests
@@ -85,7 +85,6 @@ class DatadogLogStore(OtelLogStore):
         """
         query_parts = [
             f"service:{self.config.service_name}",
-            f"service.version:{self.config.service_version}",
             f"@zenml.log_model.id:{logs_model.id}",
         ]
 
@@ -117,7 +116,7 @@ class DatadogLogStore(OtelLogStore):
             "page": {
                 "limit": min(limit, 1000),  # Datadog API limit
             },
-            "sort": "timestamp",
+            "sort": "@otel.timestamp",
         }
 
         try:
@@ -140,16 +139,33 @@ class DatadogLogStore(OtelLogStore):
             for log in data.get("data", []):
                 log_fields = log.get("attributes", {})
                 message = log_fields.get("message", "")
-                attributes = log_fields.get("attributes", {})
-                if exc_info := attributes.get("exception"):
+                nested_attrs = log_fields.get("attributes", {})
+
+                if exc_info := nested_attrs.get("exception"):
                     exc_message = exc_info.get("message")
                     exc_type = exc_info.get("type")
                     exc_stacktrace = exc_info.get("stacktrace")
                     message += f"\n{exc_type}: {exc_message}\n{exc_stacktrace}"
 
-                timestamp = datetime.fromisoformat(
-                    log_fields["timestamp"].replace("Z", "+00:00")
-                )
+                code_info = nested_attrs.get("code", {})
+                filename = code_info.get("file", {}).get("path")
+                lineno = code_info.get("line", {}).get("number")
+                function_name = code_info.get("function", {}).get("name")
+
+                otel_info = nested_attrs.get("otel", {})
+                logger_name = otel_info.get("library", {}).get("name")
+
+                timestamp_ns_str = otel_info.get("timestamp")
+                if timestamp_ns_str:
+                    timestamp_ns = int(timestamp_ns_str)
+                    timestamp = datetime.fromtimestamp(
+                        timestamp_ns / 1e9, tz=timezone.utc
+                    )
+                else:
+                    timestamp = datetime.fromisoformat(
+                        log_fields["timestamp"].replace("Z", "+00:00")
+                    )
+
                 severity = log_fields.get("status", "info").upper()
                 log_severity = (
                     LoggingLevels[severity]
@@ -157,11 +173,20 @@ class DatadogLogStore(OtelLogStore):
                     else LoggingLevels.INFO
                 )
 
-                # Parse log entry
+                module = None
+                if function_name:
+                    module = function_name
+                elif filename:
+                    module = filename.rsplit("/", 1)[-1].replace(".py", "")
+
                 entry = LogEntry(
                     message=message,
                     level=log_severity,
                     timestamp=timestamp,
+                    name=logger_name,
+                    filename=filename,
+                    lineno=lineno,
+                    module=module,
                 )
 
                 log_entries.append(entry)
