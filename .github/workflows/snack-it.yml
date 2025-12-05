@@ -76,38 +76,34 @@ jobs:
         if: steps.check-label.outputs.snack_it == 'true'
         id: claude-generate
         uses: anthropics/claude-code-action@v1
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: false
           prompt: |
-            You are helping to create a "snack" issue from a pull request. A snack is a small, bite-sized task that can be completed relatively quickly.
+            Generate a snack issue from PR #${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}.
             
-            PR Number: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+            A "snack" is a small, bite-sized task that can be completed relatively quickly.
             
-            Your task:
-            1. Use `gh pr view ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --json title,body,author,headRefName,files` to get PR details
-            2. Use `gh pr diff ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}` to see the changes (if needed for context)
-            3. Analyze the PR to understand what was accomplished
-            4. Generate TWO outputs (output them EXACTLY as shown below):
-            
-            OUTPUT FORMAT (you must follow this exactly):
+            Steps:
+            1. Run: gh pr view ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --json title,body,author,headRefName,files
+            2. Run: gh pr diff ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} (if needed for context)
+            3. Analyze what was accomplished in this PR
+            4. Output exactly in this format (no code blocks, no extra text):
             
             ISSUE_TITLE:
-            <A concise, actionable title for the snack (max 80 chars)>
+            A concise, actionable title (max 80 chars)
             
             ISSUE_BODY:
-            <A well-formatted markdown description that includes:
-            - A brief summary of what this snack accomplishes (2-3 sentences max)
-            - Key changes or features added
-            - Any relevant context for future reference
-            - Reference to the original PR #${{ github.event.pull_request.number }}
+            A brief summary (2-3 sentences) explaining what this snack accomplishes.
             
-            Keep it concise and actionable. This should read like a task description, not a PR summary.>
+            Key changes:
+            - Change 1
+            - Change 2
+            - etc.
             
-            IMPORTANT: Output ONLY the title and body in the exact format above. Do not add any other commentary.
+            References PR #${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+            
+            CRITICAL: Output ONLY the above format. No markdown code blocks. No commentary before or after.
           claude_args: --allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*)"
 
       - name: Parse Claude output and create issue
@@ -138,25 +134,42 @@ jobs:
             // Parse Claude's output
             let issueTitle = pr.title;  // Fallback to PR title
             let issueBody = `This issue tracks the work completed in PR #${pr.number}.\n\n${pr.body || 'No description provided.'}`;  // Fallback
+            let usedClaude = false;
             
-            if (claudeOutput) {
-              // Extract title
-              const titleMatch = claudeOutput.match(/ISSUE_TITLE:\s*\n(.+?)(?=\n\nISSUE_BODY:)/s);
+            if (claudeOutput && claudeOutput.trim()) {
+              console.log('Claude output received:', claudeOutput.substring(0, 200) + '...');
+              
+              // Extract title - more flexible regex
+              const titleMatch = claudeOutput.match(/ISSUE_TITLE:\s*\n+(.+?)(?=\n+ISSUE_BODY:)/s);
               if (titleMatch && titleMatch[1].trim()) {
                 issueTitle = titleMatch[1].trim();
+                console.log('Extracted title:', issueTitle);
+              } else {
+                console.log('⚠️  Failed to extract title from Claude output, using PR title');
               }
               
-              // Extract body
-              const bodyMatch = claudeOutput.match(/ISSUE_BODY:\s*\n([\s\S]+?)$/);
+              // Extract body - more flexible regex
+              const bodyMatch = claudeOutput.match(/ISSUE_BODY:\s*\n+([\s\S]+?)$/);
               if (bodyMatch && bodyMatch[1].trim()) {
                 issueBody = bodyMatch[1].trim();
+                console.log('Extracted body length:', issueBody.length, 'chars');
+                usedClaude = true;
+              } else {
+                console.log('⚠️  Failed to extract body from Claude output, using PR body');
               }
+            } else {
+              console.log('⚠️  No Claude output received, using PR title and body as fallback');
             }
             
             // Add footer with metadata
-            issueBody += `\n\n---\n_🤖 This snack issue was automatically created from PR #${pr.number} using Claude AI._`;
+            if (usedClaude) {
+              issueBody += `\n\n---\n_🤖 This snack issue was automatically created from PR #${pr.number} using Claude AI._`;
+            } else {
+              issueBody += `\n\n---\n_🤖 This snack issue was automatically created from PR #${pr.number}._`;
+            }
             
             console.log('Creating issue with title:', issueTitle);
+            console.log('AI-generated:', usedClaude);
             
             // Create the issue
             const issue = await github.rest.issues.create({
@@ -184,18 +197,12 @@ jobs:
               console.log(`Added labels: ${labelsToAdd.join(', ')}`);
             }
             
-            // Comment on the PR to notify about the created issue
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: `🍿 Snack issue created: #${issue.data.number}\n\nThis issue has been added to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1) project and set to "In Review".\n\n_Generated with Claude AI ✨_`
-            });
-            
-            // Store issue data for next step
+            // Store issue data for next step and PR comment
             core.setOutput('issue_number', issue.data.number);
             core.setOutput('issue_node_id', issue.data.node_id);
+            core.setOutput('pr_number', pr.number);
             
+            console.log(`✅ Created issue #${issue.data.number}`);
             return issue.data.number;
 
       - name: Check if PAT token is configured
@@ -211,43 +218,34 @@ jobs:
       - name: Add issue to project and set status
         if: steps.check-label.outputs.snack_it == 'true' && secrets.GH_PAT_TOKEN_FOR_SNACK_IT != ''
         continue-on-error: true
+        id: add-to-project
         uses: actions/github-script@v7
         env:
-          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+          ISSUE_NUMBER: ${{ steps.create-issue.outputs.issue_number }}
+          ISSUE_NODE_ID: ${{ steps.create-issue.outputs.issue_node_id }}
+          PR_NUMBER: ${{ steps.create-issue.outputs.pr_number }}
         with:
           github-token: ${{ secrets.GH_PAT_TOKEN_FOR_SNACK_IT }}
           script: |
-            // Get PR details (handle both workflow_dispatch and pull_request events)
-            let pr;
-            if (context.eventName === 'workflow_dispatch') {
-              const prNumber = parseInt(process.env.PR_NUMBER);
-              const prData = await github.rest.pulls.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber
-              });
-              pr = prData.data;
-            } else {
-              pr = context.payload.pull_request;
-            }
+            // Use the issue created in the previous step (avoid race condition)
+            const issueNumber = parseInt(process.env.ISSUE_NUMBER);
+            const issueNodeId = process.env.ISSUE_NODE_ID;
+            const prNumber = parseInt(process.env.PR_NUMBER);
             
-            // First, we need to find the issue we just created
-            const issues = await github.rest.issues.listForRepo({
+            console.log(`Working with issue #${issueNumber}`);
+            
+            // Get full issue and PR details for later use
+            const issue = await github.rest.issues.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: 'snack',
-              sort: 'created',
-              direction: 'desc',
-              per_page: 1
+              issue_number: issueNumber
             });
             
-            if (issues.data.length === 0) {
-              console.log('No issue found');
-              return;
-            }
-            
-            const issue = issues.data[0];
-            console.log(`Working with issue #${issue.number}`);
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
             
             try {
               // GraphQL query to add item to project
@@ -315,11 +313,11 @@ jobs:
             
             const addResult = await github.graphql(addToProjectMutation, {
               projectId: project.id,
-              contentId: issue.node_id
+              contentId: issueNodeId
             });
             
             const itemId = addResult.addProjectV2ItemById.item.id;
-            console.log(`Added issue to project with item ID: ${itemId}`);
+            console.log(`Added issue #${issueNumber} to project with item ID: ${itemId}`);
             
             // Update the status to "In Review" if we found the field and option
             if (statusField && inReviewOption) {
@@ -353,10 +351,10 @@ jobs:
               }
               
               // Link the PR branch to the issue
-              const prBranch = pr.head.ref;
-              const prRepo = pr.head.repo.full_name;
+              const prBranch = pr.data.head.ref;
+              const prRepo = pr.data.head.repo.full_name;
               
-              console.log(`Linking branch ${prBranch} to issue #${issue.number}`);
+              console.log(`Linking branch ${prBranch} to issue #${issueNumber}`);
               
               try {
                 // Create a development link between the issue and the branch
@@ -381,27 +379,59 @@ jobs:
                 });
                 
                 await github.graphql(linkBranchMutation, {
-                  issueId: issue.node_id,
+                  issueId: issueNodeId,
                   repositoryId: repoData.data.node_id,
                   branch: prBranch
                 });
                 
-                console.log(`✅ Linked branch ${prBranch} to issue #${issue.number}`);
+                console.log(`✅ Linked branch ${prBranch} to issue #${issueNumber}`);
               } catch (branchError) {
                 console.log(`Note: Could not link branch automatically: ${branchError.message}`);
                 console.log(`Branch can be linked manually in the issue sidebar.`);
               }
               
-              console.log(`✅ Successfully added issue #${issue.number} to ZenML Roadmap project`);
+              console.log(`✅ Successfully added issue #${issueNumber} to ZenML Roadmap project`);
+              core.setOutput('project_added', 'true');
               
             } catch (error) {
               console.error(`❌ Error adding issue to project: ${error.message}`);
               console.error(`This might be due to insufficient permissions on the GitHub token.`);
               console.error(`Please ensure GH_PAT_TOKEN_FOR_SNACK_IT secret has 'project' and 'org:read' scopes.`);
-              console.error(`You can manually add issue #${issue.number} to the project at:`);
+              console.error(`You can manually add issue #${issueNumber} to the project at:`);
               console.error(`https://github.com/orgs/zenml-io/projects/1`);
+              
+              core.setOutput('project_added', 'false');
               
               // Don't fail the workflow, just log the error
               // The issue was still created successfully
             }
+
+      - name: Comment on PR
+        if: steps.check-label.outputs.snack_it == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = '${{ steps.create-issue.outputs.issue_number }}';
+            const prNumber = '${{ steps.create-issue.outputs.pr_number }}';
+            const projectAdded = '${{ steps.add-to-project.outputs.project_added }}' === 'true';
+            
+            let message = `🍿 Snack issue created: #${issueNumber}\n\n`;
+            
+            if (projectAdded) {
+              message += `This issue has been added to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1) project and set to "In Review".\n\n`;
+            } else {
+              message += `⚠️ The issue could not be automatically added to the project board. Please add it manually to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1).\n\n`;
+            }
+            
+            message += `_Generated with Claude AI ✨_`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(prNumber),
+              body: message
+            });
+            
+            console.log(`Commented on PR #${prNumber}`);
 
