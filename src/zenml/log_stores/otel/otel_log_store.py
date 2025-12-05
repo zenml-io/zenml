@@ -32,6 +32,7 @@ from zenml.log_stores.base_log_store import (
     BaseLogStoreEmitter,
 )
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
+from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 
@@ -86,9 +87,6 @@ class OtelLogStoreEmitter(BaseLogStoreEmitter):
             log_model: The log model associated with the emitter.
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this emitter.
-
-        Raises:
-            RuntimeError: If the OpenTelemetry log store is not initialized.
         """
         super().__init__(name, log_store, log_model, metadata)
         assert isinstance(log_store, OtelLogStore)
@@ -181,21 +179,33 @@ class OtelLogStore(BaseLogStore):
             raise RuntimeError("OpenTelemetry log store is not initialized")
         return self._provider
 
-    @abstractmethod
     def get_exporter(self) -> "LogExporter":
-        """Get the log exporter for this log store.
-
-        Subclasses must implement this method to provide the appropriate
-        exporter for their backend.
+        """Get the Datadog log exporter.
 
         Returns:
-            The log exporter instance.
+            OTLPLogExporter configured with API key and site.
         """
+        if not self._exporter:
+            self._exporter = OTLPLogExporter(
+                endpoint=self.config.endpoint,
+                headers=self.config.headers,
+                certificate_file=self.config.certificate_file,
+                client_key_file=self.config.client_key_file,
+                client_certificate_file=self.config.client_certificate_file,
+                compression=self.config.compression,
+            )
+
+        return self._exporter
 
     def _activate(self) -> None:
         """Activate log collection with OpenTelemetry."""
         self._exporter = self.get_exporter()
-        self._processor = OtelBatchLogRecordProcessor(self._exporter)
+        self._processor = OtelBatchLogRecordProcessor(
+            exporter=self._exporter,
+            max_queue_size=self.config.max_queue_size,
+            schedule_delay_millis=self.config.schedule_delay_millis,
+            max_export_batch_size=self.config.max_export_batch_size,
+        )
 
         self._resource = Resource.create(
             {

@@ -269,7 +269,7 @@ class ArtifactLogStore(OtelLogStore):
             artifact_store=artifact_store,
             id=artifact_store.id,
             name="default",
-            config=ArtifactLogStoreConfig(),
+            config=ArtifactLogStoreConfig(endpoint=artifact_store.path),
             flavor="artifact",
             type=StackComponentType.LOG_STORE,
             user=artifact_store.user,

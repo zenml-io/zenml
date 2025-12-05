@@ -55,9 +55,20 @@ class DatadogLogStore(OtelLogStore):
             OTLPLogExporter configured with API key and site.
         """
         if not self._datadog_exporter:
+            headers = {
+                "dd-api-key": self.config.api_key.get_secret_value(),
+                "dd-application-key": self.config.application_key.get_secret_value(),
+            }
+            if self.config.headers:
+                headers.update(self.config.headers)
+
             self._datadog_exporter = DatadogLogExporter(
-                endpoint=f"https://http-intake.logs.{self.config.site}/api/v2/logs",
-                headers={"dd-api-key": self.config.api_key.get_secret_value()},
+                endpoint=self.config.endpoint,
+                headers=headers,
+                certificate_file=self.config.certificate_file,
+                client_key_file=self.config.client_key_file,
+                client_certificate_file=self.config.client_certificate_file,
+                compression=self.config.compression,
             )
         return self._datadog_exporter
 

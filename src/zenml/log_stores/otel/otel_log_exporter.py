@@ -27,8 +27,8 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
 from zenml import __version__ as zenml_version
+from zenml.log_stores.otel.otel_flavor import Compression
 from zenml.logger import get_logger
-from zenml.utils.enum_utils import StrEnum
 from zenml.utils.json_utils import pydantic_encoder
 
 DEFAULT_TIMEOUT = 10
@@ -37,14 +37,6 @@ if TYPE_CHECKING:
     from opentelemetry.sdk._logs import LogData
 
 logger = get_logger(__name__)
-
-
-class Compression(StrEnum):
-    """Compression types."""
-
-    NoCompression = "none"
-    Deflate = "deflate"
-    Gzip = "gzip"
 
 
 class OTLPLogExporter(LogExporter):
@@ -349,8 +341,6 @@ class OTLPLogExporter(LogExporter):
                     schema_url=resource.schema_url,
                 )
             )
-
-        print(json.dumps(json_resource_logs, indent=4))
 
         return dict(resource_logs=json_resource_logs)
 
