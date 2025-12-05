@@ -1,14 +1,13 @@
 name: Snack-it - Create Issue from PR
 
 # This workflow creates a "snack" issue when a PR is labeled with "snack-it"
-# Uses Claude AI to generate a concise, actionable issue description from the PR
 # The issue inherits all PR labels, gets tagged with "snack", and is added to the ZenML Roadmap project
 # The PR branch is linked to the issue for easy tracking
+# The PR author is assigned to the issue
 #
 # Can also be triggered manually via workflow_dispatch with a PR number for testing
 # 
 # REQUIREMENTS:
-# - ANTHROPIC_API_KEY: Anthropic API key for Claude AI
 # - GH_PAT_TOKEN_FOR_SNACK_IT: Personal Access Token with repo, project, and org:read scopes
 #   (needed for adding issues to organization projects)
 
@@ -26,7 +25,6 @@ permissions:
   issues: write
   pull-requests: write
   contents: read
-  id-token: write
 
 jobs:
   create-snack-issue:
@@ -72,46 +70,11 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Generate issue content with Claude
-        if: steps.check-label.outputs.snack_it == 'true'
-        id: claude-generate
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          track_progress: false
-          prompt: |
-            Generate a snack issue from PR #${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}.
-            
-            A "snack" is a small, bite-sized task that can be completed relatively quickly.
-            
-            Steps:
-            1. Run: gh pr view ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --json title,body,author,headRefName,files
-            2. Run: gh pr diff ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} (if needed for context)
-            3. Analyze what was accomplished in this PR
-            4. Output exactly in this format (no code blocks, no extra text):
-            
-            ISSUE_TITLE:
-            A concise, actionable title (max 80 chars)
-            
-            ISSUE_BODY:
-            A brief summary (2-3 sentences) explaining what this snack accomplishes.
-            
-            Key changes:
-            - Change 1
-            - Change 2
-            - etc.
-            
-            References PR #${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
-            
-            CRITICAL: Output ONLY the above format. No markdown code blocks. No commentary before or after.
-          claude_args: --allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*)"
-
-      - name: Parse Claude output and create issue
+      - name: Create issue from PR
         if: steps.check-label.outputs.snack_it == 'true'
         id: create-issue
         uses: actions/github-script@v7
         env:
-          CLAUDE_OUTPUT: ${{ steps.claude-generate.outputs.result }}
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -129,41 +92,12 @@ jobs:
             } else {
               pr = context.payload.pull_request;
             }
-            let claudeOutput = process.env.CLAUDE_OUTPUT || '';
             
-            // Parse Claude's output
-            let issueTitle = pr.title;  // Fallback to PR title
-            let issueBody = `This issue tracks the work completed in PR #${pr.number}.\n\n${pr.body || 'No description provided.'}`;  // Fallback
-            let usedClaude = false;
-            
-            if (claudeOutput && claudeOutput.trim()) {
-              // Strip markdown code blocks if present
-              claudeOutput = claudeOutput.replace(/```[\s\S]*?\n([\s\S]*?)```/g, '$1').trim();
-              
-              // Extract title - very flexible
-              const titleMatch = claudeOutput.match(/ISSUE_TITLE:\s*\n+(.+?)(?=\n+ISSUE_BODY:|\n\n)/s);
-              if (titleMatch && titleMatch[1].trim()) {
-                issueTitle = titleMatch[1].trim().replace(/^["']|["']$/g, '');
-                usedClaude = true;
-              }
-              
-              // Extract body - very flexible
-              const bodyMatch = claudeOutput.match(/ISSUE_BODY:\s*\n+([\s\S]+?)(?=\n\n---|$)/);
-              if (bodyMatch && bodyMatch[1].trim()) {
-                issueBody = bodyMatch[1].trim();
-                usedClaude = true;
-              }
-            }
-            
-            // Add footer with metadata
-            if (usedClaude) {
-              issueBody += `\n\n---\n_🤖 This snack issue was automatically created from PR #${pr.number} using Claude AI._`;
-            } else {
-              issueBody += `\n\n---\n_🤖 This snack issue was automatically created from PR #${pr.number}._`;
-            }
+            // Create simple issue from PR
+            const issueTitle = pr.title;
+            const issueBody = `This issue tracks the work completed in PR #${pr.number}.`;
             
             console.log('Creating issue with title:', issueTitle);
-            console.log('AI-generated:', usedClaude);
             
             // Create the issue
             const issue = await github.rest.issues.create({
@@ -418,12 +352,10 @@ jobs:
             let message = `🍿 Snack issue created: #${issueNumber}\n\n`;
             
             if (projectAdded) {
-              message += `This issue has been added to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1) project and set to "In Review".\n\n`;
+              message += `This issue has been added to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1) project and set to "In Review".`;
             } else {
-              message += `⚠️ The issue could not be automatically added to the project board. Please add it manually to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1).\n\n`;
+              message += `⚠️ The issue could not be automatically added to the project board. Please add it manually to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1).`;
             }
-            
-            message += `_Generated with Claude AI ✨_`;
             
             await github.rest.issues.createComment({
               owner: context.repo.owner,
