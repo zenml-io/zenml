@@ -1,13 +1,15 @@
 ---
-description: Understand workload managers and how they enable running pipelines from the dashboard.
+description: Understand workload managers and how they enable running pipelines from the ZenML Pro UI.
 icon: microchip
 ---
 
 # Workload Managers
 
-Workload managers are built into the ZenML Pro server container. They enable you to run pipeline snapshots directly from the dashboard by allowing the server to orchestrate pipeline execution on your infrastructure. Without a workload manager configured, your workspace can only be used for monitoring and analyzing completed pipeline runs. With one configured, you gain the ability to trigger and execute pipelines interactively.
+Workload managers are built into the ZenML Pro server container. They enable you to run pipeline snapshots directly from the ZenML Pro UI by allowing the server to orchestrate pipeline execution on your infrastructure. Without a workload manager configured, your workspace can only be used for monitoring and analyzing completed pipeline runs. With one configured, you gain the ability to trigger and execute pipelines interactively.
 
+{% hint style="info" %}
 This feature is available in [all ZenML Pro deployment scenarios](deployments-overview.md) (SaaS, Hybrid, and Full On-Prem).
+{% endhint %}
 
 ## Architecture
 
@@ -15,7 +17,7 @@ The ZenML Pro server container includes workload manager implementations. You co
 
 ### Execution Flow
 
-1. **User triggers a snapshot from the dashboard**: You select a pipeline snapshot and click "Run" in the ZenML Cloud interface.
+1. **User triggers a snapshot from the ZenML Pro UI**: You select a pipeline snapshot and click "Run"
 2. **ZenML server receives the request**: Your ZenML Pro server (running in your workspace, whether SaaS, Hybrid, or Full On-Prem) receives the execution request.
 3. **Workload manager implementation handles orchestration**: The configured workload manager implementation (Kubernetes, AWS, or GCP) translates the request into infrastructure-specific commands.
 4. **Runner pod/task is created**: The workload manager creates a Kubernetes pod, ECS task, or equivalent compute unit on your infrastructure.

@@ -24,12 +24,17 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 |-------------------|------|-------------|------------|
 | **ZenML Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
 | **Pipeline/ Artifact Metadata** | ZenML infrastructure | Your infrastructure | Your infrastructure |
-| **Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
+| **ZenML Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
+| **ZenML Pro UI** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
 | **RBAC** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
 | **Compute & Data** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Your infrastructure through [stacks](https://docs.zenml.io/stacks) |
 | **Setup Time** | ⚡ ~1 hour | ~4 hours | ~8 hours |
 | **Maintenance** | Fully managed | Partially managed (workspace maintenance required) | Customer managed |
 | **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and on-premises control |
+
+{% hint style="info" %}
+In all of these cases the client sdk that you pip install into your development environment is the same one found here: https://pypi.org/project/zenml/
+{% endhint %}
 
 ## Which Scenario is Right for You?
 
@@ -57,8 +62,9 @@ Choose **SaaS** if you want to get started immediately with zero infrastructure 
 Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure while benefiting from centralized user management.
 
 **What runs where:**
-- ZenML Management Plane: ZenML infrastructure
-- ZenML Server: Your infrastructure
+- ZenML Control Plane: ZenML infrastructure
+- ZenML Pro UI: ZenML infrastructure
+- ZenML Pro Server: Your infrastructure
 - RBAC: ZenML infrastructure
 - Run metadata: Your infrastructure
 - Compute and Data: [Your infrastructure](https://docs.zenml.io/stacks)
@@ -67,6 +73,7 @@ Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure 
 - 🔐 Metadata stays in your infrastructure
 - 👥 Centralized user management
 - ⚖️ Balance of control and convenience
+- 🏢 Control plane and UI fully maintained and patched by ZenML
 - ✅ Day 1 production ready
 
 **Ideal for:** Organizations with security policies requiring metadata sovereignty, teams wanting simplified identity management without full infrastructure control.
