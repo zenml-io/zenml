@@ -14,7 +14,7 @@ name: Snack-it - Create Issue from PR
 
 on:
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
     inputs:
       pr_number:
