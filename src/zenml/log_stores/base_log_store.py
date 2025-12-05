@@ -15,7 +15,7 @@
 
 import logging
 import threading
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, cast
 
@@ -31,7 +31,73 @@ class BaseLogStoreConfig(StackComponentConfig):
     """Base configuration for all log stores."""
 
 
-class BaseLogStore(StackComponent):
+class BaseLogStoreEmitter:
+    """Base class for all ZenML log store emitters.
+
+    The emitter is the entry point for all log records to be emitted to the log
+    store. The process of emitting a log record is as follows:
+
+    1. instantiate a BaseLogStoreEmitter
+    2. create an emitter by calling log_store.register_emitter() and passing the
+    log model and optional metadata to be attached to each log record
+    3. emit the log record by calling emitter.emit() and passing the log record
+    4. deregister the emitter when all logs have been emitted by calling
+    emitter.deregister()
+    """
+
+    def __init__(
+        self,
+        name: str,
+        log_store: "BaseLogStore",
+        log_model: LogsResponse,
+        metadata: Dict[str, Any],
+    ) -> None:
+        """Initialize a log store emitter.
+
+        Args:
+            name: The name of the emitter.
+            log_store: The log store to emit logs to.
+            log_model: The log model associated with the emitter.
+            metadata: Additional metadata to attach to all log entries that will
+                be emitted by this emitter.
+        """
+        self._name = name
+        self._log_store = log_store
+        self._log_model = log_model
+        self._metadata = metadata
+
+    @property
+    def name(self) -> str:
+        """The name of the emitter.
+
+        Returns:
+            The name of the emitter.
+        """
+        return self._name
+
+    @property
+    def log_model(self) -> LogsResponse:
+        """The log model associated with the emitter.
+
+        Returns:
+            The log model.
+        """
+        return self._log_model
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit a log record to the log store.
+
+        Args:
+            record: The log record to emit.
+        """
+        self._log_store._emit(self, record, metadata=self._metadata)
+
+    def deregister(self) -> None:
+        """Deregister the emitter from the log store."""
+        self._log_store.deregister_emitter(self)
+
+
+class BaseLogStore(StackComponent, ABC):
     """Base class for all ZenML log stores.
 
     A log store is responsible for collecting, storing, and retrieving logs
@@ -47,7 +113,7 @@ class BaseLogStore(StackComponent):
             **kwargs: Keyword arguments for the base class.
         """
         super().__init__(*args, **kwargs)
-        self._emitter_counter = 0
+        self._emitters: Dict[str, BaseLogStoreEmitter] = {}
         self._lock = threading.RLock()
 
     @property
@@ -59,56 +125,88 @@ class BaseLogStore(StackComponent):
         """
         return cast(BaseLogStoreConfig, self._config)
 
+    @property
+    def emitter_class(self) -> Type[BaseLogStoreEmitter]:
+        """Class of the emitter.
+
+        Returns:
+            The class of the emitter.
+        """
+        return BaseLogStoreEmitter
+
+    def register_emitter(
+        self, name: str, log_model: LogsResponse, metadata: Dict[str, Any]
+    ) -> BaseLogStoreEmitter:
+        """Register an emitter for the log store.
+
+        Args:
+            name: The name of the emitter.
+            log_model: The log model associated with the emitter.
+            metadata: Additional metadata to attach to the log entry.
+
+        Returns:
+            The emitter.
+        """
+        with self._lock:
+            emitter = self.emitter_class(name, self, log_model, metadata)
+            self._emitters[name] = emitter
+            return emitter
+
+    def deregister_emitter(self, emitter: BaseLogStoreEmitter) -> None:
+        """Deregister an emitter registered with the log store.
+
+        Args:
+            emitter: The emitter to deregister.
+        """
+        with self._lock:
+            if emitter.name not in self._emitters:
+                return
+            self._finalize(emitter)
+            del self._emitters[emitter.name]
+            if len(self._emitters) == 0:
+                self.flush(blocking=False)
+
     @abstractmethod
-    def emit(
+    def _emit(
         self,
+        emitter: BaseLogStoreEmitter,
         record: logging.LogRecord,
-        log_model: LogsResponse,
         metadata: Dict[str, Any],
     ) -> None:
         """Process a log record from the logging system.
 
         Args:
+            emitter: The emitter to emit the log record to.
             record: The Python logging.LogRecord to process.
-            log_model: The log model to emit the log record to.
             metadata: Additional metadata to attach to the log entry.
         """
 
     @abstractmethod
-    def finalize(
+    def _finalize(
         self,
-        log_model: LogsResponse,
+        emitter: BaseLogStoreEmitter,
     ) -> None:
-        """Finalize the stream of log records associated with a log model.
+        """Finalize the stream of log records associated with an emitter.
 
         This is used to announce the end of the stream of log records associated
-        with a log model and that no more log records will be emitted.
+        with an emitter and that no more log records will be emitted.
 
         The implementation should ensure that all log records associated with
-        the log model are flushed to the backend and any resources (clients,
+        the emitter are flushed to the backend and any resources (clients,
         connections, file descriptors, etc.) are released.
 
         Args:
-            log_model: The log model to finalize.
+            emitter: The emitter to finalize.
         """
 
-    def register_emitter(self) -> None:
-        """Register an emitter for the log store."""
-        with self._lock:
-            self._emitter_counter += 1
-
-    def deregister_emitter(self) -> None:
-        """Deregister an emitter for the log store."""
-        with self._lock:
-            self._emitter_counter -= 1
-            if self._emitter_counter == 0:
-                self.flush()
-
     @abstractmethod
-    def flush(self) -> None:
+    def flush(self, blocking: bool = True) -> None:
         """Flush the log store.
 
         This method is called to ensure that all logs are flushed to the backend.
+
+        Args:
+            blocking: Whether to block until the flush is complete.
         """
 
     @abstractmethod

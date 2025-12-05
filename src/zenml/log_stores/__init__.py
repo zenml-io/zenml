@@ -23,6 +23,7 @@ from zenml.log_stores.base_log_store import (
 # OpenTelemetry log store
 from zenml.log_stores.otel.otel_flavor import (
     OtelLogStoreConfig,
+    OtelLogStoreFlavor,
 )
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 
@@ -50,4 +51,5 @@ __all__ = [
     "DatadogLogStoreFlavor",
     "OtelLogStore",
     "OtelLogStoreConfig",
+    "OtelLogStoreFlavor",
 ]

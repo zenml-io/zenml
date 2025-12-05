@@ -47,6 +47,7 @@ from zenml.models import (
 )
 
 if TYPE_CHECKING:
+    from zenml.log_stores.base_log_store import BaseLogStoreEmitter
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -113,12 +114,14 @@ class LoggingContext:
 
     def __init__(
         self,
+        name: str,
         log_model: "LogsResponse",
         **metadata: Any,
     ) -> None:
         """Initialize the logging context.
 
         Args:
+            name: The name of the logging context.
             log_model: The logs response model for this context.
             **metadata: Additional metadata to attach to the log entry.
         """
@@ -128,6 +131,17 @@ class LoggingContext:
         self._disabled = False
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
+        self._emitter: Optional["BaseLogStoreEmitter"] = None
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        """The name of the logging context.
+
+        Returns:
+            The name of the logging context.
+        """
+        return self._name
 
     @classmethod
     def emit(cls, record: logging.LogRecord) -> None:
@@ -146,9 +160,8 @@ class LoggingContext:
             try:
                 message = record.getMessage()
                 if message and message.strip():
-                    context._log_store.emit(
-                        record, context.log_model, context._metadata
-                    )
+                    if context._emitter:
+                        context._emitter.emit(record)
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
             finally:
@@ -163,7 +176,11 @@ class LoggingContext:
         with self._lock:
             self._previous_context = active_logging_context.get()
             active_logging_context.set(self)
-            self._log_store.register_emitter()
+            self._emitter = self._log_store.register_emitter(
+                name=self.name,
+                log_model=self.log_model,
+                metadata=self._metadata,
+            )
 
         return self
 
@@ -194,11 +211,11 @@ class LoggingContext:
                 )
             )
 
-        self._log_store.finalize(self.log_model)
-
         with self._lock:
             active_logging_context.set(self._previous_context)
-            self._log_store.deregister_emitter()
+            if self._emitter:
+                self._emitter.deregister()
+                self._emitter = None
 
 
 def generate_logs_request(source: str) -> LogsRequest:
@@ -309,35 +326,35 @@ def get_run_log_metadata(
     Returns:
         The log metadata.
     """
-    log_metadata = dict(
-        pipeline_run_id=str(pipeline_run.id),
-        pipeline_run_name=pipeline_run.name,
-        project_id=str(pipeline_run.project.id),
-        project_name=pipeline_run.project.name,
-    )
+    log_metadata = {
+        "pipeline.run.id": str(pipeline_run.id),
+        "pipeline.run.name": pipeline_run.name,
+        "project.id": str(pipeline_run.project.id),
+        "project.name": pipeline_run.project.name,
+    }
 
     if pipeline_run.pipeline is not None:
         log_metadata.update(
-            dict(
-                pipeline_id=str(pipeline_run.pipeline.id),
-                pipeline_name=pipeline_run.pipeline.name,
-            )
+            {
+                "pipeline.id": str(pipeline_run.pipeline.id),
+                "pipeline.name": pipeline_run.pipeline.name,
+            }
         )
 
     if pipeline_run.stack is not None:
         log_metadata.update(
-            dict(
-                stack_id=str(pipeline_run.stack.id),
-                stack_name=pipeline_run.stack.name,
-            )
+            {
+                "stack.id": str(pipeline_run.stack.id),
+                "stack.name": pipeline_run.stack.name,
+            }
         )
 
     if pipeline_run.user is not None:
         log_metadata.update(
-            dict(
-                user_id=str(pipeline_run.user.id),
-                user_name=pipeline_run.user.name,
-            )
+            {
+                "user.id": str(pipeline_run.user.id),
+                "user.name": pipeline_run.user.name,
+            }
         )
 
     return log_metadata
@@ -360,12 +377,14 @@ def setup_run_logging(
     """
     log_metadata = get_run_log_metadata(pipeline_run)
     log_metadata.update(dict(source=source))
+    name = f"zenml.pipeline_run.{pipeline_run.id}.{source}"
 
     if pipeline_run.log_collection is not None:
         if run_logs := search_logs_by_source(
             pipeline_run.log_collection, source
         ):
             return LoggingContext(
+                name=name,
                 log_model=run_logs,
                 **log_metadata,
             )
@@ -385,6 +404,7 @@ def setup_run_logging(
             pipeline_run.log_collection, source
         ):
             return LoggingContext(
+                name=name,
                 log_model=run_logs,
                 **log_metadata,
             )
@@ -406,10 +426,10 @@ def get_step_log_metadata(
     """
     log_metadata = get_run_log_metadata(pipeline_run)
     log_metadata.update(
-        dict(
-            step_run_id=str(step_run.id),
-            step_run_name=step_run.name,
-        )
+        {
+            "step.run.id": str(step_run.id),
+            "step.run.name": step_run.name,
+        }
     )
     return log_metadata
 
@@ -433,19 +453,25 @@ def setup_step_logging(
     """
     log_metadata = get_step_log_metadata(step_run, pipeline_run)
     log_metadata.update(dict(source=source))
+    name = (
+        f"zenml.pipeline_run.{pipeline_run.id}.step.{step_run.name}.{source}"
+    )
 
     if pipeline_run.log_collection is not None:
         if run_logs := search_logs_by_source(
             pipeline_run.log_collection, source
         ):
             return LoggingContext(
+                name=name,
                 log_model=run_logs,
                 **log_metadata,
             )
 
     if step_run.log_collection is not None:
         if step_logs := search_logs_by_source(step_run.log_collection, source):
-            return LoggingContext(log_model=step_logs, **log_metadata)
+            return LoggingContext(
+                name=name, log_model=step_logs, **log_metadata
+            )
 
     logs_request = generate_logs_request(source=source)
     try:
@@ -459,7 +485,9 @@ def setup_step_logging(
 
     if step_run.log_collection is not None:
         if step_logs := search_logs_by_source(step_run.log_collection, source):
-            return LoggingContext(log_model=step_logs, **log_metadata)
+            return LoggingContext(
+                name=name, log_model=step_logs, **log_metadata
+            )
 
     return nullcontext()
 

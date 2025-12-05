@@ -18,9 +18,11 @@ import re
 from datetime import datetime
 from typing import (
     Any,
+    Dict,
     Iterator,
     List,
     Optional,
+    Type,
     cast,
 )
 from uuid import UUID
@@ -30,9 +32,16 @@ from opentelemetry.sdk._logs.export import LogExporter
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
-from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
+from zenml.log_stores import BaseLogStore
+from zenml.log_stores.base_log_store import (
+    MAX_ENTRIES_PER_REQUEST,
+    BaseLogStoreEmitter,
+)
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
-from zenml.log_stores.otel.otel_log_store import OtelLogStore
+from zenml.log_stores.otel.otel_log_store import (
+    OtelLogStore,
+    OtelLogStoreEmitter,
+)
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
@@ -128,6 +137,9 @@ def _stream_logs_line_by_line(
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
     """
+    if not artifact_store.exists(logs_uri):
+        return []
+
     if not artifact_store.isdir(logs_uri):
         # Single file case
         with artifact_store.open(logs_uri, "r") as file:
@@ -199,6 +211,31 @@ class ArtifactLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the artifact log store."""
 
 
+class ArtifactLogStoreEmitter(OtelLogStoreEmitter):
+    """Artifact log store emitter."""
+
+    def __init__(
+        self,
+        name: str,
+        log_store: "BaseLogStore",
+        log_model: LogsResponse,
+        metadata: Dict[str, Any],
+    ) -> None:
+        """Initialize a log store emitter.
+
+        Args:
+            name: The name of the emitter.
+            log_store: The log store to emit logs to.
+            log_model: The log model associated with the emitter.
+            metadata: Additional metadata to attach to all log entries that will
+                be emitted by this emitter.
+        """
+        super().__init__(name, log_store, log_model, metadata)
+
+        if log_model.uri:
+            self._metadata["zenml.log.uri"] = log_model.uri
+
+
 class ArtifactLogStore(OtelLogStore):
     """Log store that saves logs to the artifact store.
 
@@ -220,6 +257,15 @@ class ArtifactLogStore(OtelLogStore):
         super().__init__(*args, **kwargs)
         self._artifact_store = artifact_store
 
+    @property
+    def emitter_class(self) -> Type[ArtifactLogStoreEmitter]:
+        """Class of the emitter.
+
+        Returns:
+            The class of the emitter.
+        """
+        return ArtifactLogStoreEmitter
+
     @classmethod
     def from_artifact_store(
         cls, artifact_store: "BaseArtifactStore"
@@ -236,7 +282,7 @@ class ArtifactLogStore(OtelLogStore):
             artifact_store=artifact_store,
             id=artifact_store.id,
             name="default",
-            config=ArtifactLogStoreConfig(),
+            config=ArtifactLogStoreConfig(endpoint=artifact_store.path),
             flavor="artifact",
             type=StackComponentType.LOG_STORE,
             user=artifact_store.user,
@@ -265,26 +311,20 @@ class ArtifactLogStore(OtelLogStore):
 
         return ArtifactLogExporter(artifact_store=self._artifact_store)
 
-    def finalize(
+    def _finalize(
         self,
-        log_model: LogsResponse,
+        emitter: BaseLogStoreEmitter,
     ) -> None:
-        """Finalize the stream of log records associated with a log model.
+        """Finalize the stream of log records associated with an emitter.
 
         Args:
-            log_model: The log model to finalize.
+            emitter: The emitter to finalize.
         """
+        assert isinstance(emitter, ArtifactLogStoreEmitter)
         with self._lock:
-            if not self._provider or self._logger is None:
-                return
-
-        self._logger.emit(
-            body=END_OF_STREAM_MESSAGE,
-            attributes={
-                "zenml.log_model.id": str(log_model.id),
-                "zenml.log_model.uri": str(log_model.uri),
-            },
-        )
+            emitter.logger.emit(
+                body=END_OF_STREAM_MESSAGE,
+            )
 
     def fetch(
         self,

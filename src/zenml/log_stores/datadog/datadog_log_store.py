@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Datadog log store implementation."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional, cast
 
 import requests
@@ -21,7 +21,7 @@ import requests
 from zenml.enums import LoggingLevels
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
-from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
+from zenml.log_stores.datadog.datadog_log_exporter import DatadogLogExporter
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
@@ -37,7 +37,7 @@ class DatadogLogStore(OtelLogStore):
     to Datadog's HTTP intake API.
     """
 
-    _otlp_exporter: Optional[OTLPLogExporter] = None
+    _datadog_exporter: Optional[DatadogLogExporter] = None
 
     @property
     def config(self) -> DatadogLogStoreConfig:
@@ -48,18 +48,29 @@ class DatadogLogStore(OtelLogStore):
         """
         return cast(DatadogLogStoreConfig, self._config)
 
-    def get_exporter(self) -> OTLPLogExporter:
+    def get_exporter(self) -> DatadogLogExporter:
         """Get the Datadog log exporter.
 
         Returns:
             OTLPLogExporter configured with API key and site.
         """
-        if not self._otlp_exporter:
-            self._otlp_exporter = OTLPLogExporter(
-                endpoint=f"https://otlp.{self.config.site}/v1/logs",
-                headers={"dd-api-key": self.config.api_key.get_secret_value()},
+        if not self._datadog_exporter:
+            headers = {
+                "dd-api-key": self.config.api_key.get_secret_value(),
+                "dd-application-key": self.config.application_key.get_secret_value(),
+            }
+            if self.config.headers:
+                headers.update(self.config.headers)
+
+            self._datadog_exporter = DatadogLogExporter(
+                endpoint=self.config.endpoint,
+                headers=headers,
+                certificate_file=self.config.certificate_file,
+                client_key_file=self.config.client_key_file,
+                client_certificate_file=self.config.client_certificate_file,
+                compression=self.config.compression,
             )
-        return self._otlp_exporter
+        return self._datadog_exporter
 
     def fetch(
         self,
@@ -85,7 +96,7 @@ class DatadogLogStore(OtelLogStore):
         """
         query_parts = [
             f"service:{self.config.service_name}",
-            f"@zenml.log_model.id:{logs_model.id}",
+            f"@zenml.log.id:{logs_model.id}",
         ]
 
         query = " ".join(query_parts)
@@ -125,7 +136,7 @@ class DatadogLogStore(OtelLogStore):
                     "page": {
                         "limit": page_limit,
                     },
-                    "sort": "@otel.timestamp",
+                    "sort": "timestamp",
                 }
 
                 if cursor:
@@ -198,16 +209,9 @@ class DatadogLogStore(OtelLogStore):
             otel_info = nested_attrs.get("otel", {})
             logger_name = otel_info.get("library", {}).get("name")
 
-            timestamp_ns_str = otel_info.get("timestamp")
-            if timestamp_ns_str:
-                timestamp_ns = int(timestamp_ns_str)
-                timestamp = datetime.fromtimestamp(
-                    timestamp_ns / 1e9, tz=timezone.utc
-                )
-            else:
-                timestamp = datetime.fromisoformat(
-                    log_fields["timestamp"].replace("Z", "+00:00")
-                )
+            timestamp = datetime.fromisoformat(
+                log_fields["timestamp"].replace("Z", "+00:00")
+            )
 
             severity = log_fields.get("status", "info").upper()
             log_severity = (
@@ -240,6 +244,6 @@ class DatadogLogStore(OtelLogStore):
 
         This method is called when the log store is no longer needed.
         """
-        if self._otlp_exporter:
-            self._otlp_exporter.shutdown()
-            self._otlp_exporter = None
+        if self._datadog_exporter:
+            self._datadog_exporter.shutdown()
+            self._datadog_exporter = None
