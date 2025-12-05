@@ -1,5 +1,5 @@
+---
 name: Snack-it - Create Issue from PR
-
 # This workflow creates a "snack" issue when a PR is labeled with "snack-it"
 # The issue inherits all PR labels, gets tagged with "snack", and is added to the ZenML Roadmap project
 # The PR branch is linked to the issue for easy tracking
@@ -10,22 +10,19 @@ name: Snack-it - Create Issue from PR
 # REQUIREMENTS:
 # - GH_PAT_TOKEN_FOR_SNACK_IT: Personal Access Token with repo, project, and org:read scopes
 #   (needed for adding issues to organization projects)
-
 on:
   pull_request:
     types: [labeled]
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to create snack issue from'
+        description: PR number to create snack issue from
         required: true
         type: number
-
 permissions:
-  issues: write
-  pull-requests: write
-  contents: read
-
+  issues: write  # creating issues + comments
+  pull-requests: read  # reading PR data
+  contents: read  # reading repo contents if needed
 jobs:
   create-snack-issue:
     runs-on: ubuntu-latest
@@ -37,33 +34,40 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             let hasSnackItLabel = false;
-            
             if (context.eventName === 'workflow_dispatch') {
-              // Manual trigger - always proceed
-              hasSnackItLabel = true;
-              console.log('Manual trigger detected, will create issue for PR #' + context.payload.inputs.pr_number);
+              const prNumber = parseInt(context.payload.inputs.pr_number, 10);
+              console.log('Manual trigger detected for PR  #' + prNumber + ' - checking labels');
+              try {
+                const prData = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber
+                });
+                const labels = prData.data.labels || [];
+                hasSnackItLabel = labels.some(label => label.name === 'snack-it');
+                console.log('PR labels:', labels.map(l => l.name).join(', '));
+                console.log('Has snack-it label:', hasSnackItLabel);
+              } catch (error) {
+                console.log(`Error fetching PR  #${prNumber} to check labels: ${error.message}`);
+                hasSnackItLabel = false;
+              }
             } else if (context.payload.pull_request) {
               // Check if PR has snack-it label
               const labels = context.payload.pull_request.labels || [];
               hasSnackItLabel = labels.some(label => label.name === 'snack-it');
-              
               console.log('PR labels:', labels.map(l => l.name).join(', '));
               console.log('Has snack-it label:', hasSnackItLabel);
               console.log('Event action:', context.payload.action);
-              
               if (context.payload.label) {
                 console.log('Label from event:', context.payload.label.name);
               }
             }
-            
             core.setOutput('snack_it', hasSnackItLabel ? 'true' : 'false');
-            
             if (hasSnackItLabel) {
               console.log('✅ Will create snack issue');
             } else {
               console.log('⏭️  Skipping - no snack-it label');
             }
-
       - name: Create issue from PR
         if: steps.check-label.outputs.snack_it == 'true'
         id: create-issue
@@ -76,39 +80,38 @@ jobs:
             // Get PR details (handle both workflow_dispatch and pull_request events)
             let pr;
             if (context.eventName === 'workflow_dispatch') {
-              const prNumber = parseInt(process.env.PR_NUMBER);
-              const prData = await github.rest.pulls.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber
-              });
-              pr = prData.data;
+              try {
+                const prNumber = parseInt(process.env.PR_NUMBER, 10);
+                const prData = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber
+                });
+                pr = prData.data;
+              } catch (e) {
+                core.setFailed(`Could not load PR  #${process.env.PR_NUMBER} in this repo: ${e.message}`);
+                return;
+              }
             } else {
               pr = context.payload.pull_request;
             }
-            
             // Check for existing snack issue for this PR
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const query = `repo:${owner}/${repo} type:issue label:snack "PR #${pr.number}"`;
-            
+            const query = `repo:${owner}/${repo} type:issue label:snack "PR  #${pr.number}"`;
             const searchResult = await github.rest.search.issuesAndPullRequests({ q: query });
             const existing = searchResult.data.items[0];
-            
             if (existing) {
-              console.log(`✓ Existing snack issue #${existing.number} found for PR #${pr.number}, not creating a new one.`);
+              console.log(`✓ Existing snack issue #${existing.number} found for PR  #${pr.number}, not creating a new one.`);
               core.setOutput('issue_number', existing.number);
               core.setOutput('issue_node_id', existing.node_id);
               core.setOutput('pr_number', pr.number);
               return existing.number;
             }
-            
             // Create simple issue from PR
             const issueTitle = pr.title;
-            const issueBody = `This issue tracks the work completed in PR #${pr.number}.`;
-            
+            const issueBody = `This issue tracks the work completed in PR  #${pr.number}.`;
             console.log('Creating issue with title:', issueTitle);
-            
             // Create the issue
             const issue = await github.rest.issues.create({
               owner: context.repo.owner,
@@ -117,9 +120,7 @@ jobs:
               body: issueBody,
               labels: ['snack']
             });
-            
-            console.log(`✅ Created issue #${issue.data.number}`);
-            
+            console.log(`✅ Created issue  #${issue.data.number}`);
             // Assign the issue to the PR author
             const prAuthor = pr.user.login;
             try {
@@ -134,10 +135,8 @@ jobs:
               console.log(`⚠️  Could not assign to @${prAuthor}: ${assignError.message}`);
               console.log('User may not have write access to the repository');
             }
-            
             // Get all labels from the PR
             const prLabels = pr.labels.map(label => label.name);
-            
             // Add all PR labels to the issue (excluding 'snack-it' which triggered this)
             const labelsToAdd = prLabels.filter(label => label !== 'snack-it');
             if (labelsToAdd.length > 0) {
@@ -149,15 +148,12 @@ jobs:
               });
               console.log(`Added labels: ${labelsToAdd.join(', ')}`);
             }
-            
             // Store issue data for next step and PR comment
             core.setOutput('issue_number', issue.data.number);
             core.setOutput('issue_node_id', issue.data.node_id);
             core.setOutput('pr_number', pr.number);
-            
-            console.log(`✅ Created issue #${issue.data.number}`);
+            console.log(`✅ Created issue  #${issue.data.number}`);
             return issue.data.number;
-
       - name: Add issue to project and set status
         if: steps.check-label.outputs.snack_it == 'true'
         continue-on-error: true
@@ -174,22 +170,14 @@ jobs:
             const issueNumber = parseInt(process.env.ISSUE_NUMBER);
             const issueNodeId = process.env.ISSUE_NODE_ID;
             const prNumber = parseInt(process.env.PR_NUMBER);
-            
-            console.log(`Working with issue #${issueNumber}`);
-            
+            console.log(`Working with issue  #${issueNumber}`);
             try {
               // GraphQL query to add item to project
               // Project number from URL: https://github.com/orgs/zenml-io/projects/1
               const projectNumber = 1;
               const orgName = 'zenml-io';
               
-              // Get full issue and PR details for later use
-              const issue = await github.rest.issues.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber
-              });
-              
+              // Get full PR details for later use
               const pr = await github.rest.pulls.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -218,31 +206,25 @@ jobs:
                 }
               }
             `;
-            
             const projectData = await github.graphql(projectQuery, {
               org: orgName,
               number: projectNumber
             });
-            
             const project = projectData.organization.projectV2;
             console.log(`Found project ID: ${project.id}`);
-            
             // Find the Status field and "In Review" option
             const statusField = project.fields.nodes.find(field => field.name === 'Status');
             if (!statusField) {
               console.log('Status field not found in project');
               console.log('Available fields:', project.fields.nodes.map(f => f.name));
             }
-            
             const inReviewOption = statusField?.options.find(opt => 
               opt.name === 'In Review' || opt.name === 'In review'
             );
-            
             if (!inReviewOption) {
               console.log('In Review option not found');
               console.log('Available options:', statusField?.options.map(o => o.name));
             }
-            
             // Add the issue to the project
             const addToProjectMutation = `
               mutation($projectId: ID!, $contentId: ID!) {
@@ -253,15 +235,12 @@ jobs:
                 }
               }
             `;
-            
             const addResult = await github.graphql(addToProjectMutation, {
               projectId: project.id,
               contentId: issueNodeId
             });
-            
             const itemId = addResult.addProjectV2ItemById.item.id;
-            console.log(`Added issue #${issueNumber} to project with item ID: ${itemId}`);
-            
+            console.log(`Added issue  #${issueNumber} to project with item ID: ${itemId}`);
             // Update the status to "In Review" if we found the field and option
             if (statusField && inReviewOption) {
               const updateStatusMutation = `
@@ -293,54 +272,54 @@ jobs:
                 console.log(`Note: Could not set status automatically. Please set manually in the project.`);
               }
               
-              // Link the PR branch to the issue
+              // Link the PR branch to the issue only when the PR comes from the same repository
               const prBranch = pr.data.head.ref;
-              const prRepo = pr.data.head.repo.full_name;
-              
-              console.log(`Linking branch ${prBranch} to issue #${issueNumber}`);
-              
-              try {
-                // Create a development link between the issue and the branch
-                const linkBranchMutation = `
-                  mutation($issueId: ID!, $repositoryId: ID!, $branch: String!) {
-                    createLinkedBranch(input: {
-                      issueId: $issueId
-                      repositoryId: $repositoryId
-                      name: $branch
-                    }) {
-                      linkedBranch {
-                        id
+              const prRepoFullName = pr.data.head.repo.full_name;
+              const baseRepoFullName = `${context.repo.owner}/${context.repo.repo}`;
+              if (prRepoFullName !== baseRepoFullName) {
+                console.log(`Skipping branch link for fork PR from ${prRepoFullName}; base repo is ${baseRepoFullName}.`);
+              } else {
+                console.log(`Linking branch ${prBranch} in ${baseRepoFullName} to issue  #${issueNumber}`);
+                try {
+                  // Create a development link between the issue and the branch
+                  const linkBranchMutation = `
+                    mutation($issueId: ID!, $repositoryId: ID!, $branch: String!) {
+                      createLinkedBranch(input: {
+                        issueId: $issueId
+                        repositoryId: $repositoryId
+                        name: $branch
+                      }) {
+                        linkedBranch {
+                          id
+                        }
                       }
                     }
-                  }
-                `;
-                
-                // Get repository ID
-                const repoData = await github.rest.repos.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo
-                });
-                
-                await github.graphql(linkBranchMutation, {
-                  issueId: issueNodeId,
-                  repositoryId: repoData.data.node_id,
-                  branch: prBranch
-                });
-                
-                console.log(`✅ Linked branch ${prBranch} to issue #${issueNumber}`);
-              } catch (branchError) {
-                console.log(`Note: Could not link branch automatically: ${branchError.message}`);
-                console.log(`Branch can be linked manually in the issue sidebar.`);
+                  `;
+                  // Get repository ID
+                  const repoData = await github.rest.repos.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo
+                  });
+                  await github.graphql(linkBranchMutation, {
+                    issueId: issueNodeId,
+                    repositoryId: repoData.data.node_id,
+                    branch: prBranch
+                  });
+                  console.log(`✅ Linked branch ${prBranch} to issue  #${issueNumber}`);
+                } catch (branchError) {
+                  console.log(`Note: Could not link branch automatically: ${branchError.message}`);
+                  console.log(`Branch can be linked manually in the issue sidebar.`);
+                }
               }
               
-              console.log(`✅ Successfully added issue #${issueNumber} to ZenML Roadmap project`);
+              console.log(`✅ Successfully added issue  #${issueNumber} to ZenML Roadmap project`);
               core.setOutput('project_added', 'true');
               
             } catch (error) {
               console.error(`❌ Error adding issue to project: ${error.message}`);
               console.error(`This might be due to insufficient permissions on the GitHub token.`);
               console.error(`Please ensure GH_PAT_TOKEN_FOR_SNACK_IT secret has 'project' and 'org:read' scopes.`);
-              console.error(`You can manually add issue #${issueNumber} to the project at:`);
+              console.error(`You can manually add issue  #${issueNumber} to the project at:`);
               console.error(`https://github.com/orgs/zenml-io/projects/1`);
               
               core.setOutput('project_added', 'false');
@@ -348,31 +327,25 @@ jobs:
               // Don't fail the workflow, just log the error
               // The issue was still created successfully
             }
-
       - name: Comment on PR
         if: steps.check-label.outputs.snack_it == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
+          script: |-
             const issueNumber = '${{ steps.create-issue.outputs.issue_number }}';
             const prNumber = '${{ steps.create-issue.outputs.pr_number }}';
             const projectAdded = '${{ steps.add-to-project.outputs.project_added }}' === 'true';
-            
-            let message = `🍿 Snack issue created: #${issueNumber}\n\n`;
-            
+            let message = `🍿 Snack issue created:  #${issueNumber}\n\n`;
             if (projectAdded) {
               message += `This issue has been added to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1) project and set to "In Review".`;
             } else {
               message += `⚠️ The issue could not be automatically added to the project board. Please add it manually to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1).`;
             }
-            
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: parseInt(prNumber),
               body: message
             });
-            
-            console.log(`Commented on PR #${prNumber}`);
-
+            console.log(`Commented on PR  #${prNumber}`);
