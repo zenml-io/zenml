@@ -40,8 +40,8 @@ First, create a ZenML secret with your MinIO credentials:
 
 ```shell
 zenml secret create minio_secret \
-    --aws_access_key_id='<YOUR_MINIO_ACCESS_KEY>' \
-    --aws_secret_access_key='<YOUR_MINIO_SECRET_KEY>'
+    --access_key_id='<YOUR_MINIO_ACCESS_KEY>' \
+    --secret_access_key='<YOUR_MINIO_SECRET_KEY>'
 ```
 
 Then register the artifact store:

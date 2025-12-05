@@ -45,8 +45,8 @@ First, create a ZenML secret with your Alibaba Cloud credentials:
 
 ```shell
 zenml secret create alibaba_secret \
-    --aws_access_key_id='<YOUR_ALIBABA_ACCESS_KEY_ID>' \
-    --aws_secret_access_key='<YOUR_ALIBABA_SECRET_ACCESS_KEY>'
+    --access_key_id='<YOUR_ALIBABA_ACCESS_KEY_ID>' \
+    --secret_access_key='<YOUR_ALIBABA_SECRET_ACCESS_KEY>'
 ```
 
 Then register the artifact store with the required OSS configuration:
