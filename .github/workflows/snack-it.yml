@@ -13,7 +13,7 @@ name: Snack-it - Create Issue from PR
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [labeled]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -64,12 +64,6 @@ jobs:
               console.log('⏭️  Skipping - no snack-it label');
             }
 
-      - name: Checkout repository
-        if: steps.check-label.outputs.snack_it == 'true'
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 1
-
       - name: Create issue from PR
         if: steps.check-label.outputs.snack_it == 'true'
         id: create-issue
@@ -91,6 +85,22 @@ jobs:
               pr = prData.data;
             } else {
               pr = context.payload.pull_request;
+            }
+            
+            // Check for existing snack issue for this PR
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const query = `repo:${owner}/${repo} type:issue label:snack "PR #${pr.number}"`;
+            
+            const searchResult = await github.rest.search.issuesAndPullRequests({ q: query });
+            const existing = searchResult.data.items[0];
+            
+            if (existing) {
+              console.log(`✓ Existing snack issue #${existing.number} found for PR #${pr.number}, not creating a new one.`);
+              core.setOutput('issue_number', existing.number);
+              core.setOutput('issue_node_id', existing.node_id);
+              core.setOutput('pr_number', pr.number);
+              return existing.number;
             }
             
             // Create simple issue from PR
@@ -167,24 +177,24 @@ jobs:
             
             console.log(`Working with issue #${issueNumber}`);
             
-            // Get full issue and PR details for later use
-            const issue = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber
-            });
-            
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
-            
             try {
               // GraphQL query to add item to project
               // Project number from URL: https://github.com/orgs/zenml-io/projects/1
               const projectNumber = 1;
               const orgName = 'zenml-io';
+              
+              // Get full issue and PR details for later use
+              const issue = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              });
+              
+              const pr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
               
               // First, get the project ID
               const projectQuery = `
