@@ -18,9 +18,11 @@ import re
 from datetime import datetime
 from typing import (
     Any,
+    Dict,
     Iterator,
     List,
     Optional,
+    Type,
     cast,
 )
 from uuid import UUID
@@ -32,7 +34,10 @@ from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
-from zenml.log_stores.otel.otel_log_store import OtelLogStore
+from zenml.log_stores.otel.otel_log_store import (
+    OtelLogStore,
+    OtelLogStoreEmitter,
+)
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
@@ -199,6 +204,22 @@ class ArtifactLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the artifact log store."""
 
 
+class ArtifactLogStoreEmitter(OtelLogStoreEmitter):
+    """Artifact log store emitter."""
+
+    def _get_logger_attributes(self) -> Dict[str, Any]:
+        """Get the attributes for the logger.
+
+        Returns:
+            The attributes for the logger.
+        """
+        attributes = super()._get_logger_attributes()
+
+        if self._log_model.uri:
+            attributes["zenml.log.uri"] = self._log_model.uri
+        return attributes
+
+
 class ArtifactLogStore(OtelLogStore):
     """Log store that saves logs to the artifact store.
 
@@ -219,6 +240,15 @@ class ArtifactLogStore(OtelLogStore):
         """
         super().__init__(*args, **kwargs)
         self._artifact_store = artifact_store
+
+    @property
+    def emitter_class(self) -> Type[ArtifactLogStoreEmitter]:
+        """Class of the emitter.
+
+        Returns:
+            The class of the emitter.
+        """
+        return ArtifactLogStoreEmitter
 
     @classmethod
     def from_artifact_store(
@@ -265,26 +295,19 @@ class ArtifactLogStore(OtelLogStore):
 
         return ArtifactLogExporter(artifact_store=self._artifact_store)
 
-    def finalize(
+    def _finalize(
         self,
-        log_model: LogsResponse,
+        emitter: OtelLogStoreEmitter,
     ) -> None:
-        """Finalize the stream of log records associated with a log model.
+        """Finalize the stream of log records associated with an emitter.
 
         Args:
-            log_model: The log model to finalize.
+            emitter: The emitter to finalize.
         """
         with self._lock:
-            if not self._provider or self._logger is None:
-                return
-
-        self._logger.emit(
-            body=END_OF_STREAM_MESSAGE,
-            attributes={
-                "zenml.log_model.id": str(log_model.id),
-                "zenml.log_model.uri": str(log_model.uri),
-            },
-        )
+            emitter.logger.emit(
+                body=END_OF_STREAM_MESSAGE,
+            )
 
     def fetch(
         self,

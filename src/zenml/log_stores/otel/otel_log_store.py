@@ -16,7 +16,7 @@
 import logging
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
 from opentelemetry.sdk._logs import (
     Logger,
@@ -29,6 +29,7 @@ from opentelemetry.sdk.resources import Resource
 from zenml.log_stores.base_log_store import (
     MAX_ENTRIES_PER_REQUEST,
     BaseLogStore,
+    BaseLogStoreEmitter,
 )
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.logger import get_logger
@@ -40,6 +41,65 @@ if TYPE_CHECKING:
     from zenml.utils.logging_utils import LogEntry
 
 logger = get_logger(__name__)
+
+
+class OtelLogStoreEmitter(BaseLogStoreEmitter):
+    """OpenTelemetry log store emitter."""
+
+    def __init__(
+        self,
+        name: str,
+        log_store: "BaseLogStore",
+        log_model: LogsResponse,
+        metadata: Dict[str, Any],
+    ) -> None:
+        """Initialize a log store emitter.
+
+        Args:
+            name: The name of the emitter.
+            log_store: The log store to emit logs to.
+            log_model: The log model associated with the emitter.
+            metadata: Additional metadata to attach to all log entries that will
+                be emitted by this emitter.
+
+        Raises:
+            RuntimeError: If the OpenTelemetry log store is not initialized.
+        """
+        super().__init__(name, log_store, log_model, metadata)
+        assert isinstance(log_store, OtelLogStore)
+
+        self._logger = log_store.provider.get_logger(
+            name, attributes=self._get_logger_attributes()
+        )
+
+    def _get_logger_attributes(self) -> Dict[str, Any]:
+        """Get the attributes for the logger.
+
+        Returns:
+            The attributes for the logger.
+        """
+        attributes = {
+            f"zenml.{key}": value for key, value in self._metadata.items()
+        }
+
+        attributes.update(
+            {
+                "zenml.log.id": str(self._log_model.id),
+                "zenml.log.source": self._log_model.source,
+                "zenml.log_store.id": str(self._log_store.id),
+                "zenml.log_store.name": self._log_store.name,
+            }
+        )
+        return attributes
+
+    @property
+    def logger(self) -> "Logger":
+        """Returns the OpenTelemetry logger for this emitter.
+
+        Returns:
+            The logger.
+        """
+        return self._logger
 
 
 class OtelLogStore(BaseLogStore):
@@ -62,7 +122,6 @@ class OtelLogStore(BaseLogStore):
         self._exporter: Optional["LogExporter"] = None
         self._provider: Optional["LoggerProvider"] = None
         self._processor: Optional["BatchLogRecordProcessor"] = None
-        self._logger: Optional["Logger"] = None
         self._handler: Optional["LoggingHandler"] = None
 
     @property
@@ -73,6 +132,29 @@ class OtelLogStore(BaseLogStore):
             The configuration.
         """
         return cast(OtelLogStoreConfig, self._config)
+
+    @property
+    def emitter_class(self) -> Type[OtelLogStoreEmitter]:
+        """Class of the emitter.
+
+        Returns:
+            The class of the emitter.
+        """
+        return OtelLogStoreEmitter
+
+    @property
+    def provider(self) -> "LoggerProvider":
+        """Returns the OpenTelemetry logger provider.
+
+        Returns:
+            The logger provider.
+
+        Raises:
+            RuntimeError: If the OpenTelemetry log store is not initialized.
+        """
+        if not self._provider:
+            raise RuntimeError("OpenTelemetry log store is not initialized")
+        return self._provider
 
     @abstractmethod
     def get_exporter(self) -> "LogExporter":
@@ -85,7 +167,7 @@ class OtelLogStore(BaseLogStore):
             The log exporter instance.
         """
 
-    def activate(self) -> None:
+    def _activate(self) -> None:
         """Activate log collection with OpenTelemetry."""
         self._exporter = self.get_exporter()
         self._processor = BatchLogRecordProcessor(self._exporter)
@@ -99,66 +181,60 @@ class OtelLogStore(BaseLogStore):
 
         self._provider = LoggerProvider(resource=self._resource)
         self._provider.add_log_record_processor(self._processor)
-
-        self._logger = self._provider.get_logger(
-            "zenml.log_store.emit",
-        )
         self._handler = LoggingHandler(logger_provider=self._provider)
 
-    def emit(
+    def register_emitter(
+        self, name: str, log_model: LogsResponse, metadata: Dict[str, Any]
+    ) -> BaseLogStoreEmitter:
+        """Register an emitter for the log store.
+
+        Args:
+            name: The name of the emitter.
+            log_model: The log model associated with the emitter.
+            metadata: Additional metadata to attach to the log entry.
+
+        Returns:
+            The emitter.
+        """
+        with self._lock:
+            if not self._provider:
+                self._activate()
+
+        return super().register_emitter(name, log_model, metadata)
+
+    def _emit(
         self,
+        emitter: OtelLogStoreEmitter,
         record: logging.LogRecord,
-        log_model: "LogsResponse",
-        metadata: Dict[str, Any],
     ) -> None:
         """Process a log record by sending to OpenTelemetry.
 
         Args:
+            emitter: The emitter to emit the log record to.
             record: The log record to process.
-            log_model: The log model to emit the log record to.
-            metadata: Additional metadata to attach to the log entry.
 
         Raises:
             RuntimeError: If the OpenTelemetry provider is not initialized.
         """
         with self._lock:
             if not self._provider:
-                self.activate()
+                self._activate()
 
-        if (
-            self._provider is None
-            or self._logger is None
-            or self._handler is None
-        ):
-            raise RuntimeError("OpenTelemetry provider is not initialized")
+            if self._handler is None:
+                raise RuntimeError("OpenTelemetry provider is not initialized")
 
-        emit_kwargs = self._handler._translate(record)
+            emit_kwargs = self._handler._translate(record)
 
-        attributes = emit_kwargs.get("attributes", {})
+            emitter.logger.emit(**emit_kwargs)
 
-        attributes.update(
-            {
-                "zenml.log_store_id": str(self.id),
-                "zenml.log_model.id": str(log_model.id),
-                "zenml.log_model.uri": str(log_model.uri),
-                "zenml.log_model.artifact_store_id": str(
-                    log_model.artifact_store_id
-                ),
-                "zenml.log_model.source": log_model.source,
-                **{f"zenml.{key}": value for key, value in metadata.items()},
-            }
-        )
-
-        self._logger.emit(**emit_kwargs)
-
-    def finalize(
+    def _finalize(
         self,
-        log_model: LogsResponse,
+        emitter: OtelLogStoreEmitter,
     ) -> None:
-        """Finalize the stream of log records associated with a log model.
+        """Finalize the stream of log records associated with an emitter.
 
         Args:
-            log_model: The log model to finalize.
+            emitter: The emitter to finalize.
         """
         pass
 
@@ -167,27 +243,37 @@ class OtelLogStore(BaseLogStore):
 
         This method is called to ensure that all logs are flushed to the backend.
         """
-        if self._processor:
-            self._processor.force_flush()
+        with self._lock:
+            if self._processor:
+                self._processor.force_flush()
 
     def deactivate(self) -> None:
         """Deactivate log collection and shut down the processor.
 
         Flushes any pending logs and shuts down the processor's background thread.
         """
-        if self._processor:
-            try:
-                # Force flush any pending logs
-                self._processor.force_flush(timeout_millis=5000)
-                logger.debug("Flushed pending logs")
-            except Exception as e:
-                logger.warning(f"Error flushing logs: {e}")
+        with self._lock:
+            if self._processor:
+                try:
+                    # Force flush any pending logs
+                    self._processor.force_flush(timeout_millis=5000)
+                    logger.debug("Flushed pending logs")
+                except Exception as e:
+                    logger.warning(f"Error flushing logs: {e}")
 
-            try:
-                self._processor.shutdown()  # type: ignore[no-untyped-call]
-                logger.debug("Shut down log processor and background thread")
-            except Exception as e:
-                logger.warning(f"Error shutting down processor: {e}")
+                try:
+                    self._processor.shutdown()  # type: ignore[no-untyped-call]
+                    logger.debug(
+                        "Shut down log processor and background thread"
+                    )
+                except Exception as e:
+                    logger.warning(f"Error shutting down processor: {e}")
+                else:
+                    self._processor = None
+                    self._handler = None
+                    self._provider = None
+                    self._resource = None
+                    self._exporter = None
 
         logger.debug("OtelLogStore deactivated")
 

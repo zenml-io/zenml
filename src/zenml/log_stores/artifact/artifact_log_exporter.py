@@ -69,11 +69,11 @@ class ArtifactLogExporter(LogExporter):
             finalized_log_streams: List[str] = []
 
             for log_data in batch:
-                attrs = log_data.log_record.attributes
+                attrs = log_data.instrumentation_scope.attributes
                 if not attrs:
                     continue
 
-                log_uri = attrs.get("zenml.log_model.uri")
+                log_uri = attrs.get("zenml.log.uri")
                 if not log_uri or not isinstance(log_uri, str):
                     continue
 

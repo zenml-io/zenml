@@ -350,6 +350,8 @@ class OTLPLogExporter(LogExporter):
                 )
             )
 
+        print(json.dumps(json_resource_logs, indent=4))
+
         return dict(resource_logs=json_resource_logs)
 
     def export(self, batch: Sequence["LogData"]) -> LogExportResult:
