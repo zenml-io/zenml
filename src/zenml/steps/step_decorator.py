@@ -107,6 +107,7 @@ def step(
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
+    heartbeat_healthy_threshold: Optional[int] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -146,6 +147,9 @@ def step(
             run inline unless a step operator or docker/resource settings
             are configured. This is only applicable for dynamic
             pipelines.
+        heartbeat_healthy_threshold: The amount of time (in minutes) that a
+            running step has not received heartbeat and is considered healthy.
+            By default, set to the maximum value (30 minutes).",
 
     Returns:
         The step instance.
@@ -184,6 +188,7 @@ def step(
             substitutions=substitutions,
             cache_policy=cache_policy,
             runtime=runtime,
+            heartbeat_healthy_threshold=heartbeat_healthy_threshold,
         )
 
         return step_instance

@@ -117,7 +117,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             nullable=True,
         )
     )
-
+    heartbeat_threshold: Optional[int] = Field(nullable=True)
     # Foreign keys
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
