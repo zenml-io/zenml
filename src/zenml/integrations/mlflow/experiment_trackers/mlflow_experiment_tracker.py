@@ -18,7 +18,8 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import mlflow
-from mlflow.entities import Experiment, Run
+from mlflow.entities import Experiment, LifecycleStage, Run
+from mlflow.exceptions import MlflowException
 from mlflow.store.db.db_types import DATABASE_ENGINES
 
 import zenml
@@ -194,6 +195,24 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         run_id = self.get_run_id(
             experiment_name=experiment_name, run_name=info.run_name
         )
+
+        # Validate that the run exists before attempting to resume it
+        if run_id:
+            try:
+                run = mlflow.get_run(run_id)
+                if run.info.lifecycle_stage == LifecycleStage.DELETED:
+                    logger.warning(
+                        f"Run with id {run_id} is in 'deleted' state. "
+                        "Creating a new run instead."
+                    )
+                    run_id = None
+            except MlflowException as e:
+                # Run doesn't exist on the MLflow server, create a new one
+                logger.warning(
+                    f"Run with id {run_id} not found in MLflow tracking server. "
+                    f"Creating a new run instead. Error: {e}"
+                )
+                run_id = None
 
         tags = settings.tags.copy()
         tags.update(self._get_internal_tags())
