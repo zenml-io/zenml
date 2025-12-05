@@ -1,0 +1,323 @@
+name: Snack-it - Create Issue from PR
+
+# This workflow creates a "snack" issue when a PR is labeled with "snack-it"
+# Uses Claude AI to generate a concise, actionable issue description from the PR
+# The issue inherits all PR labels, gets tagged with "snack", and is added to the ZenML Roadmap project
+# The PR branch is linked to the issue for easy tracking
+# 
+# REQUIREMENTS:
+# - ANTHROPIC_API_KEY: Anthropic API key for Claude AI
+# - GH_PAT_TOKEN: Personal Access Token with repo, project, and org:read scopes
+#   (needed for adding issues to organization projects)
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+jobs:
+  create-snack-issue:
+    if: github.event.label.name == 'snack-it'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Generate issue content with Claude
+        id: claude-generate
+        uses: anthropics/claude-code-action@v1
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          track_progress: false
+          prompt: |
+            You are helping to create a "snack" issue from a pull request. A snack is a small, bite-sized task that can be completed relatively quickly.
+            
+            PR Number: ${{ github.event.pull_request.number }}
+            PR Title: ${{ github.event.pull_request.title }}
+            
+            Your task:
+            1. Use `gh pr view ${{ github.event.pull_request.number }} --json title,body,author,headRefName,files` to get PR details
+            2. Use `gh pr diff ${{ github.event.pull_request.number }}` to see the changes (if needed for context)
+            3. Analyze the PR to understand what was accomplished
+            4. Generate TWO outputs (output them EXACTLY as shown below):
+            
+            OUTPUT FORMAT (you must follow this exactly):
+            
+            ISSUE_TITLE:
+            <A concise, actionable title for the snack (max 80 chars)>
+            
+            ISSUE_BODY:
+            <A well-formatted markdown description that includes:
+            - A brief summary of what this snack accomplishes (2-3 sentences max)
+            - Key changes or features added
+            - Any relevant context for future reference
+            - Reference to the original PR #${{ github.event.pull_request.number }}
+            
+            Keep it concise and actionable. This should read like a task description, not a PR summary.>
+            
+            IMPORTANT: Output ONLY the title and body in the exact format above. Do not add any other commentary.
+          claude_args: --allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*)"
+
+      - name: Parse Claude output and create issue
+        id: create-issue
+        uses: actions/github-script@v7
+        env:
+          CLAUDE_OUTPUT: ${{ steps.claude-generate.outputs.result }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const claudeOutput = process.env.CLAUDE_OUTPUT || '';
+            
+            // Parse Claude's output
+            let issueTitle = pr.title;  // Fallback to PR title
+            let issueBody = `This issue tracks the work completed in PR #${pr.number}.\n\n${pr.body || 'No description provided.'}`;  // Fallback
+            
+            if (claudeOutput) {
+              // Extract title
+              const titleMatch = claudeOutput.match(/ISSUE_TITLE:\s*\n(.+?)(?=\n\nISSUE_BODY:)/s);
+              if (titleMatch && titleMatch[1].trim()) {
+                issueTitle = titleMatch[1].trim();
+              }
+              
+              // Extract body
+              const bodyMatch = claudeOutput.match(/ISSUE_BODY:\s*\n([\s\S]+?)$/);
+              if (bodyMatch && bodyMatch[1].trim()) {
+                issueBody = bodyMatch[1].trim();
+              }
+            }
+            
+            // Add footer with metadata
+            issueBody += `\n\n---\n_🤖 This snack issue was automatically created from PR #${pr.number} using Claude AI._`;
+            
+            console.log('Creating issue with title:', issueTitle);
+            
+            // Create the issue
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['snack']
+            });
+            
+            console.log(`✅ Created issue #${issue.data.number}`);
+            
+            // Get all labels from the PR
+            const prLabels = pr.labels.map(label => label.name);
+            
+            // Add all PR labels to the issue (excluding 'snack-it' which triggered this)
+            const labelsToAdd = prLabels.filter(label => label !== 'snack-it');
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.data.number,
+                labels: labelsToAdd
+              });
+              console.log(`Added labels: ${labelsToAdd.join(', ')}`);
+            }
+            
+            // Comment on the PR to notify about the created issue
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: `🍿 Snack issue created: #${issue.data.number}\n\nThis issue has been added to the [ZenML Roadmap](https://github.com/orgs/zenml-io/projects/1) project and set to "In Review".\n\n_Generated with Claude AI ✨_`
+            });
+            
+            // Store issue data for next step
+            core.setOutput('issue_number', issue.data.number);
+            core.setOutput('issue_node_id', issue.data.node_id);
+            
+            return issue.data.number;
+
+      - name: Add issue to project and set status
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            
+            // First, we need to find the issue we just created
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'snack',
+              sort: 'created',
+              direction: 'desc',
+              per_page: 1
+            });
+            
+            if (issues.data.length === 0) {
+              console.log('No issue found');
+              return;
+            }
+            
+            const issue = issues.data[0];
+            console.log(`Working with issue #${issue.number}`);
+            
+            try {
+              // GraphQL query to add item to project
+              // Project number from URL: https://github.com/orgs/zenml-io/projects/1
+              const projectNumber = 1;
+              const orgName = 'zenml-io';
+              
+              // First, get the project ID
+              const projectQuery = `
+              query($org: String!, $number: Int!) {
+                organization(login: $org) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+            
+            const projectData = await github.graphql(projectQuery, {
+              org: orgName,
+              number: projectNumber
+            });
+            
+            const project = projectData.organization.projectV2;
+            console.log(`Found project ID: ${project.id}`);
+            
+            // Find the Status field and "In Review" option
+            const statusField = project.fields.nodes.find(field => field.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              console.log('Available fields:', project.fields.nodes.map(f => f.name));
+            }
+            
+            const inReviewOption = statusField?.options.find(opt => 
+              opt.name === 'In Review' || opt.name === 'In review'
+            );
+            
+            if (!inReviewOption) {
+              console.log('In Review option not found');
+              console.log('Available options:', statusField?.options.map(o => o.name));
+            }
+            
+            // Add the issue to the project
+            const addToProjectMutation = `
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+                  item {
+                    id
+                  }
+                }
+              }
+            `;
+            
+            const addResult = await github.graphql(addToProjectMutation, {
+              projectId: project.id,
+              contentId: issue.node_id
+            });
+            
+            const itemId = addResult.addProjectV2ItemById.item.id;
+            console.log(`Added issue to project with item ID: ${itemId}`);
+            
+            // Update the status to "In Review" if we found the field and option
+            if (statusField && inReviewOption) {
+              const updateStatusMutation = `
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: { singleSelectOptionId: $optionId }
+                    }
+                  ) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+              
+              await github.graphql(updateStatusMutation, {
+                projectId: project.id,
+                itemId: itemId,
+                fieldId: statusField.id,
+                optionId: inReviewOption.id
+              });
+              
+              console.log(`Set status to "In Review"`);
+              } else {
+                console.log(`Note: Could not set status automatically. Please set manually in the project.`);
+              }
+              
+              // Link the PR branch to the issue
+              const prBranch = context.payload.pull_request.head.ref;
+              const prRepo = context.payload.pull_request.head.repo.full_name;
+              
+              console.log(`Linking branch ${prBranch} to issue #${issue.number}`);
+              
+              try {
+                // Create a development link between the issue and the branch
+                const linkBranchMutation = `
+                  mutation($issueId: ID!, $repositoryId: ID!, $branch: String!) {
+                    createLinkedBranch(input: {
+                      issueId: $issueId
+                      repositoryId: $repositoryId
+                      name: $branch
+                    }) {
+                      linkedBranch {
+                        id
+                      }
+                    }
+                  }
+                `;
+                
+                // Get repository ID
+                const repoData = await github.rest.repos.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo
+                });
+                
+                await github.graphql(linkBranchMutation, {
+                  issueId: issue.node_id,
+                  repositoryId: repoData.data.node_id,
+                  branch: prBranch
+                });
+                
+                console.log(`✅ Linked branch ${prBranch} to issue #${issue.number}`);
+              } catch (branchError) {
+                console.log(`Note: Could not link branch automatically: ${branchError.message}`);
+                console.log(`Branch can be linked manually in the issue sidebar.`);
+              }
+              
+              console.log(`✅ Successfully added issue #${issue.number} to ZenML Roadmap project`);
+              
+            } catch (error) {
+              console.error(`❌ Error adding issue to project: ${error.message}`);
+              console.error(`This might be due to insufficient permissions on the GitHub token.`);
+              console.error(`Please ensure GH_PAT_TOKEN secret has 'project' and 'org:read' scopes.`);
+              console.error(`You can manually add issue #${issue.number} to the project at:`);
+              console.error(`https://github.com/orgs/zenml-io/projects/1`);
+              
+              // Don't fail the workflow, just log the error
+              // The issue was still created successfully
+            }
+
