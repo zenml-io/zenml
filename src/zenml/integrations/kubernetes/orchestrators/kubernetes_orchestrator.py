@@ -1220,7 +1220,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         if not cron_job_name:
             logger.warning(
-                "Unable to find cron job name %s for schedule %.",
+                "Unable to find cron job %s for schedule %.",
                 cron_job_name,
                 schedule.name,
             )
