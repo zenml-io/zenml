@@ -47,7 +47,6 @@ def upgrade() -> None:
         sa.select(
             run_table.c.id,
             run_table.c.pipeline_id,
-            run_table.c.created,
         )
         .where(run_table.c.pipeline_id.is_not(None))
         .order_by(run_table.c.pipeline_id, run_table.c.created, run_table.c.id)
@@ -67,27 +66,34 @@ def upgrade() -> None:
         run_updates.append({"id_": row.id, "index": index_within_pipeline})
         run_counts[pipeline_id] = index_within_pipeline
 
+    update_batch_size = 10000
     if run_updates:
-        connection.execute(
+        update_statement = (
             sa.update(run_table)
             .where(run_table.c.id == sa.bindparam("id_"))
-            .values(index=sa.bindparam("index")),
-            run_updates,
+            .values(index=sa.bindparam("index"))
         )
+
+        for start in range(0, len(run_updates), update_batch_size):
+            batch = run_updates[start : start + update_batch_size]
+            if batch:
+                connection.execute(update_statement, batch)
 
     if run_counts:
         pipeline_updates = [
             {"id_": pipeline_id, "run_count": run_count}
             for pipeline_id, run_count in run_counts.items()
         ]
-        connection.execute(
+        update_statement = (
             sa.update(pipeline_table)
             .where(pipeline_table.c.id == sa.bindparam("id_"))
-            .values(run_count=sa.bindparam("run_count")),
-            pipeline_updates,
+            .values(run_count=sa.bindparam("run_count"))
         )
+        for start in range(0, len(pipeline_updates), update_batch_size):
+            batch = pipeline_updates[start : start + update_batch_size]
+            if batch:
+                connection.execute(update_statement, batch)
 
-    # Step 3: Make columns non-nullable
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.alter_column(
             "index", existing_type=sa.Integer(), nullable=False
