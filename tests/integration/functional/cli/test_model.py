@@ -16,16 +16,16 @@
 from uuid import uuid4
 
 import pytest
-from click.testing import CliRunner
 
 from tests.integration.functional.cli.conftest import NAME, PREFIX
+from tests.integration.functional.cli.utils import cli_runner
 from zenml.cli.cli import cli
 from zenml.client import Client
 
 
 def test_model_list(clean_client_with_models: "Client"):
     """Test that zenml model list does not fail."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     list_command = cli.commands["model"].commands["list"]
     result = runner.invoke(list_command)
     assert result.exit_code == 0, result.stderr
@@ -33,7 +33,7 @@ def test_model_list(clean_client_with_models: "Client"):
 
 def test_model_create_short_names(clean_client_with_models: "Client"):
     """Test that zenml model create does not fail with short names."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     create_command = cli.commands["model"].commands["register"]
     model_name = PREFIX + str(uuid4())
     result = runner.invoke(
@@ -82,7 +82,7 @@ def test_model_create_short_names(clean_client_with_models: "Client"):
 
 def test_model_create_full_names(clean_client_with_models: "Client"):
     """Test that zenml model create does not fail with full names."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     create_command = cli.commands["model"].commands["register"]
     model_name = PREFIX + str(uuid4())
     result = runner.invoke(
@@ -131,7 +131,7 @@ def test_model_create_full_names(clean_client_with_models: "Client"):
 
 def test_model_create_only_required(clean_client_with_models: "Client"):
     """Test that zenml model create does not fail."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     create_command = cli.commands["model"].commands["register"]
     model_name = PREFIX + str(uuid4())
     result = runner.invoke(
@@ -155,7 +155,7 @@ def test_model_create_only_required(clean_client_with_models: "Client"):
 
 def test_model_update(clean_client_with_models: "Client"):
     """Test that zenml model update does not fail."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     update_command = cli.commands["model"].commands["update"]
     result = runner.invoke(
         update_command,
@@ -185,7 +185,7 @@ def test_model_create_without_required_fails(
     clean_client_with_models: "Client",
 ):
     """Test that zenml model create fails."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     create_command = cli.commands["model"].commands["register"]
     result = runner.invoke(
         create_command,
@@ -195,7 +195,7 @@ def test_model_create_without_required_fails(
 
 def test_model_delete_found(clean_client_with_models: "Client"):
     """Test that zenml model delete does not fail."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     name = PREFIX + str(uuid4())
     create_command = cli.commands["model"].commands["register"]
     runner.invoke(
@@ -212,7 +212,7 @@ def test_model_delete_found(clean_client_with_models: "Client"):
 
 def test_model_delete_not_found(clean_client_with_models: "Client"):
     """Test that zenml model delete fail."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     name = PREFIX + str(uuid4())
     delete_command = cli.commands["model"].commands["delete"]
     result = runner.invoke(
@@ -224,7 +224,7 @@ def test_model_delete_not_found(clean_client_with_models: "Client"):
 
 def test_model_version_list(clean_client_with_models: "Client"):
     """Test that zenml model version list does not fail."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     list_command = cli.commands["model"].commands["version"].commands["list"]
     result = runner.invoke(list_command, args=[f"--model={NAME}"])
     assert result.exit_code == 0, result.stderr
@@ -232,7 +232,7 @@ def test_model_version_list(clean_client_with_models: "Client"):
 
 def test_model_version_delete_found(clean_client_with_models: "Client"):
     """Test that zenml model version delete does not fail."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     model_name = PREFIX + str(uuid4())
     model_version_name = PREFIX + str(uuid4())
     model = clean_client_with_models.create_model(
@@ -254,7 +254,7 @@ def test_model_version_delete_found(clean_client_with_models: "Client"):
 
 def test_model_version_delete_not_found(clean_client_with_models: "Client"):
     """Test that zenml model version delete fail."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     model_name = PREFIX + str(uuid4())
     model_version_name = PREFIX + str(uuid4())
     clean_client_with_models.create_model(
@@ -278,7 +278,7 @@ def test_model_version_links_list(
     command: str, clean_client_with_models: "Client"
 ):
     """Test that zenml model version artifacts list fails."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     list_command = cli.commands["model"].commands[command]
     result = runner.invoke(
         list_command,
@@ -289,7 +289,7 @@ def test_model_version_links_list(
 
 def test_model_version_update(clean_client_with_models: "Client"):
     """Test that zenml model version stage update pass."""
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner()
     update_command = (
         cli.commands["model"].commands["version"].commands["update"]
     )
