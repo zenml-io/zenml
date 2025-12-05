@@ -31,19 +31,39 @@ jobs:
   create-snack-issue:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if snack-it label was added
+      - name: Check if snack-it label is present
         id: check-label
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "snack_it=true" >> $GITHUB_OUTPUT
-            echo "Manual trigger detected, will create issue for PR #${{ inputs.pr_number }}"
-          elif [[ "${{ github.event.label.name }}" == "snack-it" ]]; then
-            echo "snack_it=true" >> $GITHUB_OUTPUT
-            echo "Label 'snack-it' detected, will create issue"
-          else
-            echo "snack_it=false" >> $GITHUB_OUTPUT
-            echo "Label '${{ github.event.label.name }}' added, skipping"
-          fi
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            let hasSnackItLabel = false;
+            
+            if (context.eventName === 'workflow_dispatch') {
+              // Manual trigger - always proceed
+              hasSnackItLabel = true;
+              console.log('Manual trigger detected, will create issue for PR #' + context.payload.inputs.pr_number);
+            } else if (context.payload.pull_request) {
+              // Check if PR has snack-it label
+              const labels = context.payload.pull_request.labels || [];
+              hasSnackItLabel = labels.some(label => label.name === 'snack-it');
+              
+              console.log('PR labels:', labels.map(l => l.name).join(', '));
+              console.log('Has snack-it label:', hasSnackItLabel);
+              console.log('Event action:', context.payload.action);
+              
+              if (context.payload.label) {
+                console.log('Label from event:', context.payload.label.name);
+              }
+            }
+            
+            core.setOutput('snack_it', hasSnackItLabel ? 'true' : 'false');
+            
+            if (hasSnackItLabel) {
+              console.log('✅ Will create snack issue');
+            } else {
+              console.log('⏭️  Skipping - no snack-it label');
+            }
 
       - name: Checkout repository
         if: steps.check-label.outputs.snack_it == 'true'
