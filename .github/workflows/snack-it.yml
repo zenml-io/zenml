@@ -7,7 +7,7 @@ name: Snack-it - Create Issue from PR
 # 
 # REQUIREMENTS:
 # - ANTHROPIC_API_KEY: Anthropic API key for Claude AI
-# - GH_PAT_TOKEN: Personal Access Token with repo, project, and org:read scopes
+# - GH_PAT_TOKEN_FOR_SNACK_IT: Personal Access Token with repo, project, and org:read scopes
 #   (needed for adding issues to organization projects)
 
 on:
@@ -21,15 +21,27 @@ permissions:
 
 jobs:
   create-snack-issue:
-    if: github.event.label.name == 'snack-it'
     runs-on: ubuntu-latest
     steps:
+      - name: Check if snack-it label was added
+        id: check-label
+        run: |
+          if [[ "${{ github.event.label.name }}" == "snack-it" ]]; then
+            echo "snack_it=true" >> $GITHUB_OUTPUT
+            echo "Label 'snack-it' detected, will create issue"
+          else
+            echo "snack_it=false" >> $GITHUB_OUTPUT
+            echo "Label '${{ github.event.label.name }}' added, skipping"
+          fi
+
       - name: Checkout repository
+        if: steps.check-label.outputs.snack_it == 'true'
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
       - name: Generate issue content with Claude
+        if: steps.check-label.outputs.snack_it == 'true'
         id: claude-generate
         uses: anthropics/claude-code-action@v1
         env:
@@ -67,6 +79,7 @@ jobs:
           claude_args: --allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*)"
 
       - name: Parse Claude output and create issue
+        if: steps.check-label.outputs.snack_it == 'true'
         id: create-issue
         uses: actions/github-script@v7
         env:
@@ -141,9 +154,10 @@ jobs:
             return issue.data.number;
 
       - name: Add issue to project and set status
+        if: steps.check-label.outputs.snack_it == 'true'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GH_PAT_TOKEN }}
+          github-token: ${{ secrets.GH_PAT_TOKEN_FOR_SNACK_IT }}
           script: |
             const pr = context.payload.pull_request;
             
@@ -313,7 +327,7 @@ jobs:
             } catch (error) {
               console.error(`❌ Error adding issue to project: ${error.message}`);
               console.error(`This might be due to insufficient permissions on the GitHub token.`);
-              console.error(`Please ensure GH_PAT_TOKEN secret has 'project' and 'org:read' scopes.`);
+              console.error(`Please ensure GH_PAT_TOKEN_FOR_SNACK_IT secret has 'project' and 'org:read' scopes.`);
               console.error(`You can manually add issue #${issue.number} to the project at:`);
               console.error(`https://github.com/orgs/zenml-io/projects/1`);
               
