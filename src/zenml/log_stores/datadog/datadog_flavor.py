@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Datadog log store flavor."""
 
-from typing import Type
+from typing import Any, Dict, Type
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
@@ -43,6 +43,22 @@ class DatadogLogStoreConfig(OtelLogStoreConfig):
         default="datadoghq.com",
         description="Datadog site (e.g., datadoghq.com, datadoghq.eu)",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_default_endpoint(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Set the endpoint based on site if not provided.
+
+        Args:
+            data: The input data dictionary.
+
+        Returns:
+            The data dictionary with the endpoint set if not provided.
+        """
+        if isinstance(data, dict) and not data.get("endpoint"):
+            site = data.get("site", "datadoghq.com")
+            data["endpoint"] = f"https://http-intake.logs.{site}/api/v2/logs"
+        return data
 
 
 class DatadogLogStoreFlavor(Flavor):
