@@ -4,6 +4,8 @@ name: Snack-it - Create Issue from PR
 # Uses Claude AI to generate a concise, actionable issue description from the PR
 # The issue inherits all PR labels, gets tagged with "snack", and is added to the ZenML Roadmap project
 # The PR branch is linked to the issue for easy tracking
+#
+# Can also be triggered manually via workflow_dispatch with a PR number for testing
 # 
 # REQUIREMENTS:
 # - ANTHROPIC_API_KEY: Anthropic API key for Claude AI
@@ -13,6 +15,12 @@ name: Snack-it - Create Issue from PR
 on:
   pull_request:
     types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to create snack issue from'
+        required: true
+        type: number
 
 permissions:
   issues: write
@@ -26,7 +34,10 @@ jobs:
       - name: Check if snack-it label was added
         id: check-label
         run: |
-          if [[ "${{ github.event.label.name }}" == "snack-it" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "snack_it=true" >> $GITHUB_OUTPUT
+            echo "Manual trigger detected, will create issue for PR #${{ inputs.pr_number }}"
+          elif [[ "${{ github.event.label.name }}" == "snack-it" ]]; then
             echo "snack_it=true" >> $GITHUB_OUTPUT
             echo "Label 'snack-it' detected, will create issue"
           else
@@ -46,18 +57,18 @@ jobs:
         uses: anthropics/claude-code-action@v1
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: false
           prompt: |
             You are helping to create a "snack" issue from a pull request. A snack is a small, bite-sized task that can be completed relatively quickly.
             
-            PR Number: ${{ github.event.pull_request.number }}
-            PR Title: ${{ github.event.pull_request.title }}
+            PR Number: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
             
             Your task:
-            1. Use `gh pr view ${{ github.event.pull_request.number }} --json title,body,author,headRefName,files` to get PR details
-            2. Use `gh pr diff ${{ github.event.pull_request.number }}` to see the changes (if needed for context)
+            1. Use `gh pr view ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --json title,body,author,headRefName,files` to get PR details
+            2. Use `gh pr diff ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}` to see the changes (if needed for context)
             3. Analyze the PR to understand what was accomplished
             4. Generate TWO outputs (output them EXACTLY as shown below):
             
@@ -84,10 +95,23 @@ jobs:
         uses: actions/github-script@v7
         env:
           CLAUDE_OUTPUT: ${{ steps.claude-generate.outputs.result }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr = context.payload.pull_request;
+            // Get PR details (handle both workflow_dispatch and pull_request events)
+            let pr;
+            if (context.eventName === 'workflow_dispatch') {
+              const prNumber = parseInt(process.env.PR_NUMBER);
+              const prData = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              pr = prData.data;
+            } else {
+              pr = context.payload.pull_request;
+            }
             const claudeOutput = process.env.CLAUDE_OUTPUT || '';
             
             // Parse Claude's output
@@ -156,10 +180,24 @@ jobs:
       - name: Add issue to project and set status
         if: steps.check-label.outputs.snack_it == 'true'
         uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         with:
           github-token: ${{ secrets.GH_PAT_TOKEN_FOR_SNACK_IT }}
           script: |
-            const pr = context.payload.pull_request;
+            // Get PR details (handle both workflow_dispatch and pull_request events)
+            let pr;
+            if (context.eventName === 'workflow_dispatch') {
+              const prNumber = parseInt(process.env.PR_NUMBER);
+              const prData = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              pr = prData.data;
+            } else {
+              pr = context.payload.pull_request;
+            }
             
             // First, we need to find the issue we just created
             const issues = await github.rest.issues.listForRepo({
@@ -283,8 +321,8 @@ jobs:
               }
               
               // Link the PR branch to the issue
-              const prBranch = context.payload.pull_request.head.ref;
-              const prRepo = context.payload.pull_request.head.repo.full_name;
+              const prBranch = pr.head.ref;
+              const prRepo = pr.head.repo.full_name;
               
               console.log(`Linking branch ${prBranch} to issue #${issue.number}`);
               
