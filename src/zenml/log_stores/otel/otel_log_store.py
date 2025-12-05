@@ -43,6 +43,31 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+class OtelBatchLogRecordProcessor(BatchLogRecordProcessor):
+    """OpenTelemetry batch log record processor.
+
+    This is a subclass of the BatchLogRecordProcessor that allows for a
+    non-blocking flush.
+    """
+
+    def flush(self, blocking: bool = True) -> bool:
+        """Force flush the batch log record processor.
+
+        Args:
+            blocking: Whether to block until the flush is complete.
+
+        Returns:
+            True if the flush is successful, False otherwise.
+        """
+        if not blocking:
+            # For a non-blocking flush, we simply need to wake up the worker
+            # thread and it will handle the flush in the background.
+            self._batch_processor._worker_awaken.set()
+            return True
+        else:
+            return self.force_flush()
+
+
 class OtelLogStoreEmitter(BaseLogStoreEmitter):
     """OpenTelemetry log store emitter."""
 
@@ -121,7 +146,7 @@ class OtelLogStore(BaseLogStore):
         self._resource: Optional["Resource"] = None
         self._exporter: Optional["LogExporter"] = None
         self._provider: Optional["LoggerProvider"] = None
-        self._processor: Optional["BatchLogRecordProcessor"] = None
+        self._processor: Optional["OtelBatchLogRecordProcessor"] = None
         self._handler: Optional["LoggingHandler"] = None
 
     @property
@@ -170,7 +195,7 @@ class OtelLogStore(BaseLogStore):
     def _activate(self) -> None:
         """Activate log collection with OpenTelemetry."""
         self._exporter = self.get_exporter()
-        self._processor = BatchLogRecordProcessor(self._exporter)
+        self._processor = OtelBatchLogRecordProcessor(self._exporter)
 
         self._resource = Resource.create(
             {
@@ -239,14 +264,17 @@ class OtelLogStore(BaseLogStore):
         """
         pass
 
-    def flush(self) -> None:
+    def flush(self, blocking: bool = True) -> None:
         """Flush the log store.
+
+        Args:
+            blocking: Whether to block until the flush is complete.
 
         This method is called to ensure that all logs are flushed to the backend.
         """
         with self._lock:
             if self._processor:
-                self._processor.force_flush()
+                self._processor.flush(blocking=blocking)
 
     def deactivate(self) -> None:
         """Deactivate log collection and shut down the processor.
@@ -257,7 +285,7 @@ class OtelLogStore(BaseLogStore):
             if self._processor:
                 try:
                     # Force flush any pending logs
-                    self._processor.force_flush(timeout_millis=5000)
+                    self._processor.flush(blocking=False)
                     logger.debug("Flushed pending logs")
                 except Exception as e:
                     logger.warning(f"Error flushing logs: {e}")

@@ -164,7 +164,7 @@ class BaseLogStore(StackComponent):
             self._finalize(emitter)
             del self._emitters[emitter.name]
             if len(self._emitters) == 0:
-                self.flush()
+                self.flush(blocking=False)
 
     @abstractmethod
     def _emit(
@@ -198,10 +198,13 @@ class BaseLogStore(StackComponent):
         """
 
     @abstractmethod
-    def flush(self) -> None:
+    def flush(self, blocking: bool = True) -> None:
         """Flush the log store.
 
         This method is called to ensure that all logs are flushed to the backend.
+
+        Args:
+            blocking: Whether to block until the flush is complete.
         """
 
     @abstractmethod
