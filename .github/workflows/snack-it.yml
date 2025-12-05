@@ -129,7 +129,7 @@ jobs:
             } else {
               pr = context.payload.pull_request;
             }
-            const claudeOutput = process.env.CLAUDE_OUTPUT || '';
+            let claudeOutput = process.env.CLAUDE_OUTPUT || '';
             
             // Parse Claude's output
             let issueTitle = pr.title;  // Fallback to PR title
@@ -137,28 +137,22 @@ jobs:
             let usedClaude = false;
             
             if (claudeOutput && claudeOutput.trim()) {
-              console.log('Claude output received:', claudeOutput.substring(0, 200) + '...');
+              // Strip markdown code blocks if present
+              claudeOutput = claudeOutput.replace(/```[\s\S]*?\n([\s\S]*?)```/g, '$1').trim();
               
-              // Extract title - more flexible regex
-              const titleMatch = claudeOutput.match(/ISSUE_TITLE:\s*\n+(.+?)(?=\n+ISSUE_BODY:)/s);
+              // Extract title - very flexible
+              const titleMatch = claudeOutput.match(/ISSUE_TITLE:\s*\n+(.+?)(?=\n+ISSUE_BODY:|\n\n)/s);
               if (titleMatch && titleMatch[1].trim()) {
-                issueTitle = titleMatch[1].trim();
-                console.log('Extracted title:', issueTitle);
-              } else {
-                console.log('⚠️  Failed to extract title from Claude output, using PR title');
+                issueTitle = titleMatch[1].trim().replace(/^["']|["']$/g, '');
+                usedClaude = true;
               }
               
-              // Extract body - more flexible regex
-              const bodyMatch = claudeOutput.match(/ISSUE_BODY:\s*\n+([\s\S]+?)$/);
+              // Extract body - very flexible
+              const bodyMatch = claudeOutput.match(/ISSUE_BODY:\s*\n+([\s\S]+?)(?=\n\n---|$)/);
               if (bodyMatch && bodyMatch[1].trim()) {
                 issueBody = bodyMatch[1].trim();
-                console.log('Extracted body length:', issueBody.length, 'chars');
                 usedClaude = true;
-              } else {
-                console.log('⚠️  Failed to extract body from Claude output, using PR body');
               }
-            } else {
-              console.log('⚠️  No Claude output received, using PR title and body as fallback');
             }
             
             // Add footer with metadata
@@ -181,6 +175,21 @@ jobs:
             });
             
             console.log(`✅ Created issue #${issue.data.number}`);
+            
+            // Assign the issue to the PR author
+            const prAuthor = pr.user.login;
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.data.number,
+                assignees: [prAuthor]
+              });
+              console.log(`Assigned issue to @${prAuthor}`);
+            } catch (assignError) {
+              console.log(`⚠️  Could not assign to @${prAuthor}: ${assignError.message}`);
+              console.log('User may not have write access to the repository');
+            }
             
             // Get all labels from the PR
             const prLabels = pr.labels.map(label => label.name);
