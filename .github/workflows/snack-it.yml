@@ -26,6 +26,7 @@ permissions:
   issues: write
   pull-requests: read
   contents: read
+  id-token: write
 
 jobs:
   create-snack-issue:
@@ -197,8 +198,19 @@ jobs:
             
             return issue.data.number;
 
+      - name: Check if PAT token is configured
+        if: steps.check-label.outputs.snack_it == 'true' && secrets.GH_PAT_TOKEN_FOR_SNACK_IT == ''
+        run: |
+          echo "⚠️  GH_PAT_TOKEN_FOR_SNACK_IT secret is not configured"
+          echo "The issue was created, but it cannot be added to the project board."
+          echo "To enable project board integration, add the GH_PAT_TOKEN_FOR_SNACK_IT secret:"
+          echo "1. Go to Settings → Secrets and variables → Actions"
+          echo "2. Create a Personal Access Token at https://github.com/settings/tokens"
+          echo "3. Add it as GH_PAT_TOKEN_FOR_SNACK_IT with repo, project, and read:org scopes"
+
       - name: Add issue to project and set status
-        if: steps.check-label.outputs.snack_it == 'true'
+        if: steps.check-label.outputs.snack_it == 'true' && secrets.GH_PAT_TOKEN_FOR_SNACK_IT != ''
+        continue-on-error: true
         uses: actions/github-script@v7
         env:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
