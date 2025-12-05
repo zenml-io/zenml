@@ -96,6 +96,7 @@ if TYPE_CHECKING:
     ]
 
     from zenml.execution.pipeline.dynamic.outputs import (
+        MapResultsFuture,
         StepRunFuture,
         StepRunOutputsFuture,
     )
@@ -690,7 +691,7 @@ class BaseStep:
         *args: Any,
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         **kwargs: Any,
-    ) -> List["StepRunOutputsFuture"]:
+    ) -> "MapResultsFuture":
         """Map over step inputs.
 
         This method will launch separate steps for each chunk of the input
@@ -734,7 +735,7 @@ class BaseStep:
                 pipeline.
 
         Returns:
-            The step run output futures.
+            A future that represents the map results.
         """
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
@@ -760,7 +761,7 @@ class BaseStep:
         *args: Any,
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         **kwargs: Any,
-    ) -> List["StepRunOutputsFuture"]:
+    ) -> "MapResultsFuture":
         """Map over step inputs using a cartesian product of the mapped inputs.
 
         This method will launch separate steps for each combination of the
@@ -804,7 +805,7 @@ class BaseStep:
                 pipeline.
 
         Returns:
-            The step run output futures.
+            A future that represents the map results.
         """
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,

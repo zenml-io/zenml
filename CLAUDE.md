@@ -97,6 +97,92 @@ def shutdown(h: Closable) -> None:
     h.close()
 ```
 
+### Util Function Placement
+
+When deciding whether to place a helper function in a utils file or on a class, follow these guidelines:
+
+1. **If a method only makes sense within the context of a class** → Put it on the class
+2. **If a static/util method is heavily used by subclasses** → Put it on the parent class
+
+**Rationale for placing methods on classes:**
+- Saves imports for users and subclasses
+- Subclasses can simply call `self.something()` instead of finding and importing from a util file
+- Keeps related functionality co-located
+
+**Example:** `requires_resources_in_orchestration_environment` in `base_orchestrator.py:495-514`
+
+```python
+# This is a @staticmethod on BaseOrchestrator, not a standalone util
+@staticmethod
+def requires_resources_in_orchestration_environment(step: "Step") -> bool:
+    """Checks if the orchestrator should run this step on special resources."""
+    if step.config.step_operator:
+        return False
+    return not step.config.resource_settings.empty
+```
+
+This method could be a global util, but it's placed on the class because:
+- All orchestrator subclasses frequently need it
+- Subclasses can call `self.requires_resources_in_orchestration_environment(step)` without imports
+- It's conceptually tied to orchestrator behavior
+
+**When to use utils files:**
+- Truly generic functions used across unrelated modules
+- Functions that don't logically belong to any class
+- Pure utility functions (string manipulation, date formatting, etc.)
+
+**Key utils locations:**
+- `src/zenml/utils/` — General utilities
+- `src/zenml/orchestrators/utils.py` — Orchestrator-specific utilities
+- `src/zenml/orchestrators/step_run_utils.py` — Step execution utilities
+- `src/zenml/orchestrators/publish_utils.py` — Status/metadata publishing
+
+### Private Methods and API Stability
+
+Methods and functions starting with `_` (underscore) are **private** and should NOT be called from outside their class or module.
+
+**The rule:**
+- `_method()` on a class → only call from within that class
+- `_function()` in a utils module → only call from within that module
+- This isn't always consistently applied in the codebase, but it's the intended convention
+
+**Backwards compatibility — case-by-case judgment:**
+
+There are no strict written rules; evaluate each change individually:
+
+| Symbol type | Part of public API? | Breaking change if modified? |
+|-------------|---------------------|------------------------------|
+| Classes/functions exported in `zenml.__init__` | ✅ Definitely public | ⚠️ Yes — requires deprecation |
+| Public methods on those classes | ✅ Public | ⚠️ Yes — requires deprecation |
+| Internal methods deep in the codebase (no underscore) | ❌ Not intended for users | ✅ No — update all internal usages |
+| `_private_method()` | ❌ No | ✅ No — can change freely |
+
+**When changing any non-underscore method:**
+1. Check if the class/function is exported in `zenml.__init__` — if so, it's public API
+2. Search for usages **within the ZenML codebase** (grep/find references)
+3. Update all internal usages
+4. For truly internal code not exported at the root, no deprecation needed
+
+**Best practice for integrations (future-proofing):**
+
+> ⚠️ **Integrations should avoid using ZenML private methods**
+
+This is primarily a future concern: when integrations eventually move out of the main ZenML repo (external packages), mypy won't detect if a private method they depend on was changed, leading to silent breakage. Even while integrations live in-repo, using only public APIs is good practice and prepares for this transition.
+
+```python
+# Bad - integration code using private method
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+
+class MyOrchestrator(BaseOrchestrator):
+    def submit_pipeline(self, ...):
+        self._some_private_helper()  # ❌ Don't do this
+
+# Good - use only public methods or reimplement logic
+class MyOrchestrator(BaseOrchestrator):
+    def submit_pipeline(self, ...):
+        self.public_method()  # ✅ Safe
+```
+
 ### FastAPI Agent Profile
 - ZenML OSS FastAPI work demands senior-level proficiency across FastAPI, SQLModel, SQLAlchemy 2.0, and modern Pydantic v2 patterns; study existing routers and services before proposing changes.
 - Favor object-oriented extensions over scattering helpers—extend service/repository classes or introduce cohesive new ones, and rely on dependency injection rather than module-level singletons.
@@ -185,7 +271,7 @@ def shutdown(h: Closable) -> None:
 ### Database and Migration Guidelines
 - Database schema changes require Alembic migrations
 - Create migrations with descriptive names: `alembic revision -m "Add X to Y table"`
-- Test migrations both up and down: `alembic upgrade head` and `alembic downgrade -1`
+- Test upgrade path: `alembic upgrade head` (downgrade testing is optional—ZenML doesn't support downgrades in most cases)
 - Never modify existing migrations that are already on main/develop branches
 - Always consider backward compatibility for rolling deployments
 - Include both schema changes and data migrations when needed
@@ -350,6 +436,19 @@ When tackling complex tasks:
 - Review similar PRs for implementation patterns
 - Pipeline execution is complex - test thoroughly when modifying
 - Centralize FastAPI logging, tracing, and unexpected error handling inside middleware; measure latency/throughput for new endpoints, cache static payloads, lazy-load heavyweight resources, and articulate serialization trade-offs in PR notes.
+
+### Summary Checklist for PR Reviewers
+
+Quick reference for common review concerns. Detailed explanations live in the nested AGENTS.md files.
+
+- [ ] **Integration PRs:** No library imports in flavor files (`src/zenml/integrations/AGENTS.md`)
+- [ ] **Orchestrator PRs:** Verify `get_orchestrator_run_id` is unique per run but same for all steps (`src/zenml/orchestrators/AGENTS.md`)
+- [ ] **Filter model changes:** Check corresponding client method is updated (`src/zenml/models/AGENTS.md`)
+- [ ] **Private method changes:** Check all internal usages (see "Private Methods" above)
+- [ ] **Import checking:** No `zen_server` imports from outside `zen_server` (`src/zenml/zen_server/AGENTS.md`)
+- [ ] **Import checking:** No direct SQL imports from outside `zen_stores` (`src/zenml/zen_stores/schemas/AGENTS.md`)
+- [ ] **Model changes:** Adding properties OK, deleting/making optional is breaking (`src/zenml/models/AGENTS.md`)
+- [ ] **Dependency bumps:** If dropping old version support, it's a breaking change (`src/zenml/integrations/AGENTS.md`)
 
 ## Documentation Guidelines
 

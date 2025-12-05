@@ -775,7 +775,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 annotations=annotations,
                 settings=settings,
                 pod_settings=orchestrator_pod_settings,
-                backoff_limit=settings.orchestrator_job_backoff_limit,
+                # In dynamic pipelines restarting the orchestrator pod is not
+                # supported yet. It will create new runs for each restart which
+                # we have to avoid.
+                backoff_limit=0
+                if snapshot.is_dynamic
+                else settings.orchestrator_job_backoff_limit,
             )
 
             if snapshot.schedule:
