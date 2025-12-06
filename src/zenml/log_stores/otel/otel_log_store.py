@@ -88,7 +88,13 @@ class OtelLogStore(BaseLogStore):
     def activate(self) -> None:
         """Activate log collection with OpenTelemetry."""
         self._exporter = self.get_exporter()
-        self._processor = BatchLogRecordProcessor(self._exporter)
+        self._processor = BatchLogRecordProcessor(
+            self._exporter,
+            max_queue_size=self.config.max_queue_size,
+            schedule_delay_millis=self.config.schedule_delay_millis,
+            max_export_batch_size=self.config.max_export_batch_size,
+            export_timeout_millis=self.config.export_timeout_millis,
+        )
 
         self._resource = Resource.create(
             {

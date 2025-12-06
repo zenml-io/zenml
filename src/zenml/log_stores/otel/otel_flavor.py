@@ -16,6 +16,12 @@
 from pydantic import Field
 
 from zenml import __version__
+from zenml.constants import (
+    LOGS_OTEL_EXPORT_TIMEOUT_MILLIS,
+    LOGS_OTEL_MAX_EXPORT_BATCH_SIZE,
+    LOGS_OTEL_MAX_QUEUE_SIZE,
+    LOGS_OTEL_SCHEDULE_DELAY_MILLIS,
+)
 from zenml.log_stores import BaseLogStoreConfig
 
 
@@ -39,14 +45,18 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
         description="Version of the service for telemetry",
     )
     max_queue_size: int = Field(
-        default=8096,
+        default=LOGS_OTEL_MAX_QUEUE_SIZE,
         description="Maximum queue size for batch log processor",
     )
     schedule_delay_millis: int = Field(
-        default=15000,
+        default=LOGS_OTEL_SCHEDULE_DELAY_MILLIS,
         description="Export interval in milliseconds",
     )
     max_export_batch_size: int = Field(
-        default=512,
+        default=LOGS_OTEL_MAX_EXPORT_BATCH_SIZE,
         description="Maximum batch size for exports",
+    )
+    export_timeout_millis: int = Field(
+        default=LOGS_OTEL_EXPORT_TIMEOUT_MILLIS,
+        description="Timeout for each export batch in milliseconds",
     )

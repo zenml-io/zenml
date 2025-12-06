@@ -310,6 +310,12 @@ class ArtifactLogExporter(LogExporter):
         from zenml.artifacts.utils import _load_file_from_artifact_store
         from zenml.exceptions import DoesNotExistException
 
+        # Check if the log directory exists - it may not if no logs
+        # were written yet. The URI folder gets created only when the
+        # first log message is sent.
+        if not self.artifact_store.exists(log_uri):
+            return
+
         files_ = self.artifact_store.listdir(log_uri)
         if len(files_) > 1:
             files_.sort()
