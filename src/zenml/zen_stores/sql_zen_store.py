@@ -6572,21 +6572,32 @@ class SqlZenStore(BaseZenStore):
 
         # Add logs entry for the run if exists
         if pipeline_run.logs is not None:
-            self._get_reference_schema_by_id(
-                resource=pipeline_run,
-                reference_schema=StackComponentSchema,
-                reference_id=pipeline_run.logs.artifact_store_id,
-                session=session,
-                reference_type="logs artifact store",
-            )
+            if pipeline_run.logs.artifact_store_id:
+                self._get_reference_schema_by_id(
+                    resource=pipeline_run,
+                    reference_schema=StackComponentSchema,
+                    reference_id=pipeline_run.logs.artifact_store_id,
+                    session=session,
+                    reference_type="logs artifact store",
+                )
+            else:
+                self._get_reference_schema_by_id(
+                    resource=pipeline_run,
+                    reference_schema=StackComponentSchema,
+                    reference_id=pipeline_run.logs.log_store_id,
+                    session=session,
+                    reference_type="logs log store",
+                )
 
             log_entry = LogsSchema(
+                id=pipeline_run.logs.id,
                 uri=pipeline_run.logs.uri,
                 # TODO: Remove fallback when not supporting
                 # clients <0.84.0 anymore
                 source=pipeline_run.logs.source or "client",
                 pipeline_run_id=new_run.id,
                 artifact_store_id=pipeline_run.logs.artifact_store_id,
+                log_store_id=pipeline_run.logs.log_store_id,
             )
             try:
                 session.add(log_entry)
@@ -7055,22 +7066,33 @@ class SqlZenStore(BaseZenStore):
                 try:
                     for log_request in run_update.add_logs:
                         # Validate the artifact store exists
-                        self._get_reference_schema_by_id(
-                            resource=log_request,
-                            reference_schema=StackComponentSchema,
-                            reference_id=log_request.artifact_store_id,
-                            session=session,
-                            reference_type="logs artifact store",
-                        )
+                        if log_request.artifact_store_id:
+                            self._get_reference_schema_by_id(
+                                resource=log_request,
+                                reference_schema=StackComponentSchema,
+                                reference_id=log_request.artifact_store_id,
+                                session=session,
+                                reference_type="logs artifact store",
+                            )
+                        else:
+                            self._get_reference_schema_by_id(
+                                resource=log_request,
+                                reference_schema=StackComponentSchema,
+                                reference_id=log_request.log_store_id,
+                                session=session,
+                                reference_type="logs log store",
+                            )
 
                         # Create the log entry
                         log_entry = LogsSchema(
+                            id=log_request.id,
                             uri=log_request.uri,
                             # TODO: Remove fallback when not supporting
                             # clients <0.84.0 anymore
                             source=log_request.source or "orchestrator",
                             pipeline_run_id=existing_run.id,
                             artifact_store_id=log_request.artifact_store_id,
+                            log_store_id=log_request.log_store_id,
                         )
                         session.add(log_entry)
 
@@ -10113,21 +10135,32 @@ class SqlZenStore(BaseZenStore):
 
             # Add logs entry for the step if exists
             if step_run.logs is not None:
-                self._get_reference_schema_by_id(
-                    resource=step_run,
-                    reference_schema=StackComponentSchema,
-                    reference_id=step_run.logs.artifact_store_id,
-                    session=session,
-                    reference_type="logs artifact store",
-                )
+                if step_run.logs.artifact_store_id:
+                    self._get_reference_schema_by_id(
+                        resource=step_run,
+                        reference_schema=StackComponentSchema,
+                        reference_id=step_run.logs.artifact_store_id,
+                        session=session,
+                        reference_type="logs artifact store",
+                    )
+                else:
+                    self._get_reference_schema_by_id(
+                        resource=step_run,
+                        reference_schema=StackComponentSchema,
+                        reference_id=step_run.logs.log_store_id,
+                        session=session,
+                        reference_type="logs log store",
+                    )
 
                 log_entry = LogsSchema(
+                    id=step_run.logs.id,
                     uri=step_run.logs.uri,
                     # TODO: Remove fallback when not supporting
-                    # clients <0.84.0 anymore
-                    source=step_run.logs.source or "execution",
+                    # clients <0.93.0 anymore
+                    source=step_run.logs.source or "step",
                     step_run_id=step_schema.id,
                     artifact_store_id=step_run.logs.artifact_store_id,
+                    log_store_id=step_run.logs.log_store_id,
                 )
                 try:
                     session.add(log_entry)
@@ -10436,6 +10469,7 @@ class SqlZenStore(BaseZenStore):
             step_run_update: The update to be applied to the step.
 
         Raises:
+            EntityExistsError: If the log entry already exists.
             ValueError: If trying to update the step status to retried.
 
         Returns:
@@ -10513,6 +10547,52 @@ class SqlZenStore(BaseZenStore):
                 pipeline_run_id=existing_step_run.pipeline_run_id,
                 session=session,
             )
+
+            # Add logs if specified
+            if step_run_update.add_logs:
+                try:
+                    for log_request in step_run_update.add_logs:
+                        # Validate the artifact store exists
+                        if log_request.artifact_store_id:
+                            self._get_reference_schema_by_id(
+                                resource=log_request,
+                                reference_schema=StackComponentSchema,
+                                reference_id=log_request.artifact_store_id,
+                                session=session,
+                                reference_type="logs artifact store",
+                            )
+                        else:
+                            self._get_reference_schema_by_id(
+                                resource=log_request,
+                                reference_schema=StackComponentSchema,
+                                reference_id=log_request.log_store_id,
+                                session=session,
+                                reference_type="logs log store",
+                            )
+
+                        # Create the log entry
+                        log_entry = LogsSchema(
+                            id=log_request.id,
+                            uri=log_request.uri,
+                            # TODO: Remove fallback when not supporting
+                            # clients <0.93.0 anymore
+                            source=log_request.source or "step",
+                            step_run_id=existing_step_run.id,
+                            artifact_store_id=log_request.artifact_store_id,
+                            log_store_id=log_request.log_store_id,
+                        )
+                        session.add(log_entry)
+
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+                    raise EntityExistsError(
+                        "Unable to create log entry: One of the provided sources "
+                        f"({', '.join(log.source for log in step_run_update.add_logs)}) "
+                        "already exists within the scope of the same step "
+                        f"'{step_run_id}'. Existing entry sources: "
+                        f"{', '.join(log.source for log in existing_step_run.logs)}"
+                    )
 
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True

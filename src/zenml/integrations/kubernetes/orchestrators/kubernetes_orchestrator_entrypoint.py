@@ -18,6 +18,7 @@ import random
 import socket
 import threading
 import time
+from contextlib import nullcontext
 from typing import List, Optional, Tuple, cast
 from uuid import UUID
 
@@ -56,7 +57,6 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import 
     KubernetesOrchestrator,
 )
 from zenml.logger import get_logger
-from zenml.logging.step_logging import setup_orchestrator_logging
 from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
@@ -74,6 +74,10 @@ from zenml.orchestrators.utils import (
 )
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.utils import env_utils
+from zenml.utils.logging_utils import (
+    is_pipeline_logging_enabled,
+    setup_run_logging,
+)
 
 logger = get_logger(__name__)
 
@@ -244,7 +248,6 @@ def main() -> None:
         namespace=namespace,
         job_name=job_name,
     )
-    existing_logs_response = None
 
     if run_id and orchestrator_run_id:
         logger.info("Continuing existing run `%s`.", run_id)
@@ -257,13 +260,9 @@ def main() -> None:
         )
         logger.debug("Reconstructed nodes: %s", nodes)
 
-        # Continue logging to the same log file if it exists
-        for log_response in pipeline_run.log_collection or []:
-            if log_response.source == "orchestrator":
-                existing_logs_response = log_response
-                break
     else:
         orchestrator_run_id = orchestrator_pod_name
+
         if args.run_id:
             pipeline_run = client.zen_store.update_run(
                 run_id=args.run_id,
@@ -293,11 +292,12 @@ def main() -> None:
             for step_name, step in snapshot.step_configurations.items()
         ]
 
-    logs_context = setup_orchestrator_logging(
-        run_id=pipeline_run.id,
-        snapshot=snapshot,
-        logs_response=existing_logs_response,
-    )
+    logs_context = nullcontext()
+    if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
+        logs_context = setup_run_logging(
+            pipeline_run=pipeline_run,
+            source="orchestrator",
+        )
 
     with logs_context:
         step_command = StepEntrypointConfiguration.get_entrypoint_command()

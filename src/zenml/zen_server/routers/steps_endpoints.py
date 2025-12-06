@@ -29,10 +29,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import AuthorizationException
-from zenml.logging.step_logging import (
-    LogEntry,
-    fetch_log_records,
-)
+from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.models import (
     Page,
     StepRunFilter,
@@ -41,6 +38,7 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
+from zenml.utils.logging_utils import LogEntry, fetch_logs
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -326,12 +324,14 @@ def get_step_status(
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
     step_id: UUID,
+    source: str = "step",
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
     """Get log entries for a step.
 
     Args:
         step_id: ID of the step for which to get the logs.
+        source: The source of the logs to get. Default is "step".
 
     Returns:
         List of log entries.
@@ -339,18 +339,19 @@ def get_step_logs(
     Raises:
         KeyError: If no logs are available for this step.
     """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
-
     store = zen_store()
 
-    # Verify that logs are available for this step
-    if step.logs is None:
-        raise KeyError("No logs available for this step.")
+    step = store.get_run_step(step_id, hydrate=True)
+    pipeline_run = store.get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
 
-    return fetch_log_records(
-        zen_store=store,
-        artifact_store_id=step.logs.artifact_store_id,
-        logs_uri=step.logs.uri,
-    )
+    if step.log_collection:
+        for logs_response in step.log_collection:
+            if logs_response.source == source:
+                return fetch_logs(
+                    logs=logs_response,
+                    zen_store=store,
+                    limit=MAX_ENTRIES_PER_REQUEST,
+                )
+
+    raise KeyError(f"No logs found for source '{source}' in step {step_id}")
