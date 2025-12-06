@@ -68,7 +68,7 @@ class DatadogLogStore(OtelLogStore):
         end_time: Optional[datetime] = None,
         limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List["LogEntry"]:
-        """Fetch logs from Datadog's API with pagination support.
+        """Fetch logs from Datadog's API.
 
         This method queries Datadog's Logs API to retrieve logs for the
         specified pipeline run and step. It automatically paginates through
