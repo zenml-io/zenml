@@ -115,6 +115,7 @@ sagemaker = [
 vertex = [
     "google-cloud-aiplatform>=1.34.0",
     "kfp>=2.6.0",
+    "urllib3<2.6.0",
     "google-cloud-pipeline-components>=2.19.0",
 ]
 azureml = [
