@@ -611,7 +611,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             client_logs = [
                 log_entry
                 for log_entry in self.logs
-                if log_entry.source == "client"
+                if log_entry.source in ["client", "deployment"]
             ]
 
             if self.snapshot:

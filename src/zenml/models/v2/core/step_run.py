@@ -204,6 +204,9 @@ class StepRunUpdate(BaseUpdate):
         "results anymore.",
         default=None,
     )
+    add_logs: Optional[List["LogsRequest"]] = Field(
+        default=None, title="New logs to add to the step run."
+    )
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -287,10 +290,6 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     )
 
     # References
-    logs: Optional["LogsResponse"] = Field(
-        title="Logs associated with this step run.",
-        default=None,
-    )
     snapshot_id: UUID = Field(
         title="The snapshot associated with the step run."
     )
@@ -313,6 +312,15 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
 
 class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
+
+    logs: Optional["LogsResponse"] = Field(
+        title="Logs associated with this step run.",
+        default=None,
+    )
+    log_collection: Optional[List["LogsResponse"]] = Field(
+        title="Logs associated with this step run.",
+        default=None,
+    )
 
     model_version: Optional[ModelVersionResponse] = None
     inputs: Dict[str, List[StepRunInputResponse]] = Field(
@@ -610,15 +618,6 @@ class StepRunResponse(
         return self.get_body().latest_heartbeat
 
     @property
-    def logs(self) -> Optional["LogsResponse"]:
-        """The `logs` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().logs
-
-    @property
     def snapshot_id(self) -> UUID:
         """The `snapshot_id` property.
 
@@ -662,6 +661,24 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_metadata().run_metadata
+
+    @property
+    def logs(self) -> Optional["LogsResponse"]:
+        """The `logs` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().logs
+
+    @property
+    def log_collection(self) -> Optional[List["LogsResponse"]]:
+        """The `log_collection` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().log_collection
 
     @property
     def model_version(self) -> Optional[ModelVersionResponse]:
