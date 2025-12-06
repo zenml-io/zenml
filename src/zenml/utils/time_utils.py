@@ -16,6 +16,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 
+from croniter import CroniterBadCronError, CroniterBadDateError, croniter
+
 
 def utc_now(tz_aware: Union[bool, datetime] = False) -> datetime:
     """Get the current time in the UTC timezone.
@@ -136,3 +138,39 @@ def expires_in(
     if expires_at < now:
         return expired_str
     return seconds_to_human_readable(int((expires_at - now).total_seconds()))
+
+
+def validate_cron_expression(
+    expr: str, *, base_time: Optional[datetime] = None
+) -> bool:
+    """Validate a standard cron expression using croniter.
+
+    Args:
+        expr: Cron expression string to validate.
+        base_time: Base datetime for croniter parsing. If not provided, uses now.
+
+    Returns:
+        True if croniter can parse the expression, False otherwise.
+    """
+    if not isinstance(expr, str) or not expr.strip():
+        return False
+
+    fields = expr.strip().split()
+    if len(fields) != 5:
+        return False
+
+    try:
+        bt = base_time or datetime.now()
+
+        for token in fields:
+            if "-" in token:
+                parts = token.split("-")
+                if len(parts) != 2:
+                    return False
+                elif int(parts[0]) >= int(parts[1]):
+                    return False
+
+        croniter(expr, bt)
+        return True
+    except (CroniterBadCronError, CroniterBadDateError, ValueError):
+        return False

@@ -48,6 +48,7 @@ from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
+from kubernetes.client import ApiException
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
@@ -1216,10 +1217,25 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         cron_job_name = schedule.run_metadata.get(
             KUBERNETES_CRON_JOB_METADATA_KEY
         )
-        if not cron_job_name:
-            raise RuntimeError("Unable to find cron job name for schedule.")
 
-        self._k8s_batch_api.delete_namespaced_cron_job(
-            name=cron_job_name,
-            namespace=self.config.kubernetes_namespace,
-        )
+        if not cron_job_name:
+            logger.warning(
+                "Unable to find cron job %s for schedule %.",
+                cron_job_name,
+                schedule.name,
+            )
+            return
+
+        try:
+            self._k8s_batch_api.delete_namespaced_cron_job(
+                name=cron_job_name,
+                namespace=self.config.kubernetes_namespace,
+            )
+        except ApiException as e:
+            if e.status == 404:
+                logger.warning(
+                    "Unable to find cron job for schedule %s.", schedule.name
+                )
+                return
+            else:
+                raise e
