@@ -68,11 +68,11 @@ class DatadogLogStore(OtelLogStore):
         end_time: Optional[datetime] = None,
         limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List["LogEntry"]:
-        """Fetch logs from Datadog's API.
+        """Fetch logs from Datadog's API with pagination support.
 
         This method queries Datadog's Logs API to retrieve logs for the
-        specified pipeline run and step. It uses the HTTP API without
-        requiring the Datadog SDK.
+        specified pipeline run and step. It automatically paginates through
+        results to fetch up to the requested limit.
 
         Args:
             logs_model: The logs model containing run and step metadata.
@@ -99,104 +99,141 @@ class DatadogLogStore(OtelLogStore):
             "Content-Type": "application/json",
         }
 
-        body: Dict[str, Any] = {
-            "filter": {
-                "query": query,
-                "from": (
-                    start_time.isoformat()
-                    if start_time
-                    else logs_model.created.isoformat()
-                ),
-                "to": (
-                    end_time.isoformat()
-                    if end_time
-                    else datetime.now().astimezone().isoformat()
-                ),
-            },
-            "page": {
-                "limit": min(limit, 1000),  # Datadog API limit
-            },
-            "sort": "@otel.timestamp",
-        }
+        log_entries: List[LogEntry] = []
+        cursor: Optional[str] = None
+        remaining = limit
 
         try:
-            response = requests.post(
-                api_endpoint,
-                headers=headers,
-                json=body,
-                timeout=30,
-            )
+            while remaining > 0:
+                # Datadog API limit is 1000 per request
+                page_limit = min(remaining, 1000)
 
-            if response.status_code != 200:
-                logger.error(
-                    f"Failed to fetch logs from Datadog: {response.status_code} - {response.text[:200]}"
+                body: Dict[str, Any] = {
+                    "filter": {
+                        "query": query,
+                        "from": (
+                            start_time.isoformat()
+                            if start_time
+                            else logs_model.created.isoformat()
+                        ),
+                        "to": (
+                            end_time.isoformat()
+                            if end_time
+                            else datetime.now().astimezone().isoformat()
+                        ),
+                    },
+                    "page": {
+                        "limit": page_limit,
+                    },
+                    "sort": "@otel.timestamp",
+                }
+
+                if cursor:
+                    body["page"]["cursor"] = cursor
+
+                response = requests.post(
+                    api_endpoint,
+                    headers=headers,
+                    json=body,
+                    timeout=30,
                 )
-                return []
 
-            data = response.json()
-            log_entries = []
-
-            for log in data.get("data", []):
-                log_fields = log.get("attributes", {})
-                message = log_fields.get("message", "")
-                nested_attrs = log_fields.get("attributes", {})
-
-                if exc_info := nested_attrs.get("exception"):
-                    exc_message = exc_info.get("message")
-                    exc_type = exc_info.get("type")
-                    exc_stacktrace = exc_info.get("stacktrace")
-                    message += f"\n{exc_type}: {exc_message}\n{exc_stacktrace}"
-
-                code_info = nested_attrs.get("code", {})
-                filename = code_info.get("file", {}).get("path")
-                lineno = code_info.get("line", {}).get("number")
-                function_name = code_info.get("function", {}).get("name")
-
-                otel_info = nested_attrs.get("otel", {})
-                logger_name = otel_info.get("library", {}).get("name")
-
-                timestamp_ns_str = otel_info.get("timestamp")
-                if timestamp_ns_str:
-                    timestamp_ns = int(timestamp_ns_str)
-                    timestamp = datetime.fromtimestamp(
-                        timestamp_ns / 1e9, tz=timezone.utc
+                if response.status_code != 200:
+                    logger.error(
+                        f"Failed to fetch logs from Datadog: "
+                        f"{response.status_code} - {response.text[:200]}"
                     )
-                else:
-                    timestamp = datetime.fromisoformat(
-                        log_fields["timestamp"].replace("Z", "+00:00")
-                    )
+                    break
 
-                severity = log_fields.get("status", "info").upper()
-                log_severity = (
-                    LoggingLevels[severity]
-                    if severity in LoggingLevels.__members__
-                    else LoggingLevels.INFO
-                )
+                data = response.json()
+                logs = data.get("data", [])
 
-                module = None
-                if function_name:
-                    module = function_name
-                elif filename:
-                    module = filename.rsplit("/", 1)[-1].replace(".py", "")
+                if not logs:
+                    break
 
-                entry = LogEntry(
-                    message=message,
-                    level=log_severity,
-                    timestamp=timestamp,
-                    name=logger_name,
-                    filename=filename,
-                    lineno=lineno,
-                    module=module,
-                )
+                for log in logs:
+                    entry = self._parse_log_entry(log)
+                    if entry:
+                        log_entries.append(entry)
 
-                log_entries.append(entry)
+                remaining -= len(logs)
+
+                # Get cursor for next page
+                cursor = data.get("meta", {}).get("page", {}).get("after")
+                if not cursor:
+                    break
 
             logger.debug(f"Fetched {len(log_entries)} logs from Datadog")
             return log_entries
 
         except Exception as e:
             logger.exception(f"Error fetching logs from Datadog: {e}")
-            return []
+            return log_entries  # Return what we have so far
+
+    def _parse_log_entry(self, log: Dict[str, Any]) -> Optional[LogEntry]:
+        """Parse a single log entry from Datadog's API response.
+
+        Args:
+            log: The log data from Datadog's API.
+
+        Returns:
+            A LogEntry object, or None if parsing fails.
+        """
+        try:
+            log_fields = log.get("attributes", {})
+            message = log_fields.get("message", "")
+            nested_attrs = log_fields.get("attributes", {})
+
+            if exc_info := nested_attrs.get("exception"):
+                exc_message = exc_info.get("message")
+                exc_type = exc_info.get("type")
+                exc_stacktrace = exc_info.get("stacktrace")
+                message += f"\n{exc_type}: {exc_message}\n{exc_stacktrace}"
+
+            code_info = nested_attrs.get("code", {})
+            filename = code_info.get("file", {}).get("path")
+            lineno = code_info.get("line", {}).get("number")
+            function_name = code_info.get("function", {}).get("name")
+
+            otel_info = nested_attrs.get("otel", {})
+            logger_name = otel_info.get("library", {}).get("name")
+
+            timestamp_ns_str = otel_info.get("timestamp")
+            if timestamp_ns_str:
+                timestamp_ns = int(timestamp_ns_str)
+                timestamp = datetime.fromtimestamp(
+                    timestamp_ns / 1e9, tz=timezone.utc
+                )
+            else:
+                timestamp = datetime.fromisoformat(
+                    log_fields["timestamp"].replace("Z", "+00:00")
+                )
+
+            severity = log_fields.get("status", "info").upper()
+            log_severity = (
+                LoggingLevels[severity]
+                if severity in LoggingLevels.__members__
+                else LoggingLevels.INFO
+            )
+
+            module = None
+            if function_name:
+                module = function_name
+            elif filename:
+                module = filename.rsplit("/", 1)[-1].replace(".py", "")
+
+            return LogEntry(
+                message=message,
+                level=log_severity,
+                timestamp=timestamp,
+                name=logger_name,
+                filename=filename,
+                lineno=lineno,
+                module=module,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to parse log entry: {e}")
+            return None
 
     def cleanup(self) -> None:
         """Cleanup the Datadog log store.
