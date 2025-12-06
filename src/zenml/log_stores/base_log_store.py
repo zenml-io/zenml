@@ -176,7 +176,7 @@ class BaseLogStore(StackComponent, ABC):
         """Process a log record from the logging system.
 
         Args:
-            emitter: The emitter to emit the log record to.
+            emitter: The emitter used to emit the log record.
             record: The Python logging.LogRecord to process.
             metadata: Additional metadata to attach to the log entry.
         """

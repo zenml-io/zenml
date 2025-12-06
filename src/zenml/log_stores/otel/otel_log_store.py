@@ -235,7 +235,7 @@ class OtelLogStore(BaseLogStore):
         """Process a log record by sending to OpenTelemetry.
 
         Args:
-            emitter: The emitter to emit the log record to.
+            emitter: The emitter used to emit the log record.
             record: The log record to process.
             metadata: Additional metadata to attach to the log entry.
 
@@ -287,7 +287,7 @@ class OtelLogStore(BaseLogStore):
             if self._processor:
                 try:
                     # Force flush any pending logs
-                    self._processor.flush(blocking=False)
+                    self._processor.flush(blocking=True)
                     logger.debug("Flushed pending logs")
                 except Exception as e:
                     logger.warning(f"Error flushing logs: {e}")
@@ -327,8 +327,9 @@ class OtelLogStore(BaseLogStore):
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
 
-        Returns:
-            List of log entries from the backend.
+        Raises:
+            NotImplementedError: Log fetching is not supported by the OTEL log
+                store.
         """
         raise NotImplementedError(
             "Log fetching is not supported by the OTEL log store."

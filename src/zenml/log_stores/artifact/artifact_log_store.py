@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import (
     Any,
     Dict,
-    Iterator,
+    Generator,
     List,
     Optional,
     Type,
@@ -121,7 +121,7 @@ def fetch_log_records(
 def _stream_logs_line_by_line(
     artifact_store: "BaseArtifactStore",
     logs_uri: str,
-) -> Iterator[str]:
+) -> Generator[str, None, None]:
     """Stream logs line by line without loading the entire file into memory.
 
     This generator yields log lines one by one, handling both single files
@@ -138,7 +138,7 @@ def _stream_logs_line_by_line(
         DoesNotExistException: If the artifact does not exist in the artifact store.
     """
     if not artifact_store.exists(logs_uri):
-        return []
+        return
 
     if not artifact_store.isdir(logs_uri):
         # Single file case
