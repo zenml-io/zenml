@@ -266,15 +266,17 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <YOUR_TOKEN>' \
   -d '{
-    "steps": {
-      "load_data": {
-        "parameters": {
-          "data_url": "s3://production-bucket/latest-data.csv"
-        }
-      },
-      "train_model": {
-        "parameters": {
-          "model_type": "gradient_boosting"
+    "run_configuration": {
+      "steps": {
+        "load_data": {
+          "parameters": {
+            "data_url": "s3://production-bucket/latest-data.csv"
+          }
+        },
+        "train_model": {
+          "parameters": {
+            "model_type": "gradient_boosting"
+          }
         }
       }
     }
