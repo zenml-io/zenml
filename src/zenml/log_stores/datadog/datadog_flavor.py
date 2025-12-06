@@ -15,13 +15,16 @@
 
 from typing import Type
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.stack.flavor import Flavor
 from zenml.utils.secret_utils import PlainSerializedSecretStr
+
+# Datadog API limits: https://docs.datadoghq.com/api/latest/logs/
+DATADOG_MAX_BATCH_SIZE = 1000
 
 
 class DatadogLogStoreConfig(OtelLogStoreConfig):
@@ -31,6 +34,7 @@ class DatadogLogStoreConfig(OtelLogStoreConfig):
         api_key: Datadog API key for log ingestion.
         application_key: Datadog application key for log extraction.
         site: Datadog site (e.g., "datadoghq.com", "datadoghq.eu").
+        max_export_batch_size: Maximum batch size for exports (Datadog limit: 1000).
     """
 
     api_key: PlainSerializedSecretStr = Field(
@@ -43,6 +47,31 @@ class DatadogLogStoreConfig(OtelLogStoreConfig):
         default="datadoghq.com",
         description="Datadog site (e.g., datadoghq.com, datadoghq.eu)",
     )
+    max_export_batch_size: int = Field(
+        default=500,
+        description="Maximum batch size for exports (Datadog limit: 1000)",
+    )
+
+    @field_validator("max_export_batch_size")
+    @classmethod
+    def validate_max_export_batch_size(cls, v: int) -> int:
+        """Validate that max_export_batch_size doesn't exceed Datadog's limit.
+
+        Args:
+            v: The value to validate.
+
+        Returns:
+            The validated value.
+
+        Raises:
+            ValueError: If the value exceeds Datadog's limit.
+        """
+        if v > DATADOG_MAX_BATCH_SIZE:
+            raise ValueError(
+                f"max_export_batch_size cannot exceed {DATADOG_MAX_BATCH_SIZE} "
+                f"(Datadog API limit). Got: {v}"
+            )
+        return v
 
 
 class DatadogLogStoreFlavor(Flavor):
