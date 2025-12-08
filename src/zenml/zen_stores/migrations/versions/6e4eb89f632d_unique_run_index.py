@@ -1,7 +1,7 @@
 """Unique run index [6e4eb89f632d].
 
 Revision ID: 6e4eb89f632d
-Revises: 0.92.0
+Revises: 5c0a1c787128
 Create Date: 2025-12-03 17:27:32.828004
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "6e4eb89f632d"
-down_revision = "0.92.0"
+down_revision = "5c0a1c787128"
 branch_labels = None
 depends_on = None
 
