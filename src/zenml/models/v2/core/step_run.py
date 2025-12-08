@@ -618,6 +618,17 @@ class StepRunResponse(
         return self.get_body().latest_heartbeat
 
     @property
+    def heartbeat_threshold(self) -> Optional[int]:
+        """The `heartbeat_threshold` property.
+
+        Returns:
+            the value of the property.
+        """
+        if self.get_metadata().spec.enable_heartbeat:
+            return self.get_metadata().config.heartbeat_healthy_threshold
+        return None
+
+    @property
     def snapshot_id(self) -> UUID:
         """The `snapshot_id` property.
 
@@ -843,3 +854,4 @@ class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     id: UUID
     status: ExecutionStatus
     latest_heartbeat: datetime
+    pipeline_run_status: ExecutionStatus | None = None

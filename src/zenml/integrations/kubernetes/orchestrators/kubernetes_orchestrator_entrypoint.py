@@ -612,6 +612,24 @@ def main() -> None:
                     )
                     break
 
+        def is_node_heartbeat_unhealthy(node: Node) -> bool:
+            from zenml.steps.heartbeat import is_heartbeat_unhealthy
+
+            sr_ = client.list_run_steps(
+                name=node.id, pipeline_run_id=pipeline_run.id
+            )
+
+            if sr_.items:
+                return is_heartbeat_unhealthy(
+                    step_run_id=sr_.items[0].id,
+                    status=sr_.items[0].status,
+                    start_time=sr_.items[0].start_time,
+                    heartbeat_threshold=sr_.items[0].heartbeat_threshold,
+                    latest_heartbeat=sr_.items[0].latest_heartbeat,
+                )
+
+            return False
+
         def check_job_status(node: Node) -> NodeStatus:
             """Check the status of a job.
 
@@ -651,6 +669,13 @@ def main() -> None:
                     step_name,
                     error_message,
                 )
+                return NodeStatus.FAILED
+            elif is_node_heartbeat_unhealthy(node):
+                logger.error(
+                    "Heartbeat for step `%s` indicates unhealthy status.",
+                    step_name,
+                )
+                stop_step(node=node)
                 return NodeStatus.FAILED
             else:
                 return NodeStatus.RUNNING
