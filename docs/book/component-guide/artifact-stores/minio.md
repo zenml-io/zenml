@@ -10,10 +10,11 @@ description: Storing artifacts in MinIO object storage.
 
 You should use the MinIO Artifact Store when:
 
-* You want to run a self-hosted object storage solution
-* You need S3-compatible storage in your own data center or private cloud
-* You're running ZenML in a Kubernetes environment and want co-located storage
-* You want to avoid cloud vendor lock-in while maintaining S3 API compatibility
+* You require self-hosted object storage for data sovereignty or compliance requirements
+* Your MLOps infrastructure runs on-premises or in a private cloud environment
+* You need S3-compatible storage co-located with your Kubernetes-based ZenML deployment
+* You want to eliminate cloud vendor dependencies while maintaining S3 API compatibility
+* You're developing locally and need a lightweight S3-compatible storage backend for testing
 
 ### How do you deploy it?
 

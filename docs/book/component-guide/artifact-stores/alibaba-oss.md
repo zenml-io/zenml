@@ -18,11 +18,12 @@ This is required for proper compatibility with Alibaba Cloud OSS's S3 API implem
 
 ### When would you want to use it?
 
-You should use the Alibaba Cloud OSS Artifact Store when you want to store your ZenML artifacts in Alibaba Cloud infrastructure, particularly if:
+You should use the Alibaba Cloud OSS Artifact Store when:
 
-* You're already using Alibaba Cloud services
-* You need to store artifacts in specific geographic regions served by Alibaba Cloud
-* You want to leverage Alibaba Cloud's pricing and performance characteristics
+* Your infrastructure is already deployed on Alibaba Cloud and you want to maintain data locality
+* You require artifact storage in specific geographic regions served by Alibaba Cloud (China, Asia-Pacific, Europe, Middle East)
+* You need S3-compatible object storage with Alibaba Cloud's pricing model and service level agreements
+* Compliance requirements mandate data residency in Alibaba Cloud regions
 
 ### How do you deploy it?
 
@@ -37,6 +38,10 @@ You'll also need to create an OSS bucket and obtain your access credentials from
 ### How do you configure it?
 
 To use Alibaba Cloud OSS with ZenML, you need to configure the S3 Artifact Store with specific settings for OSS compatibility:
+
+{% hint style="info" %}  
+Alibaba Cloud OSS does not support ZenML Service Connectors. Use ZenML Secrets to securely store and reference your Alibaba Cloud credentials.  
+{% endhint %} 
 
 {% tabs %}
 {% tab title="Using a ZenML Secret (recommended)" %}
