@@ -128,7 +128,10 @@ def map_reduce():
 ```
 
 Key points:
-- `step.map(...)` fans out a step over sequence-like inputs.
+- `step.map(...)` fans out a step over sequence-like inputs. These inputs can be either
+  - a single list-like output artifact (see the code sample above)
+  - a list of output artifacts.
+  - the output of a `.map(...)` or `.product(...)` call if the respective step only returns a single output artifact
 - Steps can accept lists of artifacts directly as inputs (useful for reducers).
 - You can pass the mapped output directly to a downstream step without loading in the orchestration environment.
 
