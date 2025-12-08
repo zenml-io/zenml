@@ -130,6 +130,7 @@ class Pipeline:
 
     def __init__(
         self,
+        *,
         name: str,
         entrypoint: F,
         enable_cache: Optional[bool] = None,

@@ -636,6 +636,10 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             ValueError: If the execution mode is not supported.
         """
+        if snapshot.is_dynamic:
+            # We can't validate execution modes for dynamic pipelines yet
+            return
+
         execution_mode = snapshot.pipeline_configuration.execution_mode
 
         if execution_mode not in self.supported_execution_modes:
