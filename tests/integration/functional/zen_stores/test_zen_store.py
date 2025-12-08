@@ -3243,6 +3243,7 @@ def test_logs_are_recorded_properly(clean_client):
     with run_context:
         steps = run_context.steps
         step1_logs = steps[0].logs
+        client.active_stack.log_store.flush(blocking=True)
         step1_logs_content = client.active_stack.log_store.fetch(
             step1_logs, limit=100
         )
