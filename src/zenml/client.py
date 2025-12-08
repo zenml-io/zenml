@@ -4959,7 +4959,7 @@ class Client(metaclass=ClientMetaClass):
             cache_expired: Whether the cache expiration time of the step run
                 has passed.
             code_hash: The code hash of the step run to filter by.
-            status: The name of the run to filter by.
+            status: The status of the step run.
             run_metadata: Filter by run metadata.
             exclude_retried: Whether to exclude retried step runs.
             hydrate: Flag deciding whether to hydrate the output model(s)
