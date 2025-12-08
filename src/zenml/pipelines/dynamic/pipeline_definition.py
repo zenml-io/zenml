@@ -26,6 +26,7 @@ from pydantic import BaseModel, ConfigDict, create_model
 
 from zenml.client import Client
 from zenml.config.source import Source
+from zenml.enums import ExecutionMode
 from zenml.execution.pipeline.utils import (
     should_prevent_pipeline_execution,
 )
@@ -48,18 +49,20 @@ class DynamicPipeline(Pipeline):
 
     def __init__(
         self,
-        *args: Any,
+        *,
         depends_on: Optional[List["BaseStep"]] = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the pipeline.
 
         Args:
-            *args: Pipeline constructor arguments.
             depends_on: The steps that the pipeline depends on.
             **kwargs: Pipeline constructor keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        # This is the only execution mode that is currently supported for
+        # dynamic pipelines, so we default to it.
+        kwargs.setdefault("execution_mode", ExecutionMode.STOP_ON_FAILURE)
+        super().__init__(**kwargs)
         self._depends_on = depends_on or []
         self._validate_depends_on(self._depends_on)
 
