@@ -6102,6 +6102,7 @@ class SqlZenStore(BaseZenStore):
                         jl_arg(PipelineRunSchema.start_time),
                         jl_arg(PipelineRunSchema.end_time),
                         jl_arg(PipelineRunSchema.status),
+                        jl_arg(PipelineRunSchema.index),
                     ),
                 ],
             )
@@ -6336,6 +6337,7 @@ class SqlZenStore(BaseZenStore):
                     for triggered_run in step_run.triggered_runs:
                         triggered_run_metadata: Dict[str, Any] = {
                             "status": triggered_run.status,
+                            "index": triggered_run.index,
                         }
 
                         if triggered_run.start_time:
