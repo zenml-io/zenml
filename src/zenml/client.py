@@ -4741,6 +4741,7 @@ class Client(metaclass=ClientMetaClass):
         linked_to_model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
+        index: Optional[int] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
         unlisted: Optional[bool] = None,
@@ -4790,6 +4791,7 @@ class Client(metaclass=ClientMetaClass):
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
+            index: The index of the pipeline run
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
             unlisted: If the runs should be unlisted or not.
@@ -4839,6 +4841,7 @@ class Client(metaclass=ClientMetaClass):
             orchestrator_run_id=orchestrator_run_id,
             stack_id=stack_id,
             status=status,
+            index=index,
             start_time=start_time,
             end_time=end_time,
             tag=tag,
