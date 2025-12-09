@@ -56,7 +56,7 @@ The Datadog Log Store comes built-in with ZenML. You need:
 2. **Application Key**: Navigate to **Organization Settings** → **Application Keys** in Datadog
 
 {% hint style="info" %}
-The Application key is required for log retrieval. If you only provide an API key, logs will be exported to Datadog but won't be viewable in the ZenML dashboard.
+Both the API key and Application key are **required** to register a Datadog log store. The API key is used for log ingestion, while the Application key is used for log retrieval (displaying logs in the ZenML dashboard).
 {% endhint %}
 
 ### How to use it

@@ -7,9 +7,21 @@ icon: file-lines
 
 The Log Store is a stack component responsible for collecting, storing, and retrieving logs generated during pipeline and step execution. It captures everything from standard logging output to print statements and any messages written to stdout/stderr, making it easy to debug and monitor your ML workflows.
 
-## How Log Capture Works
+## How it works
 
-ZenML wraps the standard output (`stdout`) and standard error (`stderr`) streams during pipeline execution. This means any output from your code—whether it's Python `logging` messages, `print()` statements, or output from third-party libraries—is automatically captured and routed to the active log store in your stack.
+ZenML's log capture system is designed to be comprehensive and non-intrusive. Here's what happens under the hood:
+
+1. **stdout/stderr wrapping**: ZenML wraps the standard output and error streams to capture all printed messages and any output directed to these streams.
+
+2. **Root logger handler**: A custom handler is added to Python's root logger to capture all log messages with proper metadata from loggers that propagate to the root.
+
+3. **Log routing**: All captured messages are routed through a `LoggingContext` to the active log store in your stack.
+
+This approach ensures that you don't miss any output from your pipeline steps, including:
+- Standard Python `logging` messages
+- `print()` statements
+- Output from third-party libraries
+- Messages from subprocesses that write to stdout/stderr
 
 ### When to use it
 
@@ -60,7 +72,30 @@ zenml log-store register <LOG_STORE_NAME> \
 zenml stack register <STACK_NAME> -a <ARTIFACT_STORE> -o <ORCHESTRATOR> -ls <LOG_STORE_NAME> --set
 ```
 
-Once configured, logs are automatically captured during pipeline execution. You can view logs through:
+Once configured, logs are automatically captured during pipeline execution.
+
+### Viewing Logs
+
+You can view logs through several methods:
 
 1. **ZenML Dashboard**: Navigate to a pipeline run and view step logs directly in the UI.
-2. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
+
+2. **Programmatically**: You can fetch logs directly using the log store:
+
+```python
+from zenml.client import Client
+
+client = Client()
+
+# Get the run you want logs for
+run = client.get_pipeline_run("<RUN_NAME_OR_ID>")
+
+# Note: The log store must match the one that captured the logs
+log_store = client.active_stack.log_store
+log_entries = log_store.fetch(logs_model=run.logs, limit=1000)
+
+for entry in log_entries:
+    print(f"[{entry.level}] {entry.message}")
+```
+
+3. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.

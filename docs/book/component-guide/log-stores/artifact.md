@@ -63,7 +63,7 @@ These defaults are optimized for most use cases. You typically only need to adju
 
 ### Log format
 
-Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contains:
+Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contains the following fields:
 
 ```json
 {
@@ -73,22 +73,27 @@ Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contain
   "name": "my_logger",
   "filename": "train.py",
   "lineno": 42,
-  "module": "train"
-}
-```
-
-For large messages (>5KB), logs are automatically chunked with additional metadata:
-
-```json
-{
-  "message": "First part of large message...",
-  "level": "INFO",
-  "timestamp": "2024-01-15T10:30:00.000Z",
+  "module": "train",
   "chunk_index": 0,
-  "total_chunks": 3,
+  "total_chunks": 1,
   "id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
+| Field          | Description                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| `message`      | The log message content                                                     |
+| `level`        | Log level (DEBUG, INFO, WARN, ERROR, CRITICAL)                             |
+| `timestamp`    | When the log was created                                                    |
+| `name`         | The name of the logger                                                      |
+| `filename`     | The source file that generated the log                                      |
+| `lineno`       | The line number in the source file                                          |
+| `module`       | The module that generated the log                                           |
+| `chunk_index`  | Index of this chunk (0 for non-chunked messages)                           |
+| `total_chunks` | Total number of chunks (1 for non-chunked messages)                        |
+| `id`           | Unique identifier for the log entry (used to reassemble chunked messages)  |
+
+For large messages (>5KB), logs are automatically split into multiple chunks with sequential `chunk_index` values and a shared `id` for reassembly.
 
 ### Storage location
 

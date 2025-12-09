@@ -366,6 +366,28 @@ zenml stack register my_stack -ls my_logs ... --set
 This separation allows you to register flavors even when their dependencies aren't installed locally.
 {% endhint %}
 
+### Server-Side Constraints
+
+{% hint style="warning" %}
+**Important**: Log stores are instantiated on the ZenML server to fetch logs for display in the dashboard. This introduces a critical constraint on your implementation.
+{% endhint %}
+
+When the ZenML dashboard or API requests logs, the server instantiates the log store and calls its `fetch()` method. This means:
+
+1. **No external dependencies**: Your `fetch()` implementation cannot rely on Python packages that aren't already installed on the ZenML server. The server is installed with `pip install zenml[server]`, and you cannot add arbitrary packages to it.
+
+2. **Use HTTP/REST APIs**: For log retrieval, prefer using HTTP APIs with the built-in `requests` library (which is available on the server) rather than vendor-specific SDKs.
+
+3. **The exporter is different**: The `get_exporter()` method runs on the client/orchestrator side during pipeline execution, so it can use any dependencies you install there. Only `fetch()` has the server-side constraint.
+
+For example, the Datadog Log Store uses:
+- A custom `DatadogLogExporter` for exporting logs (client-side, can use any dependencies)
+- Plain HTTP requests with the `requests` library for fetching logs (server-side, uses only built-in packages)
+
+If your backend requires a specific SDK for log retrieval, you have two options:
+1. Implement `fetch()` using HTTP/REST APIs directly instead of the SDK
+2. Raise `NotImplementedError` in `fetch()` and have users view logs in your backend's native interface
+
 ### Best Practices
 
 1. **Extend OtelLogStore**: Unless you have specific requirements, extend `OtelLogStore` to benefit from built-in batching and retry logic.
@@ -379,3 +401,5 @@ This separation allows you to register flavors even when their dependencies aren
 5. **Test thoroughly**: Test your implementation with various log volumes and failure scenarios.
 
 6. **Document configuration**: Clearly document all configuration options and their defaults.
+
+7. **Keep fetch() simple**: Remember that `fetch()` runs on the server with limited dependencies. Use only built-in Python libraries and HTTP APIs.
