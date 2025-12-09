@@ -108,6 +108,7 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
+        wait: bool = True,
     ):
         """Initializes the launcher.
 
@@ -115,6 +116,7 @@ class StepLauncher:
             snapshot: The pipeline snapshot.
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
+            wait: Whether to wait for the step to finish.
 
         Raises:
             RuntimeError: If the snapshot has no associated stack.
@@ -122,6 +124,7 @@ class StepLauncher:
         self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
+        self._wait = wait
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -346,14 +349,22 @@ class StepLauncher:
                                 self._invocation_id,
                                 e,
                             )
-                            publish_utils.publish_failed_step_run(step_run.id)
+                            if step_run.status == ExecutionStatus.RUNNING:
+                                # Only update the status if the step runner
+                                # somehow failed to do so.
+                                publish_utils.publish_failed_step_run(
+                                    step_run.id
+                                )
                         raise
 
-                duration = time.time() - start_time
-                logger.info(
-                    f"Step `{self._invocation_id}` has finished in "
-                    f"`{string_utils.get_human_readable_time(duration)}`."
-                )
+                if self._wait:
+                    duration = time.time() - start_time
+                    logger.info(
+                        f"Step `{self._invocation_id}` has finished in "
+                        f"`{string_utils.get_human_readable_time(duration)}`."
+                    )
+                else:
+                    logger.info("Step `%s` launched.", self._invocation_id)
 
             else:
                 logger.info(
@@ -417,6 +428,7 @@ class StepLauncher:
         from zenml.deployers.server import runtime
 
         step_run_info = StepRunInfo(
+            step_run=step_run,
             config=self._step.config,
             spec=self._step.spec,
             pipeline=self._snapshot.pipeline_configuration,
@@ -563,10 +575,14 @@ class StepLauncher:
                 stack=self._stack,
             )
         )
-        self._stack.orchestrator.run_isolated_step(
+        self._stack.orchestrator.submit_isolated_step(
             step_run_info=step_run_info,
             environment=environment,
         )
+        if self._wait:
+            self._stack.orchestrator.wait_for_isolated_step(
+                step_run_info.step_run
+            )
 
     def _run_step_in_current_thread(
         self,
