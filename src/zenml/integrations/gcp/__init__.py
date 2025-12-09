@@ -49,6 +49,7 @@ class GcpIntegration(Integration):
     # removed once the issue is resolved.
     REQUIREMENTS = [
         "kfp>=2.6.0",
+        "urllib3<2.6.0",
         "gcsfs!=2025.5.0,!=2025.5.0.post1,<=2024.12.0",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
