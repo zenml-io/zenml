@@ -88,6 +88,7 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 )
 from zenml.integrations.gcp.utils import (
     build_job_request,
+    convert_job_state,
     monitor_job,
 )
 from zenml.integrations.gcp.vertex_custom_job_parameters import (
@@ -97,6 +98,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.pipelines.dynamic.entrypoint_configuration import (
     DynamicPipelineEntrypointConfiguration,
@@ -114,11 +116,13 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         PipelineSnapshotResponse,
         ScheduleResponse,
+        StepRunResponse,
     )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
 ENV_ZENML_VERTEX_RUN_ID = "ZENML_VERTEX_RUN_ID"
+STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 
 def _clean_pipeline_name(pipeline_name: str) -> str:
@@ -751,7 +755,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             metadata=metadata,
         )
 
-    def run_isolated_step(
+    def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
         """Runs an isolated step on Vertex.
@@ -774,6 +778,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         labels = settings.labels.copy()
         labels["source"] = f"zenml-{__version__.replace('.', '_')}"
+        labels["step-run-id"] = str(step_run_info.step_run_id)
 
         job_request = build_job_request(
             display_name=f"{step_run_info.run_name}-{step_run_info.pipeline_step_name}",
@@ -799,10 +804,43 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             parent,
         )
         job = client.create_custom_job(parent=parent, custom_job=job_request)
-        monitor_job(
-            job_id=job.name,
-            get_client=self.get_job_service_client,
+        publish_step_run_metadata(
+            step_run_info.step_run_id,
+            {
+                self.id: {STEP_JOB_NAME_METADATA_KEY: job.name},
+            },
         )
+        # Include the metadata in the step run response to avoid an extra
+        # API call
+        step_run_info.step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY] = (
+            job.name
+        )
+
+    def get_isolated_step_status(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Gets the status of an isolated step on Vertex.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The status of the step run.
+        """
+        client = self.get_job_service_client()
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        job = client.get_custom_job(name=job_name)
+        return convert_job_state(job.state)
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stops an isolated step on Vertex.
+
+        Args:
+            step_run: The step run.
+        """
+        client = self.get_job_service_client()
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        client.cancel_custom_job(name=job_name)
 
     def _upload_and_run_pipeline(
         self,

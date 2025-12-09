@@ -43,6 +43,7 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.orchestrators.publish_utils import (
+    publish_failed_step_run,
     publish_step_run_metadata,
     publish_successful_step_run,
     step_exception_info,
@@ -267,16 +268,10 @@ class StepRunner:
                                 step_exception, step_instance.entrypoint
                             )
                         )
-
-                        if self._publish_exception_info:
-                            Client().zen_store.update_run_step(
-                                step_run_id=step_run_info.step_run_id,
-                                step_run_update=StepRunUpdate(
-                                    exception_info=exception_info,
-                                ),
-                            )
-                        else:
-                            step_exception_info.set(exception_info)
+                        step_exception_info.set(exception_info)
+                        step_run = publish_failed_step_run(
+                            step_run_id=step_run_info.step_run_id
+                        )
 
                         if not step_run.is_retriable:
                             if (

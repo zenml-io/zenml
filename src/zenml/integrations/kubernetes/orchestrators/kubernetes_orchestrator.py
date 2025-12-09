@@ -97,6 +97,7 @@ if TYPE_CHECKING:
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
         ScheduleResponse,
+        StepRunResponse,
     )
     from zenml.stack import Stack
 
@@ -861,14 +862,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"{body.get('message', '')}"
             )
 
-    def run_isolated_step(
+    def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Runs an isolated step on Kubernetes.
+        """Submit an isolated step.
 
         Args:
             step_run_info: The step run information.
-            environment: The environment variables to set.
+            environment: The environment variables to set in the execution
+                environment.
         """
         from zenml.step_operators.step_operator_entrypoint_configuration import (
             StepOperatorEntrypointConfiguration,
@@ -914,11 +916,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_name=step_run_info.pipeline_step_name,
         )
 
-        retry_config = step_run_info.config.retry
-        backoff_limit = (
-            retry_config.max_retries if retry_config else 0
-        ) + settings.backoff_limit_margin
-
         job_manifest = self._prepare_job_manifest(
             name=job_name,
             command=command,
@@ -929,7 +926,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             annotations=annotations,
             settings=settings,
             pod_settings=settings.pod_settings,
-            backoff_limit=backoff_limit,
+            # In the dynamic pipeline case, we can't handle retries at the
+            # orchestrator level because the entrypoint args contain a step
+            # run ID.
+            backoff_limit=settings.backoff_limit_margin,
         )
 
         kube_utils.create_job(
@@ -938,19 +938,78 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             job_manifest=job_manifest,
         )
 
-        logger.info(
-            "Waiting for job `%s` to finish...",
-            job_name,
+    def get_isolated_step_status(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Get the status of an isolated step.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The status.
+        """
+        label_selector = (
+            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
         )
-        kube_utils.wait_for_job_to_finish(
-            batch_api=self._k8s_batch_api,
-            core_api=self._k8s_core_api,
+        try:
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to list jobs for step run `%s`: %s", step_run.id, e
+            )
+            return ExecutionStatus.FAILED
+
+        if not job_list.items:
+            logger.warning("No jobs found for step run `%s`", step_run.id)
+            return ExecutionStatus.FAILED
+
+        job = job_list.items[0]
+        if job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return ExecutionStatus.COMPLETED
+                if condition.type == "Failed" and condition.status == "True":
+                    return ExecutionStatus.FAILED
+
+        return ExecutionStatus.RUNNING
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stop an isolated step.
+
+        Args:
+            step_run: The step run.
+        """
+        label_selector = (
+            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+        )
+        try:
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to list jobs for step run `%s`: %s", step_run.id, e
+            )
+            return
+
+        if not job_list.items:
+            logger.warning("No jobs found for step run `%s`", step_run.id)
+            return
+
+        job_name = job_list.items[0].metadata.name
+        self._k8s_batch_api.delete_namespaced_job(
+            name=job_name,
             namespace=self.config.kubernetes_namespace,
-            job_name=job_name,
-            fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
-            stream_logs=True,
+            propagation_policy="Foreground",
         )
-        logger.info("Job `%s` completed.", job_name)
+        logger.info(f"Successfully stopped step job: {job_name}")
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings
