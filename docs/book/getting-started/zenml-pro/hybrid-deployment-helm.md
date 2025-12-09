@@ -23,7 +23,7 @@ This guide provides step-by-step instructions for deploying ZenML Pro in a Hybri
 - `kubectl` configured to access your cluster
 - `helm` CLI (3.0+) installed
 - A domain name and TLS certificate for your ZenML server
-- MySQL or PostgreSQL database (managed or self-hosted)
+- MySQL database (managed or self-hosted)
 - Outbound HTTPS access to `cloudapi.zenml.io`
 
 Before starting, complete the setup described in [Hybrid Deployment Overview](hybrid-deployment.md):
