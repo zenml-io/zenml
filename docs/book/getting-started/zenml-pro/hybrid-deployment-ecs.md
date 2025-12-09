@@ -20,7 +20,7 @@ This guide provides high-level instructions for deploying ZenML Pro in a Hybrid 
 ## Architecture Overview
 
 In this setup:
-- **ZenML server** runs in ECS tasks within your VPC
+- **ZenML workspace** runs in ECS tasks within your VPC
 - **Load balancer** handles HTTPS traffic and routes to ECS tasks
 - **Database** stores workspace metadata in AWS RDS
 - **Secrets manager** stores Pro credentials securely
@@ -350,11 +350,11 @@ Monitor database health:
 
 ## (Optional) Enable Snapshot Support / Workload Manager
 
-Pipeline snapshots (running pipelines from the dashboard) require a workload manager. For ECS deployments, you'll typically use the AWS Kubernetes implementation if you also have a Kubernetes cluster available, or configure settings as appropriate for your infrastructure.
+Pipeline snapshots (running pipelines from the UI) require a workload manager. For ECS deployments, you'll typically use the AWS Kubernetes implementation if you also have a Kubernetes cluster available, or configure settings as appropriate for your infrastructure.
 
 ### Prerequisites for Workload Manager
 
-To enable snapshots on ECS-deployed ZenML servers:
+To enable snapshots on ECS-deployed ZenML workspaces:
 
 1. **Kubernetes Cluster Access** - You'll need a Kubernetes cluster where the workload manager can run jobs. This could be:
    - The same EKS cluster as your other infrastructure

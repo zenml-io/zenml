@@ -82,11 +82,10 @@ By default, ZenML Pro SaaS stores your cloud credentials securely in our managed
 - Zero configuration required
 - Automatic encryption at rest and in transit
 - Access controls via RBAC
-- Audit logging of secret access
 
 ### Alternative: Customer-Managed Secrets Store
 
-For organizations with strict security requirements, you can configure ZenML to use your own secrets management solution:
+For organizations with strict security requirements, you can configure ZenML to use your own (secrets management)[..deploying-zenml/secret-management] solution:
 - AWS Secrets Manager
 - Google Cloud Secret Manager
 - Azure Key Vault
@@ -107,7 +106,7 @@ ZenML Pro SaaS uses outbound-only connections from your infrastructure to ZenML 
 
 ### Artifact Store Access
 
-The ZenML dashboard requires read access to your artifact store to display:
+The ZenML UI requires read access to your artifact store to display:
 - Pipeline visualizations
 - Model comparison views
 - Artifact lineage graphs

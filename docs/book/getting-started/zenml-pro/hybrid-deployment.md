@@ -68,10 +68,8 @@ In Hybrid deployment, users authenticate via ZenML-hosted control plane (SSO), a
 
 ### 🚀 Production Ready
 
-- **High availability**: Built-in redundancy for critical components
 - **Automatic updates**: Control plane maintained by ZenML
 - **Professional support**: Direct access to ZenML experts
-- **Monitoring included**: Health checks and alerting configured
 
 ## Ideal Use Cases
 

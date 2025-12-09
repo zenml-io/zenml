@@ -5,7 +5,7 @@ icon: microchip
 
 # Workload Managers
 
-Workload managers are built into the ZenML Pro server container. They enable you to run pipeline snapshots directly from the ZenML Pro UI by allowing the server to orchestrate pipeline execution on your infrastructure. Without a workload manager configured, your workspace can only be used for monitoring and analyzing completed pipeline runs. With one configured, you gain the ability to trigger and execute pipelines interactively.
+Workload managers are built into the ZenML Pro workspace container. They enable you to run pipeline snapshots directly from the ZenML Pro UI by allowing the workspace to orchestrate pipeline execution on your infrastructure. Without a workload manager configured, your workspace can only be used for monitoring and analyzing completed pipeline runs. With one configured, you gain the ability to trigger and execute pipelines interactively.
 
 {% hint style="info" %}
 This feature is available in [all ZenML Pro deployment scenarios](deployments-overview.md) (SaaS, Hybrid, and Self-hosted).
@@ -13,12 +13,12 @@ This feature is available in [all ZenML Pro deployment scenarios](deployments-ov
 
 ## Architecture
 
-The ZenML Pro server container includes workload manager implementations. You configure which implementation to use through environment variables passed to the server. The server then uses that implementation to coordinate pipeline execution with your infrastructure.
+The ZenML Pro workspace container includes workload manager implementations. You configure which implementation to use through environment variables passed to the workspace. The workspace then uses that implementation to coordinate pipeline execution with your infrastructure.
 
 ### Execution Flow
 
 1. **User triggers a snapshot from the ZenML Pro UI**: You select a pipeline snapshot and click "Run"
-2. **ZenML server receives the request**: Your ZenML Pro server (running in your workspace, whether SaaS, Hybrid, or Self-hosted) receives the execution request.
+2. **ZenML workspace receives the request**: Your ZenML Pro workspace (running in your workspace, whether SaaS, Hybrid, or Self-hosted) receives the execution request.
 3. **Workload manager implementation handles orchestration**: The configured workload manager implementation (Kubernetes, AWS, or GCP) translates the request into infrastructure-specific commands.
 4. **Runner pod/task is created**: The workload manager creates a Kubernetes pod, ECS task, or equivalent compute unit on your infrastructure.
 5. **Pipeline executes**: The runner pulls the pipeline code, executes the steps, and streams logs back to the workspace.
@@ -26,14 +26,14 @@ The ZenML Pro server container includes workload manager implementations. You co
 
 ## How Workload Managers Are Configured
 
-Workload managers are enabled by setting environment variables on the ZenML Pro server container. Each implementation requires a specific set of environment variables that tell the server:
+Workload managers are enabled by setting environment variables on the ZenML Pro workspace container. Each implementation requires a specific set of environment variables that tell the workspace:
 
 - Which workload manager implementation to use
 - Where to create runner pods/tasks (namespace, cluster, region)
 - How to access container registries and storage
 - What permissions and resources runners should have
 
-All configuration happens within a single server deployment—no separate services are needed.
+All configuration happens within a single workspace deployment—no separate services are needed.
 
 ## Supported Implementations
 
@@ -58,16 +58,16 @@ ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 5
 **Requirements:**
 - Kubernetes cluster (1.24+)
 - Service account with permissions to create/manage pods in a dedicated namespace
-- Network connectivity from cluster to your ZenML server
+- Network connectivity from cluster to your ZenML workspace
 - Access to a container registry with ZenML runner images
 
 **How it works:**
-- The server uses the Kubernetes API to create pods in the specified namespace
+- The workspace uses the Kubernetes API to create pods in the specified namespace
 - Pods run under the specified service account, inheriting cluster network access
 - Completed pods are automatically cleaned up after the TTL expires
 
 **Use cases:**
-- Self-managed ZenML servers on Kubernetes (Hybrid or Self-hosted)
+- Self-managed ZenML workspaces on Kubernetes (Hybrid or Self-hosted)
 - Teams already running Kubernetes infrastructure
 - Minimal setup complexity
 
@@ -98,7 +98,7 @@ ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 5
 - S3 bucket for exporting logs
 
 **How it works:**
-- The server assumes an IAM role to access AWS services
+- The workspace assumes an IAM role to access AWS services
 - Runner images are stored and pulled from ECR
 - Pod permissions are managed through IAM roles for service accounts (IRSA)
 - Logs are streamed to S3 for long-term retention and analysis
@@ -132,7 +132,7 @@ ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 5
 - Docker registry (GCR) for storing runner images
 
 **How it works:**
-- The server authenticates to GCP using a service account
+- The workspace authenticates to GCP using a service account
 - Runner images are stored and pulled from GCR
 - Pod permissions are managed through Workload Identity
 - Logs are automatically sent to Cloud Logging
@@ -144,11 +144,11 @@ ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 5
 
 ## IAM Permissions and Service Accounts
 
-Proper permission configuration is critical for workload managers to function correctly. The ZenML Pro server needs sufficient permissions to create and manage runner pods without being overly permissive.
+Proper permission configuration is critical for workload managers to function correctly. The ZenML Pro workspace needs sufficient permissions to create and manage runner pods without being overly permissive.
 
 ### Kubernetes Service Account
 
-For Kubernetes-based implementations, the server uses a Kubernetes service account to interact with your cluster.
+For Kubernetes-based implementations, the workspace uses a Kubernetes service account to interact with your cluster.
 
 **Required RBAC permissions:**
 - Create pods in the designated namespace
@@ -183,7 +183,7 @@ rules:
 
 ### AWS IAM Role
 
-For AWS-based implementations, the ZenML Pro server container needs an IAM role (typically via IRSA—IAM roles for service accounts) to access EKS and related AWS services.
+For AWS-based implementations, the ZenML Pro workspace container needs an IAM role (typically via IRSA—IAM roles for service accounts) to access EKS and related AWS services.
 
 **Required permissions:**
 
@@ -194,7 +194,7 @@ For AWS-based implementations, the ZenML Pro server container needs an IAM role 
 **Pod creation and management (via Kubernetes API using IRSA):**
 - The IAM role must be associated with a Kubernetes service account
 - The role is assumed by pods running under that service account
-- This allows the ZenML server to access the Kubernetes API
+- This allows the ZenML workspace to access the Kubernetes API
 
 **ECR (if building images):**
 - `ecr:DescribeRepositories` - List image repositories
@@ -250,7 +250,7 @@ For AWS-based implementations, the ZenML Pro server container needs an IAM role 
 
 ### GCP Service Account
 
-For GCP-based implementations, the ZenML Pro server uses a GCP service account with appropriate roles.
+For GCP-based implementations, the ZenML Pro workspace uses a GCP service account with appropriate roles.
 
 **Required roles:**
 - `roles/container.developer` - Access to create and manage pods in GKE
@@ -283,8 +283,8 @@ When configuring workload managers, keep these factors in mind:
 
 ### Network Connectivity
 
-- **Egress from server to Kubernetes API**: The ZenML Pro server must have network access to your Kubernetes cluster's API server (port 6443 by default)
-- **Egress from runners to server**: Runner pods must have network access to your ZenML server (cloud.zenml.io for SaaS, your custom domain for Hybrid/Self-hosted, port 443)
+- **Egress from workspace to Kubernetes API**: The ZenML Pro workspace must have network access to your Kubernetes cluster's API server (port 6443 by default)
+- **Egress from runners to workspace**: Runner pods must have network access to your ZenML workspace (cloud.zenml.io for SaaS, your custom domain for Hybrid/Self-hosted, port 443)
 - **Artifact storage access**: Runners need network access to your artifact store (S3, GCS, Azure Blob, local NFS, etc.)
 - **Metadata backend access**: Runners need to reach your database for metadata operations
 - **Container registry access**: Runners need to pull images from your container registry
@@ -293,7 +293,7 @@ For Self-hosted deployments, ensure all dependencies are available internally:
 - Private container registry with runner images
 - Internal artifact storage accessible from runners
 - Internal database (no external connectivity required)
-- Kubernetes API accessible from the server container
+- Kubernetes API accessible from the workspace container
 
 ### Resource Configuration
 
@@ -314,7 +314,7 @@ Runner pods need access to container images:
 - **Custom images**: For Self-hosted setups, pull images into your private registry before deployment
 - **Image pull secrets**: Configure if your registry requires authentication
 - **Regular updates**: Keep runner images up-to-date for security and compatibility
-- **Image building**: For AWS and GCP implementations, set `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"` to allow the server to build custom images
+- **Image building**: For AWS and GCP implementations, set `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"` to allow the workspace to build custom images
 
 ### Logging and Observability
 
@@ -340,7 +340,7 @@ Configure limits to prevent resource exhaustion:
 - **Concurrent runs**: Set `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` to limit simultaneous executions (typical: 2-10 depending on runner resources and cluster capacity)
 - **TTL for completed pods**: Clean up finished pods automatically using `ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED` (e.g., 86400 seconds = 24 hours)
 - **Pod disruption budgets**: For HA setups, define minimum available pods to ensure service continuity
-- **Horizontal Pod Autoscaler (HPA)**: For the ZenML server itself (not runners), consider HPA if handling many concurrent run submissions
+- **Horizontal Pod Autoscaler (HPA)**: For the ZenML workspace itself (not runners), consider HPA if handling many concurrent run submissions
 
 ### Troubleshooting Common Issues
 
@@ -349,11 +349,11 @@ Configure limits to prevent resource exhaustion:
 - Verify image pull secrets if using private registries
 - Check resource availability (CPU, memory) in cluster
 - Review pod events: `kubectl describe pod <pod-name> -n zenml-workload-manager`
-- Check server logs for workload manager errors: `kubectl logs -n zenml-workspace deployment/zenml`
+- Check workspace logs for workload manager errors: `kubectl logs -n zenml-workspace deployment/zenml`
 
 **Logs not appearing:**
-- Verify server can reach artifact store and database
-- Check network connectivity between cluster and server
+- Verify workspace can reach artifact store and database
+- Check network connectivity between cluster and workspace
 - Ensure S3/Cloud Logging permissions are correct
 - Review pod logs for pipeline execution errors: `kubectl logs <pod-name> -n zenml-workload-manager`
 
@@ -363,11 +363,11 @@ Configure limits to prevent resource exhaustion:
 - Confirm service account role bindings are in place
 - Test cluster connectivity: `kubectl cluster-info`
 
-**Runners can't reach server:**
+**Runners can't reach workspace:**
 - Verify egress network policies allow outbound HTTPS (port 443)
-- Check firewall rules for ingress/egress to ZenML server
-- Confirm server URL is resolvable and reachable from pods
-- Test from pod: `kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl https://<server-url>/health`
+- Check firewall rules for ingress/egress to ZenML workspace
+- Confirm workspace URL is resolvable and reachable from pods
+- Test from pod: `kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl https://<workspace-url>/health`
 
 ## Next Steps
 

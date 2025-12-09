@@ -20,17 +20,16 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 
 ## Quick Comparison
 
-| Deployment Aspect | SaaS | Hybrid SaaS | Self-hosted |
-|-------------------|------|-------------|------------|
-| **ZenML Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
-| **Pipeline/ Artifact Metadata** | ZenML infrastructure | Your infrastructure | Your infrastructure |
-| **ZenML Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
-| **ZenML Pro UI** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
-| **RBAC** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
-| **Compute & Data** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Your infrastructure through [stacks](https://docs.zenml.io/stacks) |
-| **Setup Time** | ⚡ ~1 hour | ~4 hours | ~8 hours |
-| **Maintenance** | Fully managed | Partially managed (workspace maintenance required) | Customer managed |
-| **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and on-premises control |
+| Deployment Aspect | Purpose | SaaS | Hybrid SaaS | Self-hosted |
+|-------------------|---------|------|-------------|-------------|
+| **ZenML Server** | Stores pipeline metadata and serves the API that your SDK and UI connect to | ZenML infrastructure | Your infrastructure | Your infrastructure |
+| **Pipeline/ Artifact Metadata** | Records of your pipeline runs, step executions, and artifact locations | ZenML infrastructure | Your infrastructure | Your infrastructure |
+| **ZenML Control Plane** | Manages authentication, RBAC, and organization-level settings across workspaces | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
+| **ZenML Pro UI** | Web UI for visualizing pipelines, artifacts, and managing your ML workflows | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
+| **Compute & Data** | Your ML training infrastructure, models, datasets, and artifacts | Your infrastructure | Your infrastructure | Your infrastructure |
+| **Setup Time** | Time to get your first pipeline running | ⚡ ~1 hour | ~4 hours | ~8 hours |
+| **Maintenance** | Ongoing operational responsibility | Fully managed | Partially managed (workspace maintenance required) | Customer managed |
+| **Best For** | Recommended use case | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and on-premises control |
 
 {% hint style="info" %}
 In all of these cases the client sdk that you pip install into your development environment is the same one found here: https://pypi.org/project/zenml/
@@ -45,7 +44,7 @@ Choose **SaaS** if you want to get started immediately with zero infrastructure 
 **What runs where:**
 - ZenML Server: ZenML infrastructure
 - Metadata and RBAC: ZenML infrastructure
-- Compute and Data: [Your infrastructure](https://docs.zenml.io/stacks)
+- Compute and Data: Your infrastructure
 
 **Key Benefits:**
 - ⚡ Fastest setup (minutes)
@@ -65,9 +64,8 @@ Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure 
 - ZenML Control Plane: ZenML infrastructure
 - ZenML Pro UI: ZenML infrastructure
 - ZenML Pro Server: Your infrastructure
-- RBAC: ZenML infrastructure
 - Run metadata: Your infrastructure
-- Compute and Data: [Your infrastructure](https://docs.zenml.io/stacks)
+- Compute and Data: Your infrastructure
 
 **Key Benefits:**
 - 🔐 Metadata stays in your infrastructure
@@ -85,7 +83,7 @@ Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure 
 Choose **Self-hosted** if you need complete control with no external dependencies.
 
 **What runs where:**
-- All components: [Your infrastructure](https://docs.zenml.io/stacks) (completely isolated)
+- All components: Your infrastructure (completely isolated)
 
 **Key Benefits:**
 - 🔒 Complete data sovereignty
@@ -125,7 +123,7 @@ All three deployment scenarios follow a similar pipeline execution pattern, with
    - Artifacts are written to your artifact store
    - Metadata pointing to these artifacts is persisted
 
-6. **Observability**: The ZenML dashboard connects to your workspace and uses all persisted metadata to provide you with a complete observability plane
+6. **Observability**: The ZenML UI connects to your workspace and uses all persisted metadata to provide you with a complete observability plane
 
 ### Deployment-Specific Differences
 
@@ -172,7 +170,7 @@ For software deployed on your infrastructure (Hybrid and Self-hosted scenarios),
 
 ## Running Pipelines from the web UI
 
-All deployment scenarios support running pipeline snapshots from the dashboard through [workload managers](workload-managers.md). Workload managers are built into the ZenML Pro server and can be configured to orchestrate pipeline execution on your Kubernetes cluster, AWS ECS, or GCP infrastructure.
+All deployment scenarios support running pipeline snapshots from the UI through [workload managers](workload-managers.md). Workload managers are built into the ZenML Pro workspace and can be configured to orchestrate pipeline execution on your Kubernetes cluster, AWS ECS, or GCP infrastructure.
 
 Learn more: [Understanding Workload Managers](workload-managers.md)
 
@@ -182,7 +180,7 @@ Learn more: [Understanding Workload Managers](workload-managers.md)
 - **Need metadata control?** [Set up Hybrid Deployment](hybrid-deployment.md)
 - **Require complete isolation?** [Configure Self-hosted Deployment](self-hosted-deployment.md)
 - **Deploying on your own infrastructure?** [See Self-hosted Deployment Guide](self-hosted.md)
-- **Want to run pipelines from the dashboard?** [Configure Workload Managers](workload-managers.md)
+- **Want to run pipelines from the UI?** [Configure Workload Managers](workload-managers.md)
 
 {% hint style="info" %}
 Not sure which option is right for you? [Book a call](https://www.zenml.io/book-your-demo) with our team to discuss your specific requirements.
