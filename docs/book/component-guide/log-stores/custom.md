@@ -379,6 +379,3 @@ This separation allows you to register flavors even when their dependencies aren
 5. **Test thoroughly**: Test your implementation with various log volumes and failure scenarios.
 
 6. **Document configuration**: Clearly document all configuration options and their defaults.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

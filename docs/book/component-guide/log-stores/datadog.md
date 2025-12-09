@@ -28,22 +28,19 @@ The Datadog Log Store extends the [OTEL Log Store](otel.md) with Datadog-specifi
 
 4. **Log retrieval**: The log store uses Datadog's Logs Search API to fetch logs for display in the ZenML dashboard.
 
-#### Attribute mapping
+#### ZenML-specific attributes
 
-The Datadog Log Store maps OpenTelemetry attributes to Datadog's expected format:
+Each log record includes ZenML metadata that can be used for filtering in Datadog:
 
-| OTEL Field          | Datadog Field              |
-|---------------------|---------------------------|
-| `timestamp`         | `@timestamp`              |
-| `severity_text`     | `status`                  |
-| `body`              | `message`                 |
-| `attributes.*`      | Custom attributes (`@*`)  |
-
-ZenML-specific attributes are preserved and can be used for filtering in Datadog:
-
-- `@zenml.log.id` - Filter logs for a specific step
-- `@zenml.run.id` - Filter all logs for a pipeline run
-- `@zenml.step.name` - Filter by step name
+| Attribute              | Description                                    |
+|-----------------------|------------------------------------------------|
+| `@zenml.log.id`       | Unique identifier for the log stream           |
+| `@zenml.log.source`   | Source of the log (step, pipeline, etc.)       |
+| `@zenml.log.uri`      | URI where logs are stored (if applicable)      |
+| `@zenml.log_store.id` | ID of the log store component                  |
+| `@zenml.log_store.name`| Name of the log store component               |
+| `@zenml.run.id`       | Pipeline run ID                                |
+| `@zenml.step.name`    | Step name (for step-level logs)                |
 
 ### How to deploy it
 
@@ -125,9 +122,9 @@ zenml log-store register datadog_logs \
 | `service_name`           | `"zenml"`          | Service name shown in Datadog logs                 |
 | `service_version`        | ZenML version      | Service version shown in Datadog logs              |
 | `max_export_batch_size`  | `500`              | Maximum batch size (Datadog limit: 1000)           |
-| `max_queue_size`         | `2048`             | Maximum queue size for batch processor             |
+| `max_queue_size`         | `100000`           | Maximum queue size for batch processor             |
 | `schedule_delay_millis`  | `5000`             | Delay between batch exports (milliseconds)         |
-| `export_timeout_millis`  | `30000`            | Timeout for each export batch (milliseconds)       |
+| `export_timeout_millis`  | `15000`            | Timeout for each export batch (milliseconds)       |
 
 {% hint style="warning" %}
 Datadog has a maximum batch size limit of 1000 logs per request. The `max_export_batch_size` is capped at this value.
@@ -153,71 +150,6 @@ Or filter by specific step:
 service:zenml @zenml.step.name:my_training_step
 ```
 
-#### Via Python
-
-```python
-from zenml.client import Client
-
-client = Client()
-run = client.get_pipeline_run("<RUN_ID>")
-
-for step_name, step in run.steps.items():
-    if step.logs:
-        print(f"\n=== Logs for {step_name} ===")
-        # Logs are fetched from Datadog
-        log_entries = step.logs.fetch()
-        for entry in log_entries:
-            print(f"[{entry.level}] {entry.message}")
-```
-
-### Datadog features
-
-With logs in Datadog, you can leverage its full feature set:
-
-#### Log Patterns
-
-Datadog automatically detects patterns in your logs, helping you identify recurring issues across pipeline runs.
-
-#### Log Pipelines
-
-Create processing pipelines to:
-- Parse custom log formats
-- Extract metrics from logs
-- Enrich logs with additional context
-
-#### Monitors and Alerts
-
-Set up alerts based on log patterns:
-
-```
-logs("service:zenml status:error @zenml.step.name:*").count() > 0
-```
-
-#### Live Tail
-
-Watch logs in real-time during pipeline execution using Datadog's Live Tail feature.
-
-#### Log Archives
-
-Configure log archives for long-term retention and compliance.
-
-### Best practices
-
-1. **Use secrets**: Always store API keys and application keys in ZenML secrets, never in plain text.
-
-2. **Set appropriate retention**: Configure Datadog log retention based on your needs to manage costs.
-
-3. **Use tags**: Add custom tags to help organize logs:
-   - `team:ml-platform`
-   - `environment:production`
-   - `project:my-project`
-
-4. **Create dashboards**: Build Datadog dashboards to visualize pipeline execution metrics derived from logs.
-
-5. **Set up alerts**: Create monitors for critical pipeline failures or anomalies.
-
-6. **Index management**: Use Datadog's index exclusion filters to reduce costs on high-volume, low-priority logs.
-
 ### Troubleshooting
 
 #### Logs not appearing in Datadog
@@ -241,6 +173,3 @@ If you're hitting Datadog's rate limits:
 - Consider log sampling for high-volume pipelines
 
 For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.datadog.datadog_log_store).
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

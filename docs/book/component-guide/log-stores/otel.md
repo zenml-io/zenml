@@ -120,46 +120,10 @@ zenml log-store register my_otel_logs \
 | `compression`              | `"none"`           | Compression type: `"none"`, `"gzip"`, or `"deflate"`|
 | `service_name`             | `"zenml"`          | Service name in OTEL resource attributes           |
 | `service_version`          | ZenML version      | Service version in OTEL resource attributes        |
-| `max_queue_size`           | `2048`             | Maximum queue size for batch processor             |
+| `max_queue_size`           | `100000`           | Maximum queue size for batch processor             |
 | `schedule_delay_millis`    | `5000`             | Delay between batch exports (milliseconds)         |
-| `max_export_batch_size`    | `512`              | Maximum batch size for exports                     |
-| `export_timeout_millis`    | `30000`            | Timeout for each export batch (milliseconds)       |
-
-### Example configurations
-
-#### Grafana Cloud
-
-```shell
-zenml secret create grafana_auth \
-    --instance_id=<YOUR_INSTANCE_ID> \
-    --api_key=<YOUR_API_KEY>
-
-zenml log-store register grafana_logs \
-    --flavor=otel \
-    --endpoint=https://otlp-gateway-prod-us-central-0.grafana.net/otlp/v1/logs \
-    --headers='{"Authorization": "Basic {{grafana_auth.instance_id}}:{{grafana_auth.api_key}}"}'
-```
-
-#### Honeycomb
-
-```shell
-zenml secret create honeycomb_auth \
-    --api_key=<YOUR_API_KEY>
-
-zenml log-store register honeycomb_logs \
-    --flavor=otel \
-    --endpoint=https://api.honeycomb.io/v1/logs \
-    --headers='{"x-honeycomb-team": "{{honeycomb_auth.api_key}}"}'
-```
-
-#### Self-hosted OTEL Collector
-
-```shell
-zenml log-store register collector_logs \
-    --flavor=otel \
-    --endpoint=http://otel-collector:4318/v1/logs \
-    --compression=gzip
-```
+| `max_export_batch_size`    | `5000`             | Maximum batch size for exports                     |
+| `export_timeout_millis`    | `15000`            | Timeout for each export batch (milliseconds)       |
 
 ### Retry behavior
 
@@ -193,7 +157,3 @@ This ensures reliable log delivery even in unstable network conditions.
 4. **Use secrets for credentials**: Always store API keys and tokens in ZenML secrets, not in plain text.
 
 For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.otel.otel_log_store).
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-

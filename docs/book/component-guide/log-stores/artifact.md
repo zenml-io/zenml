@@ -7,7 +7,7 @@ description: Storing logs in your artifact store.
 The Artifact Log Store is the default [log store](./) flavor that comes built-in with ZenML. It stores logs directly in your artifact store, providing a zero-configuration logging solution that works out of the box.
 
 {% hint style="info" %}
-The Artifact Log Store is automatically used when no log store is explicitly configured in your stack. ZenML creates a temporary artifact log store from your artifact store, so logging works immediately without any additional setup.
+The Artifact Log Store is automatically used when no log store is explicitly configured in your stack. ZenML creates an artifact log store from your artifact store, so logging works immediately without any additional setup.
 {% endhint %}
 
 ### When would you want to use it?
@@ -42,60 +42,24 @@ This ensures consistent behavior across all supported artifact store types.
 
 ### How to deploy it
 
-The Artifact Log Store comes built-in with ZenML and requires no additional installation. It's automatically available when you install ZenML:
+The Artifact Log Store comes built-in with ZenML and requires no additional installation or registration. It's automatically available and used by default when you install ZenML:
 
 ```shell
 pip install zenml
 ```
 
-Since ZenML automatically creates an Artifact Log Store from your artifact store when needed, you typically don't need to explicitly register one. However, if you want to customize its configuration, you can register it explicitly.
+### Environment Variables
 
-### How to use it
+The Artifact Log Store uses OpenTelemetry's batch processing under the hood. You can tune the batching behavior using these environment variables:
 
-#### Automatic usage (recommended)
+| Environment Variable                      | Default   | Description                                         |
+|------------------------------------------|-----------|-----------------------------------------------------|
+| `ZENML_LOGS_OTEL_MAX_QUEUE_SIZE`         | `100000`  | Maximum queue size for batch log processor          |
+| `ZENML_LOGS_OTEL_SCHEDULE_DELAY_MILLIS`  | `5000`    | Delay between batch exports in milliseconds         |
+| `ZENML_LOGS_OTEL_MAX_EXPORT_BATCH_SIZE`  | `5000`    | Maximum batch size for exports                      |
+| `ZENML_LOGS_OTEL_EXPORT_TIMEOUT_MILLIS`  | `15000`   | Timeout for each export batch in milliseconds       |
 
-Simply use your stack without configuring a log store. ZenML will automatically use an Artifact Log Store backed by your artifact store:
-
-```shell
-# Just run your pipeline - logging works automatically
-python my_pipeline.py
-```
-
-#### Explicit registration
-
-If you want to customize the log store configuration or explicitly register it:
-
-```shell
-# Register an artifact log store with custom settings
-zenml log-store register my_artifact_logs \
-    --flavor=artifact \
-    --endpoint=<YOUR_ARTIFACT_STORE_PATH>
-
-# Add it to your stack
-zenml stack register my_stack \
-    -a my_artifact_store \
-    -o default \
-    -ls my_artifact_logs \
-    --set
-```
-
-### Configuration options
-
-The Artifact Log Store inherits all configuration options from the [OTEL Log Store](otel.md) since it's built on the same OpenTelemetry foundation:
-
-| Parameter                | Default            | Description                                         |
-|--------------------------|--------------------|----------------------------------------------------|
-| `service_name`           | `"zenml"`          | Name of the service for telemetry                  |
-| `service_version`        | ZenML version      | Version of the service for telemetry               |
-| `max_queue_size`         | `2048`             | Maximum queue size for batch log processor         |
-| `schedule_delay_millis`  | `5000`             | Delay between batch exports in milliseconds        |
-| `max_export_batch_size`  | `512`              | Maximum batch size for exports                     |
-| `export_timeout_millis`  | `30000`            | Timeout for each export batch in milliseconds      |
-| `endpoint`               | _required_         | Path to the artifact store (set automatically)     |
-
-{% hint style="info" %}
-When using the automatic artifact log store (no explicit configuration), these settings use sensible defaults. You only need to customize them if you have specific performance requirements.
-{% endhint %}
+These defaults are optimized for most use cases. You typically only need to adjust them for high-volume logging scenarios.
 
 ### Log format
 
@@ -126,40 +90,6 @@ For large messages (>5KB), logs are automatically chunked with additional metada
 }
 ```
 
-### Viewing logs
-
-#### Via the Dashboard
-
-Navigate to any pipeline run in the ZenML dashboard. Click on a step to view its logs in the built-in log viewer.
-
-#### Via the CLI
-
-```shell
-# List recent pipeline runs
-zenml pipeline runs list
-
-# View logs for a specific run (coming soon)
-zenml pipeline runs logs <RUN_ID>
-```
-
-#### Via Python
-
-```python
-from zenml.client import Client
-
-client = Client()
-run = client.get_pipeline_run("<RUN_ID>")
-
-# Access step logs
-for step_name, step in run.steps.items():
-    if step.logs:
-        print(f"\n=== Logs for {step_name} ===")
-        # Logs are fetched from the artifact store
-        log_entries = step.logs.fetch()
-        for entry in log_entries:
-            print(f"[{entry.level}] {entry.message}")
-```
-
 ### Storage location
 
 Logs are stored in the `logs` directory within your artifact store:
@@ -180,13 +110,8 @@ Logs are stored in the `logs` directory within your artifact store:
 
 2. **Monitor storage**: Logs can accumulate over time. Consider implementing log retention policies for your artifact store.
 
-3. **Large log volumes**: If you're generating very large log volumes, consider:
-   - Adjusting `max_queue_size` and `max_export_batch_size` for better throughput
-   - Using a dedicated log store like Datadog for better scalability
+3. **Large log volumes**: If you're generating very large log volumes, consider using a dedicated log store like Datadog for better scalability and querying.
 
 4. **Sensitive data**: Be mindful of what you log. Avoid logging sensitive information like credentials or PII.
 
 For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.artifact.artifact_log_store).
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
