@@ -88,6 +88,7 @@ def test_heartbeat_rest_functionality():
 
     assert hb_response.status == ExecutionStatus.RUNNING
     assert hb_response.latest_heartbeat is not None
+    assert hb_response.pipeline_run_status == ExecutionStatus.RUNNING
 
     assert (
         client.zen_store.get_run_step(step_run_id=step_run.id).latest_heartbeat

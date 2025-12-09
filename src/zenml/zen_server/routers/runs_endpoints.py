@@ -30,13 +30,8 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
+from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.logger import get_logger
-from zenml.logging.step_logging import (
-    MAX_ENTRIES_PER_REQUEST,
-    LogEntry,
-    fetch_log_records,
-    parse_log_entry,
-)
 from zenml.models import (
     Page,
     PipelineRunDAG,
@@ -48,6 +43,7 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.utils import run_utils
+from zenml.utils.logging_utils import LogEntry, fetch_logs
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -469,6 +465,10 @@ def run_logs(
         if (
             snapshot.template_id or snapshot.source_snapshot_id
         ) and server_config().workload_manager_enabled:
+            from zenml.log_stores.artifact.artifact_log_store import (
+                parse_log_entry,
+            )
+
             workload_logs = workload_manager().get_logs(
                 workload_id=snapshot.id
             )
@@ -485,12 +485,12 @@ def run_logs(
 
     # Handle logs from log collection
     if run.log_collection:
-        for log_entry in run.log_collection:
-            if log_entry.source == source:
-                return fetch_log_records(
+        for logs_response in run.log_collection:
+            if logs_response.source == source:
+                return fetch_logs(
+                    logs=logs_response,
                     zen_store=store,
-                    artifact_store_id=log_entry.artifact_store_id,
-                    logs_uri=log_entry.uri,
+                    limit=MAX_ENTRIES_PER_REQUEST,
                 )
 
     # If no logs found for the specified source, raise an error

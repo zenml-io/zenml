@@ -203,6 +203,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-l",
+    "--log_store",
+    "log_store",
+    help="Name of the log store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -255,6 +263,7 @@ def register_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     deployer: Optional[str] = None,
+    log_store: Optional[str] = None,
     set_stack: bool = False,
     provider: Optional[str] = None,
     connector: Optional[str] = None,
@@ -278,6 +287,7 @@ def register_stack(
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         deployer: Name of the deployer for this stack.
+        log_store: Name of the log store for this stack.
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
@@ -522,6 +532,7 @@ def register_stack(
             (StackComponentType.DATA_VALIDATOR, data_validator),
             (StackComponentType.FEATURE_STORE, feature_store),
             (StackComponentType.IMAGE_BUILDER, image_builder),
+            (StackComponentType.LOG_STORE, log_store),
             (StackComponentType.MODEL_DEPLOYER, model_deployer),
             (StackComponentType.MODEL_REGISTRY, model_registry),
             (StackComponentType.STEP_OPERATOR, step_operator),

@@ -66,3 +66,29 @@ class TestArtifactsManagement:
         assert {r.version for r in res.items} == {
             str(i) for i in range(1, runs_count * steps_count + 1)
         }, "not all artifacts are registered with proper unique versions"
+
+
+@pytest.mark.skipif(
+    platform.system().lower() == "windows",
+    reason="Windows not fully support OS processes.",
+)
+def test_parallel_runs_get_different_run_indexes(clean_client: Client):
+    processes: List[subprocess.Popen] = []
+    for _ in range(10):
+        processes.append(
+            subprocess.Popen(
+                [
+                    "python3",
+                    pathlib.Path(__file__).parent.resolve()
+                    / "run_basic_pipeline.py",
+                ]
+            )
+        )
+    for process in processes:
+        process.wait()
+
+    runs = clean_client.list_pipeline_runs()
+    assert len(runs) == 10
+
+    run_indexes = {r.index for r in runs}
+    assert run_indexes == set(range(1, 11))

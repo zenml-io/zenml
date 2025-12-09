@@ -147,6 +147,40 @@ If steps 2, 3, and 4 execute in parallel and step 2 fails:
 All three execution modes are currently only supported by the `local`, `local_docker`, and `kubernetes` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite). 
 {% endhint %}
 
+### Step Heartbeat
+
+Step heartbeat is a background mechanism that runs alongside step executions and performs two core functions:
+
+ - Periodically pings the ZenML server to refresh the step's heartbeat value.
+ - Retrieves the current pipeline and step status, and terminates the step if the pipeline has entered a stopping state.
+
+This enables ZenML to:
+
+ - Track the liveness of a step execution and assess its health based on incoming heartbeats.
+ - Gracefully interrupt running steps when a pipeline is being stopped.
+
+*Scope and current behavior*
+
+ - Heartbeats are enabled only for steps executed in isolated environments. This excludes:
+    - `Inline` steps in `dynamic` pipelines.
+    - Steps run via the `local` orchestrator.
+- A step that becomes unhealthy automatically triggers a graceful shutdown (currently supported for the `kubernetes` orchestrator).
+- When using `CONTINUE_ON_FAILURE` execution mode, heartbeat status is also used to decide whether execution tokens should be invalidated.
+
+*Configuration*
+
+You can configure how long a step may go without sending a heartbeat before it is considered unhealthy using the `heartbeat_healthy_threshold` step parameter.
+The default value currently applied is the system's maximum allowed value (30 minutes).
+
+```python
+from zenml import step
+
+@step(heartbeat_healthy_threshold=30)
+def my_step():
+    ...
+
+```
+
 ## Data & Output Management
 
 ## Type annotations

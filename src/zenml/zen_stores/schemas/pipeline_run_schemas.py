@@ -20,7 +20,7 @@ from uuid import UUID
 
 from pydantic import ConfigDict
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import object_session, selectinload
+from sqlalchemy.orm import Session, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, select
 
@@ -117,6 +117,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
+    index: int = Field(nullable=False)
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -343,12 +344,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def from_request(
-        cls, request: "PipelineRunRequest"
+        cls, request: "PipelineRunRequest", pipeline_id: UUID, index: int
     ) -> "PipelineRunSchema":
         """Convert a `PipelineRunRequest` to a `PipelineRunSchema`.
 
         Args:
             request: The request to convert.
+            pipeline_id: The ID of the pipeline.
+            index: The index of the pipeline run.
 
         Returns:
             The created `PipelineRunSchema`.
@@ -379,9 +382,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             status=request.status.value,
+            index=index,
             in_progress=not request.status.is_finished,
             status_reason=request.status_reason,
-            pipeline_id=request.pipeline,
+            pipeline_id=pipeline_id,
             snapshot_id=request.snapshot,
             trigger_execution_id=request.trigger_execution_id,
             triggered_by=triggered_by,
@@ -547,6 +551,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             created=self.created,
             updated=self.updated,
             in_progress=self.in_progress,
+            index=self.index,
         )
         metadata = None
         if include_metadata:
@@ -611,7 +616,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             client_logs = [
                 log_entry
                 for log_entry in self.logs
-                if log_entry.source == "client"
+                if log_entry.source in ["client", "deployment"]
             ]
 
             if self.snapshot:
@@ -771,11 +776,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         if (
             self.snapshot_id != request.snapshot
-            or self.pipeline_id != request.pipeline
             or self.project_id != request.project
         ):
             raise ValueError(
-                "Snapshot, project or pipeline ID of placeholder run "
+                "Snapshot or project ID of placeholder run "
                 "do not match the IDs of the run request."
             )
 
@@ -815,6 +819,31 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ExecutionStatus.PROVISIONING.value,
         }
 
+    @staticmethod
+    def _step_in_progress(step_id: UUID, session: Session) -> bool:
+        from zenml.steps.heartbeat import is_heartbeat_unhealthy
+        from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+
+        step_run = session.execute(
+            select(StepRunSchema).where(StepRunSchema.id == step_id)
+        ).scalar_one_or_none()
+
+        if not step_run:
+            return False
+
+        status: ExecutionStatus = ExecutionStatus(step_run.status)
+
+        return not (
+            status.is_finished
+            or is_heartbeat_unhealthy(
+                step_run_id=step_run.id,
+                status=status,
+                heartbeat_threshold=step_run.heartbeat_threshold,
+                start_time=step_run.start_time,
+                latest_heartbeat=step_run.latest_heartbeat,
+            )
+        )
+
     def _check_if_run_in_progress(self) -> bool:
         """Checks whether the run is in progress.
 
@@ -843,9 +872,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
                 if session := object_session(self):
                     step_run_statuses = session.execute(
-                        select(StepRunSchema.name, StepRunSchema.status).where(
-                            StepRunSchema.pipeline_run_id == self.id
-                        )
+                        select(
+                            StepRunSchema.id,
+                            StepRunSchema.name,
+                            StepRunSchema.status,
+                        ).where(StepRunSchema.pipeline_run_id == self.id)
                     ).all()
 
                     if self.snapshot and self.snapshot.pipeline_spec:
@@ -853,9 +884,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
                         dag = build_dag(step_dict)
 
+                        step_name_to_id = {
+                            name: id_ for id_, name, _ in step_run_statuses
+                        }
+
                         failed_steps = {
                             name
-                            for name, status in step_run_statuses
+                            for _, name, status in step_run_statuses
                             if ExecutionStatus(status).is_failed
                         }
 
@@ -869,17 +904,22 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
                         steps_statuses = {
                             name: ExecutionStatus(status)
-                            for name, status in step_run_statuses
+                            for _, name, status in step_run_statuses
                         }
 
                         for step_name, _ in step_dict.items():
                             if step_name in steps_to_skip:
+                                # failed steps downstream
                                 continue
 
                             if step_name not in steps_statuses:
+                                # steps that haven't started yet
                                 return True
 
-                            elif not steps_statuses[step_name].is_finished:
+                            if self._step_in_progress(
+                                step_name_to_id[step_name], session=session
+                            ):
+                                # running steps without unhealthy heartbeats
                                 return True
 
                         return False
