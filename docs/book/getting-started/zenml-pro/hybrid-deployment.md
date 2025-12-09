@@ -111,10 +111,10 @@ graph LR
 ```
 
 1. User authenticates with ZenML control plane (SSO)
-2. Control plane issues authentication token
-3. User accesses workspace with token
-4. Workspace validates token with control plane
-5. Control plane confirms authorization (RBAC)
+2. Control plane issues authentication credentials
+3. User accesses workspace with credentials
+4. Workspace validates credentials with control plane
+5. Control plane confirms authenticaiton and authorization (RBAC)
 6. Workspace executes operations on your infrastructure
 
 ### Data Residency
