@@ -108,6 +108,7 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
+        wait: bool = True,
     ):
         """Initializes the launcher.
 
@@ -122,6 +123,7 @@ class StepLauncher:
         self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
+        self._wait = wait
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -559,10 +561,12 @@ class StepLauncher:
                 stack=self._stack,
             )
         )
-        self._stack.orchestrator.run_isolated_step(
+        self._stack.orchestrator.submit_isolated_step(
             step_run_info=step_run_info,
             environment=environment,
         )
+        if self._wait:
+            self._stack.orchestrator.wait_for_isolated_step(step_run_info)
 
     def _run_step_in_current_thread(
         self,

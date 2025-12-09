@@ -39,6 +39,7 @@ def launch_step(
     step: "Step",
     orchestrator_run_id: str,
     retry: bool = False,
+    wait: bool = True,
 ) -> StepRunResponse:
     """Launch a step.
 
@@ -47,6 +48,7 @@ def launch_step(
         step: The step to run.
         orchestrator_run_id: The orchestrator run ID.
         retry: Whether to retry the step if it fails.
+        wait: Whether to wait for the step to complete.
 
     Raises:
         RunStoppedException: If the run was stopped.
@@ -61,6 +63,7 @@ def launch_step(
             snapshot=snapshot,
             step=step,
             orchestrator_run_id=orchestrator_run_id,
+            wait=wait,
         )
         return launcher.launch()
 

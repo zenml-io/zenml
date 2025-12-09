@@ -17,6 +17,8 @@ import contextvars
 import copy
 import inspect
 import itertools
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from typing import (
@@ -38,7 +40,7 @@ from zenml import ExternalArtifact
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.enums import ExecutionMode, StepRuntime
+from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
 from zenml.execution.pipeline.dynamic.outputs import (
     ArtifactFuture,
     MapResultsFuture,
@@ -127,6 +129,16 @@ class DynamicPipelineRunner:
         )
         self._futures: List[StepRunOutputsFuture] = []
 
+        # Maybe we need another thread that checks for work that is ready and
+        # submits it to the executor?
+        self._monitoring_thread = threading.Thread(
+            name="DynamicPipelineRunner-Monitoring-Loop",
+            target=self._monitoring_loop,
+            daemon=True,
+        )
+        self._running_steps: Dict[str, Any] = {}
+        self._shutdown_event = threading.Event()
+
     @property
     def pipeline(self) -> "DynamicPipeline":
         """The pipeline that the runner is executing.
@@ -155,6 +167,53 @@ class DynamicPipelineRunner:
 
         return self._pipeline
 
+    def _monitoring_loop(self) -> None:
+        """Monitoring loop.
+
+        This should run in a separate thread and monitors the running steps.
+        """
+        while not self._shutdown_event.is_set():
+            start_time = time.time()
+            for invocation_id, info in self._running_steps.items():
+                status = self._orchestrator.get_isolated_step_status(info)
+
+                if status.is_successful:
+                    self._running_steps.pop(invocation_id)
+
+                if status.is_failed:
+
+                    can_retry = False
+
+                    if can_retry:
+                        # TODO: handle retries, put in front of queue?
+                        ...
+                    else:
+                        raise RuntimeError(f"Step `{invocation_id}` failed.")
+
+                time.sleep(0.1)
+
+            duration = time.time() - start_time
+            time_to_sleep = max(0, 3 - duration)
+            self._shutdown_event.wait(timeout=time_to_sleep)
+
+    def _maybe_stop_in_progress_steps(self) -> None:
+        """Maybe stop all isolated in progress steps.
+
+        This method will only stop concurrent isolated steps if the execution
+        mode is FAIL_FAST.
+        """
+        if (
+            self._snapshot.pipeline_configuration.execution_mode
+            != ExecutionMode.FAIL_FAST
+        ):
+            return
+
+        for invocation_id, info in self._running_steps.items():
+            try:
+                self._orchestrator.stop_isolated_step(info)
+            except Exception:
+                logger.exception("Failed to stop step `%s`.", invocation_id)
+
     def run_pipeline(self) -> None:
         """Run the pipeline."""
         if self._run:
@@ -176,6 +235,8 @@ class DynamicPipelineRunner:
                 pipeline_run=run,
                 source="orchestrator",
             )
+
+        self._monitoring_thread.start()
 
         with logging_context:
             with InMemoryArtifactCache():
@@ -204,10 +265,16 @@ class DynamicPipelineRunner:
                         )
                         raise
                     finally:
+                        self._shutdown_event.set()
+                        # TODO: should we only call this on failure? In the
+                        # success case, there shouldn't be any in progress
+                        # steps?
+                        self._maybe_stop_in_progress_steps()
                         self._orchestrator.run_cleanup_hook(
                             snapshot=self._snapshot
                         )
                         self._executor.shutdown(wait=True, cancel_futures=True)
+                        self._monitoring_thread.join()
 
                     publish_successful_pipeline_run(run.id)
 
@@ -274,7 +341,10 @@ class DynamicPipelineRunner:
                     compiled_step,
                     self._snapshot.pipeline_configuration.docker_settings,
                 ),
+                wait=not concurrent,
             )
+            # This would only handle the first invocation and no retries for
+            # concurrent steps
             return _load_step_run_outputs(step_run.id)
 
         if concurrent:

@@ -492,6 +492,68 @@ class BaseOrchestrator(StackComponent, ABC):
             f"the {self.__class__.__name__} orchestrator."
         )
 
+    def submit_isolated_step(
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    ) -> None:
+        """Submit an isolated step.
+
+        Args:
+            step_run_info: The step run information.
+            environment: The environment variables to set in the execution
+                environment.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not implement this
+                method.
+        """
+        raise NotImplementedError(
+            "Submitting isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
+
+    def get_isolated_step_status(
+        self, step_run_info: "StepRunInfo"
+    ) -> ExecutionStatus:
+        """Get the status of an isolated step.
+
+        Args:
+            step_run_info: The step run information.
+        """
+        raise NotImplementedError(
+            "Getting the status of isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
+
+    def wait_for_isolated_step(
+        self, step_run_info: "StepRunInfo"
+    ) -> None:
+        """Wait for an isolated step to complete.
+
+        Args:
+            step_run_info: The step run information.
+        """
+        import time
+
+        while True:
+            status = self.get_isolated_step_status(step_run_info)
+            if status.is_finished:
+                return
+            
+            time.sleep(3)
+
+    def stop_isolated_step(
+        self, step_run_info: "StepRunInfo"
+    ) -> None:
+        """Stop an isolated step.
+
+        Args:
+            step_run_info: The step run information.
+        """
+        raise NotImplementedError(
+            "Stopping isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
+
     @staticmethod
     def requires_resources_in_orchestration_environment(
         step: "Step",
