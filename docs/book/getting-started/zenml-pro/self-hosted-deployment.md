@@ -101,8 +101,7 @@ In Self-hosted deployment, users authenticate via your internal identity provide
 
 ### 🛡️ Certified & Documented
 
-- **SOC 2 Type II certified**: Enterprise-grade security controls
-- **ISO 27001 certified**: International security management standards
+- **SOC 2 & ISO 27001 certified software**: Meets enterprise security and compliance benchmarks for your peace of mind
 - **Vulnerability Assessment Reports**: Available on request
 - **Software Bill of Materials (SBOM)**: Complete dependency inventory
 - **Architecture documentation**: Comprehensive deployment guides

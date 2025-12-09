@@ -101,8 +101,7 @@ This keeps all credentials within your infrastructure while still benefiting fro
 
 ZenML Pro SaaS uses outbound-only connections from your infrastructure to ZenML services:
 - No inbound connections required to your infrastructure
-- Compatible with firewall and VPN restrictions
-- Secure WebSocket connections for real-time updates
+- Limited compatibility with firewall and VPN restrictions
 
 ### Artifact Store Access
 
@@ -164,14 +163,7 @@ ZenML Pro SaaS includes:
 
 ## Migration Path
 
-Already running ZenML OSS? Migrating to SaaS is straightforward:
-
-1. **Export your data**: Use ZenML's migration tools
-2. **Set up SaaS workspace**: Configure your cloud connections
-3. **Import metadata**: Transfer existing pipeline history
-4. **Update pipelines**: Point to your new ZenML server
-
-Need help with migration? Our support team can assist.
+Already running ZenML OSS? Migrating to SaaS is possible with the assistance of the ZenML support team. Reach out to us at hello@zenml.io or on (slack)[https://zenml.io/slack] to learn more.
 
 ## Detailed Architecture Diagram
 

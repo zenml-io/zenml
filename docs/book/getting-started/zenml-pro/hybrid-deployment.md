@@ -48,7 +48,7 @@ In Hybrid deployment, users authenticate via ZenML-hosted control plane (SSO), a
 - **Secret isolation**: Credentials never leave your environment
 - **VPN/Firewall compatible**: Workspaces operate behind your security perimeter
 - **Audit trails**: Complete logging within your infrastructure
-- **SOC 2 & ISO 27001 certified**: Enterprise-grade security controls
+- **SOC 2 & ISO 27001 certified software**: Meets enterprise security and compliance benchmarks for your peace of mind
 
 ### 🎯 Centralized Governance
 
@@ -68,7 +68,7 @@ In Hybrid deployment, users authenticate via ZenML-hosted control plane (SSO), a
 
 ### 🚀 Production Ready
 
-- **Automatic updates**: Control plane maintained by ZenML
+- **Automatic updates**: Control plane and UI maintained by ZenML
 - **Professional support**: Direct access to ZenML experts
 
 ## Ideal Use Cases
@@ -121,7 +121,7 @@ graph LR
 
 | Data Type | Storage Location | Purpose |
 |-----------|-----------------|---------|
-| User credentials | Control Plane | Authentication only |
+| User metadata | Control Plane | Authentication only |
 | RBAC policies | Control Plane | Authorization decisions |
 | Pipeline metadata | Your Infrastructure | Run history, metrics, parameters |
 | Model metadata | Your Infrastructure | Model versions, stages, annotations |
