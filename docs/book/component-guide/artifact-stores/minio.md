@@ -6,6 +6,10 @@ description: Storing artifacts in MinIO object storage.
 
 [MinIO](https://min.io/) is a high-performance, S3-compatible object storage system. Since MinIO provides a fully S3-compatible API, you can use ZenML's S3 Artifact Store integration to connect to MinIO.
 
+{% hint style="warning" %}
+**Maintenance Mode**: The open-source MinIO project is currently in maintenance mode and is not accepting new changes. Only critical security fixes may be evaluated on a case-by-case basis. For development and testing purposes, MinIO remains a viable option, but for production use cases requiring active support, consider [MinIO AIStor](https://min.io/product/aistor) or alternative S3-compatible storage solutions like [Ceph RGW](https://ceph.io/en/discover/technology/#object).
+{% endhint %}
+
 ### When would you want to use it?
 
 You should use the MinIO Artifact Store when:
