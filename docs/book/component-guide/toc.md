@@ -92,6 +92,11 @@
 * [Model Registries](model-registries/README.md)
   * [MLflow Model Registry](model-registries/mlflow.md)
   * [Develop a Custom Model Registry](model-registries/custom.md)
+* [Log Stores](log-stores/README.md)
+  * [Artifact Log Store](log-stores/artifact.md)
+  * [OpenTelemetry Log Store](log-stores/otel.md)
+  * [Datadog Log Store](log-stores/datadog.md)
+  * [Develop a Custom Log Store](log-stores/custom.md)
 
 ## Service Connectors
 
