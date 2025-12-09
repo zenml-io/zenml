@@ -47,7 +47,7 @@ from zenml.deployers.server.models import (
 from zenml.deployers.utils import (
     deployment_snapshot_request_from_source_snapshot,
 )
-from zenml.enums import StackComponentType
+from zenml.execution.pipeline.utils import submit_pipeline
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.models import (
@@ -56,10 +56,6 @@ from zenml.models import (
     PipelineSnapshotResponse,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.orchestrators.local.local_orchestrator import (
-    LocalOrchestrator,
-    LocalOrchestratorConfig,
-)
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
@@ -71,37 +67,6 @@ if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
 
 logger = get_logger(__name__)
-
-
-class SharedLocalOrchestrator(LocalOrchestrator):
-    """Local orchestrator tweaked for deployments.
-
-    This is a slight modification of the LocalOrchestrator: it bypasses the
-    init/cleanup hook execution because they are run globally by the deployment
-    service
-    """
-
-    @classmethod
-    def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
-        """Runs the init hook.
-
-        Args:
-            snapshot: The snapshot to run the init hook for.
-        """
-        # Bypass the init hook execution because it is run globally by
-        # the deployment service
-        pass
-
-    @classmethod
-    def run_cleanup_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
-        """Runs the cleanup hook.
-
-        Args:
-            snapshot: The snapshot to run the cleanup hook for.
-        """
-        # Bypass the cleanup hook execution because it is run globally by
-        # the deployment service
-        pass
 
 
 class BasePipelineDeploymentService(ABC):
@@ -321,7 +286,6 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         self.service_start_time = time.time()
         self.last_execution_time: Optional[datetime] = None
         self.total_executions = 0
-        self.orchestrator_class = SharedLocalOrchestrator
 
         try:
             # Execute init hook
@@ -556,17 +520,6 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         """
         active_stack: Stack = self._client.active_stack
 
-        orchestrator = self.orchestrator_class(
-            name="deployment-local",
-            id=uuid4(),
-            config=LocalOrchestratorConfig(),
-            flavor="local",
-            type=StackComponentType.ORCHESTRATOR,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
-
         # Start deployment runtime context with parameters (still needed for
         # in-memory materializer)
         runtime.start(
@@ -585,7 +538,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         with logging_context:
             try:
                 # Use the new deployment snapshot with pre-configured settings
-                orchestrator.run(
+                submit_pipeline(
                     snapshot=deployment_snapshot,
                     stack=active_stack,
                     placeholder_run=placeholder_run,

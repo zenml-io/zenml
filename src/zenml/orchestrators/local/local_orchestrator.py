@@ -14,6 +14,7 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
+from contextvars import ContextVar
 from typing import TYPE_CHECKING, Dict, List, Optional, Type
 from uuid import uuid4
 
@@ -42,7 +43,9 @@ class LocalOrchestrator(BaseOrchestrator):
     does not support running on a schedule.
     """
 
-    _orchestrator_run_id: Optional[str] = None
+    _orchestrator_run_id: ContextVar[Optional[str]] = ContextVar(
+        "orchestrator_run_id", default=None
+    )
 
     @property
     def run_init_cleanup_at_step_level(self) -> bool:
@@ -96,7 +99,7 @@ class LocalOrchestrator(BaseOrchestrator):
                 step.
             RuntimeError: If the pipeline run fails.
         """
-        self._orchestrator_run_id = str(uuid4())
+        self._orchestrator_run_id.set(str(uuid4()))
         start_time = time.time()
 
         execution_mode = snapshot.pipeline_configuration.execution_mode
@@ -105,7 +108,8 @@ class LocalOrchestrator(BaseOrchestrator):
         step_exception: Optional[Exception] = None
         skipped_steps: List[str] = []
 
-        self.run_init_hook(snapshot=snapshot)
+        if placeholder_run and not placeholder_run.triggered_by_deployment:
+            self.run_init_hook(snapshot=snapshot)
 
         # Run each step
         for step_name, step in snapshot.step_configurations.items():
@@ -165,8 +169,8 @@ class LocalOrchestrator(BaseOrchestrator):
                 if execution_mode == ExecutionMode.FAIL_FAST:
                     step_exception = e
                     break
-
-        self.run_cleanup_hook(snapshot=snapshot)
+        if placeholder_run and not placeholder_run.triggered_by_deployment:
+            self.run_cleanup_hook(snapshot=snapshot)
 
         if execution_mode == ExecutionMode.FAIL_FAST and failed_steps:
             assert step_exception is not None
@@ -183,7 +187,7 @@ class LocalOrchestrator(BaseOrchestrator):
             "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
         )
-        self._orchestrator_run_id = None
+        self._orchestrator_run_id.set(None)
         return None
 
     def submit_dynamic_pipeline(
@@ -209,7 +213,7 @@ class LocalOrchestrator(BaseOrchestrator):
             DynamicPipelineRunner,
         )
 
-        self._orchestrator_run_id = str(uuid4())
+        self._orchestrator_run_id.set(str(uuid4()))
         start_time = time.time()
 
         runner = DynamicPipelineRunner(
@@ -223,7 +227,7 @@ class LocalOrchestrator(BaseOrchestrator):
             "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
         )
-        self._orchestrator_run_id = None
+        self._orchestrator_run_id.set(None)
         return None
 
     def get_orchestrator_run_id(self) -> str:
@@ -236,10 +240,11 @@ class LocalOrchestrator(BaseOrchestrator):
         Returns:
             The orchestrator run id.
         """
-        if not self._orchestrator_run_id:
+        run_id = self._orchestrator_run_id.get()
+        if not run_id:
             raise RuntimeError("No run id set.")
 
-        return self._orchestrator_run_id
+        return run_id
 
     @property
     def supported_execution_modes(self) -> List[ExecutionMode]:
