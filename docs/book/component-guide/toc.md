@@ -41,6 +41,11 @@
   * [Azure Container Registry](container-registries/azure.md)
   * [GitHub Container Registry](container-registries/github.md)
   * [Develop a custom container registry](container-registries/custom.md)
+* [Log Stores](log-stores/README.md)
+  * [Artifact Log Store](log-stores/artifact.md)
+  * [OpenTelemetry Log Store](log-stores/otel.md)
+  * [Datadog Log Store](log-stores/datadog.md)
+  * [Develop a Custom Log Store](log-stores/custom.md)
 * [Step Operators](step-operators/README.md)
   * [Amazon SageMaker](step-operators/sagemaker.md)
   * [AzureML](step-operators/azureml.md)
@@ -92,11 +97,6 @@
 * [Model Registries](model-registries/README.md)
   * [MLflow Model Registry](model-registries/mlflow.md)
   * [Develop a Custom Model Registry](model-registries/custom.md)
-* [Log Stores](log-stores/README.md)
-  * [Artifact Log Store](log-stores/artifact.md)
-  * [OpenTelemetry Log Store](log-stores/otel.md)
-  * [Datadog Log Store](log-stores/datadog.md)
-  * [Develop a Custom Log Store](log-stores/custom.md)
 
 ## Service Connectors
 
