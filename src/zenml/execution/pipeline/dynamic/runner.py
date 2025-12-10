@@ -202,7 +202,11 @@ class DynamicPipelineRunner:
             )
             if existing_runs.total == 1:
                 run = existing_runs.items[0]
-                logger.info("Continuing existing run `%s`.", str(run.id))
+                if run.status.is_finished:
+                    logger.info("Run `%s` is already finished.", str(run.id))
+                    return
+                else:
+                    logger.info("Continuing existing run `%s`.", str(run.id))
             else:
                 run = create_placeholder_run(
                     snapshot=self._snapshot,
