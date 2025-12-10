@@ -42,12 +42,11 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
+    OutputFormat,
     _component_display_name,
     is_sorted_or_filtered,
     list_options,
     print_model_url,
-    print_page_info,
-    print_stacks_table,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -204,6 +203,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-l",
+    "--log_store",
+    "log_store",
+    help="Name of the log store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -256,6 +263,7 @@ def register_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     deployer: Optional[str] = None,
+    log_store: Optional[str] = None,
     set_stack: bool = False,
     provider: Optional[str] = None,
     connector: Optional[str] = None,
@@ -279,6 +287,7 @@ def register_stack(
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         deployer: Name of the deployer for this stack.
+        log_store: Name of the log store for this stack.
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
@@ -523,6 +532,7 @@ def register_stack(
             (StackComponentType.DATA_VALIDATOR, data_validator),
             (StackComponentType.FEATURE_STORE, feature_store),
             (StackComponentType.IMAGE_BUILDER, image_builder),
+            (StackComponentType.LOG_STORE, log_store),
             (StackComponentType.MODEL_DEPLOYER, model_deployer),
             (StackComponentType.MODEL_REGISTRY, model_registry),
             (StackComponentType.STEP_OPERATOR, step_operator),
@@ -1041,28 +1051,58 @@ def rename_stack(
     print_model_url(get_stack_url(stack_))
 
 
-@stack.command("list")
-@list_options(StackFilter)
+@stack.command(
+    "list", help="List all stacks that fulfill the filter requirements."
+)
+@list_options(
+    StackFilter,
+    default_columns=[
+        "active",
+        "id",
+        "name",
+        "user",
+        "artifact_store",
+        "orchestrator",
+        "deployer",
+    ],
+)
 @click.pass_context
-def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
+def list_stacks(
+    ctx: click.Context,
+    /,
+    columns: str,
+    output_format: OutputFormat,
+    **kwargs: Any,
+) -> None:
     """List all stacks that fulfill the filter requirements.
 
     Args:
-        ctx: the Click context
-        kwargs: Keyword arguments to filter the stacks.
+        ctx: The Click context.
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
+        **kwargs: Keyword arguments to filter the stacks.
     """
     client = Client()
     with console.status("Listing stacks...\n"):
         stacks = client.list_stacks(**kwargs)
-        if not stacks:
-            cli_utils.declare("No stacks found for the given filters.")
-            return
-        print_stacks_table(
-            client=client,
-            stacks=stacks.items,
-            show_active=not is_sorted_or_filtered(ctx),
-        )
-        print_page_info(stacks)
+
+    show_active = not is_sorted_or_filtered(ctx)
+    if show_active and stacks.items:
+        active_stack_id = client.active_stack_model.id
+        if active_stack_id not in {s.id for s in stacks.items}:
+            stacks.items.insert(0, client.active_stack_model)
+        stacks.items.sort(key=lambda s: s.id != active_stack_id)
+    else:
+        active_stack_id = None
+
+    cli_utils.print_page(
+        stacks,
+        columns,
+        output_format,
+        empty_message="No stacks found for the given filters.",
+        row_generator=cli_utils.generate_stack_row,
+        active_id=active_stack_id,
+    )
 
 
 @stack.command(

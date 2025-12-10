@@ -55,6 +55,7 @@ from zenml.constants import (
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
+from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_CRON_JOB_METADATA_KEY,
@@ -66,16 +67,15 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
 )
-from zenml.integrations.kubernetes.orchestrators import kube_utils
-from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
-    KubernetesOrchestratorEntrypointConfiguration,
-)
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+from zenml.integrations.kubernetes.manifest_utils import (
     build_cron_job_manifest,
     build_job_manifest,
     build_pod_manifest,
     job_template_manifest_from_job,
     pod_template_manifest_from_pod,
+)
+from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
+    KubernetesOrchestratorEntrypointConfiguration,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
@@ -525,6 +525,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         annotations: Dict[str, str],
         settings: KubernetesOrchestratorSettings,
         pod_settings: Optional[KubernetesPodSettings] = None,
+        backoff_limit: Optional[int] = None,
     ) -> k8s_client.V1Job:
         """Prepares the job manifest for a Kubernetes job.
 
@@ -538,6 +539,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             annotations: The annotations to add to the job.
             settings: Component settings for the orchestrator.
             pod_settings: Optional settings for the pod.
+            backoff_limit: The backoff limit for the job.
 
         Returns:
             The job manifest.
@@ -602,7 +604,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return build_job_manifest(
             job_name=name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
-            backoff_limit=settings.orchestrator_job_backoff_limit,
+            backoff_limit=backoff_limit,
             ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
             active_deadline_seconds=settings.active_deadline_seconds,
             pod_failure_policy=pod_failure_policy,
@@ -740,6 +742,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             image = self.get_image(snapshot=snapshot, step_name=invocation_id)
 
         labels = {
+            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
             "pipeline": kube_utils.sanitize_label(pipeline_name),
         }
 
@@ -772,6 +775,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 annotations=annotations,
                 settings=settings,
                 pod_settings=orchestrator_pod_settings,
+                # In dynamic pipelines restarting the orchestrator pod is not
+                # supported yet. It will create new runs for each restart which
+                # we have to avoid.
+                backoff_limit=0
+                if snapshot.is_dynamic
+                else settings.orchestrator_job_backoff_limit,
             )
 
             if snapshot.schedule:
@@ -837,10 +846,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     )
                     return None
 
-    def launch_dynamic_step(
+    def run_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Launches a dynamic step on Kubernetes.
+        """Runs an isolated step on Kubernetes.
 
         Args:
             step_run_info: The step run information.
@@ -867,6 +876,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         labels = {
+            "project_id": kube_utils.sanitize_label(
+                str(step_run_info.snapshot.project_id)
+            ),
             "pipeline": kube_utils.sanitize_label(step_run_info.pipeline.name),
             "run_id": kube_utils.sanitize_label(str(step_run_info.run_id)),
             "run_name": kube_utils.sanitize_label(str(step_run_info.run_name)),
@@ -887,6 +899,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_name=step_run_info.pipeline_step_name,
         )
 
+        retry_config = step_run_info.config.retry
+        backoff_limit = (
+            retry_config.max_retries if retry_config else 0
+        ) + settings.backoff_limit_margin
+
         job_manifest = self._prepare_job_manifest(
             name=job_name,
             command=command,
@@ -897,6 +914,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             annotations=annotations,
             settings=settings,
             pod_settings=settings.pod_settings,
+            backoff_limit=backoff_limit,
         )
 
         kube_utils.create_job(
@@ -917,7 +935,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
             stream_logs=True,
         )
-        logger.info("Job completed.")
+        logger.info("Job `%s` completed.", job_name)
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings

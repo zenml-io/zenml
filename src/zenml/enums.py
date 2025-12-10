@@ -157,6 +157,7 @@ class StackComponentType(StrEnum):
     EXPERIMENT_TRACKER = "experiment_tracker"
     FEATURE_STORE = "feature_store"
     IMAGE_BUILDER = "image_builder"
+    LOG_STORE = "log_store"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"
@@ -507,6 +508,7 @@ class OnboardingStep(StrEnum):
     PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE = (
         "pipeline_run_with_remote_artifact_store"
     )
+    PIPELINE_DEPLOYED = "pipeline_deployed"
     OSS_ONBOARDING_COMPLETED = "oss_onboarding_completed"
     PRO_ONBOARDING_COMPLETED = "pro_onboarding_completed"
 
@@ -545,6 +547,14 @@ class PipelineRunTriggeredByType(StrEnum):
 
     STEP_RUN = "step_run"
     DEPLOYMENT = "deployment"
+
+
+class KubernetesServiceType(StrEnum):
+    """Kubernetes Service types for the Kubernetes deployer."""
+
+    LOAD_BALANCER = "LoadBalancer"
+    NODE_PORT = "NodePort"
+    CLUSTER_IP = "ClusterIP"
 
 
 class StepRuntime(StrEnum):

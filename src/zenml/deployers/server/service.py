@@ -63,6 +63,7 @@ from zenml.orchestrators.local.local_orchestrator import (
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
+from zenml.utils.logging_utils import setup_run_logging
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
@@ -313,6 +314,9 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             )
             self._client.zen_store.reinitialize_session()
 
+        # Instantiate the active stack here to avoid race conditions later
+        self._client.active_stack.validate()
+
         # Execution tracking
         self.service_start_time = time.time()
         self.last_execution_time: Optional[datetime] = None
@@ -382,7 +386,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             )
 
         except Exception as e:
-            logger.error(f"❌ Pipeline execution failed: {e}")
+            logger.exception("❌ Pipeline execution failed")
             return self._build_response(
                 placeholder_run=placeholder_run,
                 mapped_outputs=None,
@@ -516,16 +520,13 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         deployment_snapshot = self._client.zen_store.create_snapshot(
             deployment_snapshot_request
         )
-
         # Create a placeholder run using the new deployment snapshot
         placeholder_run = run_utils.create_placeholder_run(
             snapshot=deployment_snapshot,
-            logs=None,
             trigger_info=PipelineRunTriggerInfo(
                 deployment_id=self.deployment.id,
             ),
         )
-
         return placeholder_run, deployment_snapshot
 
     def _execute_with_orchestrator(
@@ -576,23 +577,29 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         )
 
         captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
-        try:
-            # Use the new deployment snapshot with pre-configured settings
-            orchestrator.run(
-                snapshot=deployment_snapshot,
-                stack=active_stack,
-                placeholder_run=placeholder_run,
-            )
+        logging_context = setup_run_logging(
+            pipeline_run=placeholder_run,
+            source="deployment",
+        )
 
-            # Capture in-memory outputs before stopping the runtime context
-            if runtime.is_active():
-                captured_outputs = runtime.get_outputs()
-        except Exception as e:
-            logger.exception(f"Failed to execute pipeline: {e}")
-            raise RuntimeError(f"Failed to execute pipeline: {e}")
-        finally:
-            # Always stop deployment runtime context
-            runtime.stop()
+        with logging_context:
+            try:
+                # Use the new deployment snapshot with pre-configured settings
+                orchestrator.run(
+                    snapshot=deployment_snapshot,
+                    stack=active_stack,
+                    placeholder_run=placeholder_run,
+                )
+
+                # Capture in-memory outputs before stopping the runtime context
+                if runtime.is_active():
+                    captured_outputs = runtime.get_outputs()
+            except Exception as e:
+                logger.exception(f"Failed to execute pipeline: {e}")
+                raise RuntimeError(f"Failed to execute pipeline: {e}")
+            finally:
+                # Always stop deployment runtime context
+                runtime.stop()
 
         return captured_outputs
 

@@ -462,21 +462,21 @@ class BaseOrchestrator(StackComponent, ABC):
         )
 
     @property
-    def can_launch_dynamic_steps(self) -> bool:
-        """Whether the orchestrator can launch dynamic steps.
+    def can_run_isolated_steps(self) -> bool:
+        """Whether the orchestrator can run isolated steps.
 
         Returns:
-            Whether the orchestrator can launch dynamic steps.
+            Whether the orchestrator can run isolated steps.
         """
         return (
-            getattr(self.launch_dynamic_step, "__func__", None)
-            is not BaseOrchestrator.launch_dynamic_step
+            getattr(self.run_isolated_step, "__func__", None)
+            is not BaseOrchestrator.run_isolated_step
         )
 
-    def launch_dynamic_step(
+    def run_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Launch a dynamic step.
+        """Run an isolated step.
 
         Args:
             step_run_info: The step run information.
@@ -488,7 +488,7 @@ class BaseOrchestrator(StackComponent, ABC):
                 method.
         """
         raise NotImplementedError(
-            "Launching dynamic steps is not implemented for "
+            "Running isolated steps is not implemented for "
             f"the {self.__class__.__name__} orchestrator."
         )
 
@@ -636,6 +636,10 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             ValueError: If the execution mode is not supported.
         """
+        if snapshot.is_dynamic:
+            # We can't validate execution modes for dynamic pipelines yet
+            return
+
         execution_mode = snapshot.pipeline_configuration.execution_mode
 
         if execution_mode not in self.supported_execution_modes:
@@ -678,20 +682,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 If False, forces immediate termination. Default is False.
 
         Raises:
-            NotImplementedError: If any orchestrator inheriting from the base
-                class does not implement this logic.
             IllegalOperationError: If the run has no orchestrator run id yet.
         """
-        # Check if the orchestrator supports cancellation
-        if (
-            getattr(self._stop_run, "__func__", None)
-            is BaseOrchestrator._stop_run
-        ):
-            raise NotImplementedError(
-                f"The '{self.__class__.__name__}' orchestrator does not "
-                "support stopping pipeline runs."
-            )
-
         if not run.orchestrator_run_id:
             raise IllegalOperationError(
                 "Cannot stop a pipeline run that has no orchestrator run id "
@@ -699,6 +691,7 @@ class BaseOrchestrator(StackComponent, ABC):
             )
 
         # Update pipeline status to STOPPING before calling concrete implementation
+        # Initiates graceful termination.
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
@@ -720,13 +713,24 @@ class BaseOrchestrator(StackComponent, ABC):
             run: A pipeline run response to stop (already updated to STOPPING status).
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is True.
-
-        Raises:
-            NotImplementedError: If any orchestrator inheriting from the base
-                class does not implement this logic.
         """
+        if graceful:
+            # This should work out of the box for HeartBeat step termination.
+            # Orchestrators should extend the functionality to cover other scenarios.
+            self._stop_run_gracefully(pipeline_run=run)
+        else:
+            self._stop_run_forcefully(pipeline_run=run)
+
+    def _stop_run_gracefully(
+        self, pipeline_run: "PipelineRunResponse"
+    ) -> None:
+        pass
+
+    def _stop_run_forcefully(
+        self, pipeline_run: "PipelineRunResponse"
+    ) -> None:
         raise NotImplementedError(
-            "The stop run functionality is not implemented for the "
+            "The forceful stop run functionality is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."
         )
 

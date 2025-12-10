@@ -33,13 +33,14 @@
 <p>
     <a href="https://zenml.io/projects">Projects</a> •
     <a href="https://zenml.io/roadmap">Roadmap</a> •
+    <a href="https://docs.zenml.io/changelog">Changelog</a> •
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a> •
     <a href="https://zenml.io/pro">Sign up for ZenML Pro</a> •
     <a href="https://www.zenml.io/blog">Blog</a> •
     <a href="https://docs.zenml.io/">Docs</a>
     <br />
     <br />
-    🎉 For the latest release, see the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
+    🎉 For the latest release, see the <a href="https://docs.zenml.io/changelog">changelog</a>.
 </p>
 </div>
 
@@ -151,6 +152,9 @@ The MCP (Model Context Protocol) integration transforms your ZenML metadata into
   </a>
   <a href="https://www.amazon.com/-/en/Andrew-McMahon/dp/1837631964">
     <img src="docs/book/.gitbook/assets/ml_engineering_with_python.jpg" alt="Machine Learning Engineering with Python Cover" width="200"/>
+  </a>
+  <a href="https://www.amazon.com/DeepSeek-Practice-fine-tuning-distillation-engineering/dp/1806020858">
+    <img src="docs/book/.gitbook/assets/deepseek-in-practice-thumb.jpg" alt="DeepSeek in Practice Cover" width="200"/>
   </a>
 </div>
 

@@ -53,7 +53,7 @@ class TagGroup(click.Group):
             commands: The commands of the group.
             kwargs: Additional keyword arguments.
         """
-        super(TagGroup, self).__init__(name, commands, **kwargs)
+        super(TagGroup, self).__init__(name=name, commands=commands, **kwargs)
         self.tag = tag or CliCategories.OTHER_COMMANDS
 
 

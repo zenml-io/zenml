@@ -22,6 +22,10 @@ ZenML makes it easy to log and retrieve this information through a simple interf
 
 The primary way to log metadata in ZenML is through the `log_metadata` function, which allows you to attach JSON-serializable key-value pairs to various entities.
 
+{% hint style="info" %}
+Metadata supports primitive types (`str`, `int`, `float`, `bool`), collections (`list`, `dict`, `set`, `tuple`), and special ZenML types (`Uri`, `Path`, `DType`, `StorageSize`). Sets and tuples are automatically converted to lists during storage.
+{% endhint %}
+
 ```python
 from zenml import log_metadata
 

@@ -28,9 +28,10 @@ from typing import (
 )
 
 import zenml
-from zenml.config import DockerSettings
 from zenml.config.docker_settings import (
     DockerBuildConfig,
+    DockerBuildOptions,
+    DockerSettings,
     PythonEnvironmentExportMethod,
     PythonPackageInstaller,
 )
@@ -238,8 +239,7 @@ class PipelineDockerImageBuilder:
             image_name_or_digest = image_builder.build(
                 image_name=user_image_name,
                 build_context=build_context,
-                docker_build_options=build_config.build_options
-                or docker_settings.build_options,
+                docker_build_options=build_config.build_options,
                 container_registry=container_registry if push else None,
             )
 
@@ -318,9 +318,12 @@ class PipelineDockerImageBuilder:
                 # The default parent image is static and doesn't require a pull
                 # each time
                 pull_parent_image = False
-            elif docker_settings.dockerfile and not container_registry:
-                # We built a custom parent image and there was no container
-                # registry in the stack to push to, this is a local image
+            elif docker_settings.dockerfile and (
+                not container_registry or image_builder.is_building_locally
+            ):
+                # We built a custom parent image and there was either no
+                # container registry in the stack to push to or the image was
+                # built locally and not pushed, so this is a local image
                 pull_parent_image = False
             elif not image_builder.is_building_locally:
                 # Remote image builders always need to pull the image
@@ -333,11 +336,11 @@ class PipelineDockerImageBuilder:
                     parent_image
                 )
 
-            build_options = {
-                "pull": pull_parent_image,
-                "rm": False,
-                **build_config.build_options,
-            }
+            build_options = build_config.build_options or DockerBuildOptions()
+            build_options.pull = pull_parent_image
+            if build_options.rm is None:
+                build_options.rm = False
+
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,

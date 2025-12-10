@@ -2,9 +2,12 @@
 requires = ["uv_build >= 0.8.17, <0.9.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = ["zenml", "zenml_cli"]
+
 [project]
 name = "zenml"
-version = "0.91.1"
+version = "0.92.0"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -35,6 +38,7 @@ dependencies = [
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "jsonref",
+    "opentelemetry-sdk==1.38.0",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.11.9",
@@ -51,7 +55,7 @@ Repository = "https://github.com/zenml-io/zenml"
 Issues = "https://github.com/zenml-io/zenml/issues"
 
 [project.scripts]
-zenml = "zenml.cli.cli:cli"
+zenml = "zenml_cli:cli"
 
 [project.optional-dependencies]
 local = [
@@ -106,11 +110,12 @@ connectors-azure = [
     "requests>=2.27.11,<3.0.0",
 ]
 sagemaker = [
-    "sagemaker>=2.237.3",
+    "sagemaker>=2.237.3,<3.0.0",
 ]
 vertex = [
     "google-cloud-aiplatform>=1.34.0",
     "kfp>=2.6.0",
+    "urllib3<2.6.0",
     "google-cloud-pipeline-components>=2.19.0",
 ]
 azureml = [

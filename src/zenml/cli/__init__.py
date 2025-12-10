@@ -225,6 +225,45 @@ zenml orchestrator list --created "gt:2021-01-01 00:00:00"
 This syntax can also be combined to create more complex filters using the `or`
 and `and` keywords.
 
+Output formats
+--------------
+
+All ``list`` commands support multiple output formats for scripting,
+CI/CD integration, and data analysis.
+
+Use the ``--output`` (or ``-o``) option to specify the format:
+
+```bash
+# Get stack data as JSON for processing with jq
+zenml stack list --output=json | jq '.items[] | select(.name=="production")'
+
+# Export pipeline runs to CSV for analysis
+zenml pipeline runs list --output=csv > pipeline_runs.csv
+
+# Get deployment info as YAML for configuration management
+zenml deployment list --output=yaml
+
+# Filter columns to see only what you need
+zenml stack list --columns=id,name,orchestrator
+
+# Combine filtering with custom output formats
+zenml pipeline list --columns=id,name --output=json
+```
+
+Available formats:
+
+- **json** - Structured data with pagination info, ideal for programmatic use
+- **yaml** - Human-readable structured format, great for configuration
+- **csv** - Comma-separated values for spreadsheets and data analysis
+- **tsv** - Tab-separated values for simpler parsing
+- **table** (default) - Formatted tables with colors and alignment
+
+You can also control the default output format and table width using
+environment variables:
+
+- ``ZENML_DEFAULT_OUTPUT`` - Set the default output format (e.g., ``json``)
+- ``ZENML_CLI_COLUMN_WIDTH`` - Override terminal width for consistent formatting
+
 Artifact Stores
 ---------------
 
@@ -1751,7 +1790,19 @@ zenml artifact list
 Each artifact has one or several versions. To list artifact versions, use:
 
 ```bash
-zenml artifact versions list
+zenml artifact version list
+```
+
+You can filter artifact versions by artifact name using the `--artifact` option:
+
+```bash
+zenml artifact version list --artifact <ARTIFACT_NAME>
+```
+
+To view detailed information about a specific artifact version, use:
+
+```bash
+zenml artifact version describe <NAME_OR_ID> [-v <VERSION>]
 ```
 
 If you would like to rename an artifact or adjust the tags of an artifact or

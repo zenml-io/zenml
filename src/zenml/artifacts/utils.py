@@ -208,6 +208,7 @@ def _store_artifact_data_and_prepare_request(
         visualizations=visualizations,
         has_custom_name=has_custom_name,
         save_type=save_type,
+        item_count=materializer.get_item_count(data),
         metadata=validate_metadata(combined_metadata)
         if combined_metadata
         else None,
@@ -538,7 +539,7 @@ def load_artifact_visualization(
             f"Artifact '{artifact.id}' cannot be visualized because the "
             "underlying artifact store was deleted."
         )
-    artifact_store = _load_artifact_store(
+    artifact_store = load_artifact_store(
         artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
     )
     try:
@@ -820,7 +821,7 @@ def _load_artifact_from_uri(
     return artifact
 
 
-def _load_artifact_store(
+def load_artifact_store(
     artifact_store_id: Union[str, "UUID"],
     zen_store: Optional["BaseZenStore"] = None,
 ) -> "BaseArtifactStore":

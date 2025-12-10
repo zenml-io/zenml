@@ -38,7 +38,7 @@ from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
 )
 from zenml.integrations.aws.step_operators.sagemaker_step_operator_entrypoint_config import (
     SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
-    SagemakerEntrypointConfiguration,
+    SagemakerStepOperatorEntrypointConfiguration,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -94,7 +94,7 @@ class SagemakerStepOperator(BaseStepOperator):
         Returns:
             The entrypoint configuration class for this step operator.
         """
-        return SagemakerEntrypointConfiguration
+        return SagemakerStepOperatorEntrypointConfiguration
 
     @property
     def validator(self) -> Optional[StackValidator]:

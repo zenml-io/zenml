@@ -51,12 +51,14 @@ def _compile_step(step: BaseStep) -> Step:
         pipeline=pipeline,
     )
 
+    pipeline._configuration = PipelineConfiguration(name="")
+
     compiler = Compiler()
     return compiler._compile_step_invocation(
         invocation=invocation,
         stack=Client().active_stack,
         step_config=None,
-        pipeline_configuration=PipelineConfiguration(name=""),
+        pipeline=pipeline,
     )
 
 
@@ -69,12 +71,12 @@ def _cache_test_step() -> Tuple[
 
 @pytest.fixture
 def generate_cache_key_kwargs(
-    local_artifact_store, sample_artifact_version_model
+    local_artifact_store, sample_step_run_input_response
 ):
     """Returns a dictionary of inputs for the cache key generation."""
     return {
         "step": _compile_step(_cache_test_step),
-        "input_artifacts": {"input_1": sample_artifact_version_model},
+        "input_artifacts": {"input_1": [sample_step_run_input_response]},
         "artifact_store": local_artifact_store,
         "project_id": uuid4(),
     }
@@ -147,7 +149,7 @@ def test_generate_cache_key_considers_input_artifact_ids(
 ):
     """Check that the cache key changes if the input artifacts change."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    generate_cache_key_kwargs["input_artifacts"]["input_1"].id = uuid4()
+    generate_cache_key_kwargs["input_artifacts"]["input_1"][0].id = uuid4()
     key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     assert key_1 != key_2
 
@@ -156,12 +158,12 @@ def test_generate_cache_key_considers_input_artifact_content_hash(
     generate_cache_key_kwargs,
 ):
     """Check that the cache key changes if the input artifacts change."""
-    generate_cache_key_kwargs["input_artifacts"][
-        "input_1"
+    generate_cache_key_kwargs["input_artifacts"]["input_1"][
+        0
     ].body.content_hash = "old_content_hash"
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    generate_cache_key_kwargs["input_artifacts"][
-        "input_1"
+    generate_cache_key_kwargs["input_artifacts"]["input_1"][
+        0
     ].body.content_hash = "new_content_hash"
     key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     assert key_1 != key_2
@@ -318,7 +320,6 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_pipeline_snapshot_request_model.stack = clean_client.active_stack.id
     sample_pipeline_snapshot_request_model.pipeline = pipeline.id
     sample_pipeline_run_request_model.project = clean_client.active_project.id
-    sample_pipeline_run_request_model.pipeline = pipeline.id
 
     sample_step = Step.model_validate(
         {

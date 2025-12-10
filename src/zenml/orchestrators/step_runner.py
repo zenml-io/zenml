@@ -33,15 +33,12 @@ from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
-    ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
     ENV_ZENML_STEP_OPERATOR,
-    handle_bool_env_var,
 )
-from zenml.enums import ArtifactSaveType
+from zenml.enums import ArtifactSaveType, ExecutionStatus
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
-from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
 from zenml.models.v2.core.step_run import (
@@ -55,6 +52,10 @@ from zenml.orchestrators.publish_utils import (
 )
 from zenml.orchestrators.utils import (
     is_setting_enabled,
+)
+from zenml.steps.heartbeat import (
+    StepHeartBeatTerminationException,
+    StepHeartbeatWorker,
 )
 from zenml.steps.step_context import (
     StepContext,
@@ -73,7 +74,11 @@ from zenml.utils import (
     string_utils,
     tag_utils,
 )
-from zenml.utils.typing_utils import get_origin, is_union
+from zenml.utils.logging_utils import (
+    is_step_logging_enabled,
+    setup_step_logging,
+)
+from zenml.utils.typing_utils import get_args, get_origin, is_union
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
@@ -120,7 +125,7 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: "StepRunResponse",
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List["StepRunInputResponse"]],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
@@ -135,32 +140,17 @@ class StepRunner:
 
         Raises:
             BaseException: A general exception if the step fails.
+            StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
         """
         from zenml.deployers.server import runtime
 
-        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
-            step_logging_enabled = False
-        else:
-            enabled_on_step = step_run.config.enable_step_logs
-            enabled_on_pipeline = pipeline_run.config.enable_step_logs
-
-            step_logging_enabled = is_setting_enabled(
-                is_enabled_on_step=enabled_on_step,
-                is_enabled_on_pipeline=enabled_on_pipeline,
-            )
-
         logs_context = nullcontext()
-        if step_logging_enabled and not redirected.get():
-            if step_run.logs:
-                logs_context = PipelineLogsStorageContext(  # type: ignore[assignment]
-                    logs_uri=step_run.logs.uri,
-                    artifact_store=self._stack.artifact_store,
-                )
-            else:
-                logger.debug(
-                    "There is no LogsResponseModel prepared for the step. The"
-                    "step logging storage is disabled."
-                )
+        if is_step_logging_enabled(step_run.config, pipeline_run.config):
+            logs_context = setup_step_logging(
+                step_run=step_run,
+                pipeline_run=pipeline_run,
+                source="step",
+            )
 
         with logs_context:
             step_instance = self._load_step()
@@ -215,7 +205,22 @@ class StepRunner:
                 step_environment.update(secret_environment)
 
                 step_failed = False
+
+                # To have a cross-platform compatible handling of main thread termination
+                # we use Python's interrupt_main instead of termination signals (not Windows supported).
+                # Since interrupt_main raises KeyboardInterrupt we want in this context to capture it
+                # and handle it as a custom exception.
+
+                heartbeat_worker = StepHeartbeatWorker(step_id=step_run.id)
+
                 try:
+                    if self._step.spec.enable_heartbeat:
+                        logger.info(
+                            "Initiating heartbeat for step: %s (%s)",
+                            step_run.name,
+                            step_run.id,
+                        )
+                        heartbeat_worker.start()
                     if (
                         # TODO: do we need to disable this for dynamic pipelines?
                         pipeline_run.snapshot
@@ -231,41 +236,58 @@ class StepRunner:
                         )
                 except BaseException as step_exception:  # noqa: E722
                     step_failed = True
-
-                    exception_info = (
-                        exception_utils.collect_exception_information(
-                            step_exception, step_instance
-                        )
-                    )
-
-                    if ENV_ZENML_STEP_OPERATOR in os.environ:
-                        # We're running in a step operator environment, so we can't
-                        # depend on the step launcher to publish the exception info
+                    if (
+                        isinstance(step_exception, KeyboardInterrupt)
+                        and heartbeat_worker.is_terminated
+                    ):
                         Client().zen_store.update_run_step(
                             step_run_id=step_run_info.step_run_id,
                             step_run_update=StepRunUpdate(
-                                exception_info=exception_info,
+                                status=ExecutionStatus.STOPPING,
                             ),
                         )
-                    else:
-                        # This will be published by the step launcher
-                        step_exception_info.set(exception_info)
 
-                    if not step_run.is_retriable:
-                        if (
-                            failure_hook_source
-                            := self.configuration.failure_hook_source
-                        ):
-                            logger.info("Detected failure hook. Running...")
-                            with env_utils.temporary_environment(
-                                step_environment
+                        raise StepHeartBeatTerminationException(
+                            "Remotely stopped step - terminating execution."
+                        )
+                    else:
+                        exception_info = (
+                            exception_utils.collect_exception_information(
+                                step_exception, step_instance
+                            )
+                        )
+
+                        if ENV_ZENML_STEP_OPERATOR in os.environ:
+                            # We're running in a step operator environment, so we can't
+                            # depend on the step launcher to publish the exception info
+                            Client().zen_store.update_run_step(
+                                step_run_id=step_run_info.step_run_id,
+                                step_run_update=StepRunUpdate(
+                                    exception_info=exception_info,
+                                ),
+                            )
+                        else:
+                            # This will be published by the step launcher
+                            step_exception_info.set(exception_info)
+
+                        if not step_run.is_retriable:
+                            if (
+                                failure_hook_source
+                                := self.configuration.failure_hook_source
                             ):
-                                load_and_run_hook(
-                                    failure_hook_source,
-                                    step_exception=step_exception,
+                                logger.info(
+                                    "Detected failure hook. Running..."
                                 )
-                    raise
+                                with env_utils.temporary_environment(
+                                    step_environment
+                                ):
+                                    load_and_run_hook(
+                                        failure_hook_source,
+                                        step_exception=step_exception,
+                                    )
+                    raise step_exception
                 finally:
+                    heartbeat_worker.stop()
                     step_run_metadata = self._stack.get_step_run_metadata(
                         info=step_run_info,
                     )
@@ -418,7 +440,7 @@ class StepRunner:
         self,
         args: List[str],
         annotations: Dict[str, Any],
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List["StepRunInputResponse"]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -427,11 +449,12 @@ class StepRunner:
             annotations: The annotations of the step entrypoint function.
             input_artifacts: The input artifact versions of the step.
 
-        Returns:
-            The parsed inputs for the step entrypoint function.
-
         Raises:
             RuntimeError: If a function argument value is missing.
+            StepInterfaceError: If the function argument annotation is invalid.
+
+        Returns:
+            The parsed inputs for the step entrypoint function.
         """
         function_params: Dict[str, Any] = {}
 
@@ -439,16 +462,46 @@ class StepRunner:
             args.pop(0)
 
         for arg in args:
-            arg_type = annotations.get(arg, None)
-            arg_type = resolve_type_annotation(arg_type)
+            annotation = annotations.get(arg, None)
+            arg_type = resolve_type_annotation(annotation)
 
             if arg in input_artifacts:
-                function_params[arg] = self._load_input_artifact(
-                    input_artifacts[arg], arg_type
-                )
+                artifact_list = input_artifacts[arg]
+
+                if len(artifact_list) == 1:
+                    function_params[arg] = self._load_input_artifact(
+                        artifact_list[0], arg_type
+                    )
+                else:
+                    item_arg_type = arg_type
+                    collection_type = list
+
+                    if arg_type == UnmaterializedArtifact:
+                        raise StepInterfaceError(
+                            "Passing multiple unmaterialized artifacts to a "
+                            "step is not allowed."
+                        )
+                    elif arg_type in (Any, None):
+                        pass
+                    elif issubclass(arg_type, (list, tuple)):
+                        assert annotation
+                        item_arg_type = get_args(annotation)[0]
+                        item_arg_type = resolve_type_annotation(item_arg_type)
+                        collection_type = arg_type
+                    else:
+                        raise StepInterfaceError(
+                            "Passing multiple artifacts to a step is only "
+                            "allowed if the argument type is a list or tuple."
+                        )
+
+                    function_params[arg] = collection_type(
+                        self._load_input_artifact(artifact, item_arg_type)
+                        for artifact in artifact_list
+                    )
             elif arg in self.configuration.parameters:
                 function_params[arg] = self.configuration.parameters[arg]
             else:
+                breakpoint()
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
                 )
@@ -456,7 +509,7 @@ class StepRunner:
         return function_params
 
     def _load_input_artifact(
-        self, artifact: "ArtifactVersionResponse", data_type: Type[Any]
+        self, artifact: "StepRunInputResponse", data_type: Type[Any]
     ) -> Any:
         """Loads an input artifact.
 
@@ -492,8 +545,18 @@ class StepRunner:
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
-            materializer.validate_load_type_compatibility(data_type)
-            return materializer.load(data_type=data_type)
+
+            if artifact.chunk_index is not None:
+                # We need to skip the type compatibility check here because
+                # the annotation on the step input might not be something that
+                # the materializer can load.
+                return materializer.load_item(
+                    data_type=data_type,
+                    index=artifact.chunk_index,
+                )
+            else:
+                materializer.validate_load_type_compatibility(data_type)
+                return materializer.load(data_type=data_type)
 
         if artifact.artifact_store_id == self._stack.artifact_store.id:
             # Register the artifact store of the active stack here to avoid

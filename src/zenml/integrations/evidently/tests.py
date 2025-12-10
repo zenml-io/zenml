@@ -22,15 +22,15 @@ from typing import (
     Union,
 )
 
-from evidently import test_preset, tests  # type: ignore[import-untyped]
-from evidently.test_preset.test_preset import (  # type: ignore[import-untyped]
+from evidently.legacy import test_preset, tests  # type: ignore[import-untyped]
+from evidently.legacy.test_preset.test_preset import (  # type: ignore[import-untyped]
     TestPreset,
 )
-from evidently.tests.base_test import (  # type: ignore[import-untyped]
+from evidently.legacy.tests.base_test import (  # type: ignore[import-untyped]
     Test,
     generate_column_tests,
 )
-from evidently.utils.generators import (  # type: ignore[import-untyped]
+from evidently.legacy.utils.generators import (  # type: ignore[import-untyped]
     BaseGenerator,
 )
 from pydantic import BaseModel, ConfigDict, Field
@@ -166,7 +166,7 @@ class EvidentlyTestConfig(BaseModel):
         # Configure an Evidently Test generator using a full Test class
         # path
         config = EvidentlyTest.test_generator(
-            "evidently.tests.TestColumnShareOfMissingValues", columns=["age", "name"]
+            "evidently.legacy.tests.TestColumnShareOfMissingValues", columns=["age", "name"]
         )
         ```
 
@@ -174,7 +174,7 @@ class EvidentlyTestConfig(BaseModel):
         from zenml.integrations.evidently.data_validators import EvidentlyTest
 
         # Configure an Evidently Test generator using a Test class
-        from evidently.tests import TestColumnQuantile
+        from evidently.legacy.tests import TestColumnQuantile
         config = EvidentlyTest.test_generator(
             TestColumnQuantile, columns="all", quantile=0.5
         )
@@ -246,7 +246,7 @@ class EvidentlyTestConfig(BaseModel):
 
         # Configure an Evidently TestPreset using its full class path
         config = EvidentlyTest.test(
-            "evidently.test_preset.DataDriftPreset"
+            "evidently.legacy.test_preset.DataDriftPreset"
         )
         ```
 
@@ -255,7 +255,7 @@ class EvidentlyTestConfig(BaseModel):
 
         # Configure an Evidently Test using its class and pass additional
         # parameters
-        from evidently.tests import ColumnSummaryTest
+        from evidently.legacy.tests import ColumnSummaryTest
         config = EvidentlyTest.test(
             ColumnSummaryTest, column_name="age"
         )

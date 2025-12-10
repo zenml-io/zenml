@@ -28,6 +28,7 @@ from zenml.stack import StackValidator
 from zenml.utils.archivable import ArchiveType
 
 if TYPE_CHECKING:
+    from zenml.config.docker_settings import DockerBuildOptions
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
     from zenml.stack import Stack
@@ -106,7 +107,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Dict[str, Any],
+        docker_build_options: Optional["DockerBuildOptions"] = None,
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and pushes a Docker image.
@@ -156,7 +157,10 @@ class KanikoImageBuilder(BaseImageBuilder):
             kaniko_context = "tar://stdin"
 
         spec_overrides = self._generate_spec_overrides(
-            pod_name=pod_name, image_name=image_name, context=kaniko_context
+            pod_name=pod_name,
+            image_name=image_name,
+            context=kaniko_context,
+            build_options=docker_build_options,
         )
 
         self._run_kaniko_build(
@@ -174,7 +178,11 @@ class KanikoImageBuilder(BaseImageBuilder):
         return image_name_with_sha
 
     def _generate_spec_overrides(
-        self, pod_name: str, image_name: str, context: str
+        self,
+        pod_name: str,
+        image_name: str,
+        context: str,
+        build_options: Optional["DockerBuildOptions"] = None,
     ) -> Dict[str, Any]:
         """Generates Kubernetes spec overrides for the Kaniko build Pod.
 
@@ -187,6 +195,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             pod_name: Name of the pod.
             image_name: Name of the image that should be built.
             context: The Kaniko executor context argument.
+            build_options: Docker build options.
 
         Returns:
             Dictionary of spec override values.
@@ -199,6 +208,15 @@ class KanikoImageBuilder(BaseImageBuilder):
             # message. We use this later to read the image name using kubectl.
             "--image-name-with-digest-file=/dev/termination-log",
         ] + self.config.executor_args
+
+        if build_options:
+            if build_options.labels:
+                for key, value in build_options.labels.items():
+                    args.extend(["--label", f"{key}={value}"])
+
+            if build_options.build_args:
+                for key, value in build_options.build_args.items():
+                    args.extend(["--build-arg", f"{key}={value}"])
 
         optional_spec_args: Dict[str, Any] = {}
         if self.config.service_account_name:

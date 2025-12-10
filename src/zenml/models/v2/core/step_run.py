@@ -67,6 +67,18 @@ class StepRunInputResponse(ArtifactVersionResponse):
     """Response model for step run inputs."""
 
     input_type: StepRunInputArtifactType
+    index: Optional[int] = Field(
+        title="The index of the input artifact in the step run.",
+        default=None,
+    )
+    chunk_index: Optional[int] = Field(
+        title="The index of the chunk in the input artifact.",
+        default=None,
+    )
+    chunk_size: Optional[int] = Field(
+        title="The size of the chunk in the input artifact.",
+        default=None,
+    )
 
     def get_hydrated_version(self) -> "StepRunInputResponse":
         """Get the hydrated version of this step run input.
@@ -192,6 +204,9 @@ class StepRunUpdate(BaseUpdate):
         "results anymore.",
         default=None,
     )
+    add_logs: Optional[List["LogsRequest"]] = Field(
+        default=None, title="New logs to add to the step run."
+    )
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -275,10 +290,6 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     )
 
     # References
-    logs: Optional["LogsResponse"] = Field(
-        title="Logs associated with this step run.",
-        default=None,
-    )
     snapshot_id: UUID = Field(
         title="The snapshot associated with the step run."
     )
@@ -301,6 +312,15 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
 
 class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
+
+    logs: Optional["LogsResponse"] = Field(
+        title="Logs associated with this step run.",
+        default=None,
+    )
+    log_collection: Optional[List["LogsResponse"]] = Field(
+        title="Logs associated with this step run.",
+        default=None,
+    )
 
     model_version: Optional[ModelVersionResponse] = None
     inputs: Dict[str, List[StepRunInputResponse]] = Field(
@@ -388,15 +408,11 @@ class StepRunResponse(
         return next(iter(self.outputs.values()))[0]
 
     @property
-    def regular_inputs(self) -> Dict[str, StepRunInputResponse]:
+    def regular_inputs(self) -> Dict[str, List[StepRunInputResponse]]:
         """Returns the regular step inputs of the step run.
 
         Regular step inputs are the inputs that are defined in the step function
         signature, and are not manually loaded during the step execution.
-
-        Raises:
-            ValueError: If there were multiple regular input artifacts for the
-                same input name.
 
         Returns:
             The regular step inputs.
@@ -409,13 +425,8 @@ class StepRunResponse(
                 for input_artifact in input_artifacts
                 if input_artifact.input_type != StepRunInputArtifactType.MANUAL
             ]
-            if len(filtered) > 1:
-                raise ValueError(
-                    f"Expected 1 regular input artifact for {input_name}, got "
-                    f"{len(filtered)}."
-                )
             if filtered:
-                result[input_name] = filtered[0]
+                result[input_name] = filtered
 
         return result
 
@@ -607,13 +618,15 @@ class StepRunResponse(
         return self.get_body().latest_heartbeat
 
     @property
-    def logs(self) -> Optional["LogsResponse"]:
-        """The `logs` property.
+    def heartbeat_threshold(self) -> Optional[int]:
+        """The `heartbeat_threshold` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().logs
+        if self.get_metadata().spec.enable_heartbeat:
+            return self.get_metadata().config.heartbeat_healthy_threshold
+        return None
 
     @property
     def snapshot_id(self) -> UUID:
@@ -659,6 +672,24 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_metadata().run_metadata
+
+    @property
+    def logs(self) -> Optional["LogsResponse"]:
+        """The `logs` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().logs
+
+    @property
+    def log_collection(self) -> Optional[List["LogsResponse"]]:
+        """The `log_collection` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().log_collection
 
     @property
     def model_version(self) -> Optional[ModelVersionResponse]:
@@ -823,3 +854,4 @@ class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     id: UUID
     status: ExecutionStatus
     latest_heartbeat: datetime
+    pipeline_run_status: ExecutionStatus | None = None

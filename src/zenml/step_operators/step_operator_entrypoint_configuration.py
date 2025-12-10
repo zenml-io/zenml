@@ -126,9 +126,9 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         )
 
         stack = Client().active_stack
-        input_artifacts = input_utils.resolve_step_inputs(
-            step=step, pipeline_run=pipeline_run
-        )
+        # We need to call this here to include parameters from lazy
+        # loaders in the step configuration.
+        input_utils.resolve_step_inputs(step=step, pipeline_run=pipeline_run)
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
             step_run=step_run, stack=stack, step=step
         )
@@ -137,7 +137,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         step_runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,
-            input_artifacts=input_artifacts,
+            input_artifacts=step_run.inputs,
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )

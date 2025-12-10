@@ -21,6 +21,7 @@ from kubernetes import client as k8s_client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
+from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
     STEP_OPERATOR_ANNOTATION_KEY,
@@ -29,10 +30,7 @@ from zenml.integrations.kubernetes.flavors import (
     KubernetesStepOperatorConfig,
     KubernetesStepOperatorSettings,
 )
-from zenml.integrations.kubernetes.orchestrators import (
-    kube_utils,
-)
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+from zenml.integrations.kubernetes.manifest_utils import (
     build_job_manifest,
     build_pod_manifest,
     pod_template_manifest_from_pod,
@@ -216,6 +214,9 @@ class KubernetesStepOperator(BaseStepOperator):
         args = entrypoint_command[3:]
 
         step_labels = {
+            "project_id": kube_utils.sanitize_label(
+                str(info.snapshot.project_id)
+            ),
             "run_id": kube_utils.sanitize_label(str(info.run_id)),
             "run_name": kube_utils.sanitize_label(str(info.run_name)),
             "pipeline": kube_utils.sanitize_label(info.pipeline.name),

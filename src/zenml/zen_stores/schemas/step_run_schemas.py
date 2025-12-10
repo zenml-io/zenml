@@ -117,7 +117,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             nullable=True,
         )
     )
-
+    heartbeat_threshold: Optional[int] = Field(nullable=True)
     # Foreign keys
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -188,9 +188,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
-    logs: Optional["LogsSchema"] = Relationship(
+    logs: List["LogsSchema"] = Relationship(
         back_populates="step_run",
-        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     parents: List["StepRunParentsSchema"] = Relationship(
         sa_relationship_kwargs={
@@ -224,7 +224,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     # In dynamic pipelines, the config is dynamically generated and cannot be
     # included in the compiled snapshot. In this case, we link it directly to
     # the step run.
-    dynamic_config: Optional["StepConfigurationSchema"] = Relationship()
+    dynamic_config: Optional["StepConfigurationSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+        },
+    )
     # In legacy pipelines (before snapshots, former deployments), the config
     # is stored as a string in the step run.
     step_configuration: str = Field(
@@ -273,14 +277,13 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             joinedload(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
-        if include_metadata:
-            options.extend(
-                [
-                    selectinload(jl_arg(StepRunSchema.logs)),
-                    # joinedload(jl_arg(StepRunSchema.parents)),
-                    # joinedload(jl_arg(StepRunSchema.run_metadata)),
-                ]
-            )
+        # if include_metadata:
+        #     options.extend(
+        #         [
+        #             joinedload(jl_arg(StepRunSchema.parents)),
+        #             joinedload(jl_arg(StepRunSchema.run_metadata)),
+        #         ]
+        #     )
 
         if include_resources:
             options.extend(
@@ -307,6 +310,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     .joinedload(
                         jl_arg(ArtifactVersionSchema.artifact), innerjoin=True
                     ),
+                    selectinload(jl_arg(StepRunSchema.logs)),
                 ]
             )
 
@@ -443,7 +447,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
                 if self.exception_info
                 else None,
-                logs=self.logs.to_model() if self.logs else None,
                 snapshot_id=self.snapshot_id,
                 pipeline_run_id=self.pipeline_run_id,
                 original_step_run_id=self.original_step_run_id,
@@ -463,9 +466,15 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     input_artifacts[input_artifact.name] = []
                 step_run_input = StepRunInputResponse(
                     input_type=StepRunInputArtifactType(input_artifact.type),
+                    index=input_artifact.input_index,
+                    chunk_index=input_artifact.chunk_index,
+                    chunk_size=input_artifact.chunk_size,
                     **input_artifact.artifact_version.to_model().model_dump(),
                 )
                 input_artifacts[input_artifact.name].append(step_run_input)
+
+            for artifact_list in input_artifacts.values():
+                artifact_list.sort(key=lambda a: a.index or 0)
 
             output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
             for output_artifact in self.output_artifacts:
@@ -475,9 +484,18 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     output_artifact.artifact_version.to_model()
                 )
 
+            # Add the step logs as "logs" if they exist, for backwards compatibility
+            # TODO: This will be safe to remove in future releases (>0.93.0).
+            step_logs = [
+                log_entry
+                for log_entry in self.logs
+                if log_entry.source == "step"
+            ]
             resources = StepRunResponseResources(
                 user=self.user.to_model() if self.user else None,
                 model_version=model_version,
+                logs=step_logs[0].to_model() if step_logs else None,
+                log_collection=[log.to_model() for log in self.logs],
                 inputs=input_artifacts,
                 outputs=output_artifacts,
             )
@@ -550,6 +568,9 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     # Fields
     name: str = Field(nullable=False, primary_key=True)
     type: str
+    input_index: int = Field(nullable=False, primary_key=True)
+    chunk_index: Optional[int] = None
+    chunk_size: Optional[int] = None
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(

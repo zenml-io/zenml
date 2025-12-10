@@ -5,7 +5,7 @@ description: Write dynamic pipelines
 # Dynamic Pipelines (Experimental)
 
 {% hint style="warning" %}
-**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local` and `kubernetes` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
+**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local`, `local_docker`, `kubernetes`, `sagemaker` and `vertex` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
 {% hint style="info" %}
@@ -96,6 +96,154 @@ Use `runtime="inline"` when you need:
 - Shared resources with the orchestrator
 - Sequential execution
 
+### Map/Reduce over collections
+
+Dynamic pipelines support a high-level map/reduce pattern over sequence-like step outputs. This lets you fan out a step across items of a collection and then reduce the results without manually writing loops or loading data in the orchestration environment.
+
+```python
+from zenml import pipeline, step
+
+@step
+def producer() -> list[int]:
+    return [1, 2, 3]
+
+@step
+def worker(value: int) -> int:
+    return value * 2
+
+@step
+def reducer(values: list[int]) -> int:
+    return sum(values)
+
+@pipeline(dynamic=True, enable_cache=False)
+def map_reduce():
+    values = producer()
+    results = worker.map(values)   # fan out over collection
+    reducer(results)               # pass list of artifacts directly
+```
+
+Key points:
+- `step.map(...)` fans out a step over sequence-like inputs. These inputs can be either
+  - a single list-like output artifact (see the code sample above)
+  - a list of output artifacts.
+  - the output of a `.map(...)` or `.product(...)` call if the respective step only returns a single output artifact
+- Steps can accept lists of artifacts directly as inputs (useful for reducers).
+- You can pass the mapped output directly to a downstream step without loading in the orchestration environment.
+
+#### Mapping semantics: map vs product
+
+- `step.map(...)`: If multiple sequence-like inputs are provided, all must have the same length `n`. ZenML creates `n` mapped steps where the i-th step receives the i-th element from each input.
+- `step.product(...)`: Creates a mapped step for each combination of elements across all input sequences (cartesian product).
+
+Example (cartesian product):
+
+```python
+from zenml import pipeline, step
+
+@step
+def int_values() -> list[int]:
+    return [1, 2]
+
+@step
+def str_values() -> list[str]:
+    return ["a", "b", "c"]
+
+@step
+def do_something(a: int, b: str) -> int:
+    ...
+
+@pipeline(dynamic=True)
+def cartesian_example():
+    a = int_values()
+    b = str_values()
+    # Produces 2 * 3 = 6 mapped steps
+    combine.product(a, b)
+```
+
+#### Broadcasting inputs with unmapped(...)
+
+If you want to pass a sequence-like artifact as a whole to each mapped invocation (i.e., avoid splitting), wrap it with `unmapped(...)`:
+
+```python
+from zenml import pipeline, step, unmapped
+
+@step
+def producer(length: int) -> list[int]:
+    return [1] * length
+
+@step
+def consumer(a: int, b: list[int]) -> None:
+    # `b` is the full list for every mapped call
+    ...
+
+@pipeline(dynamic=True)
+def unmapped_example():
+    a = producer(length=3)   # list of 3 ints
+    b = producer(length=4)   # list of 4 ints
+    consumer.map(a=a, b=unmapped(b))
+```
+
+#### Unpacking mapped outputs
+
+If a mapped step returns multiple outputs, you can split them into separate lists (one per output) using `unpack()`. This returns a tuple of lists of artifact futures, aligned by mapped invocation.
+
+```python
+from zenml import pipeline, step
+
+@step
+def create_int_list() -> list[int]:
+    return [1, 2]
+
+@step
+def compute(a: int) -> tuple[int, int]:
+    return a * 2, a * 3
+
+@pipeline(dynamic=True)
+def map_pipeline():
+    ints = create_int_list()
+    results = compute.map(a=ints)  # Map over [1, 2]
+
+    # Unpack per-output across all mapped invocations
+    double, triple = results.unpack()
+
+    # Each element is an ArtifactFuture; load to get concrete values
+    doubles = [f.load() for f in double]  # [2, 4]
+    triples = [f.load() for f in triple]  # [3, 6]
+```
+
+Notes:
+- `results` is a future that refers to all outputs of all steps, and `unpack()` works for both `.map(...)` and `.product(...)`.
+- Each list contains future objects that refer to a single artifact.
+
+#### Pass artifact chunks manually
+
+In some cases, you might want to loop over a sequence-like artifact manually and launch steps for only some items.
+You can do so efficiently by using the `artifact.chunk(...)` method:
+```python
+from zenml import pipeline, step
+
+@step
+def create_int_list() -> list[int]:
+    return [1, 2, 3, 4]
+
+@step
+def compute(a: int) -> int:
+    return a * 2
+
+@pipeline(dynamic=True)
+def custom_loop():
+    ints = create_int_list()
+
+    for index, value in enumerate(ints.load()):
+        # Apply some filter
+        if value % 2 == 0:
+            # Get the artifact chunk. Notice that we use `ints` here, which
+            # is a reference to the artifact and not the actual data that we
+            # loop over
+            chunk = ints.chunk(index=index)
+            compute(chunk)
+```
+
 ### Parallel Step Execution
 
 Dynamic pipelines support true parallel execution using `step.submit()`. This method returns a `StepRunFuture` that you can use to wait for results or pass to downstream steps:
@@ -166,6 +314,17 @@ if __name__ == "__main__":
 
 The `depends_on` parameter tells ZenML which steps can be configured via the YAML file. This is particularly useful when you want to allow users to configure pipeline behavior without modifying code.
 
+### Pass pipeline parameters when running snapshots from the server
+
+When running a snapshot from the server (either via the UI or the SDK/Rest API), you can now pass pipeline parameters for your dynamic pipelines.
+
+For example:
+```python
+from zenml.client import Client
+
+Client().trigger_pipeline(snapshot_id=<ID>, run_configuration={"parameters": {"my_param": 3}})
+```
+
 ## Limitations and Known Issues
 
 ### Logging
@@ -180,30 +339,25 @@ When running multiple steps concurrently using `step.submit()`, a failure in one
 
 Dynamic pipelines are currently only supported by:
 - `local` orchestrator
+- `local_docker` orchestrator
 - `kubernetes` orchestrator
+- `sagemaker` orchestrator
+- `vertex` orchestrator
 
 Other orchestrators will raise an error if you try to run a dynamic pipeline with them.
-
-### Remote Execution Requirement
-
-When running dynamic pipelines remotely (e.g., with the `kubernetes` orchestrator), you **must** include `depends_on` for at least one step in your pipeline definition. This is currently required due to a bug in remote execution.
-
-{% hint style="warning" %}
-**Required for Remote Execution**: Without `depends_on`, remote execution will fail. This requirement does not apply when running locally with the `local` orchestrator.
-{% endhint %}
-
-For example:
-
-```python
-@pipeline(dynamic=True, depends_on=[some_step])
-def dynamic_pipeline():
-    some_step()
-    # ... rest of your pipeline
-```
 
 ### Artifact Loading
 
 When you call `.load()` on an artifact in a dynamic pipeline, it synchronously loads the data. For large artifacts or when you want to maintain parallelism, consider passing the step outputs (future or artifact) directly to downstream steps instead of loading them.
+
+### Mapping Limitations
+
+- Mapping is currently supported only over artifacts produced within the same pipeline run (mapping over raw data or external artifacts is not supported).
+- Chunk size for mapped collection loading defaults to 1 and is not yet configurable.
+
+### Execution mode
+
+Currently only the `STOP_ON_FAILURE` execution mode is supported for dynamic pipelines, and will be used as a default.
 
 ## Best Practices
 

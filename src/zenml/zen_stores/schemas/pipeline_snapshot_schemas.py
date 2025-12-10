@@ -110,6 +110,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
+    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_path: Optional[str] = Field(nullable=True)
 
     # Foreign keys
@@ -410,6 +411,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         return cls(
             name=name,
             description=request.description,
+            source_code=request.source_code,
             is_dynamic=request.is_dynamic,
             stack_id=request.stack,
             project_id=request.project,
@@ -482,12 +484,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             The response.
         """
         runnable = False
-        if (
-            not self.is_dynamic
-            and self.build
-            and not self.build.is_local
-            and self.build.stack_id
-        ):
+        if self.build and not self.build.is_local and self.build.stack_id:
             runnable = True
 
         deployable = False
@@ -553,11 +550,13 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 )
                 config_schema = template_utils.generate_config_schema(
                     snapshot=self,
+                    pipeline_configuration=pipeline_configuration,
                     step_configurations=all_step_configurations,
                 )
 
             metadata = PipelineSnapshotResponseMetadata(
                 description=self.description,
+                source_code=self.source_code,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,

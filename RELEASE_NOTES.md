@@ -1,5 +1,120 @@
 <!-- markdown-link-check-disable -->
 
+> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
+
+---
+
+# 0.92.0
+
+## ⚠️ Breaking Changes
+
+* `StepRunResponse.regular_inputs` and `StepContext.inputs` are now of type `Dict[str, List[ArtifactVersionResponse]]` instead of `Dict[str, ArtifactVersionResponse]`.
+
+## New Features
+
+* The local image builder can now use the Docker CLI instead of the Python SDK, enabling BuildKit options that the Python SDK does not support.
+* The Evidently integration has been updated and now supports NumPy 2.0.
+* The active project can now be specified during login using the `--project` flag (for example, `zenml login ... --project ...`).
+* The GCP Image Builder now supports configuring the region in which the build should happen.
+
+## Bugfixes
+* Run metadata can now store sets and tuples.
+* An error that occurred when connecting to a ZenML server without the `local` extra installed has been fixed.
+* Weave import side effects when `enable_weave=False` is configured for the Weights & Biases experiment tracker have been fixed.
+
+## What's Changed
+* Add version 0.91.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4213
+* Add 0.91.2 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4215
+* Fix `mlflow` test by @bcdurak in https://github.com/zenml-io/zenml/pull/4208
+* Increase disk space on CI runners by @schustmi in https://github.com/zenml-io/zenml/pull/4217
+* Fix Azure ML compute cluster validation typo by @htahir1 in https://github.com/zenml-io/zenml/pull/4226
+* Pin sagemaker to avoid pulling in the huge 3.0 dependencies by @stefannica in https://github.com/zenml-io/zenml/pull/4235
+* Fix AzureMLOrchestratorSettings AttributeError with optional parameters by @htahir1 in https://github.com/zenml-io/zenml/pull/4228
+* Fix CLI login error message with deprecated flag  by @htahir1 in https://github.com/zenml-io/zenml/pull/4229
+* Replace `@` command invocation with `/` invocation by @strickvl in https://github.com/zenml-io/zenml/pull/4244
+* Add DeepSeek Packt book thumbnail + link to `README` by @strickvl in https://github.com/zenml-io/zenml/pull/4245
+* Feature:4151 Heartbeat activation logic by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4216
+* AWS/Sagemaker dynamic pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/4232
+* Add display_name field to flavors for better UI presentation by @htahir1 in https://github.com/zenml-io/zenml/pull/4233
+* Add pipeline deployment to onboarding by @htahir1 in https://github.com/zenml-io/zenml/pull/4231
+* Map/Reduce implementation for dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4159
+* Fix alembic order by @schustmi in https://github.com/zenml-io/zenml/pull/4250
+* [WIP] Fix set serialization in metadata system by @htahir1 in https://github.com/zenml-io/zenml/pull/4249
+* Update evidently integration to support NumPy 2.0 by @htahir1 in https://github.com/zenml-io/zenml/pull/4243
+* Added the option for setting project when logging in by @adam6878 in https://github.com/zenml-io/zenml/pull/4224
+* Enable running dynamic snapshots by @schustmi in https://github.com/zenml-io/zenml/pull/4253
+* Fix CLI profiling CI by @schustmi in https://github.com/zenml-io/zenml/pull/4255
+* Use correct backoff limit for isolated steps on Kubernetes by @schustmi in https://github.com/zenml-io/zenml/pull/4256
+* Fix security check for jinja2 autoescape in k8s by @safoinme in https://github.com/zenml-io/zenml/pull/4211
+* Add option to build docker images using subprocess calls by @schustmi in https://github.com/zenml-io/zenml/pull/4205
+* Disable heartbeat for deployments by @schustmi in https://github.com/zenml-io/zenml/pull/4254
+* Add nested `AGENTS.md` files for AI agent codebase guidance by @strickvl in https://github.com/zenml-io/zenml/pull/4259
+* Store Kubernetes step job names in run metadata by @schustmi in https://github.com/zenml-io/zenml/pull/4180
+* Fix ImportError when using zenml login without SQL dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/4252
+* Better typing for docker build options by @schustmi in https://github.com/zenml-io/zenml/pull/4262
+* Add support for dynamic pipelines to the Vertex orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/4246
+* Fix Claude workflow triggers to use `@claude` instead of `/claude` by @strickvl in https://github.com/zenml-io/zenml/pull/4264
+* Misc dynamic pipeline improvements by @schustmi in https://github.com/zenml-io/zenml/pull/4261
+* Fix weave import side-effects when `enable_weave=False` by @strickvl in https://github.com/zenml-io/zenml/pull/4265
+* Add regional location support to GCP Image Builder by @strickvl in https://github.com/zenml-io/zenml/pull/4268
+
+## New Contributors
+* @adam6878 made their first contribution in https://github.com/zenml-io/zenml/pull/4224
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.91.2...0.92.0
+
+
+# 0.91.2
+
+## New Features
+
+### Kubernetes Deployer
+- New deployer implementation that allows you to deploy your pipelines on Kubernetes
+
+### Other
+- Support for Mlflow 3.0
+
+## Bug Fixes
+
+- The S3 artifact store now works again with custom backends
+- Passing inline SSL certificates for the RestZenStore now works
+- The Weights & Biases experiment tracker now doesn't fail if the pipeline run name exceeds the maximum tag length
+
+
+## What's Changed
+* Add version 0.91.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4164
+* Fix missing snapshot in remote deployments by @stefannica in https://github.com/zenml-io/zenml/pull/4167
+* Add 0.91.1 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4166
+* Add success comments to changelog validation workflow by @strickvl in https://github.com/zenml-io/zenml/pull/4169
+* Fix applying default kubernetes resources by @schustmi in https://github.com/zenml-io/zenml/pull/4171
+* Fix bug in deploy staging workspace workflow by @htahir1 in https://github.com/zenml-io/zenml/pull/4176
+* Fix release docker build workflow by @schustmi in https://github.com/zenml-io/zenml/pull/4168
+* Fix breaking CI checks (Linting & Integration tests) by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4143
+* Improvements to CV for FiftyOne (lineage / dataset versioning) by @strickvl in https://github.com/zenml-io/zenml/pull/4147
+* Add custom commands, reviewer subagents and Claude workflows by @strickvl in https://github.com/zenml-io/zenml/pull/4172
+* Fix documentation errors in containerization and Vertex orchestrator by @strickvl in https://github.com/zenml-io/zenml/pull/4187
+* Fix code upload logic for dynamic pipelines without step templates by @schustmi in https://github.com/zenml-io/zenml/pull/4181
+* Fix UnboundLocalError in SSL certificate validation by @htahir1 in https://github.com/zenml-io/zenml/pull/4188
+* Cache key index for faster cache lookup by @schustmi in https://github.com/zenml-io/zenml/pull/4178
+* Add docs for dynamic pipelines experimental feature by @htahir1 in https://github.com/zenml-io/zenml/pull/4173
+* Support MLflow 3.0 by @htahir1 in https://github.com/zenml-io/zenml/pull/4160
+* Give Claude permission to run the formatting script by @strickvl in https://github.com/zenml-io/zenml/pull/4195
+* Fix S3 artifact store endpoint configuration for custom S3 backends by @strickvl in https://github.com/zenml-io/zenml/pull/4186
+* Fix Claude GitHub Actions workflow configuration by @strickvl in https://github.com/zenml-io/zenml/pull/4200
+* Changes to issue templates by @bcdurak in https://github.com/zenml-io/zenml/pull/4199
+* Improve detecting of local images during multi-step-build by @schustmi in https://github.com/zenml-io/zenml/pull/4194
+* Sanitize wandb tags by @schustmi in https://github.com/zenml-io/zenml/pull/4189
+* Add workflow to close stale PRs after 4 weeks of inactivity by @htahir1 in https://github.com/zenml-io/zenml/pull/4192
+* Add Kubernetes Deployer for Pipeline Deployments by @safoinme in https://github.com/zenml-io/zenml/pull/4127
+* Fix deletion of dynamic pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4191
+* Include project ID in Kubernetes labels by @schustmi in https://github.com/zenml-io/zenml/pull/4177
+* Rename method of dynamic orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/4206
+* Implemented detail view for artifact version by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4203
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.91.1...0.91.2
+
+
 # 0.91.1
 
 ## New Features

@@ -52,10 +52,6 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.constants import (
-    ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
-    handle_bool_env_var,
-)
 from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.execution.pipeline.utils import (
@@ -64,14 +60,9 @@ from zenml.execution.pipeline.utils import (
 )
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-from zenml.logging.step_logging import (
-    PipelineLogsStorageContext,
-    prepare_logs_uri,
-)
 from zenml.models import (
     CodeReferenceRequest,
     DeploymentResponse,
-    LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
     PipelineRequest,
@@ -105,6 +96,10 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
+from zenml.utils.logging_utils import (
+    is_pipeline_logging_enabled,
+    setup_run_logging,
+)
 from zenml.utils.string_utils import format_name_template
 from zenml.utils.tag_utils import Tag
 
@@ -135,6 +130,7 @@ class Pipeline:
 
     def __init__(
         self,
+        *,
         name: str,
         entrypoint: F,
         enable_cache: Optional[bool] = None,
@@ -1008,6 +1004,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule=schedule_id,
             code_reference=code_reference,
             code_path=code_path,
+            source_code=self.source_code,
             **snapshot.model_dump(),
             **snapshot_request_kwargs,
         )
@@ -1030,54 +1027,24 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
 
-            # Enable or disable pipeline run logs storage
-            if self._run_args.get("schedule"):
-                # Pipeline runs scheduled to run in the future are not logged
-                # via the client.
-                logging_enabled = False
-            elif handle_bool_env_var(
-                ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
-            ):
-                logging_enabled = False
-            else:
-                logging_enabled = self._run_args.get(
-                    "enable_pipeline_logs",
-                    self.configuration.enable_pipeline_logs
-                    if self.configuration.enable_pipeline_logs is not None
-                    else True,
-                )
+            snapshot = self._create_snapshot(**self._run_args)
+            self.log_pipeline_snapshot_metadata(snapshot)
+
+            run = (
+                create_placeholder_run(snapshot=snapshot)
+                if not snapshot.schedule
+                else None
+            )
 
             logs_context = nullcontext()
-            logs_model = None
-
-            if logging_enabled:
-                # Configure the logs
-                logs_uri = prepare_logs_uri(
-                    stack.artifact_store,
-                )
-
-                logs_context = PipelineLogsStorageContext(
-                    logs_uri=logs_uri,
-                    artifact_store=stack.artifact_store,
-                    prepend_step_name=False,
-                )  # type: ignore[assignment]
-
-                logs_model = LogsRequest(
-                    uri=logs_uri,
-                    source="client",
-                    artifact_store_id=stack.artifact_store.id,
+            if run and is_pipeline_logging_enabled(
+                snapshot.pipeline_configuration
+            ):
+                logs_context = setup_run_logging(
+                    pipeline_run=run, source="client"
                 )
 
             with logs_context:
-                snapshot = self._create_snapshot(**self._run_args)
-
-                self.log_pipeline_snapshot_metadata(snapshot)
-                run = (
-                    create_placeholder_run(snapshot=snapshot, logs=logs_model)
-                    if not snapshot.schedule
-                    else None
-                )
-
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(
                         snapshot=snapshot,
@@ -1290,6 +1257,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             "custom_materializer": custom_materializer,
             "own_stack": own_stack,
             "pipeline_run_id": str(run_id) if run_id else None,
+            "dynamic": self.is_dynamic,
         }
 
     def _compile(
@@ -1367,7 +1335,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def add_step_invocation(
         self,
         step: "BaseStep",
-        input_artifacts: Dict[str, StepArtifact],
+        input_artifacts: Dict[str, List[StepArtifact]],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],
@@ -1416,13 +1384,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "A step invocation can only be added to an active pipeline."
             )
 
-        for artifact in input_artifacts.values():
-            if artifact.pipeline is not self:
-                raise RuntimeError(
-                    "Got invalid input artifact for invocation of step "
-                    f"{step.name}: The input artifact was produced by a step "
-                    f"inside a different pipeline {artifact.pipeline.name}."
-                )
+        for artifact_list in input_artifacts.values():
+            for artifact in artifact_list:
+                if artifact.pipeline is not self:
+                    raise RuntimeError(
+                        "Got invalid input artifact for invocation of step "
+                        f"{step.name}: The input artifact was produced by a step "
+                        f"inside a different pipeline {artifact.pipeline.name}."
+                    )
 
         invocation_id = self._compute_invocation_id(
             step=step, custom_id=custom_id, allow_suffix=allow_id_suffix
