@@ -220,6 +220,34 @@ Notes:
 - `results` is a future that refers to all outputs of all steps, and `unpack()` works for both `.map(...)` and `.product(...)`.
 - Each list contains future objects that refer to a single artifact.
 
+#### Pass artifact chunks manually
+
+In some cases, you might want to loop over a sequence-like artifact manually and launch steps for only some items.
+You can do so efficiently by using the `artifact.chunk(...)` method:
+```python
+from zenml import pipeline, step
+
+@step
+def create_int_list() -> list[int]:
+    return [1, 2, 3, 4]
+
+@step
+def compute(a: int) -> int:
+    return a * 2
+
+@pipeline(dynamic=True)
+def custom_loop():
+    ints = create_int_list()
+
+    for index, value in enumerate(ints.load()):
+        # Apply some filter
+        if value % 2 == 0:
+            # Get the artifact chunk. Notice that we use `ints` here, which
+            # is a reference to the artifact and not the actual data that we
+            # loop over
+            chunk = ints.chunk(index=index)
+            compute(chunk)
+```
 
 ### Parallel Step Execution
 
