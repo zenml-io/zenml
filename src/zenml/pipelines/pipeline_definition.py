@@ -130,6 +130,7 @@ class Pipeline:
 
     def __init__(
         self,
+        *,
         name: str,
         entrypoint: F,
         enable_cache: Optional[bool] = None,
@@ -1003,6 +1004,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule=schedule_id,
             code_reference=code_reference,
             code_path=code_path,
+            source_code=self.source_code,
             **snapshot.model_dump(),
             **snapshot_request_kwargs,
         )

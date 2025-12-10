@@ -623,10 +623,7 @@ def expand_mapped_inputs(
                 mapped_input_names.append(key)
                 mapped_inputs.append(
                     tuple(
-                        value.model_copy(
-                            update={"chunk_index": i, "chunk_size": 1}
-                        )
-                        for i in range(value.item_count)
+                        value.chunk(index=i) for i in range(value.item_count)
                     )
                 )
         elif (
@@ -642,6 +639,15 @@ def expand_mapped_inputs(
                 "wrap your input with the `unmapped(...)` function.",
                 key,
             )
+        elif (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, OutputArtifact) for item in value)
+        ):
+            # List of step output artifacts, in this case the mapping is over
+            # the items of the list
+            mapped_input_names.append(key)
+            mapped_inputs.append(tuple(value))
         elif isinstance(value, Sequence):
             logger.warning(
                 "Received sequence-like data for step input `%s`. Mapping over "
