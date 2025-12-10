@@ -491,7 +491,8 @@ def deploy_pipeline(
         dashboard_url = get_deployment_url(deployment)
         if dashboard_url:
             cli_utils.declare(
-                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]",
+                no_wrap=True,
             )
 
         if attach:
@@ -1272,7 +1273,8 @@ def deploy_snapshot(
             dashboard_url = get_deployment_url(deployment)
             if dashboard_url:
                 cli_utils.declare(
-                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]",
+                    no_wrap=True,
                 )
 
 
