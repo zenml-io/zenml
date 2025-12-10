@@ -1217,11 +1217,19 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if not cron_job_name:
             raise RuntimeError("Unable to find cron job name for schedule.")
 
+        spec = {}
+
         if update.cron_expression:
+            spec["schedule"] = update.cron_expression
+
+        if update.active is not None:
+            spec["suspend"] = not update.active  # type: ignore[assignment]
+
+        if spec:
             self._k8s_batch_api.patch_namespaced_cron_job(
                 name=cron_job_name,
                 namespace=self.config.kubernetes_namespace,
-                body={"spec": {"schedule": update.cron_expression}},
+                body={"spec": spec},
             )
 
     def delete_schedule(self, schedule: "ScheduleResponse") -> None:
