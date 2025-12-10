@@ -47,132 +47,72 @@ Alternatively, you can install directly from OCI (see Step 5 below).
 kubectl create namespace zenml-hybrid
 ```
 
-## Step 3: Create Secrets for Credentials
-
-Create a secret for your Pro OAuth2 credentials. Ask you ZenML Solutions Architect to send you this secret.:
-
-```bash
-kubectl -n zenml-hybrid create secret generic zenml-pro-credentials \
-  --from-literal=ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET=<your-client-secret>
-```
-
-
-If using a custom TLS certificate (self-signed or from a CA), create a secret:
-
-```bash
-kubectl -n zenml-hybrid create secret tls zenml-tls \
-  --cert=/path/to/tls.crt \
-  --key=/path/to/tls.key
-```
-
-## Step 4: Create Helm Values File
+## Step 3: Create Helm Values File
 
 Create a file `zenml-hybrid-values.yaml` with your configuration:
 
 ```yaml
 # ZenML Server Configuration
 zenml:
-  # Server metadata
-  serverURL: https://zenml.mycompany.com
+  # Analytics (optional)
+  analyticsOptIn: false
 
-  # Pro Hybrid Configuration
-  pro:
-    enabled: true
-    deploymentType: cloud
-
-    # ZenML Control Plane endpoints
-    apiURL: https://cloudapi.zenml.io
-    dashboardURL: https://cloud.zenml.io
-
-    # Your organization details
-    organizationID: <your-org-id>
-    organizationName: <your-org-name>
-
-    # Workspace details (provided by ZenML)
-    workspaceID: <your-workspace-id>
-    workspaceName: <your-workspace-name>
-
-    # OAuth2 authentication (stored in secret)
-    oauth2:
-      audience: https://cloudapi.zenml.io
-      clientSecretRef:
-        name: zenml-pro-credentials
-        key: ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET
+  # Thread pool size for concurrent operations
+  threadPoolSize: 20
 
   # Database Configuration
   # Note: Workspace servers only support MySQL, not PostgreSQL
   database:
-    external:
-      type: mysql
-      host: mysql.mycompany.com
-      port: 3306
-      username: zenml_user
-      password: <secure-password>
-      database: zenml_hybrid
+    maxOverflow: "-1"
+    poolSize: "10"
+
+    url: mysql://<user>:<password>@<host>:<port>/<database>
 
   # Image Configuration
   image:
     repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
-    tag: "<ZENML_OSS_VERSION>"  # e.g., "0.73.0" - Match your ZenML OSS version
-    pullPolicy: IfNotPresent
+
+  # Server URL (your actual domain)
+  serverURL: https://zenml.mycompany.com
 
   # Ingress Configuration
   ingress:
     enabled: true
-    className: nginx  # or your ingress class
     host: zenml.mycompany.com
 
-    # TLS Configuration
-    tls:
-      enabled: true
-      secretName: zenml-tls
-
-    # Annotations for your ingress controller
-    annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt-prod"  # if using cert-manager
-
-  # Service Configuration
-  service:
-    type: ClusterIP
-    port: 80
-    targetPort: 8000
-
-  # Resource Limits
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: 1000m
-      memory: 2Gi
-
-  # Analytics (optional)
-  analyticsOptIn: false
+  # Pro Hybrid Configuration
+  pro:
+    # ZenML Control Plane endpoints
+    apiURL: https://cloudapi.zenml.io
+    dashboardURL: https://cloud.zenml.io
+    enabled: true
+    enrollmentKey: <your-enrollment-key>
+    # Your organization details
+    organizationID: <your-org-id>
+    organizationName: <your-org-name>
+    # Workspace details (provided by ZenML)
+    workspaceID: <your-workspace-id>
+    workspaceName: <your-workspace-name>
 
   # Replica count
   replicaCount: 1
 
-# Image pull secrets (if using private registry)
-imagePullSecrets: []
+  # Secrets Store Configuration
+  secretsStore:
+    sql:
+      encryptionKey: <your-encryption-key>  # 32-byte hex string
+    type: sql
 
-# Pod Security Context
-podSecurityContext:
-  fsGroup: 1000
-  runAsNonRoot: true
-  runAsUser: 1000
-
-# Container Security Context
-securityContext:
-  allowPrivilegeEscalation: false
-  readOnlyRootFilesystem: true
-  runAsNonRoot: true
-  runAsUser: 1000
-  capabilities:
-    drop:
-      - ALL
+# Resource Limits (adjust to your needs)
+resources:
+  limits:
+    memory: 800Mi
+  requests:
+    cpu: 100m
+    memory: 450Mi
 ```
 
-## Step 5: Deploy with Helm
+## Step 4: Deploy with Helm
 
 Install the ZenML chart directly from OCI:
 

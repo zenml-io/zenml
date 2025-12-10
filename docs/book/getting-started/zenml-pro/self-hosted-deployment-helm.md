@@ -99,19 +99,32 @@ On a machine with internet access and access to the ZenML Pro container registri
    - Follow registry-specific authentication procedures
 
 2. Pull all required images:
-   - **Pro Control Plane images:**
+   - **Pro Control Plane images (AWS ECR):**
      - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version>`
      - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<version>`
-   - **Workspace Server image:**
+   - **Pro Control Plane images (GCP Artifact Registry):**
+     - `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-api:<version>`
+     - `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard:<version>`
+   - **Workspace Server image (AWS ECR):**
      - `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>`
+   - **Workspace Server image (GCP Artifact Registry):**
+     - `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server:<version>`
    - **Client image (for pipelines):**
      - `zenmldocker/zenml:<version>`
 
-   Example pull commands:
+   Example pull commands (AWS ECR):
    ```bash
    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version>
    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<version>
    docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>
+   docker pull zenmldocker/zenml:<version>
+   ```
+
+   Example pull commands (GCP Artifact Registry):
+   ```bash
+   docker pull europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-api:<version>
+   docker pull europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard:<version>
+   docker pull europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server:<version>
    docker pull zenmldocker/zenml:<version>
    ```
 
@@ -140,6 +153,14 @@ On the same machine with internet access:
    - ZenML Workspace Server: `oci://public.ecr.aws/zenml/zenml`
 
 2. Save charts as `.tgz` files for transfer
+
+{% hint style="info" %}
+**Version Synchronization**: The container image tags and the Helm chart versions are synchronized:
+- **ZenML Pro Control Plane**: Image tags match the ZenML Pro Helm chart version. Check the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro) for available versions.
+- **ZenML Workspace Server**: Image tags match the ZenML OSS Helm chart version. Check the [ZenML OSS ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml) or the [ZenML GitHub releases page](https://github.com/zenml-io/zenml/releases).
+
+When copying images to your internal registry, maintain the same version tags to ensure compatibility between components.
+{% endhint %}
 
 ### 1.3 Create Offline Bundle
 
@@ -215,6 +236,10 @@ kubectl -n zenml-pro create secret tls zenml-tls \
   --cert=/path/to/tls.crt \
   --key=/path/to/tls.key
 ```
+
+{% hint style="info" %}
+If you are using self-signed certificates, it is highly recommended to use the same self-signed CA certificate for all the ZenML Pro services (control plane and workspace servers). This simplifies certificate management - you only need to install one CA certificate system-wide on all client machines, then use it to sign all the TLS certificates for the ZenML Pro services.
+{% endhint %}
 
 ## Step 5: Set Up Databases
 
@@ -433,7 +458,15 @@ Update your internal DNS to resolve:
 - `zenml-pro.internal.mycompany.com` → Your ALB/Ingress IP
 - `zenml-workspace.internal.mycompany.com` → Your ALB/Ingress IP
 
+{% hint style="warning" %}
+Always use a fully qualified domain name (FQDN) (e.g. `https://zenml.ml.cluster`). Do not use a simple DNS prefix for the servers (e.g. `https://zenml.cluster` is not recommended). This is especially relevant for the TLS certificates that you prepare for these endpoints. The TLS certificates will not be accepted by some browsers (e.g. Chrome) otherwise.
+{% endhint %}
+
 ## Step 12: Install Internal CA Certificate
+
+If the TLS certificates used by the ZenML Pro services are signed by a custom Certificate Authority, you need to install the CA certificates on every machine that needs to access the ZenML server.
+
+### System-wide Installation
 
 On all client machines that will access ZenML:
 
@@ -443,12 +476,51 @@ On all client machines that will access ZenML:
    - **macOS**: Use `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain <cert.pem>`
    - **Windows**: Use `certutil -addstore "Root" cert.pem`
 
-3. For Python/ZenML client:
+3. For some browsers (e.g., Chrome), updating the system's CA certificates is not enough. You will also need to import the CA certificates into the browser.
+
+4. For Python/ZenML client:
    ```bash
-   export REQUESTS_CA_BUNDLE=/path/to/ca-bundle.crt
+   export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
    ```
 
-4. For containerized pipelines, include the CA certificate in your custom ZenML image
+### For Containerized Pipelines
+
+When running containerized pipelines with ZenML, you'll need to install the CA certificates into the container images built by ZenML. Customize the build process via [DockerSettings](https://docs.zenml.io/how-to/customize-docker-builds):
+
+1. Create a custom Dockerfile:
+   ```dockerfile
+   # Use the original ZenML client image as a base image
+   FROM zenmldocker/zenml:<zenml-version>
+
+   # Install certificates
+   COPY my-custom-ca.crt /usr/local/share/ca-certificates/
+   RUN update-ca-certificates
+
+   ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+   ```
+
+2. Build and push the image to your internal registry:
+   ```bash
+   docker build -t internal-registry.mycompany.com/zenml/zenml:<zenml-version> .
+   docker push internal-registry.mycompany.com/zenml/zenml:<zenml-version>
+   ```
+
+3. Update your ZenML pipeline code to use the custom image:
+   ```python
+   from zenml.config import DockerSettings
+   from zenml import __version__
+
+   # Define the custom base image
+   CUSTOM_BASE_IMAGE = f"internal-registry.mycompany.com/zenml/zenml:{__version__}"
+
+   docker_settings = DockerSettings(
+       parent_image=CUSTOM_BASE_IMAGE,
+   )
+
+   @pipeline(settings={"docker": docker_settings})
+   def my_pipeline() -> None:
+       ...
+   ```
 
 ## Step 13: Verify the Deployment
 
@@ -474,7 +546,22 @@ On all client machines that will access ZenML:
 
 ## Step 14: (Optional) Enable Snapshot Support / Workload Manager
 
-Pipeline snapshots (running pipelines from the dashboard) require additional configuration:
+Pipeline snapshots (running pipelines from the UI) requires additional configuration.
+
+{% hint style="warning" %}
+Snapshots are only available from ZenML workspace server version 0.90.0 onwards.
+{% endhint %}
+
+### Understanding Snapshot Sub-features
+
+Snapshots come with optional sub-features that can be turned on or off:
+
+* **Building runner container images**: Running pipelines from the UI relies on Kubernetes jobs ("runner" jobs) that need container images with the correct Python packages. You can:
+  - Reuse existing pipeline container images (requires Kubernetes cluster access to those registries)
+  - Have ZenML build "runner" images and push to a configured registry
+  - Use a single pre-built "runner" image for all runs
+
+* **Store logs externally**: By default, logs are extracted from runner job pods. Since pods may disappear, you can configure external log storage (currently only supported with AWS implementation).
 
 ### 1. Create Kubernetes Resources for Workload Manager
 
@@ -491,7 +578,15 @@ kubectl -n zenml-workload-manager create serviceaccount zenml-runner
 # (Specific permissions depend on your implementation choice below)
 ```
 
+The service account needs permissions to build images and run jobs, including access to container images and any configured bucket for logs.
+
 ### 2. Choose Implementation
+
+There are three available implementations:
+
+* **Kubernetes**: Runs pipelines in the same Kubernetes cluster as the ZenML Pro workspace server.
+* **AWS**: Extends Kubernetes implementation to build/push images to AWS ECR and store logs in AWS S3.
+* **GCP**: Currently same as Kubernetes, with plans to extend for GCP GCR and GCS support.
 
 **Option A: Kubernetes Implementation (Simplest)**
 
@@ -505,9 +600,21 @@ zenml:
     ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
 ```
 
-**Option B: GCP Implementation (if using GCP)**
+**Option B: AWS Implementation (Full Featured)**
 
-For GCP-specific features:
+For AWS-specific features including external logs and ECR integration:
+
+```yaml
+zenml:
+  environment:
+    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+```
+
+**Option C: GCP Implementation**
+
+For GCP environments:
 
 ```yaml
 zenml:
@@ -515,8 +622,6 @@ zenml:
     ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
     ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
     ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: <your-internal-registry>/zenml
 ```
 
 ### 3. Configure Runner Image
@@ -532,7 +637,7 @@ zenml:
     ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: internal-registry.mycompany.com/zenml/zenml:<ZENML_OSS_VERSION>
 ```
 
-Pre-build your runner image and push to your internal registry.
+Pre-build your runner image and push to your internal registry. Note that this image needs to have all requirements installed to instantiate the stack that will be used for the template run.
 
 **Option B: Have ZenML Build Runner Images**
 
@@ -545,18 +650,97 @@ zenml:
     ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: internal-registry.mycompany.com/zenml
 ```
 
-### 4. Configure Pod Resources and Policies
+### 4. Environment Variable Reference
+
+All supported environment variables for workload manager configuration:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE` | Yes | Implementation class (see options above) |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` | Yes | Kubernetes namespace for runner jobs |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` | Yes | Kubernetes service account for runner jobs |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` | No | Whether to build runner images (default: `false`) |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY` | Conditional | Registry for runner images (required if building images) |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` | No | Pre-built runner image (used if not building) |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` | No | Store logs externally (default: `false`, AWS only) |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES` | No | Pod resources in JSON format |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED` | No | Cleanup time for finished jobs (default: 2 days) |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR` | No | Node selector in JSON format |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS` | No | Tolerations in JSON format |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_JOB_BACKOFF_LIMIT` | No | Backoff limit for builder/runner jobs |
+| `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_FAILURE_POLICY` | No | Pod failure policy for builder/runner jobs |
+| `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` | No | Max concurrent snapshot runs per pod (default: 2) |
+
+**AWS-specific variables:**
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` | Conditional | S3 bucket for logs (required if external logs enabled) |
+| `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION` | Conditional | AWS region (required if building images) |
+
+### 5. Complete Configuration Examples
+
+**Minimal Kubernetes Configuration:**
 
 ```yaml
 zenml:
   environment:
+    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+```
+
+**Full AWS Configuration:**
+
+```yaml
+zenml:
+  environment:
+    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: 339712793861.dkr.ecr.eu-central-1.amazonaws.com
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS: "true"
     ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED: 86400  # 1 day
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "compute"}'
+    ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET: s3://my-bucket/run-template-logs
+    ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION: eu-central-1
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
+    ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
+```
+
+**Full GCP Configuration:**
+
+```yaml
+zenml:
+  environment:
+    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-snapshots/zenml
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
+    ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
+```
+
+**Air-gapped Configuration with Pre-built Runner:**
+
+```yaml
+zenml:
+  environment:
+    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: internal-registry.mycompany.com/zenml/zenml:<ZENML_OSS_VERSION>
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+    ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED: 86400
     ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 2
 ```
 
-### 5. Update Workspace Deployment
+### 6. Update Workspace Deployment
 
 Update your workspace server Helm values with workload manager configuration and redeploy:
 
@@ -575,13 +759,32 @@ In the ZenML Pro dashboard:
 3. Assign roles and permissions
 4. Configure teams
 
+{% hint style="info" %}
+For detailed instructions on creating users programmatically, including Python scripts for batch user creation, see the [Self-hosted Deployment Guide](self-hosted.md#onboard-additional-users).
+{% endhint %}
+
+## Step 16: Access the Workspace from ZenML CLI
+
+To login to the workspace with the ZenML CLI, you need to pass the custom ZenML Pro API URL:
+
+```bash
+zenml login --pro-api-url https://zenml-pro.internal.mycompany.com/api/v1
+```
+
+Alternatively, you can set the `ZENML_PRO_API_URL` environment variable:
+
+```bash
+export ZENML_PRO_API_URL=https://zenml-pro.internal.mycompany.com/api/v1
+zenml login
+```
+
 ## Network Requirements Summary
 
 | Traffic | Source | Destination | Port | Direction |
 |---------|--------|-------------|------|-----------|
 | Web Access | Client Machines | Ingress Controller | 443 | Inbound |
 | API Access | ZenML Client | Workspace Server | 443 | Inbound |
-| Database | Kubernetes Pods | PostgreSQL | 5432 | Outbound |
+| Database | Kubernetes Pods | PostgreSQL/MySQL | 5432/3306 | Outbound |
 | Registry | Kubernetes | Internal Registry | 443 | Outbound |
 | Inter-service | Kubernetes Internal | Kubernetes Services | 443 | Internal |
 
@@ -735,59 +938,82 @@ kubectl -n zenml-pro exec -it zenml-pro-xxxxx -- \
 
 ## Day 2 Operations: Updates and Upgrades
 
-### Receiving New Versions
+{% hint style="warning" %}
+Always upgrade the ZenML Pro Control Plane first, then upgrade the workspace servers. This ensures compatibility and prevents potential issues.
+{% endhint %}
 
-When new ZenML versions are released:
+### Upgrade Checklist
 
-1. **Request offline bundle** from ZenML Support containing:
-   - Updated container images
-   - Updated Helm charts
-   - Release notes and migration guide
-   - Vulnerability assessment (if applicable)
+1. **Check Available Versions and Release Notes**
+   - For ZenML Pro Control Plane: Check available versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro)
+   - For ZenML Pro Workspace Servers: Check available versions in the [ZenML OSS ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml) and review the [ZenML GitHub releases page](https://github.com/zenml-io/zenml/releases) for release notes and breaking changes
 
-2. **Review release notes** for:
-   - Breaking changes
-   - Database migration requirements
-   - New features and configuration options
-   - Security updates
+2. **Fetch and Prepare New Software Artifacts**
+   - Request offline bundle from ZenML Support containing:
+     - Updated container images
+     - Updated Helm charts
+     - Release notes and migration guide
+     - Vulnerability assessment (if applicable)
+   - If using a private registry, copy the new container images to your private registry
+   - Transfer bundle to your air-gapped environment using approved methods
 
-3. **Transfer bundle** to your air-gapped environment using approved methods
-
-### Upgrade Process
-
-1. **Backup current state:**
+3. **Backup Current State**
    - Database backup
    - Values.yaml files
    - TLS certificates
 
-2. **Update container images in internal registry:**
+4. **Update Container Images in Internal Registry**
    - Extract and load new images
    - Tag and push to your internal registry
 
-3. **Update Helm charts:**
-   - Extract new chart versions
-   - Review any changes to values schema
-
-4. **Upgrade control plane first:**
+5. **Upgrade the ZenML Pro Control Plane**
+   
+   **Option A - In-place upgrade with existing values** (if no config changes needed):
    ```bash
    helm upgrade zenml-pro ./zenml-pro-<new-version>.tgz \
      --namespace zenml-pro \
-     --values zenml-pro-values.yaml
+     --reuse-values
    ```
 
-5. **Verify control plane:**
+   **Option B - Retrieve, modify and reapply values** (if config changes needed):
+   ```bash
+   # Get the current values
+   helm --namespace zenml-pro get values zenml-pro > current-values.yaml
+
+   # Edit current-values.yaml if needed, then upgrade
+   helm upgrade zenml-pro ./zenml-pro-<new-version>.tgz \
+     --namespace zenml-pro \
+     --values current-values.yaml
+   ```
+
+6. **Verify Control Plane**
    - Check pod status
    - Review logs
    - Test connectivity
 
-6. **Upgrade workspace servers:**
+7. **Upgrade ZenML Pro Workspace Servers**
+
+   For each workspace, perform either:
+
+   **Option A - In-place upgrade with existing values**:
    ```bash
    helm upgrade zenml ./zenml-<new-version>.tgz \
      --namespace zenml-workspace \
-     --values zenml-workspace-values.yaml
+     --reuse-values
    ```
 
-7. **Verify workspaces:**
+   **Option B - Retrieve, modify and reapply values**:
+   ```bash
+   # Get the current values
+   helm --namespace zenml-workspace get values zenml > current-workspace-values.yaml
+
+   # Edit current-workspace-values.yaml if needed, then upgrade
+   helm upgrade zenml ./zenml-<new-version>.tgz \
+     --namespace zenml-workspace \
+     --values current-workspace-values.yaml
+   ```
+
+8. **Verify Workspaces**
    - Check all pods are running
    - Review logs
    - Run health checks
@@ -861,3 +1087,4 @@ Request from ZenML Support:
 - Offline support packages
 - Update bundles and release notes
 - Security documentation (SBOM, vulnerability reports)
+

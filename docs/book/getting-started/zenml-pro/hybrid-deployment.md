@@ -100,12 +100,14 @@ Each workspace can be:
 
 ### Authentication & Authorization Flow
 
+This is meant to serve as a simplification of the typical authentication and authorization flow. Not every request will follow this exact pattern.
+
 ```mermaid
 graph LR
     A[User] -->|1. Login| B[Control Plane<br/>ZenML Infrastructure]
-    B -->|2. Auth Token| A
+    B -->|2. Auth Credentials| A
     A -->|3. Access Workspace| C[Workspace<br/>Your Infrastructure]
-    C -->|4. Validate Token| B
+    C -->|4. Validate Credentials| B
     B -->|5. Authorization| C
     C -->|6. Execute| D[Your Resources]
 ```
@@ -114,7 +116,7 @@ graph LR
 2. Control plane issues authentication credentials
 3. User accesses workspace with credentials
 4. Workspace validates credentials with control plane
-5. Control plane confirms authenticaiton and authorization (RBAC)
+5. Control plane confirms authentication and authorization (RBAC)
 6. Workspace executes operations on your infrastructure
 
 ### Data Residency
@@ -186,13 +188,6 @@ graph TB
     style customer fill:#f0f0f0
     style clients fill:#fff4e6
 ```
-
-**Connection Flow:**
-1. **Clients authenticate** with ZenML Control Plane (SSO) - hosted by ZenML
-2. **Control Plane issues** RBAC-validated tokens to clients
-3. **Clients connect** to their assigned workspace(s) in your infrastructure
-4. **Workspaces validate** tokens with Control Plane (outbound-only connection)
-5. **Pipelines execute** on your infrastructure resources
 
 ### Multi-Region Support
 
