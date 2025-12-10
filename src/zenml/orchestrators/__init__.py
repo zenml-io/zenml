@@ -31,6 +31,9 @@ from zenml.orchestrators.base_orchestrator import (
 from zenml.orchestrators.containerized_orchestrator import (
     ContainerizedOrchestrator,
 )
+from zenml.orchestrators.exceptions import (
+    PipelineSubmissionError,
+)
 from zenml.orchestrators.wheeled_orchestrator import (
     WheeledOrchestrator,
 )
@@ -54,4 +57,5 @@ __all__ = [
     "LocalDockerOrchestrator",
     "LocalDockerOrchestratorFlavor",
     "SubmissionResult",
+    "PipelineSubmissionError"
 ]
