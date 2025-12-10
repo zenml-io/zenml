@@ -36,6 +36,8 @@ Out of the box, ZenML comes with a `local` artifact store already part of the de
 | [Amazon S3](s3.md)                 | `s3`     | `s3`        | `s3://`            | Uses AWS S3 as an object store backend                                                                                           |
 | [Google Cloud Storage](gcp.md)     | `gcp`    | `gcp`       | `gs://`            | Uses Google Cloud Storage as an object store backend                                                                             |
 | [Azure](azure.md)                  | `azure`  | `azure`     | `abfs://`, `az://` | Uses Azure Blob Storage as an object store backend                                                                               |
+| [Alibaba Cloud OSS](alibaba-oss.md) | `s3`    | `s3`        | `s3://`            | Uses S3 integration to connect to Alibaba Cloud OSS                                                                              |
+| [MinIO](minio.md)                  | `s3`     | `s3`        | `s3://`            | Uses S3 integration to connect to self-hosted MinIO                                                                              |
 | [Custom Implementation](custom.md) | _custom_ |             | _custom_           | Extend the Artifact Store abstraction and provide your own implementation                                                        |
 
 If you would like to see the available flavors of Artifact Stores, you can use the command:
