@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline execution outputs."""
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from typing import Any, Iterator, List, Optional, Tuple, Union, overload
 
@@ -69,7 +69,7 @@ class OutputArtifact(ArtifactVersionResponse):
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
 
 
-class BaseFuture:
+class BaseFuture(ABC):
     """Base future."""
 
     @abstractmethod
