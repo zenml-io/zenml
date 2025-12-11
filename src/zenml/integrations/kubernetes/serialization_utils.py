@@ -15,10 +15,12 @@
 
 import re
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
 
 if TYPE_CHECKING:
-    pass
+    from pydantic import BaseModel
+
+T = TypeVar("T", bound="BaseModel")
 
 
 def normalize_resource_to_dict(
@@ -268,3 +270,45 @@ def _deserialize_dict(data: Any, class_name: str) -> Dict[str, Any]:
         }
     else:
         return data
+
+
+def parse_gateway_api_resource(
+    resource: Union[Dict[str, Any], Any],
+    model_class: Type[T],
+) -> T:
+    """Parse Gateway API resource into typed Pydantic model.
+
+    Converts raw Kubernetes Gateway API resources (Gateway, HTTPRoute) into
+    validated Pydantic models for type-safe attribute access.
+
+    Args:
+        resource: Raw K8s resource (dict, typed model, or dynamic resource).
+        model_class: Target Pydantic model class (e.g., GatewayStatus or
+            HTTPRouteSpec from gateway_api_models).
+
+    Returns:
+        Validated Pydantic model instance with type safety.
+
+    Raises:
+        ValueError: If resource cannot be normalized or validation fails.
+    """
+    from pydantic import ValidationError
+
+    try:
+        resource_dict = normalize_resource_to_dict(resource)
+    except ValueError as e:
+        raise ValueError(
+            f"Failed to normalize {model_class.__name__} resource to dict: {e}"
+        ) from e
+
+    try:
+        return model_class.model_validate(resource_dict)
+    except ValidationError as e:
+        raise ValueError(
+            f"Failed to parse {model_class.__name__} from resource dict. "
+            f"Validation errors: {e}"
+        ) from e
+    except Exception as e:
+        raise ValueError(
+            f"Unexpected error parsing {model_class.__name__}: {e}"
+        ) from e

@@ -58,6 +58,10 @@ from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
+from zenml.integrations.kubernetes.gateway_api_models import (
+    GatewayStatus,
+    HTTPRouteSpec,
+)
 from zenml.integrations.kubernetes.manifest_utils import (
     build_namespace_manifest,
     build_role_binding_manifest_for_service_account,
@@ -67,6 +71,7 @@ from zenml.integrations.kubernetes.manifest_utils import (
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.integrations.kubernetes.serialization_utils import (
     normalize_resource_to_dict,
+    parse_gateway_api_resource,
 )
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
@@ -1376,45 +1381,45 @@ def build_gateway_api_url(
     gateway_dict = normalize_resource_to_dict(gateway)
     httproute_dict = normalize_resource_to_dict(httproute)
 
-    gateway_status = gateway_dict.get("status", {})
-    gateway_listeners = gateway_status.get("listeners", [])
+    try:
+        gateway_status_dict = gateway_dict.get("status", {})
+        gateway_status = parse_gateway_api_resource(
+            {"listeners": gateway_status_dict.get("listeners", [])},
+            GatewayStatus,
+        )
 
-    httproute_spec = httproute_dict.get("spec", {})
-    httproute_hostnames = httproute_spec.get("hostnames", [])
-    httproute_rules = httproute_spec.get("rules", [])
-
-    if not httproute_hostnames or not httproute_rules:
+        httproute_spec_dict = httproute_dict.get("spec", {})
+        httproute_spec = parse_gateway_api_resource(
+            httproute_spec_dict, HTTPRouteSpec
+        )
+    except ValueError as e:
+        logger.warning(f"Failed to parse Gateway API resources: {e}")
         return None
 
-    hostname = httproute_hostnames[0]
+    if not httproute_spec.hostnames or not httproute_spec.rules:
+        return None
+
+    hostname = httproute_spec.hostnames[0]
 
     protocol = "http"
-    parent_refs = httproute_spec.get("parentRefs", [])
-    if parent_refs:
-        parent_ref = parent_refs[0]
-        section_name = parent_ref.get("sectionName")
+    if httproute_spec.parent_refs:
+        parent_ref = httproute_spec.parent_refs[0]
+        section_name = parent_ref.section_name
 
-        for listener in gateway_listeners:
-            current_listener_name = listener.get("name")
-            if not current_listener_name:
+        for listener in gateway_status.listeners:
+            if section_name and listener.name != section_name:
                 continue
 
-            if section_name and current_listener_name != section_name:
-                continue
-
-            listener_protocol = listener.get("protocol", "").lower()
-            if listener_protocol in ("https", "tls"):
+            if listener.protocol.lower() in ("https", "tls"):
                 protocol = "https"
                 break
 
     path = "/"
-    if httproute_rules:
-        first_rule = httproute_rules[0]
-        matches = first_rule.get("matches", [])
-        if matches:
-            first_match = matches[0]
-            match_path = first_match.get("path")
-            if match_path:
-                path = match_path.get("value", "/")
+    if httproute_spec.rules:
+        first_rule = httproute_spec.rules[0]
+        if first_rule.matches:
+            first_match = first_rule.matches[0]
+            if first_match.path:
+                path = first_match.path.value
 
     return f"{protocol}://{hostname}{path}"

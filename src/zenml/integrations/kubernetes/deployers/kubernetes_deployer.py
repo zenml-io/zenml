@@ -57,6 +57,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
     KubernetesDeployerConfig,
     KubernetesDeployerSettings,
 )
+from zenml.integrations.kubernetes.gateway_api_models import HTTPRouteSpec
 from zenml.integrations.kubernetes.k8s_applier import (
     KubernetesApplier,
     ProvisioningError,
@@ -71,6 +72,7 @@ from zenml.integrations.kubernetes.pod_settings import (
 )
 from zenml.integrations.kubernetes.serialization_utils import (
     normalize_resource_to_dict,
+    parse_gateway_api_resource,
 )
 from zenml.integrations.kubernetes.template_engine import (
     KubernetesTemplateEngine,
@@ -1255,27 +1257,33 @@ class KubernetesDeployer(ContainerizedDeployer):
                 name=httproute_item.name,
                 namespace=httproute_namespace,
                 kind="HTTPRoute",
-                api_version="gateway.networking.k8s.io/v1beta1",
+                api_version=httproute_item.api_version,
             )
 
             if not k8s_httproute:
                 continue
 
-            httproute_dict = normalize_resource_to_dict(k8s_httproute)
-            httproute_spec = httproute_dict.get("spec", {})
-            httproute_rules = httproute_spec.get("rules", [])
+            try:
+                httproute_dict = normalize_resource_to_dict(k8s_httproute)
+                httproute_spec_dict = httproute_dict.get("spec", {})
+                httproute_spec = parse_gateway_api_resource(
+                    httproute_spec_dict, HTTPRouteSpec
+                )
+            except ValueError as e:
+                logger.warning(
+                    f"Failed to parse HTTPRoute {httproute_item.name}: {e}"
+                )
+                continue
 
             routes_to_service = False
-            for rule in httproute_rules:
-                backend_refs = rule.get("backendRefs", [])
-                for backend_ref in backend_refs:
-                    backend_service_name = backend_ref.get("name")
+            for rule in httproute_spec.rules:
+                for backend_ref in rule.backend_refs:
                     backend_namespace = (
-                        backend_ref.get("namespace") or httproute_namespace
+                        backend_ref.namespace or httproute_namespace
                     )
 
                     if (
-                        backend_service_name == service_item.name
+                        backend_ref.name == service_item.name
                         and backend_namespace == service_namespace
                     ):
                         routes_to_service = True
@@ -1286,15 +1294,12 @@ class KubernetesDeployer(ContainerizedDeployer):
             if not routes_to_service:
                 continue
 
-            parent_refs = httproute_spec.get("parentRefs", [])
-            if not parent_refs:
+            if not httproute_spec.parent_refs:
                 continue
 
-            parent_ref = parent_refs[0]
-            gateway_name = parent_ref.get("name")
-            if not gateway_name:
-                continue
-            gateway_namespace = parent_ref.get("namespace") or namespace
+            parent_ref = httproute_spec.parent_refs[0]
+            gateway_name = parent_ref.name
+            gateway_namespace = parent_ref.namespace or namespace
 
             matching_gateway = None
             for gateway_item in gateway_items:
@@ -1307,7 +1312,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                         name=gateway_item.name,
                         namespace=gateway_item_namespace,
                         kind="Gateway",
-                        api_version="gateway.networking.k8s.io/v1beta1",
+                        api_version=gateway_item.api_version,
                     )
                     break
 

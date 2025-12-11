@@ -269,13 +269,13 @@ def test_discover_urls_finds_gateway_api_url() -> None:
     )
     gateway_inventory = ResourceInventoryItem(
         kind="Gateway",
-        api_version="gateway.networking.k8s.io/v1beta1",
+        api_version="gateway.networking.k8s.io/v1",
         namespace="ns",
         name="main-gateway",
     )
     httproute_inventory = ResourceInventoryItem(
         kind="HTTPRoute",
-        api_version="gateway.networking.k8s.io/v1beta1",
+        api_version="gateway.networking.k8s.io/v1",
         namespace="ns",
         name="api-route",
     )
@@ -290,7 +290,7 @@ def test_discover_urls_finds_gateway_api_url() -> None:
         },
         (
             "Gateway",
-            "gateway.networking.k8s.io/v1beta1",
+            "gateway.networking.k8s.io/v1",
             "main-gateway",
             "ns",
         ): {
@@ -305,7 +305,7 @@ def test_discover_urls_finds_gateway_api_url() -> None:
         },
         (
             "HTTPRoute",
-            "gateway.networking.k8s.io/v1beta1",
+            "gateway.networking.k8s.io/v1",
             "api-route",
             "ns",
         ): {
