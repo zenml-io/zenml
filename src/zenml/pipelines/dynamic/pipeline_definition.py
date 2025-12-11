@@ -61,7 +61,8 @@ class DynamicPipeline(Pipeline):
         """
         # This is the only execution mode that is currently supported for
         # dynamic pipelines, so we default to it.
-        kwargs.setdefault("execution_mode", ExecutionMode.STOP_ON_FAILURE)
+        if kwargs.get("execution_mode", None) is None:
+            kwargs["execution_mode"] = ExecutionMode.STOP_ON_FAILURE
         super().__init__(**kwargs)
         self._depends_on = depends_on or []
         self._validate_depends_on(self._depends_on)

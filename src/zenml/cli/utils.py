@@ -2363,9 +2363,14 @@ def pretty_print_deployment(
     if deployment.url:
         declare("\n[bold]Connection information:[/bold]")
 
-        endpoint_url = deployment.url.rstrip("/")
-        declare(f"\n[bold]Endpoint URL:[/bold] [link]{endpoint_url}[/link]")
-        declare(f"[bold]Swagger URL:[/bold] [link]{endpoint_url}/docs[/link]")
+        declare(
+            f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]",
+            no_wrap=True,
+        )
+        declare(
+            f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]",
+            no_wrap=True,
+        )
 
         # Auth key handling with proper security
         auth_key = deployment.auth_key

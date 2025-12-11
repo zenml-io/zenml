@@ -272,7 +272,8 @@ def provision_deployment(
             dashboard_url = get_deployment_url(deployment)
             if dashboard_url:
                 cli_utils.declare(
-                    f"\nView in ZenML Cloud: [link]{dashboard_url}[/link]"
+                    f"\nView in ZenML Cloud: [link]{dashboard_url}[/link]",
+                    no_wrap=True,
                 )
 
 

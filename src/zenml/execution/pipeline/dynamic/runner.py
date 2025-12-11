@@ -623,10 +623,7 @@ def expand_mapped_inputs(
                 mapped_input_names.append(key)
                 mapped_inputs.append(
                     tuple(
-                        value.model_copy(
-                            update={"chunk_index": i, "chunk_size": 1}
-                        )
-                        for i in range(value.item_count)
+                        value.chunk(index=i) for i in range(value.item_count)
                     )
                 )
         elif (

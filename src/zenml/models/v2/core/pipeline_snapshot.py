@@ -122,6 +122,11 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
         title="The description of the snapshot.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
+    source_code: Optional[str] = Field(
+        default=None,
+        title="The source code of the pipeline function or class.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
     replace: Optional[bool] = Field(
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
@@ -247,6 +252,11 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
     description: Optional[str] = Field(
         default=None,
         title="The description of the snapshot.",
+    )
+    source_code: Optional[str] = Field(
+        default=None,
+        title="The source code of the pipeline function or class.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
     run_name_template: str = Field(
         title="The run name template for runs created using this snapshot.",
@@ -401,6 +411,15 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def source_code(self) -> Optional[str]:
+        """The `source_code` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().source_code
 
     @property
     def run_name_template(self) -> str:
