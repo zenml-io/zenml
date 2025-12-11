@@ -425,6 +425,11 @@ The available package installers are:
 
 Full documentation for how `uv` works with PyTorch can be found on the Astral Docs website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers some of the particular gotchas and details you might need to know.
 
+{% hint style="info" %}
+If you're using `uv` and specify a custom parent image or Dockerfile that does not have an activated virtual environment, you need to pass `python_package_installer_args={"system": None}` in your DockerSettings so that
+`uv` installs the packages for the Python system installation. Depending on the parent image, you might also need to include `"break-system-packages": None` in the installer args as well to make it work.
+{% endhint %}
+
 ## Private PyPI Repositories
 
 For packages that require authentication from private repositories:
