@@ -224,44 +224,41 @@ def update_heartbeat(
     """
     step = zen_store().get_run_step(step_run_id, hydrate=False)
 
-    # Avoid using status.is_finished as it invalidates useful statuses for heartbeat
-    # such as STOPPED.
-    if step.status.is_failed or step.status.is_successful:
+    if step.status.is_finished:
         raise HTTPException(
             status_code=422,
             detail=f"Step {step.id} is finished - can not update heartbeat.",
         )
 
-    def validate_token_access(
-        ctx: AuthContext, step_: StepRunResponse
-    ) -> None:
+    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
+
+    def validate_token_access(ctx: AuthContext) -> None:
         token_run_id = ctx.access_token.pipeline_run_id  # type: ignore[union-attr]
         token_schedule_id = ctx.access_token.schedule_id  # type: ignore[union-attr]
 
         if token_run_id:
-            if step_.pipeline_run_id != token_run_id:
+            if step.pipeline_run_id != token_run_id:
                 raise AuthorizationException(
-                    f"Authentication token provided is invalid for step: {step_.id}"
+                    f"Authentication token provided is invalid for step: {step.id}"
                 )
         elif token_schedule_id:
-            pipeline_run = zen_store().get_run(
-                step_.pipeline_run_id, hydrate=False
-            )
-
             if not (
                 pipeline_run.schedule
                 and pipeline_run.schedule.id == token_schedule_id
             ):
                 raise AuthorizationException(
-                    f"Authentication token provided is invalid for step: {step_.id}"
+                    f"Authentication token provided is invalid for step: {step.id}"
                 )
         else:
             # un-scoped token. Soon to-be-deprecated, we will ignore validation temporarily.
             pass
 
-    validate_token_access(ctx=auth_context, step_=step)
+    validate_token_access(ctx=auth_context)
 
-    return zen_store().update_step_heartbeat(step_run_id=step_run_id)
+    hb = zen_store().update_step_heartbeat(step_run_id=step_run_id)
+    hb.pipeline_run_status = pipeline_run.status
+
+    return hb
 
 
 @router.get(

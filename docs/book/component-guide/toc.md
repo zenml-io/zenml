@@ -32,6 +32,8 @@
   * [Amazon Simple Cloud Storage (S3)](artifact-stores/s3.md)
   * [Google Cloud Storage (GCS)](artifact-stores/gcp.md)
   * [Azure Blob Storage](artifact-stores/azure.md)
+  * [Alibaba Cloud OSS](artifact-stores/alibaba-oss.md)
+  * [MinIO](artifact-stores/minio.md)
   * [Develop a custom artifact store](artifact-stores/custom.md)
 * [Container Registries](container-registries/README.md)
   * [Default Container Registry](container-registries/default.md)

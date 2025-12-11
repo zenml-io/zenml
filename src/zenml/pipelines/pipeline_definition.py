@@ -130,6 +130,7 @@ class Pipeline:
 
     def __init__(
         self,
+        *,
         name: str,
         entrypoint: F,
         enable_cache: Optional[bool] = None,
@@ -189,7 +190,8 @@ class Pipeline:
                 function with no arguments (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
-            substitutions: Extra placeholders to use in the name templates.
+            substitutions: Extra substitutions for pipeline run, model and
+                artifact name placeholders.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
             **kwargs: Additional keyword arguments.
@@ -407,7 +409,8 @@ class Pipeline:
             model: configuration of the model version in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
-            substitutions: Extra placeholders to use in the name templates.
+            substitutions: Extra substitutions for pipeline run, model and
+                artifact name placeholders.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
@@ -1003,6 +1006,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule=schedule_id,
             code_reference=code_reference,
             code_path=code_path,
+            source_code=self.source_code,
             **snapshot.model_dump(),
             **snapshot_request_kwargs,
         )

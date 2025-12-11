@@ -694,6 +694,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 deployment_name=self.deployment.name,
                 pipeline_name=self.snapshot.pipeline_configuration.name,
                 run_id=run.id if run else None,
+                run_index=run.index if run else None,
                 run_name=run.name if run else None,
                 parameters_used=resolved_params,
                 snapshot_id=self.snapshot.id,

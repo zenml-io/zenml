@@ -37,6 +37,9 @@ class DeploymentInvocationResponseMetadata(BaseModel):
     run_id: Optional[UUID] = Field(
         default=None, title="The ID of the pipeline run."
     )
+    run_index: Optional[int] = Field(
+        default=None, title="The index of the pipeline run."
+    )
     run_name: Optional[str] = Field(
         default=None, title="The name of the pipeline run."
     )

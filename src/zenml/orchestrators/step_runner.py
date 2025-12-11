@@ -35,7 +35,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
 )
-from zenml.enums import ArtifactSaveType
+from zenml.enums import ArtifactSaveType, ExecutionStatus
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
@@ -236,46 +236,55 @@ class StepRunner:
                         )
                 except BaseException as step_exception:  # noqa: E722
                     step_failed = True
-
-                    exception_info = (
-                        exception_utils.collect_exception_information(
-                            step_exception, step_instance
-                        )
-                    )
-
-                    if ENV_ZENML_STEP_OPERATOR in os.environ:
-                        # We're running in a step operator environment, so we can't
-                        # depend on the step launcher to publish the exception info
-                        Client().zen_store.update_run_step(
-                            step_run_id=step_run_info.step_run_id,
-                            step_run_update=StepRunUpdate(
-                                exception_info=exception_info,
-                            ),
-                        )
-                    else:
-                        # This will be published by the step launcher
-                        step_exception_info.set(exception_info)
-
-                    if not step_run.is_retriable:
-                        if (
-                            failure_hook_source
-                            := self.configuration.failure_hook_source
-                        ):
-                            logger.info("Detected failure hook. Running...")
-                            with env_utils.temporary_environment(
-                                step_environment
-                            ):
-                                load_and_run_hook(
-                                    failure_hook_source,
-                                    step_exception=step_exception,
-                                )
                     if (
                         isinstance(step_exception, KeyboardInterrupt)
                         and heartbeat_worker.is_terminated
                     ):
+                        Client().zen_store.update_run_step(
+                            step_run_id=step_run_info.step_run_id,
+                            step_run_update=StepRunUpdate(
+                                status=ExecutionStatus.STOPPING,
+                            ),
+                        )
+
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
                         )
+                    else:
+                        exception_info = (
+                            exception_utils.collect_exception_information(
+                                step_exception, step_instance
+                            )
+                        )
+
+                        if ENV_ZENML_STEP_OPERATOR in os.environ:
+                            # We're running in a step operator environment, so we can't
+                            # depend on the step launcher to publish the exception info
+                            Client().zen_store.update_run_step(
+                                step_run_id=step_run_info.step_run_id,
+                                step_run_update=StepRunUpdate(
+                                    exception_info=exception_info,
+                                ),
+                            )
+                        else:
+                            # This will be published by the step launcher
+                            step_exception_info.set(exception_info)
+
+                        if not step_run.is_retriable:
+                            if (
+                                failure_hook_source
+                                := self.configuration.failure_hook_source
+                            ):
+                                logger.info(
+                                    "Detected failure hook. Running..."
+                                )
+                                with env_utils.temporary_environment(
+                                    step_environment
+                                ):
+                                    load_and_run_hook(
+                                        failure_hook_source,
+                                        step_exception=step_exception,
+                                    )
                     raise step_exception
                 finally:
                     heartbeat_worker.stop()

@@ -30,6 +30,40 @@ class OutputArtifact(ArtifactVersionResponse):
     chunk_index: Optional[int] = None
     chunk_size: Optional[int] = None
 
+    def chunk(self, index: int) -> "OutputArtifact":
+        """Get a chunk of the output artifact.
+
+        Args:
+            index: The index of the chunk.
+
+        Raises:
+            ValueError: If the output artifact can not be chunked or the index
+                is out of range.
+
+        Returns:
+            The artifact chunk.
+        """
+        if not self.item_count:
+            raise ValueError(
+                f"Output artifact `{self.output_name}` of step "
+                f"`{self.step_name}` can not be chunked."
+            )
+
+        if index < 0 or index >= self.item_count:
+            raise ValueError(
+                f"Chunk index `{index}` out of range for output artifact "
+                f"`{self.output_name}` of step `{self.step_name}`."
+            )
+
+        if self.chunk_index is not None and self.chunk_index != index:
+            raise ValueError(
+                f"Output artifact `{self.output_name}` of step "
+                f"`{self.step_name}` is already referring to a "
+                "different chunk."
+            )
+
+        return self.model_copy(update={"chunk_index": index, "chunk_size": 1})
+
 
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
 
@@ -113,6 +147,20 @@ class ArtifactFuture(_BaseStepRunFuture):
             The step run output artifact data.
         """
         return self.result().load(disable_cache=disable_cache)
+
+    def chunk(self, index: int) -> "OutputArtifact":
+        """Get a chunk of the output artifact.
+
+        This method will wait for the future to complete and then return the
+        artifact chunk.
+
+        Args:
+            index: The index of the chunk.
+
+        Returns:
+            The artifact chunk.
+        """
+        return self.result().chunk(index=index)
 
 
 class StepRunOutputsFuture(_BaseStepRunFuture):
