@@ -377,7 +377,7 @@ def setup_run_logging(
     """
     log_metadata = get_run_log_metadata(pipeline_run)
     log_metadata.update(dict(source=source))
-    name = f"zenml.pipeline_run.{pipeline_run.id}.{source}"
+    name = f"zenml.pipeline_run.{pipeline_run.name}.{source}"
 
     if pipeline_run.log_collection is not None:
         if run_logs := search_logs_by_source(
@@ -454,7 +454,7 @@ def setup_step_logging(
     log_metadata = get_step_log_metadata(step_run, pipeline_run)
     log_metadata.update(dict(source=source))
     name = (
-        f"zenml.pipeline_run.{pipeline_run.id}.step.{step_run.name}.{source}"
+        f"zenml.pipeline_run.{pipeline_run.name}.step.{step_run.name}.{source}"
     )
 
     if pipeline_run.log_collection is not None:
