@@ -53,6 +53,7 @@ from zenml.enums import (
     StackComponentType,
 )
 from zenml.integrations.kubernetes import kube_utils
+from zenml.integrations.kubernetes.constants import GATEWAY_API_VERSIONS
 from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
     KubernetesDeployerConfig,
     KubernetesDeployerSettings,
@@ -1176,12 +1177,18 @@ class KubernetesDeployer(ContainerizedDeployer):
         ingress_items = _filter_inventory(
             inventory, "Ingress", "networking.k8s.io/v1"
         )
-        gateway_items = _filter_inventory(
-            inventory, "Gateway", "gateway.networking.k8s.io/v1beta1"
-        )
-        httproute_items = _filter_inventory(
-            inventory, "HTTPRoute", "gateway.networking.k8s.io/v1beta1"
-        )
+        gateway_items = [
+            item
+            for item in inventory
+            if item.kind == "Gateway"
+            and item.api_version in GATEWAY_API_VERSIONS
+        ]
+        httproute_items = [
+            item
+            for item in inventory
+            if item.kind == "HTTPRoute"
+            and item.api_version in GATEWAY_API_VERSIONS
+        ]
 
         for service_item in service_items:
             k8s_service = self.k8s_applier.get_resource(
