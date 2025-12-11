@@ -52,7 +52,7 @@ class DatadogLogStore(OtelLogStore):
         """Get the Datadog log exporter.
 
         Returns:
-            OTLPLogExporter configured with API key and site.
+            DatadogExporter with the proper configuration.
         """
         if not self._datadog_exporter:
             headers = {
