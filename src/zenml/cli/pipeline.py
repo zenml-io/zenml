@@ -491,7 +491,8 @@ def deploy_pipeline(
         dashboard_url = get_deployment_url(deployment)
         if dashboard_url:
             cli_utils.declare(
-                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]",
+                no_wrap=True,
             )
 
         if attach:
@@ -740,7 +741,15 @@ def runs() -> None:
 @runs.command("list", help="List all registered pipeline runs.")
 @list_options(
     PipelineRunFilter,
-    default_columns=["id", "run_name", "pipeline", "status", "stack", "owner"],
+    default_columns=[
+        "id",
+        "index",
+        "run_name",
+        "pipeline",
+        "status",
+        "stack",
+        "owner",
+    ],
 )
 def list_pipeline_runs(
     columns: str, output_format: OutputFormat, **kwargs: Any
@@ -1264,7 +1273,8 @@ def deploy_snapshot(
             dashboard_url = get_deployment_url(deployment)
             if dashboard_url:
                 cli_utils.declare(
-                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]",
+                    no_wrap=True,
                 )
 
 

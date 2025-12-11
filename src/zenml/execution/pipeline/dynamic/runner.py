@@ -18,6 +18,7 @@ import copy
 import inspect
 import itertools
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -53,7 +54,6 @@ from zenml.execution.pipeline.dynamic.run_context import (
 from zenml.execution.pipeline.dynamic.utils import _Unmapped
 from zenml.execution.step.utils import launch_step
 from zenml.logger import get_logger
-from zenml.logging.step_logging import setup_pipeline_logging
 from zenml.models import (
     ArtifactVersionResponse,
     PipelineRunResponse,
@@ -70,6 +70,10 @@ from zenml.stack import Stack
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.utils import OutputSignature
 from zenml.utils import source_utils
+from zenml.utils.logging_utils import (
+    is_pipeline_logging_enabled,
+    setup_run_logging,
+)
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -153,25 +157,27 @@ class DynamicPipelineRunner:
 
     def run_pipeline(self) -> None:
         """Run the pipeline."""
-        with setup_pipeline_logging(
-            source="orchestrator",
-            snapshot=self._snapshot,
-        ) as logs_request:
-            if self._run:
-                run = Client().zen_store.update_run(
-                    run_id=self._run.id,
-                    run_update=PipelineRunUpdate(
-                        orchestrator_run_id=self._orchestrator_run_id,
-                        add_logs=[logs_request] if logs_request else None,
-                    ),
-                )
-            else:
-                run = create_placeholder_run(
-                    snapshot=self._snapshot,
+        if self._run:
+            run = Client().zen_store.update_run(
+                run_id=self._run.id,
+                run_update=PipelineRunUpdate(
                     orchestrator_run_id=self._orchestrator_run_id,
-                    logs=logs_request,
-                )
+                ),
+            )
+        else:
+            run = create_placeholder_run(
+                snapshot=self._snapshot,
+                orchestrator_run_id=self._orchestrator_run_id,
+            )
 
+        logging_context = nullcontext()
+        if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
+            logging_context = setup_run_logging(
+                pipeline_run=run,
+                source="orchestrator",
+            )
+
+        with logging_context:
             with InMemoryArtifactCache():
                 with DynamicPipelineRunContext(
                     pipeline=self.pipeline,
@@ -181,7 +187,6 @@ class DynamicPipelineRunner:
                 ):
                     self._orchestrator.run_init_hook(snapshot=self._snapshot)
                     try:
-                        # TODO: step logging isn't threadsafe
                         # TODO: what should be allowed as pipeline returns?
                         #  (artifacts, json serializable, anything?)
                         #  how do we show it in the UI?
@@ -618,10 +623,7 @@ def expand_mapped_inputs(
                 mapped_input_names.append(key)
                 mapped_inputs.append(
                     tuple(
-                        value.model_copy(
-                            update={"chunk_index": i, "chunk_size": 1}
-                        )
-                        for i in range(value.item_count)
+                        value.chunk(index=i) for i in range(value.item_count)
                     )
                 )
         elif (
@@ -637,6 +639,15 @@ def expand_mapped_inputs(
                 "wrap your input with the `unmapped(...)` function.",
                 key,
             )
+        elif (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, OutputArtifact) for item in value)
+        ):
+            # List of step output artifacts, in this case the mapping is over
+            # the items of the list
+            mapped_input_names.append(key)
+            mapped_inputs.append(tuple(value))
         elif isinstance(value, Sequence):
             logger.warning(
                 "Received sequence-like data for step input `%s`. Mapping over "

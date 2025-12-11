@@ -13,43 +13,74 @@
 #  permissions and limitations under the License.
 """Logger implementation."""
 
-import builtins
 import logging
 import os
 import re
 import sys
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Dict
-
-if TYPE_CHECKING:
-    from zenml.logging.step_logging import ArtifactStoreHandler
+from typing import Any, Dict, Optional
 
 from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ENABLE_RICH_TRACEBACK,
-    ENV_ZENML_CAPTURE_PRINTS,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
-    ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
     ZENML_STORAGE_LOGGING_VERBOSITY,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
-from zenml.utils.context_utils import ContextVarList
 
 ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
     ENV_ZENML_LOGGING_COLORS_DISABLED, False
 )
 
-
 step_names_in_console: ContextVar[bool] = ContextVar(
     "step_names_in_console", default=False
 )
-logging_handlers: ContextVarList["ArtifactStoreHandler"] = ContextVarList(
-    "logging_handlers"
-)
+
+_original_stdout_write: Optional[Any] = None
+_original_stderr_write: Optional[Any] = None
+_stdout_wrapped: bool = False
+_stderr_wrapped: bool = False
+
+
+class _ZenMLStdoutStream:
+    """Stream that writes to the original stdout, bypassing the ZenML wrapper.
+
+    This ensures console logging doesn't trigger the LoggingContext wrapper,
+    preventing duplicate log entries in stored logs.
+    """
+
+    def write(self, text: str) -> Any:
+        """Write text to the original stdout.
+
+        Args:
+            text: The text to write.
+
+        Returns:
+            The number of characters written.
+        """
+        if _original_stdout_write:
+            return _original_stdout_write(text)
+        return sys.stdout.write(text)
+
+    def flush(self) -> None:
+        """Flush the stdout buffer."""
+        sys.stdout.flush()
+
+
+def get_logger(logger_name: str) -> logging.Logger:
+    """Main function to get logger name,.
+
+    Args:
+        logger_name: Name of logger to initialize.
+
+    Returns:
+        A logger object.
+    """
+    return logging.getLogger(logger_name)
 
 
 def _add_step_name_to_message(message: str) -> str:
@@ -82,7 +113,7 @@ def _add_step_name_to_message(message: str) -> str:
     return message
 
 
-class CustomFormatter(logging.Formatter):
+class ConsoleFormatter(logging.Formatter):
     """Formats logs according to custom specifications."""
 
     grey: str = "\x1b[90m"
@@ -106,7 +137,6 @@ class CustomFormatter(logging.Formatter):
         Returns:
             The format template string.
         """
-        # Only include location info for DEBUG level
         if get_logging_level() == LoggingLevels.DEBUG:
             return "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
         else:
@@ -129,19 +159,15 @@ class CustomFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
-        # Get the template
         format_template = self._get_format_template(record)
 
-        # Apply step name prepending if enabled (for console display)
         message = record.getMessage()
         try:
             if step_names_in_console.get():
                 message = _add_step_name_to_message(message)
         except Exception:
-            # If we can't get step context, just use the original message
             pass
 
-        # Create a new record with the modified message
         modified_record = logging.LogRecord(
             name=record.name,
             level=record.levelno,
@@ -153,11 +179,9 @@ class CustomFormatter(logging.Formatter):
         )
 
         if ZENML_LOGGING_COLORS_DISABLED:
-            # If color formatting is disabled, use the default format without colors
             formatter = logging.Formatter(format_template)
             return formatter.format(modified_record)
         else:
-            # Use color formatting
             log_fmt = (
                 self.COLORS[LoggingLevels(record.levelno)]
                 + format_template
@@ -175,7 +199,6 @@ class CustomFormatter(logging.Formatter):
                     + self.COLORS.get(LoggingLevels(record.levelno)),
                 )
 
-            # Format URLs
             url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
             urls = re.findall(url_pattern, formatted_message)
             for url in urls:
@@ -203,23 +226,13 @@ def get_logging_level() -> LoggingLevels:
         raise KeyError(
             f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
         )
-    return LoggingLevels[verbosity]
 
-
-def get_storage_log_level() -> LoggingLevels:
-    """Get storage logging level from the env variable with safe fallback.
-
-    Returns:
-        The storage logging level, defaulting to INFO if invalid.
-
-    Raises:
-        KeyError: If the storage logging level is not found.
-    """
-    verbosity = ZENML_STORAGE_LOGGING_VERBOSITY.upper()
-    if verbosity not in LoggingLevels.__members__:
-        raise KeyError(
-            f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
+    if ZENML_STORAGE_LOGGING_VERBOSITY is not None:
+        get_logger(__name__).warning(
+            "The ZENML_STORAGE_LOGGING_VERBOSITY is no longer supported. "
+            "Please use the ZENML_LOGGING_VERBOSITY instead."
         )
+
     return LoggingLevels[verbosity]
 
 
@@ -240,137 +253,124 @@ def set_root_verbosity() -> None:
         get_logger(__name__).debug("Logging NOTSET")
 
 
-def wrapped_print(*args: Any, **kwargs: Any) -> None:
-    """Wrapped print function.
+def _wrapped_write(original_write: Any, stream_name: str) -> Any:
+    """Wrap stdout/stderr write method to route logs to LoggingContext.
 
     Args:
-        *args: Arguments to print
-        **kwargs: Keyword arguments for print
-    """
-    original_print = getattr(builtins, "_zenml_original_print")
-
-    file_arg = kwargs.get("file", sys.stdout)
-
-    # IMPORTANT: Don't intercept internal calls to any objects
-    # other than sys.stdout and sys.stderr. This is especially
-    # critical for handling tracebacks. The default logging
-    # formatter uses StringIO to format tracebacks, we don't
-    # want to intercept it and create a LogRecord about it.
-    if file_arg not in (sys.stdout, sys.stderr):
-        original_print(*args, **kwargs)
-
-    # Convert print arguments to message
-    message = " ".join(str(arg) for arg in args)
-
-    # Call active handlers first (for storage)
-    if message.strip():
-        handlers = logging_handlers.get()
-
-        for handler in handlers:
-            try:
-                # Create a LogRecord for the handler
-                record = logging.LogRecord(
-                    name="print",
-                    level=logging.ERROR
-                    if file_arg == sys.stderr
-                    else logging.INFO,
-                    pathname="",
-                    lineno=0,
-                    msg=message,
-                    args=(),
-                    exc_info=None,
-                )
-                # Check if handler's level would accept this record
-                if record.levelno >= handler.level:
-                    handler.emit(record)
-            except Exception:
-                # Don't let handler errors break print
-                pass
-
-    if step_names_in_console.get():
-        message = _add_step_name_to_message(message)
-
-    # Then call original print for console display
-    original_print(message, *args[1:], **kwargs)
-
-
-def setup_global_print_wrapping() -> None:
-    """Set up global print() wrapping with context-aware handlers."""
-    capture_prints = handle_bool_env_var(
-        ENV_ZENML_CAPTURE_PRINTS, default=True
-    )
-
-    if not capture_prints or hasattr(__builtins__, "_zenml_original_print"):
-        return
-
-    # Store original and replace print
-    setattr(builtins, "_zenml_original_print", builtins.print)
-    setattr(builtins, "print", wrapped_print)
-
-
-def get_formatter() -> logging.Formatter:
-    """Get a configured logging formatter.
+        original_write: The original write method.
+        stream_name: The name of the stream.
 
     Returns:
-        The formatter.
+        The wrapped write method.
     """
-    if log_format := os.environ.get(ENV_ZENML_LOGGING_FORMAT, None):
-        return logging.Formatter(fmt=log_format)
-    else:
-        return CustomFormatter()
+
+    def wrapped_write(text: str) -> Any:
+        """Write method that routes logs through LoggingContext.
+
+        Args:
+            text: The text to write.
+
+        Returns:
+            The result of the original write method.
+        """
+        from zenml.utils.logging_utils import LoggingContext
+
+        level_int = logging.INFO if stream_name == "stdout" else logging.ERROR
+
+        record = logging.LogRecord(
+            name=stream_name,
+            level=level_int,
+            pathname="",
+            lineno=0,
+            msg=text,
+            args=(),
+            exc_info=None,
+            func="",
+        )
+        LoggingContext.emit(record)
+
+        return original_write(text)
+
+    return wrapped_write
 
 
-def get_console_handler() -> Any:
-    """Get console handler for logging.
+def wrap_stdout_stderr() -> None:
+    """Wrap stdout and stderr write methods to route through LoggingContext."""
+    global _stdout_wrapped, _stderr_wrapped
+    global _original_stdout_write, _original_stderr_write
+
+    if not _stdout_wrapped:
+        _original_stdout_write = getattr(sys.stdout, "write")
+        setattr(
+            sys.stdout,
+            "write",
+            _wrapped_write(_original_stdout_write, "stdout"),
+        )
+        _stdout_wrapped = True
+
+    if not _stderr_wrapped:
+        _original_stderr_write = getattr(sys.stderr, "write")
+        setattr(
+            sys.stderr,
+            "write",
+            _wrapped_write(_original_stderr_write, "stderr"),
+        )
+        _stderr_wrapped = True
+
+
+class ZenMLLoggingHandler(logging.Handler):
+    """Custom handler that routes logs through LoggingContext."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit a log record through LoggingContext.
+
+        Args:
+            record: The log record to emit.
+        """
+        from zenml.utils.logging_utils import LoggingContext
+
+        LoggingContext.emit(record)
+
+
+def get_console_handler() -> logging.Handler:
+    """Get console handler that writes to original stdout.
 
     Returns:
         A console handler.
     """
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(get_formatter())
-    # Set console handler level explicitly to console verbosity
-    console_handler.setLevel(get_logging_level().value)
-    return console_handler
+    handler = logging.StreamHandler(_ZenMLStdoutStream())
+    handler.setFormatter(ConsoleFormatter())
+    return handler
 
 
-def get_logger(logger_name: str) -> logging.Logger:
-    """Main function to get logger name,.
-
-    Args:
-        logger_name: Name of logger to initialize.
+def get_zenml_handler() -> logging.Handler:
+    """Get ZenML handler that routes logs through LoggingContext.
 
     Returns:
-        A logger object.
+        A ZenML handler.
     """
-    return logging.getLogger(logger_name)
+    return ZenMLLoggingHandler()
 
 
 def init_logging() -> None:
-    """Initialize logging with default levels."""
+    """Initialize the logging system."""
+    set_root_verbosity()
+    wrap_stdout_stderr()
+
+    # Add both handlers to the root logger
+    root_logger = logging.getLogger()
+
+    # Console handler - writes to original stdout
+    root_logger.addHandler(get_console_handler())
+
+    # ZenML handler - routes through LoggingContext
+    root_logger.addHandler(get_zenml_handler())
+
     # Mute tensorflow cuda warnings
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-    set_root_verbosity()
-
-    # Check if console handler already exists to avoid duplicates
-    root_logger = logging.getLogger()
-    has_console_handler = any(
-        isinstance(handler, logging.StreamHandler)
-        and handler.stream == sys.stdout
-        for handler in root_logger.handlers
-    )
 
     # logging capture warnings
     logging.captureWarnings(True)
-
-    if not has_console_handler:
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(get_formatter())
-        # Set console handler level explicitly to console verbosity
-        console_handler.setLevel(get_logging_level().value)
-        root_logger.addHandler(console_handler)
-
-    # Initialize global print wrapping
-    setup_global_print_wrapping()
 
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
     suppress_zenml_logs: bool = handle_bool_env_var(

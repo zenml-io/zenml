@@ -44,7 +44,6 @@ from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
-    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
     from zenml.zen_stores.schemas.secret_schemas import SecretSchema
@@ -95,11 +94,6 @@ class StackComponentSchema(NamedSchema, table=True):
             "lazy": "joined",
             "uselist": False,
         },
-    )
-
-    run_or_step_logs: List["LogsSchema"] = Relationship(
-        back_populates="artifact_store",
-        sa_relationship_kwargs={"cascade": "delete", "uselist": True},
     )
 
     connector_id: Optional[UUID] = build_foreign_key_field(

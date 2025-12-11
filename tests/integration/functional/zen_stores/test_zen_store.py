@@ -49,9 +49,6 @@ from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
 from zenml import Model, Tag, add_tags, log_metadata, pipeline, step
-from zenml.artifacts.utils import (
-    _load_artifact_store,
-)
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -84,7 +81,6 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.logging.step_logging import fetch_log_records, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
@@ -3242,67 +3238,30 @@ def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
 def test_logs_are_recorded_properly(clean_client):
     """Tests if logs are stored in the artifact store."""
     client = Client()
-    store = client.zen_store
 
     run_context = PipelineRunContext(1)
     with run_context:
         steps = run_context.steps
         step1_logs = steps[0].logs
-        step2_logs = steps[1].logs
-        step1_logs_content = fetch_log_records(
-            store, step1_logs.artifact_store_id, step1_logs.uri
-        )
-        step2_logs_content = fetch_log_records(
-            store, step1_logs.artifact_store_id, step2_logs.uri
+        step1_logs_content = client.active_stack.log_store.fetch(
+            step1_logs, limit=100
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
         assert any("log" in record.message for record in step1_logs_content)
 
-        # Step 2 does not have logs!
-        assert any(
-            "Step `int_plus_one_test_step` has started." in record.message
-            for record in step2_logs_content
-        )
 
-
-def test_logs_are_recorded_properly_when_disabled(clean_client):
-    """Tests no logs are stored in the artifact store when disabled"""
+def test_logs_dont_exist_when_disabled(clean_client):
+    """Tests that logs don't exist when disabled."""
     client = Client()
     store = client.zen_store
 
-    with PipelineRunContext(2, enable_step_logs=False):
+    with PipelineRunContext(num_runs=2, enable_step_logs=False):
         steps = store.list_run_steps(StepRunFilter())
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
-        assert not step1_logs
-        assert not step2_logs
-
-        artifact_store_id = steps[0].output.artifact_store_id
-        assert artifact_store_id
-
-        artifact_store = _load_artifact_store(artifact_store_id, store)
-
-        logs_uri_1 = prepare_logs_uri(
-            artifact_store=artifact_store,
-            step_name=steps[0].name,
-        )
-
-        logs_uri_2 = prepare_logs_uri(
-            artifact_store=artifact_store,
-            step_name=steps[1].name,
-        )
-
-        prepare_logs_uri(
-            artifact_store=artifact_store,
-            step_name=steps[1].name,
-        )
-
-        with pytest.raises(FileNotFoundError):
-            fetch_log_records(store, artifact_store_id, logs_uri_1)
-
-        with pytest.raises(FileNotFoundError):
-            fetch_log_records(store, artifact_store_id, logs_uri_2)
+        assert step1_logs is None
+        assert step2_logs is None
 
 
 # .--------------------.

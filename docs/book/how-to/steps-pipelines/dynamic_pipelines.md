@@ -123,7 +123,10 @@ def map_reduce():
 ```
 
 Key points:
-- `step.map(...)` fans out a step over sequence-like inputs.
+- `step.map(...)` fans out a step over sequence-like inputs. These inputs can be either
+  - a single list-like output artifact (see the code sample above)
+  - a list of output artifacts.
+  - the output of a `.map(...)` or `.product(...)` call if the respective step only returns a single output artifact
 - Steps can accept lists of artifacts directly as inputs (useful for reducers).
 - You can pass the mapped output directly to a downstream step without loading in the orchestration environment.
 
@@ -212,6 +215,34 @@ Notes:
 - `results` is a future that refers to all outputs of all steps, and `unpack()` works for both `.map(...)` and `.product(...)`.
 - Each list contains future objects that refer to a single artifact.
 
+#### Pass artifact chunks manually
+
+In some cases, you might want to loop over a sequence-like artifact manually and launch steps for only some items.
+You can do so efficiently by using the `artifact.chunk(...)` method:
+```python
+from zenml import pipeline, step
+
+@step
+def create_int_list() -> list[int]:
+    return [1, 2, 3, 4]
+
+@step
+def compute(a: int) -> int:
+    return a * 2
+
+@pipeline(dynamic=True)
+def custom_loop():
+    ints = create_int_list()
+
+    for index, value in enumerate(ints.load()):
+        # Apply some filter
+        if value % 2 == 0:
+            # Get the artifact chunk. Notice that we use `ints` here, which
+            # is a reference to the artifact and not the actual data that we
+            # loop over
+            chunk = ints.chunk(index=index)
+            compute(chunk)
+```
 
 ### Parallel Step Execution
 
@@ -323,6 +354,10 @@ When you call `.load()` on an artifact in a dynamic pipeline, it synchronously l
 
 - Mapping is currently supported only over artifacts produced within the same pipeline run (mapping over raw data or external artifacts is not supported).
 - Chunk size for mapped collection loading defaults to 1 and is not yet configurable.
+
+### Execution mode
+
+Currently only the `STOP_ON_FAILURE` execution mode is supported for dynamic pipelines, and will be used as a default.
 
 ## Best Practices
 
