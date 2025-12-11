@@ -35,6 +35,7 @@ from azure.ai.ml.entities import (
     CommandComponent,
     CronTrigger,
     Environment,
+    JobResourceConfiguration,
     JobSchedule,
     RecurrenceTrigger,
 )
@@ -162,6 +163,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         image: str,
         command: List[str],
         arguments: List[str],
+        shm_size: Optional[str] = None,
     ) -> CommandComponent:
         """Creates a CommandComponent to run on AzureML Pipelines.
 
@@ -172,6 +174,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             image: The image to use in the environment
             command: The command to execute the entrypoint with.
             arguments: The arguments to pass into the command.
+            shm_size: Optional shared memory size for the container (e.g., '2g', '200g').
 
         Returns:
             the generated AzureML CommandComponent.
@@ -187,6 +190,10 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 for upstream_step in step.spec.upstream_steps
             }
 
+        resources = None
+        if shm_size:
+            resources = JobResourceConfiguration(shm_size=shm_size)
+
         return CommandComponent(
             name=step_name,
             display_name=step_name,
@@ -195,6 +202,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             outputs=outputs,
             environment=env,
             command=" ".join(command + arguments),
+            resources=resources,
         )
 
     def submit_pipeline(
@@ -275,6 +283,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 image=image,
                 command=command,
                 arguments=arguments,
+                shm_size=settings.shm_size,
             )
 
         # Pipeline definition
