@@ -85,6 +85,15 @@ class BaseLogStoreOrigin:
         """
         return self._log_model
 
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        """The metadata associated with the origin.
+
+        Returns:
+            The metadata.
+        """
+        return self._metadata
+
     def deregister(self) -> None:
         """Deregister the origin from the log store."""
         self._log_store.deregister_origin(self)
@@ -164,7 +173,7 @@ class BaseLogStore(StackComponent, ABC):
         self,
         origin: BaseLogStoreOrigin,
         record: logging.LogRecord,
-        metadata: Dict[str, Any],
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Process a log record from the logging system.
 

@@ -162,7 +162,8 @@ class LoggingContext:
                 if message and message.strip():
                     if context._origin:
                         context._log_store.emit(
-                            context._origin, record, context._metadata
+                            context._origin,
+                            record,
                         )
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)

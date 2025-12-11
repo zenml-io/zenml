@@ -230,7 +230,7 @@ class OtelLogStore(BaseLogStore):
         self,
         origin: BaseLogStoreOrigin,
         record: logging.LogRecord,
-        metadata: Dict[str, Any],
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Process a log record by sending to OpenTelemetry.
 
@@ -251,7 +251,9 @@ class OtelLogStore(BaseLogStore):
                 raise RuntimeError("OpenTelemetry provider is not initialized")
 
             emit_kwargs = self._handler._translate(record)
-            emit_kwargs["attributes"].update(metadata)
+            emit_kwargs["attributes"].update(origin.metadata)
+            if metadata:
+                emit_kwargs["attributes"].update(metadata)
 
             origin.logger.emit(**emit_kwargs)
 
