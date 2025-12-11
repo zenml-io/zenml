@@ -69,11 +69,29 @@ class IntegrationTestExample:
         Raises:
             RuntimeError: If running the example fails.
         """
-        subprocess.check_call(
+        result = subprocess.run(
             [sys.executable, self.run_dot_py_file, *args],
             cwd=str(self.path),
             env=os.environ.copy(),
+            capture_output=True,
+            text=True,
         )
+        if result.returncode != 0:
+            error_msg = (
+                f"Example {self.name} failed with exit code "
+                f"{result.returncode}"
+            )
+            if result.stdout:
+                error_msg += f"\n=== STDOUT ===\n{result.stdout}"
+            if result.stderr:
+                error_msg += f"\n=== STDERR ===\n{result.stderr}"
+            logging.error(error_msg)
+            raise subprocess.CalledProcessError(
+                result.returncode,
+                result.args,
+                output=result.stdout,
+                stderr=result.stderr,
+            )
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
