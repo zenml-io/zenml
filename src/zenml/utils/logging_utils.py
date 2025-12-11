@@ -47,7 +47,7 @@ from zenml.models import (
 )
 
 if TYPE_CHECKING:
-    from zenml.log_stores.base_log_store import BaseLogStoreEmitter
+    from zenml.log_stores.base_log_store import BaseLogStoreOrigin
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -131,7 +131,7 @@ class LoggingContext:
         self._disabled = False
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
-        self._emitter: Optional["BaseLogStoreEmitter"] = None
+        self._origin: Optional["BaseLogStoreOrigin"] = None
         self._name = name
 
     @property
@@ -160,8 +160,10 @@ class LoggingContext:
             try:
                 message = record.getMessage()
                 if message and message.strip():
-                    if context._emitter:
-                        context._emitter.emit(record)
+                    if context._origin:
+                        context._log_store.emit(
+                            context._origin, record, context._metadata
+                        )
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
             finally:
@@ -176,7 +178,7 @@ class LoggingContext:
         with self._lock:
             self._previous_context = active_logging_context.get()
             active_logging_context.set(self)
-            self._emitter = self._log_store.register_emitter(
+            self._origin = self._log_store.register_origin(
                 name=self.name,
                 log_model=self.log_model,
                 metadata=self._metadata,
@@ -213,9 +215,9 @@ class LoggingContext:
 
         with self._lock:
             active_logging_context.set(self._previous_context)
-            if self._emitter:
-                self._emitter.deregister()
-                self._emitter = None
+            if self._origin:
+                self._origin.deregister()
+                self._origin = None
 
 
 def generate_logs_request(source: str) -> LogsRequest:
