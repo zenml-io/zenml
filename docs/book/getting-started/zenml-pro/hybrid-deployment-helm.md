@@ -39,15 +39,9 @@ For OCI-based Helm charts, you can either pull the chart or install directly. To
 helm pull oci://public.ecr.aws/zenml/zenml --version <ZENML_OSS_VERSION>
 ```
 
-Alternatively, you can install directly from OCI (see Step 5 below).
+Alternatively, you can install directly from OCI (see Step 3 below).
 
-## Step 2: Create Kubernetes Namespace
-
-```bash
-kubectl create namespace zenml-hybrid
-```
-
-## Step 3: Create Helm Values File
+## Step 2: Create Helm Values File
 
 Create a file `zenml-hybrid-values.yaml` with your configuration:
 
@@ -112,13 +106,14 @@ resources:
     memory: 450Mi
 ```
 
-## Step 4: Deploy with Helm
+## Step 3: Deploy with Helm
 
 Install the ZenML chart directly from OCI:
 
 ```bash
 helm install zenml oci://public.ecr.aws/zenml/zenml \
   --namespace zenml-hybrid \
+  --create-namespace \
   --values zenml-hybrid-values.yaml \
   --version <ZENML_OSS_VERSION>
 ```
@@ -128,6 +123,7 @@ Or if you pulled the chart in Step 1, install from the local file:
 ```bash
 helm install zenml ./zenml-<ZENML_OSS_VERSION>.tgz \
   --namespace zenml-hybrid \
+  --create-namespace \
   --values zenml-hybrid-values.yaml
 ```
 
@@ -146,7 +142,7 @@ kubectl -n zenml-hybrid get pods
 # zenml-5c4b6d9dcd-7bhfp  1/1     Running   0          2m
 ```
 
-## Step 6: Verify the Deployment
+## Step 4: Verify the Deployment
 
 ### Check Service is Running
 
@@ -177,17 +173,17 @@ curl -k https://zenml.mycompany.com/health
 3. Sign in with your organization credentials
 4. You should see your workspace listed
 
-## Step 7: (Optional) Enable Snapshot Support / Workload Manager
+## Step 5: (Optional) Enable Snapshot Support / Workload Manager
 
-Pipeline snapshots (running pipelines from the dashboard) require a workload manager. For hybrid deployments, you can configure one of the following:
+Pipeline snapshots (running pipelines from the UI) require a workload manager. For hybrid deployments, you can configure one of the following:
 
 ### 1. Create Kubernetes Resources for Workload Manager
 
 Create a dedicated namespace and service account:
 
 ```bash
-kubectl create namespace zenml-workload-manager
-kubectl -n zenml-workload-manager create serviceaccount zenml-runner
+kubectl create namespace zenml-workspace-namespace
+kubectl -n zenml-workspace-namespace create serviceaccount zenml-workspace-service-account
 ```
 
 ### 2. Configure Workload Manager in Helm Values
@@ -198,48 +194,48 @@ Add environment variables to your `zenml-hybrid-values.yaml`:
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<ZENML_OSS_VERSION>
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<ZENML_OSS_VERSION>
 ```
 
 **Option B: AWS-based (if running on EKS)**
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: <your-ecr-registry>
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS: "true"
-    ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET: s3://your-bucket/zenml-logs
-    ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION: us-east-1
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: <your-ecr-registry>
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS: "true"
+        ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET: s3://your-bucket/zenml-logs
+        ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION: us-east-1
 ```
 
 **Option C: GCP-based (if running on GKE)**
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: <your-gcr-registry>
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: <your-gcr-registry>
 ```
 
 ### 3. Configure Pod Resources (Optional but Recommended)
 
 ```yaml
 zenml:
-  environment:
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "500m", "memory": "512Mi"}, "limits": {"cpu": "2000m", "memory": "2Gi"}}'
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED: 86400
-    ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 5
+    environment:
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED: 86400
+        ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 5
 ```
 
 ### 4. Redeploy with Updated Values
@@ -250,7 +246,7 @@ helm upgrade zenml zenml/zenml \
   --values zenml-hybrid-values.yaml
 ```
 
-## Step 8: Configure Environment Variables (Advanced)
+## Step 6: Configure Environment Variables (Advanced)
 
 For advanced configurations, you can set additional environment variables in your Helm values:
 
@@ -268,42 +264,30 @@ zenml:
 
 ```yaml
 zenml:
-  database:
-    external:
-      type: mysql
-      host: zenml-db.123456789.us-east-1.rds.amazonaws.com
-      port: 3306
-      username: admin
-      password: <your-rds-password>
-      database: zenml_hybrid
+    database:
+        maxOverflow: "-1"
+        poolSize: "10"
+        url: mysql://admin:<your-rds-password>@zenml-db.123456789.us-east-1.rds.amazonaws.com:3306/zenml_hybrid
 ```
 
 ### Google Cloud SQL MySQL
 
 ```yaml
 zenml:
-  database:
-    external:
-      type: mysql
-      host: 34.123.45.67
-      port: 3306
-      username: root
-      password: <your-cloud-sql-password>
-      database: zenml_hybrid
+    database:
+        maxOverflow: "-1"
+        poolSize: "10"
+        url: mysql://root:<your-cloud-sql-password>@34.123.45.67:3306/zenml_hybrid
 ```
 
 ### Self-Managed MySQL
 
 ```yaml
 zenml:
-  database:
-    external:
-      type: mysql
-      host: mysql.internal.mycompany.com
-      port: 3306
-      username: zenml_user
-      password: <your-password>
-      database: zenml_hybrid
+    database:
+        maxOverflow: "-1"
+        poolSize: "10"
+        url: mysql://zenml_user:<your-password>@mysql.internal.mycompany.com:3306/zenml_hybrid
 ```
 
 ## Networking & Firewall Configuration

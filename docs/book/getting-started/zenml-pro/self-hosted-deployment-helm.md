@@ -47,7 +47,7 @@ All components run entirely within your Kubernetes cluster and infrastructure:
 │  └────────────────────────────────────────────┘ │
 │                                                  │
 │  ┌────────────────────────────────────────────┐ │
-│  │     PostgreSQL Database                    │ │
+│  │     MySQL Database                         │ │
 │  │     (for metadata storage)                 │ │
 │  └────────────────────────────────────────────┘ │
 │                                                  │
@@ -71,7 +71,7 @@ Before starting, you need:
 
 **Infrastructure:**
 - Kubernetes cluster (1.24+) within your air-gapped network
-- PostgreSQL database (12+) for metadata storage
+- MySQL database (8.0+) for metadata storage (PostgreSQL also supported for control plane only)
 - Internal Docker registry (Harbor, Quay, Artifactory, etc.)
 - Load balancer or Ingress controller for HTTPS
 - NFS or object storage for artifacts (optional)
@@ -219,22 +219,17 @@ In your air-gapped environment, load the images:
    docker push internal-registry.mycompany.com/zenml/zenml:version
    ```
 
-## Step 4: Create Kubernetes Namespace and Secrets
+## Step 4: Create Kubernetes Secrets
 
 ```bash
 # Create namespace for ZenML Pro
 kubectl create namespace zenml-pro
 
 # Create secret for internal registry credentials (if needed)
-kubectl -n zenml-pro create secret docker-registry internal-registry-secret \
+kubectl -n zenml-pro create secret docker-registry image-pull-secret \
   --docker-server=internal-registry.mycompany.com \
   --docker-username=<your-username> \
   --docker-password=<your-password>
-
-# Create secret for TLS certificate
-kubectl -n zenml-pro create secret tls zenml-tls \
-  --cert=/path/to/tls.crt \
-  --key=/path/to/tls.key
 ```
 
 {% hint style="info" %}
@@ -265,62 +260,64 @@ Create database instances (within your air-gapped network):
 Create a file `zenml-pro-values.yaml`:
 
 ```yaml
-# ZenML Pro Control Plane Values
+# Set up imagePullSecrets to authenticate to the container registry where the
+# ZenML Pro container images are hosted, if necessary (see the previous step)
+imagePullSecrets:
+  - name: image-pull-secret
 
+# ZenML Pro server related options.
 zenml:
-  # Image configuration - use your internal registry
+
   image:
     api:
+      # Change this to point to your own container repository or use this for direct ECR access
       repository: internal-registry.mycompany.com/zenml/zenml-pro-api
-      tag: "<ZENML_PRO_VERSION>"  # e.g., "0.10.24"
+      # Use this for direct GAR access
+      # repository: europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-api
     dashboard:
+      # Change this to point to your own container repository or use this for direct ECR access
       repository: internal-registry.mycompany.com/zenml/zenml-pro-dashboard
-      tag: "<ZENML_PRO_VERSION>"  # e.g., "0.10.24"
+      # Use this for direct GAR access
+      # repository: europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard
 
-  # Server URL - use your internal domain
+  # The external URL where the ZenML Pro server API and dashboard are reachable.
+  #
+  # This should be set to a hostname that is associated with the Ingress
+  # controller.
   serverURL: https://zenml-pro.internal.mycompany.com
 
-  # Database for Control Plane
+  # Database configuration.
   database:
+
+    # Credentials to use to connect to an external Postgres or MySQL database.
     external:
-      type: postgresql
-      host: postgres.internal.mycompany.com
-      port: 5432
+      
+      # The type of the external database service to use:
+      # - postgres: use an external Postgres database service.
+      # - mysql: use an external MySQL database service.
+      type: mysql
+    
+      # The host of the external database service.
+      host: mysql.internal.mycompany.com
+
+      # The username to use to connect to the external database service.
       username: zenml_pro_user
+
+      # The password to use to connect to the external database service.
       password: <secure-password>
+      
+      # The name of the database to use. Will be created on first run if it
+      # doesn't exist.
+      #
+      # NOTE: if the database user doesn't have permissions to create this
+      # database, the database should be created manually before installing
+      # the helm chart.
       database: zenml_pro
 
-  # Ingress configuration
   ingress:
     enabled: true
-    className: nginx  # or your ingress controller
+    # Use the same hostname configured in `serverURL`
     host: zenml-pro.internal.mycompany.com
-    tls:
-      enabled: true
-      secretName: zenml-tls
-
-  # Authentication (no external IdP needed for air-gap)
-  auth:
-    password: <admin-password>
-
-  # Resource constraints
-  resources:
-    requests:
-      cpu: 500m
-      memory: 1Gi
-    limits:
-      cpu: 2000m
-      memory: 4Gi
-
-# Image pull secrets for internal registry
-imagePullSecrets:
-  - name: internal-registry-secret
-
-# Pod security context
-podSecurityContext:
-  fsGroup: 1000
-  runAsNonRoot: true
-  runAsUser: 1000
 ```
 
 ## Step 7: Deploy ZenML Pro Control Plane
@@ -330,6 +327,7 @@ Using the local Helm chart:
 ```bash
 helm install zenml-pro ./zenml-pro-<ZENML_PRO_VERSION>.tgz \
   --namespace zenml-pro \
+  --create-namespace \
   --values zenml-pro-values.yaml
 ```
 
@@ -373,74 +371,56 @@ Create a file `zenml-workspace-values.yaml`:
 
 ```yaml
 zenml:
-  # Image configuration - use your internal registry
-  image:
-    repository: internal-registry.mycompany.com/zenml/zenml-pro-server
-    tag: "<ZENML_OSS_VERSION>"  # e.g., "0.73.0"
+    analyticsOptIn: false
+    threadPoolSize: 20
+    database:
+        maxOverflow: "-1"
+        poolSize: "10"
+        # TODO: use the actual database host and credentials
+        # Note: Workspace servers only support MySQL, not PostgreSQL
+        url: mysql://zenml_workspace_user:password@mysql.internal.mycompany.com:3306/zenml_workspace
+    image:
+        # TODO: use your actual image repository (omit the tag, which is
+        # assumed to be the same as the helm chart version)
+        repository: internal-registry.mycompany.com/zenml/zenml-pro-server
+    # TODO: use your actual server domain here
+    serverURL: https://zenml-workspace.internal.mycompany.com
+    ingress:
+        enabled: true
+        # TODO: use your actual domain here
+        host: zenml-workspace.internal.mycompany.com
+    pro:
+        apiURL: https://zenml-pro.internal.mycompany.com/api/v1
+        dashboardURL: https://zenml-pro.internal.mycompany.com
+        enabled: true
+        enrollmentKey: <enrollment-key-from-control-plane>
+        organizationID: <your-organization-id>
+        organizationName: <your-organization-name>
+        workspaceID: <your-workspace-id>
+        workspaceName: <your-workspace-name>
+    replicaCount: 1
+    secretsStore:
+        sql:
+            encryptionKey: <generate-a-64-character-hex-key>
+        type: sql
 
-  # Server URL
-  serverURL: https://zenml-workspace.internal.mycompany.com
-
-  # Database for Workspace
-  # Note: Workspace servers only support MySQL, not PostgreSQL
-  database:
-    external:
-      type: mysql
-      host: mysql.internal.mycompany.com
-      port: 3306
-      username: zenml_workspace_user
-      password: <secure-password>
-      database: zenml_workspace
-
-  # Pro configuration - connect to local control plane
-  pro:
-    enabled: true
-    apiURL: https://zenml-pro.internal.mycompany.com/api/v1
-    dashboardURL: https://zenml-pro.internal.mycompany.com
-    enrollmentKey: <enrollment-key-from-control-plane>
-    organizationID: <your-organization-id>
-    organizationName: <your-organization-name>
-    workspaceID: <your-workspace-id>
-    workspaceName: <your-workspace-name>
-
-  # Ingress configuration
-  ingress:
-    enabled: true
-    className: nginx
-    host: zenml-workspace.internal.mycompany.com
-    tls:
-      enabled: true
-      secretName: zenml-tls
-
-  # Resource constraints
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
+# TODO: these are the minimum resources required for the ZenML server. You can
+# adjust them to your needs.
+resources:
     limits:
-      cpu: 1000m
-      memory: 2Gi
-
-# Image pull secrets
-imagePullSecrets:
-  - name: internal-registry-secret
-
-# Pod security context
-podSecurityContext:
-  fsGroup: 1000
-  runAsNonRoot: true
-  runAsUser: 1000
+        memory: 800Mi
+    requests:
+        cpu: 100m
+        memory: 450Mi
 ```
 
 ## Step 10: Deploy ZenML Workspace Server
 
 ```bash
-# Create namespace
-kubectl create namespace zenml-workspace
-
 # Deploy workspace
 helm install zenml ./zenml-<ZENML_OSS_VERSION>.tgz \
   --namespace zenml-workspace \
+  --create-namespace \
   --values zenml-workspace-values.yaml
 ```
 
@@ -569,10 +549,10 @@ Create a dedicated namespace and service account for runner jobs:
 
 ```bash
 # Create namespace
-kubectl create namespace zenml-workload-manager
+kubectl create namespace zenml-workspace-namespace
 
 # Create service account
-kubectl -n zenml-workload-manager create serviceaccount zenml-runner
+kubectl -n zenml-workspace-namespace create serviceaccount zenml-workspace-service-account
 
 # Create role with permissions to create jobs and access registry
 # (Specific permissions depend on your implementation choice below)
@@ -594,10 +574,10 @@ Use the built-in Kubernetes implementation for running snapshots:
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
 ```
 
 **Option B: AWS Implementation (Full Featured)**
@@ -606,10 +586,10 @@ For AWS-specific features including external logs and ECR integration:
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
 ```
 
 **Option C: GCP Implementation**
@@ -618,10 +598,10 @@ For GCP environments:
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
 ```
 
 ### 3. Configure Runner Image
@@ -632,9 +612,9 @@ Choose how runner images are managed:
 
 ```yaml
 zenml:
-  environment:
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: internal-registry.mycompany.com/zenml/zenml:<ZENML_OSS_VERSION>
+    environment:
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: internal-registry.mycompany.com/zenml/zenml:<ZENML_OSS_VERSION>
 ```
 
 Pre-build your runner image and push to your internal registry. Note that this image needs to have all requirements installed to instantiate the stack that will be used for the template run.
@@ -645,9 +625,9 @@ Requires access to internal Docker registry with push permissions:
 
 ```yaml
 zenml:
-  environment:
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: internal-registry.mycompany.com/zenml
+    environment:
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: internal-registry.mycompany.com/zenml
 ```
 
 ### 4. Environment Variable Reference
@@ -684,60 +664,60 @@ All supported environment variables for workload manager configuration:
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
 ```
 
 **Full AWS Configuration:**
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: 339712793861.dkr.ecr.eu-central-1.amazonaws.com
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS: "true"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
-    ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET: s3://my-bucket/run-template-logs
-    ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION: eu-central-1
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
-    ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: 339712793861.dkr.ecr.eu-central-1.amazonaws.com
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS: "true"
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+        ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET: s3://my-bucket/run-template-logs
+        ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION: eu-central-1
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
+        ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
 ```
 
 **Full GCP Configuration:**
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-snapshots/zenml
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
-    ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-snapshots/zenml
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
+        ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 10
 ```
 
 **Air-gapped Configuration with Pre-built Runner:**
 
 ```yaml
 zenml:
-  environment:
-    ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-runner
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: internal-registry.mycompany.com/zenml/zenml:<ZENML_OSS_VERSION>
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
-    ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED: 86400
-    ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 2
+    environment:
+        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: internal-registry.mycompany.com/zenml/zenml:<ZENML_OSS_VERSION>
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
+        ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED: 86400
+        ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 2
 ```
 
 ### 6. Update Workspace Deployment
@@ -784,7 +764,7 @@ zenml login
 |---------|--------|-------------|------|-----------|
 | Web Access | Client Machines | Ingress Controller | 443 | Inbound |
 | API Access | ZenML Client | Workspace Server | 443 | Inbound |
-| Database | Kubernetes Pods | PostgreSQL/MySQL | 5432/3306 | Outbound |
+| Database | Kubernetes Pods | MySQL | 3306 | Outbound |
 | Registry | Kubernetes | Internal Registry | 443 | Outbound |
 | Inter-service | Kubernetes Internal | Kubernetes Services | 443 | Internal |
 
@@ -816,16 +796,16 @@ podDisruptionBudget:
 
 ### Database Replication
 
-For HA, configure PostgreSQL streaming replication:
+For HA, configure MySQL replication:
 1. Set up a standby database
-2. Configure continuous archiving
+2. Configure binary log replication
 3. Test failover procedures
 
 ## Backup & Recovery
 
 ### Automated Backups
 
-Configure automated PostgreSQL backups:
+Configure automated MySQL backups:
 - **Frequency**: Daily or more frequent
 - **Retention**: 30+ days
 - **Location**: Internal storage (not external)
@@ -920,7 +900,7 @@ Common issues:
 ```bash
 # Test from pod
 kubectl -n zenml-pro exec -it zenml-pro-xxxxx -- \
-  psql -h postgres.internal.mycompany.com -U zenml_pro_user -d zenml_pro
+  mysql -h mysql.internal.mycompany.com -u zenml_pro_user -p zenml_pro
 ```
 
 ### Can't Access via HTTPS
@@ -1035,7 +1015,7 @@ Some updates may require database migrations:
 
 Regular backups should include:
 
-1. **PostgreSQL Databases:**
+1. **MySQL Databases:**
    - Schedule automated backups (daily minimum)
    - Test restore procedures regularly
    - Store backups in a different location (second disk, external storage)
@@ -1073,7 +1053,7 @@ Document and test:
 - [Self-hosted Deployment Overview](self-hosted-deployment.md)
 - [Self-hosted Deployment Guide](self-hosted.md) - Comprehensive deployment reference
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [MySQL Documentation](https://dev.mysql.com/doc/)
 - [Helm Documentation](https://helm.sh/docs/)
 
 ## Support
