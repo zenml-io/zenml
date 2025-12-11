@@ -166,7 +166,8 @@ class BaseStep:
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
-            substitutions: Extra placeholders to use in the name template.
+            substitutions: Extra substitutions for model and artifact name
+                placeholders.
             cache_policy: Cache policy for this step.
             runtime: The step runtime. If not configured, the step will
                 run inline unless a step operator or docker/resource settings
@@ -923,7 +924,8 @@ class BaseStep:
                 function (e.g. `module.my_function`).
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
-            substitutions: Extra placeholders to use in the name template.
+            substitutions: Extra substitutions for model and artifact name
+                placeholders.
             cache_policy: Cache policy for this step.
             runtime: The step runtime. This is only applicable for dynamic
                 pipelines.
@@ -1071,7 +1073,8 @@ class BaseStep:
                 function (e.g. `module.my_function`).
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
-            substitutions: Extra placeholders for the step name.
+            substitutions: Extra substitutions for model and artifact name
+                placeholders.
             cache_policy: Cache policy for this step.
             runtime: The step runtime. This is only applicable for dynamic
                 pipelines.
