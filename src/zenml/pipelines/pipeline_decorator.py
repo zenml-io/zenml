@@ -136,7 +136,8 @@ def pipeline(
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
         retry: Retry configuration for the pipeline steps.
-        substitutions: Extra placeholders to use in the name templates.
+        substitutions: Extra substitutions for pipeline run, model and
+            artifact name placeholders.
         execution_mode: The execution mode to use for the pipeline.
         cache_policy: Cache policy for this pipeline.
 
