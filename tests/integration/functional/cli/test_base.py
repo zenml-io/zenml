@@ -54,6 +54,7 @@ def test_init_creates_from_templates(
             "--template",
             template_name,
             "--template-with-defaults",
+            "--test",
         ],
     )
     assert result.exit_code == 0, (
