@@ -14,7 +14,7 @@ ZenML comes equipped with [Log Store implementations](./#log-store-flavors) that
 
 The Log Store is responsible for collecting, storing, and retrieving logs during pipeline execution. Let's take a deeper dive into the fundamentals behind its abstraction, namely the `BaseLogStore` class:
 
-1. **Origin pattern**: Log stores use an origin pattern where `BaseLogStoreOrigin` instances represent the source of log records (e.g., a step execution). Each logging context registers an origin with the log store, and logs are emitted through the log store referencing that origin.
+1. **Origins**: A `BaseLogStoreOrigin` represents the source of log records (e.g., a step execution). When logging starts, you register an origin with the log store, then emit logs through the log store referencing that origin. When logging ends, you deregister the origin to release resources.
 
 2. **Core methods**: The base class defines four abstract methods that must be implemented:
    - `emit()`: Process and export a log record for a given origin
