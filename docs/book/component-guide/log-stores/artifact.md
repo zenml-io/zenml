@@ -4,10 +4,10 @@ description: Storing logs in your artifact store.
 
 # Artifact Log Store
 
-The Artifact Log Store is the default [log store](./) flavor that comes built-in with ZenML. It stores logs directly in your artifact store, providing a zero-configuration logging solution that works out of the box.
+The Artifact Log Store is the default log store flavor that comes built-in with ZenML. It stores logs directly in your artifact store, providing a zero-configuration logging solution that works out of the box.
 
-{% hint style="info" %}
-The Artifact Log Store is automatically used when no log store is explicitly configured in your stack. ZenML creates an artifact log store from your artifact store, so logging works immediately without any additional setup.
+{% hint style="warning" %}
+The Artifact Log Store is ZenML's implicit default. You don't need to register it as a flavor or add it to your stack. When no log store is explicitly configured, ZenML automatically uses an Artifact Log Store to handle logs. This means logging works out of the box with zero configuration.
 {% endhint %}
 
 ### When would you want to use it?
@@ -39,14 +39,6 @@ The Artifact Log Store handles different artifact store backends intelligently:
 - **Immutable filesystems** (GCS): Logs are written as timestamped files in a directory, then merged on finalization.
 
 This ensures consistent behavior across all supported artifact store types.
-
-### How to deploy it
-
-The Artifact Log Store comes built-in with ZenML and requires no additional installation or registration. It's automatically available and used by default when you install ZenML:
-
-```shell
-pip install zenml
-```
 
 ### Environment Variables
 
