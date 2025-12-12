@@ -15,7 +15,7 @@
 
 from typing import Optional
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -83,6 +83,15 @@ class AzureMLComputeSettings(BaseSettings):
     max_instances: Optional[int] = None
     tier: Optional[str] = None
 
+    # Container resource configuration
+    shm_size: Optional[str] = Field(
+        default=None,
+        description="Size of the shared memory block for the container. Must be "
+        "specified in format supported by Docker (e.g., '2g', '200g', '1024m'). "
+        "Useful for PyTorch dataloaders with multiple workers, large model caching, "
+        "and RAM-based operations. Defaults to AzureML's default (typically 64MB)",
+    )
+
     @model_validator(mode="after")
     def azureml_settings_validator(self) -> "AzureMLComputeSettings":
         """Checks whether the right configuration is set based on mode.
@@ -95,12 +104,13 @@ class AzureMLComputeSettings(BaseSettings):
                 instances and clusters.
         """
         viable_configuration_fields = {
-            AzureMLComputeTypes.SERVERLESS: {"mode"},
+            AzureMLComputeTypes.SERVERLESS: {"mode", "shm_size"},
             AzureMLComputeTypes.COMPUTE_INSTANCE: {
                 "mode",
                 "compute_name",
                 "size",
                 "idle_time_before_shutdown_minutes",
+                "shm_size",
             },
             AzureMLComputeTypes.COMPUTE_CLUSTER: {
                 "mode",
@@ -111,6 +121,7 @@ class AzureMLComputeSettings(BaseSettings):
                 "min_instances",
                 "max_instances",
                 "tier",
+                "shm_size",
             },
         }
         viable_fields = viable_configuration_fields[self.mode]
