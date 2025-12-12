@@ -4,7 +4,20 @@
 
 ## Deployments
 
-* [Self-hosted deployment](self-hosted.md)
+* [Deployment Scenarios Overview](deployments-overview.md)
+* [SaaS Deployment](saas-deployment.md)
+* [Hybrid SaaS Deployment](hybrid-deployment.md)
+  * [Kubernetes with Helm](hybrid-deployment-helm.md)
+  * [AWS ECS](hybrid-deployment-ecs.md)
+* [Self-hosted Deployment](self-hosted-deployment.md)
+  * [Kubernetes with Helm](self-hosted-deployment-helm.md)
+
+## Services
+
+* [Services Overview](services.md)
+  * [Control Plane](control-plane.md)
+  * [Workspace Server](workspace-server.md)
+  * [Workload Managers](workload-managers.md)
 
 ## Core Concepts
 
