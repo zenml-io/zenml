@@ -125,6 +125,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     interval_second: Optional[float] = Field(nullable=True)
     catchup: bool
     run_once_start_time: Optional[datetime] = Field(nullable=True)
+    is_archived: bool = Field(nullable=False, default=False)
 
     @classmethod
     def get_query_options(
@@ -245,6 +246,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
             updated=self.updated,
             created=self.created,
             run_once_start_time=self.run_once_start_time,
+            is_archived=self.is_archived,
         )
         metadata = None
         if include_metadata:
