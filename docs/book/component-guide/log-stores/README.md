@@ -29,7 +29,7 @@ The Log Store is automatically used in every ZenML stack. If you don't explicitl
 
 You should consider configuring a dedicated log store when:
 
-- You want to use a centralized logging backend like Datadog for log aggregation and analysis
+- You want to use a centralized logging backend like Datadog, Jaeger, Grafana Tempo, Honeycomb, Lightstep or Dash0 for log aggregation and analysis
 - You need advanced log querying capabilities beyond what file-based storage provides
 - You're running pipelines at scale and need better log management
 - You want to integrate with your organization's existing observability infrastructure
