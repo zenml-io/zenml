@@ -1,6 +1,5 @@
 ---
 description: Understanding source roots and source paths
-icon: folders
 ---
 
 # Source Code and Imports
