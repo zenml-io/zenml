@@ -61,8 +61,9 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_prune_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
     dehydrate_page,
     get_allowed_resource_ids,
 )
@@ -317,10 +318,17 @@ def get_artifact_download_token(
     Returns:
         The download token for the artifact data.
     """
-    artifact = verify_permissions_and_get_entity(
-        id=artifact_version_id, get_method=zen_store().get_artifact_version
+    store = zen_store()
+    artifact_version = store.get_artifact_version(artifact_version_id)
+    artifact_store = store.get_stack_component(
+        artifact_version.artifact_store_id
     )
-    verify_artifact_is_downloadable(artifact)
+
+    batch_verify_permissions_for_models(
+        models=[artifact_version, artifact_store], action=Action.READ
+    )
+
+    verify_artifact_is_downloadable(artifact_version)
 
     # The artifact download is handled in a separate tab by the browser. In this
     # tab, we do not have the ability to set any headers and therefore cannot

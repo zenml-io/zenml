@@ -43,7 +43,11 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.utils import run_utils
-from zenml.utils.logging_utils import LogEntry, fetch_logs
+from zenml.utils.logging_utils import (
+    LogEntry,
+    fetch_logs,
+    search_logs_by_source,
+)
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -58,6 +62,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
     dehydrate_response_model,
     verify_permission_for_model,
 )
@@ -453,11 +458,7 @@ def run_logs(
     """
     store = zen_store()
 
-    run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=store.get_run,
-        hydrate=True,
-    )
+    run = zen_store().get_run(run_id, hydrate=True)
 
     # Handle runner logs from workload manager
     if run.snapshot and source == "runner":
@@ -483,15 +484,29 @@ def run_logs(
 
             return log_entries
 
-    # Handle logs from log collection
     if run.log_collection:
-        for logs_response in run.log_collection:
-            if logs_response.source == source:
-                return fetch_logs(
-                    logs=logs_response,
-                    zen_store=store,
-                    limit=MAX_ENTRIES_PER_REQUEST,
+        if logs_response := search_logs_by_source(run.log_collection, source):
+            if logs_response.log_store_id:
+                component = store.get_stack_component(
+                    logs_response.log_store_id
+                )
+            elif logs_response.artifact_store_id:
+                component = store.get_stack_component(
+                    logs_response.artifact_store_id
+                )
+            else:
+                raise KeyError(
+                    f"No log store or artifact store found for logs {logs_response.id}"
                 )
 
-    # If no logs found for the specified source, raise an error
-    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
+            batch_verify_permissions_for_models(
+                [run, component], action=Action.READ
+            )
+
+            return fetch_logs(
+                logs=logs_response,
+                zen_store=store,
+                limit=MAX_ENTRIES_PER_REQUEST,
+            )
+    else:
+        raise KeyError(f"No logs found for source '{source}' in run {run_id}")

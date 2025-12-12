@@ -38,7 +38,11 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
-from zenml.utils.logging_utils import LogEntry, fetch_logs
+from zenml.utils.logging_utils import (
+    LogEntry,
+    fetch_logs,
+    search_logs_by_source,
+)
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -49,6 +53,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
     dehydrate_page,
     dehydrate_response_model,
     get_allowed_resource_ids,
@@ -339,16 +344,29 @@ def get_step_logs(
     store = zen_store()
 
     step = store.get_run_step(step_id, hydrate=True)
-    pipeline_run = store.get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
+    run = store.get_run(step.pipeline_run_id)
 
     if step.log_collection:
-        for logs_response in step.log_collection:
-            if logs_response.source == source:
-                return fetch_logs(
-                    logs=logs_response,
-                    zen_store=store,
-                    limit=MAX_ENTRIES_PER_REQUEST,
+        if logs := search_logs_by_source(step.log_collection, source):
+            if logs.log_store_id:
+                component = store.get_stack_component(
+                    logs.log_store_id, hydrate=True
                 )
+            elif logs.artifact_store_id:
+                component = store.get_stack_component(
+                    logs.artifact_store_id, hydrate=True
+                )
+            else:
+                raise KeyError(
+                    f"No log store or artifact store found for logs {logs.id}"
+                )
+            batch_verify_permissions_for_models(
+                [run, component], action=Action.READ
+            )
+            return fetch_logs(
+                logs=logs,
+                zen_store=store,
+                limit=MAX_ENTRIES_PER_REQUEST,
+            )
 
     raise KeyError(f"No logs found for source '{source}' in step {step_id}")
