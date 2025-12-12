@@ -509,8 +509,6 @@ def prune_artifacts(
                     delete_from_artifact_store=delete_from_artifact_store,
                 )
 
-    # If fail-fast was triggered, abort before artifact cleanup to prevent
-    # any further destructive operations after an unexpected failure
     if first_failure is not None:
         target, exc = first_failure
         cli_utils.error(
