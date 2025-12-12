@@ -5454,8 +5454,6 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If the artifact version is still used in any runs.
         """
-        # Query for this specific version with only_unused=True filter
-        # If the version is used, it won't appear in the results
         page = self.list_artifact_versions(
             id=artifact_version_id, only_unused=True, size=1, project=project
         )
