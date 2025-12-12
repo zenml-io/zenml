@@ -5,7 +5,7 @@ icon: file-lines
 
 # Log Stores
 
-The Log Store is a stack component responsible for collecting, storing, and retrieving logs generated during pipeline and step execution. It captures everything from standard logging output to print statements and any messages written to stdout/stderr, making it easy to debug and monitor your ML workflows.
+The log store is a stack component responsible for collecting, storing, and retrieving logs generated during pipeline and step execution. It captures everything from standard logging output to print statements and any messages written to stdout/stderr, making it easy to debug and monitor your ML workflows.
 
 ### How it works
 
@@ -25,7 +25,7 @@ This approach ensures that you don't miss any output from your pipeline steps, i
 
 ### When to use it
 
-The Log Store is automatically used in every ZenML stack. If you don't explicitly configure a log store, ZenML will use an **Artifact Log Store** by default, which stores logs in your artifact store.
+The Log Store is automatically used in every ZenML stack. If you don't explicitly configure a log store, ZenML will use an [**Artifact Log Store**](artifact.md) by default, which stores logs in your artifact store.
 
 You should consider configuring a dedicated log store when:
 
@@ -33,27 +33,6 @@ You should consider configuring a dedicated log store when:
 - You need advanced log querying capabilities beyond what file-based storage provides
 - You're running pipelines at scale and need better log management
 - You want to integrate with your organization's existing observability infrastructure
-
-### Log Store Flavors
-
-ZenML provides several log store flavors out of the box:
-
-| Log Store                          | Flavor     | Integration | Notes                                                                                           |
-|------------------------------------|------------|-------------|------------------------------------------------------------------------------------------------|
-| [ArtifactLogStore](artifact.md)    | `artifact` | _built-in_  | Default log store that writes logs to your artifact store. Zero configuration required.        |
-| [OtelLogStore](otel.md)            | `otel`     | _built-in_  | Generic OpenTelemetry log store for any OTEL-compatible backend. Does not support log fetching.|
-| [DatadogLogStore](datadog.md)      | `datadog`  | _built-in_  | Exports logs to Datadog's log management platform with full fetch support.                     |
-| [Custom Implementation](custom.md) | _custom_   |             | Extend the log store abstraction and provide your own implementation.                          |
-
-If you would like to see the available flavors of log stores, you can use the command:
-
-```shell
-zenml log-store flavor list
-```
-
-{% hint style="info" %}
-If you're interested in understanding the base abstraction and how log stores work internally, check out the [Develop a Custom Log Store](custom.md) page for a detailed explanation of the architecture.
-{% endhint %}
 
 ### How to use it
 
@@ -99,3 +78,27 @@ for entry in log_entries:
 ```
 
 3. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
+
+### Log Store Flavors
+
+ZenML provides several log store flavors out of the box:
+
+| Log Store                          | Flavor     | Integration | Notes                                                                                           |
+|------------------------------------|------------|-------------|------------------------------------------------------------------------------------------------|
+| [ArtifactLogStore](artifact.md)    | `artifact` | _built-in_  | Default log store that writes logs to your artifact store. Zero configuration required.        |
+| [OtelLogStore](otel.md)            | `otel`     | _built-in_  | Generic OpenTelemetry log store for any OTEL-compatible backend. Does not support log fetching.|
+| [DatadogLogStore](datadog.md)      | `datadog`  | _built-in_  | Exports logs to Datadog's log management platform with full fetch support.                     |
+| [Custom Implementation](custom.md) | _custom_   |             | Extend the log store abstraction and provide your own implementation.                          |
+
+If you would like to see the available flavors of log stores, you can use the command:
+
+```shell
+zenml log-store flavor list
+```
+
+{% hint style="info" %}
+If you're interested in understanding the base abstraction and how log stores work internally, check out the [Develop a Custom Log Store](custom.md) page for a detailed explanation of the architecture.
+{% endhint %}
+
+
+
