@@ -5414,14 +5414,51 @@ class Client(metaclass=ClientMetaClass):
             version=version,
             project=project,
         )
+
+        # Perform unused check once up-front for any destructive operation.
+        # This prevents race conditions where artifact-store data is deleted
+        # for a version that has become used since listing.
+        if not _skip_unused_check and (
+            delete_metadata or delete_from_artifact_store
+        ):
+            self._assert_artifact_version_unused(artifact_version.id)
+
         if delete_from_artifact_store:
             self._delete_artifact_from_artifact_store(
                 artifact_version=artifact_version
             )
         if delete_metadata:
+            # Skip the redundant check since we already verified above
             self._delete_artifact_version(
                 artifact_version=artifact_version,
-                _skip_unused_check=_skip_unused_check,
+                _skip_unused_check=True,
+            )
+
+    def _assert_artifact_version_unused(
+        self,
+        artifact_version_id: UUID,
+    ) -> None:
+        """Assert that an artifact version is unused (not referenced by runs).
+
+        This performs a cheap single-item query instead of depaginating all
+        unused versions, making it efficient for per-version checks.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to check.
+
+        Raises:
+            ValueError: If the artifact version is still used in any runs.
+        """
+        # Query for this specific version with only_unused=True filter
+        # If the version is used, it won't appear in the results
+        page = self.list_artifact_versions(
+            id=artifact_version_id, only_unused=True, size=1
+        )
+        if page.total == 0:
+            raise ValueError(
+                "The artifact version is still referenced by pipeline runs "
+                "and cannot be deleted. Please delete all runs that use this "
+                "artifact first."
             )
 
     def _delete_artifact_version(
@@ -5435,20 +5472,15 @@ class Client(metaclass=ClientMetaClass):
             artifact_version: The artifact version to delete.
             _skip_unused_check: If True, skip the check that verifies the
                 artifact version is unused. Only set this to True if you have
-                already verified the artifact version is unused.
+                already verified the artifact version is unused externally,
+                such as when batch-deleting versions that were already
+                filtered by only_unused=True.
 
         Raises:
             ValueError: If the artifact version is still used in any runs.
         """
         if not _skip_unused_check:
-            if artifact_version not in depaginate(
-                self.list_artifact_versions, only_unused=True
-            ):
-                raise ValueError(
-                    "The metadata of artifact versions that are used in runs "
-                    "cannot be deleted. Please delete all runs that use this "
-                    "artifact first."
-                )
+            self._assert_artifact_version_unused(artifact_version.id)
         self.zen_store.delete_artifact_version(artifact_version.id)
         logger.info(
             f"Deleted version '{artifact_version.version}' of artifact "

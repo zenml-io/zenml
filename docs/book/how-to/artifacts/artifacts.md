@@ -405,10 +405,15 @@ zenml artifact prune
 
 This deletes artifacts that are no longer referenced by any pipeline run. You can control this behavior with flags:
 
-* `--only-artifact`: Only delete the physical files, keep database entries
-* `--only-metadata`: Only delete database entries, keep files
-* `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
-* `--threads` / `-t`: Enable parallel deletion for faster pruning when dealing with many artifacts
+* `--only-artifact` / `-a`: Only delete the physical files, keep database entries
+* `--only-metadata` / `-m`: Only delete database entries, keep files
+* `--yes` / `-y`: Skip the confirmation prompt (useful for automation/CI)
+* `--ignore-errors` / `-i`: Continue pruning even if some deletions fail (by default, pruning stops on the first error)
+* `--threads` / `-t`: Number of parallel threads for faster pruning (default: 1)
+
+{% hint style="info" %}
+**Fail-fast behavior**: Without `--ignore-errors`, pruning stops immediately when any deletion fails. With `--threads > 1`, this means in-flight deletions will complete but no new deletions will be scheduled after a failure.
+{% endhint %}
 
 ### Registering Existing Data as Artifacts
 

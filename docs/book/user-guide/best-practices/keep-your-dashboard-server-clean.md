@@ -116,14 +116,23 @@ See the full documentation on [how to delete models](https://docs.zenml.io/how-t
 
 ### Pruning artifacts
 
-If you want to delete artifacts that are no longer referenced by any pipeline\
-runs, you can use the following CLI command:
+If you want to delete artifacts that are no longer referenced by any pipeline runs, you can use the following CLI command:
 
 ```bash
 zenml artifact prune
 ```
 
-By default, this method deletes artifacts physically from the underlying artifact store AND also the entry in the database. You can control this behavior by using the `--only-artifact` and `--only-metadata` flags, and you can speed up pruning with `--threads` / `-t` to enable parallel deletion.
+By default, this method deletes artifacts physically from the underlying artifact store AND also the entry in the database. Useful flags include:
+
+* `--only-artifact` / `-a`: Only delete physical files, keep database entries
+* `--only-metadata` / `-m`: Only delete database entries, keep physical files
+* `--yes` / `-y`: Skip the confirmation prompt (useful for scripts/automation)
+* `--ignore-errors` / `-i`: Continue pruning even if some deletions fail
+* `--threads` / `-t`: Number of parallel threads for faster pruning
+
+{% hint style="info" %}
+**Note**: Artifacts only become "unused" after you delete the pipeline runs that reference them. If artifacts aren't being pruned, check if they're still referenced by existing runs.
+{% endhint %}
 
 For more information, see the [documentation for this artifact pruning feature](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact).
 

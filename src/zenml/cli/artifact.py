@@ -295,13 +295,19 @@ def _delete_artifact_version_target(
 
     Returns:
         The target for downstream artifact cleanup tracking.
+
+    Note:
+        We intentionally do NOT skip the unused check here, even though we
+        already filtered for unused versions during listing. This provides
+        defense-in-depth against race conditions where a version becomes
+        used between listing and deletion. The check is cheap (single
+        filtered query) and ensures we never delete data for used versions.
     """
     client = _get_thread_local_client()
     client.delete_artifact_version(
         name_id_or_prefix=target.artifact_version_id,
         delete_metadata=delete_metadata,
         delete_from_artifact_store=delete_from_artifact_store,
-        _skip_unused_check=True,
     )
     return target
 
@@ -416,12 +422,19 @@ def prune_artifacts(
     in_flight: Set[Future[_PruneTarget]] = set()
     targets_iter = iter(targets)
 
+    # Fail-fast state: when abort is True, we stop scheduling new work
+    abort = False
+    first_failure: Optional[tuple[_PruneTarget, Exception]] = None
+
     with console.status(
         f"Deleting unused artifact versions... ({completed}/{total})"
     ) as status:
         with ThreadPoolExecutor(max_workers=threads) as executor:
 
             def submit_next() -> None:
+                # Don't schedule new work if we're aborting
+                if abort:
+                    return
                 try:
                     target = next(targets_iter)
                 except StopIteration:
@@ -448,21 +461,45 @@ def prune_artifacts(
                     try:
                         future.result()
                     except Exception as e:
+                        failed_deletions += 1
                         if ignore_errors:
                             cli_utils.warning(
                                 f"Failed to delete artifact version {target.artifact_version_id}: {str(e)}"
                             )
-                            failed_deletions += 1
                         else:
-                            cli_utils.error(
-                                f"Failed to delete artifact version {target.artifact_version_id}: {str(e)}"
-                            )
+                            # Fail-fast: stop scheduling and cancel queued work
+                            abort = True
+                            first_failure = (target, e)
+                            # Cancel futures that haven't started yet
+                            for queued_future in in_flight:
+                                queued_future.cancel()
+                            # Don't process more done futures, exit loop
+                            break
 
                     completed += 1
                     status.update(
                         f"Deleting unused artifact versions... ({completed}/{total})"
                     )
                     submit_next()
+
+                # If we aborted, wait for remaining in-flight work to finish
+                # but don't schedule anything new
+                if abort:
+                    # Wait for any remaining running futures to complete
+                    for remaining_future in in_flight:
+                        try:
+                            remaining_future.result()
+                        except Exception:
+                            # Ignore errors from cancelled/in-flight futures
+                            pass
+                    break
+
+    # If fail-fast was triggered, raise the error after cleanup
+    if first_failure is not None:
+        target, exc = first_failure
+        cli_utils.error(
+            f"Failed to delete artifact version {target.artifact_version_id}: {str(exc)}"
+        )
 
     if not only_artifact:
         for artifact_id in artifact_ids:
