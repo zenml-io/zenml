@@ -846,7 +846,10 @@ class BaseFilter(BaseModel):
         from sqlmodel import or_
 
         value, operator = BaseFilter._resolve_operator(value)
-        value = str(value)
+        # For the `oneof` operator, the return value here will be a list which
+        # we do not want to convert.
+        if isinstance(value, UUID):
+            value = str(value)
 
         conditions = []
 
