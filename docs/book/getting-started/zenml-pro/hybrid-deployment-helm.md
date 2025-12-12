@@ -177,6 +177,10 @@ curl -k https://zenml.mycompany.com/health
 
 Pipeline snapshots (running pipelines from the UI) require a workload manager. For hybrid deployments, you can configure one of the following:
 
+{% hint style="warning" %}
+Snapshots are only available from ZenML workspace server version 0.90.0 onwards.
+{% endhint %}
+
 ### 1. Create Kubernetes Resources for Workload Manager
 
 Create a dedicated namespace and service account:
