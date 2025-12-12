@@ -26,7 +26,6 @@ def trainer(
 ) -> ClassifierMixin:
     model = LogisticRegression(
         solver="lbfgs",
-        multi_class="auto",
         max_iter=200,
     )
     model.fit(X_train, y_train)
