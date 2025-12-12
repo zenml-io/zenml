@@ -15,8 +15,8 @@
 ## Services
 
 * [Services Overview](services.md)
-  * [Workspace Server](workspace-server.md)
   * [Control Plane](control-plane.md)
+  * [Workspace Server](workspace-server.md)
   * [Workload Managers](workload-managers.md)
 
 ## Core Concepts
