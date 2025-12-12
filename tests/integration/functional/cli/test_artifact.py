@@ -151,7 +151,7 @@ def test_artifact_prune(clean_client_with_run):
     # After pruning, nothing should change since the artifacts are still used
     runner = CliRunner()
     prune_command = cli.commands["artifact"].commands["prune"]
-    result = runner.invoke(prune_command, ["-y"])
+    result = runner.invoke(prune_command, ["-y", "--threads", "2"])
     assert result.exit_code == 0
     existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 2
@@ -171,9 +171,20 @@ def test_artifact_prune(clean_client_with_run):
     assert len(existing_artifact_versions) == 2
 
     # After deleting the run, the artifacts should now get pruned
-    result = runner.invoke(prune_command, ["-y"])
+    result = runner.invoke(prune_command, ["-y", "--threads", "2"])
     assert result.exit_code == 0
     existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 0
     existing_artifact_versions = clean_client_with_run.list_artifact_versions()
     assert len(existing_artifact_versions) == 0
+
+
+def test_artifact_prune_mutually_exclusive_only_flags(clean_client_with_run):
+    """Test that `--only-artifact` and `--only-metadata` cannot be used together."""
+    runner = CliRunner()
+    prune_command = cli.commands["artifact"].commands["prune"]
+    result = runner.invoke(
+        prune_command, ["--only-artifact", "--only-metadata", "-y"]
+    )
+    assert result.exit_code != 0
+    assert "Cannot use both" in result.output
