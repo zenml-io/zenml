@@ -38,6 +38,7 @@ from zenml import ExternalArtifact
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
+from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionMode, StepRuntime
 from zenml.execution.pipeline.dynamic.outputs import (
     ArtifactFuture,
@@ -78,6 +79,7 @@ from zenml.utils.logging_utils import (
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
     from zenml.config.step_configurations import Step, StepConfiguration
+    from zenml.orchestrators import BaseOrchestrator
     from zenml.steps import BaseStep
 
 
@@ -91,12 +93,15 @@ class DynamicPipelineRunner:
         self,
         snapshot: "PipelineSnapshotResponse",
         run: Optional["PipelineRunResponse"],
+        orchestrator: Optional["BaseOrchestrator"] = None,
     ) -> None:
         """Initialize the dynamic pipeline runner.
 
         Args:
             snapshot: The snapshot of the pipeline.
             run: The pipeline run.
+            orchestrator: The orchestrator to use. If not provided, the
+                orchestrator will be inferred from the snapshot stack.
 
         Raises:
             RuntimeError: If the snapshot has no associated stack.
@@ -121,7 +126,10 @@ class DynamicPipelineRunner:
         # TODO: make this configurable
         self._executor = ThreadPoolExecutor(max_workers=10)
         self._pipeline: Optional["DynamicPipeline"] = None
-        self._orchestrator = Stack.from_model(snapshot.stack).orchestrator
+        if orchestrator:
+            self._orchestrator = orchestrator
+        else:
+            self._orchestrator = Stack.from_model(snapshot.stack).orchestrator
         self._orchestrator_run_id = (
             self._orchestrator.get_orchestrator_run_id()
         )
@@ -150,6 +158,7 @@ class DynamicPipelineRunner:
                     "Invalid pipeline source: "
                     f"{self._snapshot.pipeline_spec.source.import_path}"
                 )
+            pipeline = copy.deepcopy(pipeline)
             pipeline._configuration = self._snapshot.pipeline_configuration
             self._pipeline = pipeline
 
@@ -171,7 +180,9 @@ class DynamicPipelineRunner:
             )
 
         logging_context = nullcontext()
-        if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
+        if not run.triggered_by_deployment and is_pipeline_logging_enabled(
+            self._snapshot.pipeline_configuration
+        ):
             logging_context = setup_run_logging(
                 pipeline_run=run,
                 source="orchestrator",
@@ -185,7 +196,14 @@ class DynamicPipelineRunner:
                     snapshot=self._snapshot,
                     runner=self,
                 ):
-                    self._orchestrator.run_init_hook(snapshot=self._snapshot)
+                    if not run.triggered_by_deployment:
+                        # Only run the init hook if the run is not triggered by
+                        # a deployment, as the deployment service will have
+                        # already run the init hook.
+                        self._orchestrator.run_init_hook(
+                            snapshot=self._snapshot
+                        )
+
                     try:
                         # TODO: what should be allowed as pipeline returns?
                         #  (artifacts, json serializable, anything?)
@@ -204,9 +222,13 @@ class DynamicPipelineRunner:
                         )
                         raise
                     finally:
-                        self._orchestrator.run_cleanup_hook(
-                            snapshot=self._snapshot
-                        )
+                        if not run.triggered_by_deployment:
+                            # Only run the cleanup hook if the run is not triggered by
+                            # a deployment, as the deployment service will have
+                            # already run the cleanup hook.
+                            self._orchestrator.run_cleanup_hook(
+                                snapshot=self._snapshot
+                            )
                         self._executor.shutdown(wait=True, cancel_futures=True)
 
                     publish_successful_pipeline_run(run.id)
@@ -256,6 +278,16 @@ class DynamicPipelineRunner:
             The step run outputs or a future for the step run outputs.
         """
         step = step.copy()
+        step_config = None
+        if self._run and self._run.triggered_by_deployment:
+            # Deployment-specific step overrides
+            step_config = StepConfigurationUpdate(
+                enable_cache=False,
+                step_operator=None,
+                parameters={},
+                runtime=StepRuntime.INLINE,
+            )
+
         compiled_step = compile_dynamic_step_invocation(
             snapshot=self._snapshot,
             pipeline=self.pipeline,
@@ -263,6 +295,7 @@ class DynamicPipelineRunner:
             id=id,
             inputs=convert_to_keyword_arguments(step.entrypoint, args, kwargs),
             after=after,
+            config=step_config,
         )
 
         def _launch() -> StepRunOutputs:
@@ -273,6 +306,7 @@ class DynamicPipelineRunner:
                 retry=_should_retry_locally(
                     compiled_step,
                     self._snapshot.pipeline_configuration.docker_settings,
+                    self._orchestrator,
                 ),
             )
             return _load_step_run_outputs(step_run.id)
@@ -349,6 +383,7 @@ def compile_dynamic_step_invocation(
         None,
     ] = None,
     id: Optional[str] = None,
+    config: Optional[StepConfigurationUpdate] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.
 
@@ -359,6 +394,7 @@ def compile_dynamic_step_invocation(
         id: Custom invocation ID.
         inputs: The inputs for the step function.
         after: The step run output futures to wait for.
+        config: The configuration for the step.
 
     Returns:
         The compiled step.
@@ -460,7 +496,7 @@ def compile_dynamic_step_invocation(
     return Compiler()._compile_step_invocation(
         invocation=pipeline.invocations[invocation_id],
         stack=Client().active_stack,
-        step_config=None,
+        step_config=config,
         pipeline=pipeline,
     )
 
@@ -503,13 +539,16 @@ def _load_step_run_outputs(step_run_id: UUID) -> StepRunOutputs:
 
 
 def _should_retry_locally(
-    step: "Step", pipeline_docker_settings: "DockerSettings"
+    step: "Step",
+    pipeline_docker_settings: "DockerSettings",
+    orchestrator: "BaseOrchestrator",
 ) -> bool:
     """Determine if a step should be retried locally.
 
     Args:
         step: The step.
         pipeline_docker_settings: The Docker settings of the parent pipeline.
+        orchestrator: The orchestrator to use.
 
     Returns:
         Whether the step should be retried locally.
@@ -520,25 +559,27 @@ def _should_retry_locally(
     runtime = get_step_runtime(
         step_config=step.config,
         pipeline_docker_settings=pipeline_docker_settings,
+        orchestrator=orchestrator,
     )
     if runtime == StepRuntime.INLINE:
         return True
     else:
         # Running in isolated mode with the orchestrator
-        return (
-            not Client().active_stack.orchestrator.config.handles_step_retries
-        )
+        return not orchestrator.config.handles_step_retries
 
 
 def get_step_runtime(
     step_config: "StepConfiguration",
     pipeline_docker_settings: "DockerSettings",
+    orchestrator: Optional["BaseOrchestrator"] = None,
 ) -> StepRuntime:
     """Determine if a step should be run in process.
 
     Args:
         step_config: The step configuration.
         pipeline_docker_settings: The Docker settings of the parent pipeline.
+        orchestrator: The orchestrator to use. If not provided, the
+            orchestrator will be inferred from the active stack.
 
     Returns:
         The runtime for the step.
@@ -546,7 +587,10 @@ def get_step_runtime(
     if step_config.step_operator:
         return StepRuntime.ISOLATED
 
-    if not Client().active_stack.orchestrator.can_run_isolated_steps:
+    if not orchestrator:
+        orchestrator = Client().active_stack.orchestrator
+
+    if not orchestrator.can_run_isolated_steps:
         return StepRuntime.INLINE
 
     runtime = step_config.runtime

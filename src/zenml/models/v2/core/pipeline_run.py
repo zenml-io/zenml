@@ -518,6 +518,27 @@ class PipelineRunResponse(
         return self.get_metadata().is_templatable
 
     @property
+    def trigger_info(self) -> Optional[PipelineRunTriggerInfo]:
+        """The `trigger_info` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().trigger_info
+
+    @property
+    def triggered_by_deployment(self) -> bool:
+        """The `triggered_by_deployment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return (
+            self.trigger_info is not None
+            and self.trigger_info.deployment_id is not None
+        )
+
+    @property
     def snapshot(self) -> Optional["PipelineSnapshotResponse"]:
         """The `snapshot` property.
 
