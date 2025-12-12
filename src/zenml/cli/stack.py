@@ -717,6 +717,14 @@ def register_stack(
     required=False,
 )
 @click.option(
+    "-l",
+    "--log_store",
+    "log_store",
+    help="Name of the log store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--secret",
     "secrets",
     help="Secrets to attach to the stack.",
@@ -757,6 +765,7 @@ def update_stack(
     image_builder: Optional[str] = None,
     model_registry: Optional[str] = None,
     deployer: Optional[str] = None,
+    log_store: Optional[str] = None,
     secrets: List[str] = [],
     remove_secrets: List[str] = [],
     environment_variables: List[str] = [],
@@ -779,6 +788,7 @@ def update_stack(
         image_builder: Name of the new image builder for this stack.
         model_registry: Name of the new model registry for this stack.
         deployer: Name of the new deployer for this stack.
+        log_store: Name of the log store for this stack.
         secrets: Secrets to attach to the stack.
         remove_secrets: Secrets to remove from the stack.
         environment_variables: Environment variables to set when running on this
@@ -825,6 +835,8 @@ def update_stack(
             updates[StackComponentType.STEP_OPERATOR] = [step_operator]
         if deployer:
             updates[StackComponentType.DEPLOYER] = [deployer]
+        if log_store:
+            updates[StackComponentType.LOG_STORE] = [log_store]
 
         try:
             updated_stack = client.update_stack(
@@ -938,6 +950,14 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-l",
+    "--log_store",
+    "log_store_flag",
+    help="Include this to remove the log store from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
@@ -951,6 +971,7 @@ def remove_stack_component(
     image_builder_flag: Optional[bool] = False,
     model_registry_flag: Optional[str] = None,
     deployer_flag: Optional[bool] = False,
+    log_store_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -969,6 +990,7 @@ def remove_stack_component(
         image_builder_flag: To remove the image builder from this stack.
         model_registry_flag: To remove the model registry from this stack.
         deployer_flag: To remove the deployer from this stack.
+        log_store_flag: To remove the log store from this stack.
     """
     client = Client()
 
@@ -1007,6 +1029,9 @@ def remove_stack_component(
 
         if deployer_flag:
             stack_component_update[StackComponentType.DEPLOYER] = []
+
+        if log_store_flag:
+            stack_component_update[StackComponentType.LOG_STORE] = []
 
         try:
             updated_stack = client.update_stack(
