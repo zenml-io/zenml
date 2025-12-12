@@ -82,6 +82,7 @@ def step(
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
+    heartbeat_healthy_threshold: Optional[int] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 

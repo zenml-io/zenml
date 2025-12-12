@@ -4613,12 +4613,14 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         cron_expression: Optional[str] = None,
+        active: bool | None = None,
     ) -> ScheduleResponse:
         """Update a schedule.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the schedule to update.
             cron_expression: The new cron expression for the schedule.
+            active: Active status flag for the schedule.
 
         Returns:
             The updated schedule.
@@ -4642,7 +4644,13 @@ class Client(metaclass=ClientMetaClass):
             )
             return schedule
 
-        update = ScheduleUpdate(cron_expression=cron_expression)
+        if schedule.active == active:
+            logger.warning(
+                f"Schedule active value is already {active}, skipping update."
+            )
+            return schedule
+
+        update = ScheduleUpdate(cron_expression=cron_expression, active=active)
         orchestrator.update_schedule(schedule, update)
         return self.zen_store.update_schedule(
             schedule_id=schedule.id,
