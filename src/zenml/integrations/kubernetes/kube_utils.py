@@ -58,6 +58,10 @@ from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
+from zenml.integrations.kubernetes.gateway_api_models import (
+    GatewayStatus,
+    HTTPRouteSpec,
+)
 from zenml.integrations.kubernetes.manifest_utils import (
     build_namespace_manifest,
     build_role_binding_manifest_for_service_account,
@@ -67,6 +71,7 @@ from zenml.integrations.kubernetes.manifest_utils import (
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.integrations.kubernetes.serialization_utils import (
     normalize_resource_to_dict,
+    parse_gateway_api_resource,
 )
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
@@ -1355,3 +1360,66 @@ def build_service_url(
         return f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
 
     return None
+
+
+def build_gateway_api_url(
+    gateway: Union[Dict[str, Any], Any],
+    httproute: Union[Dict[str, Any], Any],
+) -> Optional[str]:
+    """Build URL from Gateway API Gateway and HTTPRoute resources.
+
+    Gateway API is the newer Kubernetes standard for ingress/routing.
+    It uses Gateway (entry point) + HTTPRoute (routing rules) instead of Ingress.
+
+    Args:
+        gateway: Gateway resource (gateway.networking.k8s.io/v1beta1).
+        httproute: HTTPRoute resource (gateway.networking.k8s.io/v1beta1).
+
+    Returns:
+        Service URL from Gateway API, or None if URL cannot be determined.
+    """
+    gateway_dict = normalize_resource_to_dict(gateway)
+    httproute_dict = normalize_resource_to_dict(httproute)
+
+    try:
+        gateway_status_dict = gateway_dict.get("status", {})
+        gateway_status = parse_gateway_api_resource(
+            {"listeners": gateway_status_dict.get("listeners", [])},
+            GatewayStatus,
+        )
+
+        httproute_spec_dict = httproute_dict.get("spec", {})
+        httproute_spec = parse_gateway_api_resource(
+            httproute_spec_dict, HTTPRouteSpec
+        )
+    except ValueError as e:
+        logger.warning(f"Failed to parse Gateway API resources: {e}")
+        return None
+
+    if not httproute_spec.hostnames or not httproute_spec.rules:
+        return None
+
+    hostname = httproute_spec.hostnames[0]
+
+    protocol = "http"
+    if httproute_spec.parent_refs:
+        parent_ref = httproute_spec.parent_refs[0]
+        section_name = parent_ref.section_name
+
+        for listener in gateway_status.listeners:
+            if section_name and listener.name != section_name:
+                continue
+
+            if listener.protocol.lower() in ("https", "tls"):
+                protocol = "https"
+                break
+
+    path = "/"
+    if httproute_spec.rules:
+        first_rule = httproute_spec.rules[0]
+        if first_rule.matches:
+            first_match = first_rule.matches[0]
+            if first_match.path:
+                path = first_match.path.value
+
+    return f"{protocol}://{hostname}{path}"
