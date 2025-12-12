@@ -494,7 +494,8 @@ def prune_artifacts(
                             pass
                     break
 
-    # If fail-fast was triggered, raise the error after cleanup
+    # If fail-fast was triggered, abort before artifact cleanup to prevent
+    # any further destructive operations after an unexpected failure
     if first_failure is not None:
         target, exc = first_failure
         cli_utils.error(

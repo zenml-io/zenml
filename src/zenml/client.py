@@ -5421,7 +5421,9 @@ class Client(metaclass=ClientMetaClass):
         if not _skip_unused_check and (
             delete_metadata or delete_from_artifact_store
         ):
-            self._assert_artifact_version_unused(artifact_version.id)
+            self._assert_artifact_version_unused(
+                artifact_version.id, project=project
+            )
 
         if delete_from_artifact_store:
             self._delete_artifact_from_artifact_store(
@@ -5437,6 +5439,7 @@ class Client(metaclass=ClientMetaClass):
     def _assert_artifact_version_unused(
         self,
         artifact_version_id: UUID,
+        project: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Assert that an artifact version is unused (not referenced by runs).
 
@@ -5445,6 +5448,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             artifact_version_id: The ID of the artifact version to check.
+            project: The project name/ID to scope the unused check. Should
+                match the project used when fetching the artifact version.
 
         Raises:
             ValueError: If the artifact version is still used in any runs.
@@ -5452,7 +5457,7 @@ class Client(metaclass=ClientMetaClass):
         # Query for this specific version with only_unused=True filter
         # If the version is used, it won't appear in the results
         page = self.list_artifact_versions(
-            id=artifact_version_id, only_unused=True, size=1
+            id=artifact_version_id, only_unused=True, size=1, project=project
         )
         if page.total == 0:
             raise ValueError(
