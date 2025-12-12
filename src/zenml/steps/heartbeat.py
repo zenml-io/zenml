@@ -17,9 +17,15 @@ import _thread
 import logging
 import threading
 import time
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
+from zenml.utils.time_utils import to_utc_timezone
+
+if TYPE_CHECKING:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -161,8 +167,53 @@ class StepHeartbeatWorker:
 
         response = store.update_step_heartbeat(step_run_id=self.step_id)
 
-        if response.status in {
+        if response.pipeline_run_status in {
             ExecutionStatus.STOPPED,
             ExecutionStatus.STOPPING,
         }:
             self._terminated = True
+
+
+def is_heartbeat_unhealthy(
+    step_run_id: UUID,
+    status: ExecutionStatus,
+    latest_heartbeat: datetime | None,
+    start_time: datetime | None = None,
+    heartbeat_threshold: int | None = None,
+) -> bool:
+    """Utility function - Checks if step heartbeats indicate un-healthy execution.
+
+    Args:
+        step_run_id: The run step id.
+        status: The run step status.
+        latest_heartbeat: The run step latest heartbeat.
+        start_time: The run step start time.
+        heartbeat_threshold: If heartbeat enabled the max minutes without heartbeat
+            for healthy, running tasks.
+
+    Returns:
+        True if the step heartbeat is unhealthy, False otherwise.
+    """
+    if not heartbeat_threshold:
+        return False
+
+    if status.is_finished:
+        return False
+
+    if latest_heartbeat:
+        heartbeat_diff = datetime.now(tz=timezone.utc) - to_utc_timezone(
+            latest_heartbeat
+        )
+    elif start_time:
+        heartbeat_diff = datetime.now(tz=timezone.utc) - to_utc_timezone(
+            start_time
+        )
+    else:
+        return False
+
+    logger.debug("Step %s heartbeat diff=%s", step_run_id, heartbeat_diff)
+
+    if heartbeat_diff.total_seconds() > heartbeat_threshold * 60:
+        return True
+
+    return False

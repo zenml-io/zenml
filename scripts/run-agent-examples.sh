@@ -122,21 +122,12 @@ run_example() {
     echo "Pip (uv pip): $(uv pip --version 2>&1 || true)"
   } >>"$log_file" 2>&1
 
-  # Install the local zenml from this repository in editable mode so examples validate against repo code
-  log "Installing local zenml (editable) for '${name}' from: ${ROOT_DIR}" | tee -a "$log_file"
-  if ! uv pip install -e "$ROOT_DIR" >>"$log_file" 2>&1; then
-    log "ERROR: Installing local zenml failed for '${name}'"
-    deactivate >/dev/null 2>&1 || true
-    popd >/dev/null || true
-    FAILURES+=("$name")
-    echo "::endgroup::"
-    return 0
-  fi
-
-  # Install example-specific requirements (should not override editable zenml)
-  log "Installing requirements for '${name}'" | tee -a "$log_file"
-  if ! uv pip install -r requirements.txt >>"$log_file" 2>&1; then
-    log "ERROR: Dependency installation failed for '${name}'"
+  # Install local zenml (editable) AND example requirements in a single resolution pass.
+  # This ensures uv sees all constraints together and fails fast on conflicts
+  # (e.g., if an example's dependency pins an incompatible version of a ZenML dep).
+  log "Installing local zenml (editable) + requirements for '${name}'" | tee -a "$log_file"
+  if ! uv pip install -e "$ROOT_DIR" -r requirements.txt >>"$log_file" 2>&1; then
+    log "ERROR: Dependency installation failed for '${name}' (check for version conflicts)"
     deactivate >/dev/null 2>&1 || true
     popd >/dev/null || true
     FAILURES+=("$name")
@@ -227,8 +218,7 @@ TOTAL_COUNT=$(( PASS_COUNT + FAIL_COUNT + SKIP_COUNT ))
   echo "cd examples/agent_framework_integrations/<example-name>"
   echo "${PYTHON_VERSION:+PYTHON_VERSION=${PYTHON_VERSION} }uv venv ${PYTHON_VERSION:+--python ${PYTHON_VERSION}}"
   echo "source .venv/bin/activate"
-  echo "uv pip install -e \"$ROOT_DIR\""
-  echo "uv pip install -r requirements.txt"
+  echo "uv pip install -e \"$ROOT_DIR\" -r requirements.txt"
   echo "PYTHONPATH=\"$ROOT_DIR/src:\\\$PWD:\\\${PYTHONPATH:-}\" python run.py"
   echo "\\\`\\\`\\\`"
 } >"$SUMMARY_FILE"

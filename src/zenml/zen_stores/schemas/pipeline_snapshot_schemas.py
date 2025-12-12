@@ -110,6 +110,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
+    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_path: Optional[str] = Field(nullable=True)
 
     # Foreign keys
@@ -410,6 +411,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         return cls(
             name=name,
             description=request.description,
+            source_code=request.source_code,
             is_dynamic=request.is_dynamic,
             stack_id=request.stack,
             project_id=request.project,
@@ -549,6 +551,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
             metadata = PipelineSnapshotResponseMetadata(
                 description=self.description,
+                source_code=self.source_code,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,

@@ -30,6 +30,7 @@ from uuid import UUID
 
 from pydantic import model_validator
 
+from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
@@ -43,6 +44,7 @@ from zenml.exceptions import (
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.orchestrators.exceptions import PipelineSubmissionError
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
     publish_pipeline_run_status_update,
@@ -261,6 +263,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
+            PipelineSubmissionError: If a pipeline submission failed on the
+                orchestrator.
         """
         self._prepare_run(snapshot=snapshot)
 
@@ -373,6 +377,7 @@ class BaseOrchestrator(StackComponent, ABC):
                         step_environments=step_environments,
                         placeholder_run=placeholder_run,
                     )
+
                 if placeholder_run:
                     publish_pipeline_run_status_update(
                         pipeline_run_id=placeholder_run.id,
@@ -425,7 +430,14 @@ class BaseOrchestrator(StackComponent, ABC):
                             raise RunMonitoringError(original_exception=e)
                         except BaseException as e:
                             raise RunMonitoringError(original_exception=e)
+        except PipelineSubmissionError as e:
+            # clean-up actions in case of failure
 
+            if snapshot.schedule:
+                # delete created DB schedules
+                Client().zen_store.delete_schedule(snapshot.schedule.id)
+
+            raise e
         finally:
             self._cleanup_run()
 
@@ -682,20 +694,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 If False, forces immediate termination. Default is False.
 
         Raises:
-            NotImplementedError: If any orchestrator inheriting from the base
-                class does not implement this logic.
             IllegalOperationError: If the run has no orchestrator run id yet.
         """
-        # Check if the orchestrator supports cancellation
-        if (
-            getattr(self._stop_run, "__func__", None)
-            is BaseOrchestrator._stop_run
-        ):
-            raise NotImplementedError(
-                f"The '{self.__class__.__name__}' orchestrator does not "
-                "support stopping pipeline runs."
-            )
-
         if not run.orchestrator_run_id:
             raise IllegalOperationError(
                 "Cannot stop a pipeline run that has no orchestrator run id "
@@ -703,6 +703,7 @@ class BaseOrchestrator(StackComponent, ABC):
             )
 
         # Update pipeline status to STOPPING before calling concrete implementation
+        # Initiates graceful termination.
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
@@ -724,13 +725,24 @@ class BaseOrchestrator(StackComponent, ABC):
             run: A pipeline run response to stop (already updated to STOPPING status).
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is True.
-
-        Raises:
-            NotImplementedError: If any orchestrator inheriting from the base
-                class does not implement this logic.
         """
+        if graceful:
+            # This should work out of the box for HeartBeat step termination.
+            # Orchestrators should extend the functionality to cover other scenarios.
+            self._stop_run_gracefully(pipeline_run=run)
+        else:
+            self._stop_run_forcefully(pipeline_run=run)
+
+    def _stop_run_gracefully(
+        self, pipeline_run: "PipelineRunResponse"
+    ) -> None:
+        pass
+
+    def _stop_run_forcefully(
+        self, pipeline_run: "PipelineRunResponse"
+    ) -> None:
         raise NotImplementedError(
-            "The stop run functionality is not implemented for the "
+            "The forceful stop run functionality is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."
         )
 
