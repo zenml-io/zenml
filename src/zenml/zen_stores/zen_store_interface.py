@@ -1886,11 +1886,12 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_schedule(self, schedule_id: UUID) -> None:
+    def delete_schedule(self, schedule_id: UUID, soft: bool) -> None:
         """Deletes a schedule.
 
         Args:
             schedule_id: The ID of the schedule to delete.
+            soft: Soft deletion will archive the schedule.
 
         Raises:
             KeyError: if the schedule doesn't exist.
