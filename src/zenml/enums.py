@@ -105,7 +105,6 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
-            ExecutionStatus.RETRYING,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
         }
