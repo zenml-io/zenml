@@ -18,9 +18,11 @@ import re
 from datetime import datetime
 from typing import (
     Any,
-    Iterator,
+    Dict,
+    Generator,
     List,
     Optional,
+    Type,
     cast,
 )
 from uuid import UUID
@@ -30,9 +32,16 @@ from opentelemetry.sdk._logs.export import LogExporter
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
-from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
+from zenml.log_stores import BaseLogStore
+from zenml.log_stores.base_log_store import (
+    MAX_ENTRIES_PER_REQUEST,
+    BaseLogStoreOrigin,
+)
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
-from zenml.log_stores.otel.otel_log_store import OtelLogStore
+from zenml.log_stores.otel.otel_log_store import (
+    OtelLogStore,
+    OtelLogStoreOrigin,
+)
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
@@ -112,7 +121,7 @@ def fetch_log_records(
 def _stream_logs_line_by_line(
     artifact_store: "BaseArtifactStore",
     logs_uri: str,
-) -> Iterator[str]:
+) -> Generator[str, None, None]:
     """Stream logs line by line without loading the entire file into memory.
 
     This generator yields log lines one by one, handling both single files
@@ -128,6 +137,9 @@ def _stream_logs_line_by_line(
     Raises:
         DoesNotExistException: If the artifact does not exist in the artifact store.
     """
+    if not artifact_store.exists(logs_uri):
+        return
+
     if not artifact_store.isdir(logs_uri):
         # Single file case
         with artifact_store.open(logs_uri, "r") as file:
@@ -199,6 +211,31 @@ class ArtifactLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the artifact log store."""
 
 
+class ArtifactLogStoreOrigin(OtelLogStoreOrigin):
+    """Artifact log store origin."""
+
+    def __init__(
+        self,
+        name: str,
+        log_store: "BaseLogStore",
+        log_model: LogsResponse,
+        metadata: Dict[str, Any],
+    ) -> None:
+        """Initialize a log store origin.
+
+        Args:
+            name: The name of the origin.
+            log_store: The log store to emit logs to.
+            log_model: The log model associated with the origin.
+            metadata: Additional metadata to attach to all log entries that will
+                be emitted by this origin.
+        """
+        super().__init__(name, log_store, log_model, metadata)
+
+        if log_model.uri:
+            self._metadata["zenml.log.uri"] = log_model.uri
+
+
 class ArtifactLogStore(OtelLogStore):
     """Log store that saves logs to the artifact store.
 
@@ -220,6 +257,15 @@ class ArtifactLogStore(OtelLogStore):
         super().__init__(*args, **kwargs)
         self._artifact_store = artifact_store
 
+    @property
+    def origin_class(self) -> Type[ArtifactLogStoreOrigin]:
+        """Class of the origin.
+
+        Returns:
+            The class of the origin.
+        """
+        return ArtifactLogStoreOrigin
+
     @classmethod
     def from_artifact_store(
         cls, artifact_store: "BaseArtifactStore"
@@ -236,7 +282,7 @@ class ArtifactLogStore(OtelLogStore):
             artifact_store=artifact_store,
             id=artifact_store.id,
             name="default",
-            config=ArtifactLogStoreConfig(),
+            config=ArtifactLogStoreConfig(endpoint=artifact_store.path),
             flavor="artifact",
             type=StackComponentType.LOG_STORE,
             user=artifact_store.user,
@@ -265,26 +311,20 @@ class ArtifactLogStore(OtelLogStore):
 
         return ArtifactLogExporter(artifact_store=self._artifact_store)
 
-    def finalize(
+    def _release_origin(
         self,
-        log_model: LogsResponse,
+        origin: BaseLogStoreOrigin,
     ) -> None:
-        """Finalize the stream of log records associated with a log model.
+        """Finalize the stream of log records associated with an origin.
 
         Args:
-            log_model: The log model to finalize.
+            origin: The origin to finalize.
         """
+        assert isinstance(origin, ArtifactLogStoreOrigin)
         with self._lock:
-            if not self._provider or self._logger is None:
-                return
-
-        self._logger.emit(
-            body=END_OF_STREAM_MESSAGE,
-            attributes={
-                "zenml.log_model.id": str(log_model.id),
-                "zenml.log_model.uri": str(log_model.uri),
-            },
-        )
+            origin.logger.emit(
+                body=END_OF_STREAM_MESSAGE,
+            )
 
     def fetch(
         self,
