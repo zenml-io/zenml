@@ -28,7 +28,11 @@ from opentelemetry.sdk.resources import Resource
 from zenml.log_stores.base_log_store import (
     MAX_ENTRIES_PER_REQUEST,
     BaseLogStore,
+<<<<<<< HEAD
     BaseLogStoreEmitter,
+=======
+    BaseLogStoreOrigin,
+>>>>>>> origin/develop
 )
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
@@ -68,8 +72,13 @@ class OtelBatchLogRecordProcessor(BatchLogRecordProcessor):
             return self.force_flush()
 
 
+<<<<<<< HEAD
 class OtelLogStoreEmitter(BaseLogStoreEmitter):
     """OpenTelemetry log store emitter."""
+=======
+class OtelLogStoreOrigin(BaseLogStoreOrigin):
+    """OpenTelemetry log store origin."""
+>>>>>>> origin/develop
 
     def __init__(
         self,
@@ -78,6 +87,7 @@ class OtelLogStoreEmitter(BaseLogStoreEmitter):
         log_model: LogsResponse,
         metadata: Dict[str, Any],
     ) -> None:
+<<<<<<< HEAD
         """Initialize a log store emitter.
 
         Args:
@@ -86,6 +96,16 @@ class OtelLogStoreEmitter(BaseLogStoreEmitter):
             log_model: The log model associated with the emitter.
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this emitter.
+=======
+        """Initialize a log store origin.
+
+        Args:
+            name: The name of the origin.
+            log_store: The log store to emit logs to.
+            log_model: The log model associated with the origin.
+            metadata: Additional metadata to attach to all log entries that will
+                be emitted by this origin.
+>>>>>>> origin/develop
         """
         metadata = {f"zenml.{key}": value for key, value in metadata.items()}
 
@@ -105,7 +125,11 @@ class OtelLogStoreEmitter(BaseLogStoreEmitter):
 
     @property
     def logger(self) -> "Logger":
+<<<<<<< HEAD
         """Returns the OpenTelemetry logger for this emitter.
+=======
+        """Returns the OpenTelemetry logger for this origin.
+>>>>>>> origin/develop
 
         Returns:
             The logger.
@@ -145,6 +169,7 @@ class OtelLogStore(BaseLogStore):
         return cast(OtelLogStoreConfig, self._config)
 
     @property
+<<<<<<< HEAD
     def emitter_class(self) -> Type[OtelLogStoreEmitter]:
         """Class of the emitter.
 
@@ -152,6 +177,15 @@ class OtelLogStore(BaseLogStore):
             The class of the emitter.
         """
         return OtelLogStoreEmitter
+=======
+    def origin_class(self) -> Type[OtelLogStoreOrigin]:
+        """Class of the origin.
+
+        Returns:
+            The class of the origin.
+        """
+        return OtelLogStoreOrigin
+>>>>>>> origin/develop
 
     @property
     def provider(self) -> "LoggerProvider":
@@ -207,6 +241,7 @@ class OtelLogStore(BaseLogStore):
         self._provider.add_log_record_processor(self._processor)
         self._handler = LoggingHandler(logger_provider=self._provider)
 
+<<<<<<< HEAD
     def register_emitter(
         self, name: str, log_model: LogsResponse, metadata: Dict[str, Any]
     ) -> BaseLogStoreEmitter:
@@ -219,11 +254,26 @@ class OtelLogStore(BaseLogStore):
 
         Returns:
             The emitter.
+=======
+    def register_origin(
+        self, name: str, log_model: LogsResponse, metadata: Dict[str, Any]
+    ) -> BaseLogStoreOrigin:
+        """Register an origin for the log store.
+
+        Args:
+            name: The name of the origin.
+            log_model: The log model associated with the origin.
+            metadata: Additional metadata to attach to the log entry.
+
+        Returns:
+            The origin.
+>>>>>>> origin/develop
         """
         with self._lock:
             if not self._provider:
                 self._activate()
 
+<<<<<<< HEAD
         return super().register_emitter(name, log_model, metadata)
 
     def _emit(
@@ -231,18 +281,35 @@ class OtelLogStore(BaseLogStore):
         emitter: BaseLogStoreEmitter,
         record: logging.LogRecord,
         metadata: Dict[str, Any],
+=======
+        return super().register_origin(name, log_model, metadata)
+
+    def emit(
+        self,
+        origin: BaseLogStoreOrigin,
+        record: logging.LogRecord,
+        metadata: Optional[Dict[str, Any]] = None,
+>>>>>>> origin/develop
     ) -> None:
         """Process a log record by sending to OpenTelemetry.
 
         Args:
+<<<<<<< HEAD
             emitter: The emitter used to emit the log record.
+=======
+            origin: The origin used to send the log record.
+>>>>>>> origin/develop
             record: The log record to process.
             metadata: Additional metadata to attach to the log entry.
 
         Raises:
             RuntimeError: If the OpenTelemetry provider is not initialized.
         """
+<<<<<<< HEAD
         assert isinstance(emitter, OtelLogStoreEmitter)
+=======
+        assert isinstance(origin, OtelLogStoreOrigin)
+>>>>>>> origin/develop
         with self._lock:
             if not self._provider:
                 self._activate()
@@ -251,6 +318,7 @@ class OtelLogStore(BaseLogStore):
                 raise RuntimeError("OpenTelemetry provider is not initialized")
 
             emit_kwargs = self._handler._translate(record)
+<<<<<<< HEAD
             emit_kwargs["attributes"].update(metadata)
 
             emitter.logger.emit(**emit_kwargs)
@@ -263,6 +331,22 @@ class OtelLogStore(BaseLogStore):
 
         Args:
             emitter: The emitter to finalize.
+=======
+            emit_kwargs["attributes"].update(origin.metadata)
+            if metadata:
+                emit_kwargs["attributes"].update(metadata)
+
+            origin.logger.emit(**emit_kwargs)
+
+    def _release_origin(
+        self,
+        origin: BaseLogStoreOrigin,
+    ) -> None:
+        """Finalize the stream of log records associated with an origin.
+
+        Args:
+            origin: The origin to finalize.
+>>>>>>> origin/develop
         """
         pass
 

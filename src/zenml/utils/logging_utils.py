@@ -47,7 +47,11 @@ from zenml.models import (
 )
 
 if TYPE_CHECKING:
+<<<<<<< HEAD
     from zenml.log_stores.base_log_store import BaseLogStoreEmitter
+=======
+    from zenml.log_stores.base_log_store import BaseLogStoreOrigin
+>>>>>>> origin/develop
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -131,7 +135,11 @@ class LoggingContext:
         self._disabled = False
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
+<<<<<<< HEAD
         self._emitter: Optional["BaseLogStoreEmitter"] = None
+=======
+        self._origin: Optional["BaseLogStoreOrigin"] = None
+>>>>>>> origin/develop
         self._name = name
 
     @property
@@ -160,8 +168,16 @@ class LoggingContext:
             try:
                 message = record.getMessage()
                 if message and message.strip():
+<<<<<<< HEAD
                     if context._emitter:
                         context._emitter.emit(record)
+=======
+                    if context._origin:
+                        context._log_store.emit(
+                            context._origin,
+                            record,
+                        )
+>>>>>>> origin/develop
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
             finally:
@@ -176,7 +192,11 @@ class LoggingContext:
         with self._lock:
             self._previous_context = active_logging_context.get()
             active_logging_context.set(self)
+<<<<<<< HEAD
             self._emitter = self._log_store.register_emitter(
+=======
+            self._origin = self._log_store.register_origin(
+>>>>>>> origin/develop
                 name=self.name,
                 log_model=self.log_model,
                 metadata=self._metadata,
@@ -213,9 +233,15 @@ class LoggingContext:
 
         with self._lock:
             active_logging_context.set(self._previous_context)
+<<<<<<< HEAD
             if self._emitter:
                 self._emitter.deregister()
                 self._emitter = None
+=======
+            if self._origin:
+                self._origin.deregister()
+                self._origin = None
+>>>>>>> origin/develop
 
 
 def generate_logs_request(source: str) -> LogsRequest:
@@ -377,7 +403,11 @@ def setup_run_logging(
     """
     log_metadata = get_run_log_metadata(pipeline_run)
     log_metadata.update(dict(source=source))
+<<<<<<< HEAD
     name = f"zenml.pipeline_run.{pipeline_run.id}.{source}"
+=======
+    name = f"zenml.pipeline_run.{pipeline_run.name}.{source}"
+>>>>>>> origin/develop
 
     if pipeline_run.log_collection is not None:
         if run_logs := search_logs_by_source(
@@ -454,7 +484,11 @@ def setup_step_logging(
     log_metadata = get_step_log_metadata(step_run, pipeline_run)
     log_metadata.update(dict(source=source))
     name = (
+<<<<<<< HEAD
         f"zenml.pipeline_run.{pipeline_run.id}.step.{step_run.name}.{source}"
+=======
+        f"zenml.pipeline_run.{pipeline_run.name}.step.{step_run.name}.{source}"
+>>>>>>> origin/develop
     )
 
     if pipeline_run.log_collection is not None:

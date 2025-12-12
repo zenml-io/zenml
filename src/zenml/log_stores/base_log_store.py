@@ -31,6 +31,7 @@ class BaseLogStoreConfig(StackComponentConfig):
     """Base configuration for all log stores."""
 
 
+<<<<<<< HEAD
 class BaseLogStoreEmitter:
     """Base class for all ZenML log store emitters.
 
@@ -43,6 +44,21 @@ class BaseLogStoreEmitter:
     3. emit the log record by calling emitter.emit() and passing the log record
     4. deregister the emitter when all logs have been emitted by calling
     emitter.deregister()
+=======
+class BaseLogStoreOrigin:
+    """Base class for all ZenML log store origins.
+
+    The origin is the entry point for all log records to be sent to the log
+    store for processing. The process of sending a log record is as follows:
+
+    1. instantiate the log store or use the active log store
+    2. register an origin by calling log_store.register_origin() and passing
+    the log model and optional metadata to be attached to each log record
+    3. emit the log record by calling log_store.emit() and passing the origin
+    and log record
+    4. deregister the origin when all logs have been emitted by calling
+    origin.deregister()
+>>>>>>> origin/develop
     """
 
     def __init__(
@@ -52,6 +68,7 @@ class BaseLogStoreEmitter:
         log_model: LogsResponse,
         metadata: Dict[str, Any],
     ) -> None:
+<<<<<<< HEAD
         """Initialize a log store emitter.
 
         Args:
@@ -60,6 +77,16 @@ class BaseLogStoreEmitter:
             log_model: The log model associated with the emitter.
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this emitter.
+=======
+        """Initialize a log store origin.
+
+        Args:
+            name: The name of the origin.
+            log_store: The log store to emit logs to.
+            log_model: The log model associated with the origin.
+            metadata: Additional metadata to attach to all log entries that will
+                be emitted by this origin.
+>>>>>>> origin/develop
         """
         self._name = name
         self._log_store = log_store
@@ -68,22 +95,34 @@ class BaseLogStoreEmitter:
 
     @property
     def name(self) -> str:
+<<<<<<< HEAD
         """The name of the emitter.
 
         Returns:
             The name of the emitter.
+=======
+        """The name of the origin.
+
+        Returns:
+            The name of the origin.
+>>>>>>> origin/develop
         """
         return self._name
 
     @property
     def log_model(self) -> LogsResponse:
+<<<<<<< HEAD
         """The log model associated with the emitter.
+=======
+        """The log model associated with the origin.
+>>>>>>> origin/develop
 
         Returns:
             The log model.
         """
         return self._log_model
 
+<<<<<<< HEAD
     def emit(self, record: logging.LogRecord) -> None:
         """Emit a log record to the log store.
 
@@ -95,6 +134,20 @@ class BaseLogStoreEmitter:
     def deregister(self) -> None:
         """Deregister the emitter from the log store."""
         self._log_store.deregister_emitter(self)
+=======
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        """The metadata associated with the origin.
+
+        Returns:
+            The metadata.
+        """
+        return self._metadata
+
+    def deregister(self) -> None:
+        """Deregister the origin from the log store."""
+        self._log_store.deregister_origin(self)
+>>>>>>> origin/develop
 
 
 class BaseLogStore(StackComponent, ABC):
@@ -113,7 +166,11 @@ class BaseLogStore(StackComponent, ABC):
             **kwargs: Keyword arguments for the base class.
         """
         super().__init__(*args, **kwargs)
+<<<<<<< HEAD
         self._emitters: Dict[str, BaseLogStoreEmitter] = {}
+=======
+        self._origins: Dict[str, BaseLogStoreOrigin] = {}
+>>>>>>> origin/develop
         self._lock = threading.RLock()
 
     @property
@@ -126,6 +183,7 @@ class BaseLogStore(StackComponent, ABC):
         return cast(BaseLogStoreConfig, self._config)
 
     @property
+<<<<<<< HEAD
     def emitter_class(self) -> Type[BaseLogStoreEmitter]:
         """Class of the emitter.
 
@@ -164,24 +222,75 @@ class BaseLogStore(StackComponent, ABC):
             self._finalize(emitter)
             del self._emitters[emitter.name]
             if len(self._emitters) == 0:
+=======
+    def origin_class(self) -> Type[BaseLogStoreOrigin]:
+        """Class of the origin.
+
+        Returns:
+            The class of the origin used with this log store.
+        """
+        return BaseLogStoreOrigin
+
+    def register_origin(
+        self, name: str, log_model: LogsResponse, metadata: Dict[str, Any]
+    ) -> BaseLogStoreOrigin:
+        """Register an origin for the log store.
+
+        Args:
+            name: The name of the origin.
+            log_model: The log model associated with the origin.
+            metadata: Additional metadata to attach to the log entry.
+
+        Returns:
+            The origin.
+        """
+        with self._lock:
+            origin = self.origin_class(name, self, log_model, metadata)
+            self._origins[name] = origin
+            return origin
+
+    def deregister_origin(self, origin: BaseLogStoreOrigin) -> None:
+        """Deregister an origin previously registered with the log store.
+
+        Args:
+            origin: The origin to deregister.
+        """
+        with self._lock:
+            if origin.name not in self._origins:
+                return
+            self._release_origin(origin)
+            del self._origins[origin.name]
+            if len(self._origins) == 0:
+>>>>>>> origin/develop
                 self.flush(blocking=False)
 
     @abstractmethod
     def _emit(
         self,
+<<<<<<< HEAD
         emitter: BaseLogStoreEmitter,
         record: logging.LogRecord,
         metadata: Dict[str, Any],
+=======
+        origin: BaseLogStoreOrigin,
+        record: logging.LogRecord,
+        metadata: Optional[Dict[str, Any]] = None,
+>>>>>>> origin/develop
     ) -> None:
         """Process a log record from the logging system.
 
         Args:
+<<<<<<< HEAD
             emitter: The emitter used to emit the log record.
+=======
+            origin: The origin used to send the log record.
+>>>>>>> origin/develop
             record: The Python logging.LogRecord to process.
             metadata: Additional metadata to attach to the log entry.
         """
 
     @abstractmethod
+<<<<<<< HEAD
     def _finalize(
         self,
         emitter: BaseLogStoreEmitter,
@@ -197,6 +306,23 @@ class BaseLogStore(StackComponent, ABC):
 
         Args:
             emitter: The emitter to finalize.
+=======
+    def _release_origin(
+        self,
+        origin: BaseLogStoreOrigin,
+    ) -> None:
+        """Finalize the stream of log records associated with an origin.
+
+        This is used to announce the end of the stream of log records associated
+        with an origin and that no more log records will be emitted.
+
+        The implementation should ensure that all log records associated with
+        the origin are flushed to the backend and any resources (clients,
+        connections, file descriptors, etc.) are released.
+
+        Args:
+            origin: The origin to finalize.
+>>>>>>> origin/develop
         """
 
     @abstractmethod
