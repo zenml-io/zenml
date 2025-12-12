@@ -19,7 +19,7 @@ In static pipelines, ZenML executes the pipeline function before running the pip
 
 ## Dynamic pipelines
 
-Dynamic pipelines execute the pipeline function at runtime. Each step executed inside the pipeline function can be:
+[Dynamic pipelines](./dynamic_pipelines.md) execute the pipeline function at runtime. Each step executed inside the pipeline function can be:
 
 - **Inline** (runs inside the orchestration environment)
 - **Isolated** (runs in a separate environment via the orchestrator or a step operator)
