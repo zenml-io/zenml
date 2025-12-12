@@ -29,7 +29,7 @@ The OTEL Log Store implements the OpenTelemetry logging specification:
 
 3. **Batching**: Logs are batched using OpenTelemetry's `BatchLogRecordProcessor` for efficient export.
 
-4. **Export**: Batched logs are sent to your configured endpoint using OTLP/HTTP with JSON encoding.
+4. **Export**: Batched logs are sent to your configured endpoint using OTLP/HTTP with JSON encoding and optionally, using data compression.
 
 #### ZenML-specific attributes
 
