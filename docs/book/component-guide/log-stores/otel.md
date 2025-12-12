@@ -10,7 +10,7 @@ The OpenTelemetry (OTEL) Log Store is a log store flavor that exports logs to an
 The OTEL Log Store is a **write-only** log store. It can export logs to an OTEL-compatible endpoint, but it cannot fetch logs back for display in the ZenML dashboard. If you need log retrieval capabilities, you can extend this log store and implement the `fetch()` method for your backend. See [Develop a Custom Log Store](custom.md) for details on how to do this.
 {% endhint %}
 
-### When would you want to use it?
+### When to use it
 
 The OTEL Log Store is ideal when:
 
@@ -47,15 +47,13 @@ Each log record includes ZenML metadata as OTEL attributes:
 
 These attributes enable powerful filtering and querying in your observability platform.
 
-### How to deploy it
+### How to use it
 
 You need to have an OpenTelemetry-compatible endpoint ready to receive logs. This could be:
 
 - A self-hosted OTEL Collector
 - A managed observability platform (Grafana Cloud, Honeycomb, etc.)
 - Any service that accepts OTLP/HTTP with JSON encoding
-
-### How to use it
 
 Register the OTEL log store with your endpoint configuration:
 

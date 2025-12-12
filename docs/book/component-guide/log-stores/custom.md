@@ -14,11 +14,11 @@ ZenML comes equipped with [Log Store implementations](./#log-store-flavors) that
 
 The Log Store is responsible for collecting, storing, and retrieving logs during pipeline execution. Let's take a deeper dive into the fundamentals behind its abstraction, namely the `BaseLogStore` class:
 
-1. **Emitter pattern**: Log stores use an emitter pattern where `BaseLogStoreEmitter` instances handle the actual log emission. Each logging context registers an emitter with the log store.
+1. **Origin pattern**: Log stores use an origin pattern where `BaseLogStoreOrigin` instances represent the source of log records (e.g., a step execution). Each logging context registers an origin with the log store, and logs are emitted through the log store referencing that origin.
 
 2. **Core methods**: The base class defines four abstract methods that must be implemented:
-   - `_emit()`: Process and export a log record
-   - `_finalize()`: Called when logging for a context is complete
+   - `_emit()`: Process and export a log record for a given origin
+   - `_release_origin()`: Called when logging for an origin is complete (cleanup resources)
    - `flush()`: Ensure all pending logs are exported
    - `fetch()`: Retrieve stored logs for display
 
@@ -44,8 +44,8 @@ class BaseLogStoreConfig(StackComponentConfig):
     pass
 
 
-class BaseLogStoreEmitter:
-    """Emitter that routes logs to the log store."""
+class BaseLogStoreOrigin:
+    """Represents the source of log records (e.g., a step execution)."""
 
     def __init__(
         self,
@@ -59,13 +59,19 @@ class BaseLogStoreEmitter:
         self._log_model = log_model
         self._metadata = metadata
 
-    def emit(self, record: logging.LogRecord) -> None:
-        """Emit a log record to the log store."""
-        self._log_store._emit(self, record, metadata=self._metadata)
+    @property
+    def name(self) -> str:
+        """The name of the origin."""
+        return self._name
+
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        """The metadata associated with the origin."""
+        return self._metadata
 
     def deregister(self) -> None:
-        """Deregister the emitter from the log store."""
-        self._log_store.deregister_emitter(self)
+        """Deregister the origin from the log store."""
+        self._log_store.deregister_origin(self)
 
 
 class BaseLogStore(StackComponent, ABC):
@@ -73,40 +79,45 @@ class BaseLogStore(StackComponent, ABC):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._emitters: Dict[str, BaseLogStoreEmitter] = {}
+        self._origins: Dict[str, BaseLogStoreOrigin] = {}
         self._lock = threading.RLock()
 
-    def register_emitter(
-        self, name: str, log_model: LogsResponse, metadata: Dict[str, Any]
-    ) -> BaseLogStoreEmitter:
-        """Register an emitter for a logging context."""
-        with self._lock:
-            emitter = self.emitter_class(name, self, log_model, metadata)
-            self._emitters[name] = emitter
-            return emitter
+    @property
+    def origin_class(self) -> Type[BaseLogStoreOrigin]:
+        """Class of the origin used with this log store."""
+        return BaseLogStoreOrigin
 
-    def deregister_emitter(self, emitter: BaseLogStoreEmitter) -> None:
-        """Deregister an emitter and finalize its logs."""
+    def register_origin(
+        self, name: str, log_model: LogsResponse, metadata: Dict[str, Any]
+    ) -> BaseLogStoreOrigin:
+        """Register an origin for a logging context."""
         with self._lock:
-            if emitter.name not in self._emitters:
+            origin = self.origin_class(name, self, log_model, metadata)
+            self._origins[name] = origin
+            return origin
+
+    def deregister_origin(self, origin: BaseLogStoreOrigin) -> None:
+        """Deregister an origin and finalize its logs."""
+        with self._lock:
+            if origin.name not in self._origins:
                 return
-            self._finalize(emitter)
-            del self._emitters[emitter.name]
-            if len(self._emitters) == 0:
+            self._release_origin(origin)
+            del self._origins[origin.name]
+            if len(self._origins) == 0:
                 self.flush(blocking=False)
 
     @abstractmethod
-    def _emit(
+    def emit(
         self,
-        emitter: BaseLogStoreEmitter,
+        origin: BaseLogStoreOrigin,
         record: logging.LogRecord,
-        metadata: Dict[str, Any],
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Process a log record."""
+        """Process a log record for the given origin."""
 
     @abstractmethod
-    def _finalize(self, emitter: BaseLogStoreEmitter) -> None:
-        """Finalize logging for a context."""
+    def _release_origin(self, origin: BaseLogStoreOrigin) -> None:
+        """Finalize logging for an origin and release resources."""
 
     @abstractmethod
     def flush(self, blocking: bool = True) -> None:

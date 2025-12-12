@@ -35,20 +35,12 @@ from zenml.exceptions import DoesNotExistException
 from zenml.log_stores import BaseLogStore
 from zenml.log_stores.base_log_store import (
     MAX_ENTRIES_PER_REQUEST,
-<<<<<<< HEAD
-    BaseLogStoreEmitter,
-=======
     BaseLogStoreOrigin,
->>>>>>> origin/develop
 )
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import (
     OtelLogStore,
-<<<<<<< HEAD
-    OtelLogStoreEmitter,
-=======
     OtelLogStoreOrigin,
->>>>>>> origin/develop
 )
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
@@ -219,13 +211,8 @@ class ArtifactLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the artifact log store."""
 
 
-<<<<<<< HEAD
-class ArtifactLogStoreEmitter(OtelLogStoreEmitter):
-    """Artifact log store emitter."""
-=======
 class ArtifactLogStoreOrigin(OtelLogStoreOrigin):
     """Artifact log store origin."""
->>>>>>> origin/develop
 
     def __init__(
         self,
@@ -234,16 +221,6 @@ class ArtifactLogStoreOrigin(OtelLogStoreOrigin):
         log_model: LogsResponse,
         metadata: Dict[str, Any],
     ) -> None:
-<<<<<<< HEAD
-        """Initialize a log store emitter.
-
-        Args:
-            name: The name of the emitter.
-            log_store: The log store to emit logs to.
-            log_model: The log model associated with the emitter.
-            metadata: Additional metadata to attach to all log entries that will
-                be emitted by this emitter.
-=======
         """Initialize a log store origin.
 
         Args:
@@ -252,7 +229,6 @@ class ArtifactLogStoreOrigin(OtelLogStoreOrigin):
             log_model: The log model associated with the origin.
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this origin.
->>>>>>> origin/develop
         """
         super().__init__(name, log_store, log_model, metadata)
 
@@ -282,15 +258,6 @@ class ArtifactLogStore(OtelLogStore):
         self._artifact_store = artifact_store
 
     @property
-<<<<<<< HEAD
-    def emitter_class(self) -> Type[ArtifactLogStoreEmitter]:
-        """Class of the emitter.
-
-        Returns:
-            The class of the emitter.
-        """
-        return ArtifactLogStoreEmitter
-=======
     def origin_class(self) -> Type[ArtifactLogStoreOrigin]:
         """Class of the origin.
 
@@ -298,7 +265,6 @@ class ArtifactLogStore(OtelLogStore):
             The class of the origin.
         """
         return ArtifactLogStoreOrigin
->>>>>>> origin/develop
 
     @classmethod
     def from_artifact_store(
@@ -345,20 +311,6 @@ class ArtifactLogStore(OtelLogStore):
 
         return ArtifactLogExporter(artifact_store=self._artifact_store)
 
-<<<<<<< HEAD
-    def _finalize(
-        self,
-        emitter: BaseLogStoreEmitter,
-    ) -> None:
-        """Finalize the stream of log records associated with an emitter.
-
-        Args:
-            emitter: The emitter to finalize.
-        """
-        assert isinstance(emitter, ArtifactLogStoreEmitter)
-        with self._lock:
-            emitter.logger.emit(
-=======
     def _release_origin(
         self,
         origin: BaseLogStoreOrigin,
@@ -371,7 +323,6 @@ class ArtifactLogStore(OtelLogStore):
         assert isinstance(origin, ArtifactLogStoreOrigin)
         with self._lock:
             origin.logger.emit(
->>>>>>> origin/develop
                 body=END_OF_STREAM_MESSAGE,
             )
 

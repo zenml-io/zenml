@@ -10,7 +10,7 @@ The Artifact Log Store is the default log store flavor that comes built-in with 
 The Artifact Log Store is ZenML's implicit default. You don't need to register it as a flavor or add it to your stack. When no log store is explicitly configured, ZenML automatically uses an Artifact Log Store to handle logs. This means logging works out of the box with zero configuration.
 {% endhint %}
 
-### When would you want to use it?
+### When to use it
 
 The Artifact Log Store is ideal when:
 
