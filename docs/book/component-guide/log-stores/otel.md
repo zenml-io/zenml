@@ -41,8 +41,17 @@ Each log record includes ZenML metadata as OTEL attributes:
 | `zenml.log.source`    | Source of the log (step, pipeline, etc.)       |
 | `zenml.log_store.id`  | ID of the log store component                  |
 | `zenml.log_store.name`| Name of the log store component                |
-| `zenml.run.id`        | Pipeline run ID                                |
-| `zenml.step.name`     | Step name (for step-level logs)                |
+| `zenml.user.id`        | User ID                                |
+| `zenml.user.name`        | User name                                |
+| `zenml.project.id`        | Project ID                                |
+| `zenml.project.name`        | Project name                                |
+| `zenml.stack.id`        | Stack ID                                |
+| `zenml.stack.name`        | Stack name                                |
+| `zenml.pipeline.id`        | Pipeline ID                                |
+| `zenml.pipeline.name`        | Pipeline name                                |
+| `zenml.pipeline.run.id`        | Pipeline run ID                                |
+| `zenml.pipeline.run.name`        | Pipeline run name                                |
+| `zenml.step.run.name`     | Step name (for step-level logs)                |
 
 These attributes enable powerful filtering and querying in your observability platform.
 
