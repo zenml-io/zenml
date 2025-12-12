@@ -7,7 +7,7 @@ icon: file-lines
 
 The Log Store is a stack component responsible for collecting, storing, and retrieving logs generated during pipeline and step execution. It captures everything from standard logging output to print statements and any messages written to stdout/stderr, making it easy to debug and monitor your ML workflows.
 
-## How it works
+### How it works
 
 ZenML's log capture system is designed to be comprehensive and non-intrusive. Here's what happens under the hood:
 
