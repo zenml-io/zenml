@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 
+from __future__ import annotations
+
 import threading
 from collections import deque
 from concurrent.futures import (
@@ -301,11 +303,13 @@ def _delete_artifact_version_target(
         The target for downstream artifact cleanup tracking.
 
     Note:
-        We intentionally do NOT skip the unused check here, even though we
-        already filtered for unused versions during listing. This provides
-        defense-in-depth against race conditions where a version becomes
-        used between listing and deletion. The check is cheap (single
-        filtered query) and ensures we never delete data for used versions.
+        This function delegates the actual deletion to
+        `Client.delete_artifact_version`.
+
+        We intentionally rely on the client's default unused re-check (i.e. we
+        do NOT pass `_skip_unused_check=True`) to provide defense-in-depth
+        against race conditions where a version becomes used between listing
+        and deletion.
     """
     client = _get_thread_local_client()
     client.delete_artifact_version(

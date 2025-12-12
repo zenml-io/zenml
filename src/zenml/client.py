@@ -5408,6 +5408,12 @@ class Client(metaclass=ClientMetaClass):
             _skip_unused_check: If True, skip the check that verifies the
                 artifact version is unused. Only set this to True if you have
                 already verified the artifact version is unused.
+
+                When `delete_from_artifact_store=True`, this should generally
+                remain False unless the caller can guarantee correctness under
+                concurrent operations (e.g. the artifact version cannot become
+                used between verification and deletion), because artifact-store
+                deletion is irreversible.
         """
         artifact_version = self.get_artifact_version(
             name_id_or_prefix=name_id_or_prefix,

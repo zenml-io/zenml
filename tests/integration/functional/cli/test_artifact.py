@@ -191,9 +191,10 @@ def test_artifact_prune_fail_fast_threaded(
     unused = depaginate(client.list_artifact_versions, only_unused=True)
     assert len(unused) > 2
 
-    failing_id = unused[0].id
     calls = []
     failure_raised = threading.Event()
+    failure_lock = threading.Lock()
+    failure_injected = False
     original_delete = Client.delete_artifact_version
 
     def patched_delete_artifact_version(
@@ -203,13 +204,20 @@ def test_artifact_prune_fail_fast_threaded(
         delete_from_artifact_store=True,
         **kwargs,
     ):
+        nonlocal failure_injected
         calls.append(name_id_or_prefix)
 
-        if name_id_or_prefix == failing_id:
-            failure_raised.set()
-            raise RuntimeError("boom")
+        with failure_lock:
+            if not failure_injected:
+                failure_injected = True
+                failure_raised.set()
+                raise RuntimeError("boom")
 
-        failure_raised.wait()
+        if not failure_raised.wait(timeout=5):
+            raise RuntimeError(
+                "Timed out waiting for the injected deletion failure."
+            )
+
         return original_delete(
             self,
             name_id_or_prefix=name_id_or_prefix,
@@ -244,8 +252,9 @@ def test_artifact_prune_ignore_errors_threaded(
     unused = depaginate(client.list_artifact_versions, only_unused=True)
     assert len(unused) > 2
 
-    failing_id = unused[0].id
     calls = []
+    failure_lock = threading.Lock()
+    failure_injected = False
     original_delete = Client.delete_artifact_version
 
     def patched_delete_artifact_version(
@@ -255,10 +264,13 @@ def test_artifact_prune_ignore_errors_threaded(
         delete_from_artifact_store=True,
         **kwargs,
     ):
+        nonlocal failure_injected
         calls.append(name_id_or_prefix)
 
-        if name_id_or_prefix == failing_id:
-            raise RuntimeError("boom")
+        with failure_lock:
+            if not failure_injected:
+                failure_injected = True
+                raise RuntimeError("boom")
 
         return original_delete(
             self,

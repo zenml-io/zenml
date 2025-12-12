@@ -87,10 +87,11 @@ def clean_client_with_unused_artifact_versions(
     deterministic enough to test reliably.
     """
     for _ in range(4):
-        connected_two_step_pipeline(
+        pipeline = connected_two_step_pipeline(
             step_1=constant_int_output_test_step,
             step_2=int_plus_one_test_step,
-        )()
+        ).with_options(enable_cache=False)
+        pipeline()
 
     run_names = [run.name for run in clean_client.list_pipeline_runs()]
     for run_name in run_names:
