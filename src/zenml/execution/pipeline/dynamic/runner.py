@@ -284,8 +284,8 @@ class DynamicPipelineRunner:
             step_config = StepConfigurationUpdate(
                 enable_cache=False,
                 step_operator=None,
-                retry=None,
                 parameters={},
+                runtime=StepRuntime.INLINE,
             )
 
         compiled_step = compile_dynamic_step_invocation(
