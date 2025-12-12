@@ -39,7 +39,6 @@ Each log record includes ZenML metadata as OTEL attributes:
 |-----------------------|------------------------------------------------|
 | `zenml.log.id`        | Unique identifier for the log stream           |
 | `zenml.log.source`    | Source of the log (step, pipeline, etc.)       |
-| `zenml.log.uri`       | URI where logs are stored (if applicable)      |
 | `zenml.log_store.id`  | ID of the log store component                  |
 | `zenml.log_store.name`| Name of the log store component                |
 | `zenml.run.id`        | Pipeline run ID                                |
