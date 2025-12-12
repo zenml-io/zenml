@@ -12,7 +12,7 @@ ZenML comes equipped with [Log Store implementations](./#log-store-flavors) that
 
 ### Base Abstraction
 
-The Log Store is responsible for collecting, storing, and retrieving logs during pipeline execution. Let's take a deeper dive into the fundamentals behind its abstraction, namely the `BaseLogStore` class:
+The log store is responsible for collecting, storing, and retrieving logs during pipeline execution. Let's take a deeper dive into the fundamentals behind its abstraction, namely the `BaseLogStore` class:
 
 1. **Origins**: A `BaseLogStoreOrigin` represents the source of log records (e.g., a step execution). When logging starts, you register an origin with the log store, then emit logs through the log store referencing that origin. When logging ends, you deregister the origin to release resources.
 
@@ -382,27 +382,10 @@ zenml stack register my_stack -ls my_logs ... --set
 This separation allows you to register flavors even when their dependencies aren't installed locally.
 {% endhint %}
 
-### Server-Side Constraints
 
 {% hint style="warning" %}
-**Important**: Log stores are instantiated on the ZenML server to fetch logs for display in the dashboard. This introduces a critical constraint on your implementation.
+**Important**: Log stores are instantiated on the ZenML server to fetch logs for display in the dashboard. This introduces a critical constraint on your implementation. When the ZenML dashboard or API requests logs, the server instantiates the log store and calls its `fetch()` method. This means that there can be **no external dependencies** that aren't already installed on the ZenML server.
 {% endhint %}
-
-When the ZenML dashboard or API requests logs, the server instantiates the log store and calls its `fetch()` method. This means:
-
-1. **No external dependencies**: Your `fetch()` implementation cannot rely on Python packages that aren't already installed on the ZenML server. The server is installed with `pip install zenml[server]`, and you cannot add arbitrary packages to it.
-
-2. **Use HTTP/REST APIs**: For log retrieval, prefer using HTTP APIs with the built-in `requests` library (which is available on the server) rather than vendor-specific SDKs.
-
-3. **The exporter is different**: The `get_exporter()` method runs on the client/orchestrator side during pipeline execution, so it can use any dependencies you install there. Only `fetch()` has the server-side constraint.
-
-For example, the Datadog Log Store uses:
-- A custom `DatadogLogExporter` for exporting logs (client-side, can use any dependencies)
-- Plain HTTP requests with the `requests` library for fetching logs (server-side, uses only built-in packages)
-
-If your backend requires a specific SDK for log retrieval, you have two options:
-1. Implement `fetch()` using HTTP/REST APIs directly instead of the SDK
-2. Raise `NotImplementedError` in `fetch()` and have users view logs in your backend's native interface
 
 ### Best Practices
 
