@@ -1,6 +1,5 @@
 ---
 description: Understanding source roots and source paths
-icon: folders
 ---
 
 {% hint style="warning" %}
