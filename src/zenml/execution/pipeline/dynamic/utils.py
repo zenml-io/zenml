@@ -21,6 +21,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import StepRunResponse
 
@@ -72,7 +73,7 @@ def wait_for_step_run_to_finish(step_run_id: UUID) -> "StepRunResponse":
     while True:
         step_run = Client().zen_store.get_run_step(step_run_id)
 
-        if step_run.status.is_finished:
+        if step_run.status != ExecutionStatus.RUNNING:
             return step_run
 
         logger.debug(

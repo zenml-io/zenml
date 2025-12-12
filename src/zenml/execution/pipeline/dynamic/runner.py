@@ -402,7 +402,7 @@ class DynamicPipelineRunner:
             )
             if (
                 runtime == StepRuntime.INLINE
-                and not step_run.status.is_finished
+                and step_run.status == ExecutionStatus.RUNNING
             ):
                 # Inline steps that are in running state didn't have the
                 # chance to report their failure back to ZenML before the
@@ -422,7 +422,7 @@ class DynamicPipelineRunner:
                 )
                 remaining_retries = max(0, 1 + max_retries - step_run.version)
 
-            if not step_run.status.is_finished:
+            if step_run.status == ExecutionStatus.RUNNING:
                 logger.info(
                     "Restarting the monitoring of existing step `%s` "
                     "(step run ID: %s). Remaining retries: %d",
