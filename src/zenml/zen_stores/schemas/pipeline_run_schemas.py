@@ -611,14 +611,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         resources = None
         if include_resources:
-            # Add the client logs as "logs" if they exist, for backwards compatibility
-            # TODO: This will be safe to remove in future releases (>0.84.0).
-            client_logs = [
-                log_entry
-                for log_entry in self.logs
-                if log_entry.source in ["client", "deployment"]
-            ]
-
             if self.snapshot:
                 source_snapshot = (
                     self.snapshot.source_snapshot.to_model()
@@ -674,7 +666,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.model_version
                 else None,
                 tags=[tag.to_model() for tag in self.tags],
-                logs=client_logs[0].to_model() if client_logs else None,
                 log_collection=[log.to_model() for log in self.logs],
                 visualizations=[
                     visualization.to_model(
