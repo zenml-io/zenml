@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """Test zenml artifact CLI commands."""
 
+import threading
+
 from click.testing import CliRunner
 
 from zenml.cli.cli import cli
+from zenml.client import Client
+from zenml.utils.pagination_utils import depaginate
 
 
 def test_artifact_list(clean_client_with_run):
@@ -177,6 +181,111 @@ def test_artifact_prune(clean_client_with_run):
     assert len(existing_artifacts) == 0
     existing_artifact_versions = clean_client_with_run.list_artifact_versions()
     assert len(existing_artifact_versions) == 0
+
+
+def test_artifact_prune_fail_fast_threaded(
+    clean_client_with_unused_artifact_versions, monkeypatch
+):
+    """Test that threaded prune fails fast when --ignore-errors is not set."""
+    client = clean_client_with_unused_artifact_versions
+    unused = depaginate(client.list_artifact_versions, only_unused=True)
+    assert len(unused) > 2
+
+    failing_id = unused[0].id
+    calls = []
+    failure_raised = threading.Event()
+    original_delete = Client.delete_artifact_version
+
+    def patched_delete_artifact_version(
+        self,
+        name_id_or_prefix,
+        delete_metadata=True,
+        delete_from_artifact_store=True,
+        **kwargs,
+    ):
+        calls.append(name_id_or_prefix)
+
+        if name_id_or_prefix == failing_id:
+            failure_raised.set()
+            raise RuntimeError("boom")
+
+        failure_raised.wait()
+        return original_delete(
+            self,
+            name_id_or_prefix=name_id_or_prefix,
+            delete_metadata=delete_metadata,
+            delete_from_artifact_store=delete_from_artifact_store,
+            **kwargs,
+        )
+
+    monkeypatch.setattr(
+        Client,
+        "delete_artifact_version",
+        patched_delete_artifact_version,
+        raising=True,
+    )
+
+    runner = CliRunner()
+    prune_command = cli.commands["artifact"].commands["prune"]
+    result = runner.invoke(prune_command, ["-y", "--threads", "2"])
+
+    remaining = depaginate(client.list_artifact_versions, only_unused=True)
+
+    assert result.exit_code != 0
+    assert len(remaining) > 1
+    assert len(calls) < len(unused)
+
+
+def test_artifact_prune_ignore_errors_threaded(
+    clean_client_with_unused_artifact_versions, monkeypatch
+):
+    """Test that threaded prune continues and succeeds with --ignore-errors."""
+    client = clean_client_with_unused_artifact_versions
+    unused = depaginate(client.list_artifact_versions, only_unused=True)
+    assert len(unused) > 2
+
+    failing_id = unused[0].id
+    calls = []
+    original_delete = Client.delete_artifact_version
+
+    def patched_delete_artifact_version(
+        self,
+        name_id_or_prefix,
+        delete_metadata=True,
+        delete_from_artifact_store=True,
+        **kwargs,
+    ):
+        calls.append(name_id_or_prefix)
+
+        if name_id_or_prefix == failing_id:
+            raise RuntimeError("boom")
+
+        return original_delete(
+            self,
+            name_id_or_prefix=name_id_or_prefix,
+            delete_metadata=delete_metadata,
+            delete_from_artifact_store=delete_from_artifact_store,
+            **kwargs,
+        )
+
+    monkeypatch.setattr(
+        Client,
+        "delete_artifact_version",
+        patched_delete_artifact_version,
+        raising=True,
+    )
+
+    runner = CliRunner()
+    prune_command = cli.commands["artifact"].commands["prune"]
+    result = runner.invoke(
+        prune_command, ["-y", "--threads", "2", "--ignore-errors"]
+    )
+
+    remaining = depaginate(client.list_artifact_versions, only_unused=True)
+
+    assert result.exit_code == 0
+    assert len(remaining) == 1
+    assert len(calls) == len(unused)
 
 
 def test_artifact_prune_mutually_exclusive_only_flags(clean_client_with_run):

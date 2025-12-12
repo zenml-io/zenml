@@ -14,6 +14,7 @@
 """CLI functionality to interact with artifacts."""
 
 import threading
+from collections import deque
 from concurrent.futures import (
     FIRST_COMPLETED,
     Future,
@@ -281,6 +282,9 @@ class _PruneTarget:
     artifact_id: UUID
 
 
+_FirstFailure = tuple[_PruneTarget, Exception]
+
+
 def _delete_artifact_version_target(
     target: _PruneTarget,
     delete_metadata: bool,
@@ -310,6 +314,40 @@ def _delete_artifact_version_target(
         delete_from_artifact_store=delete_from_artifact_store,
     )
     return target
+
+
+def _submit_until_full(
+    *,
+    executor: ThreadPoolExecutor,
+    pending: deque[_PruneTarget],
+    in_flight: dict[Future[_PruneTarget], _PruneTarget],
+    max_in_flight: int,
+    delete_metadata: bool,
+    delete_from_artifact_store: bool,
+) -> None:
+    """Submit deletion tasks until the in-flight buffer is full or pending is empty."""
+    while pending and len(in_flight) < max_in_flight:
+        target = pending.popleft()
+        future: Future[_PruneTarget] = executor.submit(
+            _delete_artifact_version_target,
+            target=target,
+            delete_metadata=delete_metadata,
+            delete_from_artifact_store=delete_from_artifact_store,
+        )
+        in_flight[future] = target
+
+
+def _cancel_pending_futures(*, futures: List[Future[Any]]) -> None:
+    """Best-effort cancellation of futures.
+
+    This is intentionally silent: cancellation can fail if a future already
+    started running, and that's an expected state during fail-fast cleanup.
+    """
+    for future in futures:
+        try:
+            future.cancel()
+        except Exception:
+            pass
 
 
 @artifact.command(
@@ -418,45 +456,28 @@ def prune_artifacts(
     delete_metadata = not only_artifact
     delete_from_artifact_store = not only_metadata
 
-    future_to_target: Dict[Future[_PruneTarget], _PruneTarget] = {}
-    in_flight: Set[Future[_PruneTarget]] = set()
-    targets_iter = iter(targets)
-
-    # Fail-fast state: when abort is True, we stop scheduling new work
-    abort = False
-    first_failure: Optional[tuple[_PruneTarget, Exception]] = None
+    pending = deque(targets)
+    in_flight: dict[Future[_PruneTarget], _PruneTarget] = {}
+    first_failure: Optional[_FirstFailure] = None
 
     with console.status(
         f"Deleting unused artifact versions... ({completed}/{total})"
     ) as status:
         with ThreadPoolExecutor(max_workers=threads) as executor:
-
-            def submit_next() -> None:
-                # Don't schedule new work if we're aborting
-                if abort:
-                    return
-                try:
-                    target = next(targets_iter)
-                except StopIteration:
-                    return
-
-                future: Future[_PruneTarget] = executor.submit(
-                    _delete_artifact_version_target,
-                    target=target,
-                    delete_metadata=delete_metadata,
-                    delete_from_artifact_store=delete_from_artifact_store,
-                )
-                future_to_target[future] = target
-                in_flight.add(future)
-
-            for _ in range(min(threads, total)):
-                submit_next()
+            _submit_until_full(
+                executor=executor,
+                pending=pending,
+                in_flight=in_flight,
+                max_in_flight=threads,
+                delete_metadata=delete_metadata,
+                delete_from_artifact_store=delete_from_artifact_store,
+            )
 
             while in_flight:
-                done, _ = wait(in_flight, return_when=FIRST_COMPLETED)
+                done, _ = wait(in_flight.keys(), return_when=FIRST_COMPLETED)
+
                 for future in done:
-                    in_flight.remove(future)
-                    target = future_to_target.pop(future)
+                    target = in_flight.pop(future)
 
                     try:
                         future.result()
@@ -466,33 +487,27 @@ def prune_artifacts(
                             cli_utils.warning(
                                 f"Failed to delete artifact version {target.artifact_version_id}: {str(e)}"
                             )
-                        else:
-                            # Fail-fast: stop scheduling and cancel queued work
-                            abort = True
+                        elif first_failure is None:
                             first_failure = (target, e)
-                            # Cancel futures that haven't started yet
-                            for queued_future in in_flight:
-                                queued_future.cancel()
-                            # Don't process more done futures, exit loop
-                            break
 
                     completed += 1
                     status.update(
                         f"Deleting unused artifact versions... ({completed}/{total})"
                     )
-                    submit_next()
 
-                # If we aborted, wait for remaining in-flight work to finish
-                # but don't schedule anything new
-                if abort:
-                    # Wait for any remaining running futures to complete
-                    for remaining_future in in_flight:
-                        try:
-                            remaining_future.result()
-                        except Exception:
-                            # Ignore errors from cancelled/in-flight futures
-                            pass
+                if first_failure is not None:
+                    _cancel_pending_futures(futures=list(in_flight.keys()))
+                    pending.clear()
                     break
+
+                _submit_until_full(
+                    executor=executor,
+                    pending=pending,
+                    in_flight=in_flight,
+                    max_in_flight=threads,
+                    delete_metadata=delete_metadata,
+                    delete_from_artifact_store=delete_from_artifact_store,
+                )
 
     # If fail-fast was triggered, abort before artifact cleanup to prevent
     # any further destructive operations after an unexpected failure

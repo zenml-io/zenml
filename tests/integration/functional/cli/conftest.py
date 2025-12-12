@@ -76,6 +76,29 @@ def clean_client_with_scheduled_run(
     return clean_client
 
 
+@pytest.fixture
+def clean_client_with_unused_artifact_versions(
+    clean_client: "Client", connected_two_step_pipeline
+):
+    """Fixture to create enough unused artifact versions for threaded prune tests.
+
+    The artifact prune command can delete in parallel. Creating more unused
+    artifact versions than the thread count makes fail-fast behavior
+    deterministic enough to test reliably.
+    """
+    for _ in range(4):
+        connected_two_step_pipeline(
+            step_1=constant_int_output_test_step,
+            step_2=int_plus_one_test_step,
+        )()
+
+    run_names = [run.name for run in clean_client.list_pipeline_runs()]
+    for run_name in run_names:
+        clean_client.delete_pipeline_run(run_name)
+
+    return clean_client
+
+
 PREFIX = "tests_integration_functional_cli_model_"
 NAME = f"{PREFIX}{uuid4()}"
 
