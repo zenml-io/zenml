@@ -24,8 +24,6 @@ def trainer(
     X_train: csr_matrix,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    # Use a multi-class capable solver; liblinear fails when the dataset has
-    # more than two labels.
     model = LogisticRegression(
         solver="lbfgs",
         multi_class="auto",
