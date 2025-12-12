@@ -31,7 +31,7 @@ from zenml.deployers.exceptions import (
     DeploymentNotFoundError,
     DeploymentProvisionError,
 )
-from zenml.enums import DeploymentStatus
+from zenml.enums import DeploymentStatus, StepRuntime
 from zenml.models import (
     CodeReferenceRequest,
     DeploymentResponse,
@@ -332,8 +332,8 @@ def deployment_snapshot_request_from_source_snapshot(
         step_update = {
             "enable_cache": False,  # Disable caching for all steps
             "step_operator": None,  # Remove step operators for deployments
-            "retry": None,  # Remove retry configuration
             "parameters": updated_step_parameters,
+            "runtime": StepRuntime.INLINE,
         }
 
         step_config = pydantic_utils.update_model(
@@ -410,6 +410,7 @@ def deployment_snapshot_request_from_source_snapshot(
         source_snapshot=source_snapshot_id,
         pipeline_version_hash=source_snapshot.pipeline_version_hash,
         pipeline_spec=updated_pipeline_spec,
+        is_dynamic=source_snapshot.is_dynamic,
     )
 
 
