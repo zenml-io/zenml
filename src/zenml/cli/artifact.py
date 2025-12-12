@@ -24,7 +24,7 @@ from concurrent.futures import (
     wait,
 )
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import UUID
 
 import click
@@ -284,7 +284,7 @@ class _PruneTarget:
     artifact_id: UUID
 
 
-_FirstFailure = tuple[_PruneTarget, Exception]
+_FirstFailure = Tuple[_PruneTarget, Exception]
 
 
 def _delete_artifact_version_target(
