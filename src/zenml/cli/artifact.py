@@ -371,7 +371,13 @@ def prune_artifacts(
         yes: If set, don't ask for confirmation.
         ignore_errors: If set, ignore errors and continue with the next
             artifact version.
+        threads: Number of parallel threads for artifact version deletion.
     """
+    if only_artifact and only_metadata:
+        cli_utils.error(
+            "Cannot use both `--only-artifact` and `--only-metadata` together."
+        )
+
     client = Client()
     unused_artifact_versions = depaginate(
         client.list_artifact_versions, only_unused=True
@@ -401,6 +407,7 @@ def prune_artifacts(
 
     total = len(targets)
     completed = 0
+    failed_deletions = 0
     delete_metadata = not only_artifact
     delete_from_artifact_store = not only_metadata
 
@@ -444,6 +451,7 @@ def prune_artifacts(
                             cli_utils.warning(
                                 f"Failed to delete artifact version {target.artifact_version_id}: {str(e)}"
                             )
+                            failed_deletions += 1
                         else:
                             cli_utils.error(
                                 f"Failed to delete artifact version {target.artifact_version_id}: {str(e)}"
@@ -462,13 +470,7 @@ def prune_artifacts(
                     artifact=artifact_id, size=1
                 )
 
-                has_versions = False
-                if hasattr(versions_page, "items"):
-                    has_versions = bool(versions_page.items)
-                elif hasattr(versions_page, "total"):
-                    has_versions = bool(versions_page.total)
-                else:
-                    has_versions = bool(versions_page)
+                has_versions = versions_page.total > 0
 
                 if not has_versions:
                     client.delete_artifact(artifact_id)
@@ -477,12 +479,21 @@ def prune_artifacts(
                     cli_utils.warning(
                         f"Failed to delete artifact {artifact_id}: {str(e)}"
                     )
+                    failed_deletions += 1
                 else:
                     cli_utils.error(
                         f"Failed to delete artifact {artifact_id}: {str(e)}"
                     )
 
-    cli_utils.declare("All unused artifacts and artifact versions deleted.")
+    if failed_deletions > 0:
+        cli_utils.warning(
+            f"Pruning completed with {failed_deletions} error(s). "
+            "Some artifacts may not have been deleted."
+        )
+    else:
+        cli_utils.declare(
+            "All unused artifacts and artifact versions deleted."
+        )
 
 
 def _artifact_version_to_print(
