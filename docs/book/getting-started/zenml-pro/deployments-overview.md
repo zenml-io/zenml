@@ -89,43 +89,14 @@ Choose **Self-hosted** if you need complete control with no external dependencie
 - 🔒 Complete data sovereignty
 - 🚫 No external network dependencies
 - 🛡️ Maximum security posture
-- 📋 Full audit trail control
 
 **Ideal for:** Regulated industries (healthcare, finance, defense), government organizations, enterprises with strict data residency requirements, environments requiring offline operation.
 
 [Learn more about Self-hosted deployment →](self-hosted-deployment.md)
 
-## Common Pipeline Execution Data Flow
-
-All three deployment scenarios follow a similar pipeline execution pattern, with differences in where authentication happens and where data resides:
-
-### Standard Data Flow Steps
-
-1. **Code Execution**: You write code and run pipelines with your client SDK using Python
-
-2. **Token Acquisition**: The ZenML client fetches short-lived tokens from your ZenML workspace for:
-   - Pushing Docker images to your container registry
-   - Communicating with your artifact store
-   - Submitting workloads to your orchestrator
-   - *Note: Your local Python environment needs the client libraries for your stack components*
-
-3. **Image & Workload Submission**: The client automatically builds and pushes Docker images (and optionally code if no code repository is configured) to your container registry, then submits the workload to your orchestrator
-
-4. **Orchestrator Execution**: In the orchestrator environment:
-   - The Docker image is pulled from your container registry
-   - The necessary code is pulled in
-   - A connection to your ZenML workspace is established
-   - The relevant pipeline/step code is executed
-
-5. **Runtime Data Flow**: During execution:
-   - Pipeline and step run metadata is logged to your ZenML workspace
-   - Logs are streamed to your log backend
-   - Artifacts are written to your artifact store
-   - Metadata pointing to these artifacts is persisted
-
-6. **Observability**: The ZenML UI connects to your workspace and uses all persisted metadata to provide you with a complete observability plane
-
 ### Deployment-Specific Differences
+
+All three deployment scenarios follow the same [pipeline execution data flow](services.md#pipeline-execution-data-flow), with differences in where authentication happens and where data resides:
 
 **SaaS**: Metadata is stored in ZenML infrastructure. Your ML data and compute remain in your infrastructure.
 

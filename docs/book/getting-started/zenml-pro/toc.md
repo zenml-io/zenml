@@ -12,6 +12,13 @@
 * [Self-hosted Deployment](self-hosted-deployment.md)
   * [Kubernetes with Helm](self-hosted-deployment-helm.md)
 
+## Services
+
+* [Services Overview](services.md)
+  * [Workspace Server](workspace-server.md)
+  * [Control Plane](control-plane.md)
+  * [Workload Managers](workload-managers.md)
+
 ## Core Concepts
 
 * [Hierarchy](hierarchy.md)
@@ -19,7 +26,6 @@
 * [Workspaces](workspaces.md)
 * [Projects](projects.md)
 * [Teams](teams.md)
-* [Workload Managers](workload-managers.md)
 
 ## Access Management
 
