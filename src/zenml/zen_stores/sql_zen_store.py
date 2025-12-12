@@ -7376,6 +7376,11 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if existing_schedule.is_archived:
+                raise IllegalOperationError(
+                    "Archived schedules can not be updated."
+                )
+
             self._verify_name_uniqueness(
                 resource=schedule_update,
                 schema=existing_schedule,
@@ -7390,11 +7395,12 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
-    def delete_schedule(self, schedule_id: UUID) -> None:
+    def delete_schedule(self, schedule_id: UUID, soft: bool = False) -> None:
         """Deletes a schedule.
 
         Args:
             schedule_id: The ID of the schedule to delete.
+            soft: Soft deletion will archive the schedule.
         """
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
@@ -7404,8 +7410,14 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Delete the schedule
-            session.delete(schedule)
+            if not soft:
+                # Hard delete the schedule
+                session.delete(schedule)
+            else:
+                # Soft deletion - set is_archived
+                schedule.is_archived = True
+                session.add(schedule)
+
             session.commit()
 
     # ------------------------- Secrets -------------------------
