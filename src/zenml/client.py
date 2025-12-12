@@ -5389,6 +5389,7 @@ class Client(metaclass=ClientMetaClass):
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
         project: Optional[Union[str, UUID]] = None,
+        _skip_unused_check: bool = False,
     ) -> None:
         """Delete an artifact version.
 
@@ -5404,6 +5405,9 @@ class Client(metaclass=ClientMetaClass):
             delete_from_artifact_store: If True, delete the artifact object
                     itself from the artifact store.
             project: The project name/ID to filter by.
+            _skip_unused_check: If True, skip the check that verifies the
+                artifact version is unused. Only set this to True if you have
+                already verified the artifact version is unused.
         """
         artifact_version = self.get_artifact_version(
             name_id_or_prefix=name_id_or_prefix,
@@ -5415,27 +5419,36 @@ class Client(metaclass=ClientMetaClass):
                 artifact_version=artifact_version
             )
         if delete_metadata:
-            self._delete_artifact_version(artifact_version=artifact_version)
+            self._delete_artifact_version(
+                artifact_version=artifact_version,
+                _skip_unused_check=_skip_unused_check,
+            )
 
     def _delete_artifact_version(
-        self, artifact_version: ArtifactVersionResponse
+        self,
+        artifact_version: ArtifactVersionResponse,
+        _skip_unused_check: bool = False,
     ) -> None:
         """Delete the metadata of an artifact version from the database.
 
         Args:
             artifact_version: The artifact version to delete.
+            _skip_unused_check: If True, skip the check that verifies the
+                artifact version is unused. Only set this to True if you have
+                already verified the artifact version is unused.
 
         Raises:
             ValueError: If the artifact version is still used in any runs.
         """
-        if artifact_version not in depaginate(
-            self.list_artifact_versions, only_unused=True
-        ):
-            raise ValueError(
-                "The metadata of artifact versions that are used in runs "
-                "cannot be deleted. Please delete all runs that use this "
-                "artifact first."
-            )
+        if not _skip_unused_check:
+            if artifact_version not in depaginate(
+                self.list_artifact_versions, only_unused=True
+            ):
+                raise ValueError(
+                    "The metadata of artifact versions that are used in runs "
+                    "cannot be deleted. Please delete all runs that use this "
+                    "artifact first."
+                )
         self.zen_store.delete_artifact_version(artifact_version.id)
         logger.info(
             f"Deleted version '{artifact_version.version}' of artifact "

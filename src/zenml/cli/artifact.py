@@ -301,6 +301,7 @@ def _delete_artifact_version_target(
         name_id_or_prefix=target.artifact_version_id,
         delete_metadata=delete_metadata,
         delete_from_artifact_store=delete_from_artifact_store,
+        _skip_unused_check=True,
     )
     return target
 
