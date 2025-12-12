@@ -10,7 +10,7 @@ inputs are loaded via materializers, outputs are materialized as versioned artif
 
 ## Static pipelines
 
-In static pipelines, ZenML executes the pipeline function before running the pipeline to compile a DAG of steps which the orchestrator then schedules according to their upstream dependencies.
+In static pipelines, ZenML executes the pipeline function before running the pipeline to compile a DAG of steps, which the orchestrator then schedules according to their upstream dependencies. This pre-compilation allows ZenML to optimize execution order and validate the DAG structure before any steps run.
 
 ### Execution scenarios
 
