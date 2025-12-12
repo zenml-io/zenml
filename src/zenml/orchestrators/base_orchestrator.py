@@ -171,8 +171,13 @@ class BaseOrchestrator(StackComponent, ABC):
     def get_orchestrator_run_id(self) -> str:
         """Returns the run id of the active orchestrator run.
 
-        Important: This needs to be a unique ID and return the same value for
+        Important:
+        - This needs to be a unique ID and return the same value for
         all steps of a pipeline run.
+        - For dynamic pipelines, this needs to be a unique ID which will be
+        fetched in the orchestration environment. If the orchestrator supports
+        retries of the orchestration environment, this ID needs to be the same
+        for all retries.
 
         Returns:
             The orchestrator run id.

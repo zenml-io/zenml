@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline execution outputs."""
 
+from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from typing import Any, Iterator, List, Optional, Tuple, Union, overload
 
@@ -68,7 +69,27 @@ class OutputArtifact(ArtifactVersionResponse):
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
 
 
-class _BaseStepRunFuture:
+class BaseFuture(ABC):
+    """Base future."""
+
+    @abstractmethod
+    def running(self) -> bool:
+        """Check if the future is running.
+
+        Returns:
+            True if the future is running, False otherwise.
+        """
+
+    @abstractmethod
+    def result(self) -> Any:
+        """Get the result of the future.
+
+        Returns:
+            The result of the future.
+        """
+
+
+class BaseStepRunFuture(BaseFuture):
     """Base step run future."""
 
     def __init__(
@@ -96,12 +117,16 @@ class _BaseStepRunFuture:
         """
         return self._invocation_id
 
-    def _wait(self) -> None:
-        """Wait for the step run future to complete."""
-        self._wrapped.result()
+    def running(self) -> bool:
+        """Check if the step run future is running.
+
+        Returns:
+            True if the step run future is running, False otherwise.
+        """
+        return self._wrapped.running()
 
 
-class ArtifactFuture(_BaseStepRunFuture):
+class ArtifactFuture(BaseStepRunFuture):
     """Future for a step run output artifact."""
 
     def __init__(
@@ -163,7 +188,7 @@ class ArtifactFuture(_BaseStepRunFuture):
         return self.result().chunk(index=index)
 
 
-class StepRunOutputsFuture(_BaseStepRunFuture):
+class StepRunOutputsFuture(BaseStepRunFuture):
     """Future for a step run output."""
 
     def __init__(
@@ -318,7 +343,7 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         return len(self._output_keys)
 
 
-class MapResultsFuture:
+class MapResultsFuture(BaseFuture):
     """Future that represents the results of a `step.map/product(...)` call."""
 
     def __init__(self, futures: List[StepRunOutputsFuture]) -> None:
@@ -329,6 +354,14 @@ class MapResultsFuture:
         """
         self.futures = futures
 
+    def running(self) -> bool:
+        """Check if the map results future is running.
+
+        Returns:
+            True if the map results future is running, False otherwise.
+        """
+        return any(future.running() for future in self.futures)
+
     def result(self) -> List[StepRunOutputs]:
         """Get the step run outputs this future represents.
 
@@ -336,6 +369,19 @@ class MapResultsFuture:
             The step run outputs.
         """
         return [future.result() for future in self.futures]
+
+    def load(self, disable_cache: bool = False) -> List[Any]:
+        """Load the step run output artifacts.
+
+        Args:
+            disable_cache: Whether to disable the artifact cache.
+
+        Returns:
+            The step run output artifacts.
+        """
+        return [
+            future.load(disable_cache=disable_cache) for future in self.futures
+        ]
 
     def unpack(self) -> Tuple[List[ArtifactFuture], ...]:
         """Unpack the map results future.
@@ -406,4 +452,6 @@ class MapResultsFuture:
         return len(self.futures)
 
 
-StepRunFuture = Union[ArtifactFuture, StepRunOutputsFuture, MapResultsFuture]
+AnyStepRunFuture = Union[
+    ArtifactFuture, StepRunOutputsFuture, MapResultsFuture
+]
