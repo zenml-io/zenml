@@ -408,6 +408,7 @@ This deletes artifacts that are no longer referenced by any pipeline run. You ca
 * `--only-artifact`: Only delete the physical files, keep database entries
 * `--only-metadata`: Only delete database entries, keep files
 * `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
+* `--threads` / `-t`: Enable parallel deletion for faster pruning when dealing with many artifacts
 
 ### Registering Existing Data as Artifacts
 

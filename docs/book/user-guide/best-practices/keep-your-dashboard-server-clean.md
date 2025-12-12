@@ -123,7 +123,7 @@ runs, you can use the following CLI command:
 zenml artifact prune
 ```
 
-By default, this method deletes artifacts physically from the underlying artifact store AND also the entry in the database. You can control this behavior by using the `--only-artifact` and `--only-metadata` flags.
+By default, this method deletes artifacts physically from the underlying artifact store AND also the entry in the database. You can control this behavior by using the `--only-artifact` and `--only-metadata` flags, and you can speed up pruning with `--threads` / `-t` to enable parallel deletion.
 
 For more information, see the [documentation for this artifact pruning feature](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact).
 

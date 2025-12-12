@@ -13,7 +13,16 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 
-from typing import Any, Dict, List, Optional
+import threading
+from concurrent.futures import (
+    FIRST_COMPLETED,
+    Future,
+    ThreadPoolExecutor,
+    wait,
+)
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set
+from uuid import UUID
 
 import click
 
@@ -252,6 +261,50 @@ def update_artifact_version(
         cli_utils.declare(f"Artifact version '{artifact_version.id}' updated.")
 
 
+# Thread-local storage for Client instances used in parallel deletion
+_thread_local = threading.local()
+
+
+def _get_thread_local_client() -> Client:
+    """Get or create a thread-local Client instance."""
+    if not hasattr(_thread_local, "client"):
+        _thread_local.client = Client()
+    client: Client = _thread_local.client
+    return client
+
+
+@dataclass(frozen=True)
+class _PruneTarget:
+    """Target for artifact version deletion."""
+
+    artifact_version_id: UUID
+    artifact_id: UUID
+
+
+def _delete_artifact_version_target(
+    target: _PruneTarget,
+    delete_metadata: bool,
+    delete_from_artifact_store: bool,
+) -> _PruneTarget:
+    """Delete an artifact version.
+
+    Args:
+        target: The target containing artifact version and artifact IDs.
+        delete_metadata: Whether to delete the metadata.
+        delete_from_artifact_store: Whether to delete from artifact store.
+
+    Returns:
+        The target for downstream artifact cleanup tracking.
+    """
+    client = _get_thread_local_client()
+    client.delete_artifact_version(
+        name_id_or_prefix=target.artifact_version_id,
+        delete_metadata=delete_metadata,
+        delete_from_artifact_store=delete_from_artifact_store,
+    )
+    return target
+
+
 @artifact.command(
     "prune",
     help=(
@@ -289,11 +342,20 @@ def update_artifact_version(
     is_flag=True,
     help="Ignore errors and continue with the next artifact version.",
 )
+@click.option(
+    "--threads",
+    "-t",
+    type=click.IntRange(1, None),
+    default=1,
+    show_default=True,
+    help="Number of threads for parallel deletion of artifact versions.",
+)
 def prune_artifacts(
     only_artifact: bool = False,
     only_metadata: bool = False,
     yes: bool = False,
     ignore_errors: bool = False,
+    threads: int = 1,
 ) -> None:
     """Delete all unused artifacts and artifact versions.
 
@@ -328,26 +390,98 @@ def prune_artifacts(
             cli_utils.declare("Artifact deletion canceled.")
             return
 
-    for unused_artifact_version in unused_artifact_versions:
-        try:
-            Client().delete_artifact_version(
-                name_id_or_prefix=unused_artifact_version.id,
-                delete_metadata=not only_artifact,
-                delete_from_artifact_store=not only_metadata,
-            )
-            unused_artifact = unused_artifact_version.artifact
-            if not unused_artifact.versions and not only_artifact:
-                Client().delete_artifact(unused_artifact.id)
+    targets: List[_PruneTarget] = [
+        _PruneTarget(
+            artifact_version_id=unused_artifact_version.id,
+            artifact_id=unused_artifact_version.artifact.id,
+        )
+        for unused_artifact_version in unused_artifact_versions
+    ]
+    artifact_ids: Set[UUID] = {t.artifact_id for t in targets}
 
-        except Exception as e:
-            if ignore_errors:
-                cli_utils.warning(
-                    f"Failed to delete artifact version {unused_artifact_version.id}: {str(e)}"
+    total = len(targets)
+    completed = 0
+    delete_metadata = not only_artifact
+    delete_from_artifact_store = not only_metadata
+
+    future_to_target: Dict[Future[_PruneTarget], _PruneTarget] = {}
+    in_flight: Set[Future[_PruneTarget]] = set()
+    targets_iter = iter(targets)
+
+    with console.status(
+        f"Deleting unused artifact versions... ({completed}/{total})"
+    ) as status:
+        with ThreadPoolExecutor(max_workers=threads) as executor:
+
+            def submit_next() -> None:
+                try:
+                    target = next(targets_iter)
+                except StopIteration:
+                    return
+
+                future: Future[_PruneTarget] = executor.submit(
+                    _delete_artifact_version_target,
+                    target=target,
+                    delete_metadata=delete_metadata,
+                    delete_from_artifact_store=delete_from_artifact_store,
                 )
-            else:
-                cli_utils.error(
-                    f"Failed to delete artifact version {unused_artifact_version.id}: {str(e)}"
+                future_to_target[future] = target
+                in_flight.add(future)
+
+            for _ in range(min(threads, total)):
+                submit_next()
+
+            while in_flight:
+                done, _ = wait(in_flight, return_when=FIRST_COMPLETED)
+                for future in done:
+                    in_flight.remove(future)
+                    target = future_to_target.pop(future)
+
+                    try:
+                        future.result()
+                    except Exception as e:
+                        if ignore_errors:
+                            cli_utils.warning(
+                                f"Failed to delete artifact version {target.artifact_version_id}: {str(e)}"
+                            )
+                        else:
+                            cli_utils.error(
+                                f"Failed to delete artifact version {target.artifact_version_id}: {str(e)}"
+                            )
+
+                    completed += 1
+                    status.update(
+                        f"Deleting unused artifact versions... ({completed}/{total})"
+                    )
+                    submit_next()
+
+    if not only_artifact:
+        for artifact_id in artifact_ids:
+            try:
+                versions_page = client.list_artifact_versions(
+                    artifact=artifact_id, size=1
                 )
+
+                has_versions = False
+                if hasattr(versions_page, "items"):
+                    has_versions = bool(versions_page.items)
+                elif hasattr(versions_page, "total"):
+                    has_versions = bool(versions_page.total)
+                else:
+                    has_versions = bool(versions_page)
+
+                if not has_versions:
+                    client.delete_artifact(artifact_id)
+            except Exception as e:
+                if ignore_errors:
+                    cli_utils.warning(
+                        f"Failed to delete artifact {artifact_id}: {str(e)}"
+                    )
+                else:
+                    cli_utils.error(
+                        f"Failed to delete artifact {artifact_id}: {str(e)}"
+                    )
+
     cli_utils.declare("All unused artifacts and artifact versions deleted.")
 
 
