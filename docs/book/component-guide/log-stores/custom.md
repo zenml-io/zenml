@@ -17,7 +17,7 @@ The Log Store is responsible for collecting, storing, and retrieving logs during
 1. **Origin pattern**: Log stores use an origin pattern where `BaseLogStoreOrigin` instances represent the source of log records (e.g., a step execution). Each logging context registers an origin with the log store, and logs are emitted through the log store referencing that origin.
 
 2. **Core methods**: The base class defines four abstract methods that must be implemented:
-   - `_emit()`: Process and export a log record for a given origin
+   - `emit()`: Process and export a log record for a given origin
    - `_release_origin()`: Called when logging for an origin is complete (cleanup resources)
    - `flush()`: Ensure all pending logs are exported
    - `fetch()`: Retrieve stored logs for display
@@ -63,6 +63,11 @@ class BaseLogStoreOrigin:
     def name(self) -> str:
         """The name of the origin."""
         return self._name
+
+    @property
+    def log_model(self) -> LogsResponse:
+        """The log model associated with the origin."""
+        return self._log_model
 
     @property
     def metadata(self) -> Dict[str, Any]:
