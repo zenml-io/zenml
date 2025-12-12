@@ -73,7 +73,7 @@ class ArtifactLogExporter(LogExporter):
                 if not attrs:
                     continue
 
-                log_uri = attrs.get("zenml.log_model.uri")
+                log_uri = attrs.get("zenml.log.uri")
                 if not log_uri or not isinstance(log_uri, str):
                     continue
 
