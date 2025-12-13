@@ -162,7 +162,7 @@ service:zenml @zenml.run.id:<YOUR_RUN_ID>
 Or filter by specific step:
 
 ```
-service:zenml @zenml.step.name:my_training_step
+service:zenml @zenml.pipeline.run.name:<YOUR_RUN_NAME> @zenml.step.run.name:my_training_step
 ```
 
 ### Troubleshooting
