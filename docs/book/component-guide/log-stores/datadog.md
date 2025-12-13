@@ -156,7 +156,7 @@ Logs are automatically fetched from Datadog when viewing step details in the Zen
 Navigate to **Logs** in your Datadog dashboard and use these filters:
 
 ```
-service:zenml @zenml.run.id:<YOUR_RUN_ID>
+service:zenml @zenml.pipeline.run.name:<YOUR_RUN_NAME>
 ```
 
 Or filter by specific step:
