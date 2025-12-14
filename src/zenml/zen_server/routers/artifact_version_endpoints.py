@@ -14,11 +14,12 @@
 """Endpoint definitions for artifact versions."""
 
 import os
-from typing import List, Union
+from typing import List, Sequence, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from starlette.background import BackgroundTask
 
 from zenml.artifacts.utils import (
@@ -303,9 +304,8 @@ def get_artifact_visualization(
         raise KeyError(
             f"Artifact version {artifact_version_id} has no artifact store"
         )
-    batch_verify_permissions_for_models(
-        models=[artifact_version, artifact_store], action=Action.READ
-    )
+    models: Sequence[BaseModel] = [artifact_version, artifact_store]
+    batch_verify_permissions_for_models(models=models, action=Action.READ)
 
     return load_artifact_visualization(
         artifact=artifact_version,
@@ -347,9 +347,8 @@ def get_artifact_download_token(
             f"Artifact version {artifact_version_id} has no artifact store"
         )
 
-    batch_verify_permissions_for_models(
-        models=[artifact_version, artifact_store], action=Action.READ
-    )
+    models: Sequence[BaseModel] = [artifact_version, artifact_store]
+    batch_verify_permissions_for_models(models=models, action=Action.READ)
 
     verify_artifact_is_downloadable(artifact_version)
 
@@ -401,9 +400,8 @@ def download_artifact_data(
         raise KeyError(
             f"Artifact version {artifact_version_id} has no artifact store"
         )
-    batch_verify_permissions_for_models(
-        models=[artifact_version, artifact_store], action=Action.READ
-    )
+    models: Sequence[BaseModel] = [artifact_version, artifact_store]
+    batch_verify_permissions_for_models(models=models, action=Action.READ)
 
     archive_path = create_artifact_archive(artifact_version)
     return FileResponse(
