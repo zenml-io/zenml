@@ -101,8 +101,7 @@ from zenml import add_tags
 add_tags(tags=["my_tag"], run="run_name_or_id")
 ```
 
-Alternatively, you can use the same function within a step without\
-specifying any arguments, which will automatically tag the run:
+Alternatively, you can use the same function within a step without specifying any arguments, which will automatically tag the run:
 
 ```python
 from zenml import step, add_tags
