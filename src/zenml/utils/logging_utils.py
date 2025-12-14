@@ -584,7 +584,7 @@ def fetch_logs(
             "BaseArtifactStore",
             StackComponent.from_model(artifact_store_model),
         )
-        log_store = ArtifactLogStore(artifact_store=artifact_store)
+        log_store = ArtifactLogStore.from_artifact_store(artifact_store=artifact_store)
 
     else:
         return []
