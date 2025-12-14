@@ -293,11 +293,25 @@ def get_artifact_visualization(
         The visualization of the artifact version.
     """
     store = zen_store()
-    artifact = verify_permissions_and_get_entity(
-        id=artifact_version_id, get_method=store.get_artifact_version
+    artifact_version = store.get_artifact_version(artifact_version_id)
+
+    if artifact_version.artifact_store_id:
+        artifact_store = store.get_stack_component(
+            artifact_version.artifact_store_id
+        )
+    else:
+        raise KeyError(
+            f"Artifact version {artifact_version_id} has no artifact store"
+        )
+    batch_verify_permissions_for_models(
+        models=[artifact_version, artifact_store], action=Action.READ
     )
+
     return load_artifact_visualization(
-        artifact=artifact, index=index, zen_store=store, encode_image=True
+        artifact=artifact_version,
+        index=index,
+        zen_store=store,
+        encode_image=True,
     )
 
 
@@ -317,12 +331,21 @@ def get_artifact_download_token(
 
     Returns:
         The download token for the artifact data.
+
+    Raises:
+        KeyError: If the artifact version has no artifact store.
     """
     store = zen_store()
     artifact_version = store.get_artifact_version(artifact_version_id)
-    artifact_store = store.get_stack_component(
-        artifact_version.artifact_store_id
-    )
+
+    if artifact_version.artifact_store_id:
+        artifact_store = store.get_stack_component(
+            artifact_version.artifact_store_id
+        )
+    else:
+        raise KeyError(
+            f"Artifact version {artifact_version_id} has no artifact store"
+        )
 
     batch_verify_permissions_for_models(
         models=[artifact_version, artifact_store], action=Action.READ
@@ -358,6 +381,9 @@ def download_artifact_data(
 
     Returns:
         The artifact data.
+
+    Raises:
+        KeyError: If the artifact version has no artifact store.
     """
     verify_download_token(
         token=token,
@@ -365,12 +391,24 @@ def download_artifact_data(
         resource_id=artifact_version_id,
     )
 
-    artifact = zen_store().get_artifact_version(artifact_version_id)
-    archive_path = create_artifact_archive(artifact)
+    store = zen_store()
+    artifact_version = store.get_artifact_version(artifact_version_id)
+    if artifact_version.artifact_store_id:
+        artifact_store = store.get_stack_component(
+            artifact_version.artifact_store_id
+        )
+    else:
+        raise KeyError(
+            f"Artifact version {artifact_version_id} has no artifact store"
+        )
+    batch_verify_permissions_for_models(
+        models=[artifact_version, artifact_store], action=Action.READ
+    )
 
+    archive_path = create_artifact_archive(artifact_version)
     return FileResponse(
         archive_path,
         media_type="application/gzip",
-        filename=f"{artifact.name}-{artifact.version}.tar.gz",
+        filename=f"{artifact_version.name}-{artifact_version.version}.tar.gz",
         background=BackgroundTask(os.remove, archive_path),
     )
