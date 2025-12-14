@@ -62,7 +62,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
-    batch_verify_permissions_for_models,
     dehydrate_response_model,
     verify_permission_for_model,
 )
@@ -458,7 +457,9 @@ def run_logs(
     """
     store = zen_store()
 
-    run = zen_store().get_run(run_id, hydrate=True)
+    run = verify_permissions_and_get_entity(
+        id=run_id, get_method=store.get_run, hydrate=True
+    )
 
     # Handle runner logs from workload manager
     if run.snapshot and source == "runner":
@@ -486,23 +487,6 @@ def run_logs(
 
     if run.log_collection:
         if logs_response := search_logs_by_source(run.log_collection, source):
-            if logs_response.log_store_id:
-                component = store.get_stack_component(
-                    logs_response.log_store_id
-                )
-            elif logs_response.artifact_store_id:
-                component = store.get_stack_component(
-                    logs_response.artifact_store_id
-                )
-            else:
-                raise KeyError(
-                    f"No log store or artifact store found for logs {logs_response.id}"
-                )
-
-            batch_verify_permissions_for_models(
-                [run, component], action=Action.READ
-            )
-
             return fetch_logs(
                 logs=logs_response,
                 zen_store=store,
