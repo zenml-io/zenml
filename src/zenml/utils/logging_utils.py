@@ -419,6 +419,7 @@ def setup_run_logging(
             return LoggingContext(
                 name=name,
                 log_model=run_logs,
+                block_on_exit=block_on_exit,
                 **log_metadata,
             )
 
@@ -487,7 +488,10 @@ def setup_step_logging(
     if step_run.log_collection is not None:
         if step_logs := search_logs_by_source(step_run.log_collection, source):
             return LoggingContext(
-                name=name, log_model=step_logs, **log_metadata
+                name=name,
+                log_model=step_logs,
+                block_on_exit=block_on_exit,
+                **log_metadata,
             )
 
     logs_request = generate_logs_request(source=source)
@@ -503,7 +507,10 @@ def setup_step_logging(
     if step_run.log_collection is not None:
         if step_logs := search_logs_by_source(step_run.log_collection, source):
             return LoggingContext(
-                name=name, log_model=step_logs, **log_metadata
+                name=name,
+                log_model=step_logs,
+                block_on_exit=block_on_exit,
+                **log_metadata,
             )
 
     return nullcontext()
