@@ -116,6 +116,7 @@ class LoggingContext:
         self,
         name: str,
         log_model: "LogsResponse",
+        block_on_exit: bool = True,
         **metadata: Any,
     ) -> None:
         """Initialize the logging context.
@@ -123,6 +124,8 @@ class LoggingContext:
         Args:
             name: The name of the logging context.
             log_model: The logs response model for this context.
+            block_on_exit: Whether to block until all logs are flushed when the
+                context is exited, if there are no more logging contexts active.
             **metadata: Additional metadata to attach to the log entry.
         """
         self.log_model = log_model
@@ -133,6 +136,7 @@ class LoggingContext:
         self._metadata = metadata
         self._origin: Optional["BaseLogStoreOrigin"] = None
         self._name = name
+        self._block_on_exit = block_on_exit
 
     @property
     def name(self) -> str:
@@ -217,7 +221,9 @@ class LoggingContext:
         with self._lock:
             active_logging_context.set(self._previous_context)
             if self._origin:
-                self._origin.deregister()
+                self._log_store.deregister_origin(
+                    self._origin, blocking=self._block_on_exit
+                )
                 self._origin = None
 
 
@@ -366,6 +372,7 @@ def get_run_log_metadata(
 def setup_run_logging(
     pipeline_run: "PipelineRunResponse",
     source: str,
+    block_on_exit: bool = True,
 ) -> Any:
     """Set up logging for a pipeline run.
 
@@ -374,6 +381,8 @@ def setup_run_logging(
     Args:
         pipeline_run: The pipeline run.
         source: The source of the logs.
+        block_on_exit: Whether to block until all logs are flushed when the
+            context is exited, if there are no more logging contexts active.
 
     Returns:
         The logs context.
@@ -389,6 +398,7 @@ def setup_run_logging(
             return LoggingContext(
                 name=name,
                 log_model=run_logs,
+                block_on_exit=block_on_exit,
                 **log_metadata,
             )
 
@@ -441,6 +451,7 @@ def setup_step_logging(
     step_run: "StepRunResponse",
     pipeline_run: "PipelineRunResponse",
     source: str,
+    block_on_exit: bool = True,
 ) -> Any:
     """Set up logging for a step run.
 
@@ -450,6 +461,8 @@ def setup_step_logging(
         step_run: The step run.
         pipeline_run: The pipeline run.
         source: The source of the logs.
+        block_on_exit: Whether to block until all logs are flushed when the
+            context is exited, if there are no more logging contexts active.
 
     Returns:
         The logs context.
@@ -467,6 +480,7 @@ def setup_step_logging(
             return LoggingContext(
                 name=name,
                 log_model=run_logs,
+                block_on_exit=block_on_exit,
                 **log_metadata,
             )
 
