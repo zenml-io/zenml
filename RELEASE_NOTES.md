@@ -1,6 +1,36 @@
 <!-- markdown-link-check-disable -->
 
+> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
+
+---
+
 # 0.93.0
+
+## ⚠️ Breaking Changes
+
+- The `PipelineRunResponse.logs` field has been removed. Use `PipelineRunResponse.log_collection` instead.
+- The `StepRunResponse.logs` field has been removed. Use `StepRunResponse.log_collection` instead.
+- The `/api/v1/pipelines/<ID>/runs` endpoint has been removed. Use `/api/v1/runs?pipeline=<ID>` instead.
+
+## New Features
+
+### Log stores
+Log stores are a new stack component that controls where pipeline and step logs are persisted. Three flavors are available: Artifact Store (writes logs to the stack’s artifact store), generic OpenTelemetry (OTEL), and Datadog. If a stack does not configure a log store, logging defaults to the Artifact Store flavor.
+
+### Other
+- CLI tables have been improved. You can now specify columns and output formats (for example, CSV or JSON). For example: `zenml pipeline runs list --columns id,index,name --output json`.
+- Each pipeline run now exposes an increasing index unique within its pipeline, making it easier to distinguish and reference runs.
+- Orchestrators now support graceful stopping across all flavors. You can invoke this from the UI or the CLI: `zenml pipeline runs stop <ID> --graceful`.
+- The AzureML orchestrator and step operator now support configurable shared memory size.
+- The `oneof` filtering operator is now available when filtering objects by their related entities: `zenml pipeline runs list --pipeline='oneof:["some_pipeline", "other_pipeline"]'`.
+- UI: The pipeline code can now be viewed in the DAG visualizer.
+
+## Bug fixes
+- Resuming MLflow runs on AzureML now works reliably.
+- Schedule state inconsistencies in the Kubernetes orchestrator have been resolved.
+- Running the latest snapshot for a pipeline now selects the correct snapshot.
+- Creating a snapshot from within a step now works correctly again.
+- Missing RBAC checks when fetching logs and downloading artifact data or visualizations have been added. These endpoints now perform the appropriate log and artifact store RBAC checks.
 
 ## What's Changed
 * Add version 0.91.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4283
@@ -47,11 +77,6 @@
 
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.92.0...0.93.0
-
-
-> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
-
----
 
 # 0.92.0
 
