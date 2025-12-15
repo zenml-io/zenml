@@ -315,7 +315,8 @@ class ScheduleResponse(
     def __bool__(self) -> bool:
         """Boolean validation of the object.
 
-        Returns: `True` if the schedule is not archived, `False` otherwise.
+        Returns:
+            `True` if the schedule is not archived, `False` otherwise.
         """
         return not self.is_archived
 

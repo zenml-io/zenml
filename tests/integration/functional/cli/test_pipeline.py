@@ -105,6 +105,7 @@ def test_pipeline_schedule_list(clean_client_with_scheduled_run):
 
 def test_pipeline_schedule_delete(clean_client_with_scheduled_run):
     """Test that `zenml pipeline schedules delete` works as expected."""
+
     existing_schedules = clean_client_with_scheduled_run.list_schedules()
     assert len(existing_schedules) == 1
     schedule_name = existing_schedules[0].name
@@ -114,9 +115,17 @@ def test_pipeline_schedule_delete(clean_client_with_scheduled_run):
     )
     result = runner.invoke(delete_command, [schedule_name, "-y"])
     assert result.exit_code == 0
-    with pytest.raises(KeyError):
-        clean_client_with_scheduled_run.get_schedule(schedule_name)
-    existing_schedules = clean_client_with_scheduled_run.list_schedules()
+    assert clean_client_with_scheduled_run.get_schedule(
+        schedule_name
+    ).is_archived
+    existing_schedules = clean_client_with_scheduled_run.list_schedules(
+        active=False
+    )
+    assert len(existing_schedules) == 1
+
+    existing_schedules = clean_client_with_scheduled_run.list_schedules(
+        active=True
+    )
     assert len(existing_schedules) == 0
 
 

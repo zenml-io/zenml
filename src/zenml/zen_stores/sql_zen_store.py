@@ -7367,6 +7367,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated schedule.
+
+        Raises:
+            IllegalOperationError: If the update cannot be applied (e.g. schedule is archived).
         """
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
