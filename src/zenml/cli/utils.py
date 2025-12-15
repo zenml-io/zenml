@@ -2118,8 +2118,8 @@ def generate_deployment_row(
     """
     user_name = _get_user_name(deployment.user)
 
-    if deployment.snapshot is None or deployment.snapshot.pipeline is None:
-        pipeline_name = "unlisted"
+    if deployment.snapshot is None:
+        pipeline_name = "N/A"
     else:
         pipeline_name = deployment.snapshot.pipeline.name
 
@@ -2238,7 +2238,7 @@ def generate_pipeline_run_row(
         Dict with pipeline run data for display.
     """
     pipeline_name = (
-        pipeline_run.pipeline.name if pipeline_run.pipeline else "unlisted"
+        pipeline_run.pipeline.name if pipeline_run.pipeline else "N/A"
     )
     stack_name = pipeline_run.stack.name if pipeline_run.stack else "[DELETED]"
     user_name = _get_user_name(pipeline_run.user)

@@ -4746,7 +4746,6 @@ class Client(metaclass=ClientMetaClass):
         index: Optional[int] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
-        unlisted: Optional[bool] = None,
         templatable: Optional[bool] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
@@ -4796,7 +4795,6 @@ class Client(metaclass=ClientMetaClass):
             index: The index of the pipeline run
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
-            unlisted: If the runs should be unlisted or not.
             templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
             tags: Tags to filter by.
@@ -4848,7 +4846,6 @@ class Client(metaclass=ClientMetaClass):
             end_time=end_time,
             tag=tag,
             tags=tags,
-            unlisted=unlisted,
             user=user,
             run_metadata=run_metadata,
             pipeline=pipeline,

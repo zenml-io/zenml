@@ -655,7 +655,6 @@ class PipelineRunFilter(
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
-        "unlisted",
         "code_repository_id",
         "build_id",
         "schedule_id",
@@ -768,7 +767,6 @@ class PipelineRunFilter(
         description="End time for this run",
         union_mode="left_to_right",
     )
-    unlisted: Optional[bool] = None
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     #   generic `pipeline` filter below.
     pipeline_name: Optional[str] = Field(
@@ -843,13 +841,6 @@ class PipelineRunFilter(
             StackSchema,
             StepRunSchema,
         )
-
-        if self.unlisted is not None:
-            if self.unlisted is True:
-                unlisted_filter = PipelineRunSchema.pipeline_id.is_(None)  # type: ignore[union-attr]
-            else:
-                unlisted_filter = PipelineRunSchema.pipeline_id.is_not(None)  # type: ignore[union-attr]
-            custom_filters.append(unlisted_filter)
 
         if self.code_repository_id:
             code_repo_filter = and_(

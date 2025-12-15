@@ -564,7 +564,7 @@ def run_as_single_step_pipeline(
     def single_step_pipeline() -> None:
         __step(**inputs)
 
-    run = single_step_pipeline.with_options(unlisted=True)()
+    run = single_step_pipeline()
     assert run
     run = wait_for_pipeline_run_to_finish(run.id)
 
