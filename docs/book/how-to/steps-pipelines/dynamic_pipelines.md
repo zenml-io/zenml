@@ -5,7 +5,7 @@ description: Write dynamic pipelines
 # Dynamic Pipelines (Experimental)
 
 {% hint style="warning" %}
-**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local`, `local_docker`, `kubernetes`, `sagemaker` and `vertex` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
+**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local`, `local_docker`, `kubernetes`, `sagemaker`, `vertex`, and `azureml` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
 {% hint style="info" %}
@@ -343,6 +343,7 @@ Dynamic pipelines are currently only supported by:
 - `kubernetes` orchestrator
 - `sagemaker` orchestrator
 - `vertex` orchestrator
+- `azureml` orchestrator
 
 Other orchestrators will raise an error if you try to run a dynamic pipeline with them.
 
