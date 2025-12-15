@@ -166,7 +166,7 @@ class BaseLogStore(StackComponent, ABC):
             self._release_origin(origin)
             del self._origins[origin.name]
             if len(self._origins) == 0:
-                self.flush(blocking=False)
+                self.flush(blocking=True)
 
     @abstractmethod
     def emit(
