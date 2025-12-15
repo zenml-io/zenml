@@ -201,9 +201,9 @@ Collaboration is a crucial aspect of any MLOps team as they often need to bring 
 
 With a deployed **ZenML Server**, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork across the entire AI development lifecycle.
 
-#### Dashboard
+#### UI
 
-The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_ and share your stacks with them.
+The **ZenML UI** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_ and share your stacks with them.
 
 When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition, you will need to [deploy ZenML](deploying-zenml/). Don't worry though, there is a one-click way to do it, which we'll learn about later.
 

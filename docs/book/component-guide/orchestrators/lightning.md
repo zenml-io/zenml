@@ -27,7 +27,7 @@ To use the [Lightning AI Studio](https://lightning.ai/) orchestrator, you need t
 The Lightning AI orchestrator is a ZenML orchestrator that runs your pipelines on Lightning AI's infrastructure. When you run a pipeline with the Lightning AI orchestrator, ZenML will archive your current ZenML repository and upload it to the Lightning AI studio. Once the code is archived, using `lightning-sdk`, ZenML will create a new stduio in Lightning AI and upload the code to it. Then ZenML runs list of commands via `studio.run()` to prepare for the pipeline run (e.g. installing dependencies, setting up the environment). Finally, ZenML will run the pipeline on Lightning AI's infrastructure.
 
 * You can always use an already existing studio by specifying the `main_studio_name` in the `LightningOrchestratorSettings`.
-* The orchestartor supports a async mode, which means that the pipeline will be run in the background and you can check the status of the run in the ZenML Dashboard or the Lightning AI Studio.
+* The orchestartor supports a async mode, which means that the pipeline will be run in the background and you can check the status of the run in the ZenML UI or the Lightning AI Studio.
 * You can specify a list of custom commands that will be executed before running the pipeline. This can be useful for installing dependencies or setting up the environment.
 * The orchestrator supports both CPU and GPU machine types. You can specify the machine type in the `LightningOrchestratorSettings`.
 

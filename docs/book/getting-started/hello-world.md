@@ -163,7 +163,7 @@ python run.py  # Automatically runs on cloud infrastructure
 
 ZenML handles packaging code, building containers, orchestrating execution, and tracking artifacts automatically across all cloud providers.
 
-<figure><img src="../.gitbook/assets/pipeline-run-on-the-dashboard.png" alt="Pipeline Run in ZenML Dashboard"><figcaption><p>Your pipeline in the ZenML Pro Dashboard</p></figcaption></figure>
+<figure><img src="../.gitbook/assets/pipeline-run-on-the-dashboard.png" alt="Pipeline Run in ZenML UI"><figcaption><p>Your pipeline in the ZenML Pro UI</p></figcaption></figure>
 {% endstep %}
 
 {% step %}

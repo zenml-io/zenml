@@ -131,7 +131,7 @@ The `main.tf` file uses the `zenml-io/zenml-stack/azure` module hosted on the Te
 
 <img src="../../../.gitbook/assets/deploy_stack_azure_cloud_shell_terraform_outputs.png" alt="Azure Cloud Shell Terraform Outputs" data-size="original">
 
-Once the Terraform deployment is complete, you may close the Cloud Shell session and return to the ZenML Dashboard to view the newly created stack:
+Once the Terraform deployment is complete, you may close the Cloud Shell session and return to the ZenML UI to view the newly created stack:
 
 <img src="../../../.gitbook/assets/deploy_stack_azure_dashboard_output.png" alt="Azure Stack Dashboard output" data-size="original">
 

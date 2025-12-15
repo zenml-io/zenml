@@ -84,15 +84,15 @@ Step train_model has started.
 Trained model using 3 data points. Feature sum is 21, label sum is 1
 Step train_model has finished in 0.265s.
 Run simple_ml_pipeline-2023_11_23-10_51_59_657489 has finished in 1.612s.
-Pipeline visualization can be seen in the ZenML Dashboard. Run zenml login --local to see your pipeline!
+Pipeline visualization can be seen in the ZenML UI. Run zenml login --local to see your pipeline!
 ```
 {% endcode %}
 
 ### Explore the dashboard
 
-Once the pipeline has finished its execution, use the `zenml login --local` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
+Once the pipeline has finished its execution, use the `zenml login --local` command to view the results in the ZenML UI. Using that command will open up the browser automatically.
 
-<figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the UI</p></figcaption></figure>
 
 Usually, the dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG or Timeline visualization to understand the flow of data and to ensure all steps are completed successfully. ZenML offers two visualization modes: the **DAG view** for understanding pipeline structure and dependencies, and the **Timeline view** for analyzing execution performance. For pipelines with many steps, the Timeline view provides a cleaner interface for performance optimization. [Learn more](../../how-to/dashboard/dashboard-features.md#timeline-view).
 

@@ -21,6 +21,46 @@ ZenML Pro has three main services, each with distinct responsibilities:
 
 When you execute a pipeline, data flows through the system in a well-defined sequence:
 
+```mermaid
+sequenceDiagram
+    participant User as 👤 User/Developer
+    participant Client as 💻 ZenML Client<br/>(Local SDK)
+    participant Workspace as 🏢 ZenML Workspace<br/>(Server)
+    participant Registry as 📦 Container Registry<br/>(Your Infrastructure)
+    participant Orchestrator as ⚙️ Orchestrator<br/>(K8s/Cloud)
+    participant ArtifactStore as 💾 Artifact Store<br/>(S3/GCS/etc)
+    participant LogBackend as 📝 Log Backend
+    participant UI as 📊 ZenML UI
+
+    Note over User,Client: 1. Code Execution
+    User->>Client: Write & run pipeline code
+    
+    Note over Client,Workspace: 2. Token Acquisition
+    Client->>Workspace: Request credentials
+    Workspace-->>Client: Return tokens for:<br/>- Container registry<br/>- Artifact store<br/>- Orchestrator
+    
+    Note over Client,Registry: 3. Image & Workload Submission
+    Client->>Registry: Build & push Docker image
+    Client->>Orchestrator: Submit pipeline workload
+    
+    Note over Orchestrator,ArtifactStore: 4. Orchestrator Execution
+    Orchestrator->>Registry: Pull Docker image
+    Orchestrator->>ArtifactStore: Pull code (if code repo configured)
+    Orchestrator->>Workspace: Establish connection
+    Orchestrator->>Orchestrator: Execute pipeline/step code
+    
+    Note over Orchestrator,UI: 5. Runtime Data Flow
+    Orchestrator->>Workspace: Log pipeline & step metadata
+    Orchestrator->>LogBackend: Stream execution logs
+    Orchestrator->>ArtifactStore: Write artifacts (models, datasets)
+    Orchestrator->>Workspace: Persist artifact metadata pointers
+    
+    Note over UI,Workspace: 6. Observability
+    UI->>Workspace: Query metadata
+    Workspace-->>UI: Return run data
+    UI->>User: Display complete observability plane
+```
+
 **1. Code Execution**
 
 You write code and run pipelines with your client SDK using Python. The pipeline definition specifies the steps and their dependencies.
@@ -58,7 +98,7 @@ During execution:
 
 **6. Observability**
 
-The ZenML Dashboard connects to your workspace and uses all persisted metadata to provide a complete observability plane for monitoring, debugging, and analyzing your ML workflows.
+The ZenML UI connects to your workspace and uses all persisted metadata to provide a complete observability plane for monitoring, debugging, and analyzing your ML workflows.
 
 ## Where Data Lives
 
