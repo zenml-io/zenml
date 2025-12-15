@@ -4,6 +4,80 @@
 
 ---
 
+# 0.93.0
+
+## ⚠️ Breaking Changes
+
+- The `PipelineRunResponse.logs` field has been removed. Use `PipelineRunResponse.log_collection` instead.
+- The `StepRunResponse.logs` field has been removed. Use `StepRunResponse.log_collection` instead.
+- The `/api/v1/pipelines/<ID>/runs` endpoint has been removed. Use `/api/v1/runs?pipeline=<ID>` instead.
+
+## New Features
+
+### Log stores
+Log stores are a new stack component that controls where pipeline and step logs are persisted. Three flavors are available: Artifact Store (writes logs to the stack’s artifact store), generic OpenTelemetry (OTEL), and Datadog. If a stack does not configure a log store, logging defaults to the Artifact Store flavor.
+
+### Other
+- CLI tables have been improved. You can now specify columns and output formats (for example, CSV or JSON). For example: `zenml pipeline runs list --columns id,index,name --output json`.
+- Each pipeline run now exposes an increasing index unique within its pipeline, making it easier to distinguish and reference runs.
+- Orchestrators now support graceful stopping across all flavors. You can invoke this from the UI or the CLI: `zenml pipeline runs stop <ID> --graceful`.
+- The AzureML orchestrator and step operator now support configurable shared memory size.
+- The `oneof` filtering operator is now available when filtering objects by their related entities: `zenml pipeline runs list --pipeline='oneof:["some_pipeline", "other_pipeline"]'`.
+- UI: The pipeline code can now be viewed in the DAG visualizer.
+
+## Bug fixes
+- Resuming MLflow runs on AzureML now works reliably.
+- Schedule state inconsistencies in the Kubernetes orchestrator have been resolved.
+- Running the latest snapshot for a pipeline now selects the correct snapshot.
+- Creating a snapshot from within a step now works correctly again.
+- Missing RBAC checks when fetching logs and downloading artifact data or visualizations have been added. These endpoints now perform the appropriate log and artifact store RBAC checks.
+
+## What's Changed
+* Add version 0.91.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4283
+* Add 0.92.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4285
+* Add workflow to require release labels on PRs by @strickvl in https://github.com/zenml-io/zenml/pull/4281
+* Improve CLI Tables and IDs handling by @safoinme in https://github.com/zenml-io/zenml/pull/4241
+* Include static/dynamic pipeline in analytics by @schustmi in https://github.com/zenml-io/zenml/pull/4290
+* Add changelog notification workflow by @strickvl in https://github.com/zenml-io/zenml/pull/4291
+* Add dynamic pipeline support to local docker orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/4294
+* Add Changelog link to README by @strickvl in https://github.com/zenml-io/zenml/pull/4292
+* Replace broken Medium link with official Apple docs by @strickvl in https://github.com/zenml-io/zenml/pull/4296
+* Add `zenml-backport` skill for Claude Code by @strickvl in https://github.com/zenml-io/zenml/pull/4298
+* Fix MLflow experiment tracker crash with non-existent runs by @htahir1 in https://github.com/zenml-io/zenml/pull/4227
+* Update changelog with changes from `zenml-changelog` by @strickvl in https://github.com/zenml-io/zenml/pull/4310
+* Create "snack" issue from PR labeled "snack-it". by @htahir1 in https://github.com/zenml-io/zenml/pull/4304
+* Fix KFP related requirements by @stefannica in https://github.com/zenml-io/zenml/pull/4312
+* Log store abstraction by @bcdurak in https://github.com/zenml-io/zenml/pull/4111
+* Improving the Datadog fetch logic by @bcdurak in https://github.com/zenml-io/zenml/pull/4314
+* Fix docs for triggering snapshots via Rest by @schustmi in https://github.com/zenml-io/zenml/pull/4313
+* Allow mapping over artifact lists by @schustmi in https://github.com/zenml-io/zenml/pull/4302
+* Update dynamic pipeline default execution mode by @schustmi in https://github.com/zenml-io/zenml/pull/4317
+* Add pipeline run index attribute by @schustmi in https://github.com/zenml-io/zenml/pull/4288
+* Feature:4135 Orchestrator generic graceful stopping by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4247
+* Allow manual artifact chunking by @schustmi in https://github.com/zenml-io/zenml/pull/4321
+* Store pipeline code by @schustmi in https://github.com/zenml-io/zenml/pull/4320
+* Add Alibaba Cloud storage artifact-store by @safoinme in https://github.com/zenml-io/zenml/pull/4289
+* Include run index in deployment response by @schustmi in https://github.com/zenml-io/zenml/pull/4326
+* Bug/4295 improve schedule state consistency by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4301
+* Fix CLI hyperlink wrapping that breaks CMD-click by @strickvl in https://github.com/zenml-io/zenml/pull/4318
+* Fix `google_adk` and `crewai` examples' OTEL version conflict by @strickvl in https://github.com/zenml-io/zenml/pull/4316
+* Fix substitutions docstring by @schustmi in https://github.com/zenml-io/zenml/pull/4330
+* Fix docker settings docs for custom parent images by @schustmi in https://github.com/zenml-io/zenml/pull/4332
+* Log store improvements by @stefannica in https://github.com/zenml-io/zenml/pull/4309
+* Add shared memory size configuration to AzureML orchestrator and step operator by @htahir1 in https://github.com/zenml-io/zenml/pull/4334
+* Enable the oneof operator for referenced entities by @schustmi in https://github.com/zenml-io/zenml/pull/4336
+* Enable dynamic pipelines to be deployed by @stefannica in https://github.com/zenml-io/zenml/pull/4300
+* Fix scipy and other integration tests failing in CI by @strickvl in https://github.com/zenml-io/zenml/pull/4331
+* Docs for different step execution scenarios by @schustmi in https://github.com/zenml-io/zenml/pull/4345
+* Docs for the new log stores by @bcdurak in https://github.com/zenml-io/zenml/pull/4325
+* Trigger latest snapshot if only passing pipeline name by @schustmi in https://github.com/zenml-io/zenml/pull/4346
+* Allow compiling static pipeline while executing a step by @schustmi in https://github.com/zenml-io/zenml/pull/4342
+* Remove unused endpoint by @schustmi in https://github.com/zenml-io/zenml/pull/4350
+* Miscellaneous fixes for heartbeat, logs, and RBAC by @bcdurak in https://github.com/zenml-io/zenml/pull/4347
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.92.0...0.93.0
+
 # 0.92.0
 
 ## ⚠️ Breaking Changes
