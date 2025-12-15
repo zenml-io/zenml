@@ -484,17 +484,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     output_artifact.artifact_version.to_model()
                 )
 
-            # Add the step logs as "logs" if they exist, for backwards compatibility
-            # TODO: This will be safe to remove in future releases (>0.93.0).
-            step_logs = [
-                log_entry
-                for log_entry in self.logs
-                if log_entry.source == "step"
-            ]
             resources = StepRunResponseResources(
                 user=self.user.to_model() if self.user else None,
                 model_version=model_version,
-                logs=step_logs[0].to_model() if step_logs else None,
                 log_collection=[log.to_model() for log in self.logs],
                 inputs=input_artifacts,
                 outputs=output_artifacts,

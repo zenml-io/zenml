@@ -519,9 +519,11 @@ def fetch_logs(
         NotImplementedError: If the log store's dependencies are not installed.
         RuntimeError: If the function is called from the client environment.
     """
-    from zenml.artifacts.utils import load_artifact_store
     from zenml.log_stores.base_log_store import BaseLogStore
     from zenml.stack import StackComponent
+    from zenml.zen_server.rbac.endpoint_utils import (
+        verify_permissions_and_get_entity,
+    )
 
     if ENV_ZENML_SERVER not in os.environ:
         # This utility function should not be called from the client environment
@@ -535,7 +537,10 @@ def fetch_logs(
 
     if logs.log_store_id:
         try:
-            log_store_model = zen_store.get_stack_component(logs.log_store_id)
+            log_store_model = verify_permissions_and_get_entity(
+                id=logs.log_store_id,
+                get_method=zen_store.get_stack_component,
+            )
         except KeyError:
             raise DoesNotExistException(
                 f"Log store '{logs.log_store_id}' does not exist."
@@ -557,12 +562,31 @@ def fetch_logs(
                 "instantiated."
             )
     elif logs.artifact_store_id:
+        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.log_stores.artifact.artifact_log_store import (
             ArtifactLogStore,
         )
 
-        artifact_store = load_artifact_store(logs.artifact_store_id, zen_store)
-        log_store = ArtifactLogStore.from_artifact_store(artifact_store)
+        try:
+            artifact_store_model = verify_permissions_and_get_entity(
+                id=logs.artifact_store_id,
+                get_method=zen_store.get_stack_component,
+            )
+        except KeyError:
+            raise DoesNotExistException(
+                f"Artifact store '{logs.artifact_store_id}' does not exist."
+            )
+        if not artifact_store_model.type == StackComponentType.ARTIFACT_STORE:
+            raise DoesNotExistException(
+                f"Stack component '{logs.artifact_store_id}' is not an artifact store."
+            )
+        artifact_store = cast(
+            "BaseArtifactStore",
+            StackComponent.from_model(artifact_store_model),
+        )
+        log_store = ArtifactLogStore.from_artifact_store(
+            artifact_store=artifact_store
+        )
 
     else:
         return []

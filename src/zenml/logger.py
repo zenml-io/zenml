@@ -275,19 +275,20 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
         """
         from zenml.utils.logging_utils import LoggingContext
 
-        level_int = logging.INFO if stream_name == "stdout" else logging.ERROR
+        level = logging.INFO if stream_name == "stdout" else logging.ERROR
 
-        record = logging.LogRecord(
-            name=stream_name,
-            level=level_int,
-            pathname="",
-            lineno=0,
-            msg=text,
-            args=(),
-            exc_info=None,
-            func="",
-        )
-        LoggingContext.emit(record)
+        if logging.root.isEnabledFor(level):
+            record = logging.LogRecord(
+                name=stream_name,
+                level=level,
+                pathname="",
+                lineno=0,
+                msg=text,
+                args=(),
+                exc_info=None,
+                func="",
+            )
+            LoggingContext.emit(record)
 
         return original_write(text)
 
