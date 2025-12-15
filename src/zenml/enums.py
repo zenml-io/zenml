@@ -474,6 +474,8 @@ class DatabaseBackupStrategy(StrEnum):
     DUMP_FILE = "dump-file"
     # Create a backup of the database in the remote database service
     DATABASE = "database"
+    # Use mydumper/myloader for parallel backup/restore (MySQL only)
+    MYDUMPER = "mydumper"
 
 
 class PluginType(StrEnum):
