@@ -5,6 +5,11 @@ description: >-
 icon: link
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Service Connectors
 
 Service Connectors provide a unified way to handle authentication between ZenML and external services like cloud providers. They are a critical part of working with cloud-based stacks and significantly simplify the authentication challenge in ML workflows.
