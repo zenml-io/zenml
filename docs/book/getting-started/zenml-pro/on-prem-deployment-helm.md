@@ -1031,14 +1031,6 @@ Common issues:
 - Database connectivity (verify connection string)
 - Certificate issues (verify CA is trusted)
 
-### Database Connection Failed
-
-```bash
-# Test from pod
-kubectl -n zenml-pro exec -it zenml-pro-xxxxx -- \
-  psql -h postgres.internal.mycompany.com -U zenml_pro_user -d zenml_pro
-```
-
 ### Can't Access via HTTPS
 
 1. Verify certificate validity
@@ -1056,21 +1048,20 @@ kubectl -n zenml-pro exec -it zenml-pro-xxxxx -- \
 
 ### Receiving New Versions
 
-When new ZenML versions are released:
+The latest versions of ZenML images and Helm charts can be discovered and reviewed at:
 
-1. **Request offline bundle** from ZenML Support containing:
-   - Updated container images
-   - Updated Helm charts
-   - Release notes and migration guide
-   - Vulnerability assessment (if applicable)
+- **ZenML Pro Helm chart**: [artifacthub.io/packages/helm/zenml-pro/zenml-pro](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro)
+- **ZenML (OSS/workspace) Helm chart**: [artifacthub.io/packages/helm/zenml/zenml](https://artifacthub.io/packages/helm/zenml/zenml)
+- **ZenML container images**: Tags are published alongside each [release on ArtifactHub](https://artifacthub.io/packages/helm/zenml/zenml) and [ZenML changelog](https://docs.zenml.io/changelog).
+- **Changelog and release notes** for updates and migrations: [ZenML Changelog](https://docs.zenml.io/changelog)
 
-2. **Review release notes** for:
-   - Breaking changes
-   - Database migration requirements
-   - New features and configuration options
-   - Security updates
+When preparing for an update or upgrade, always consult the changelog for:
+- New Helm chart releases and corresponding Helm values
+- Updated container image tags (OSS and Pro)
+- Migration requirements and compatibility notes
+- Security/vulnerability disclosures
 
-3. **Transfer bundle** to your air-gapped environment using approved methods
+For air-gapped or regulated environments, coordinate with ZenML Support to acquire new versions in the format required for your infrastructure.
 
 ### Upgrade Process
 
@@ -1112,62 +1103,6 @@ When new ZenML versions are released:
    - Run health checks
    - Test dashboard access
 
-### Database Migrations
-
-Some updates may require database migrations:
-
-1. **Review migration guide** in release notes
-2. **Back up database** before upgrading
-3. **Monitor logs** for any migration-related errors
-4. **Verify data integrity** after upgrade
-5. **Test key features** (workspace access, pipeline runs, etc.)
-
-## Disaster Recovery & Backup Strategy
-
-### Backup Components
-
-Regular backups should include:
-
-1. **PostgreSQL Databases:**
-   - Schedule automated backups (daily minimum)
-   - Test restore procedures regularly
-   - Store backups in a different location (second disk, external storage)
-   - Retain for 30+ days
-
-2. **Configuration:**
-   - Version control Helm values files
-   - Store TLS certificates securely
-   - Document any manual customizations
-
-3. **Container Images:**
-   - Keep copies of all images used
-   - Maintain manifest of images and versions
-
-### Recovery Procedures
-
-Document and test:
-
-1. **Database Recovery:**
-   - Steps to restore from backup
-   - Verification procedures
-   - Estimated recovery time
-
-2. **Full Cluster Recovery:**
-   - How to redeploy from scratch
-   - Image and chart preparation
-   - Restore order (databases first, then control plane, then workspaces)
-
-3. **Partial Recovery:**
-   - Recovering single workspace
-   - Recovering specific components
-
-## Related Resources
-
-- [Self-hosted Deployment Overview](self-hosted-deployment.md)
-- [Self-hosted Deployment Guide](self-hosted.md) - Comprehensive deployment reference
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-- [Helm Documentation](https://helm.sh/docs/)
 
 ## Support
 
