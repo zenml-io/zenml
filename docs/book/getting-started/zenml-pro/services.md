@@ -22,6 +22,11 @@ ZenML Pro has three main services, each with distinct responsibilities:
 When you execute a pipeline, data flows through the system in a well-defined sequence:
 
 ```mermaid
+---
+config:
+  layout: elk
+  theme: mc
+---
 sequenceDiagram
     participant User as 👤 User/Developer
     participant Client as 💻 ZenML Client<br/>(Local SDK)
