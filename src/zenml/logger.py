@@ -277,8 +277,6 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
 
         level = logging.INFO if stream_name == "stdout" else logging.ERROR
 
-        # Respect the logging verbosity setting - only emit to LoggingContext
-        # if the level is enabled by the root logger
         if logging.root.isEnabledFor(level):
             record = logging.LogRecord(
                 name=stream_name,
