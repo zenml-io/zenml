@@ -55,29 +55,28 @@ When running your own Control Plane, you need:
 
 **Identity provider integration:**
 - OAuth2/OIDC client credentials
-- SAML metadata exchange (if using SAML)
 
 ## Network Requirements
 
-### Ingress (Incoming Traffic)
+### Ingress
 
 The Control Plane must accept connections from:
 
-| Source | Port | Protocol | Purpose |
-|--------|------|----------|---------|
-| User browsers | 443 | HTTPS | Dashboard login, UI access |
-| ZenML SDK clients | 443 | HTTPS | Authentication, token exchange |
-| ZenML Workspace | 443 | HTTPS | Workspace registration, heartbeats |
-| Identity providers | 443 | HTTPS | SSO callbacks |
+| Source | Protocol | Purpose |
+|--------|----------|---------|
+| User browsers | HTTPS | Dashboard login, UI access |
+| ZenML SDK clients | HTTPS | Authentication, token exchange |
+| ZenML Workspace | HTTPS | Workspace registration, heartbeats |
+| Identity providers | HTTPS | SSO callbacks |
 
-### Egress (Outgoing Traffic)
+### Egress
 
 The Control Plane needs to reach:
 
-| Destination | Port | Protocol | Purpose |
-|-------------|------|----------|---------|
-| Identity providers | 443 | HTTPS | SSO authentication flows |
-| Database | 3306/5432 | TCP | Persistent storage |
+| Destination | Protocol | Purpose |
+|-------------|----------|---------|
+| Identity providers | HTTPS | SSO authentication flows |
+| Database | TCP | Persistent storage |
 
 ### Network Diagram
 

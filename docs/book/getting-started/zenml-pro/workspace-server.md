@@ -61,22 +61,22 @@ The Workspace Server requires a database for persistent storage:
 
 The Workspace Server must accept connections from:
 
-| Source | Port | Protocol | Purpose |
-|--------|------|----------|---------|
-| ZenML SDK clients | 443 | HTTPS | API requests from client machines |
-| ZenML Pro Dashboard | 443 | HTTPS | UI data requests |
-| Orchestrator pods/tasks | 443 | HTTPS | Pipeline status updates, metadata logging |
+| Source | Protocol | Purpose |
+|--------|----------|---------|
+| ZenML SDK clients | HTTPS | API requests from client machines |
+| ZenML Pro Dashboard | HTTPS | UI data requests |
+| Orchestrator pods/tasks | HTTPS | Pipeline status updates, metadata logging |
 
 ### Egress
 
 The Workspace Server needs to reach:
 
-| Destination | Port | Protocol | Purpose |
-|-------------|------|----------|---------|
-| Database | 3306/5432 | TCP | MySQL/PostgreSQL |
-| Control Plane | 443 | HTTPS | Authentication  |
-| Secrets backend | varies | HTTPS | AWS Secrets Manager, GCP Secret Manager, etc. |
-| Artifact Store | 443 | HTTPS | Artifact visualizations |
+| Destination | Protocol | Purpose |
+|-------------|----------|---------|
+| Database | TCP | MySQL/PostgreSQL |
+| Control Plane | HTTPS | Authentication  |
+| Secrets backend | HTTPS | AWS Secrets Manager, GCP Secret Manager, etc. |
+| Artifact Store | HTTPS | Artifact visualizations |
 
 ### Resource Recommendations
 

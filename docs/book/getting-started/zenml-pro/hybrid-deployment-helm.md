@@ -106,6 +106,21 @@ resources:
     memory: 450Mi
 ```
 
+**Minimum required settings:**
+
+* the database credentials (`zenml.database.url`)
+* the URL (`zenml.serverURL`) and Ingress hostname (`zenml.ingress.host`) where the ZenML Hybrid workspace server will be reachable
+* the Pro configuration (`zenml.pro.*`) with your organization and workspace details
+
+**Additional relevant settings:**
+
+* configure container registry credentials (`imagePullSecrets`) if your cluster cannot authenticate directly to the ZenML Pro container registry
+* injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificates used by the ZenML Pro services are signed by a custom Certificate Authority
+* configure HTTP proxy settings (`zenml.proxy`)
+* custom container image repository location (`zenml.image.repository`)
+* additional Ingress settings (`zenml.ingress`)
+* Kubernetes resources allocated to the pods (`resources`)
+
 ## Step 3: Deploy with Helm
 
 Install the ZenML chart directly from OCI:
@@ -175,7 +190,7 @@ curl -k https://zenml.mycompany.com/health
 
 ## Step 5: (Optional) Enable Snapshot Support / Workload Manager
 
-Pipeline snapshots (running pipelines from the UI) require a workload manager. For hybrid deployments, you can configure one of the following:
+Pipeline snapshots (running pipelines from the UI) require a workload manager. For an overview of available workload manager options and guidance on choosing and configuring one for your hybrid deployment, see the [Workload Managers documentation](../workload-managers.md).
 
 {% hint style="warning" %}
 Snapshots are only available from ZenML workspace server version 0.90.0 onwards.
@@ -250,119 +265,118 @@ helm upgrade zenml zenml/zenml \
   --values zenml-hybrid-values.yaml
 ```
 
-## Step 6: Configure Environment Variables (Advanced)
+## Domain Name
 
-For advanced configurations, you can set additional environment variables in your Helm values:
+You'll need an FQDN for the ZenML Hybrid workspace server.
 
-```yaml
-zenml:
-  environment:
-    ZENML_LOGGING_LEVEL: INFO
-    ZENML_ANALYTICS_OPT_IN: "false"
-    # Add other environment variables as needed
-```
+* **FQDN Setup**\
+  Obtain a Fully Qualified Domain Name (FQDN) (e.g., `zenml.mycompany.com`) from your DNS provider.
+  * Identify the external Load Balancer IP address of the Ingress controller using the command `kubectl get svc -n <ingress-namespace>`. Look for the `EXTERNAL-IP` field of the Load Balancer service.
+  * Create a DNS `A` record (or `CNAME` for subdomains) pointing the FQDN to the Load Balancer IP. Example:
+    * Host: `zenml.mycompany.com`
+    * Type: `A`
+    * Value: `<Load Balancer IP>`
+  * Use a DNS propagation checker to confirm that the DNS record is resolving correctly.
 
-## Database Configuration Examples
+{% hint style="warning" %}
+Make sure you don't use a simple DNS prefix for the server (e.g. `https://zenml.cluster` is not recommended). Always use a fully qualified domain name (FQDN) (e.g. `https://zenml.ml.cluster`). The TLS certificates will not be accepted by some browsers otherwise (e.g. Chrome).
+{% endhint %}
 
-### AWS RDS MySQL
+## SSL Certificate
 
-```yaml
-zenml:
-    database:
-        maxOverflow: "-1"
-        poolSize: "10"
-        url: mysql://admin:<your-rds-password>@zenml-db.123456789.us-east-1.rds.amazonaws.com:3306/zenml_hybrid
-```
+The ZenML Hybrid workspace server does not terminate SSL traffic. It is your responsibility to generate and configure the necessary SSL certificates for the workspace server.
 
-### Google Cloud SQL MySQL
+### Obtaining SSL Certificates
 
-```yaml
-zenml:
-    database:
-        maxOverflow: "-1"
-        poolSize: "10"
-        url: mysql://root:<your-cloud-sql-password>@34.123.45.67:3306/zenml_hybrid
-```
+Acquire an SSL certificate for the domain. You can use:
 
-### Self-Managed MySQL
+* A commercial SSL certificate provider (e.g., DigiCert, Sectigo).
+* Free services like [Let's Encrypt](https://letsencrypt.org/) for domain validation and issuance.
+* Self-signed certificates (not recommended for production environments). **IMPORTANT**: If you are using self-signed certificates, you will need to install the CA certificate on every client machine that connects to the workspace server.
 
-```yaml
-zenml:
-    database:
-        maxOverflow: "-1"
-        poolSize: "10"
-        url: mysql://zenml_user:<your-password>@mysql.internal.mycompany.com:3306/zenml_hybrid
-```
+### Configuring SSL Termination
 
-## Networking & Firewall Configuration
+Once the SSL certificate is obtained, configure your load balancer or Ingress controller to terminate HTTPS traffic:
 
-### Kubernetes Network Policy
+**For NGINX Ingress Controller**:
 
-If your cluster uses network policies, allow traffic:
+You can configure SSL termination globally for the NGINX Ingress Controller by setting up a default SSL certificate or configuring it at the ingress controller level, or you can specify SSL certificates when configuring the ingress in the ZenML server Helm values.
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: zenml-egress
-  namespace: zenml-hybrid
-spec:
-  podSelector:
-    matchLabels:
-      app: zenml
-  policyTypes:
-    - Egress
-  egress:
-    # Allow DNS
-    - to:
-        - namespaceSelector: {}
-      ports:
-        - protocol: UDP
-          port: 53
-    # Allow outbound to ZenML Cloud
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-      ports:
-        - protocol: TCP
-          port: 443
-    # Allow database access
-    - to:
-        - podSelector:
-            matchLabels:
-              app: mysql
-      ports:
-        - protocol: TCP
-          port: 3306
-```
+Here's how you can do it globally:
 
-### Firewall Rules
+1.  **Create a TLS Secret**
 
-Ensure your infrastructure firewall allows:
+    Store your SSL certificate and private key as a Kubernetes TLS secret in the namespace where the NGINX Ingress Controller is deployed.
 
-**Egress:**
-- Destination: `cloudapi.zenml.io` (HTTPS port 443)
-- Destination: Your database server (e.g., port 3306 for MySQL)
+    ```bash
+    kubectl create secret tls default-ssl-secret \
+      --cert=/path/to/tls.crt \
+      --key=/path/to/tls.key \
+      -n <nginx-ingress-namespace>
+    ```
 
-**Ingress:**
-- Source: Your organization's networks or public internet
-- Destination: Your ZenML server domain (HTTPS port 443)
+2.  **Update NGINX Ingress Controller Configurations**
 
-## Ingress Controller Setup
+    Configure the NGINX Ingress Controller to use the default SSL certificate.
 
-### Using NGINX Ingress Controller
+    *   If using the NGINX Ingress Controller Helm chart, modify the `values.yaml` file or use `--set` during installation:
 
-If not already installed:
+        ```yaml
+        controller:
+          extraArgs:
+            default-ssl-certificate: <nginx-ingress-namespace>/default-ssl-secret
+        ```
 
-```bash
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
-helm install nginx-ingress ingress-nginx/ingress-nginx \
-  --namespace ingress-nginx \
-  --create-namespace
-```
+        Or directly pass the argument during Helm installation or upgrade:
 
-Configure your Helm values:
+        ```bash
+        helm upgrade --install ingress-nginx ingress-nginx \
+          --repo https://kubernetes.github.io/ingress-nginx \
+          --namespace <nginx-ingress-namespace> \
+          --set controller.extraArgs.default-ssl-certificate=<nginx-ingress-namespace>/default-ssl-secret
+        ```
+
+    *   If the NGINX Ingress Controller was installed manually, edit its deployment to include the argument in the `args` section of the container:
+
+        ```yaml
+        spec:
+          containers:
+          - name: controller
+            args:
+              - --default-ssl-certificate=<nginx-ingress-namespace>/default-ssl-secret
+        ```
+
+**For Traefik**:
+
+*   Configure Traefik to use TLS by creating a certificate resolver for Let's Encrypt or specifying the certificates manually in the `traefik.yml` or `values.yaml` file. Example for Let's Encrypt:
+
+    ```yaml
+    tls:
+      certificatesResolvers:
+        letsencrypt:
+          acme:
+            email: your-email@example.com
+            storage: acme.json
+            httpChallenge:
+              entryPoint: web
+    entryPoints:
+      web:
+        address: ":80"
+      websecure:
+        address: ":443"
+    ```
+
+* Reference the domain in your IngressRoute or Middleware configuration.
+
+{% hint style="warning" %}
+If you used a custom CA certificate to sign the TLS certificates for the ZenML Hybrid workspace server, you will need to install the CA certificates on every client machine.
+{% endhint %}
+
+### Configure Ingress in Helm Values
+
+After setting up SSL termination at the ingress controller level, configure the ZenML Helm values to use ingress:
+
+**For NGINX:**
 
 ```yaml
 zenml:
@@ -378,7 +392,7 @@ zenml:
       secretName: zenml-tls
 ```
 
-### Using Traefik
+**For Traefik:**
 
 ```yaml
 zenml:
@@ -392,63 +406,6 @@ zenml:
     tls:
       enabled: true
       secretName: zenml-tls
-```
-
-## TLS Certificate Management
-
-### Self-Signed Certificates (Development Only)
-
-```bash
-# Generate certificate
-openssl req -x509 -newkey rsa:4096 -keyout tls.key -out tls.crt -days 365 -nodes \
-  -subj "/CN=zenml.mycompany.com"
-
-# Create secret
-kubectl -n zenml-hybrid create secret tls zenml-tls \
-  --cert=tls.crt --key=tls.key
-```
-
-### Using cert-manager with Let's Encrypt
-
-1. Install cert-manager:
-
-```bash
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-helm install cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --create-namespace \
-  --set installCRDs=true
-```
-
-2. Create ClusterIssuer:
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod
-spec:
-  acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@mycompany.com
-    privateKeySecretRef:
-      name: letsencrypt-prod
-    solvers:
-      - http01:
-          ingress:
-            class: nginx
-```
-
-3. Update Helm values:
-
-```yaml
-zenml:
-  ingress:
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
-    tls:
-      enabled: true
 ```
 
 ## Persistent Storage (Optional)
