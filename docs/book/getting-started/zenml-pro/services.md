@@ -27,6 +27,7 @@ config:
   layout: elk
   theme: mc
 ---
+
 sequenceDiagram
     participant User as 👤 User/Developer
     participant Client as 💻 ZenML Client<br/>(Local SDK)
