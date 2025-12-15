@@ -233,7 +233,7 @@ class ArtifactLogStoreOrigin(OtelLogStoreOrigin):
         super().__init__(name, log_store, log_model, metadata)
 
         if log_model.uri:
-            self._metadata["zenml.log.uri"] = log_model.uri
+            self.metadata["zenml.log.uri"] = log_model.uri
 
 
 class ArtifactLogStore(OtelLogStore):
