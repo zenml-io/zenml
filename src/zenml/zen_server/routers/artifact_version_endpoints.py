@@ -292,6 +292,9 @@ def get_artifact_visualization(
 
     Returns:
         The visualization of the artifact version.
+
+    Raises:
+        KeyError: If the artifact version has no artifact store.
     """
     store = zen_store()
     artifact_version = store.get_artifact_version(artifact_version_id)
