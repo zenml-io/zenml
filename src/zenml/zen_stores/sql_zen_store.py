@@ -7416,6 +7416,7 @@ class SqlZenStore(BaseZenStore):
             else:
                 # Soft deletion - set is_archived
                 schedule.is_archived = True
+                schedule.active = False
                 session.add(schedule)
 
             session.commit()
