@@ -34,6 +34,7 @@ import math
 import os
 import random
 import re
+import shutil
 import sys
 import time
 from collections import defaultdict
@@ -1362,10 +1363,10 @@ class SqlZenStore(BaseZenStore):
         self._send_user_enriched_events_if_necessary()
 
     def _get_db_backup_file_path(self) -> str:
-        """Get the path to the database backup file.
+        """Get the path to the database backup.
 
         Returns:
-            The path to the configured database backup file.
+            The path to the configured database backup.
         """
         if self.config.driver == SQLDatabaseDriver.SQLITE:
             return os.path.join(
@@ -1374,8 +1375,9 @@ class SqlZenStore(BaseZenStore):
                 ZENML_SQLITE_DB_FILENAME[:-3] + "-backup.db",
             )
 
-        # For a MySQL database, we need to dump the database to a JSON
-        # file
+        if self.config.backup_strategy == DatabaseBackupStrategy.MYDUMPER:
+            return self.config.backup_directory
+
         return os.path.join(
             self.config.backup_directory,
             f"{self.engine.url.database}-backup.json",
@@ -1450,6 +1452,20 @@ class SqlZenStore(BaseZenStore):
                 "memory",
                 self.migration_utils.backup_database_to_memory(),
             )
+        elif strategy == DatabaseBackupStrategy.MYDUMPER:
+
+            backup_dir = location or self._get_db_backup_file_path()
+
+            if not overwrite and os.path.isdir(backup_dir):
+                logger.warning(
+                    f"A previous mydumper backup already exists at "
+                    f"'{backup_dir}'. Reusing the existing backup."
+                )
+            else:
+                self.migration_utils.backup_database_with_mydumper(
+                    output_dir=backup_dir
+                )
+            return f"the '{backup_dir}' mydumper backup directory", backup_dir
 
         else:
             raise ValueError(f"Invalid backup strategy: {strategy}.")
@@ -1503,6 +1519,11 @@ class SqlZenStore(BaseZenStore):
                     "to restore the database from an in-memory backup."
                 )
             self.migration_utils.restore_database_from_memory(db_dump=location)
+        elif strategy == DatabaseBackupStrategy.MYDUMPER:
+            backup_dir = location or self._get_db_backup_file_path()
+            self.migration_utils.restore_database_with_myloader(
+                input_dir=backup_dir
+            )
 
         else:
             raise ValueError(f"Invalid backup strategy: {strategy}.")
@@ -1565,6 +1586,21 @@ class SqlZenStore(BaseZenStore):
                     f"Successfully cleaned up backup database "
                     f"{backup_db_name}."
                 )
+        elif strategy == DatabaseBackupStrategy.MYDUMPER:
+            backup_dir = location or self._get_db_backup_file_path()
+            if backup_dir is not None and os.path.isdir(backup_dir):
+                try:
+                    shutil.rmtree(backup_dir)
+                except OSError:
+                    logger.warning(
+                        f"Failed to cleanup mydumper backup directory "
+                        f"{backup_dir}."
+                    )
+                else:
+                    logger.info(
+                        f"Successfully cleaned up mydumper backup directory "
+                        f"{backup_dir}."
+                    )
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the python package.

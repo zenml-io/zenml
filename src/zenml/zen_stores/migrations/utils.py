@@ -17,6 +17,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 from typing import (
     Any,
     Callable,
@@ -775,4 +776,227 @@ class MigrationUtils(BaseModel):
             f"Database restored from the `{backup_db_name}` backup database."
         )
 
+    @staticmethod
+    def _check_mydumper_installed() -> None:
+        """Verify that mydumper is installed and available.
+
+        Raises:
+            RuntimeError: If mydumper is not found in the system PATH.
+        """
+        if shutil.which("mydumper") is None:
+            raise RuntimeError(
+                "mydumper is not installed or not available in PATH. "
+                "Please install mydumper to use this backup method."
+            )
+
+    @staticmethod
+    def _check_myloader_installed() -> None:
+        """Verify that myloader is installed and available.
+
+        Raises:
+            RuntimeError: If myloader is not found in the system PATH.
+        """
+        if shutil.which("myloader") is None:
+            raise RuntimeError(
+                "myloader is not installed or not available in PATH. "
+                "Please install myloader to use this restore method."
+            )
+
+    def _get_mysql_connection_args(self) -> List[str]:
+        """Build MySQL connection arguments for mydumper/myloader.
+
+        Returns:
+            List of command-line arguments for MySQL connection.
+
+        Raises:
+            RuntimeError: If required connection parameters are missing.
+        """
+        args: List[str] = []
+
+        if self.url.host:
+            args.extend(["--host", self.url.host])
+
+        if self.url.port:
+            args.extend(["--port", str(self.url.port)])
+
+        if self.url.username:
+            args.extend(["--user", self.url.username])
+
+        return args
+
+    def _get_mysql_env(self) -> Optional[Dict[str, str]]:
+        """Build environment variables for MySQL authentication.
+
+        Returns:
+            Dictionary of environment variables to pass to subprocess,
+            or None if no password is configured.
+        """
+        if self.url.password:
+            return {"MYSQL_PWD": self.url.password}
+        return None
+
+    def backup_database_with_mydumper(
+        self,
+        output_dir: str,
+        threads: int = 4,
+        compress: bool = False,
+        extra_args: Optional[List[str]] = None,
+    ) -> None:
+        """Backup the database using mydumper for parallel dumping.
+
+        mydumper is a high-performance MySQL backup tool that supports
+        parallel backups, making it significantly faster than traditional
+        mysqldump for large databases.
+
+        Args:
+            output_dir: Directory where the backup files will be stored.
+                Will be created if it doesn't exist.
+            threads: Number of threads to use for parallel dumping.
+                Defaults to 4.
+            compress: Whether to compress the backup files. Defaults to False.
+            extra_args: Additional command-line arguments to pass to mydumper.
+
+        Raises:
+            RuntimeError: If mydumper is not installed, if this is called on
+                a non-MySQL database, or if the backup process fails.
+        """
+        self._check_mydumper_installed()
+
+        if not self.url.database:
+            raise RuntimeError(
+                "Database name is required for mydumper backup."
+            )
+
+        os.makedirs(output_dir, exist_ok=True)
+
+        cmd = ["mydumper"]
+        cmd.extend(self._get_mysql_connection_args())
+        cmd.extend(["--database", self.url.database])
+        cmd.extend(["--outputdir", output_dir])
+        cmd.extend(["--threads", str(threads)])
+        cmd.append("--triggers")
+        cmd.append("--events")
+        cmd.append("--routines")
+
+        if compress:
+            cmd.append("--compress")
+
+        if extra_args:
+            cmd.extend(extra_args)
+
+        logger.info(
+            f"Starting mydumper backup of database '{self.url.database}' "
+            f"to '{output_dir}' with {threads} threads"
+        )
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=self._get_mysql_env(),
+        )
+
+        assert process.stdout is not None
+        for line in process.stdout:
+            line = line.rstrip()
+            if line:
+                logger.info(f"[mydumper] {line}")
+
+        return_code = process.wait()
+        if return_code != 0:
+            raise RuntimeError(
+                f"mydumper backup failed with return code {return_code}"
+            )
+
+        logger.info(
+            f"Database '{self.url.database}' successfully backed up "
+            f"to '{output_dir}'"
+        )
+
+    def restore_database_with_myloader(
+        self,
+        input_dir: str,
+        threads: int = 4,
+        overwrite_tables: bool = True,
+        extra_args: Optional[List[str]] = None,
+    ) -> None:
+        """Restore the database using myloader for parallel loading.
+
+        myloader is the companion tool to mydumper that restores backups
+        created by mydumper using parallel threads for faster restoration.
+
+        Args:
+            input_dir: Directory containing the mydumper backup files.
+            threads: Number of threads to use for parallel loading.
+                Defaults to 4.
+            overwrite_tables: Whether to drop existing tables before
+                restoring. Defaults to True.
+            extra_args: Additional command-line arguments to pass to myloader.
+
+        Raises:
+            RuntimeError: If myloader is not installed, if this is called on
+                a non-MySQL database, if the input directory doesn't exist,
+                or if the restore process fails.
+        """
+        self._check_myloader_installed()
+
+        if not self.url.database:
+            raise RuntimeError(
+                "Database name is required for myloader restore."
+            )
+
+        if not os.path.isdir(input_dir):
+            raise RuntimeError(
+                f"Backup directory '{input_dir}' does not exist or is not "
+                "a directory."
+            )
+
+        # Drop and re-create the primary database
+        self.create_database(drop=True)
+
+        cmd = ["myloader"]
+        cmd.extend(self._get_mysql_connection_args())
+        cmd.extend(["--database", self.url.database])
+        cmd.extend(["--directory", input_dir])
+        cmd.extend(["--threads", str(threads)])
+
+        if overwrite_tables:
+            cmd.append("--overwrite-tables")
+
+        if extra_args:
+            cmd.extend(extra_args)
+
+        logger.info(
+            f"Starting myloader restore of database '{self.url.database}' "
+            f"from '{input_dir}' with {threads} threads"
+        )
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=self._get_mysql_env(),
+        )
+
+        assert process.stdout is not None
+        for line in process.stdout:
+            line = line.rstrip()
+            if line:
+                logger.info(f"[myloader] {line}")
+
+        return_code = process.wait()
+        if return_code != 0:
+            raise RuntimeError(
+                f"myloader restore failed with return code {return_code}"
+            )
+
+        logger.info(
+            f"Database '{self.url.database}' successfully restored "
+            f"from '{input_dir}'"
+        )
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
