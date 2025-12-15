@@ -30,3 +30,7 @@
 * [Personal Access Tokens](personal-access-tokens.md)
 * [Service Accounts](service-accounts.md)
 * [Secrets Stores](secrets-stores.md)
+
+## Operations
+
+* [Upgrades & Updates](upgrades.md)
