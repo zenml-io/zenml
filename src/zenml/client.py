@@ -3677,6 +3677,8 @@ class Client(metaclass=ClientMetaClass):
                     runnable=True,
                     # Only try to run named snapshots
                     named_only=True,
+                    # Latest snapshots first
+                    sort_by="desc:created",
                 )
 
                 for snapshot in all_snapshots:
