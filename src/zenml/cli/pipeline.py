@@ -677,69 +677,67 @@ def list_schedules(
     required=False,
     help="The cron expression to update the schedule with.",
 )
-@click.option(
-    "--activate",
-    "-a",
-    type=bool,
-    required=False,
-    is_flag=True,
-    help="Activate a pipeline schedule.",
-)
-@click.option(
-    "--deactivate",
-    "-d",
-    type=bool,
-    required=False,
-    is_flag=True,
-    help="Deactivate a pipeline schedule.",
-)
 def update_schedule(
     schedule_name_or_id: str,
     cron_expression: str | None = None,
-    activate: bool | None = None,
-    deactivate: bool | None = None,
 ) -> None:
     """Update a pipeline schedule.
 
     Args:
         schedule_name_or_id: The name or ID of the schedule to update.
         cron_expression: The cron expression to update the schedule with.
-        activate: Activate a pipeline schedule.
-        deactivate: Deactivate a pipeline schedule.
     """
     options = [
         cron_expression,
-        activate,
-        deactivate,
     ]
 
     if not any(options):
         cli_utils.declare("No schedule update requested.")
         return
 
-    if activate and deactivate:
-        cli_utils.declare(
-            "You can not both activate and deactivate at the same time."
-        )
-        return
-
-    if activate:
-        is_active = True
-    elif deactivate:
-        is_active = False
-    else:
-        is_active = None
-
     try:
         Client().update_schedule(
             name_id_or_prefix=schedule_name_or_id,
             cron_expression=cron_expression,
-            active=is_active,
         )
     except Exception as e:
         cli_utils.exception(e)
     else:
         cli_utils.declare(f"Updated schedule '{schedule_name_or_id}'.")
+
+
+@schedule.command("activate", help="Activate a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+def activate_schedule(schedule_name_or_id: str) -> None:
+    """Activate a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+    """
+
+    try:
+        Client().update_schedule(name_id_or_prefix=schedule_name_or_id, active=True)
+    except KeyError as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Activated schedule '{schedule_name_or_id}'.")
+
+
+@schedule.command("deactivate", help="Deactivate a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+def deactivate_schedule(schedule_name_or_id: str) -> None:
+    """Activate a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+    """
+
+    try:
+        Client().update_schedule(name_id_or_prefix=schedule_name_or_id, active=False)
+    except KeyError as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Deactivated schedule '{schedule_name_or_id}'.")
 
 
 @schedule.command("delete", help="Delete a pipeline schedule.")
