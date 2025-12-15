@@ -317,6 +317,9 @@ class StepLauncher:
 
                 start_time = time.time()
                 with logs_context:
+                    logger.info(
+                        "Preparing to run step `%s`.", self._invocation_id
+                    )
                     try:
                         self._run_step(
                             pipeline_run=pipeline_run,
