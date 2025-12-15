@@ -1,6 +1,10 @@
 # Table of contents
 
-* [Overview](README.md)
+* [Comparison OSS vs Pro](README.md)
+* [Services Overview](services.md)
+  * [Control Plane](control-plane.md)
+  * [Workspace Server](workspace-server.md)
+  * [Workload Managers](workload-managers.md)
 
 ## Deployments
 
@@ -11,13 +15,6 @@
   * [AWS ECS](hybrid-deployment-ecs.md)
 * [Self-hosted Deployment](self-hosted-deployment.md)
   * [Kubernetes with Helm](self-hosted-deployment-helm.md)
-
-## Services
-
-* [Services Overview](services.md)
-  * [Control Plane](control-plane.md)
-  * [Workspace Server](workspace-server.md)
-  * [Workload Managers](workload-managers.md)
 
 ## Core Concepts
 
