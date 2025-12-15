@@ -217,12 +217,16 @@ def test_disabling_step_logs(clean_client: "Client", one_step_pipeline):
 
 def _assert_step_logs_enabled(pipe, step_name="step_with_logs"):
     """Assert that step logs were enabled in the last run."""
-    assert _get_first_step_of_last_run(pipe, step_name=step_name).logs
+    assert _get_first_step_of_last_run(
+        pipe, step_name=step_name
+    ).log_collection
 
 
 def _assert_step_logs_disabled(pipe, step_name="step_with_logs"):
     """Assert that step logs were disabled in the last run."""
-    assert not _get_first_step_of_last_run(pipe, step_name=step_name).logs
+    assert not _get_first_step_of_last_run(
+        pipe, step_name=step_name
+    ).log_collection
 
 
 def _get_first_step_of_last_run(pipe, step_name) -> "StepRunResponse":

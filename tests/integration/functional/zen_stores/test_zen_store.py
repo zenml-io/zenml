@@ -3237,12 +3237,14 @@ def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
 
 def test_logs_are_recorded_properly(clean_client):
     """Tests if logs are stored in the artifact store."""
+    from zenml.utils.logging_utils import search_logs_by_source
+
     client = Client()
 
     run_context = PipelineRunContext(1)
     with run_context:
         steps = run_context.steps
-        step1_logs = steps[0].logs
+        step1_logs = search_logs_by_source(steps[0].log_collection, "step")
         client.active_stack.log_store.flush(blocking=True)
         step1_logs_content = client.active_stack.log_store.fetch(
             step1_logs, limit=100
@@ -3254,15 +3256,17 @@ def test_logs_are_recorded_properly(clean_client):
 
 def test_logs_dont_exist_when_disabled(clean_client):
     """Tests that logs don't exist when disabled."""
+    from zenml.utils.logging_utils import search_logs_by_source
+
     client = Client()
     store = client.zen_store
 
     with PipelineRunContext(num_runs=2, enable_step_logs=False):
         steps = store.list_run_steps(StepRunFilter())
-        step1_logs = steps[0].logs
-        step2_logs = steps[1].logs
-        assert step1_logs is None
-        assert step2_logs is None
+        step1_logs = steps[0].log_collection
+        step2_logs = steps[1].log_collection
+        assert search_logs_by_source(step1_logs, "step") is None
+        assert search_logs_by_source(step2_logs, "step") is None
 
 
 # .--------------------.
