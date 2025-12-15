@@ -38,6 +38,7 @@ config:
   layout: elk
   theme: mc
 ---
+
 flowchart TB
   U["CLI / curl / web UI"] --> D["ZenML Deployment<br/>(doc_analyzer)"]
 
