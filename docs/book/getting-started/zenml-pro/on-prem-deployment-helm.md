@@ -65,6 +65,13 @@ All components run entirely within your Kubernetes cluster and infrastructure:
      🔒 Completely Isolated - No External Access
 ```
 
+For a comprehensive look at each main component, see:
+
+- [ZenML Pro Control Plane Service](../zenml-pro/self-hosted.md) – details for the central authentication, dashboard, and RBAC management service.
+- [ZenML Pro Workspace Server Service](../zenml-pro/hybrid-deployment-helm.md) – details and configuration for individual workspace environments.
+
+These pages offer full documentation, architecture, and details for each core ZenML Pro service.
+
 ## Prerequisites
 
 Before starting, you need:
@@ -86,28 +93,31 @@ Before starting, you need:
 - Helm (3.0+)
 - Access to pull ZenML Pro images from private registries (credentials from ZenML)
 
-## Step 1: Prepare Offline Artifacts
+## (Optional) Prepare Software Bundle for Air-Gapped Environment
 
-This step is performed on a machine with internet access, then transferred to your air-gapped environment.
+If your network is fully air-gapped, you must prepare all required ZenML Pro deployment artifacts (container images, Helm charts, and a manifest file) ahead of time on a machine that has internet access, and transfer them into the secured environment.
 
-### 1.1 Pull Container Images
+**Overview of the steps:**
 
-On a machine with internet access and access to the ZenML Pro container registries:
+1. **Pull all required container images** from ZenML Pro registries (AWS ECR, GCP Artifact Registry, Docker Hub).
+2. **Download Helm charts** for ZenML Pro Control Plane and Workspace Server.
+3. **Create a bundle** of all images and charts, including a manifest file documenting versions and sources.
+4. **Transfer the bundle** into your air-gapped environment using approved procedures.
+5. **Load the images** into your internal registry for use by the cluster.
 
-1. Authenticate to the ZenML Pro container registries (AWS ECR or GCP Artifact Registry)
-   - Use credentials provided by ZenML Support
-   - Follow registry-specific authentication procedures
+### Step 1: Prepare Images and Charts (on Internet-Connected Machine)
 
-2. Pull all required images:
-   - **Pro Control Plane images:**
+1. **Authenticate** to the ZenML Pro registries using credentials provided by ZenML.
+2. **Pull the required images:**
+   - Control Plane:
      - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version>`
      - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<version>`
-   - **Workspace Server image:**
+   - Workspace Server:
      - `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>`
-   - **Client image (for pipelines):**
+   - Client (pipelines, agents, etc.):
      - `zenmldocker/zenml:<version>`
 
-   Example pull commands:
+   Example commands:
    ```bash
    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version>
    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<version>
@@ -115,15 +125,12 @@ On a machine with internet access and access to the ZenML Pro container registri
    docker pull zenmldocker/zenml:<version>
    ```
 
-3. Tag images with your internal registry:
+3. **(Optional)** Tag images for your internal registry, e.g.:
    ```
-   internal-registry.mycompany.com/zenml/zenml-pro-api:version
-   internal-registry.mycompany.com/zenml/zenml-pro-dashboard:version
-   internal-registry.mycompany.com/zenml/zenml-pro-server:version
-   internal-registry.mycompany.com/zenml/zenml:version
+   docker tag 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version> internal-registry.mycompany.com/zenml/zenml-pro-api:<version>
    ```
 
-4. Save images to tar files for transfer:
+4. **Save all images as tar files:**
    ```bash
    docker save 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<version> > zenml-pro-api.tar
    docker save 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<version> > zenml-pro-dashboard.tar
@@ -131,48 +138,42 @@ On a machine with internet access and access to the ZenML Pro container registri
    docker save zenmldocker/zenml:<version> > zenml-client.tar
    ```
 
-### 1.2 Download Helm Charts
-
-On the same machine with internet access:
-
-1. Pull the Helm charts:
+5. **Download Helm charts:**
    - ZenML Pro Control Plane: `oci://public.ecr.aws/zenml/zenml-pro`
    - ZenML Workspace Server: `oci://public.ecr.aws/zenml/zenml`
+   
+   Save as `.tgz` files, e.g.:
+   ```bash
+   helm pull oci://public.ecr.aws/zenml/zenml-pro --version <version> --destination ./charts
+   helm pull oci://public.ecr.aws/zenml/zenml --version <version> --destination ./charts
+   ```
 
-2. Save charts as `.tgz` files for transfer
+6. **Organize your offline bundle directory:**
 
-### 1.3 Create Offline Bundle
+   ```
+   zenml-air-gapped-bundle/
+   ├── images/
+   │   ├── zenml-pro-api.tar
+   │   ├── zenml-pro-dashboard.tar
+   │   ├── zenml-pro-server.tar
+   │   └── zenml-client.tar
+   ├── charts/
+   │   ├── zenml-pro-<version>.tgz
+   │   └── zenml-<version>.tgz
+   └── manifest.txt
+   ```
 
-Create a bundle containing all artifacts:
+   The `manifest.txt` should include:
+   - Image names and versions
+   - Chart names and versions
+   - Date of export
+   - Intended internal registry URLs
 
-```
-zenml-air-gapped-bundle/
-├── images/
-│   ├── zenml-pro-api.tar
-│   ├── zenml-pro-dashboard.tar
-│   ├── zenml-pro-server.tar
-│   └── zenml-client.tar
-├── charts/
-│   ├── zenml-pro-<version>.tgz
-│   └── zenml-<version>.tgz
-└── manifest.txt
-```
+### Step 2: Transfer Bundle to Air-Gapped Environment
 
-The manifest should document:
-- All image names and versions
-- Helm chart versions
-- Date of bundle creation
-- Required internal registry URLs
+Move the `zenml-air-gapped-bundle/` into your secure environment using only methods permitted by your security policy (e.g., encrypted USB drive, air-gap appliance, or secure internal transfer).
 
-## Step 2: Transfer to Air-gapped Environment
-
-Transfer the bundle to your air-gapped environment using approved methods:
-- Physical media (USB drive, external drive)
-- Approved secure file transfer system
-- Air-gap transfer appliances
-- Any method compliant with your security policies
-
-## Step 3: Load Images into Internal Registry
+### Step 3: Load Images to Internal Registry (inside air-gapped network)
 
 In your air-gapped environment, load the images:
 
@@ -198,7 +199,9 @@ In your air-gapped environment, load the images:
    docker push internal-registry.mycompany.com/zenml/zenml:version
    ```
 
-## Step 4: Create Kubernetes Namespace and Secrets
+You are now ready to proceed with an air-gapped Helm-based deployment using your internal registry and the downloaded Helm chart tarballs.
+
+## Step 1: Create Kubernetes Namespace and Secrets
 
 ```bash
 # Create namespace for ZenML Pro
@@ -216,7 +219,7 @@ kubectl -n zenml-pro create secret tls zenml-tls \
   --key=/path/to/tls.key
 ```
 
-## Step 5: Set Up Databases
+## Step 2: Set Up Databases
 
 Create database instances (within your air-gapped network):
 
@@ -235,50 +238,55 @@ Create database instances (within your air-gapped network):
 - Control Plane DB (PostgreSQL or MySQL): `postgresql://user:password@db-host:5432/zenml_pro` or `mysql://user:password@db-host:3306/zenml_pro`
 - Workspace DB (MySQL only): `mysql://user:password@db-host:3306/zenml_workspace`
 
-## Step 6: Configure Helm Values for Control Plane
+## Step 3: Configure Helm Values for Control Plane
 
-Create a file `zenml-pro-values.yaml`:
+To learn more about the ZenML Pro control plane, see [Control Plane Architecture and Setup](control-plane.md).
+
+The ZenML Pro Helm chart for on-prem deployments exposes many configurable values. For the full list and documentation of each field, consult the [ZenML Pro Helm chart reference](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro).
+
+### Minimum Helm values required for a control plane deployment
+
+At a minimum, you must set:
+
+- The image repositories and tags for API and Dashboard (pointing to your internal/private registry).
+- The `serverURL` and ingress hostname (must match your TLS cert and DNS).
+- The external database connection for the control plane.
+- Admin password for the control plane.
+
+Below is an example `zenml-pro-values.yaml`:
 
 ```yaml
-# ZenML Pro Control Plane Values
-
 zenml:
-  # Image configuration - use your internal registry
   image:
     api:
       repository: internal-registry.mycompany.com/zenml/zenml-pro-api
-      tag: "<ZENML_PRO_VERSION>"  # e.g., "0.10.24"
+      tag: "<ZENML_PRO_VERSION>"
     dashboard:
       repository: internal-registry.mycompany.com/zenml/zenml-pro-dashboard
-      tag: "<ZENML_PRO_VERSION>"  # e.g., "0.10.24"
+      tag: "<ZENML_PRO_VERSION>"
 
-  # Server URL - use your internal domain
   serverURL: https://zenml-pro.internal.mycompany.com
 
-  # Database for Control Plane
   database:
     external:
-      type: postgresql
-      host: postgres.internal.mycompany.com
-      port: 5432
-      username: zenml_pro_user
-      password: <secure-password>
+      type: mysql
+      host: <db-host>
+      port: 3306
+      username: <db-user>
+      password: <db-password>
       database: zenml_pro
 
-  # Ingress configuration
   ingress:
     enabled: true
-    className: nginx  # or your ingress controller
+    className: nginx
     host: zenml-pro.internal.mycompany.com
     tls:
       enabled: true
       secretName: zenml-tls
 
-  # Authentication (no external IdP needed for air-gap)
   auth:
     password: <admin-password>
 
-  # Resource constraints
   resources:
     requests:
       cpu: 500m
@@ -287,18 +295,18 @@ zenml:
       cpu: 2000m
       memory: 4Gi
 
-# Image pull secrets for internal registry
-imagePullSecrets:
-  - name: internal-registry-secret
-
-# Pod security context
-podSecurityContext:
-  fsGroup: 1000
-  runAsNonRoot: true
-  runAsUser: 1000
+  # Add the secret if you use an internal registry
+  imagePullSecrets:
+    - name: internal-registry-secret
 ```
 
-## Step 7: Deploy ZenML Pro Control Plane
+> Get the full list of available configurations and advanced options from the [Helm chart documentation](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro) or by running `helm show values zenml-pro/zenml-pro`.
+
+**Note:** 
+- For high-availability, monitoring, backups, and advanced security options, see [the full Helm chart documentation](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro).
+- For breaking changes, new features, and release notes, always check the [ZenML Pro changelog](https://docs.zenml.io/changelog).
+
+## Step 3: Deploy ZenML Pro Control Plane
 
 Using the local Helm chart:
 
@@ -318,7 +326,7 @@ kubectl -n zenml-pro get ingress
 
 Wait for all pods to be running and healthy.
 
-## Step 8: Enroll Workspace in Control Plane
+## Step 4: Enroll Workspace in Control Plane
 
 Before deploying the workspace server, you must enroll it in the control plane to obtain the necessary enrollment credentials.
 
@@ -332,17 +340,328 @@ Before deploying the workspace server, you must enroll it in the control plane t
    - Note the Organization ID and Name
 
 3. **Enroll the Workspace**
-   - Use the enrollment script from the [Self-hosted Deployment Guide](self-hosted.md#enrolling-a-workspace) or
-   - Create a workspace through the dashboard and obtain:
-     - Enrollment Key
-     - Organization ID
-     - Organization Name
-     - Workspace ID
-     - Workspace Name
+   
+   You can either use the enrollment script below or create a workspace through the dashboard.
+
+   **Option A: Use the Enrollment Script**
+   
+   Run the `enroll-workspace.py` script below. It will collect all the necessary data, create a workspace placeholder in the organization, and generate a Helm `values.yaml` file template.
+
+   <details>
+   <summary>Click to expand enrollment script</summary>
+
+   Save this as `enroll-workspace.py` and run it with `python enroll-workspace.py`:
+
+   ```python
+   import getpass
+   import sys
+   import uuid
+   from typing import List, Optional, Tuple
+
+   import requests
+
+   DEFAULT_API_ROOT_PATH = "/api/v1"
+   DEFAULT_REPOSITORY = (
+       "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server"
+   )
+
+   # Configuration
+   LOGIN_ENDPOINT = "/api/v1/auth/login"
+   WORKSPACE_ENDPOINT = "/api/v1/workspaces"
+   ORGANIZATION_ENDPOINT = "/api/v1/organizations"
+
+   def login(base_url: str, username: str, password: str) -> str:
+       """Log in and return the authentication token."""
+       headers = {
+           "accept": "application/json",
+           "Content-Type": "application/x-www-form-urlencoded",
+       }
+       data = {
+           "grant_type": "",
+           "username": username,
+           "password": password,
+           "client_id": "",
+           "client_secret": "",
+           "device_code": "",
+           "audience": "",
+       }
+       login_url = f"{base_url}{LOGIN_ENDPOINT}"
+       response = requests.post(login_url, headers=headers, data=data)
+       if response.status_code == 200:
+           return response.json().get("access_token")
+       else:
+           print(f"Login failed. Status code: {response.status_code}")
+           print(f"Response: {response.text}")
+           sys.exit(1)
+
+   def workspace_exists(
+       token: str,
+       base_url: str,
+       org_id: str,
+       workspace_name: Optional[str] = None,
+   ) -> Optional[str]:
+       """Get a workspace with a given name or url."""
+       workspace_url = f"{base_url}{WORKSPACE_ENDPOINT}"
+       headers = {
+           "accept": "application/json",
+           "Authorization": f"Bearer {token}",
+       }
+       params = {"organization_id": org_id}
+       if workspace_name:
+           params["workspace_name"] = workspace_name
+       response = requests.get(workspace_url, params=params, headers=headers)
+       if response.status_code == 200:
+           json_response = response.json()
+           if len(json_response) > 0:
+               return json_response[0]["id"]
+       else:
+           print(f"Failed to fetch workspaces for organization: {org_id}")
+           print(f"Status code: {response.status_code}")
+           print(f"Response: {response.text}")
+           sys.exit(1)
+       return None
+
+   def list_organizations(token: str, base_url: str) -> List[Tuple[str, str]]:
+       """Get a list of organizations."""
+       organization_url = f"{base_url}{ORGANIZATION_ENDPOINT}"
+       headers = {
+           "accept": "application/json",
+           "Authorization": f"Bearer {token}",
+       }
+       response = requests.get(organization_url, headers=headers)
+       if response.status_code == 200:
+           json_response = response.json()
+           return [(org["id"], org["name"]) for org in json_response]
+       else:
+           print("Failed to fetch organizations")
+           print(f"Status code: {response.status_code}")
+           print(f"Response: {response.text}")
+           sys.exit(1)
+
+   def enroll_workspace(
+       token: str,
+       base_url: str,
+       org_id: str,
+       workspace_name: str,
+       delete_existing: Optional[str] = None,
+   ) -> dict:
+       """Enroll a workspace."""
+       workspace_url = f"{base_url}{WORKSPACE_ENDPOINT}"
+       headers = {
+           "accept": "application/json",
+           "Authorization": f"Bearer {token}",
+       }
+       if delete_existing:
+           response = requests.delete(
+               f"{workspace_url}/{delete_existing}",
+               headers=headers,
+           )
+           if response.status_code == 200:
+               print(f"Workspace deleted successfully: {delete_existing}")
+           else:
+               print(f"Failed to delete workspace: {delete_existing}")
+               print(f"Status code: {response.status_code}")
+               print(f"Response: {response.text}")
+               sys.exit(1)
+       response = requests.post(
+           workspace_url,
+           json={"name": workspace_name, "organization_id": org_id},
+           params={"enroll": True},
+           headers=headers,
+       )
+       if response.status_code == 200:
+           workspace = response.json()
+           workspace_id = workspace.get("id")
+           print(f"Workspace enrolled successfully: {workspace_name} [{workspace_id}]")
+           return workspace
+       else:
+           print(f"Failed to enroll workspace: {workspace_name}")
+           print(f"Status code: {response.status_code}")
+           print(f"Response: {response.text}")
+           sys.exit(1)
+
+   def prompt(
+       prompt_text: str,
+       default_value: Optional[str] = None,
+       password: bool = False,
+   ) -> str:
+       """Prompt the user with a default value."""
+       while True:
+           if default_value:
+               text = f"{prompt_text} [{default_value}]: "
+           else:
+               text = f"{prompt_text}: "
+           if password:
+               user_input = getpass.getpass(text)
+           else:
+               user_input = input(text)
+           if user_input.strip() == "":
+               if default_value:
+                   return default_value
+               print("Please provide a value.")
+               continue
+           return user_input
+
+   def get_workspace_config(
+       zenml_pro_url: str,
+       organization_id: str,
+       organization_name: str,
+       workspace_id: str,
+       workspace_name: str,
+       enrollment_key: str,
+       repository: str = DEFAULT_REPOSITORY,
+   ) -> str:
+       """Get the workspace configuration."""
+       encryption_key = f"{uuid.uuid4().hex}{uuid.uuid4().hex}"
+       short_workspace_id = workspace_id.replace("-", "")
+       return f"""
+   zenml:
+       analyticsOptIn: false
+       threadPoolSize: 20
+       database:
+           maxOverflow: "-1"
+           poolSize: "10"
+           # TODO: use the actual database host and credentials
+           url: mysql://root:password@mysql.example.com:3306/zenml{short_workspace_id}
+       image:
+           # TODO: use your actual image repository (omit the tag, which is
+           # assumed to be the same as the helm chart version)
+           repository: {repository}
+       # TODO: use your actual server domain here
+       serverURL: https://zenml.{short_workspace_id}.example.com
+       ingress:
+           enabled: true
+           # TODO: use your actual domain here
+           host: zenml.{short_workspace_id}.example.com
+       pro:
+           apiURL: {zenml_pro_url}/api/v1
+           dashboardURL: {zenml_pro_url}
+           enabled: true
+           enrollmentKey: {enrollment_key}
+           organizationID: {organization_id}
+           organizationName: {organization_name}
+           workspaceID: {workspace_id}
+           workspaceName: {workspace_name}
+       replicaCount: 1
+       secretsStore:
+           sql:
+               encryptionKey: {encryption_key}
+           type: sql
+
+   # TODO: these are the minimum resources required for the ZenML server.
+   resources:
+       limits:
+           memory: 800Mi
+       requests:
+           cpu: 100m
+           memory: 450Mi
+   """
+
+   def main() -> None:
+       zenml_pro_url = prompt(
+           "What is the URL of your ZenML Pro instance? (e.g. https://zenml-pro.mydomain.com)",
+       )
+       username = prompt("Enter the ZenML Pro admin account username", default_value="admin")
+       password = prompt("Enter the ZenML Pro admin account password", password=True)
+       token = login(zenml_pro_url, username, password)
+       print("Login successful.")
+
+       organizations = list_organizations(token=token, base_url=zenml_pro_url)
+       if len(organizations) == 0:
+           print("No organizations found. Please create an organization first.")
+           sys.exit(1)
+       elif len(organizations) == 1:
+           organization_id, organization_name = organizations[0]
+           confirm = prompt(
+               f"The following organization was found: {organization_name} [{organization_id}]. "
+               f"Use this organization? (y/n)",
+               default_value="n",
+           )
+           if confirm.lower() != "y":
+               print("Exiting.")
+               sys.exit(0)
+       else:
+           while True:
+               orgs_str = "\n".join([f"{name} [{id}]" for id, name in organizations])
+               print(f"The following organizations are available:\n{orgs_str}")
+               organization_id = prompt("Which organization ID should the workspace be enrolled in?")
+               if organization_id in [id for id, _ in organizations]:
+                   break
+               print("Invalid organization ID. Please try again.")
+
+       workspace_name = f"zenml-{str(uuid.uuid4())[:8]}"
+       workspace_name = prompt(
+           "Choose a name for the workspace (only lowercase letters, numbers, and hyphens)",
+           default_value=workspace_name,
+       )
+       existing_workspace_id = workspace_exists(
+           token=token, base_url=zenml_pro_url, org_id=organization_id, workspace_name=workspace_name
+       )
+       if existing_workspace_id:
+           confirm = prompt(
+               f"A workspace with name {workspace_name} already exists. Overwrite? (y/n)",
+               default_value="n",
+           )
+           if confirm.lower() != "y":
+               print("Exiting.")
+               sys.exit(0)
+
+       workspace = enroll_workspace(
+           token=token,
+           base_url=zenml_pro_url,
+           org_id=organization_id,
+           workspace_name=workspace_name,
+           delete_existing=existing_workspace_id,
+       )
+       workspace_id = workspace.get("id")
+       organization_name = workspace.get("organization").get("name")
+       enrollment_key = workspace.get("enrollment_key")
+
+       workspace_config = get_workspace_config(
+           zenml_pro_url=zenml_pro_url,
+           workspace_name=workspace_name,
+           workspace_id=workspace_id,
+           organization_id=organization_id,
+           organization_name=organization_name,
+           enrollment_key=enrollment_key,
+       )
+       values_file = f"zenml-{workspace_name}-values.yaml"
+       with open(values_file, "w") as file:
+           file.write(workspace_config)
+
+       print(f"""
+   The workspace was enrolled successfully. It can be accessed at:
+   {zenml_pro_url}/workspaces/{workspace_name}
+
+   The workspace server Helm values were written to: {values_file}
+   Please note the TODOs in the file and adjust them to your needs.
+
+   To install the workspace, run:
+       helm --namespace zenml-pro-{workspace_name} upgrade --install --create-namespace \\
+           zenml oci://public.ecr.aws/zenml/zenml --version <version> \\
+           --values {values_file}
+   """)
+
+   if __name__ == "__main__":
+       main()
+   ```
+
+   </details>
+
+   **Option B: Create via Dashboard**
+   
+   Create a workspace through the dashboard and obtain:
+   - Enrollment Key
+   - Organization ID
+   - Organization Name
+   - Workspace ID
+   - Workspace Name
 
 4. **Save these values** - you'll need them in the next step
 
-## Step 9: Configure Helm Values for Workspace Server
+## Step 5: Configure Helm Values for Workspace Server
+
+The ZenML workspace server uses the open-source ZenML Helm chart. For the full list of configurable values and documentation, see the [ZenML Helm chart on ArtifactHub](https://artifacthub.io/packages/helm/zenml/zenml).
 
 Create a file `zenml-workspace-values.yaml`:
 
@@ -407,7 +726,7 @@ podSecurityContext:
   runAsUser: 1000
 ```
 
-## Step 10: Deploy ZenML Workspace Server
+## Step 6: Deploy ZenML Workspace Server
 
 ```bash
 # Create namespace
@@ -427,13 +746,13 @@ kubectl -n zenml-workspace get svc
 kubectl -n zenml-workspace get ingress
 ```
 
-## Step 11: Configure Internal DNS
+## Step 7: Configure Internal DNS
 
 Update your internal DNS to resolve:
 - `zenml-pro.internal.mycompany.com` → Your ALB/Ingress IP
 - `zenml-workspace.internal.mycompany.com` → Your ALB/Ingress IP
 
-## Step 12: Install Internal CA Certificate
+## Step 8: Install Internal CA Certificate
 
 On all client machines that will access ZenML:
 
@@ -450,7 +769,7 @@ On all client machines that will access ZenML:
 
 4. For containerized pipelines, include the CA certificate in your custom ZenML image
 
-## Step 13: Verify the Deployment
+## Step 9: Verify the Deployment
 
 1. **Check Control Plane Health**
    ```bash
@@ -472,7 +791,7 @@ On all client machines that will access ZenML:
    kubectl -n zenml-workspace logs deployment/zenml
    ```
 
-## Step 14: (Optional) Enable Snapshot Support / Workload Manager
+## Step 10: (Optional) Enable Snapshot Support / Workload Manager
 
 Pipeline snapshots (running pipelines from the dashboard) require additional configuration:
 
@@ -566,7 +885,7 @@ helm upgrade zenml ./zenml-<version>.tgz \
   --values zenml-workspace-values.yaml
 ```
 
-## Step 15: Create Users and Organizations
+## Step 11: Create Users and Organizations
 
 In the ZenML Pro dashboard:
 
