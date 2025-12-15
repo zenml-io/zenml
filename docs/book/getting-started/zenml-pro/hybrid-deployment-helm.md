@@ -491,7 +491,8 @@ helm upgrade zenml oci://public.ecr.aws/zenml/zenml \
 
 1. Check available versions:
 
-For OCI charts, you can check available versions by attempting to pull different versions, or contact ZenML Support for the latest version information.
+For the latest available ZenML Helm chart versions, visit: https://artifacthub.io/packages/helm/zenml/zenml
+
 
 2. Update values file with new version
 3. Upgrade:
@@ -510,28 +511,6 @@ helm upgrade zenml zenml/zenml \
 ```bash
 kubectl -n zenml-hybrid describe pod zenml-xxxxx
 kubectl -n zenml-hybrid logs zenml-xxxxx
-```
-
-### Database connection errors
-
-```bash
-# Test database connectivity from pod
-kubectl -n zenml-hybrid exec -it zenml-xxxxx -- \
-  mysql -h <db-host> -u <user> -p<password> -e "SELECT 1"
-```
-
-### Control plane connection issues
-
-```bash
-# Check logs for auth errors
-kubectl -n zenml-hybrid logs zenml-xxxxx | grep -i "oauth\|auth\|control"
-```
-
-### Ingress not working
-
-```bash
-kubectl -n zenml-hybrid get ingress
-kubectl -n zenml-hybrid describe ingress zenml
 ```
 
 ## Uninstalling
