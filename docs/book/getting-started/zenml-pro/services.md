@@ -13,9 +13,9 @@ ZenML Pro has three main services, each with distinct responsibilities:
 
 | Service | Purpose | Deployment Location |
 |---------|---------|---------------------|
-| [**Workspace Server**](workspace-server.md) | Stores metadata, serves APIs, manages entities | Your infrastructure (Hybrid/Self-hosted) or ZenML (SaaS) |
-| [**Control Plane**](control-plane.md) | Authentication, RBAC, organization management | ZenML infrastructure (SaaS/Hybrid) or yours (Self-hosted) |
-| [**Workload Manager**](workload-managers.md) | Executes pipelines from UI, manages runner pods | Your infrastructure |
+| [**Workspace Server**](workspace-server.md) | Stores metadata, serves APIs, manages entities | Your infrastructure (Hybrid/Self-hosted) or ZenML infrastructure (SaaS) |
+| [**Control Plane**](control-plane.md) | Authentication, RBAC, organization management | Your infrastructure (Self-hosted) or ZenML infrastructure (SaaS/Hybrid) |
+| [**Workload Manager**](workload-managers.md) | Executes pipelines from UI, manages runner pods | Your infrastructure (Hybrid/Self-hosted) or ZenML infrastructure (SaaS) |
 
 ## Pipeline Execution Data Flow (remote docker runtime)
 
