@@ -185,6 +185,9 @@ class DynamicPipelineRunner:
     def run_pipeline(self) -> None:
         """Run the pipeline."""
         if self._run:
+            if self._run.status.is_finished:
+                logger.info("Run `%s` is already finished.", str(self._run.id))
+                return
             if self._run.orchestrator_run_id:
                 logger.info("Continuing existing run `%s`.", str(self._run.id))
                 run = self._run
@@ -360,9 +363,9 @@ class DynamicPipelineRunner:
         )
 
         should_retry = _should_retry_locally(
-            compiled_step,
-            self._snapshot.pipeline_configuration.docker_settings,
-            self._orchestrator,
+            step=compiled_step,
+            pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+            orchestrator=self._orchestrator,
         )
 
         def _launch_step_and_load_outputs(
@@ -399,6 +402,7 @@ class DynamicPipelineRunner:
             runtime = get_step_runtime(
                 step_config=compiled_step.config,
                 pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+                orchestrator=self._orchestrator,
             )
             if (
                 runtime == StepRuntime.INLINE
@@ -425,7 +429,7 @@ class DynamicPipelineRunner:
             if step_run.status == ExecutionStatus.RUNNING:
                 logger.info(
                     "Restarting the monitoring of existing step `%s` "
-                    "(step run ID: %s). Remaining retries: %d",
+                    "(ID: %s). Remaining retries: %d",
                     step_run.name,
                     step_run.id,
                     remaining_retries,
