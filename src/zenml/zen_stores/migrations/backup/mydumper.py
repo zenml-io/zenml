@@ -199,6 +199,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             f"Starting mydumper backup of database `{self.url.database}` "
             f"to `{self.backup_dir}`"
         )
+        logger.debug(f"mydumper command: {cmd}")
 
         process = subprocess.Popen(
             cmd,
@@ -267,6 +268,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             f"Starting myloader restore of database `{self.url.database}` "
             f"from `{self.backup_dir}`"
         )
+        logger.debug(f"myloader command: {cmd}")
 
         process = subprocess.Popen(
             cmd,
