@@ -50,7 +50,7 @@ You can run a single step directly:
 model, accuracy = train_classifier(X_train=X_train, y_train=y_train)
 ```
 
-This creates an [unlisted pipeline run](https://docs.zenml.io/user-guides/best-practices/keep-your-dashboard-server-clean#unlisted-runs) with just that step. If you want to bypass ZenML completely and run the underlying function directly:
+This creates a pipeline run with just that step. If you want to bypass ZenML completely and run the underlying function directly:
 
 ```python
 model, accuracy = train_classifier.entrypoint(X_train=X_train, y_train=y_train)
