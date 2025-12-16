@@ -319,7 +319,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 step_config = snapshot.step_configurations[component_name]
                 step_settings = self.get_settings(step_config)
 
-                if step_settings:
+                if step_settings and isinstance(step_settings, AzureMLOrchestratorSettings):
                     try:
                         step_compute = create_or_get_compute(
                             ml_client,
