@@ -16,8 +16,8 @@
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Dict,
     Generator,
     Optional,
     cast,
@@ -25,7 +25,7 @@ from typing import (
 
 import pymysql
 from sqlalchemy import text
-from sqlalchemy.engine import URL, Engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import (
     OperationalError,
 )
@@ -35,23 +35,28 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+
 
 class BaseDatabaseBackupEngine(ABC):
     """Base class for database backup engines."""
 
     def __init__(
         self,
-        url: URL,
-        connect_args: Dict[str, Any],
-        engine_args: Dict[str, Any],
+        config: "SqlZenStoreConfiguration",
+        location: Optional[str] = None,
     ) -> None:
         """Initialize the backup engine.
 
         Args:
-            url: The URL of the database to backup.
-            connect_args: The connect arguments for the SQLAlchemy engine.
-            engine_args: The engine arguments for the SQLAlchemy engine.
+            config: The configuration of the store.
+            location: The custom location to store the backup.
         """
+        self.config = config
+        self._backup_location = location
+        url, connect_args, engine_args = config.get_sqlalchemy_config()
+
         self.url = url
         self.connect_args = connect_args
         self.engine_args = engine_args
@@ -213,13 +218,18 @@ class BaseDatabaseBackupEngine(ABC):
         """Delete the database backup."""
 
     @property
-    @abstractmethod
     def backup_location(self) -> str:
         """The location where the database is backed up to.
 
         Returns:
             The location where the database is backed up to.
+
+        Raises:
+            RuntimeError: If the backup location is not set.
         """
+        if self._backup_location is None:
+            raise RuntimeError("The backup location is not set.")
+        return self._backup_location
 
     @contextmanager
     def backup_database_context(
@@ -240,7 +250,7 @@ class BaseDatabaseBackupEngine(ABC):
         """
         logger.info(
             f"Backing up the database before migration to "
-            f"{self.backup_location}."
+            f"`{self.backup_location}`."
         )
 
         try:
@@ -251,7 +261,7 @@ class BaseDatabaseBackupEngine(ABC):
             ) from e
 
         logger.info(
-            f"Database successfully backed up to {self.backup_location}. If "
+            f"Database successfully backed up to `{self.backup_location}`. If "
             "something goes wrong with the upgrade, ZenML will attempt to "
             "restore the database from this backup automatically."
         )
@@ -260,20 +270,20 @@ class BaseDatabaseBackupEngine(ABC):
         except Exception:
             logger.info(
                 "The database operation failed. Attempting to restore the "
-                f"database from {self.backup_location}."
+                f"database from `{self.backup_location}`."
             )
             try:
                 self.restore_database(cleanup=True)
             except Exception:
                 logger.exception(
                     f"Failed to restore the database from "
-                    f"{self.backup_location}. You might need to restore the "
+                    f"`{self.backup_location}`. You might need to restore the "
                     "database manually."
                 )
             else:
                 logger.info(
                     "The database was successfully restored from "
-                    f"{self.backup_location}."
+                    f"`{self.backup_location}`."
                 )
 
             raise

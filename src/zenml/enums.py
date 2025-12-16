@@ -476,6 +476,8 @@ class DatabaseBackupStrategy(StrEnum):
     DATABASE = "database"
     # Use mydumper/myloader for parallel backup/restore (MySQL only)
     MYDUMPER = "mydumper"
+    # Use a custom backup engine
+    CUSTOM = "custom"
 
 
 class PluginType(StrEnum):
