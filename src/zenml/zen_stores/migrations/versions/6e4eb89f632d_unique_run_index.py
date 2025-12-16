@@ -94,6 +94,13 @@ def upgrade() -> None:
             if batch:
                 connection.execute(update_statement, batch)
 
+    # Set run_count to 0 for pipelines without any runs
+    connection.execute(
+        sa.update(pipeline_table)
+        .where(pipeline_table.c.run_count.is_(None))
+        .values(run_count=0)
+    )
+
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.alter_column(
             "index", existing_type=sa.Integer(), nullable=False
