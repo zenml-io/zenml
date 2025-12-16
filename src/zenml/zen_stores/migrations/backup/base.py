@@ -247,8 +247,7 @@ class BaseDatabaseBackupEngine(ABC):
             self.backup_database(overwrite=True)
         except Exception as e:
             raise RuntimeError(
-                f"Failed to backup the database: {str(e)}. "
-                "Please check the logs for more details. "
+                f"Failed to backup the database: {str(e)}."
             ) from e
 
         logger.info(
@@ -259,7 +258,7 @@ class BaseDatabaseBackupEngine(ABC):
         try:
             yield
         except Exception:
-            logger.exception(
+            logger.info(
                 "Attempting to restore the database from "
                 f"{self.backup_location}."
             )
@@ -274,8 +273,7 @@ class BaseDatabaseBackupEngine(ABC):
             else:
                 logger.info(
                     "The database was successfully restored from "
-                    f"{self.backup_location}. Please check the logs for more "
-                    "details."
+                    f"{self.backup_location}."
                 )
 
             raise
