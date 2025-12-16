@@ -436,15 +436,28 @@ zenml:
     #            `mydumperCompress`, `mydumperExtraArgs`, `myloaderThreads`,
     #            and `myloaderExtraArgs` options can be used to configure the
     #            backup and restore processes.
+    # custom - use a custom backup engine. This requires the `customBackupEngine`
+    #          option to be set to the class path of the custom backup engine.
+    #          The class should extend from the `zenml.zen_stores.migrations.backup.base_backup_engine.BaseBackupEngine`
+    #          base class and be importable from the container image that you
+    #          are using for the ZenML server. Arguments for the custom backup engine
+    #          can be passed using the `customBackupEngineArgs` option.
+    #
     # backupStrategy: in-memory
     # backupPVStorageClass: standard
     # backupPVStorageSize: 1Gi
     # backupDatabase: "zenml_backup"
+    #
     # mydumperThreads: 4
     # mydumperCompress: true
     # mydumperExtraArgs: []
     # myloaderThreads: 4
     # myloaderExtraArgs: []
+    #
+    # customBackupEngine: my.custom.backup.engine.MyCustomBackupEngine
+    # customBackupEngineArgs:
+    #   arg1: value1
+    #   arg2: value2
 
   # Secrets store settings. This is used to store centralized secrets.
   secretsStore:

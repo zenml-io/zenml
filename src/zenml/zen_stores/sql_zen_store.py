@@ -345,7 +345,7 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
-from zenml.utils import tag_utils, uuid_utils
+from zenml.utils import source_utils, tag_utils, uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -645,6 +645,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_pre_ping: bool = True
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
+    custom_backup_engine: Optional[str] = None
+    custom_backup_engine_config: Optional[Dict[str, Any]] = None
     # database backup directory
     backup_directory: str = Field(
         default_factory=lambda: os.path.join(
@@ -696,6 +698,15 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             raise ValueError(
                 "The `backup_database` attribute must also be set if the "
                 "backup strategy is set to use a backup database."
+            )
+
+        if (
+            self.backup_strategy == DatabaseBackupStrategy.CUSTOM
+            and not self.custom_backup_engine
+        ):
+            raise ValueError(
+                "The `custom_backup_engine` attribute must also be set if the "
+                "backup strategy is set to use a custom backup engine."
             )
 
         return self
@@ -1366,30 +1377,6 @@ class SqlZenStore(BaseZenStore):
         # Send user enriched events that we missed due to a bug in 0.57.0
         self._send_user_enriched_events_if_necessary()
 
-    def _get_db_backup_file_path(self) -> str:
-        """Get the path to the database backup.
-
-        Returns:
-            The path to the configured database backup.
-        """
-        if self.config.driver == SQLDatabaseDriver.SQLITE:
-            return os.path.join(
-                self.config.backup_directory,
-                # Add the -backup suffix to the database filename
-                ZENML_SQLITE_DB_FILENAME[:-3] + "-backup.db",
-            )
-
-        if self.config.backup_strategy == DatabaseBackupStrategy.MYDUMPER:
-            return os.path.join(
-                self.config.backup_directory,
-                f"{self.engine.url.database}-backup",
-            )
-
-        return os.path.join(
-            self.config.backup_directory,
-            f"{self.engine.url.database}-backup.json",
-        )
-
     def initialize_database_backup_engine(
         self,
         strategy: Optional[DatabaseBackupStrategy] = None,
@@ -1398,14 +1385,21 @@ class SqlZenStore(BaseZenStore):
         """Initialize the database backup engine.
 
         Args:
-            strategy: Custom backup strategy to use. If not set, the backup
+            strategy: Backup strategy to use. If not set, the backup
                 strategy from the store configuration will be used.
             location: Custom target location to backup the database to. If not
                 set, the configured backup location will be used. Depending on
-                the backup strategy, this can be a file path or a database name.`
+                the backup strategy, this can be a file path or a database name.
+
+        Returns:
+            The initialized database backup engine.
+
+        Raises:
+            ValueError: If the backup strategy or arguments are invalid.
         """
-        url, connect_args, engine_args = self.config.get_sqlalchemy_config()
         strategy = strategy or self.config.backup_strategy
+
+        backup_engine_class: Type[BaseDatabaseBackupEngine]
 
         if (
             strategy == DatabaseBackupStrategy.DUMP_FILE
@@ -1415,72 +1409,47 @@ class SqlZenStore(BaseZenStore):
                 FileDatabaseBackupEngine,
             )
 
-            dump_file = location or self._get_db_backup_file_path()
+            backup_engine_class = FileDatabaseBackupEngine
 
-            return FileDatabaseBackupEngine(
-                url=url,
-                connect_args=connect_args,
-                engine_args=engine_args,
-                file_path=dump_file,
-            )
         elif strategy == DatabaseBackupStrategy.DATABASE:
             from zenml.zen_stores.migrations.backup.sqlalchemy import (
                 DBCloneDatabaseBackupEngine,
             )
 
-            backup_db_name = location or self.config.backup_database
-            if not backup_db_name:
-                raise ValueError(
-                    "The backup database name must be set in the store "
-                    "configuration to use the backup database strategy."
-                )
+            backup_engine_class = DBCloneDatabaseBackupEngine
 
-            return DBCloneDatabaseBackupEngine(
-                url=url,
-                connect_args=connect_args,
-                engine_args=engine_args,
-                backup_db_name=backup_db_name,
-            )
         elif strategy == DatabaseBackupStrategy.IN_MEMORY:
             from zenml.zen_stores.migrations.backup.sqlalchemy import (
                 InMemoryDatabaseBackupEngine,
             )
 
-            return InMemoryDatabaseBackupEngine(
-                url=url,
-                connect_args=connect_args,
-                engine_args=engine_args,
-            )
+            backup_engine_class = InMemoryDatabaseBackupEngine
 
         elif strategy == DatabaseBackupStrategy.MYDUMPER:
             from zenml.zen_stores.migrations.backup.mydumper import (
                 MyDumperDatabaseBackupEngine,
             )
 
-            config: Dict[str, Any] = {}
-            if self.config.mydumper_threads is not None:
-                config["mydumper_threads"] = self.config.mydumper_threads
-            if self.config.mydumper_compress is not None:
-                config["mydumper_compress"] = self.config.mydumper_compress
-            if self.config.mydumper_extra_args is not None:
-                config["mydumper_extra_args"] = self.config.mydumper_extra_args
-            if self.config.myloader_threads is not None:
-                config["myloader_threads"] = self.config.myloader_threads
-            if self.config.myloader_extra_args is not None:
-                config["myloader_extra_args"] = self.config.myloader_extra_args
+            backup_engine_class = MyDumperDatabaseBackupEngine
 
-            backup_dir = location or self._get_db_backup_file_path()
+        elif strategy == DatabaseBackupStrategy.CUSTOM:
+            custom_backup_engine = self.config.custom_backup_engine
+            if custom_backup_engine is None:
+                raise ValueError("Custom backup engine not set.")
 
-            return MyDumperDatabaseBackupEngine(
-                url=url,
-                connect_args=connect_args,
-                engine_args=engine_args,
-                backup_dir=backup_dir,
-                **config,
-            )
-
+            try:
+                backup_engine_class = source_utils.load(custom_backup_engine)
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to load custom backup engine `{custom_backup_engine}`"
+                ) from e
         else:
             raise ValueError(f"Invalid backup strategy: {strategy}.")
+
+        return backup_engine_class(
+            config=self.config,
+            location=location,
+        )
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the python package.

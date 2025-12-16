@@ -19,14 +19,16 @@ import re
 import shutil
 from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Generator,
     List,
+    Optional,
     TextIO,
 )
 
-from sqlalchemy import URL, Engine, MetaData, func, text
+from sqlalchemy import Engine, MetaData, func, text
 from sqlalchemy.schema import CreateIndex, CreateTable
 from sqlmodel import (
     select,
@@ -37,6 +39,9 @@ from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
 
 class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
@@ -372,18 +377,16 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
 
     def __init__(
         self,
-        url: URL,
-        connect_args: Dict[str, Any],
-        engine_args: Dict[str, Any],
+        config: "SqlZenStoreConfiguration",
+        location: Optional[str] = None,
     ) -> None:
         """Initialize the in-memory database backup engine.
 
         Args:
-            url: The URL of the database to backup.
-            connect_args: The connect arguments for the SQLAlchemy engine.
-            engine_args: The engine arguments for the SQLAlchemy engine.
+            config: The configuration of the store.
+            location: The custom location to store the backup.
         """
-        super().__init__(url, connect_args, engine_args)
+        super().__init__(config, location or "memory")
         self.database_data: List[Dict[str, Any]] = []
 
     def store_database_data(self, data: Dict[str, Any], **kwargs: Any) -> None:
@@ -464,36 +467,46 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
 
         logger.debug("In-memory database backup cleaned up.")
 
-    @property
-    def backup_location(self) -> str:
-        """The location where the database is backed up to.
-
-        Returns:
-            The location where the database is backed up to.
-        """
-        return "memory"
-
 
 class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
     """Database backup engine that stores the database data in a file."""
 
     def __init__(
         self,
-        url: URL,
-        connect_args: Dict[str, Any],
-        engine_args: Dict[str, Any],
-        file_path: str,
+        config: "SqlZenStoreConfiguration",
+        location: Optional[str] = None,
     ) -> None:
         """Initialize the file database backup engine.
 
         Args:
-            url: The URL of the database to backup.
-            connect_args: The connect arguments for the SQLAlchemy engine.
-            engine_args: The engine arguments for the SQLAlchemy engine.
-            file_path: The path to the file to store the database data.
+            config: The configuration of the store.
+            location: The custom location to store the backup.
         """
-        super().__init__(url, connect_args, engine_args)
-        self.file_path = file_path
+        super().__init__(config, location)
+        if self._backup_location is None:
+            self._backup_location = self._get_db_backup_file_path()
+
+    def _get_db_backup_file_path(self) -> str:
+        """Get the path to the database backup.
+
+        Returns:
+            The path to the configured database backup.
+        """
+        from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
+
+        assert self.url.database is not None
+
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            return os.path.join(
+                self.config.backup_directory,
+                # Add the -backup suffix to the database filename
+                self.url.database[:-3] + "-backup.db",
+            )
+
+        return os.path.join(
+            self.config.backup_directory,
+            f"{self.url.database}-backup.json",
+        )
 
     def store_database_data(self, data: Dict[str, Any], **kwargs: Any) -> None:
         """Store the database data.
@@ -553,10 +566,10 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             overwrite: Whether to overwrite an existing backup if it exists.
                 If set to False, the existing backup will be reused.
         """
-        if os.path.isfile(self.file_path):
+        if os.path.isfile(self.backup_location):
             if not overwrite:
                 logger.warning(
-                    f"A previous backup file already exists at '{self.file_path}'. "
+                    f"A previous backup file already exists at `{self.backup_location}`. "
                     "Reusing the existing backup."
                 )
                 return
@@ -569,14 +582,14 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             assert self.url.database is not None
             shutil.copyfile(
                 self.url.database,
-                self.file_path,
+                self.backup_location,
             )
             return
 
-        with open(self.file_path, "w") as f:
+        with open(self.backup_location, "w") as f:
             self.backup_database_to_storage(dump_file=f)
 
-        logger.debug(f"Database backed up to file '{self.file_path}'.")
+        logger.debug(f"Database backed up to file `{self.backup_location}`.")
 
     def restore_database(
         self,
@@ -587,9 +600,9 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
         Args:
             cleanup: Whether to cleanup the backup after restoring the database.
         """
-        if not os.path.isfile(self.file_path):
+        if not os.path.isfile(self.backup_location):
             raise RuntimeError(
-                f"Database backup file '{self.file_path}' does not "
+                f"Database backup file `{self.backup_location}` does not "
                 "exist or is not accessible."
             )
 
@@ -598,15 +611,15 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             # with the backup file
             assert self.url.database is not None
             shutil.copyfile(
-                self.file_path,
+                self.backup_location,
                 self.url.database,
             )
             return
 
-        with open(self.file_path, "r") as f:
+        with open(self.backup_location, "r") as f:
             self.restore_database_from_storage(dump_file=f)
 
-        logger.debug(f"Database restored from file '{self.file_path}'.")
+        logger.debug(f"Database restored from file `{self.backup_location}`.")
 
         if cleanup:
             self.cleanup_database_backup()
@@ -615,27 +628,18 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
         self,
     ) -> None:
         """Delete the database backup."""
-        if os.path.isfile(self.file_path):
+        if os.path.isfile(self.backup_location):
             try:
-                os.remove(self.file_path)
+                os.remove(self.backup_location)
             except OSError:
                 logger.warning(
-                    f"Failed to cleanup database dump file {self.file_path}."
+                    f"Failed to cleanup database dump file `{self.backup_location}`."
                 )
             else:
                 logger.info(
                     f"Successfully cleaned up database dump file "
-                    f"{self.file_path}."
+                    f"`{self.backup_location}`."
                 )
-
-    @property
-    def backup_location(self) -> str:
-        """The location where the database is backed up to.
-
-        Returns:
-            The location where the database is backed up to.
-        """
-        return f"`{self.file_path}`"
 
 
 class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
@@ -643,21 +647,27 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
     def __init__(
         self,
-        url: URL,
-        connect_args: Dict[str, Any],
-        engine_args: Dict[str, Any],
-        backup_db_name: str,
+        config: "SqlZenStoreConfiguration",
+        location: Optional[str] = None,
     ) -> None:
         """Initialize the database backup engine.
 
         Args:
-            url: The URL of the database to backup.
-            connect_args: The connect arguments for the SQLAlchemy engine.
-            engine_args: The engine arguments for the SQLAlchemy engine.
-            backup_db_name: The name of the backup database.
+            config: The configuration of the store.
+            location: The custom location to store the backup.
+
+        Raises:
+            ValueError: If the backup database name is not set in the store
+                configuration.
         """
-        super().__init__(url, connect_args, engine_args)
-        self.backup_db_name = backup_db_name
+        super().__init__(config, location)
+        if self._backup_location is None:
+            if self.config.backup_database is None:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+            self._backup_location = self.config.backup_database
 
     @classmethod
     def _copy_database(cls, src_engine: Engine, dst_engine: Engine) -> None:
@@ -741,27 +751,27 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
             overwrite: Whether to overwrite an existing backup if it exists.
                 If set to False, the existing backup will be reused.
         """
-        if self.database_exists(database=self.backup_db_name):
+        if self.database_exists(database=self.backup_location):
             if not overwrite:
                 logger.warning(
                     f"A previous backup database already exists at "
-                    f"'{self.backup_db_name}'. Reusing the existing backup."
+                    f"`{self.backup_location}`. Reusing the existing backup."
                 )
                 return
             else:
                 self.cleanup_database_backup()
 
         self.create_database(
-            database=self.backup_db_name,
+            database=self.backup_location,
             drop=True,
         )
 
-        backup_engine = self.create_engine(database=self.backup_db_name)
+        backup_engine = self.create_engine(database=self.backup_location)
 
         self._copy_database(self.engine, backup_engine)
 
         logger.debug(
-            f"Database backed up to the `{self.backup_db_name}` backup database."
+            f"Database backed up to the `{self.backup_location}` backup database."
         )
 
     def restore_database(
@@ -773,19 +783,19 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
         Args:
             cleanup: Whether to cleanup the backup after restoring the database.
         """
-        if not self.database_exists(database=self.backup_db_name):
+        if not self.database_exists(database=self.backup_location):
             raise RuntimeError(
-                f"Backup database `{self.backup_db_name}` does not exist."
+                f"Backup database `{self.backup_location}` does not exist."
             )
 
-        backup_engine = self.create_engine(database=self.backup_db_name)
+        backup_engine = self.create_engine(database=self.backup_location)
 
         self.create_database(drop=True)
 
         self._copy_database(backup_engine, self.engine)
 
         logger.debug(
-            f"Database restored from the `{self.backup_db_name}` backup database."
+            f"Database restored from the `{self.backup_location}` backup database."
         )
 
         if cleanup:
@@ -795,20 +805,11 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
         self,
     ) -> None:
         """Delete the database backup."""
-        if self.database_exists(database=self.backup_db_name):
+        if self.database_exists(database=self.backup_location):
             self.drop_database(
-                database=self.backup_db_name,
+                database=self.backup_location,
             )
             logger.debug(
                 f"Successfully cleaned up backup database "
-                f"{self.backup_db_name}."
+                f"{self.backup_location}."
             )
-
-    @property
-    def backup_location(self) -> str:
-        """The location where the database is backed up to.
-
-        Returns:
-            The location where the database is backed up to.
-        """
-        return f"the `{self.backup_db_name}` backup database"
