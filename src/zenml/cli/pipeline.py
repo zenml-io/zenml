@@ -714,9 +714,10 @@ def activate_schedule(schedule_name_or_id: str) -> None:
     Args:
         schedule_name_or_id: The name or ID of the schedule to delete.
     """
-
     try:
-        Client().update_schedule(name_id_or_prefix=schedule_name_or_id, active=True)
+        Client().update_schedule(
+            name_id_or_prefix=schedule_name_or_id, active=True
+        )
     except KeyError as e:
         cli_utils.exception(e)
     else:
@@ -731,9 +732,10 @@ def deactivate_schedule(schedule_name_or_id: str) -> None:
     Args:
         schedule_name_or_id: The name or ID of the schedule to delete.
     """
-
     try:
-        Client().update_schedule(name_id_or_prefix=schedule_name_or_id, active=False)
+        Client().update_schedule(
+            name_id_or_prefix=schedule_name_or_id, active=False
+        )
     except KeyError as e:
         cli_utils.exception(e)
     else:
