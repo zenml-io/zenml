@@ -25,10 +25,23 @@ from typing import (
 
 from sqlalchemy.engine import URL
 
-from zenml.logger import get_logger
+from zenml.enums import LoggingLevels
+from zenml.logger import get_logger, get_logging_level
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 
 logger = get_logger(__name__)
+
+# Mapping from Python logging levels to mydumper/myloader verbosity:
+# mydumper: 0 = silent, 1 = errors, 2 = warnings, 3 = info
+LOGGING_LEVEL_TO_MYDUMPER_VERBOSITY = {
+    LoggingLevels.NOTSET: 0,
+    LoggingLevels.DEBUG: 3,
+    LoggingLevels.INFO: 2,
+    LoggingLevels.WARNING: 2,
+    LoggingLevels.WARN: 2,
+    LoggingLevels.ERROR: 1,
+    LoggingLevels.CRITICAL: 1,
+}
 
 
 class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
@@ -40,9 +53,11 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         connect_args: Dict[str, Any],
         engine_args: Dict[str, Any],
         backup_dir: str,
-        threads: int = 4,
-        compress: bool = False,
-        extra_args: Optional[List[str]] = None,
+        mydumper_threads: int = 4,
+        mydumper_compress: bool = False,
+        mydumper_extra_args: Optional[List[str]] = None,
+        myloader_threads: int = 4,
+        myloader_extra_args: Optional[List[str]] = None,
     ) -> None:
         """Initialize the backup engine.
 
@@ -51,18 +66,22 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             connect_args: The connect arguments for the SQLAlchemy engine.
             engine_args: The engine arguments for the SQLAlchemy engine.
             backup_dir: The directory where the backup will be stored.
-            threads: The number of threads to use for parallel backup/restore.
-            compress: Whether to compress the backup files.
-            extra_args: Additional arguments to pass to mydumper/myloader.
+            mydumper_threads: The number of threads to use for parallel backup.
+            mydumper_compress: Whether to compress the backup files.
+            mydumper_extra_args: Additional arguments to pass to mydumper.
+            myloader_threads: The number of threads to use for parallel restore.
+            myloader_extra_args: Additional arguments to pass to mydumper.
         """
         self._check_mydumper_installed()
         self._check_myloader_installed()
 
         super().__init__(url, connect_args, engine_args)
         self.backup_dir = backup_dir
-        self.threads = threads
-        self.compress = compress
-        self.extra_args = extra_args
+        self.mydumper_threads = mydumper_threads
+        self.mydumper_compress = mydumper_compress
+        self.mydumper_extra_args = mydumper_extra_args
+        self.myloader_threads = myloader_threads
+        self.myloader_extra_args = myloader_extra_args
 
     @staticmethod
     def _check_mydumper_installed() -> None:
@@ -123,6 +142,16 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             return {"MYSQL_PWD": self.url.password}
         return None
 
+    @staticmethod
+    def _get_mydumper_verbosity() -> int:
+        """Map ZenML's logging level to mydumper/myloader verbosity.
+
+        Returns:
+            The mydumper verbosity level (0-3).
+        """
+        current_level = get_logging_level()
+        return LOGGING_LEVEL_TO_MYDUMPER_VERBOSITY.get(current_level, 2)
+
     def backup_database(
         self,
         overwrite: bool = False,
@@ -140,7 +169,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         if os.path.isdir(self.backup_dir):
             if not overwrite:
                 raise RuntimeError(
-                    f"Backup directory '{self.backup_dir}' already exists. "
+                    f"Backup directory `{self.backup_dir}` already exists. "
                     "Reusing the existing backup."
                 )
             else:
@@ -157,17 +186,18 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd.extend(self._get_mysql_connection_args())
         cmd.extend(["--database", self.url.database])
         cmd.extend(["--outputdir", self.backup_dir])
-        cmd.extend(["--threads", str(self.threads)])
+        cmd.extend(["--threads", str(self.mydumper_threads)])
+        cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
 
-        if self.compress:
+        if self.mydumper_compress:
             cmd.append("--compress")
 
-        if self.extra_args:
-            cmd.extend(self.extra_args)
+        if self.mydumper_extra_args:
+            cmd.extend(self.mydumper_extra_args)
 
         logger.info(
-            f"Starting mydumper backup of database '{self.url.database}' "
-            f"to '{self.backup_dir}'"
+            f"Starting mydumper backup of database `{self.url.database}` "
+            f"to `{self.backup_dir}`"
         )
 
         process = subprocess.Popen(
@@ -191,8 +221,8 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             )
 
         logger.info(
-            f"Database '{self.url.database}' successfully backed up "
-            f"to '{self.backup_dir}'"
+            f"Database `{self.url.database}` successfully backed up "
+            f"to `{self.backup_dir}`"
         )
 
     def restore_database(
@@ -210,7 +240,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         """
         if not os.path.isdir(self.backup_dir):
             raise RuntimeError(
-                f"Backup directory '{self.backup_dir}' does not exist. "
+                f"Backup directory `{self.backup_dir}` does not exist. "
                 "Please backup the database first."
             )
 
@@ -226,15 +256,16 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd.extend(self._get_mysql_connection_args())
         cmd.extend(["--database", self.url.database])
         cmd.extend(["--directory", self.backup_dir])
-        cmd.extend(["--threads", str(self.threads)])
+        cmd.extend(["--threads", str(self.myloader_threads)])
+        cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
         cmd.append("--overwrite-tables")
 
-        if self.extra_args:
-            cmd.extend(self.extra_args)
+        if self.myloader_extra_args:
+            cmd.extend(self.myloader_extra_args)
 
         logger.info(
-            f"Starting myloader restore of database '{self.url.database}' "
-            f"from '{self.backup_dir}'"
+            f"Starting myloader restore of database `{self.url.database}` "
+            f"from `{self.backup_dir}`"
         )
 
         process = subprocess.Popen(
@@ -258,9 +289,12 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             )
 
         logger.info(
-            f"Database '{self.url.database}' successfully restored "
-            f"from '{self.backup_dir}'"
+            f"Database `{self.url.database}` successfully restored "
+            f"from `{self.backup_dir}`"
         )
+
+        if cleanup:
+            self.cleanup_database_backup()
 
     def cleanup_database_backup(
         self,
@@ -269,7 +303,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         if os.path.isdir(self.backup_dir):
             shutil.rmtree(self.backup_dir)
             logger.info(
-                f"Successfully cleaned up database backup '{self.backup_dir}'."
+                f"Successfully cleaned up database backup `{self.backup_dir}`."
             )
 
     @property

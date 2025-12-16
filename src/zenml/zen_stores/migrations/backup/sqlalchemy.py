@@ -213,6 +213,7 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                                 table=table.name,
                                 data=[row._asdict() for row in rows],
                             ),
+                            **store_db_kwargs,
                         )
 
     def restore_database_from_storage(

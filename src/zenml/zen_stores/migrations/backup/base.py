@@ -259,8 +259,8 @@ class BaseDatabaseBackupEngine(ABC):
             yield
         except Exception:
             logger.info(
-                "Attempting to restore the database from "
-                f"{self.backup_location}."
+                "The database operation failed. Attempting to restore the "
+                f"database from {self.backup_location}."
             )
             try:
                 self.restore_database(cleanup=True)

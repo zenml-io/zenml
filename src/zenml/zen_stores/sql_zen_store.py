@@ -657,6 +657,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     mydumper_threads: Optional[int] = None
     mydumper_compress: Optional[bool] = None
     mydumper_extra_args: Optional[List[str]] = None
+    myloader_threads: Optional[int] = None
+    myloader_extra_args: Optional[List[str]] = None
 
     @field_validator("secrets_store")
     @classmethod
@@ -1457,11 +1459,15 @@ class SqlZenStore(BaseZenStore):
 
             config: Dict[str, Any] = {}
             if self.config.mydumper_threads is not None:
-                config["threads"] = self.config.mydumper_threads
+                config["mydumper_threads"] = self.config.mydumper_threads
             if self.config.mydumper_compress is not None:
-                config["compress"] = self.config.mydumper_compress
+                config["mydumper_compress"] = self.config.mydumper_compress
             if self.config.mydumper_extra_args is not None:
-                config["extra_args"] = self.config.mydumper_extra_args
+                config["mydumper_extra_args"] = self.config.mydumper_extra_args
+            if self.config.myloader_threads is not None:
+                config["myloader_threads"] = self.config.myloader_threads
+            if self.config.myloader_extra_args is not None:
+                config["myloader_extra_args"] = self.config.myloader_extra_args
 
             backup_dir = location or self._get_db_backup_file_path()
 

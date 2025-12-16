@@ -430,11 +430,21 @@ zenml:
     #            database URL must have permissions to manage (create, drop, and
     #            modify) the backup database in addition to the main
     #            database.
-    backupStrategy: in-memory
+    # mydumper - the database is backed up using mydumper/myloader. This
+    #            requires the mydumper and myloader utilities to be installed
+    #            in the ZenML server container. The `mydumperThreads`,
+    #            `mydumperCompress`, `mydumperExtraArgs`, `myloaderThreads`,
+    #            and `myloaderExtraArgs` options can be used to configure the
+    #            backup and restore processes.
+    # backupStrategy: in-memory
     # backupPVStorageClass: standard
     # backupPVStorageSize: 1Gi
     # backupDatabase: "zenml_backup"
-
+    # mydumperThreads: 4
+    # mydumperCompress: true
+    # mydumperExtraArgs: []
+    # myloaderThreads: 4
+    # myloaderExtraArgs: []
 
   # Secrets store settings. This is used to store centralized secrets.
   secretsStore:
