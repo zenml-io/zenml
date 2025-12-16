@@ -319,18 +319,24 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 step_config = snapshot.step_configurations[component_name]
                 step_settings = self.get_settings(step_config)
 
-                if step_settings and isinstance(step_settings, AzureMLOrchestratorSettings):
+                if step_settings and isinstance(
+                    step_settings, AzureMLOrchestratorSettings
+                ):
                     try:
                         step_compute = create_or_get_compute(
                             ml_client,
                             step_settings,
-                            default_compute_name=f"zenml_{self.id}_{component_name}"
+                            default_compute_name=f"zenml_{self.id}_{component_name}",
                         )
                         if step_compute:
                             component_job.compute = step_compute
-                            logger.info(f"Step '{component_name}' will run on compute: {step_compute}")
+                            logger.info(
+                                f"Step '{component_name}' will run on compute: {step_compute}"
+                            )
                     except Exception as e:
-                        logger.debug(f"Could not apply per-step compute for '{component_name}': {e}")
+                        logger.debug(
+                            f"Could not apply per-step compute for '{component_name}': {e}"
+                        )
 
                 # Outputs
                 if component_job.outputs:
