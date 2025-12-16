@@ -11,7 +11,7 @@ within a team or wider organization.
 
 As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data
 will almost certainly be different from how you access that data as part of a real-time or online inference setting.
-Feast solves the problem of developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where those two
+Feast solves the problem of developing train-serve skew where those two
 sources of data diverge from each other.
 
 Feature stores are a relatively recent addition to commonly-used machine learning stacks.

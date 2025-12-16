@@ -31,7 +31,7 @@ zenml integration install s3 -y
 You'll also need a running MinIO instance. MinIO can be deployed in various ways:
 
 * **Docker**: `docker run -p 9000:9000 -p 9001:9001 minio/minio server /data --console-address ":9001"`
-* **Kubernetes**: Using the [MinIO Operator](https://min.io/docs/minio/kubernetes/upstream/)
+* **Kubernetes**: Follow the instructions [here](https://docs.min.io/enterprise/aistor-object-store/installation/kubernetes/install/deploy-aistor-on-kubernetes/)
 * **Binary**: Download from [MinIO's website](https://min.io/download)
 
 ### How do you configure it?
