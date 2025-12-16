@@ -59,6 +59,7 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_LOGS_URL,
     METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.enums import (
     ExecutionStatus,
@@ -1067,10 +1068,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         session = self.sagemaker_session
 
-        image = self.get_image(
-            snapshot=step_run_info.snapshot,
-            step_name=step_run_info.pipeline_step_name,
-        )
+        image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
 
         settings = cast(
             SagemakerOrchestratorSettings, self.get_settings(step_run_info)

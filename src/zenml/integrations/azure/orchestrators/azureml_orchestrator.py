@@ -28,7 +28,7 @@ from typing import (
 )
 from uuid import UUID
 
-from azure.ai.ml import Input, MLClient, Output
+from azure.ai.ml import Input, MLClient, Output, command
 from azure.ai.ml.constants import TimeZone
 from azure.ai.ml.dsl import pipeline
 from azure.ai.ml.entities import (
@@ -50,6 +50,7 @@ from zenml.config.step_configurations import Step
 from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.azure.azureml_utils import create_or_get_compute
@@ -65,10 +66,17 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.pipelines.dynamic.entrypoint_configuration import (
+    DynamicPipelineEntrypointConfiguration,
+)
 from zenml.stack import StackValidator
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
+)
 from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
@@ -147,13 +155,18 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If the run id cannot be read from the environment.
         """
-        try:
-            return os.environ[ENV_ZENML_AZUREML_RUN_ID]
-        except KeyError:
-            raise RuntimeError(
-                "Unable to read run id from environment variable "
-                f"{ENV_ZENML_AZUREML_RUN_ID}."
-            )
+        for env_var in [
+            ENV_ZENML_AZUREML_RUN_ID,
+            # Best-effort fallbacks for AzureML job runtimes
+            "AZUREML_RUN_ID",
+            "AZUREML_JOB_ID",
+        ]:
+            if env_var in os.environ:
+                return os.environ[env_var]
+
+        raise RuntimeError(
+            "Unable to read orchestrator run id from environment."
+        )
 
     @staticmethod
     def _create_command_component(
@@ -205,6 +218,24 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             resources=resources,
         )
 
+    def get_azureml_client(self) -> MLClient:
+        """Returns the AzureML client.
+
+        Returns:
+            The AzureML client.
+        """
+        if connector := self.get_connector():
+            credentials = connector.connect()
+        else:
+            credentials = DefaultAzureCredential()
+
+        return MLClient(
+            credential=credentials,
+            subscription_id=self.config.subscription_id,
+            resource_group_name=self.config.resource_group,
+            workspace_name=self.config.workspace,
+        )
+
     def submit_pipeline(
         self,
         snapshot: "PipelineSnapshotResponse",
@@ -236,12 +267,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         Returns:
             Optional submission result.
         """
-        # Authentication
-        if connector := self.get_connector():
-            credentials = connector.connect()
-        else:
-            credentials = DefaultAzureCredential()
-
         # Settings
         settings = cast(
             AzureMLOrchestratorSettings,
@@ -249,12 +274,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         )
 
         # Client creation
-        ml_client = MLClient(
-            credential=credentials,
-            subscription_id=self.config.subscription_id,
-            resource_group_name=self.config.resource_group,
-            workspace_name=self.config.workspace,
-        )
+        ml_client = self.get_azureml_client()
 
         # Create components
         components = {}
@@ -430,6 +450,154 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 wait_for_completion=_wait_for_completion,
             )
 
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Dynamic pipelines are executed as an AzureML command job that runs the
+        dynamic pipeline orchestration container.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+            placeholder_run: An optional placeholder run.
+
+        Raises:
+            RuntimeError: If the snapshot contains a schedule.
+
+        Returns:
+            Optional submission result.
+        """
+        logger.info("Submitting dynamic pipeline to AzureML...")
+
+        if snapshot.schedule:
+            raise RuntimeError(
+                "Scheduling dynamic pipelines is not supported for the "
+                "AzureML orchestrator yet."
+            )
+
+        settings = cast(
+            AzureMLOrchestratorSettings,
+            self.get_settings(snapshot),
+        )
+
+        ml_client = self.get_azureml_client()
+
+        image = self.get_image(snapshot=snapshot)
+        env = Environment(
+            name=f"zenml-{snapshot.pipeline_configuration.name}",
+            image=image,
+        )
+
+        entrypoint_command = (
+            DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+        )
+        entrypoint_args = (
+            DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+                snapshot_id=snapshot.id,
+                run_id=placeholder_run.id if placeholder_run else None,
+            )
+        )
+
+        compute_target = create_or_get_compute(
+            ml_client, settings, default_compute_name=f"zenml_{self.id}"
+        )
+
+        run_name = get_orchestrator_run_name(
+            pipeline_name=snapshot.pipeline_configuration.name
+        )
+
+        command_job = command(
+            name=run_name,
+            command=" ".join(entrypoint_command + entrypoint_args),
+            environment=env,
+            environment_variables=environment,
+            compute=compute_target,
+            experiment_name=snapshot.pipeline_configuration.name,
+            shm_size=settings.shm_size,
+        )
+
+        job = ml_client.jobs.create_or_update(command_job)
+
+        _wait_for_completion = None
+        if settings.synchronous:
+
+            def _wait_for_completion() -> None:
+                logger.info("Waiting for AzureML job to finish...")
+                ml_client.jobs.stream(job.name)
+
+        return SubmissionResult(
+            metadata=self.compute_metadata(job),
+            wait_for_completion=_wait_for_completion,
+        )
+
+    def run_isolated_step(
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    ) -> None:
+        """Runs an isolated step on AzureML.
+
+        Args:
+            step_run_info: The step run information.
+            environment: The environment variables to set in the execution
+                environment.
+        """
+        logger.info(
+            "Launching job for step `%s`.",
+            step_run_info.pipeline_step_name,
+        )
+
+        settings = cast(
+            AzureMLOrchestratorSettings,
+            self.get_settings(step_run_info),
+        )
+
+        ml_client = self.get_azureml_client()
+
+        image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
+        env = Environment(name=f"zenml-{step_run_info.run_name}", image=image)
+
+        entrypoint_command = (
+            StepOperatorEntrypointConfiguration.get_entrypoint_command()
+        )
+        entrypoint_args = (
+            StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
+                step_name=step_run_info.pipeline_step_name,
+                snapshot_id=(step_run_info.snapshot.id),
+                step_run_id=str(step_run_info.step_run_id),
+            )
+        )
+
+        compute_target = create_or_get_compute(
+            ml_client, settings, default_compute_name=f"zenml_{self.id}"
+        )
+
+        job_name = (
+            f"{step_run_info.run_name}-{step_run_info.pipeline_step_name}"
+        )
+
+        command_job = command(
+            name=job_name,
+            display_name=job_name,
+            command=" ".join(entrypoint_command + entrypoint_args),
+            environment=env,
+            environment_variables=environment,
+            compute=compute_target,
+            experiment_name=step_run_info.pipeline.name,
+            shm_size=settings.shm_size,
+        )
+
+        job = ml_client.jobs.create_or_update(command_job)
+        logger.info("Waiting for AzureML job `%s` to finish...", job.name)
+        ml_client.jobs.stream(job.name)
+        logger.info("AzureML job `%s` completed.", job.name)
+
     def get_pipeline_run_metadata(
         self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:
@@ -454,12 +622,22 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 workspace_name=self.config.workspace,
             )
 
-            azureml_root_run_id = os.environ[ENV_ZENML_AZUREML_RUN_ID]
-            azureml_job = ml_client.jobs.get(azureml_root_run_id)
+            azureml_run_id = self.get_orchestrator_run_id()
+            azureml_job = ml_client.jobs.get(azureml_run_id)
 
-            return {
-                METADATA_ORCHESTRATOR_URL: Uri(azureml_job.studio_url),
+            metadata: Dict[str, MetadataType] = {
+                METADATA_ORCHESTRATOR_RUN_ID: azureml_run_id,
             }
+
+            url = getattr(azureml_job, "studio_url", None) or getattr(
+                getattr(azureml_job, "services", {}).get("Studio", None),
+                "endpoint",
+                None,
+            )
+            if isinstance(url, str) and url:
+                metadata[METADATA_ORCHESTRATOR_URL] = Uri(url)
+
+            return metadata
         except Exception as e:
             logger.warning(
                 f"Failed to fetch the Studio URL of the AzureML pipeline "
