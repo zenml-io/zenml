@@ -322,20 +322,37 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 if step_settings and isinstance(
                     step_settings, AzureMLOrchestratorSettings
                 ):
-                    try:
-                        step_compute = create_or_get_compute(
-                            ml_client,
-                            step_settings,
-                            default_compute_name=f"zenml_{self.id}_{component_name}",
-                        )
-                        if step_compute:
-                            component_job.compute = step_compute
-                            logger.info(
-                                f"Step '{component_name}' will run on compute: {step_compute}"
+                    # Check if step settings differ from pipeline settings to avoid unnecessary Azure calls
+                    if (
+                        step_settings.mode != settings.mode
+                        or step_settings.compute_name != settings.compute_name
+                        or step_settings.size != settings.size
+                    ):
+                        try:
+                            step_compute = create_or_get_compute(
+                                ml_client,
+                                step_settings,
+                                default_compute_name="zenml_{}_{}".format(
+                                    self.id, component_name
+                                ),
                             )
-                    except Exception as e:
+                            if step_compute:
+                                component_job.compute = step_compute
+                                logger.info(
+                                    "Step '%s' will run on compute: %s",
+                                    component_name,
+                                    step_compute,
+                                )
+                        except Exception as e:
+                            logger.debug(
+                                "Could not apply per-step compute for '%s': %s",
+                                component_name,
+                                e,
+                            )
+                    else:
                         logger.debug(
-                            f"Could not apply per-step compute for '{component_name}': {e}"
+                            "Step '%s' compute settings match pipeline level, using default compute",
+                            component_name,
                         )
 
                 # Outputs
