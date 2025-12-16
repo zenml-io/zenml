@@ -53,13 +53,13 @@ mydumper_threads: {{ .ZenML.database.mydumperThreads | quote }}
 mydumper_compress: {{ .ZenML.database.mydumperCompress | quote }}
 {{- end }}
 {{- if .ZenML.database.mydumperExtraArgs }}
-mydumper_extra_args: {{ .ZenML.database.mydumperExtraArgs | to_json | quote }}
+mydumper_extra_args: {{ .ZenML.database.mydumperExtraArgs | toJson | quote }}
 {{- end }}
 {{- if .ZenML.database.myloaderThreads }}
 myloader_threads: {{ .ZenML.database.myloaderThreads | quote }}
 {{- end }}
 {{- if .ZenML.database.myloaderExtraArgs }}
-myloader_extra_args: {{ .ZenML.database.myloaderExtraArgs | to_json | quote }}
+myloader_extra_args: {{ .ZenML.database.myloaderExtraArgs | toJson | quote }}
 {{- end }}
 {{- end }}
 {{- end }}

@@ -115,6 +115,17 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         if self.url.username:
             args.extend(["--user", self.url.username])
 
+        if self.config.ssl:
+            args.extend(["--ssl", "--ssl-mode", "REQUIRED"])
+            if self.config.ssl_ca:
+                args.extend(["--ca", self.config.ssl_ca.get_secret_value()])
+            if self.config.ssl_cert:
+                args.extend(
+                    ["--cert", self.config.ssl_cert.get_secret_value()]
+                )
+            if self.config.ssl_key:
+                args.extend(["--key", self.config.ssl_key.get_secret_value()])
+
         return args
 
     def _get_mysql_env(self) -> Optional[Dict[str, str]]:
@@ -149,17 +160,18 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
                 If set to False, the existing backup will be reused.
 
         Raises:
-            RuntimeError: If the backup directory already exists, if the
-                database name is not set, or if the backup process fails.
+            RuntimeError: If the database name is not set or if the backup
+                process fails.
         """
         if os.path.isdir(self.backup_location):
             if not overwrite:
-                raise RuntimeError(
+                logger.warning(
                     f"Backup directory `{self.backup_location}` already exists. "
                     "Reusing the existing backup."
                 )
-            else:
-                self.cleanup_database_backup()
+                return
+
+            self.cleanup_database_backup()
 
         if not self.url.database:
             raise RuntimeError(
