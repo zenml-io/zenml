@@ -1739,9 +1739,8 @@ To delete a pipeline, run:
 zenml pipeline delete <PIPELINE_NAME>
 ```
 
-This will delete the pipeline and change all corresponding
-pipeline runs to become unlisted (not linked to any pipeline).
-
+This will delete the pipeline and all the pipeline runs and snapshots that are
+associated with it.
 
 To list all pipeline runs that you have executed, use:
 
