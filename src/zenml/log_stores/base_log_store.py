@@ -43,7 +43,7 @@ class BaseLogStoreOrigin:
     3. emit the log record by calling log_store.emit() and passing the origin
     and log record
     4. deregister the origin when all logs have been emitted by calling
-    origin.deregister()
+    log_store.deregister(origin)
     """
 
     def __init__(
@@ -62,41 +62,10 @@ class BaseLogStoreOrigin:
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this origin.
         """
-        self._name = name
-        self._log_store = log_store
-        self._log_model = log_model
-        self._metadata = metadata
-
-    @property
-    def name(self) -> str:
-        """The name of the origin.
-
-        Returns:
-            The name of the origin.
-        """
-        return self._name
-
-    @property
-    def log_model(self) -> LogsResponse:
-        """The log model associated with the origin.
-
-        Returns:
-            The log model.
-        """
-        return self._log_model
-
-    @property
-    def metadata(self) -> Dict[str, Any]:
-        """The metadata associated with the origin.
-
-        Returns:
-            The metadata.
-        """
-        return self._metadata
-
-    def deregister(self) -> None:
-        """Deregister the origin from the log store."""
-        self._log_store.deregister_origin(self)
+        self.name = name
+        self.log_store = log_store
+        self.log_model = log_model
+        self.metadata = metadata
 
 
 class BaseLogStore(StackComponent, ABC):
@@ -154,11 +123,21 @@ class BaseLogStore(StackComponent, ABC):
             self._origins[name] = origin
             return origin
 
-    def deregister_origin(self, origin: BaseLogStoreOrigin) -> None:
+    def deregister_origin(
+        self,
+        origin: BaseLogStoreOrigin,
+        blocking: bool = True,
+    ) -> None:
         """Deregister an origin previously registered with the log store.
+
+        If no other origins are left, the log store will be flushed. The
+        `blocking` parameter determines whether to block until the flush is
+        complete.
 
         Args:
             origin: The origin to deregister.
+            blocking: Whether to block until the deregistration is complete
+                and all logs are flushed if this is the last origin registered.
         """
         with self._lock:
             if origin.name not in self._origins:
@@ -166,7 +145,7 @@ class BaseLogStore(StackComponent, ABC):
             self._release_origin(origin)
             del self._origins[origin.name]
             if len(self._origins) == 0:
-                self.flush(blocking=False)
+                self.flush(blocking=blocking)
 
     @abstractmethod
     def emit(

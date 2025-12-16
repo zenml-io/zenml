@@ -16,6 +16,7 @@
 import time
 from typing import (
     TYPE_CHECKING,
+    Optional,
 )
 
 from zenml.config.step_configurations import Step
@@ -39,6 +40,7 @@ def launch_step(
     step: "Step",
     orchestrator_run_id: str,
     retry: bool = False,
+    remaining_retries: Optional[int] = None,
 ) -> StepRunResponse:
     """Launch a step.
 
@@ -47,6 +49,8 @@ def launch_step(
         step: The step to run.
         orchestrator_run_id: The orchestrator run ID.
         retry: Whether to retry the step if it fails.
+        remaining_retries: The number of remaining retries. If not passed, this
+            will be read from the step configuration.
 
     Raises:
         RunStoppedException: If the run was stopped.
@@ -69,7 +73,10 @@ def launch_step(
     else:
         retries = 0
         retry_config = step.config.retry
-        max_retries = retry_config.max_retries if retry_config else 0
+        if remaining_retries is None:
+            max_retries = retry_config.max_retries if retry_config else 0
+        else:
+            max_retries = remaining_retries
         delay = retry_config.delay if retry_config else 0
         backoff = retry_config.backoff if retry_config else 1
 

@@ -128,6 +128,7 @@ class ScheduleUpdate(BaseUpdate):
 
     name: Optional[str] = None
     cron_expression: Optional[str] = None
+    active: bool | None = None
 
 
 # ------------------ Response Model ------------------

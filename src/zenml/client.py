@@ -4615,12 +4615,14 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         cron_expression: Optional[str] = None,
+        active: bool | None = None,
     ) -> ScheduleResponse:
         """Update a schedule.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the schedule to update.
             cron_expression: The new cron expression for the schedule.
+            active: Active status flag for the schedule.
 
         Returns:
             The updated schedule.
@@ -4644,7 +4646,13 @@ class Client(metaclass=ClientMetaClass):
             )
             return schedule
 
-        update = ScheduleUpdate(cron_expression=cron_expression)
+        if schedule.active == active:
+            logger.warning(
+                f"Schedule active value is already {active}, skipping update."
+            )
+            return schedule
+
+        update = ScheduleUpdate(cron_expression=cron_expression, active=active)
         orchestrator.update_schedule(schedule, update)
         return self.zen_store.update_schedule(
             schedule_id=schedule.id,
@@ -4746,7 +4754,6 @@ class Client(metaclass=ClientMetaClass):
         index: Optional[int] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
-        unlisted: Optional[bool] = None,
         templatable: Optional[bool] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
@@ -4796,7 +4803,6 @@ class Client(metaclass=ClientMetaClass):
             index: The index of the pipeline run
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
-            unlisted: If the runs should be unlisted or not.
             templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
             tags: Tags to filter by.
@@ -4848,7 +4854,6 @@ class Client(metaclass=ClientMetaClass):
             end_time=end_time,
             tag=tag,
             tags=tags,
-            unlisted=unlisted,
             user=user,
             run_metadata=run_metadata,
             pipeline=pipeline,
