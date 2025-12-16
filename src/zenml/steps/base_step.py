@@ -96,8 +96,8 @@ if TYPE_CHECKING:
     ]
 
     from zenml.execution.pipeline.dynamic.outputs import (
+        AnyStepRunFuture,
         MapResultsFuture,
-        StepRunFuture,
         StepRunOutputsFuture,
     )
     from zenml.pipelines.compilation_context import (
@@ -570,8 +570,8 @@ class BaseStep:
         after: Union[
             str,
             StepArtifact,
-            "StepRunFuture",
-            Sequence[Union[str, StepArtifact, "StepRunFuture"]],
+            "AnyStepRunFuture",
+            Sequence[Union[str, StepArtifact, "AnyStepRunFuture"]],
             None,
         ] = None,
         **kwargs: Any,
@@ -638,8 +638,8 @@ class BaseStep:
         if run_context := DynamicPipelineRunContext.get():
             after = cast(
                 Union[
-                    "StepRunFuture",
-                    Sequence["StepRunFuture"],
+                    "AnyStepRunFuture",
+                    Sequence["AnyStepRunFuture"],
                     None,
                 ],
                 after,
@@ -700,7 +700,9 @@ class BaseStep:
         self,
         *args: Any,
         id: Optional[str] = None,
-        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        after: Union[
+            "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "StepRunOutputsFuture":
         """Submit the step to run concurrently in a separate thread.
@@ -741,7 +743,9 @@ class BaseStep:
     def map(
         self,
         *args: Any,
-        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        after: Union[
+            "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs.
@@ -811,7 +815,9 @@ class BaseStep:
     def product(
         self,
         *args: Any,
-        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        after: Union[
+            "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs using a cartesian product of the mapped inputs.
