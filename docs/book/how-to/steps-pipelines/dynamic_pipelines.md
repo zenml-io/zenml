@@ -343,13 +343,15 @@ When running multiple steps concurrently using `step.submit()`, a failure in one
 ### Orchestrator Support
 
 Dynamic pipelines are currently only supported by:
-- `local` orchestrator
-- `local_docker` orchestrator
-- `kubernetes` orchestrator
-- `sagemaker` orchestrator
-- `vertex` orchestrator
 
-Other orchestrators will raise an error if you try to run a dynamic pipeline with them.
+| Orchestrator                                | Isolated steps | Handles orchestration environment failures |
+| ------------------------------------------- | :------------: | :----------------------------------------: |
+| [LocalOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/local)               | ❌             | ❌                                   |
+| [LocalDockerOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/local-docker)  | ❌             | ❌                                   |
+| [KubernetesOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)     | ✅             | ✅                                   |
+| [VertexOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/vertex)             | ✅             | ❌                                   |
+| [SagemakerOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker)       | ✅             | ❌                                   |
+
 
 ### Artifact Loading
 
