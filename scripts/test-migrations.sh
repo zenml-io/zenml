@@ -340,6 +340,9 @@ if [ "$MIGRATION_TYPE" == "full" ]; then
 
     # Test the most recent migration with MySQL
     test_upgrade_to_version "current"
+elif [ "$MIGRATION_TYPE" == "latest" ]; then
+    test_upgrade_to_version "$LATEST_VERSION"
+    test_upgrade_to_version "current"
 else
     # Test the most recent migration with MySQL
     test_upgrade_to_version "current"

@@ -38,5 +38,6 @@ else
       --title "Add $NEW_VERSION to the migration tests" \
       --body "This PR adds $NEW_VERSION to the list of version in the migration test script." \
       --label "internal"
+      --label "no-release-notes"
     exit 0
 fi
