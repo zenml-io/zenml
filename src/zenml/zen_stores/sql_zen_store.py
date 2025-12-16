@@ -16,6 +16,7 @@
 from contextlib import nullcontext
 
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 
 try:
@@ -710,6 +711,32 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             )
 
         return self
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def validate_json_args(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate the secrets store configuration.
+
+        Args:
+            data: The values of the store configuration.
+
+        Returns:
+            The values of the store configuration.
+        """
+        for attr in [
+            "custom_backup_engine_config",
+            "mydumper_extra_args",
+            "myloader_extra_args",
+        ]:
+            value = data.get(attr)
+            if isinstance(value, str):
+                try:
+                    data[attr] = json.loads(value)
+                except json.JSONDecodeError:
+                    pass
+
+        return data
 
     @model_validator(mode="after")
     def _validate_url(self) -> "SqlZenStoreConfiguration":

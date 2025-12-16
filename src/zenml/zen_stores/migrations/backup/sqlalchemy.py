@@ -428,8 +428,8 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
                     "An existing backup already exists. Reusing the existing backup."
                 )
                 return
-            else:
-                self.cleanup_database_backup()
+
+            self.cleanup_database_backup()
 
         self.backup_database_to_storage()
 
@@ -573,8 +573,8 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
                     "Reusing the existing backup."
                 )
                 return
-            else:
-                self.cleanup_database_backup()
+
+            self.cleanup_database_backup()
 
         if self.url.drivername == "sqlite":
             # For a sqlite database, we can just make a copy of the database
@@ -758,8 +758,8 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
                     f"`{self.backup_location}`. Reusing the existing backup."
                 )
                 return
-            else:
-                self.cleanup_database_backup()
+
+            self.cleanup_database_backup()
 
         self.create_database(
             database=self.backup_location,
