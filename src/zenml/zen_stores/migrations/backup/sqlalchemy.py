@@ -21,10 +21,7 @@ from abc import abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Generator,
-    List,
-    Optional,
     TextIO,
 )
 
@@ -243,7 +240,7 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         with self.engine.begin() as connection:
             # read the DB information one JSON object at a time
-            self_references: Dict[str, bool] = {}
+            self_references: dict[str, bool] = {}
             for table_dump in self.load_database_data(**load_db_kwargs):
                 table_name = table_dump["table"]
                 if "create_stmt" in table_dump:
@@ -299,7 +296,7 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                         connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
 
     @abstractmethod
-    def store_database_data(self, data: Dict[str, Any], **kwargs: Any) -> None:
+    def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
         """Store the database data.
 
         This method is called repeatedly to store the database information. It
@@ -357,7 +354,7 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
     @abstractmethod
     def load_database_data(
         self, **kwargs: Any
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> Generator[dict[str, Any], None, None]:
         """Generator that loads the database data.
 
         This method is called repeatedly to load the database data. It must
@@ -378,7 +375,7 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
     def __init__(
         self,
         config: "SqlZenStoreConfiguration",
-        location: Optional[str] = None,
+        location: str | None = None,
     ) -> None:
         """Initialize the in-memory database backup engine.
 
@@ -387,9 +384,9 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             location: The custom location to store the backup.
         """
         super().__init__(config, location or "memory")
-        self.database_data: List[Dict[str, Any]] = []
+        self.database_data: list[dict[str, Any]] = []
 
-    def store_database_data(self, data: Dict[str, Any], **kwargs: Any) -> None:
+    def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
         """Store the database data.
 
         Args:
@@ -400,7 +397,7 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
 
     def load_database_data(
         self, **kwargs: Any
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> Generator[dict[str, Any], None, None]:
         """Generator that loads the database data.
 
         Yields:
@@ -474,7 +471,7 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
     def __init__(
         self,
         config: "SqlZenStoreConfiguration",
-        location: Optional[str] = None,
+        location: str | None = None,
     ) -> None:
         """Initialize the file database backup engine.
 
@@ -508,16 +505,13 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             f"{self.url.database}-backup.json",
         )
 
-    def store_database_data(self, data: Dict[str, Any], **kwargs: Any) -> None:
+    def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
         """Store the database data.
 
         Args:
             data: The database data to store.
             **kwargs: Must include `dump_file` (TextIO) - the file handle
                 to store the database data.
-
-        Raises:
-            KeyError: If dump_file is not provided in kwargs.
         """
         dump_file: TextIO = kwargs["dump_file"]
         # Write the data to the JSON file. Use an encoder that
@@ -532,7 +526,7 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
 
     def load_database_data(
         self, **kwargs: Any
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> Generator[dict[str, Any], None, None]:
         """Generator that loads the database data.
 
         Args:
@@ -541,9 +535,6 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
 
         Yields:
             The loaded database data.
-
-        Raises:
-            KeyError: If dump_file is not provided in kwargs.
         """
         dump_file: TextIO = kwargs["dump_file"]
         buffer = ""
@@ -599,6 +590,9 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
 
         Args:
             cleanup: Whether to cleanup the backup after restoring the database.
+
+        Raises:
+            RuntimeError: If the backup file does not exist or is not accessible.
         """
         if not os.path.isfile(self.backup_location):
             raise RuntimeError(
@@ -648,7 +642,7 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
     def __init__(
         self,
         config: "SqlZenStoreConfiguration",
-        location: Optional[str] = None,
+        location: str | None = None,
     ) -> None:
         """Initialize the database backup engine.
 
@@ -782,6 +776,9 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         Args:
             cleanup: Whether to cleanup the backup after restoring the database.
+
+        Raises:
+            RuntimeError: If the backup database does not exist.
         """
         if not self.database_exists(database=self.backup_location):
             raise RuntimeError(

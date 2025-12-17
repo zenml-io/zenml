@@ -16,12 +16,7 @@
 import os
 import shutil
 import subprocess
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    List,
-    Optional,
-)
+from typing import TYPE_CHECKING
 
 from zenml.enums import LoggingLevels
 from zenml.logger import get_logger, get_logging_level
@@ -51,7 +46,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
     def __init__(
         self,
         config: "SqlZenStoreConfiguration",
-        location: Optional[str] = None,
+        location: str | None = None,
     ) -> None:
         """Initialize the backup engine.
 
@@ -95,16 +90,13 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
                 "Please install myloader to use this restore method."
             )
 
-    def _get_mysql_connection_args(self) -> List[str]:
+    def _get_mysql_connection_args(self) -> list[str]:
         """Build MySQL connection arguments for mydumper/myloader.
 
         Returns:
             List of command-line arguments for MySQL connection.
-
-        Raises:
-            RuntimeError: If required connection parameters are missing.
         """
-        args: List[str] = []
+        args: list[str] = []
 
         if self.url.host:
             args.extend(["--host", self.url.host])
@@ -128,7 +120,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         return args
 
-    def _get_mysql_env(self) -> Optional[Dict[str, str]]:
+    def _get_mysql_env(self) -> dict[str, str] | None:
         """Build environment variables for MySQL authentication.
 
         Returns:
