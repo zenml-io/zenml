@@ -88,6 +88,8 @@ ENV_ZENML_AZUREML_RUN_ID = "AZUREML_ROOT_RUN_ID"
 class AzureMLOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines on AzureML."""
 
+    _azureml_client: Optional[MLClient] = None
+
     @property
     def config(self) -> AzureMLOrchestratorConfig:
         """Returns the `AzureMLOrchestratorConfig` config.
@@ -224,17 +226,23 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         Returns:
             The AzureML client.
         """
-        if connector := self.get_connector():
-            credentials = connector.connect()
-        else:
-            credentials = DefaultAzureCredential()
+        if self.connector_has_expired():
+            self._azureml_client = None
 
-        return MLClient(
-            credential=credentials,
-            subscription_id=self.config.subscription_id,
-            resource_group_name=self.config.resource_group,
-            workspace_name=self.config.workspace,
-        )
+        if self._azureml_client is None:
+            if connector := self.get_connector():
+                credentials = connector.connect()
+            else:
+                credentials = DefaultAzureCredential()
+
+            self._azureml_client = MLClient(
+                credential=credentials,
+                subscription_id=self.config.subscription_id,
+                resource_group_name=self.config.resource_group,
+                workspace_name=self.config.workspace,
+            )
+
+        return self._azureml_client
 
     def submit_pipeline(
         self,
@@ -650,18 +658,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             A dictionary of metadata.
         """
         try:
-            if connector := self.get_connector():
-                credentials = connector.connect()
-            else:
-                credentials = DefaultAzureCredential()
-
-            ml_client = MLClient(
-                credential=credentials,
-                subscription_id=self.config.subscription_id,
-                resource_group_name=self.config.resource_group,
-                workspace_name=self.config.workspace,
-            )
-
+            ml_client = self.get_azureml_client()
             azureml_run_id = self.get_orchestrator_run_id()
             azureml_job = ml_client.jobs.get(azureml_run_id)
 
@@ -718,18 +715,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             == run.stack.components[StackComponentType.ORCHESTRATOR][0].id
         )
 
-        # Initialize the AzureML client
-        if connector := self.get_connector():
-            credentials = connector.connect()
-        else:
-            credentials = DefaultAzureCredential()
-
-        ml_client = MLClient(
-            credential=credentials,
-            subscription_id=self.config.subscription_id,
-            resource_group_name=self.config.resource_group,
-            workspace_name=self.config.workspace,
-        )
+        ml_client = self.get_azureml_client()
 
         # Fetch the status of the PipelineJob
         if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
