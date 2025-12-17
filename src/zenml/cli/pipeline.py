@@ -647,7 +647,14 @@ def schedule() -> None:
 @schedule.command("list", help="List all pipeline schedules.")
 @list_options(
     ScheduleFilter,
-    default_columns=["id", "name", "pipeline", "cron_expression"],
+    default_columns=[
+        "id",
+        "name",
+        "pipeline",
+        "cron_expression",
+        "active",
+        "is_archived",
+    ],
 )
 def list_schedules(
     columns: str, output_format: OutputFormat, **kwargs: Any
@@ -750,24 +757,37 @@ def deactivate_schedule(schedule_name_or_id: str) -> None:
     is_flag=True,
     help="Don't ask for confirmation.",
 )
-def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
+@click.option("--hard", "-h", is_flag=True, help="Hard delete the schedule")
+def delete_schedule(
+    schedule_name_or_id: str, yes: bool = False, hard: bool = False
+) -> None:
     """Delete a pipeline schedule.
 
     Args:
         schedule_name_or_id: The name or ID of the schedule to delete.
         yes: If set, don't ask for confirmation.
+        hard: If set will trigger hard deletion of the schedule instead of archiving.
     """
     if not yes:
-        confirmation = cli_utils.confirmation(
-            f"Are you sure you want to delete schedule "
-            f"`{schedule_name_or_id}`?"
-        )
+        if not hard:
+            confirmation = cli_utils.confirmation(
+                f"Are you sure you want to delete schedule "
+                f"`{schedule_name_or_id}`?"
+            )
+        else:
+            confirmation = cli_utils.confirmation(
+                f"Are you sure you want to hard delete schedule "
+                f"`{schedule_name_or_id}`? Any historical data or references "
+                f"to this schedule will be lost."
+            )
         if not confirmation:
             cli_utils.declare("Schedule deletion canceled.")
             return
 
     try:
-        Client().delete_schedule(name_id_or_prefix=schedule_name_or_id)
+        Client().delete_schedule(
+            name_id_or_prefix=schedule_name_or_id, soft=not hard
+        )
     except KeyError as e:
         cli_utils.exception(e)
     else:

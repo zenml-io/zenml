@@ -312,14 +312,6 @@ class ScheduleResponse(
         """
         return self.get_body().is_archived
 
-    def __bool__(self) -> bool:
-        """Boolean validation of the object.
-
-        Returns:
-            `True` if the schedule is not archived, `False` otherwise.
-        """
-        return not self.is_archived
-
 
 # ------------------ Filter Model ------------------
 
@@ -370,7 +362,7 @@ class ScheduleFilter(ProjectScopedFilter):
         union_mode="left_to_right",
     )
 
-    is_archived: bool | None = Field(
-        default=None,
+    is_archived: bool = Field(
+        default=False,
         description="Whether or not the schedule is archived",
     )

@@ -119,13 +119,11 @@ def test_pipeline_schedule_delete(clean_client_with_scheduled_run):
         schedule_name
     ).is_archived
     existing_schedules = clean_client_with_scheduled_run.list_schedules(
-        active=False
+        active=False, is_archived=True
     )
     assert len(existing_schedules) == 1
 
-    existing_schedules = clean_client_with_scheduled_run.list_schedules(
-        active=True
-    )
+    existing_schedules = clean_client_with_scheduled_run.list_schedules()
     assert len(existing_schedules) == 0
 
 
