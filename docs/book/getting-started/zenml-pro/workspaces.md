@@ -1,6 +1,9 @@
 ---
 description: Learn how to use workspaces in ZenML Pro.
 icon: briefcase
+metaLinks:
+  alternates:
+    - https://app.gitbook.com/s/0X0jeOmA9V2fzR9bl1bS/core-concepts/workspaces
 ---
 
 # Workspaces
@@ -10,8 +13,6 @@ icon: briefcase
 {% endhint %}
 
 Workspaces are individual, isolated deployments of the ZenML server. Each workspace has its own set of users, roles, projects, and resources. Essentially, everything you do in ZenML Pro revolves around a workspace: all of your projects, pipelines, stacks, runs, connectors and so on are scoped to a workspace. This includes both traditional ML workflows and AI agent development projects.
-
-![Image showing the workspace page](<.gitbook/assets/Workspace - Home.png>)
 
 The ZenML server that you get through a workspace is a supercharged version of the open-source ZenML server. This means that you get all the features of the open-source version, plus some extra Pro features.
 
@@ -58,19 +59,17 @@ A workspace is a crucial part of your Organization and serves as a container for
 
 {% stepper %}
 {% step %}
-#### Go to your organization page
-
-![Image showing the create workspace page](<.gitbook/assets/Organization - Home.png>)
+**Go to your organization page**
 {% endstep %}
 
 {% step %}
-#### Click on the "New Workspace" button
+**Click on the "New Workspace" button**
 
 <figure><img src=".gitbook/assets/image (1).png" alt=""><figcaption><p>Image showing the "New Workspace" button</p></figcaption></figure>
 {% endstep %}
 
 {% step %}
-#### Add a name and id
+**Add a name and id**
 
 Give your workspace a name, an id, and click on the "**Create Workspace**" button.
 
@@ -82,13 +81,13 @@ Give your workspace a name, an id, and click on the "**Create Workspace**" butto
 {% endstep %}
 
 {% step %}
-#### Your workspace is ready!
+**Your workspace is ready!**
 
 The workspace will then be created and added to your organization. In the meantime, you can already get started with setting up your environment for the onboarding experience.
 
 The image below shows you how the overview page looks like when you are being onboarded. Follow the instructions on the screen to get started.
 
-![Image showing the onboarding experience](../../.gitbook/assets/tenant_onboarding.png)
+![Image showing the onboarding experience](<.gitbook/assets/tenant_onboarding (1).png>)
 
 {% hint style="info" %}
 You can also create a workspace through the Cloud API by navigating to https://cloudapi.zenml.io/ and using the `POST /organizations` endpoint to create a workspace.
@@ -115,7 +114,7 @@ One common approach is to separate your workspaces based on the development stag
 
 This separation allows for a clear distinction between experimental work and production-ready systems, reducing the risk of untested changes affecting live services.
 
-![Staging vs production workspaces](../../.gitbook/assets/staging-production-tenants.png)
+![Staging vs production workspaces](<.gitbook/assets/staging-production-tenants (1).png>)
 
 ### Organizing workspaces by business logic
 
@@ -142,7 +141,7 @@ This organization method offers several benefits:
 * Better alignment with team structures and workflows
 * Enhanced data security and compliance management
 
-![Business logic-based workspace organization](../../.gitbook/assets/staging-production-tenants.png)
+![Business logic-based workspace organization](<.gitbook/assets/staging-production-tenants (1).png>)
 
 Of course, both approaches of organizing your workspaces can be mixed and matched to create a structure that works best for you.
 
@@ -181,7 +180,7 @@ Every workspace (formerly known as tenant) has a name which you can use to conne
 In the API documentation and some error messages, you might still see references to "tenant" instead of "workspace". These terms refer to the same concept and will be updated in future releases.
 {% endhint %}
 
-![Image showing the workspace swagger docs](../../.gitbook/assets/swagger_docs_zenml.png)
+![Image showing the workspace swagger docs](<.gitbook/assets/swagger_docs_zenml (1).png>)
 
 Read more about to access the API [here](https://docs.zenml.io/api-reference).
 

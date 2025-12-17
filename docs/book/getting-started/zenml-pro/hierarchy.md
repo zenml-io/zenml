@@ -1,6 +1,9 @@
 ---
 description: Understanding ZenML's hierarchical structure
 icon: ball-pile
+metaLinks:
+  alternates:
+    - https://app.gitbook.com/s/0X0jeOmA9V2fzR9bl1bS/core-concepts/hierarchy
 ---
 
 # Hierarchy

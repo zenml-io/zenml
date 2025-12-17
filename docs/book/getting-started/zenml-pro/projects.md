@@ -1,6 +1,9 @@
 ---
 description: Managing projects in ZenML
 icon: clipboard-list
+metaLinks:
+  alternates:
+    - https://app.gitbook.com/s/0X0jeOmA9V2fzR9bl1bS/core-concepts/projects
 ---
 
 # Projects
@@ -71,13 +74,13 @@ To create a new project:
 
 {% stepper %}
 {% step %}
-#### Navigate to Projects
+**Navigate to Projects**
 
 From your workspace dashboard, click on the **Projects** tab.
 {% endstep %}
 
 {% step %}
-#### Click "Add a New Project"
+**Click "Add a New Project"**
 
 In the project creation form, you'll need to provide:
 
@@ -87,7 +90,7 @@ In the project creation form, you'll need to provide:
 {% endstep %}
 
 {% step %}
-#### Configure Project Settings
+**Configure Project Settings**
 
 After creating the project, you can configure additional settings such as:
 

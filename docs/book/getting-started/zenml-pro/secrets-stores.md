@@ -1,7 +1,10 @@
 ---
+description: Learn how to link your own secrets store backend to your ZenML Pro workspace.
 icon: lock
-description: >-
-  Learn how to link your own secrets store backend to your ZenML Pro workspace.
+metaLinks:
+  alternates:
+    - >-
+      https://app.gitbook.com/s/0X0jeOmA9V2fzR9bl1bS/access-management/secrets-stores
 ---
 
 # Secrets Stores
@@ -24,10 +27,9 @@ The recommended authentication method documented here is to use the [implicit au
 The process is as follows:
 
 1. Identify the AWS IAM role of your ZenML Pro workspace. Every ZenML Pro workspace is associated with a particular AWS IAM role that bears all the AWS permissions granted to the workspace. The ARN of this role is formed as follows: `arn:aws:iam::715803424590:role/zenml-<workspace-uuid>`. For example, if your workspace UUID is `123e4567-e89b-12d3-a456-426614174000`, the ARN of the role is `arn:aws:iam::715803424590:role/zenml-123e4567-e89b-12d3-a456-426614174000`.
-
 2. Create an AWS IAM role in your AWS account that will be assumed by the ZenML Pro workspace role:
 
-  * use the following trust relationship to allow the ZenML Pro workspace role to assume the new role:
+*   use the following trust relationship to allow the ZenML Pro workspace role to assume the new role:
 
     ```json
     {
@@ -42,31 +44,35 @@ The process is as follows:
       ]
     }
     ```
+* attach the following custom IAM policy to the new role to allow it to access the AWS Secrets Manager service:
 
-   * attach the following custom IAM policy to the new role to allow it to access the AWS Secrets Manager service:
+````
+```json
+````
 
-    ```json
+````
+{
+  "Version": "2012-10-17",
+  "Statement": [
     {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Effect": "Allow",
-          "Action": [
-            "secretsmanager:CreateSecret",
-            "secretsmanager:GetSecretValue",
-            "secretsmanager:DescribeSecret",
-            "secretsmanager:PutSecretValue",
-            "secretsmanager:UpdateSecret",
-            "secretsmanager:TagResource",
-            "secretsmanager:DeleteSecret"
-          ],
-          "Resource": "arn:aws:secretsmanager:<AWS-region>:<AWS-account-id>:secret:zenml/*"
-        }
-      ]
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:UpdateSecret",
+        "secretsmanager:TagResource",
+        "secretsmanager:DeleteSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:<AWS-region>:<AWS-account-id>:secret:zenml/*"
     }
-    ```
+  ]
+}
+```
+````
 
-3. Contact the ZenML Pro support team to update your ZenML Pro workspace to use the new secrets store. You will need to provide the ARN of the new role you created in step 2 and the region where the AWS Secrets Manager service is located. After your workspace is updated, you will see the following changes in the workspace configuration:
+3\. Contact the ZenML Pro support team to update your ZenML Pro workspace to use the new secrets store. You will need to provide the ARN of the new role you created in step 2 and the region where the AWS Secrets Manager service is located. After your workspace is updated, you will see the following changes in the workspace configuration:
 
 ```json
 {
@@ -171,7 +177,6 @@ The recommended authentication method documented here is to use the implicit AWS
 The process is as follows:
 
 1. Identify the AWS IAM role of your ZenML Pro workspace. Every ZenML Pro workspace is associated with a particular AWS IAM role that bears all the AWS permissions granted to the workspace. The ARN of this role is formed as follows: `arn:aws:iam::715803424590:role/zenml-<workspace-uuid>`. For example, if your workspace UUID is `123e4567-e89b-12d3-a456-426614174000`, the ARN of the role is `arn:aws:iam::715803424590:role/zenml-123e4567-e89b-12d3-a456-426614174000`.
-
 2. Enable the AWS authentication method for your HashiCorp Vault:
 
 ```shell
@@ -179,7 +184,6 @@ vault auth enable aws
 ```
 
 3. Enable the AWS authentication method for your HashiCorp Vault and configure an AWS role to use for authentication, e.g.:
-
 
 ```shell
 vault auth enable aws
