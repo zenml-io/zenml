@@ -45,17 +45,13 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
+from zenml.utils import context_utils
 
 if TYPE_CHECKING:
     from zenml.log_stores.base_log_store import BaseLogStoreOrigin
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
-
-
-active_logging_context: ContextVar[Optional["LoggingContext"]] = ContextVar(
-    "active_logging_context", default=None
-)
 
 
 class LogEntry(BaseModel):
@@ -109,8 +105,10 @@ class LogEntry(BaseModel):
     )
 
 
-class LoggingContext:
+class LoggingContext(context_utils.BaseContext):
     """Context manager which collects logs using a LogStore."""
+
+    __context_var__ = ContextVar("logging_context")
 
     def __init__(
         self,
@@ -130,7 +128,6 @@ class LoggingContext:
         """
         self.log_model = log_model
         self._lock = threading.Lock()
-        self._previous_context: Optional[LoggingContext] = None
         self._disabled = False
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
@@ -157,7 +154,7 @@ class LoggingContext:
         Args:
             record: The log record to emit.
         """
-        if context := active_logging_context.get():
+        if context := LoggingContext.get():
             if context._disabled:
                 return
             context._disabled = True
@@ -181,8 +178,7 @@ class LoggingContext:
             self
         """
         with self._lock:
-            self._previous_context = active_logging_context.get()
-            active_logging_context.set(self)
+            super().__enter__()
             self._origin = self._log_store.register_origin(
                 name=self.name,
                 log_model=self.log_model,
@@ -219,7 +215,7 @@ class LoggingContext:
             )
 
         with self._lock:
-            active_logging_context.set(self._previous_context)
+            super().__exit__(exc_type, exc_val, exc_tb)
             if self._origin:
                 self._log_store.deregister_origin(
                     self._origin, blocking=self._block_on_exit
