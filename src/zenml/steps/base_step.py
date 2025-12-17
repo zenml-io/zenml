@@ -48,7 +48,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import StepRuntime
-from zenml.exceptions import StepInterfaceError
+from zenml.exceptions import SourceValidationException, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
@@ -1354,14 +1354,16 @@ To avoid this consider setting step parameters only in one place (config or code
 
             if output.materializer_source:
                 for source in output.materializer_source:
-                    if not source_utils.validate_source_class(
-                        source, expected_class=BaseMaterializer
-                    ):
+                    try:
+                        source_utils.validate_source_class(
+                            source, expected_class=BaseMaterializer
+                        )
+                    except SourceValidationException as e:
                         raise StepInterfaceError(
                             f"Materializer source `{source}` "
                             f"for output '{output_name}' of step '{self.name}' "
                             "does not resolve to a `BaseMaterializer` subclass."
-                        )
+                        ) from e
 
     def _validate_inputs(
         self,
