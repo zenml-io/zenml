@@ -244,6 +244,7 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
         status=ExecutionStatus.COMPLETED,
         sort_by=f"{SorterOps.DESCENDING}:created",
         size=1,
+        hydrate=True,
     ).items
 
     if cache_candidates:

@@ -19,7 +19,7 @@ import socket
 import threading
 import time
 from contextlib import nullcontext
-from typing import List, Optional, Tuple, cast
+from typing import Dict, List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -62,6 +62,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
     RunMetadataResource,
+    StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.step_run_utils import (
@@ -327,7 +328,7 @@ def main() -> None:
             pipeline_run=pipeline_run,
             stack=active_stack,
         )
-        step_runs = {}
+        step_runs: Dict[str, StepRunResponse] = {}
 
         base_labels = {
             "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
@@ -346,7 +347,9 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(step_run_request)
+                step_run_request_factory.populate_request(
+                    step_run_request, step_runs=step_runs
+                )
             except Exception as e:
                 logger.error(
                     f"Failed to populate step run request for step {step_name}: {e}"
