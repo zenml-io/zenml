@@ -141,37 +141,13 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         current_level = get_logging_level()
         return LOGGING_LEVEL_TO_MYDUMPER_VERBOSITY.get(current_level, 2)
 
-    def backup_database(
-        self,
-        overwrite: bool = False,
-    ) -> None:
-        """Backup the database.
+    def _build_mydumper_command(self) -> list[str]:
+        """Build the mydumper command for database backup.
 
-        Args:
-            overwrite: Whether to overwrite an existing backup if it exists.
-                If set to False, the existing backup will be reused.
-
-        Raises:
-            RuntimeError: If the database name is not set or if the backup
-                process fails.
+        Returns:
+            List of command-line arguments for mydumper.
         """
-        if os.path.isdir(self.backup_location):
-            if not overwrite:
-                logger.warning(
-                    f"Backup directory `{self.backup_location}` already exists. "
-                    "Reusing the existing backup."
-                )
-                return
-
-            self.cleanup_database_backup()
-
-        if not self.url.database:
-            raise RuntimeError(
-                "Database name is required for mydumper backup."
-            )
-
-        os.makedirs(self.backup_location, exist_ok=True)
-
+        assert self.url.database is not None
         cmd = ["mydumper"]
         cmd.extend(self._get_mysql_connection_args())
         cmd.extend(["--database", self.url.database])
@@ -186,6 +162,57 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         if self.config.mydumper_extra_args:
             cmd.extend(self.config.mydumper_extra_args)
+
+        return cmd
+
+    def _build_myloader_command(self) -> list[str]:
+        """Build the myloader command for database restore.
+
+        Returns:
+            List of command-line arguments for myloader.
+        """
+        assert self.url.database is not None
+        cmd = ["myloader"]
+        cmd.extend(self._get_mysql_connection_args())
+        cmd.extend(["--database", self.url.database])
+        cmd.extend(["--directory", self.backup_location])
+        cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
+        cmd.append("--overwrite-tables")
+
+        if self.config.myloader_threads:
+            cmd.extend(["--threads", str(self.config.myloader_threads)])
+
+        if self.config.myloader_extra_args:
+            cmd.extend(self.config.myloader_extra_args)
+
+        return cmd
+
+    def backup_database(
+        self,
+        overwrite: bool = False,
+    ) -> None:
+        """Backup the database.
+
+        Args:
+            overwrite: Whether to overwrite an existing backup if it exists.
+                If set to False, the existing backup will be reused.
+
+        Raises:
+            RuntimeError: If the backup process fails.
+        """
+        if os.path.isdir(self.backup_location):
+            if not overwrite:
+                logger.warning(
+                    f"Backup directory `{self.backup_location}` already exists. "
+                    "Reusing the existing backup."
+                )
+                return
+
+            self.cleanup_database_backup()
+
+        os.makedirs(self.backup_location, exist_ok=True)
+
+        cmd = self._build_mydumper_command()
 
         logger.info(
             f"Starting mydumper backup of database `{self.url.database}` "
@@ -228,8 +255,8 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             cleanup: Whether to cleanup the backup after restoring the database.
 
         Raises:
-            RuntimeError: If the backup directory does not exist, if the
-                database name is not set, or if the restore process fails.
+            RuntimeError: If the backup directory does not exist or if the
+                restore process fails.
         """
         if not os.path.isdir(self.backup_location):
             raise RuntimeError(
@@ -237,26 +264,10 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
                 "Please backup the database first."
             )
 
-        if not self.url.database:
-            raise RuntimeError(
-                "Database name is required for myloader restore."
-            )
-
         # Drop and re-create the primary database
         self.create_database(drop=True)
 
-        cmd = ["myloader"]
-        cmd.extend(self._get_mysql_connection_args())
-        cmd.extend(["--database", self.url.database])
-        cmd.extend(["--directory", self.backup_location])
-        cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
-        cmd.append("--overwrite-tables")
-
-        if self.config.myloader_threads:
-            cmd.extend(["--threads", str(self.config.myloader_threads)])
-
-        if self.config.myloader_extra_args:
-            cmd.extend(self.config.myloader_extra_args)
+        cmd = self._build_myloader_command()
 
         logger.info(
             f"Starting myloader restore of database `{self.url.database}` "
