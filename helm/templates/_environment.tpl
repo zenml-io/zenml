@@ -61,6 +61,11 @@ myloader_threads: {{ .ZenML.database.myloaderThreads | quote }}
 {{- if .ZenML.database.myloaderExtraArgs }}
 myloader_extra_args: {{ .ZenML.database.myloaderExtraArgs | toJson | quote }}
 {{- end }}
+{{- else if eq .ZenML.database.backupStrategy "custom" }}
+custom_backup_engine: {{ .ZenML.database.customBackupEngine | quote }}
+{{- if .ZenML.database.customBackupEngineConfig }}
+custom_backup_engine_config: {{ .ZenML.database.customBackupEngineConfig | toJson | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- if .ZenML.database.poolSize }}
