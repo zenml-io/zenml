@@ -315,6 +315,46 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
                 # Job
                 component_job = component(**component_inputs)
 
+                # Apply per-step compute settings if available
+                step_config = snapshot.step_configurations[component_name]
+                step_settings = self.get_settings(step_config)
+
+                if step_settings and isinstance(
+                    step_settings, AzureMLOrchestratorSettings
+                ):
+                    # Check if step settings differ from pipeline settings to avoid unnecessary Azure calls
+                    if (
+                        step_settings.mode != settings.mode
+                        or step_settings.compute_name != settings.compute_name
+                        or step_settings.size != settings.size
+                    ):
+                        try:
+                            step_compute = create_or_get_compute(
+                                ml_client,
+                                step_settings,
+                                default_compute_name="zenml_{}_{}".format(
+                                    self.id, component_name
+                                ),
+                            )
+                            if step_compute:
+                                component_job.compute = step_compute
+                                logger.info(
+                                    "Step '%s' will run on compute: %s",
+                                    component_name,
+                                    step_compute,
+                                )
+                        except Exception as e:
+                            logger.debug(
+                                "Could not apply per-step compute for '%s': %s",
+                                component_name,
+                                e,
+                            )
+                    else:
+                        logger.debug(
+                            "Step '%s' compute settings match pipeline level, using default compute",
+                            component_name,
+                        )
+
                 # Outputs
                 if component_job.outputs:
                     component_outputs[component_name] = (
