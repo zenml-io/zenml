@@ -19,7 +19,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Generator,
-    Optional,
     cast,
 )
 
@@ -45,7 +44,7 @@ class BaseDatabaseBackupEngine(ABC):
     def __init__(
         self,
         config: "SqlZenStoreConfiguration",
-        location: Optional[str] = None,
+        location: str | None = None,
     ) -> None:
         """Initialize the backup engine.
 
@@ -60,10 +59,10 @@ class BaseDatabaseBackupEngine(ABC):
         self.url = url
         self.connect_args = connect_args
         self.engine_args = engine_args
-        self._engine: Optional[Engine] = None
-        self._master_engine: Optional[Engine] = None
+        self._engine: Engine | None = None
+        self._master_engine: Engine | None = None
 
-    def create_engine(self, database: Optional[str] = None) -> Engine:
+    def create_engine(self, database: str | None = None) -> Engine:
         """Get the SQLAlchemy engine for a database.
 
         Args:
@@ -122,7 +121,7 @@ class BaseDatabaseBackupEngine(ABC):
 
     def database_exists(
         self,
-        database: Optional[str] = None,
+        database: str | None = None,
     ) -> bool:
         """Check if a database exists.
 
@@ -154,7 +153,7 @@ class BaseDatabaseBackupEngine(ABC):
 
     def drop_database(
         self,
-        database: Optional[str] = None,
+        database: str | None = None,
     ) -> None:
         """Drops a mysql database.
 
@@ -170,7 +169,7 @@ class BaseDatabaseBackupEngine(ABC):
 
     def create_database(
         self,
-        database: Optional[str] = None,
+        database: str | None = None,
         drop: bool = False,
     ) -> None:
         """Creates a mysql database.
@@ -246,6 +245,8 @@ class BaseDatabaseBackupEngine(ABC):
 
         Raises:
             RuntimeError: If the wrapped operation fails. The original
+                exception is chained.
+            Exception: If the wrapped operation fails. The original
                 exception is chained.
         """
         logger.info(

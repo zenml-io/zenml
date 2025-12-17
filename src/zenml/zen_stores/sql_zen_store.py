@@ -723,6 +723,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Returns:
             The values of the store configuration.
+
+        Raises:
+            ValueError: if a JSON attribute value cannot be decoded.
         """
         for attr in [
             "custom_backup_engine_config",
@@ -734,7 +737,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 try:
                     data[attr] = json.loads(value)
                 except json.JSONDecodeError:
-                    pass
+                    raise ValueError(
+                        f"The value set to the {attr} attribute is not a valid "
+                        "JSON string."
+                    )
 
         return data
 
