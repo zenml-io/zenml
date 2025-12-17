@@ -441,7 +441,7 @@ zenml:
     #          The class should extend from the `zenml.zen_stores.migrations.backup.base_backup_engine.BaseBackupEngine`
     #          base class and be importable from the container image that you
     #          are using for the ZenML server. Arguments for the custom backup engine
-    #          can be passed using the `customBackupEngineArgs` option.
+    #          can be passed using the `customBackupEngineConfig` option.
     #
     # backupStrategy: in-memory
     # backupPVStorageClass: standard
@@ -455,7 +455,7 @@ zenml:
     # myloaderExtraArgs: []
     #
     # customBackupEngine: my.custom.backup.engine.MyCustomBackupEngine
-    # customBackupEngineArgs:
+    # customBackupEngineConfig:
     #   arg1: value1
     #   arg2: value2
 
