@@ -5040,6 +5040,12 @@ class SqlZenStore(BaseZenStore):
             for index, (step_name, step_configuration) in enumerate(
                 snapshot.step_configurations.items()
             ):
+                spec = step_configuration.spec.model_copy(
+                    update={"enable_heartbeat": False}
+                )
+                step_configuration = step_configuration.model_copy(
+                    update={"spec": spec}
+                )
                 step_configuration_schema = StepConfigurationSchema(
                     index=index,
                     name=step_name,
