@@ -227,6 +227,7 @@ def update_heartbeat(
     Raises:
         HTTPException: If the step is finished raises with 422 status code.
     """
+
     step = zen_store().get_run_step(step_run_id, hydrate=False)
 
     if step.status.is_finished:

@@ -613,6 +613,7 @@ def main() -> None:
                     break
 
         def is_node_heartbeat_unhealthy(node: Node) -> bool:
+            """
             from zenml.steps.heartbeat import is_heartbeat_unhealthy
 
             sr_ = client.list_run_steps(
@@ -628,6 +629,10 @@ def main() -> None:
                     latest_heartbeat=sr_.items[0].latest_heartbeat,
                 )
 
+            return False
+            """
+
+            # TODO: replace with a more light-weight version of the check.
             return False
 
         def check_job_status(node: Node) -> NodeStatus:

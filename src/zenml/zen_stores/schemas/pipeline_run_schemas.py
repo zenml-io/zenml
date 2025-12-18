@@ -812,6 +812,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @staticmethod
     def _step_in_progress(step_id: UUID, session: Session) -> bool:
+
         from zenml.steps.heartbeat import is_heartbeat_unhealthy
         from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
@@ -824,6 +825,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         status: ExecutionStatus = ExecutionStatus(step_run.status)
 
+        return not status.is_finished
+
+        """
         return not (
             status.is_finished
             or is_heartbeat_unhealthy(
@@ -834,6 +838,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 latest_heartbeat=step_run.latest_heartbeat,
             )
         )
+        """
 
     def _check_if_run_in_progress(self) -> bool:
         """Checks whether the run is in progress.
