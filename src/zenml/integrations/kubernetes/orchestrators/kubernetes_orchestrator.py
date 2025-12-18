@@ -861,14 +861,19 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"{body.get('message', '')}"
             )
 
-    def run_isolated_step(
+    def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Runs an isolated step on Kubernetes.
+        """Submit an isolated step.
 
         Args:
             step_run_info: The step run information.
-            environment: The environment variables to set.
+            environment: The environment variables to set in the execution
+                environment.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not implement this
+                method.
         """
         from zenml.step_operators.step_operator_entrypoint_configuration import (
             StepOperatorEntrypointConfiguration,
@@ -938,19 +943,44 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             job_manifest=job_manifest,
         )
 
-        logger.info(
-            "Waiting for job `%s` to finish...",
-            job_name,
-        )
-        kube_utils.wait_for_job_to_finish(
+        return job_name
+
+    def get_isolated_step_status(
+        self, step_run_info: "StepRunInfo"
+    ) -> ExecutionStatus:
+        """Get the status of an isolated step.
+
+        Args:
+            step_run_info: The step run information.
+        """
+        job_name = ...
+        job = kube_utils.get_job(
             batch_api=self._k8s_batch_api,
-            core_api=self._k8s_core_api,
             namespace=self.config.kubernetes_namespace,
             job_name=job_name,
-            fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
-            stream_logs=True,
         )
-        logger.info("Job `%s` completed.", job_name)
+        if job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return ExecutionStatus.COMPLETED
+                if condition.type == "Failed" and condition.status == "True":
+                    return ExecutionStatus.FAILED
+
+        return ExecutionStatus.RUNNING
+
+    def stop_isolated_step(self, step_run_info: "StepRunInfo") -> None:
+        """Stop an isolated step.
+
+        Args:
+            step_run_info: The step run information.
+        """
+        job_name = ...
+        self._k8s_batch_api.delete_namespaced_job(
+            name=job_name,
+            namespace=self.config.kubernetes_namespace,
+            propagation_policy="Foreground",
+        )
+        logger.info(f"Successfully stopped step job: {job_name}")
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings

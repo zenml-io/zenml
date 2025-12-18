@@ -122,14 +122,14 @@ class DynamicPipelineRunner:
 
         if (
             snapshot.pipeline_configuration.execution_mode
-            != ExecutionMode.STOP_ON_FAILURE
+            == ExecutionMode.CONTINUE_ON_FAILURE
         ):
             logger.warning(
-                "Only the `%s` execution mode is supported for "
+                "The `%s` execution mode is not supported for "
                 "dynamic pipelines right now. "
-                "The execution mode `%s` will be ignored.",
-                ExecutionMode.STOP_ON_FAILURE,
+                "The `%s` execution mode will be used instead.",
                 snapshot.pipeline_configuration.execution_mode,
+                ExecutionMode.STOP_ON_FAILURE,
             )
 
         self._snapshot = snapshot
@@ -201,22 +201,41 @@ class DynamicPipelineRunner:
         """
         while not self._shutdown_event.is_set():
             start_time = time.time()
+            finished_steps = []
+
             for invocation_id, info in self._running_steps.items():
                 status = self._orchestrator.get_isolated_step_status(info)
 
                 if status.is_successful:
-                    self._running_steps.pop(invocation_id)
+                    logger.info(
+                        "Step `%s` finished successfully.", invocation_id
+                    )
+                    finished_steps.append(invocation_id)
 
                 if status.is_failed:
-                    can_retry = False
+                    finished_steps.append(invocation_id)
 
-                    if can_retry:
+                    remaining_retries = 0
+                    retry_config = info.config.retry
+
+                    max_retries = (
+                        retry_config.max_retries if retry_config else 0
+                    )
+                    step_run = Client().get_run_step(info.step_run_id)
+                    remaining_retries = max(
+                        0, 1 + max_retries - step_run.version
+                    )
+
+                    if remaining_retries > 0:
                         # TODO: handle retries, put in front of queue?
                         ...
                     else:
                         raise RuntimeError(f"Step `{invocation_id}` failed.")
 
                 time.sleep(0.1)
+
+            for invocation_id in finished_steps:
+                self._running_steps.pop(invocation_id)
 
             duration = time.time() - start_time
             time_to_sleep = max(0, 3 - duration)
@@ -232,6 +251,14 @@ class DynamicPipelineRunner:
             self._snapshot.pipeline_configuration.execution_mode
             != ExecutionMode.FAIL_FAST
         ):
+            return
+
+        if not self._orchestrator.can_stop_isolated_steps:
+            logger.warning(
+                "The orchestrator `%s` does not support stopping isolated "
+                "steps. All in progress steps will be left running.",
+                self._orchestrator.__class__.__name__,
+            )
             return
 
         for invocation_id, info in self._running_steps.items():

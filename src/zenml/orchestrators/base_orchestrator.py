@@ -486,27 +486,8 @@ class BaseOrchestrator(StackComponent, ABC):
             Whether the orchestrator can run isolated steps.
         """
         return (
-            getattr(self.run_isolated_step, "__func__", None)
-            is not BaseOrchestrator.run_isolated_step
-        )
-
-    def run_isolated_step(
-        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
-    ) -> None:
-        """Run an isolated step.
-
-        Args:
-            step_run_info: The step run information.
-            environment: The environment variables to set in the execution
-                environment.
-
-        Raises:
-            NotImplementedError: If the orchestrator does not implement this
-                method.
-        """
-        raise NotImplementedError(
-            "Running isolated steps is not implemented for "
-            f"the {self.__class__.__name__} orchestrator."
+            getattr(self.submit_isolated_step, "__func__", None)
+            is not BaseOrchestrator.submit_isolated_step
         )
 
     def submit_isolated_step(
@@ -555,6 +536,18 @@ class BaseOrchestrator(StackComponent, ABC):
                 return
 
             time.sleep(3)
+
+    @property
+    def can_stop_isolated_steps(self) -> bool:
+        """Whether the orchestrator can stop isolated steps.
+
+        Returns:
+            Whether the orchestrator can stop isolated steps.
+        """
+        return (
+            getattr(self.stop_isolated_step, "__func__", None)
+            is not BaseOrchestrator.stop_isolated_step
+        )
 
     def stop_isolated_step(self, step_run_info: "StepRunInfo") -> None:
         """Stop an isolated step.
