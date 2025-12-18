@@ -528,15 +528,22 @@ def main() -> None:
                 job_manifest=job_manifest,
             )
 
-            Client().create_run_metadata(
-                metadata={"step_jobs": {step_name: job_name}},
-                resources=[
-                    RunMetadataResource(
-                        id=pipeline_run.id,
-                        type=MetadataResourceTypes.PIPELINE_RUN,
-                    )
-                ],
-            )
+            try:
+                Client().create_run_metadata(
+                    metadata={"step_jobs": {step_name: job_name}},
+                    resources=[
+                        RunMetadataResource(
+                            id=pipeline_run.id,
+                            type=MetadataResourceTypes.PIPELINE_RUN,
+                        )
+                    ],
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to create run metadata for step `%s`: %s",
+                    step_name,
+                    str(e),
+                )
 
             node.metadata["job_name"] = job_name
 
