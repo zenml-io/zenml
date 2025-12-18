@@ -824,15 +824,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         status: ExecutionStatus = ExecutionStatus(step_run.status)
 
-        return not (
-            status.is_finished
-            or is_heartbeat_unhealthy(
-                step_run_id=step_run.id,
-                status=status,
-                heartbeat_threshold=step_run.heartbeat_threshold,
-                start_time=step_run.start_time,
-                latest_heartbeat=step_run.latest_heartbeat,
-            )
+        return not is_heartbeat_unhealthy(
+            step_run_id=step_run.id,
+            status=status,
+            heartbeat_threshold=step_run.heartbeat_threshold,
+            start_time=step_run.start_time,
+            latest_heartbeat=step_run.latest_heartbeat,
         )
 
     def _check_if_run_in_progress(self) -> bool:
@@ -891,7 +888,18 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                                 find_all_downstream_steps(failed_step, dag)
                             )
 
-                        steps_to_skip.update(failed_steps)
+                        completed_steps = {
+                            name
+                            for _, name, status in step_run_statuses
+                            if ExecutionStatus(status).is_finished
+                        }
+
+                        steps_to_skip.update(
+                            failed_steps
+                        )  # skip downstream steps
+                        steps_to_skip.update(
+                            completed_steps
+                        )  # skip completed steps
 
                         steps_statuses = {
                             name: ExecutionStatus(status)
@@ -917,7 +925,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     else:
                         in_progress = any(
                             not ExecutionStatus(status).is_finished
-                            for _, status in step_run_statuses
+                            for _, _, status in step_run_statuses
                         )
                         return in_progress
                 else:

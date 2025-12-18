@@ -7028,6 +7028,44 @@ class SqlZenStore(BaseZenStore):
             schema=PipelineRunSchema, filter_model=filter_model
         )
 
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        with Session(self.engine) as session:
+            existing_run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+
+            if existing_run.get_pipeline_configuration().enable_heartbeat:
+                raise IllegalOperationError(
+                    f"The heartbeat flag for run {run_id} is already disabled."
+                )
+
+            # update run configuration - new step runs will set heartbeat flags to False
+
+            if existing_run.snapshot:
+                config = json.loads(
+                    existing_run.snapshot.pipeline_configuration
+                )
+            else:
+                config = json.loads(existing_run.pipeline_configuration)
+
+            config["enable_heartbeat"] = False
+            existing_run.snapshot.pipeline_configuration = json.dumps(config)
+
+            session.add(existing_run)
+
+            # set heartbeat threshold to null for all created steps
+
+            stmt = (
+                update(StepRunSchema)
+                .where(StepRunSchema.c.pipeline_run_id == str(existing_run.id))
+                .values(heartbeat_threshold=None)
+            )
+
+            session.exec(stmt)
+            session.commit()
+
     # ----------------------------- Run Metadata -----------------------------
 
     def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
@@ -10011,6 +10049,7 @@ class SqlZenStore(BaseZenStore):
             step_schema.heartbeat_threshold = (
                 step_config.config.heartbeat_healthy_threshold
                 if step_config.spec.enable_heartbeat
+                and run.get_pipeline_configuration().enable_heartbeat
                 else None
             )
 
@@ -10346,6 +10385,71 @@ class SqlZenStore(BaseZenStore):
                 id=existing_step_run.id,
                 status=existing_step_run.status,
                 latest_heartbeat=existing_step_run.latest_heartbeat,
+            )
+
+    def validate_and_update_heartbeat(
+        self,
+        step_run_id: UUID,
+        token_run_id: UUID | None = None,
+        token_schedule_id: UUID | None = None,
+    ) -> StepHeartbeatResponse:
+        """Updates & Validates a step run heartbeat value.
+
+        Lightweight function for fast updates as heartbeats may be received at bulk.
+
+        Args:
+            step_run_id: ID of the step run.
+            token_run_id: Pipeline run id of the auth context
+            token_schedule_id: Schedule id of the auth context
+
+        Returns:
+            Step heartbeat response (minimal info, id, status & latest_heartbeat).
+
+        Raises:
+            AuthorizationException: If token identifiers do not much step information.
+            IllegalOperationError: If update heartbeat is called for a finished step.
+        """
+        with Session(self.engine) as session:
+            step_run = self._get_schema_by_id(
+                resource_id=step_run_id,
+                schema_class=StepRunSchema,
+                session=session,
+            )
+
+            if ExecutionStatus(step_run.status).is_finished:
+                raise IllegalOperationError(
+                    "Can not update heartbeat for finished steps."
+                )
+
+            run = self._get_schema_by_id(
+                resource_id=step_run.pipeline_run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+
+            if token_run_id:
+                if step_run.pipeline_run_id != token_run_id:
+                    raise AuthorizationException(
+                        f"Authentication token provided is invalid for step: {step_run_id}"
+                    )
+            elif token_schedule_id:
+                if not (run.schedule_id == token_schedule_id):
+                    raise AuthorizationException(
+                        f"Authentication token provided is invalid for step: {step_run_id}"
+                    )
+            else:
+                # un-scoped token. Soon to-be-deprecated, we will ignore validation temporarily.
+                pass
+
+            latest_heartbeat = datetime.now(timezone.utc)
+            step_run.latest_heartbeat = latest_heartbeat
+            session.commit()
+
+            return StepHeartbeatResponse(
+                id=step_run_id,
+                status=ExecutionStatus(run.status),
+                latest_heartbeat=latest_heartbeat,
+                heartbeat_enabled=step_run.heartbeat_threshold is not None,
             )
 
     def update_run_step(

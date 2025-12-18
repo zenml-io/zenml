@@ -115,7 +115,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
-    ZENML_PRO_API_KEY_PREFIX,
+    ZENML_PRO_API_KEY_PREFIX, DISABLE_HEARTBEAT,
 )
 from zenml.enums import (
     APITokenType,
@@ -2270,6 +2270,17 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=run_id,
             route=RUNS,
+        )
+
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables heartbeat for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+        """
+        self.put(
+            path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
+            timeout=10,
         )
 
     # ----------------------------- Run Metadata -----------------------------

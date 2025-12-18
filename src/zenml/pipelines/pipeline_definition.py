@@ -137,6 +137,7 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_heartbeat: Optional[bool] = None,
         environment: Optional[Dict[str, Any]] = None,
         secrets: Optional[List[Union[UUID, str]]] = None,
         enable_pipeline_logs: Optional[bool] = None,
@@ -166,6 +167,7 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_heartbeat: If heartbeat should be enabled for this pipeline.
             environment: Environment variables to set when running this
                 pipeline.
             secrets: Secrets to set as environment variables when running this
@@ -209,6 +211,7 @@ class Pipeline:
                 enable_artifact_metadata=enable_artifact_metadata,
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
+                enable_heartbeat=enable_heartbeat,
                 environment=environment,
                 secrets=secrets,
                 enable_pipeline_logs=enable_pipeline_logs,
@@ -258,6 +261,15 @@ class Pipeline:
             If caching is enabled for the pipeline.
         """
         return self.configuration.enable_cache
+
+    @property
+    def enable_heartbeat(self) -> Optional[bool]:
+        """If heartbeat is enabled for the pipeline.
+
+        Returns:
+            If heartbeat is enabled for the pipeline.
+        """
+        return self.configuration.enable_heartbeat
 
     @property
     def configuration(self) -> PipelineConfiguration:
@@ -345,6 +357,7 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_heartbeat: Optional[bool] = None,
         environment: Optional[Dict[str, Any]] = None,
         secrets: Optional[Sequence[Union[UUID, str]]] = None,
         enable_pipeline_logs: Optional[bool] = None,
@@ -383,6 +396,7 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_heartbeat: If heartbeat should be enabled for this pipeline.
             environment: Environment variables to set when running this
                 pipeline.
             secrets: Secrets to set as environment variables when running this
@@ -473,12 +487,16 @@ class Pipeline:
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + list(secrets)
 
+        if not enable_heartbeat:
+            enable_heartbeat = True
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
+                "enable_heartbeat": enable_heartbeat,
                 "environment": environment,
                 "secrets": secrets,
                 "enable_pipeline_logs": enable_pipeline_logs,

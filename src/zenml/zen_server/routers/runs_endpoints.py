@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    DISABLE_HEARTBEAT,
     LOGS,
     PIPELINE_CONFIGURATION,
     REFRESH,
@@ -494,3 +495,33 @@ def run_logs(
             )
 
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")
+
+
+@router.put(
+    "/{run_id}" + DISABLE_HEARTBEAT,
+    responses={
+        400: error_response,
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def disable_run_heartbeat(
+    run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Disables heartbeats for a run.
+
+    Args:
+        run_id: ID of the run.
+    """
+
+    run = verify_permissions_and_get_entity(
+        id=run_id, get_method=zen_store().get_run, hydrate=False
+    )
+
+    verify_permission_for_model(run, action=Action.READ)
+    verify_permission_for_model(run, action=Action.UPDATE)
+
+    zen_store().disable_run_heartbeat(run_id=run_id)

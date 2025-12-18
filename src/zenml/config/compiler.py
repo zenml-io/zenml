@@ -491,6 +491,9 @@ class Compiler:
     def _get_heartbeat_flag(
         pipeline: "Pipeline", stack: "Stack", step_config: "StepConfiguration"
     ) -> bool:
+        if not pipeline.enable_heartbeat:
+            return False
+
         if stack.orchestrator.flavor == "local":
             return False
         elif not pipeline.is_dynamic:

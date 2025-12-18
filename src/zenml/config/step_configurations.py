@@ -225,9 +225,9 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=30,
         description="The amount of time (in minutes) that a running step "
         "has not received heartbeat and is considered healthy. By default, "
-        "set to the maximum value (30 minutes).",
-        ge=1,
-        le=30,
+        "set to 30 minutes.",
+        ge=10,
+        le=60,
     )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
