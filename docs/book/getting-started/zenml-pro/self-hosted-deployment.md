@@ -67,9 +67,6 @@ flowchart TB
 **Complete data sovereignty**: Zero data leaves your environment. All components, metadata, and ML artifacts remain within your infrastructure boundaries.
 {% endhint %}
 
-### Data Flow
-
-For a detailed explanation of the common pipeline execution data flow across all deployment scenarios, see [Common Pipeline Execution Data Flow](deployments-overview.md#common-pipeline-execution-data-flow) in the Deployment Scenarios Overview.
 
 In Self-hosted deployment, users authenticate via your internal identity provider (LDAP/AD/OIDC), and the control plane (running in your infrastructure) handles both authentication and RBAC. All communication happens entirely within your infrastructure boundary with zero external dependencies or internet connectivity required.
 
@@ -360,7 +357,7 @@ Available on request for compliance and security reviews:
 | Customization | Limited | Moderate | **Complete** |
 | Best For | Fast start | Balance | **Max security** |
 
-[Compare all deployment options →](README.md#deployment-scenarios)
+[Compare all deployment options →](scenarios.md)
 
 ## Migration Path
 
@@ -395,13 +392,12 @@ Your ZenML representative will provide you with a tailored migration checklist, 
 
 ## Related Resources
 
-- [System Architecture Overview](../system-architectures.md#zenml-pro-self-hosted-architecture)
-- [Deployment Scenarios Overview](deployments-overview.md)
+- [System Architecture](system-architecture.md)
+- [Scenarios](scenarios.md)
 - [SaaS Deployment](saas-deployment.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
-- [Workload Managers](workload-managers.md)
-- [Self-hosted Deployment Guide](self-hosted.md)
-- [Security & Compliance](README.md#security--compliance)
+- [Configuration Details](configuration-details.md)
+- [Upgrades and Updates](upgrades-updates.md)
 
 ## Get Started
 

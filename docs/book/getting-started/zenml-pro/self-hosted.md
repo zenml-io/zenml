@@ -15,6 +15,8 @@ explain the different options you have.
 
 ZenML Pro can be installed as a self-hosted deployment. You need to be granted access to the ZenML Pro container images and you'll have to provide your own infrastructure: a Kubernetes cluster, a database server and a few other common prerequisites usually needed to expose Kubernetes services via HTTPs - a load balancer, an Ingress controller, HTTPs certificate(s) and DNS rule(s).
 
+<!-- DIAGRAM: Self-hosted architecture showing Control Plane, Workspace Server(s), database(s), ingress controller, and how they connect to user SDK/dashboard -->
+
 This document will guide you through the process.
 
 {% hint style="info" %}
@@ -460,6 +462,8 @@ helm install zenml-workspace ./zenml-artifacts/charts/zenml-<version>.tgz \
 
 ### Infrastructure Requirements
 
+<!-- DIAGRAM: Infrastructure requirements - Kubernetes cluster, database server, load balancer, ingress controller, TLS certificates, DNS -->
+
 To deploy the ZenML Pro control plane and one or more ZenML Pro workspace servers, ensure the following prerequisites are met:
 
 1.  **Kubernetes Cluster**
@@ -593,6 +597,8 @@ The above are infrastructure requirements for ZenML Pro. If, in addition to ZenM
 * (optional) you can install [Kaniko](https://github.com/GoogleContainerTools/kaniko) in your Kubernetes cluster to build the container images for your ZenML pipelines and then configure it as a [ZenML Kaniko Image Builder](https://docs.zenml.io/stacks/image-builders/kaniko) in your ZenML Stack.
 
 ## Stage 1/2: Install the ZenML Pro Control Plane
+
+<!-- DIAGRAM: Control Plane components - API server, dashboard, database connections, ingress paths -->
 
 ### Set up Credentials
 
@@ -953,6 +959,8 @@ Here in the members tab, add all the users you created in the previous step. Mak
 Finally, send the account's username and initial password over to your team members.
 
 ## Stage 2/2: Enroll and Deploy ZenML Pro workspaces
+
+<!-- DIAGRAM: Workspace enrollment flow - Control Plane to Workspace Server registration, database per workspace -->
 
 Installing and updating on-prem ZenML Pro workspace servers is not automated, as it is with the SaaS version. You will be responsible for enrolling workspace servers in the right ZenML Pro organization, installing them and regularly updating them. Some scripts are provided to simplify this task as much as possible.
 
@@ -1497,9 +1505,13 @@ export ZENML_PRO_API_URL=https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
 zenml login
 ```
 
-## Enabling Snapshot Support
+## Configuring the Workload Manager
 
-The ZenML Pro workspace server can be configured to optionally support running pipeline snapshots straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
+The Workspace Server includes a workload manager that enables running pipelines directly from the ZenML Pro UI. **This requires the workspace server to have access to a Kubernetes cluster where ad-hoc runner pods can be created.**
+
+<!-- DIAGRAM: Workload manager architecture - workspace server creating runner pods in Kubernetes, accessing container registry and artifact store -->
+
+This feature requires additional configuration as described below.
 
 {% hint style="warning" %}
 Snapshots are only available from ZenML workspace server version 0.90.0 onwards.

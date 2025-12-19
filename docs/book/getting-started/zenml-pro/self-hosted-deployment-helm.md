@@ -918,7 +918,7 @@ kubectl -n zenml-pro exec -it zenml-pro-xxxxx -- \
 
 ## Day 2 Operations
 
-For information on upgrading ZenML Pro components, see the [Upgrades & Updates](upgrades.md) guide.
+For information on upgrading ZenML Pro components, see the [Upgrades & Updates](upgrades-updates.md) guide.
 
 ## Related Resources
 

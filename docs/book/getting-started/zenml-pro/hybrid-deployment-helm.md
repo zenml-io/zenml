@@ -15,7 +15,15 @@ layout:
 
 # Hybrid Deployment on Kubernetes with Helm
 
-This guide provides step-by-step instructions for deploying ZenML Pro in a Hybrid setup using Kubernetes and Helm charts.
+This guide provides step-by-step instructions for deploying ZenML Pro in a Hybrid setup using Kubernetes and Helm charts. In this deployment model, the Workspace Server runs in your infrastructure while the Control Plane is managed by ZenML.
+
+<!-- DIAGRAM: Hybrid deployment architecture showing Control Plane (ZenML) connected to Workspace Server (your K8s cluster), database, and workload manager pods -->
+
+**What you'll configure:**
+- Workspace Server with database connection
+- Network connectivity to ZenML Control Plane
+- Workload manager for running pipelines from the UI
+- TLS/SSL certificates and domain name
 
 ## Prerequisites
 
@@ -188,9 +196,9 @@ curl -k https://zenml.mycompany.com/health
 3. Sign in with your organization credentials
 4. You should see your workspace listed
 
-## Step 5: (Optional) Enable Snapshot Support / Workload Manager
+## Step 5: Configure Workload Manager
 
-Pipeline snapshots (running pipelines from the UI) require a workload manager. For an overview of available workload manager options and guidance on choosing and configuring one for your hybrid deployment, see the [Workload Managers documentation](../workload-managers.md).
+The Workspace Server includes a workload manager that enables running pipelines directly from the ZenML Pro UI. This requires the workspace server to have access to a Kubernetes cluster where ad-hoc runner pods can be created.
 
 {% hint style="warning" %}
 Snapshots are only available from ZenML workspace server version 0.90.0 onwards.

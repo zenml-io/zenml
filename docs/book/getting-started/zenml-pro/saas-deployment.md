@@ -30,13 +30,7 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
 | **Compute Resources** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
 | **Data & Artifacts** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
 
-### Data Flow
 
-For a detailed explanation of the common pipeline execution data flow across all deployment scenarios, see [Common Pipeline Execution Data Flow](deployments-overview.md#common-pipeline-execution-data-flow) in the Deployment Scenarios Overview.
-
-{% hint style="success" %}
-**Your ML data never leaves your infrastructure.** Only metadata about runs and pipelines is stored on ZenML infrastructure.
-{% endhint %}
 
 ## Key Benefits
 
@@ -159,7 +153,7 @@ ZenML Pro SaaS includes:
 | Data Sovereignty | Metadata on ZenML | Full | Full |
 | Best For | Fast time-to-value | Security requirements | Strictest compliance |
 
-[Compare all deployment options →](README.md#deployment-scenarios)
+[Compare all deployment options →](scenarios.md)
 
 ## Migration Path
 
@@ -171,12 +165,12 @@ Already running ZenML OSS? Migrating to SaaS is possible with the assistance of 
 
 ## Related Resources
 
-- [System Architecture Overview](../system-architectures.md#zenml-pro-saas-architecture)
-- [Deployment Scenarios Overview](deployments-overview.md)
+- [System Architecture](system-architecture.md)
+- [Scenarios](scenarios.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
 - [Self-hosted Deployment](self-hosted-deployment.md)
-- [Workload Managers](workload-managers.md)
-- [Security & Compliance](README.md#security--compliance)
+- [Configuration Details](configuration-details.md)
+- [Upgrades and Updates](upgrades-updates.md)
 
 ## Get Started
 

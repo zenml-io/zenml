@@ -30,11 +30,7 @@ The Hybrid deployment model is designed for organizations that need to keep sens
 | **Compute Resources** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
 | **Data & Artifacts** | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
 
-### Data Flow
 
-For a detailed explanation of the common pipeline execution data flow across all deployment scenarios, see [Common Pipeline Execution Data Flow](deployments-overview.md#common-pipeline-execution-data-flow) in the Deployment Scenarios Overview.
-
-In Hybrid deployment, users authenticate via ZenML-hosted control plane (SSO), and RBAC policies are enforced there before token issuance.
 
 {% hint style="success" %}
 **Complete data sovereignty**: All metadata, secrets, and ML artifacts remain within your infrastructure. Only authentication and authorization data flows to ZenML control plane.
@@ -354,7 +350,7 @@ Contact [cloud@zenml.io](mailto:cloud@zenml.io) to request security documentatio
 | Control | Minimal | Moderate | Complete |
 | Best For | Fast start | Security + Convenience | Strictest compliance |
 
-[Compare all deployment options →](README.md#deployment-scenarios)
+[Compare all deployment options →](scenarios.md)
 
 ## Migration Paths
 
@@ -388,12 +384,12 @@ A workspace deep copy feature for migrating pipelines and artifacts between work
 
 ## Related Resources
 
-- [System Architecture Overview](../system-architectures.md#zenml-pro-hybrid-saas)
-- [Deployment Scenarios Overview](deployments-overview.md)
+- [System Architecture](system-architecture.md)
+- [Scenarios](scenarios.md)
 - [SaaS Deployment](saas-deployment.md)
 - [Self-hosted Deployment](self-hosted-deployment.md)
-- [Workload Managers](workload-managers.md)
-- [Self-hosted Deployment Guide](self-hosted.md)
+- [Configuration Details](configuration-details.md)
+- [Upgrades and Updates](upgrades-updates.md)
 - [Workspaces](workspaces.md)
 - [Organizations](organization.md)
 

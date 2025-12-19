@@ -240,7 +240,7 @@ Create database instances (within your air-gapped network):
 
 ## Step 3: Configure Helm Values for Control Plane
 
-To learn more about the ZenML Pro control plane, see [Control Plane Architecture and Setup](control-plane.md).
+To learn more about the ZenML Pro control plane, see [System Architecture](system-architecture.md#control-plane) and [Control Plane Configuration](config-control-plane.md).
 
 The ZenML Pro Helm chart for on-prem deployments exposes many configurable values. For the full list and documentation of each field, consult the [ZenML Pro Helm chart reference](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro).
 

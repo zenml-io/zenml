@@ -1,20 +1,25 @@
 # Table of contents
 
-* [Comparison OSS vs Pro](README.md)
-* [Services Overview](services.md)
-  * [Control Plane](control-plane.md)
-  * [Workspace Server](workspace-server.md)
-  * [Workload Managers](workload-managers.md)
+* [Introduction](README.md)
+* [System Architecture](system-architecture.md)
 
 ## Deployments
+* [Scenarios](scenarios.md)
+  * [SaaS](saas-deployment.md)
+  * [Hybrid](hybrid-deployment.md)
+    * [Kubernetes with Helm](hybrid-deployment-helm.md)
+    * [AWS ECS](hybrid-deployment-ecs.md)
+  * [Self-hosted](self-hosted-deployment.md)
+    * [Kubernetes with Helm](self-hosted-deployment-helm.md)
 
-* [Deployment Scenarios Overview](deployments-overview.md)
-* [SaaS Deployment](saas-deployment.md)
-* [Hybrid SaaS Deployment](hybrid-deployment.md)
-  * [Kubernetes with Helm](hybrid-deployment-helm.md)
-  * [AWS ECS](hybrid-deployment-ecs.md)
-* [Self-hosted Deployment](self-hosted-deployment.md)
-  * [Kubernetes with Helm](self-hosted-deployment-helm.md)
+## Manage
+
+* [Configuration Details](configuration-details.md)
+  * [Control Plane](config-control-plane.md)
+  * [Workspace Server](config-workspace-server.md)
+* [Upgrades and Updates](upgrades-updates.md)
+  * [Control Plane](upgrades-control-plane.md)
+  * [Workspace Server](upgrades-workspace-server.md)
 
 ## Core Concepts
 
@@ -30,7 +35,3 @@
 * [Personal Access Tokens](personal-access-tokens.md)
 * [Service Accounts](service-accounts.md)
 * [Secrets Stores](secrets-stores.md)
-
-## Operations
-
-* [Upgrades & Updates](upgrades.md)
