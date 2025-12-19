@@ -28,6 +28,7 @@
 * [Workspaces](workspaces.md)
 * [Projects](projects.md)
 * [Teams](teams.md)
+* [Snapshots](snapshots.md)
 
 ## Access Management
 
