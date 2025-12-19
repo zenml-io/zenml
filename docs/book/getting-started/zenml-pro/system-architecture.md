@@ -7,14 +7,16 @@ icon: diagram-project
 
 ZenML Pro's architecture consists of two core services that work together to execute, track, and manage your ML pipelines. Understanding these services helps you make informed decisions about deployment, security, and infrastructure.
 
-<!-- DIAGRAM: High-level architecture showing Control Plane, Workspace Server, and data flow between them and user infrastructure -->
+<!-- DIAGRAM: High-level architecture showing Control Plane connected to multiple Workspace Servers, and data flow between them and user infrastructure -->
 
 ## Core Services
 
+A single **Control Plane** manages one or more **Workspace Servers**. This allows you to have separate workspaces for different teams, projects, or environments (dev/staging/prod) while maintaining centralized authentication and organization management.
+
 | Service | Purpose | Deployment Location |
 |---------|---------|---------------------|
-| [**Control Plane**](#control-plane) | Authentication, RBAC, organization management | ZenML infrastructure (SaaS/Hybrid) or yours (Self-hosted) |
-| [**Workspace Server**](#workspace-server) | Stores metadata, serves APIs, manages entities, runs pipelines from UI | Your infrastructure (Hybrid/Self-hosted) or ZenML (SaaS) |
+| [**Control Plane**](#control-plane) | Authentication, RBAC, organization management (1 per organization) | ZenML infrastructure (SaaS/Hybrid) or yours (Self-hosted) |
+| [**Workspace Server**](#workspace-server) | Stores metadata, serves APIs, manages entities, runs pipelines from UI (1 or more per Control Plane) | Your infrastructure (Hybrid/Self-hosted) or ZenML (SaaS) |
 
 ## Control Plane
 
