@@ -5,7 +5,7 @@ description: Write dynamic pipelines
 # Dynamic Pipelines (Experimental)
 
 {% hint style="warning" %}
-**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local`, `kubernetes`, `sagemaker` and `vertex` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
+**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local`, `local_docker`, `kubernetes`, `sagemaker`, `vertex`, and `azureml` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
 {% hint style="info" %}
@@ -123,7 +123,10 @@ def map_reduce():
 ```
 
 Key points:
-- `step.map(...)` fans out a step over sequence-like inputs.
+- `step.map(...)` fans out a step over sequence-like inputs. These inputs can be either
+  - a single list-like output artifact (see the code sample above)
+  - a list of output artifacts.
+  - the output of a `.map(...)` or `.product(...)` call if the respective step only returns a single output artifact
 - Steps can accept lists of artifacts directly as inputs (useful for reducers).
 - You can pass the mapped output directly to a downstream step without loading in the orchestration environment.
 
@@ -212,6 +215,34 @@ Notes:
 - `results` is a future that refers to all outputs of all steps, and `unpack()` works for both `.map(...)` and `.product(...)`.
 - Each list contains future objects that refer to a single artifact.
 
+#### Pass artifact chunks manually
+
+In some cases, you might want to loop over a sequence-like artifact manually and launch steps for only some items.
+You can do so efficiently by using the `artifact.chunk(...)` method:
+```python
+from zenml import pipeline, step
+
+@step
+def create_int_list() -> list[int]:
+    return [1, 2, 3, 4]
+
+@step
+def compute(a: int) -> int:
+    return a * 2
+
+@pipeline(dynamic=True)
+def custom_loop():
+    ints = create_int_list()
+
+    for index, value in enumerate(ints.load()):
+        # Apply some filter
+        if value % 2 == 0:
+            # Get the artifact chunk. Notice that we use `ints` here, which
+            # is a reference to the artifact and not the actual data that we
+            # loop over
+            chunk = ints.chunk(index=index)
+            compute(chunk)
+```
 
 ### Parallel Step Execution
 
@@ -307,12 +338,16 @@ When running multiple steps concurrently using `step.submit()`, a failure in one
 ### Orchestrator Support
 
 Dynamic pipelines are currently only supported by:
-- `local` orchestrator
-- `kubernetes` orchestrator
-- `sagemaker` orchestrator
-- `vertex` orchestrator
 
-Other orchestrators will raise an error if you try to run a dynamic pipeline with them.
+| Orchestrator                                | Isolated steps | Handles orchestration environment failures |
+| ------------------------------------------- | :------------: | :----------------------------------------: |
+| [LocalOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/local)               | ❌             | ❌                                   |
+| [LocalDockerOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/local-docker)  | ❌             | ❌                                   |
+| [KubernetesOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)     | ✅             | ✅                                   |
+| [VertexOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/vertex)             | ✅             | ❌                                   |
+| [SagemakerOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker)       | ✅             | ❌                                   |
+| [AzureMLOrchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/azureml)        | ✅             | ❌                                   |
+
 
 ### Artifact Loading
 
@@ -322,6 +357,10 @@ When you call `.load()` on an artifact in a dynamic pipeline, it synchronously l
 
 - Mapping is currently supported only over artifacts produced within the same pipeline run (mapping over raw data or external artifacts is not supported).
 - Chunk size for mapped collection loading defaults to 1 and is not yet configurable.
+
+### Execution mode
+
+Currently only the `STOP_ON_FAILURE` execution mode is supported for dynamic pipelines, and will be used as a default.
 
 ## Best Practices
 

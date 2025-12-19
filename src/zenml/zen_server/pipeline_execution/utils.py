@@ -619,6 +619,7 @@ def snapshot_request_from_source_snapshot(
         source_snapshot=source_snapshot_id,
         pipeline_version_hash=source_snapshot.pipeline_version_hash,
         pipeline_spec=pipeline_spec,
+        source_code=source_snapshot.source_code,
     )
 
 

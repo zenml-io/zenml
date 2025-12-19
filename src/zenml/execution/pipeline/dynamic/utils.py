@@ -13,10 +13,20 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline execution utilities."""
 
+import time
 from typing import (
     Generic,
     TypeVar,
 )
+from uuid import UUID
+
+from zenml.client import Client
+from zenml.enums import ExecutionStatus
+from zenml.logger import get_logger
+from zenml.models import StepRunResponse
+
+logger = get_logger(__name__)
+
 
 T = TypeVar("T")
 
@@ -46,3 +56,31 @@ def unmapped(value: T) -> _Unmapped[T]:
         The wrapped value.
     """
     return _Unmapped(value)
+
+
+def wait_for_step_run_to_finish(step_run_id: UUID) -> "StepRunResponse":
+    """Wait until a step run is finished.
+
+    Args:
+        step_run_id: The ID of the step run.
+
+    Returns:
+        The finished step run.
+    """
+    sleep_interval = 1
+    max_sleep_interval = 64
+
+    while True:
+        step_run = Client().zen_store.get_run_step(step_run_id)
+
+        if step_run.status != ExecutionStatus.RUNNING:
+            return step_run
+
+        logger.debug(
+            "Waiting for step run with ID %s to finish (current status: %s)",
+            step_run_id,
+            step_run.status,
+        )
+        time.sleep(sleep_interval)
+        if sleep_interval < max_sleep_interval:
+            sleep_interval *= 2

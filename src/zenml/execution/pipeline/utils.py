@@ -15,14 +15,7 @@
 
 import contextvars
 from contextlib import contextmanager
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Generator,
-    Optional,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Union
 
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfigurationUpdate
@@ -39,6 +32,7 @@ if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
+    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -113,3 +107,42 @@ def submit_pipeline(
                 publish_failed_pipeline_run(placeholder_run.id)
 
             raise e
+
+
+def compute_invocation_id(
+    existing_invocations: Set[str],
+    step: "BaseStep",
+    custom_id: Optional[str] = None,
+    allow_suffix: bool = True,
+) -> str:
+    """Compute the invocation ID.
+
+    Args:
+        existing_invocations: The existing invocation IDs.
+        step: The step for which to compute the ID.
+        custom_id: Custom ID to use for the invocation.
+        allow_suffix: Whether a suffix can be appended to the invocation
+            ID.
+
+    Raises:
+        RuntimeError: If no ID suffix is allowed and an invocation for the
+            same ID already exists.
+        RuntimeError: If no unique invocation ID can be found.
+
+    Returns:
+        The invocation ID.
+    """
+    base_id = id_ = custom_id or step.name
+
+    if id_ not in existing_invocations:
+        return id_
+
+    if not allow_suffix:
+        raise RuntimeError(f"Duplicate step ID `{id_}`")
+
+    for index in range(2, 10000):
+        id_ = f"{base_id}_{index}"
+        if id_ not in existing_invocations:
+            return id_
+
+    raise RuntimeError("Unable to find step ID")

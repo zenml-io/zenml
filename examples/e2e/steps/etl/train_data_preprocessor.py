@@ -77,9 +77,13 @@ def train_data_preprocessor(
     if normalize:
         # Normalize the data
         preprocess_pipeline.steps.append(("normalize", MinMaxScaler()))
-    preprocess_pipeline.steps.append(
-        ("cast", DataFrameCaster(dataset_trn.columns))
-    )
+    # Ensure the DataFrameCaster uses a column list consistent with any dropping.
+    # This avoids shape/column mismatches when `drop_columns` is enabled.
+    caster_columns = list(dataset_trn.columns)
+    if drop_columns:
+        drop_set = set(drop_columns)
+        caster_columns = [c for c in caster_columns if c not in drop_set]
+    preprocess_pipeline.steps.append(("cast", DataFrameCaster(caster_columns)))
     dataset_trn = preprocess_pipeline.fit_transform(dataset_trn)
     dataset_tst = preprocess_pipeline.transform(dataset_tst)
     ### YOUR CODE ENDS HERE ###

@@ -83,10 +83,12 @@ class ExecutionStatus(StrEnum):
 
     INITIALIZING = "initializing"
     PROVISIONING = "provisioning"
+    RUNNING = "running"
     FAILED = "failed"
     COMPLETED = "completed"
-    RUNNING = "running"
     CACHED = "cached"
+    # When a step that can be retried failed, its status is set to retrying.
+    # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
     STOPPED = "stopped"
@@ -157,6 +159,7 @@ class StackComponentType(StrEnum):
     EXPERIMENT_TRACKER = "experiment_tracker"
     FEATURE_STORE = "feature_store"
     IMAGE_BUILDER = "image_builder"
+    LOG_STORE = "log_store"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"

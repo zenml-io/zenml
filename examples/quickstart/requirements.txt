@@ -1,1 +1,1 @@
-zenml[server]>=0.91.2
+zenml[server]>=0.93.0

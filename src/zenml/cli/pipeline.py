@@ -21,7 +21,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import fetch_snapshot, list_options
+from zenml.cli.utils import OutputFormat, fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.deployers.base_deployer import BaseDeployer
@@ -491,7 +491,8 @@ def deploy_pipeline(
         dashboard_url = get_deployment_url(deployment)
         if dashboard_url:
             cli_utils.declare(
-                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]",
+                no_wrap=True,
             )
 
         if attach:
@@ -574,25 +575,30 @@ def create_run_template(
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-@list_options(PipelineFilter)
-def list_pipelines(**kwargs: Any) -> None:
+@list_options(
+    PipelineFilter,
+    default_columns=["id", "name", "user", "latest_run_status", "created"],
+)
+def list_pipelines(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all registered pipelines.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter pipelines.
     """
     client = Client()
     with console.status("Listing pipelines...\n"):
         pipelines = client.list_pipelines(**kwargs)
 
-        if not pipelines.items:
-            cli_utils.declare("No pipelines found for this filter.")
-            return
-
-        cli_utils.print_pydantic_models(
-            pipelines,
-            exclude_columns=["id", "created", "updated", "user", "project"],
-        )
+    cli_utils.print_page(
+        pipelines,
+        columns,
+        output_format,
+        empty_message="No pipelines found for this filter.",
+    )
 
 
 @pipeline.command("delete")
@@ -639,24 +645,26 @@ def schedule() -> None:
 
 
 @schedule.command("list", help="List all pipeline schedules.")
-@list_options(ScheduleFilter)
-def list_schedules(**kwargs: Any) -> None:
+@list_options(
+    ScheduleFilter,
+    default_columns=["id", "name", "pipeline", "cron_expression"],
+)
+def list_schedules(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all pipeline schedules.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter schedules.
     """
-    client = Client()
-
-    schedules = client.list_schedules(**kwargs)
-
-    if not schedules:
-        cli_utils.declare("No schedules found for this filter.")
-        return
-
-    cli_utils.print_pydantic_models(
+    schedules = Client().list_schedules(**kwargs)
+    cli_utils.print_page(
         schedules,
-        exclude_columns=["id", "created", "updated", "user", "project"],
+        columns,
+        output_format,
+        empty_message="No schedules found for this filter.",
     )
 
 
@@ -670,7 +678,8 @@ def list_schedules(**kwargs: Any) -> None:
     help="The cron expression to update the schedule with.",
 )
 def update_schedule(
-    schedule_name_or_id: str, cron_expression: Optional[str] = None
+    schedule_name_or_id: str,
+    cron_expression: str | None = None,
 ) -> None:
     """Update a pipeline schedule.
 
@@ -678,7 +687,11 @@ def update_schedule(
         schedule_name_or_id: The name or ID of the schedule to update.
         cron_expression: The cron expression to update the schedule with.
     """
-    if not cron_expression:
+    options = [
+        cron_expression,
+    ]
+
+    if not any(options):
         cli_utils.declare("No schedule update requested.")
         return
 
@@ -691,6 +704,42 @@ def update_schedule(
         cli_utils.exception(e)
     else:
         cli_utils.declare(f"Updated schedule '{schedule_name_or_id}'.")
+
+
+@schedule.command("activate", help="Activate a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+def activate_schedule(schedule_name_or_id: str) -> None:
+    """Activate a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+    """
+    try:
+        Client().update_schedule(
+            name_id_or_prefix=schedule_name_or_id, active=True
+        )
+    except KeyError as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Activated schedule '{schedule_name_or_id}'.")
+
+
+@schedule.command("deactivate", help="Deactivate a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+def deactivate_schedule(schedule_name_or_id: str) -> None:
+    """Activate a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+    """
+    try:
+        Client().update_schedule(
+            name_id_or_prefix=schedule_name_or_id, active=False
+        )
+    except KeyError as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Deactivated schedule '{schedule_name_or_id}'.")
 
 
 @schedule.command("delete", help="Delete a pipeline schedule.")
@@ -731,11 +780,26 @@ def runs() -> None:
 
 
 @runs.command("list", help="List all registered pipeline runs.")
-@list_options(PipelineRunFilter)
-def list_pipeline_runs(**kwargs: Any) -> None:
+@list_options(
+    PipelineRunFilter,
+    default_columns=[
+        "id",
+        "index",
+        "run_name",
+        "pipeline",
+        "status",
+        "stack",
+        "owner",
+    ],
+)
+def list_pipeline_runs(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all registered pipeline runs for the filter.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter pipeline runs.
     """
     client = Client()
@@ -744,13 +808,15 @@ def list_pipeline_runs(**kwargs: Any) -> None:
             pipeline_runs = client.list_pipeline_runs(**kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-    else:
-        if not pipeline_runs.items:
-            cli_utils.declare("No pipeline runs found for this filter.")
-            return
+        return
 
-        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs.items)
-        cli_utils.print_page_info(pipeline_runs)
+    cli_utils.print_page(
+        pipeline_runs,
+        columns,
+        output_format,
+        cli_utils.generate_pipeline_run_row,
+        empty_message="No pipeline runs found for this filter.",
+    )
 
 
 @runs.command("stop")
@@ -882,11 +948,26 @@ def builds() -> None:
 
 
 @builds.command("list", help="List all pipeline builds.")
-@list_options(PipelineBuildFilter)
-def list_pipeline_builds(**kwargs: Any) -> None:
+@list_options(
+    PipelineBuildFilter,
+    default_columns=[
+        "id",
+        "pipeline",
+        "stack",
+        "zenml_version",
+        "python_version",
+        "checksum",
+        "is_local",
+    ],
+)
+def list_pipeline_builds(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all pipeline builds for the filter.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter pipeline builds.
     """
     client = Client()
@@ -895,22 +976,14 @@ def list_pipeline_builds(**kwargs: Any) -> None:
             pipeline_builds = client.list_builds(hydrate=True, **kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-    else:
-        if not pipeline_builds.items:
-            cli_utils.declare("No pipeline builds found for this filter.")
-            return
+        return
 
-        cli_utils.print_pydantic_models(
-            pipeline_builds,
-            exclude_columns=[
-                "created",
-                "updated",
-                "user",
-                "project",
-                "images",
-                "stack_checksum",
-            ],
-        )
+    cli_utils.print_page(
+        pipeline_builds,
+        columns,
+        output_format,
+        empty_message="No pipeline builds found for this filter.",
+    )
 
 
 @builds.command("delete")
@@ -1241,54 +1314,47 @@ def deploy_snapshot(
             dashboard_url = get_deployment_url(deployment)
             if dashboard_url:
                 cli_utils.declare(
-                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]",
+                    no_wrap=True,
                 )
 
 
 @snapshot.command("list", help="List pipeline snapshots.")
-@list_options(PipelineSnapshotFilter)
-def list_pipeline_snapshots(**kwargs: Any) -> None:
+@list_options(
+    PipelineSnapshotFilter,
+    default_columns=[
+        "id",
+        "name",
+        "pipeline",
+        "is_dynamic",
+        "runnable",
+        "deployable",
+    ],
+)
+def list_pipeline_snapshots(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all pipeline snapshots for the filter.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter pipeline snapshots.
     """
     client = Client()
     try:
         with console.status("Listing pipeline snapshots...\n"):
-            pipeline_snapshots = client.list_snapshots(hydrate=True, **kwargs)
+            pipeline_snapshots = client.list_snapshots(**kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-    else:
-        if not pipeline_snapshots.items:
-            cli_utils.declare("No pipeline snapshots found for this filter.")
-            return
+        return
 
-        cli_utils.print_pydantic_models(
-            pipeline_snapshots,
-            exclude_columns=[
-                "created",
-                "updated",
-                "user_id",
-                "project_id",
-                "pipeline_configuration",
-                "step_configurations",
-                "client_environment",
-                "client_version",
-                "server_version",
-                "run_name_template",
-                "pipeline_version_hash",
-                "pipeline_spec",
-                "build",
-                "schedule",
-                "code_reference",
-                "config_schema",
-                "config_template",
-                "source_snapshot_id",
-                "template_id",
-                "code_path",
-            ],
-        )
+    cli_utils.print_page(
+        pipeline_snapshots,
+        columns,
+        output_format,
+        empty_message="No pipeline snapshots found for this filter.",
+    )
 
 
 @snapshot.command("delete", help="Delete a pipeline snapshot.")

@@ -101,10 +101,6 @@ class PipelineRunRequest(ProjectScopedRequest):
     snapshot: UUID = Field(
         title="The snapshot associated with the pipeline run."
     )
-    pipeline: Optional[UUID] = Field(
-        title="The pipeline associated with the pipeline run.",
-        default=None,
-    )
     orchestrator_run_id: Optional[str] = Field(
         title="The orchestrator run ID.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -214,6 +210,9 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
         default=None,
         title="The reason for the status of the pipeline run.",
     )
+    index: int = Field(
+        title="The unique index of the run within the pipeline."
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -308,10 +307,6 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
     )
-    logs: Optional["LogsResponse"] = Field(
-        title="Logs associated with this pipeline run.",
-        default=None,
-    )
     log_collection: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this pipeline run.",
         default=None,
@@ -390,6 +385,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().status
+
+    @property
+    def index(self) -> int:
+        """The `index` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().index
 
     @property
     def run_metadata(self) -> Dict[str, MetadataType]:
@@ -510,6 +514,27 @@ class PipelineRunResponse(
         return self.get_metadata().is_templatable
 
     @property
+    def trigger_info(self) -> Optional[PipelineRunTriggerInfo]:
+        """The `trigger_info` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().trigger_info
+
+    @property
+    def triggered_by_deployment(self) -> bool:
+        """The `triggered_by_deployment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return (
+            self.trigger_info is not None
+            and self.trigger_info.deployment_id is not None
+        )
+
+    @property
     def snapshot(self) -> Optional["PipelineSnapshotResponse"]:
         """The `snapshot` property.
 
@@ -600,15 +625,6 @@ class PipelineRunResponse(
         return self.get_resources().tags
 
     @property
-    def logs(self) -> Optional["LogsResponse"]:
-        """The `logs` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().logs
-
-    @property
     def log_collection(self) -> Optional[List["LogsResponse"]]:
         """The `log_collection` property.
 
@@ -639,7 +655,6 @@ class PipelineRunFilter(
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
-        "unlisted",
         "code_repository_id",
         "build_id",
         "schedule_id",
@@ -671,6 +686,10 @@ class PipelineRunFilter(
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
+    )
+    index: Optional[int] = Field(
+        default=None,
+        description="The unique index of the run within the pipeline.",
     )
     orchestrator_run_id: Optional[str] = Field(
         default=None,
@@ -748,7 +767,6 @@ class PipelineRunFilter(
         description="End time for this run",
         union_mode="left_to_right",
     )
-    unlisted: Optional[bool] = None
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     #   generic `pipeline` filter below.
     pipeline_name: Optional[str] = Field(
@@ -823,13 +841,6 @@ class PipelineRunFilter(
             StackSchema,
             StepRunSchema,
         )
-
-        if self.unlisted is not None:
-            if self.unlisted is True:
-                unlisted_filter = PipelineRunSchema.pipeline_id.is_(None)  # type: ignore[union-attr]
-            else:
-                unlisted_filter = PipelineRunSchema.pipeline_id.is_not(None)  # type: ignore[union-attr]
-            custom_filters.append(unlisted_filter)
 
         if self.code_repository_id:
             code_repo_filter = and_(

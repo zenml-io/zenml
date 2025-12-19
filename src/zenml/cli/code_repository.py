@@ -19,12 +19,13 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import OutputFormat, list_options
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
 from zenml.config.source import Source
 from zenml.console import console
 from zenml.enums import CliCategories
+from zenml.exceptions import SourceValidationException
 from zenml.logger import get_logger
 from zenml.models import CodeRepositoryFilter
 from zenml.utils import source_utils
@@ -139,13 +140,14 @@ def register_code_repository(
                 "a path to the implementation class using the --source option: "
                 "`zenml code-repository register --type=custom --source=<...>"
             )
-        if not source_utils.validate_source_class(
-            source_path, expected_class=BaseCodeRepository
-        ):
+        try:
+            source_utils.validate_source_class(
+                source_path, expected_class=BaseCodeRepository
+            )
+        except SourceValidationException as e:
             cli_utils.error(
-                f"Your source {source_path} does not point to a "
-                f"`{BaseCodeRepository.__name__}` subclass and can't be used "
-                "to register a code repository."
+                "Unable to register code repository from source "
+                f"`{source_path}`: {e}"
             )
 
         source = Source.from_import_path(source_path)
@@ -189,24 +191,29 @@ def describe_code_repository(name_id_or_prefix: str) -> None:
 
 
 @code_repository.command("list", help="List all connected code repositories.")
-@list_options(CodeRepositoryFilter)
-def list_code_repositories(**kwargs: Any) -> None:
+@list_options(
+    CodeRepositoryFilter,
+    default_columns=["id", "name", "type", "source", "project", "description"],
+)
+def list_code_repositories(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all connected code repositories.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter code repositories.
     """
     with console.status("Listing code repositories...\n"):
         repos = Client().list_code_repositories(**kwargs)
 
-        if not repos.items:
-            cli_utils.declare("No code repositories found for this filter.")
-            return
-
-        cli_utils.print_pydantic_models(
-            repos,
-            exclude_columns=["created", "updated", "user", "project"],
-        )
+    cli_utils.print_page(
+        repos,
+        columns,
+        output_format,
+        empty_message="No code repositories found for this filter.",
+    )
 
 
 @code_repository.command(

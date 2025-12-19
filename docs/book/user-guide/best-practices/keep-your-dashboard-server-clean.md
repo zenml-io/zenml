@@ -19,16 +19,6 @@ Note that there are some limitations to this approach, particularly if you want 
 
 ## Pipeline Runs
 
-### Unlisted Runs
-
-Pipeline runs can be created without being explicitly associated with a pipeline by passing the `unlisted` parameter when running a pipeline:
-
-```python
-pipeline_instance.run(unlisted=True)
-```
-
-Unlisted runs are not displayed on the pipeline's page in the dashboard (though they _are_ displayed in the pipeline run section), keeping the pipeline's history clean and focused on the pipelines that matter most.
-
 ### Deleting Pipeline Runs
 
 If you want to delete a specific pipeline run, you can use a script like this:
