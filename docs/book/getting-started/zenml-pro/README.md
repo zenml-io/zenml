@@ -3,6 +3,7 @@ description: Learn about the ZenML Pro features and deployment scenarios.
 cover: .gitbook/assets/procover.png
 coverY: 0
 layout:
+  width: default
   cover:
     visible: true
     size: hero
@@ -16,6 +17,8 @@ layout:
     visible: true
   pagination:
     visible: true
+  metadata:
+    visible: true
 ---
 
 # Introduction
@@ -24,7 +27,7 @@ layout:
 
 The [Pro version of ZenML](https://zenml.io/pro) extends the Open Source product with advanced features for enterprise-grade MLOps. It provides multi-user collaboration, role-based access control, flexible deployment options, and professional support to help teams scale their ML operations.
 
-![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp-walkthrough.gif)
+![Walkthrough of ZenML Model Control Plane](.gitbook/assets/mcp-walkthrough.gif)
 
 {% hint style="info" %}
 To get access to ZenML Pro, [book a call](https://www.zenml.io/book-your-demo).
