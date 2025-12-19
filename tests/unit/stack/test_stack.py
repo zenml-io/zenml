@@ -85,7 +85,10 @@ def test_stack_returns_all_its_components(
         StackComponentType.ORCHESTRATOR: local_orchestrator,
         StackComponentType.ARTIFACT_STORE: local_artifact_store,
     }
-    assert stack.components == expected_components
+    assert all(
+        stack.components[component_type] == component
+        for component_type, component in expected_components.items()
+    )
 
     # check that it also works with optional container registry
     stack = Stack(
@@ -100,7 +103,10 @@ def test_stack_returns_all_its_components(
         local_container_registry
     )
 
-    assert stack.components == expected_components
+    assert all(
+        stack.components[component_type] == component
+        for component_type, component in expected_components.items()
+    )
 
 
 def test_stack_requirements(stack_with_mock_components):

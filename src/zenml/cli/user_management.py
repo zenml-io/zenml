@@ -19,7 +19,11 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import is_sorted_or_filtered, list_options
+from zenml.cli.utils import (
+    OutputFormat,
+    is_sorted_or_filtered,
+    list_options,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
@@ -77,34 +81,47 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-@list_options(UserFilter)
+@list_options(
+    UserFilter, default_columns=["active", "id", "name", "full_name"]
+)
 @click.pass_context
-def list_users(ctx: click.Context, /, **kwargs: Any) -> None:
+def list_users(
+    ctx: click.Context,
+    /,
+    columns: str,
+    output_format: OutputFormat,
+    **kwargs: Any,
+) -> None:
     """List all users.
 
     Args:
         ctx: The click context object
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         kwargs: Keyword arguments to filter the list of users.
     """
     client = Client()
-    with console.status("Listing stacks...\n"):
+    with console.status("Listing users...\n"):
         users = client.list_users(**kwargs)
-        if not users:
-            cli_utils.declare("No users found for the given filters.")
-            return
 
-        cli_utils.print_pydantic_models(
-            users,
-            exclude_columns=[
-                "created",
-                "updated",
-                "email",
-                "email_opted_in",
-                "activation_token",
-            ],
-            active_models=[Client().active_user],
-            show_active=not is_sorted_or_filtered(ctx),
-        )
+    # Handle active user highlighting (only if not filtered/sorted)
+    show_active = not is_sorted_or_filtered(ctx)
+    if show_active and users.items:
+        active_user_id = client.active_user.id
+        if active_user_id not in {u.id for u in users.items}:
+            users.items.insert(0, client.active_user)
+        users.items.sort(key=lambda u: u.id != active_user_id)
+    else:
+        active_user_id = None
+
+    cli_utils.print_page(
+        users,
+        columns,
+        output_format,
+        empty_message="No users found for the given filters.",
+        row_generator=cli_utils.generate_user_row,
+        active_id=active_user_id,
+    )
 
 
 @user.command(

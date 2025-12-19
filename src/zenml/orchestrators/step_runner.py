@@ -33,15 +33,12 @@ from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
-    ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
     ENV_ZENML_STEP_OPERATOR,
-    handle_bool_env_var,
 )
-from zenml.enums import ArtifactSaveType
+from zenml.enums import ArtifactSaveType, ExecutionStatus
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
-from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
 from zenml.models.v2.core.step_run import (
@@ -76,6 +73,10 @@ from zenml.utils import (
     source_utils,
     string_utils,
     tag_utils,
+)
+from zenml.utils.logging_utils import (
+    is_step_logging_enabled,
+    setup_step_logging,
 )
 from zenml.utils.typing_utils import get_args, get_origin, is_union
 
@@ -143,29 +144,13 @@ class StepRunner:
         """
         from zenml.deployers.server import runtime
 
-        if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
-            step_logging_enabled = False
-        else:
-            enabled_on_step = step_run.config.enable_step_logs
-            enabled_on_pipeline = pipeline_run.config.enable_step_logs
-
-            step_logging_enabled = is_setting_enabled(
-                is_enabled_on_step=enabled_on_step,
-                is_enabled_on_pipeline=enabled_on_pipeline,
-            )
-
         logs_context = nullcontext()
-        if step_logging_enabled and not redirected.get():
-            if step_run.logs:
-                logs_context = PipelineLogsStorageContext(  # type: ignore[assignment]
-                    logs_uri=step_run.logs.uri,
-                    artifact_store=self._stack.artifact_store,
-                )
-            else:
-                logger.debug(
-                    "There is no LogsResponseModel prepared for the step. The"
-                    "step logging storage is disabled."
-                )
+        if is_step_logging_enabled(step_run.config, pipeline_run.config):
+            logs_context = setup_step_logging(
+                step_run=step_run,
+                pipeline_run=pipeline_run,
+                source="step",
+            )
 
         with logs_context:
             step_instance = self._load_step()
@@ -251,46 +236,55 @@ class StepRunner:
                         )
                 except BaseException as step_exception:  # noqa: E722
                     step_failed = True
-
-                    exception_info = (
-                        exception_utils.collect_exception_information(
-                            step_exception, step_instance
-                        )
-                    )
-
-                    if ENV_ZENML_STEP_OPERATOR in os.environ:
-                        # We're running in a step operator environment, so we can't
-                        # depend on the step launcher to publish the exception info
-                        Client().zen_store.update_run_step(
-                            step_run_id=step_run_info.step_run_id,
-                            step_run_update=StepRunUpdate(
-                                exception_info=exception_info,
-                            ),
-                        )
-                    else:
-                        # This will be published by the step launcher
-                        step_exception_info.set(exception_info)
-
-                    if not step_run.is_retriable:
-                        if (
-                            failure_hook_source
-                            := self.configuration.failure_hook_source
-                        ):
-                            logger.info("Detected failure hook. Running...")
-                            with env_utils.temporary_environment(
-                                step_environment
-                            ):
-                                load_and_run_hook(
-                                    failure_hook_source,
-                                    step_exception=step_exception,
-                                )
                     if (
                         isinstance(step_exception, KeyboardInterrupt)
                         and heartbeat_worker.is_terminated
                     ):
+                        Client().zen_store.update_run_step(
+                            step_run_id=step_run_info.step_run_id,
+                            step_run_update=StepRunUpdate(
+                                status=ExecutionStatus.STOPPING,
+                            ),
+                        )
+
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
                         )
+                    else:
+                        exception_info = (
+                            exception_utils.collect_exception_information(
+                                step_exception, step_instance
+                            )
+                        )
+
+                        if ENV_ZENML_STEP_OPERATOR in os.environ:
+                            # We're running in a step operator environment, so we can't
+                            # depend on the step launcher to publish the exception info
+                            Client().zen_store.update_run_step(
+                                step_run_id=step_run_info.step_run_id,
+                                step_run_update=StepRunUpdate(
+                                    exception_info=exception_info,
+                                ),
+                            )
+                        else:
+                            # This will be published by the step launcher
+                            step_exception_info.set(exception_info)
+
+                        if not step_run.is_retriable:
+                            if (
+                                failure_hook_source
+                                := self.configuration.failure_hook_source
+                            ):
+                                logger.info(
+                                    "Detected failure hook. Running..."
+                                )
+                                with env_utils.temporary_environment(
+                                    step_environment
+                                ):
+                                    load_and_run_hook(
+                                        failure_hook_source,
+                                        step_exception=step_exception,
+                                    )
                     raise step_exception
                 finally:
                     heartbeat_worker.stop()
@@ -507,7 +501,6 @@ class StepRunner:
             elif arg in self.configuration.parameters:
                 function_params[arg] = self.configuration.parameters[arg]
             else:
-                breakpoint()
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
                 )

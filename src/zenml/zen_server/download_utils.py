@@ -18,7 +18,7 @@ import tarfile
 import tempfile
 from typing import TYPE_CHECKING
 
-from zenml.artifacts.utils import _load_artifact_store
+from zenml.artifacts.utils import load_artifact_store
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ArtifactVersionResponse,
@@ -51,7 +51,7 @@ def verify_artifact_is_downloadable(
             "underlying artifact store was deleted."
         )
 
-    artifact_store = _load_artifact_store(
+    artifact_store = load_artifact_store(
         artifact_store_id=artifact.artifact_store_id, zen_store=zen_store()
     )
 

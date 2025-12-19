@@ -197,6 +197,7 @@ class AzureMLStepOperator(BaseStepOperator):
             environment_variables=environment,
             compute=compute_target,
             experiment_name=info.pipeline.name,
+            shm_size=settings.shm_size,
         )
 
         job = ml_client.jobs.create_or_update(command_job)

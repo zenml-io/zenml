@@ -205,6 +205,9 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         if schedule_update.cron_expression:
             self.cron_expression = schedule_update.cron_expression
 
+        if schedule_update.active is not None:
+            self.active = schedule_update.active
+
         self.updated = utc_now()
         return self
 

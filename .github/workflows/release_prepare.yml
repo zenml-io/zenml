@@ -133,7 +133,7 @@ jobs:
           gh pr create --base "develop" --head "${{ github.ref }}" \
             --title "Prepare release ${{ needs.fetch-versions.outputs.new_version }}" \
             --body "This PR prepares the release of version ${{ needs.fetch-versions.outputs.new_version }}." \
-            --label "internal" --label "python" --label "run-slow-ci" --label "release"
+            --label "internal" --label "run-slow-ci" --label "release" --label "no-release-notes"
       # Send a message to Discord to alert everyone for the release
       - name: Send message to Discord
         # Only run this part once when the release branch is created

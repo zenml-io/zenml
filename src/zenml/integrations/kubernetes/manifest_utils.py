@@ -28,6 +28,7 @@ from zenml.integrations.airflow.orchestrators.dag_generator import (
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
+from zenml.utils import string_utils
 
 logger = get_logger(__name__)
 
@@ -167,7 +168,14 @@ def build_pod_manifest(
     labels = labels or {}
 
     if pod_settings:
-        add_pod_settings(pod_spec, pod_settings)
+        substitutions = {
+            "{{ image }}": image_name,
+        }
+        add_pod_settings(
+            pod_spec=pod_spec,
+            settings=pod_settings,
+            substitutions=substitutions,
+        )
 
     if pod_settings and pod_settings.labels:
         labels.update(pod_settings.labels)
@@ -197,12 +205,14 @@ def build_pod_manifest(
 def add_pod_settings(
     pod_spec: k8s_client.V1PodSpec,
     settings: KubernetesPodSettings,
+    substitutions: Dict[str, str],
 ) -> None:
     """Updates pod `spec` fields in place if passed in orchestrator settings.
 
     Args:
         pod_spec: Pod spec to update.
         settings: Pod settings to apply.
+        substitutions: Substitutions to apply to additional pod spec arguments.
     """
     if settings.node_selectors:
         pod_spec.node_selector = settings.node_selectors
@@ -262,6 +272,11 @@ def add_pod_settings(
         else:
             if value is None:
                 continue
+
+            def _substitute(v: str) -> str:
+                return substitutions.get(v, v)
+
+            value = string_utils.substitute_string(value, _substitute)
 
             existing_value = getattr(pod_spec, key)
             if isinstance(existing_value, list):

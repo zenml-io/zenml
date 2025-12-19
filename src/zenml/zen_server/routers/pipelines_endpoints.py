@@ -21,7 +21,6 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     PIPELINES,
-    RUNS,
     VERSION_1,
 )
 from zenml.models import (
@@ -29,8 +28,6 @@ from zenml.models import (
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
-    PipelineRunFilter,
-    PipelineRunResponse,
     PipelineUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -232,29 +229,3 @@ def delete_pipeline(
     )
     if should_decrement:
         report_decrement(ResourceType.PIPELINE, resource_id=pipeline_id)
-
-
-@router.get(
-    "/{pipeline_id}" + RUNS,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper(deduplicate=True)
-def list_pipeline_runs(
-    pipeline_run_filter_model: PipelineRunFilter = Depends(
-        make_dependable(PipelineRunFilter)
-    ),
-    hydrate: bool = False,
-    _: AuthContext = Security(authorize),
-) -> Page[PipelineRunResponse]:
-    """Get pipeline runs according to query filters.
-
-    Args:
-        pipeline_run_filter_model: Filter model used for pagination, sorting,
-            filtering
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-
-    Returns:
-        The pipeline runs according to query filters.
-    """
-    return zen_store().list_runs(pipeline_run_filter_model, hydrate=hydrate)

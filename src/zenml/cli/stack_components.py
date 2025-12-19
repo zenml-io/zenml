@@ -28,11 +28,11 @@ from zenml.cli.feature import register_feature_store_subcommands
 from zenml.cli.model_registry import register_model_registry_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
+    OutputFormat,
     _component_display_name,
     is_sorted_or_filtered,
     list_options,
     print_model_url,
-    print_page_info,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -152,32 +152,63 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    @list_options(ComponentFilter)
+    @list_options(
+        ComponentFilter,
+        default_columns=["active", "id", "name", "flavor", "owner"],
+    )
     @click.pass_context
     def list_stack_components_command(
-        ctx: click.Context, /, **kwargs: Any
+        ctx: click.Context,
+        /,
+        columns: str,
+        output_format: OutputFormat,
+        **kwargs: Any,
     ) -> None:
         """Prints a table of stack components.
 
         Args:
             ctx: The click context object
+            columns: Columns to display in output.
+            output_format: Format for output (table/json/yaml/csv/tsv).
             kwargs: Keyword arguments to filter the components.
         """
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type
             components = client.list_stack_components(**kwargs)
-            if not components:
-                cli_utils.declare("No components found for the given filters.")
-                return
 
-            cli_utils.print_components_table(
-                client=client,
-                component_type=component_type,
-                components=components.items,
-                show_active=not is_sorted_or_filtered(ctx),
+            show_active = not is_sorted_or_filtered(ctx)
+            if show_active and components.items:
+                active_stack = client.active_stack_model
+                active_component = None
+                if component_type in active_stack.components.keys():
+                    active_components = active_stack.components[component_type]
+                    active_component = (
+                        active_components[0] if active_components else None
+                    )
+
+                if active_component is not None:
+                    active_component_id = active_component.id
+                    if active_component_id not in {
+                        c.id for c in components.items
+                    }:
+                        components.items.insert(0, active_component)
+                    components.items.sort(
+                        key=lambda c: c.id != active_component_id
+                    )
+                else:
+                    active_component_id = None
+            else:
+                active_component_id = None
+
+            cli_utils.print_page(
+                components,
+                columns,
+                output_format,
+                empty_message="No components found for the given filters.",
+                row_generator=cli_utils.generate_component_row,
+                active_id=active_component_id,
             )
-            print_page_info(components)
 
     return list_stack_components_command
 

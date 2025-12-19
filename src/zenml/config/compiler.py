@@ -505,6 +505,7 @@ class Compiler:
             step_runtime = get_step_runtime(
                 step_config=step_config,
                 pipeline_docker_settings=pipeline.configuration.docker_settings,
+                orchestrator=stack.orchestrator,
             )
             if step_runtime == StepRuntime.ISOLATED:
                 # dynamic pipelines & isolated execution

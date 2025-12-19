@@ -117,7 +117,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             nullable=True,
         )
     )
-
+    heartbeat_threshold: Optional[int] = Field(nullable=True)
     # Foreign keys
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -188,9 +188,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
-    logs: Optional["LogsSchema"] = Relationship(
+    logs: List["LogsSchema"] = Relationship(
         back_populates="step_run",
-        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     parents: List["StepRunParentsSchema"] = Relationship(
         sa_relationship_kwargs={
@@ -277,14 +277,13 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             joinedload(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
-        if include_metadata:
-            options.extend(
-                [
-                    selectinload(jl_arg(StepRunSchema.logs)),
-                    # joinedload(jl_arg(StepRunSchema.parents)),
-                    # joinedload(jl_arg(StepRunSchema.run_metadata)),
-                ]
-            )
+        # if include_metadata:
+        #     options.extend(
+        #         [
+        #             joinedload(jl_arg(StepRunSchema.parents)),
+        #             joinedload(jl_arg(StepRunSchema.run_metadata)),
+        #         ]
+        #     )
 
         if include_resources:
             options.extend(
@@ -311,6 +310,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     .joinedload(
                         jl_arg(ArtifactVersionSchema.artifact), innerjoin=True
                     ),
+                    selectinload(jl_arg(StepRunSchema.logs)),
                 ]
             )
 
@@ -447,7 +447,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
                 if self.exception_info
                 else None,
-                logs=self.logs.to_model() if self.logs else None,
                 snapshot_id=self.snapshot_id,
                 pipeline_run_id=self.pipeline_run_id,
                 original_step_run_id=self.original_step_run_id,
@@ -488,6 +487,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             resources = StepRunResponseResources(
                 user=self.user.to_model() if self.user else None,
                 model_version=model_version,
+                log_collection=[log.to_model() for log in self.logs],
                 inputs=input_artifacts,
                 outputs=output_artifacts,
             )

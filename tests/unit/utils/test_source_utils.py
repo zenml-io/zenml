@@ -31,6 +31,7 @@ from zenml.config.source import (
     Source,
     SourceType,
 )
+from zenml.exceptions import SourceValidationException
 from zenml.utils import code_repository_utils, source_utils
 
 CURRENT_MODULE_PARENT_DIR = str(pathlib.Path(__file__).resolve().parent)
@@ -307,26 +308,27 @@ def test_validating_source_classes(mocker):
             instance_source, expected_class=EmptyClass
         )
 
-    assert not source_utils.validate_source_class(
-        instance_source, expected_class=EmptyClass
-    )
+    with pytest.raises(SourceValidationException):
+        source_utils.validate_source_class(
+            instance_source, expected_class=EmptyClass
+        )
 
     class_source = f"{__name__}.{EmptyClass.__name__}"
     with pytest.raises(TypeError):
         source_utils.load_and_validate_class(class_source, expected_class=int)
 
-    assert not source_utils.validate_source_class(
-        class_source, expected_class=int
-    )
+    with pytest.raises(SourceValidationException):
+        source_utils.validate_source_class(class_source, expected_class=int)
 
     with does_not_raise():
         source_utils.load_and_validate_class(
             class_source, expected_class=EmptyClass
         )
 
-    assert source_utils.validate_source_class(
-        class_source, expected_class=EmptyClass
-    )
+    with does_not_raise():
+        source_utils.validate_source_class(
+            class_source, expected_class=EmptyClass
+        )
 
 
 def test_package_utility_functions():

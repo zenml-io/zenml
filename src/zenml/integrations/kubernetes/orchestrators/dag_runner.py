@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """DAG runner."""
 
+import contextvars
 import queue
 import threading
 import time
@@ -122,9 +123,11 @@ class DagRunner:
         self.node_monitoring_function = node_monitoring_function
         self.node_stop_function = node_stop_function
         self.interrupt_function = interrupt_function
+
+        ctx = contextvars.copy_context()
         self.monitoring_thread = threading.Thread(
             name="DagRunner-Monitoring-Loop",
-            target=self._monitoring_loop,
+            target=lambda: ctx.run(self._monitoring_loop),
             daemon=True,
         )
         self.monitoring_interval = monitoring_interval
@@ -231,7 +234,8 @@ class DagRunner:
                     "Node `%s` started (status: %s)", node.id, node.status
                 )
 
-        self.startup_executor.submit(_start_node_task)
+        ctx = contextvars.copy_context()
+        self.startup_executor.submit(ctx.run, _start_node_task)
 
     def _stop_node(self, node: Node) -> None:
         """Stop a node.

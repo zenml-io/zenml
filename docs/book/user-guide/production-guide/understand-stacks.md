@@ -50,6 +50,10 @@ Stack 'default' with id '...' is owned by user default and is 'private'.
 ```
 
 {% hint style="info" %}
+You can customize the output using `--columns` to show specific fields or `--output` to change the format (json, yaml, csv, tsv). Learn more in the [Quick Wins guide](../best-practices/quick-wins.md#id-15-export-cli-data-in-multiple-formats).
+{% endhint %}
+
+{% hint style="info" %}
 As you can see a stack can be **active** on your **client**. This simply means that any pipeline you run will be using the **active stack** as its environment.
 {% endhint %}
 

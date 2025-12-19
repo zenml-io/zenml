@@ -539,7 +539,7 @@ def load_artifact_visualization(
             f"Artifact '{artifact.id}' cannot be visualized because the "
             "underlying artifact store was deleted."
         )
-    artifact_store = _load_artifact_store(
+    artifact_store = load_artifact_store(
         artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
     )
     try:
@@ -821,7 +821,7 @@ def _load_artifact_from_uri(
     return artifact
 
 
-def _load_artifact_store(
+def load_artifact_store(
     artifact_store_id: Union[str, "UUID"],
     zen_store: Optional["BaseZenStore"] = None,
 ) -> "BaseArtifactStore":

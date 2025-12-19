@@ -47,7 +47,7 @@ Without snapshots, each scenario would require:
 
 - **Through REST API**: Your CI/CD system can trigger snapshots via API calls
 ```bash
-  curl -X POST 'https://your-zenml-server/api/v1/pipeline-snapshots/<ID>/runs' -H 'Authorization: Bearer <TOKEN>' -d '{"steps": {...}}'
+  curl -X POST 'https://your-zenml-server/api/v1/pipeline-snapshots/<ID>/runs' -H 'Authorization: Bearer <TOKEN>' -d '{"run_configuration": {...}}'
 ```
 - **Through Browser** (Pro feature): Non-technical stakeholders can run snapshots directly from the ZenML dashboard by simply filling in a form with the required parameters - no coding required!
 
@@ -182,7 +182,7 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <YOUR-TOKEN>' \
   -d '{
-  "steps": {"model_trainer": {"parameters": {"model_type": "rf"}}}
+  "run_configuration" { "steps": {"model_trainer": {"parameters": {"model_type": "rf"}}}}
 }'
 ```
 

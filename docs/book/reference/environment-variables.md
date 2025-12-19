@@ -129,6 +129,28 @@ To set the path to the global config file, used by ZenML to manage and store the
 export ZENML_CONFIG_PATH=/path/to/somewhere
 ```
 
+## CLI output formatting
+
+### Default output format
+
+Set the default output format for all CLI list commands:
+
+```bash
+export ZENML_DEFAULT_OUTPUT=json
+```
+
+Choose from `table` (default), `json`, `yaml`, `csv`, or `tsv`. This applies to commands like `zenml stack list`, `zenml pipeline list`, etc.
+
+### Terminal width override
+
+Override the automatic terminal width detection for table rendering:
+
+```bash
+export ZENML_CLI_COLUMN_WIDTH=120
+```
+
+This is useful when running ZenML in CI/CD environments or when you want to control table formatting regardless of your terminal size.
+
 ## Server configuration
 
 For more information on server configuration, see the [ZenML Server documentation](../getting-started/deploying-zenml/deploy-with-docker.md#zenml-server-configuration-options) for more, especially the section entitled "ZenML server configuration options".

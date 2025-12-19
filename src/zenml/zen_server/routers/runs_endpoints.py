@@ -30,13 +30,8 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
+from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.logger import get_logger
-from zenml.logging.step_logging import (
-    MAX_ENTRIES_PER_REQUEST,
-    LogEntry,
-    fetch_log_records,
-    parse_log_entry,
-)
 from zenml.models import (
     Page,
     PipelineRunDAG,
@@ -48,6 +43,11 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.utils import run_utils
+from zenml.utils.logging_utils import (
+    LogEntry,
+    fetch_logs,
+    search_logs_by_source,
+)
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -458,9 +458,7 @@ def run_logs(
     store = zen_store()
 
     run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=store.get_run,
-        hydrate=True,
+        id=run_id, get_method=store.get_run, hydrate=True
     )
 
     # Handle runner logs from workload manager
@@ -469,6 +467,10 @@ def run_logs(
         if (
             snapshot.template_id or snapshot.source_snapshot_id
         ) and server_config().workload_manager_enabled:
+            from zenml.log_stores.artifact.artifact_log_store import (
+                parse_log_entry,
+            )
+
             workload_logs = workload_manager().get_logs(
                 workload_id=snapshot.id
             )
@@ -483,15 +485,12 @@ def run_logs(
 
             return log_entries
 
-    # Handle logs from log collection
     if run.log_collection:
-        for log_entry in run.log_collection:
-            if log_entry.source == source:
-                return fetch_log_records(
-                    zen_store=store,
-                    artifact_store_id=log_entry.artifact_store_id,
-                    logs_uri=log_entry.uri,
-                )
+        if logs_response := search_logs_by_source(run.log_collection, source):
+            return fetch_logs(
+                logs=logs_response,
+                zen_store=store,
+                limit=MAX_ENTRIES_PER_REQUEST,
+            )
 
-    # If no logs found for the specified source, raise an error
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")

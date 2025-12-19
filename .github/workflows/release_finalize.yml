@@ -118,3 +118,4 @@ jobs:
                       --body "This PR adds version ${{ github.event.inputs.latest_version }} to the legacy documentation reference table." \
                       --base develop \
                       --head legacy_docs_update_${{ github.event.inputs.latest_version }}
+                      --label "no-release-notes"

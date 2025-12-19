@@ -10,6 +10,8 @@ jobs:
       os: ubuntu-latest
       python-version: '3.11'
     secrets: inherit
+  # We only run the `latest` DB migration test here, as the other previous steps in the release flow already
+  # test full migrations.
   mysql-db-migration-testing:
     runs-on: ubuntu-latest
     env:
@@ -30,7 +32,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mysql
+        run: bash scripts/test-migrations.sh mysql latest
   sqlite-db-migration-testing:
     runs-on: ubuntu-latest
     env:
@@ -46,7 +48,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh sqlite
+        run: bash scripts/test-migrations.sh sqlite latest
   mariadb-db-migration-testing:
     runs-on: ubuntu-latest
     env:
@@ -67,7 +69,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mariadb
+        run: bash scripts/test-migrations.sh mariadb latest
   publish-python-package:
     # This previously used the publish_to_pypi.yml workflow, but PyPI
     # doesn't support trusted publishing with reusable workflows yet.

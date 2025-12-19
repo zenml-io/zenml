@@ -108,7 +108,6 @@ def create_placeholder_run(
         orchestrator_run_id=orchestrator_run_id,
         project=snapshot.project_id,
         snapshot=snapshot.id,
-        pipeline=snapshot.pipeline.id if snapshot.pipeline else None,
         status=ExecutionStatus.INITIALIZING,
         tags=snapshot.pipeline_configuration.tags,
         logs=logs,

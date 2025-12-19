@@ -52,10 +52,6 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.constants import (
-    ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
-    handle_bool_env_var,
-)
 from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.execution.pipeline.utils import (
@@ -64,14 +60,9 @@ from zenml.execution.pipeline.utils import (
 )
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-from zenml.logging.step_logging import (
-    PipelineLogsStorageContext,
-    prepare_logs_uri,
-)
 from zenml.models import (
     CodeReferenceRequest,
     DeploymentResponse,
-    LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
     PipelineRequest,
@@ -105,6 +96,10 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
+from zenml.utils.logging_utils import (
+    is_pipeline_logging_enabled,
+    setup_run_logging,
+)
 from zenml.utils.string_utils import format_name_template
 from zenml.utils.tag_utils import Tag
 
@@ -135,6 +130,7 @@ class Pipeline:
 
     def __init__(
         self,
+        *,
         name: str,
         entrypoint: F,
         enable_cache: Optional[bool] = None,
@@ -194,7 +190,8 @@ class Pipeline:
                 function with no arguments (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
-            substitutions: Extra placeholders to use in the name templates.
+            substitutions: Extra substitutions for pipeline run, model and
+                artifact name placeholders.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
             **kwargs: Additional keyword arguments.
@@ -412,7 +409,8 @@ class Pipeline:
             model: configuration of the model version in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
-            substitutions: Extra placeholders to use in the name templates.
+            substitutions: Extra substitutions for pipeline run, model and
+                artifact name placeholders.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
@@ -1008,6 +1006,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule=schedule_id,
             code_reference=code_reference,
             code_path=code_path,
+            source_code=self.source_code,
             **snapshot.model_dump(),
             **snapshot_request_kwargs,
         )
@@ -1030,54 +1029,24 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
 
-            # Enable or disable pipeline run logs storage
-            if self._run_args.get("schedule"):
-                # Pipeline runs scheduled to run in the future are not logged
-                # via the client.
-                logging_enabled = False
-            elif handle_bool_env_var(
-                ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
-            ):
-                logging_enabled = False
-            else:
-                logging_enabled = self._run_args.get(
-                    "enable_pipeline_logs",
-                    self.configuration.enable_pipeline_logs
-                    if self.configuration.enable_pipeline_logs is not None
-                    else True,
-                )
+            snapshot = self._create_snapshot(**self._run_args)
+            self.log_pipeline_snapshot_metadata(snapshot)
+
+            run = (
+                create_placeholder_run(snapshot=snapshot)
+                if not snapshot.schedule
+                else None
+            )
 
             logs_context = nullcontext()
-            logs_model = None
-
-            if logging_enabled:
-                # Configure the logs
-                logs_uri = prepare_logs_uri(
-                    stack.artifact_store,
-                )
-
-                logs_context = PipelineLogsStorageContext(
-                    logs_uri=logs_uri,
-                    artifact_store=stack.artifact_store,
-                    prepend_step_name=False,
-                )  # type: ignore[assignment]
-
-                logs_model = LogsRequest(
-                    uri=logs_uri,
-                    source="client",
-                    artifact_store_id=stack.artifact_store.id,
+            if run and is_pipeline_logging_enabled(
+                snapshot.pipeline_configuration
+            ):
+                logs_context = setup_run_logging(
+                    pipeline_run=run, source="client"
                 )
 
             with logs_context:
-                snapshot = self._create_snapshot(**self._run_args)
-
-                self.log_pipeline_snapshot_metadata(snapshot)
-                run = (
-                    create_placeholder_run(snapshot=snapshot, logs=logs_model)
-                    if not snapshot.schedule
-                    else None
-                )
-
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(
                         snapshot=snapshot,
@@ -1290,6 +1259,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             "custom_materializer": custom_materializer,
             "own_stack": own_stack,
             "pipeline_run_id": str(run_id) if run_id else None,
+            "dynamic": self.is_dynamic,
         }
 
     def _compile(
@@ -1406,6 +1376,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
+        from zenml.execution.pipeline.utils import compute_invocation_id
 
         context = (
             PipelineCompilationContext.get() or DynamicPipelineRunContext.get()
@@ -1425,10 +1396,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         f"inside a different pipeline {artifact.pipeline.name}."
                     )
 
-        invocation_id = self._compute_invocation_id(
-            step=step, custom_id=custom_id, allow_suffix=allow_id_suffix
+        invocation_id = compute_invocation_id(
+            existing_invocations=set(self.invocations.keys()),
+            step=step,
+            custom_id=custom_id,
+            allow_suffix=allow_id_suffix,
         )
-        invocation = StepInvocation(
+        self._invocations[invocation_id] = StepInvocation(
             id=invocation_id,
             step=step,
             input_artifacts=input_artifacts,
@@ -1440,45 +1414,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             upstream_steps=upstream_steps,
             pipeline=self,
         )
-        self._invocations[invocation_id] = invocation
         return invocation_id
-
-    def _compute_invocation_id(
-        self,
-        step: "BaseStep",
-        custom_id: Optional[str] = None,
-        allow_suffix: bool = True,
-    ) -> str:
-        """Compute the invocation ID.
-
-        Args:
-            step: The step for which to compute the ID.
-            custom_id: Custom ID to use for the invocation.
-            allow_suffix: Whether a suffix can be appended to the invocation
-                ID.
-
-        Raises:
-            RuntimeError: If no ID suffix is allowed and an invocation for the
-                same ID already exists.
-            RuntimeError: If no unique invocation ID can be found.
-
-        Returns:
-            The invocation ID.
-        """
-        base_id = id_ = custom_id or step.name
-
-        if id_ not in self.invocations:
-            return id_
-
-        if not allow_suffix:
-            raise RuntimeError(f"Duplicate step ID `{id_}`")
-
-        for index in range(2, 10000):
-            id_ = f"{base_id}_{index}"
-            if id_ not in self.invocations:
-                return id_
-
-        raise RuntimeError("Unable to find step ID")
 
     def _parse_config_file(
         self, config_path: Optional[str], matcher: List[str]
