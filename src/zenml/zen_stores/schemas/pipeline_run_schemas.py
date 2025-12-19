@@ -891,7 +891,18 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                                 find_all_downstream_steps(failed_step, dag)
                             )
 
-                        steps_to_skip.update(failed_steps)
+                        completed_steps = {
+                            name
+                            for _, name, status in step_run_statuses
+                            if ExecutionStatus(status).is_finished
+                        }
+
+                        steps_to_skip.update(
+                            failed_steps
+                        )  # skip downstream steps
+                        steps_to_skip.update(
+                            completed_steps
+                        )  # skip completed steps
 
                         steps_statuses = {
                             name: ExecutionStatus(status)

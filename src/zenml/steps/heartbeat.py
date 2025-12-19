@@ -39,7 +39,9 @@ class StepHeartBeatTerminationException(Exception):
 class StepHeartbeatWorker:
     """Worker class implementing heartbeat polling and remote termination."""
 
-    STEP_HEARTBEAT_INTERVAL_SECONDS = 60
+    STEP_HEARTBEAT_INTERVAL_SECONDS = (
+        60 * 2
+    )  # submit heartbeats every 2 minutes.
 
     def __init__(self, step_id: UUID):
         """Heartbeat worker constructor.

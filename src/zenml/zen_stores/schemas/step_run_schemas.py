@@ -431,6 +431,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             updated=self.updated,
             model_version_id=self.model_version_id,
             substitutions=step.config.substitutions,
+            heartbeat_threshold=self.heartbeat_threshold,
         )
         metadata = None
         if include_metadata:

@@ -226,7 +226,7 @@ class StepConfigurationUpdate(FrozenBaseModel):
         description="The amount of time (in minutes) that a running step "
         "has not received heartbeat and is considered healthy. By default, "
         "set to the maximum value (30 minutes).",
-        ge=1,
+        ge=10,
         le=30,
     )
 

@@ -10499,6 +10499,70 @@ class SqlZenStore(BaseZenStore):
                 latest_heartbeat=existing_step_run.latest_heartbeat,
             )
 
+    def validate_and_update_heartbeat(
+        self,
+        step_run_id: UUID,
+        token_run_id: UUID | None = None,
+        token_schedule_id: UUID | None = None,
+    ) -> StepHeartbeatResponse:
+        """Updates & Validates a step run heartbeat value.
+
+        Lightweight function for fast updates as heartbeats may be received at bulk.
+
+        Args:
+            step_run_id: ID of the step run.
+            token_run_id: Pipeline run id of the auth context
+            token_schedule_id: Schedule id of the auth context
+
+        Returns:
+            Step heartbeat response (minimal info, id, status & latest_heartbeat).
+
+        Raises:
+            AuthorizationException: If token identifiers do not much step information.
+            IllegalOperationError: If update heartbeat is called for a finished step.
+        """
+        with Session(self.engine) as session:
+            step_run = self._get_schema_by_id(
+                resource_id=step_run_id,
+                schema_class=StepRunSchema,
+                session=session,
+            )
+
+            if ExecutionStatus(step_run.status).is_finished:
+                raise IllegalOperationError(
+                    "Can not update heartbeat for finished steps."
+                )
+
+            run = self._get_schema_by_id(
+                resource_id=step_run.pipeline_run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+
+            if token_run_id:
+                if step_run.pipeline_run_id != token_run_id:
+                    raise AuthorizationException(
+                        f"Authentication token provided is invalid for step: {step_run_id}"
+                    )
+            elif token_schedule_id:
+                if not (run.schedule_id == token_schedule_id):
+                    raise AuthorizationException(
+                        f"Authentication token provided is invalid for step: {step_run_id}"
+                    )
+            else:
+                # un-scoped token. Soon to-be-deprecated, we will ignore validation temporarily.
+                pass
+
+            latest_heartbeat = datetime.now(timezone.utc)
+            step_run.latest_heartbeat = latest_heartbeat
+            session.commit()
+
+        return StepHeartbeatResponse(
+            id=step_run_id,
+            status=ExecutionStatus(run.status),
+            latest_heartbeat=latest_heartbeat,
+        )
+
     def update_run_step(
         self,
         step_run_id: UUID,
