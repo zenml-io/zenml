@@ -7,7 +7,7 @@ icon: diagram-project
 
 ZenML Pro's architecture consists of two core services that work together to execute, track, and manage your ML pipelines. Understanding these services helps you make informed decisions about deployment, security, and infrastructure.
 
-![ZenML Pro High-Level Architecture Placeholder](../../.gitbook/.assets/Agnostic-diagram-placeholder.jpg)
+![ZenML Pro High-Level Architecture Placeholder](../../.gitbook/.assets/Agnostic-diagram-placeholder.png)
 
 ## Core Services
 
