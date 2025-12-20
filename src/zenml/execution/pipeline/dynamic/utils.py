@@ -84,3 +84,69 @@ def wait_for_step_run_to_finish(step_run_id: UUID) -> "StepRunResponse":
         time.sleep(sleep_interval)
         if sleep_interval < max_sleep_interval:
             sleep_interval *= 2
+
+
+def get_latest_step_run(
+    pipeline_run_id: UUID, invocation_id: str, hydrate: bool = False
+) -> "StepRunResponse":
+    """Get the latest step run for a step.
+
+    Args:
+        pipeline_run_id: The ID of the pipeline run.
+        invocation_id: The invocation ID of the step.
+
+    Returns:
+        The latest step run.
+    """
+    step_runs = Client().list_run_steps(
+        pipeline_run_id=pipeline_run_id,
+        name=invocation_id,
+        exclude_retried=True,
+        size=1,
+        hydrate=hydrate,
+    )
+
+    if not step_runs:
+        raise RuntimeError(
+            f"Step `{invocation_id}` not found in pipeline run `{pipeline_run_id}`."
+        )
+
+    return step_runs.items[0]
+
+
+def wait_for_step_to_finish(
+    pipeline_run_id: UUID, step_name: str
+) -> "StepRunResponse":
+    """Wait until a step is finished.
+
+    Args:
+        pipeline_run_id: The ID of the pipeline run.
+        step_name: The name of the step.
+
+    Returns:
+        The finished step run.
+    """
+    sleep_interval = 1
+    max_sleep_interval = 64
+
+    while True:
+        step_run = get_latest_step_run(
+            pipeline_run_id, step_name, hydrate=False
+        )
+        # If a step is in `retrying` status, another step run will be
+        # created and we will try to pick it up in the next iteration.
+        if step_run.status not in {
+            ExecutionStatus.RUNNING,
+            ExecutionStatus.RETRYING,
+        }:
+            return step_run
+
+        logger.debug(
+            "Waiting for step `%s` to finish (current status: %s)",
+            step_name,
+            step_run.status,
+        )
+
+        time.sleep(sleep_interval)
+        if sleep_interval < max_sleep_interval:
+            sleep_interval *= 2

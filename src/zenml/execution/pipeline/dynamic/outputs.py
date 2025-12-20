@@ -16,6 +16,7 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from typing import Any, Iterator, List, Optional, Tuple, Union, overload
+from uuid import UUID
 
 from zenml.logger import get_logger
 from zenml.models import ArtifactVersionResponse
@@ -87,6 +88,34 @@ class BaseFuture(ABC):
         Returns:
             The result of the future.
         """
+
+
+class BaseIsolatedStepRunFuture(BaseFuture):
+    """Future for a step run."""
+
+    def __init__(self, pipeline_run_id: UUID, invocation_id: str) -> None:
+        """Initialize the step run future.
+
+        Args:
+            wrapped: The wrapped future object.
+            invocation_id: The invocation ID of the step run.
+        """
+        self.pipeline_run_id = pipeline_run_id
+        self.invocation_id = invocation_id
+
+    def running(self) -> bool:
+        """Check if the step run future is running.
+
+        Returns:
+            True if the step run future is running, False otherwise.
+        """
+        from zenml.execution.pipeline.dynamic.utils import get_latest_step_run
+
+        step_run = get_latest_step_run(
+            self.pipeline_run_id, self.invocation_id, hydrate=False
+        )
+
+        return not step_run.status.is_finished
 
 
 class BaseStepRunFuture(BaseFuture):

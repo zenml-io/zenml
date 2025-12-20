@@ -17,6 +17,8 @@ import contextvars
 import copy
 import inspect
 import itertools
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from typing import (
@@ -120,14 +122,14 @@ class DynamicPipelineRunner:
 
         if (
             snapshot.pipeline_configuration.execution_mode
-            != ExecutionMode.STOP_ON_FAILURE
+            == ExecutionMode.CONTINUE_ON_FAILURE
         ):
             logger.warning(
-                "Only the `%s` execution mode is supported for "
+                "The `%s` execution mode is not supported for "
                 "dynamic pipelines right now. "
-                "The execution mode `%s` will be ignored.",
-                ExecutionMode.STOP_ON_FAILURE,
+                "The `%s` execution mode will be used instead.",
                 snapshot.pipeline_configuration.execution_mode,
+                ExecutionMode.STOP_ON_FAILURE,
             )
 
         self._snapshot = snapshot
@@ -152,6 +154,16 @@ class DynamicPipelineRunner:
             self._orchestrator_run_id = (
                 self._orchestrator.get_orchestrator_run_id()
             )
+
+        # Maybe we need another thread that checks for work that is ready and
+        # submits it to the executor?
+        self._monitoring_thread = threading.Thread(
+            name="DynamicPipelineRunner-Monitoring-Loop",
+            target=self._monitoring_loop,
+            daemon=True,
+        )
+        self._running_steps: Dict[str, Any] = {}
+        self._shutdown_event = threading.Event()
 
     @property
     def pipeline(self) -> "DynamicPipeline":
@@ -181,6 +193,79 @@ class DynamicPipelineRunner:
             self._pipeline = pipeline
 
         return self._pipeline
+
+    def _monitoring_loop(self) -> None:
+        """Monitoring loop.
+
+        This should run in a separate thread and monitors the running steps.
+        """
+        while not self._shutdown_event.is_set():
+            start_time = time.time()
+            finished_steps = []
+
+            for invocation_id, info in self._running_steps.items():
+                status = self._orchestrator.get_isolated_step_status(info)
+
+                if status.is_successful:
+                    logger.info(
+                        "Step `%s` finished successfully.", invocation_id
+                    )
+                    finished_steps.append(invocation_id)
+
+                if status.is_failed:
+                    finished_steps.append(invocation_id)
+
+                    remaining_retries = 0
+                    retry_config = info.config.retry
+
+                    max_retries = (
+                        retry_config.max_retries if retry_config else 0
+                    )
+                    step_run = Client().get_run_step(info.step_run_id)
+                    remaining_retries = max(
+                        0, 1 + max_retries - step_run.version
+                    )
+
+                    if remaining_retries > 0:
+                        # TODO: handle retries, put in front of queue?
+                        ...
+                    else:
+                        raise RuntimeError(f"Step `{invocation_id}` failed.")
+
+                time.sleep(0.1)
+
+            for invocation_id in finished_steps:
+                self._running_steps.pop(invocation_id)
+
+            duration = time.time() - start_time
+            time_to_sleep = max(0, 3 - duration)
+            self._shutdown_event.wait(timeout=time_to_sleep)
+
+    def _maybe_stop_in_progress_steps(self) -> None:
+        """Maybe stop all isolated in progress steps.
+
+        This method will only stop concurrent isolated steps if the execution
+        mode is FAIL_FAST.
+        """
+        if (
+            self._snapshot.pipeline_configuration.execution_mode
+            != ExecutionMode.FAIL_FAST
+        ):
+            return
+
+        if not self._orchestrator.can_stop_isolated_steps:
+            logger.warning(
+                "The orchestrator `%s` does not support stopping isolated "
+                "steps. All in progress steps will be left running.",
+                self._orchestrator.__class__.__name__,
+            )
+            return
+
+        for invocation_id, info in self._running_steps.items():
+            try:
+                self._orchestrator.stop_isolated_step(info)
+            except Exception:
+                logger.exception("Failed to stop step `%s`.", invocation_id)
 
     def run_pipeline(self) -> None:
         """Run the pipeline."""
@@ -224,6 +309,8 @@ class DynamicPipelineRunner:
                 pipeline_run=run,
                 source="orchestrator",
             )
+
+        self._monitoring_thread.start()
 
         with logging_context:
             with InMemoryArtifactCache():
@@ -269,7 +356,16 @@ class DynamicPipelineRunner:
                             self._orchestrator.run_cleanup_hook(
                                 snapshot=self._snapshot
                             )
+                        self._shutdown_event.set()
+                        # TODO: should we only call this on failure? In the
+                        # success case, there shouldn't be any in progress
+                        # steps?
+                        self._maybe_stop_in_progress_steps()
+                        self._orchestrator.run_cleanup_hook(
+                            snapshot=self._snapshot
+                        )
                         self._executor.shutdown(wait=True, cancel_futures=True)
+                        self._monitoring_thread.join()
 
                     publish_successful_pipeline_run(run.id)
                     logger.info("Pipeline completed successfully.")
@@ -378,7 +474,10 @@ class DynamicPipelineRunner:
                 orchestrator_run_id=self._orchestrator_run_id,
                 retry=should_retry,
                 remaining_retries=remaining_retries,
+                wait=not concurrent,
             )
+            # This would only handle the first invocation and no retries for
+            # concurrent steps
             return _load_step_run_outputs(step_run.id)
 
         step_run = self._existing_step_runs.get(invocation_id)
