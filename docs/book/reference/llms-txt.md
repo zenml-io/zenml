@@ -68,6 +68,10 @@ Add the server via Cursor's JSON settings (Settings → search "MCP" → Configu
 
 The MCP server indexes the latest released documentation, not the develop branch.
 
+{% hint style="info" %}
+**Looking to chat with your ZenML server data?** ZenML also provides its own MCP server that connects directly to your ZenML server, allowing you to query pipelines, analyze runs, and trigger executions through natural language. See the [MCP Chat with Server guide](https://docs.zenml.io/user-guides/best-practices/mcp-chat-with-server) for setup instructions.
+{% endhint %}
+
 Prefer the native GitBook MCP server above for the best experience; if you prefer working directly with llms.txt or need alternative workflows, the following tools are helpful:
 
 To use the llms.txt file in partnership with an MCP client, you can use the
