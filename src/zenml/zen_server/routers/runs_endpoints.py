@@ -43,7 +43,11 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.utils import run_utils
-from zenml.utils.logging_utils import LogEntry, fetch_logs
+from zenml.utils.logging_utils import (
+    LogEntry,
+    fetch_logs,
+    search_logs_by_source,
+)
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -454,9 +458,7 @@ def run_logs(
     store = zen_store()
 
     run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=store.get_run,
-        hydrate=True,
+        id=run_id, get_method=store.get_run, hydrate=True
     )
 
     # Handle runner logs from workload manager
@@ -483,15 +485,12 @@ def run_logs(
 
             return log_entries
 
-    # Handle logs from log collection
     if run.log_collection:
-        for logs_response in run.log_collection:
-            if logs_response.source == source:
-                return fetch_logs(
-                    logs=logs_response,
-                    zen_store=store,
-                    limit=MAX_ENTRIES_PER_REQUEST,
-                )
+        if logs_response := search_logs_by_source(run.log_collection, source):
+            return fetch_logs(
+                logs=logs_response,
+                zen_store=store,
+                limit=MAX_ENTRIES_PER_REQUEST,
+            )
 
-    # If no logs found for the specified source, raise an error
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")

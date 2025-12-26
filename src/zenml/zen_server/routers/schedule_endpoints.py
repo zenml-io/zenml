@@ -193,15 +193,18 @@ def update_schedule(
 @async_fastapi_endpoint_wrapper
 def delete_schedule(
     schedule_id: UUID,
+    soft: bool,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific schedule using its unique id.
 
     Args:
         schedule_id: ID of the schedule to delete.
+        soft: Soft deletion will archive the schedule.
     """
     verify_permissions_and_delete_entity(
         id=schedule_id,
         get_method=zen_store().get_schedule,
         delete_method=zen_store().delete_schedule,
+        soft=soft,
     )

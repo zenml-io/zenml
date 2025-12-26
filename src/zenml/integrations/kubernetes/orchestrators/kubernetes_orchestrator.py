@@ -786,12 +786,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     annotations=annotations,
                     settings=settings,
                     pod_settings=orchestrator_pod_settings,
-                    # In dynamic pipelines restarting the orchestrator pod is not
-                    # supported yet. It will create new runs for each restart which
-                    # we have to avoid.
-                    backoff_limit=0
-                    if snapshot.is_dynamic
-                    else settings.orchestrator_job_backoff_limit,
+                    backoff_limit=settings.orchestrator_job_backoff_limit,
                 )
 
                 if snapshot.schedule:
@@ -992,9 +987,27 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         try:
             return os.environ[ENV_ZENML_KUBERNETES_RUN_ID]
         except KeyError:
-            # This means we're in a dynamic pipeline orchestration container,
-            # so we use the hostname (= pod name) as the run id
-            return socket.gethostname()
+            # This means we're in a dynamic pipeline orchestration container.
+            # In case the orchestrator pod is restarted, we need to return the
+            # same `orchestrator_run_id` as the previous pod, so we use the
+            # orchestrator job name (which created this pod and handles the
+            # restarts) as the unique ID.
+            pod_name = socket.gethostname()
+            orchestrator_run_id = None
+            try:
+                orchestrator_run_id = kube_utils.get_parent_job_name(
+                    core_api=self._k8s_core_api,
+                    pod_name=pod_name,
+                    namespace=self.config.kubernetes_namespace,
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to fetch orchestrator job name. Using pod name as "
+                    "fallback, which may cause issues if the orchestrator pod "
+                    "is restarted. Error: %s",
+                    e,
+                )
+            return orchestrator_run_id or pod_name
 
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = True
@@ -1217,11 +1230,19 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if not cron_job_name:
             raise RuntimeError("Unable to find cron job name for schedule.")
 
+        spec = {}
+
         if update.cron_expression:
+            spec["schedule"] = update.cron_expression
+
+        if update.active is not None:
+            spec["suspend"] = not update.active  # type: ignore[assignment]
+
+        if spec:
             self._k8s_batch_api.patch_namespaced_cron_job(
                 name=cron_job_name,
                 namespace=self.config.kubernetes_namespace,
-                body={"spec": {"schedule": update.cron_expression}},
+                body={"spec": spec},
             )
 
     def delete_schedule(self, schedule: "ScheduleResponse") -> None:

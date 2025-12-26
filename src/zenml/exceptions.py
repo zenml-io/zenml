@@ -252,3 +252,7 @@ class HookValidationException(ZenMLBaseException):
 
 class HookExecutionException(ZenMLBaseException):
     """Exception raised when hook execution fails."""
+
+
+class SourceValidationException(ZenMLBaseException):
+    """Exception raised during source validation."""

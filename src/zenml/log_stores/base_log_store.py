@@ -15,7 +15,7 @@
 
 import logging
 import threading
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, cast
 
@@ -31,7 +31,44 @@ class BaseLogStoreConfig(StackComponentConfig):
     """Base configuration for all log stores."""
 
 
-class BaseLogStore(StackComponent):
+class BaseLogStoreOrigin:
+    """Base class for all ZenML log store origins.
+
+    The origin is the entry point for all log records to be sent to the log
+    store for processing. The process of sending a log record is as follows:
+
+    1. instantiate the log store or use the active log store
+    2. register an origin by calling log_store.register_origin() and passing
+    the log model and optional metadata to be attached to each log record
+    3. emit the log record by calling log_store.emit() and passing the origin
+    and log record
+    4. deregister the origin when all logs have been emitted by calling
+    log_store.deregister(origin)
+    """
+
+    def __init__(
+        self,
+        name: str,
+        log_store: "BaseLogStore",
+        log_model: LogsResponse,
+        metadata: Dict[str, Any],
+    ) -> None:
+        """Initialize a log store origin.
+
+        Args:
+            name: The name of the origin.
+            log_store: The log store to emit logs to.
+            log_model: The log model associated with the origin.
+            metadata: Additional metadata to attach to all log entries that will
+                be emitted by this origin.
+        """
+        self.name = name
+        self.log_store = log_store
+        self.log_model = log_model
+        self.metadata = metadata
+
+
+class BaseLogStore(StackComponent, ABC):
     """Base class for all ZenML log stores.
 
     A log store is responsible for collecting, storing, and retrieving logs
@@ -47,7 +84,7 @@ class BaseLogStore(StackComponent):
             **kwargs: Keyword arguments for the base class.
         """
         super().__init__(*args, **kwargs)
-        self._emitter_counter = 0
+        self._origins: Dict[str, BaseLogStoreOrigin] = {}
         self._lock = threading.RLock()
 
     @property
@@ -59,56 +96,98 @@ class BaseLogStore(StackComponent):
         """
         return cast(BaseLogStoreConfig, self._config)
 
+    @property
+    def origin_class(self) -> Type[BaseLogStoreOrigin]:
+        """Class of the origin.
+
+        Returns:
+            The class of the origin used with this log store.
+        """
+        return BaseLogStoreOrigin
+
+    def register_origin(
+        self, name: str, log_model: LogsResponse, metadata: Dict[str, Any]
+    ) -> BaseLogStoreOrigin:
+        """Register an origin for the log store.
+
+        Args:
+            name: The name of the origin.
+            log_model: The log model associated with the origin.
+            metadata: Additional metadata to attach to the log entry.
+
+        Returns:
+            The origin.
+        """
+        with self._lock:
+            origin = self.origin_class(name, self, log_model, metadata)
+            self._origins[name] = origin
+            return origin
+
+    def deregister_origin(
+        self,
+        origin: BaseLogStoreOrigin,
+        blocking: bool = True,
+    ) -> None:
+        """Deregister an origin previously registered with the log store.
+
+        If no other origins are left, the log store will be flushed. The
+        `blocking` parameter determines whether to block until the flush is
+        complete.
+
+        Args:
+            origin: The origin to deregister.
+            blocking: Whether to block until the deregistration is complete
+                and all logs are flushed if this is the last origin registered.
+        """
+        with self._lock:
+            if origin.name not in self._origins:
+                return
+            self._release_origin(origin)
+            del self._origins[origin.name]
+            if len(self._origins) == 0:
+                self.flush(blocking=blocking)
+
     @abstractmethod
     def emit(
         self,
+        origin: BaseLogStoreOrigin,
         record: logging.LogRecord,
-        log_model: LogsResponse,
-        metadata: Dict[str, Any],
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Process a log record from the logging system.
 
         Args:
+            origin: The origin used to send the log record.
             record: The Python logging.LogRecord to process.
-            log_model: The log model to emit the log record to.
             metadata: Additional metadata to attach to the log entry.
         """
 
     @abstractmethod
-    def finalize(
+    def _release_origin(
         self,
-        log_model: LogsResponse,
+        origin: BaseLogStoreOrigin,
     ) -> None:
-        """Finalize the stream of log records associated with a log model.
+        """Finalize the stream of log records associated with an origin.
 
         This is used to announce the end of the stream of log records associated
-        with a log model and that no more log records will be emitted.
+        with an origin and that no more log records will be emitted.
 
         The implementation should ensure that all log records associated with
-        the log model are flushed to the backend and any resources (clients,
+        the origin are flushed to the backend and any resources (clients,
         connections, file descriptors, etc.) are released.
 
         Args:
-            log_model: The log model to finalize.
+            origin: The origin to finalize.
         """
 
-    def register_emitter(self) -> None:
-        """Register an emitter for the log store."""
-        with self._lock:
-            self._emitter_counter += 1
-
-    def deregister_emitter(self) -> None:
-        """Deregister an emitter for the log store."""
-        with self._lock:
-            self._emitter_counter -= 1
-            if self._emitter_counter == 0:
-                self.flush()
-
     @abstractmethod
-    def flush(self) -> None:
+    def flush(self, blocking: bool = True) -> None:
         """Flush the log store.
 
         This method is called to ensure that all logs are flushed to the backend.
+
+        Args:
+            blocking: Whether to block until the flush is complete.
         """
 
     @abstractmethod

@@ -313,10 +313,6 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
 class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
-    logs: Optional["LogsResponse"] = Field(
-        title="Logs associated with this step run.",
-        default=None,
-    )
     log_collection: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this step run.",
         default=None,
@@ -672,15 +668,6 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_metadata().run_metadata
-
-    @property
-    def logs(self) -> Optional["LogsResponse"]:
-        """The `logs` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().logs
 
     @property
     def log_collection(self) -> Optional[List["LogsResponse"]]:

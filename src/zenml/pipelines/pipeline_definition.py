@@ -190,7 +190,8 @@ class Pipeline:
                 function with no arguments (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
-            substitutions: Extra placeholders to use in the name templates.
+            substitutions: Extra substitutions for pipeline run, model and
+                artifact name placeholders.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
             **kwargs: Additional keyword arguments.
@@ -408,7 +409,8 @@ class Pipeline:
             model: configuration of the model version in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
-            substitutions: Extra placeholders to use in the name templates.
+            substitutions: Extra substitutions for pipeline run, model and
+                artifact name placeholders.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
@@ -1374,6 +1376,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
+        from zenml.execution.pipeline.utils import compute_invocation_id
 
         context = (
             PipelineCompilationContext.get() or DynamicPipelineRunContext.get()
@@ -1393,10 +1396,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         f"inside a different pipeline {artifact.pipeline.name}."
                     )
 
-        invocation_id = self._compute_invocation_id(
-            step=step, custom_id=custom_id, allow_suffix=allow_id_suffix
+        invocation_id = compute_invocation_id(
+            existing_invocations=set(self.invocations.keys()),
+            step=step,
+            custom_id=custom_id,
+            allow_suffix=allow_id_suffix,
         )
-        invocation = StepInvocation(
+        self._invocations[invocation_id] = StepInvocation(
             id=invocation_id,
             step=step,
             input_artifacts=input_artifacts,
@@ -1408,45 +1414,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             upstream_steps=upstream_steps,
             pipeline=self,
         )
-        self._invocations[invocation_id] = invocation
         return invocation_id
-
-    def _compute_invocation_id(
-        self,
-        step: "BaseStep",
-        custom_id: Optional[str] = None,
-        allow_suffix: bool = True,
-    ) -> str:
-        """Compute the invocation ID.
-
-        Args:
-            step: The step for which to compute the ID.
-            custom_id: Custom ID to use for the invocation.
-            allow_suffix: Whether a suffix can be appended to the invocation
-                ID.
-
-        Raises:
-            RuntimeError: If no ID suffix is allowed and an invocation for the
-                same ID already exists.
-            RuntimeError: If no unique invocation ID can be found.
-
-        Returns:
-            The invocation ID.
-        """
-        base_id = id_ = custom_id or step.name
-
-        if id_ not in self.invocations:
-            return id_
-
-        if not allow_suffix:
-            raise RuntimeError(f"Duplicate step ID `{id_}`")
-
-        for index in range(2, 10000):
-            id_ = f"{base_id}_{index}"
-            if id_ not in self.invocations:
-                return id_
-
-        raise RuntimeError("Unable to find step ID")
 
     def _parse_config_file(
         self, config_path: Optional[str], matcher: List[str]

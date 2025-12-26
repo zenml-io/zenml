@@ -45,16 +45,13 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
+from zenml.utils import context_utils
 
 if TYPE_CHECKING:
+    from zenml.log_stores.base_log_store import BaseLogStoreOrigin
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
-
-
-active_logging_context: ContextVar[Optional["LoggingContext"]] = ContextVar(
-    "active_logging_context", default=None
-)
 
 
 class LogEntry(BaseModel):
@@ -108,26 +105,44 @@ class LogEntry(BaseModel):
     )
 
 
-class LoggingContext:
+class LoggingContext(context_utils.BaseContext):
     """Context manager which collects logs using a LogStore."""
+
+    __context_var__ = ContextVar("logging_context")
 
     def __init__(
         self,
+        name: str,
         log_model: "LogsResponse",
+        block_on_exit: bool = True,
         **metadata: Any,
     ) -> None:
         """Initialize the logging context.
 
         Args:
+            name: The name of the logging context.
             log_model: The logs response model for this context.
+            block_on_exit: Whether to block until all logs are flushed when the
+                context is exited, if there are no more logging contexts active.
             **metadata: Additional metadata to attach to the log entry.
         """
         self.log_model = log_model
         self._lock = threading.Lock()
-        self._previous_context: Optional[LoggingContext] = None
         self._disabled = False
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
+        self._origin: Optional["BaseLogStoreOrigin"] = None
+        self._name = name
+        self._block_on_exit = block_on_exit
+
+    @property
+    def name(self) -> str:
+        """The name of the logging context.
+
+        Returns:
+            The name of the logging context.
+        """
+        return self._name
 
     @classmethod
     def emit(cls, record: logging.LogRecord) -> None:
@@ -139,16 +154,18 @@ class LoggingContext:
         Args:
             record: The log record to emit.
         """
-        if context := active_logging_context.get():
+        if context := LoggingContext.get():
             if context._disabled:
                 return
             context._disabled = True
             try:
                 message = record.getMessage()
                 if message and message.strip():
-                    context._log_store.emit(
-                        record, context.log_model, context._metadata
-                    )
+                    if context._origin:
+                        context._log_store.emit(
+                            context._origin,
+                            record,
+                        )
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
             finally:
@@ -161,9 +178,12 @@ class LoggingContext:
             self
         """
         with self._lock:
-            self._previous_context = active_logging_context.get()
-            active_logging_context.set(self)
-            self._log_store.register_emitter()
+            super().__enter__()
+            self._origin = self._log_store.register_origin(
+                name=self.name,
+                log_model=self.log_model,
+                metadata=self._metadata,
+            )
 
         return self
 
@@ -194,11 +214,13 @@ class LoggingContext:
                 )
             )
 
-        self._log_store.finalize(self.log_model)
-
         with self._lock:
-            active_logging_context.set(self._previous_context)
-            self._log_store.deregister_emitter()
+            super().__exit__(exc_type, exc_val, exc_tb)
+            if self._origin:
+                self._log_store.deregister_origin(
+                    self._origin, blocking=self._block_on_exit
+                )
+                self._origin = None
 
 
 def generate_logs_request(source: str) -> LogsRequest:
@@ -309,35 +331,35 @@ def get_run_log_metadata(
     Returns:
         The log metadata.
     """
-    log_metadata = dict(
-        pipeline_run_id=str(pipeline_run.id),
-        pipeline_run_name=pipeline_run.name,
-        project_id=str(pipeline_run.project.id),
-        project_name=pipeline_run.project.name,
-    )
+    log_metadata = {
+        "pipeline.run.id": str(pipeline_run.id),
+        "pipeline.run.name": pipeline_run.name,
+        "project.id": str(pipeline_run.project.id),
+        "project.name": pipeline_run.project.name,
+    }
 
     if pipeline_run.pipeline is not None:
         log_metadata.update(
-            dict(
-                pipeline_id=str(pipeline_run.pipeline.id),
-                pipeline_name=pipeline_run.pipeline.name,
-            )
+            {
+                "pipeline.id": str(pipeline_run.pipeline.id),
+                "pipeline.name": pipeline_run.pipeline.name,
+            }
         )
 
     if pipeline_run.stack is not None:
         log_metadata.update(
-            dict(
-                stack_id=str(pipeline_run.stack.id),
-                stack_name=pipeline_run.stack.name,
-            )
+            {
+                "stack.id": str(pipeline_run.stack.id),
+                "stack.name": pipeline_run.stack.name,
+            }
         )
 
     if pipeline_run.user is not None:
         log_metadata.update(
-            dict(
-                user_id=str(pipeline_run.user.id),
-                user_name=pipeline_run.user.name,
-            )
+            {
+                "user.id": str(pipeline_run.user.id),
+                "user.name": pipeline_run.user.name,
+            }
         )
 
     return log_metadata
@@ -346,6 +368,7 @@ def get_run_log_metadata(
 def setup_run_logging(
     pipeline_run: "PipelineRunResponse",
     source: str,
+    block_on_exit: bool = True,
 ) -> Any:
     """Set up logging for a pipeline run.
 
@@ -354,19 +377,24 @@ def setup_run_logging(
     Args:
         pipeline_run: The pipeline run.
         source: The source of the logs.
+        block_on_exit: Whether to block until all logs are flushed when the
+            context is exited, if there are no more logging contexts active.
 
     Returns:
         The logs context.
     """
     log_metadata = get_run_log_metadata(pipeline_run)
     log_metadata.update(dict(source=source))
+    name = f"zenml.pipeline_run.{pipeline_run.name}.{source}"
 
     if pipeline_run.log_collection is not None:
         if run_logs := search_logs_by_source(
             pipeline_run.log_collection, source
         ):
             return LoggingContext(
+                name=name,
                 log_model=run_logs,
+                block_on_exit=block_on_exit,
                 **log_metadata,
             )
 
@@ -385,7 +413,9 @@ def setup_run_logging(
             pipeline_run.log_collection, source
         ):
             return LoggingContext(
+                name=name,
                 log_model=run_logs,
+                block_on_exit=block_on_exit,
                 **log_metadata,
             )
 
@@ -406,10 +436,10 @@ def get_step_log_metadata(
     """
     log_metadata = get_run_log_metadata(pipeline_run)
     log_metadata.update(
-        dict(
-            step_run_id=str(step_run.id),
-            step_run_name=step_run.name,
-        )
+        {
+            "step.run.id": str(step_run.id),
+            "step.run.name": step_run.name,
+        }
     )
     return log_metadata
 
@@ -418,6 +448,7 @@ def setup_step_logging(
     step_run: "StepRunResponse",
     pipeline_run: "PipelineRunResponse",
     source: str,
+    block_on_exit: bool = True,
 ) -> Any:
     """Set up logging for a step run.
 
@@ -427,25 +458,37 @@ def setup_step_logging(
         step_run: The step run.
         pipeline_run: The pipeline run.
         source: The source of the logs.
+        block_on_exit: Whether to block until all logs are flushed when the
+            context is exited, if there are no more logging contexts active.
 
     Returns:
         The logs context.
     """
     log_metadata = get_step_log_metadata(step_run, pipeline_run)
     log_metadata.update(dict(source=source))
+    name = (
+        f"zenml.pipeline_run.{pipeline_run.name}.step.{step_run.name}.{source}"
+    )
 
     if pipeline_run.log_collection is not None:
         if run_logs := search_logs_by_source(
             pipeline_run.log_collection, source
         ):
             return LoggingContext(
+                name=name,
                 log_model=run_logs,
+                block_on_exit=block_on_exit,
                 **log_metadata,
             )
 
     if step_run.log_collection is not None:
         if step_logs := search_logs_by_source(step_run.log_collection, source):
-            return LoggingContext(log_model=step_logs, **log_metadata)
+            return LoggingContext(
+                name=name,
+                log_model=step_logs,
+                block_on_exit=block_on_exit,
+                **log_metadata,
+            )
 
     logs_request = generate_logs_request(source=source)
     try:
@@ -459,7 +502,12 @@ def setup_step_logging(
 
     if step_run.log_collection is not None:
         if step_logs := search_logs_by_source(step_run.log_collection, source):
-            return LoggingContext(log_model=step_logs, **log_metadata)
+            return LoggingContext(
+                name=name,
+                log_model=step_logs,
+                block_on_exit=block_on_exit,
+                **log_metadata,
+            )
 
     return nullcontext()
 
@@ -488,9 +536,11 @@ def fetch_logs(
         NotImplementedError: If the log store's dependencies are not installed.
         RuntimeError: If the function is called from the client environment.
     """
-    from zenml.artifacts.utils import load_artifact_store
     from zenml.log_stores.base_log_store import BaseLogStore
     from zenml.stack import StackComponent
+    from zenml.zen_server.rbac.endpoint_utils import (
+        verify_permissions_and_get_entity,
+    )
 
     if ENV_ZENML_SERVER not in os.environ:
         # This utility function should not be called from the client environment
@@ -504,7 +554,10 @@ def fetch_logs(
 
     if logs.log_store_id:
         try:
-            log_store_model = zen_store.get_stack_component(logs.log_store_id)
+            log_store_model = verify_permissions_and_get_entity(
+                id=logs.log_store_id,
+                get_method=zen_store.get_stack_component,
+            )
         except KeyError:
             raise DoesNotExistException(
                 f"Log store '{logs.log_store_id}' does not exist."
@@ -526,12 +579,31 @@ def fetch_logs(
                 "instantiated."
             )
     elif logs.artifact_store_id:
+        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.log_stores.artifact.artifact_log_store import (
             ArtifactLogStore,
         )
 
-        artifact_store = load_artifact_store(logs.artifact_store_id, zen_store)
-        log_store = ArtifactLogStore.from_artifact_store(artifact_store)
+        try:
+            artifact_store_model = verify_permissions_and_get_entity(
+                id=logs.artifact_store_id,
+                get_method=zen_store.get_stack_component,
+            )
+        except KeyError:
+            raise DoesNotExistException(
+                f"Artifact store '{logs.artifact_store_id}' does not exist."
+            )
+        if not artifact_store_model.type == StackComponentType.ARTIFACT_STORE:
+            raise DoesNotExistException(
+                f"Stack component '{logs.artifact_store_id}' is not an artifact store."
+            )
+        artifact_store = cast(
+            "BaseArtifactStore",
+            StackComponent.from_model(artifact_store_model),
+        )
+        log_store = ArtifactLogStore.from_artifact_store(
+            artifact_store=artifact_store
+        )
 
     else:
         return []

@@ -42,6 +42,7 @@ from zenml.config.source import (
 )
 from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.environment import Environment
+from zenml.exceptions import SourceValidationException
 from zenml.logger import get_logger
 from zenml.utils import notebook_utils
 
@@ -773,25 +774,31 @@ def load_and_validate_class(
 
 def validate_source_class(
     source: Union[Source, str], expected_class: Type[Any]
-) -> bool:
+) -> None:
     """Validates that a source resolves to a certain class.
 
     Args:
         source: The source to validate.
         expected_class: The class that the source should resolve to.
 
-    Returns:
-        True if the source resolves to the expected class, False otherwise.
+    Raises:
+        SourceValidationException: If the source cannot be loaded or does not
+            resolve to the expected class.
     """
     try:
         obj = load(source)
-    except Exception:
-        return False
+    except Exception as e:
+        raise SourceValidationException(
+            f"Failed to load source `{source}` for validation: {e}"
+        ) from e
 
     if isinstance(obj, type) and issubclass(obj, expected_class):
-        return True
+        return
     else:
-        return False
+        raise SourceValidationException(
+            f"Source `{source}` does not resolve to the expected class "
+            f"`{expected_class.__name__}`. Got `{obj}` instead."
+        )
 
 
 def get_resolved_notebook_sources() -> Dict[str, str]:

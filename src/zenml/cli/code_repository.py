@@ -25,6 +25,7 @@ from zenml.code_repositories import BaseCodeRepository
 from zenml.config.source import Source
 from zenml.console import console
 from zenml.enums import CliCategories
+from zenml.exceptions import SourceValidationException
 from zenml.logger import get_logger
 from zenml.models import CodeRepositoryFilter
 from zenml.utils import source_utils
@@ -139,13 +140,14 @@ def register_code_repository(
                 "a path to the implementation class using the --source option: "
                 "`zenml code-repository register --type=custom --source=<...>"
             )
-        if not source_utils.validate_source_class(
-            source_path, expected_class=BaseCodeRepository
-        ):
+        try:
+            source_utils.validate_source_class(
+                source_path, expected_class=BaseCodeRepository
+            )
+        except SourceValidationException as e:
             cli_utils.error(
-                f"Your source {source_path} does not point to a "
-                f"`{BaseCodeRepository.__name__}` subclass and can't be used "
-                "to register a code repository."
+                "Unable to register code repository from source "
+                f"`{source_path}`: {e}"
             )
 
         source = Source.from_import_path(source_path)
