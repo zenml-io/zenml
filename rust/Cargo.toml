@@ -1,0 +1,28 @@
+[package]
+name = "zenml-cli"
+version = "0.93.0"
+edition = "2021"
+description = "Fast Rust-based CLI entry point for ZenML"
+license = "Apache-2.0"
+authors = ["ZenML GmbH <info@zenml.io>"]
+repository = "https://github.com/zenml-io/zenml"
+build = "build.rs"
+
+# This is the binary that Maturin will install as the CLI entry point
+[[bin]]
+name = "zenml"
+path = "src/main.rs"
+
+[dependencies]
+# Minimal dependencies for Phase 1
+rand = "0.8"  # For random ASCII art selection (matching Python behavior)
+
+[build-dependencies]
+# No external deps needed - we use std only for reading VERSION file
+
+[profile.release]
+# Optimize for size while keeping good performance
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

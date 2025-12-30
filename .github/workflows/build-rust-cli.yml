@@ -1,0 +1,224 @@
+# Build and test Rust CLI for multiple platforms
+# This workflow builds the ZenML Rust CLI binary for all supported platforms
+# and creates platform-specific wheels.
+
+name: Build Rust CLI
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'rust/**'
+      - 'pyproject.toml'
+      - '.github/workflows/build-rust-cli.yml'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'rust/**'
+      - 'pyproject.toml'
+      - '.github/workflows/build-rust-cli.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to PyPI (only for releases)'
+        required: false
+        default: 'false'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Build wheels for all platforms
+  build:
+    name: Build - ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64 (most common)
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            
+          # Linux ARM64 (Graviton, ARM servers)
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            
+          # macOS Intel
+          - os: macos-13
+            target: x86_64-apple-darwin
+            
+          # macOS Apple Silicon (M1/M2/M3)
+          - os: macos-14
+            target: aarch64-apple-darwin
+            
+          # Windows x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+          
+      - name: Install cross-compilation tools (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist
+          manylinux: auto
+          
+      - name: Test wheel (native platforms only)
+        if: >
+          (matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-unknown-linux-gnu') ||
+          (matrix.os == 'macos-13' && matrix.target == 'x86_64-apple-darwin') ||
+          (matrix.os == 'macos-14' && matrix.target == 'aarch64-apple-darwin') ||
+          (matrix.os == 'windows-latest')
+        shell: bash
+        run: |
+          pip install dist/*.whl
+          zenml --version
+          zenml version
+          
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.target }}
+          path: dist/*.whl
+
+  # Build source distribution
+  sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+          
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  # Test the built wheels
+  test:
+    name: Test - Python ${{ matrix.python }} on ${{ matrix.os }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-13, macos-14, windows-latest]
+        python: ['3.10', '3.11', '3.12', '3.13']
+        exclude:
+          # Skip Python 3.13 on older macOS
+          - os: macos-13
+            python: '3.13'
+            
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          
+      - name: Determine wheel artifact
+        id: wheel
+        shell: bash
+        run: |
+          case "${{ matrix.os }}" in
+            ubuntu-latest)
+              echo "artifact=wheel-x86_64-unknown-linux-gnu" >> $GITHUB_OUTPUT
+              ;;
+            macos-13)
+              echo "artifact=wheel-x86_64-apple-darwin" >> $GITHUB_OUTPUT
+              ;;
+            macos-14)
+              echo "artifact=wheel-aarch64-apple-darwin" >> $GITHUB_OUTPUT
+              ;;
+            windows-latest)
+              echo "artifact=wheel-x86_64-pc-windows-msvc" >> $GITHUB_OUTPUT
+              ;;
+          esac
+          
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.wheel.outputs.artifact }}
+          path: dist/
+          
+      - name: Install wheel
+        shell: bash
+        run: pip install dist/*.whl
+        
+      - name: Test CLI commands
+        shell: bash
+        run: |
+          echo "Testing --version (fast path)..."
+          zenml --version
+          
+          echo "Testing version command (fast path)..."
+          zenml version
+          
+          echo "Testing --help (delegates to Python)..."
+          zenml --help
+          
+      - name: Benchmark fast path
+        shell: bash
+        run: |
+          echo "Benchmarking fast path commands..."
+          
+          # Warm up
+          zenml --version > /dev/null 2>&1
+          
+          # Time 10 runs
+          start=$(python -c 'import time; print(time.time())')
+          for i in {1..10}; do
+            zenml --version > /dev/null 2>&1
+          done
+          end=$(python -c 'import time; print(time.time())')
+          
+          avg=$(python -c "print(f'{($end - $start) / 10 * 1000:.1f}')")
+          echo "Average time for 'zenml --version': ${avg}ms"
+
+  # Publish to PyPI (only on release tags)
+  publish:
+    name: Publish to PyPI
+    needs: [build, sdist, test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true'
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+          
+      - name: List artifacts
+        run: ls -la dist/
+        
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
