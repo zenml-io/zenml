@@ -20,6 +20,9 @@ serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
 dirs = "5"
 
+# Phase 3b: PyO3 for calling Python Client API directly
+pyo3 = { version = "0.23", features = ["auto-initialize"] }
+
 [build-dependencies]
 # No external deps needed - we use std only for reading VERSION file
 
