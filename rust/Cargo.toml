@@ -16,6 +16,9 @@ path = "src/main.rs"
 [dependencies]
 # Minimal dependencies for Phase 1
 rand = "0.8"  # For random ASCII art selection (matching Python behavior)
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+dirs = "5"
 
 [build-dependencies]
 # No external deps needed - we use std only for reading VERSION file

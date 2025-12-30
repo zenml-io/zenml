@@ -11,7 +11,9 @@
 use std::env;
 use std::process::ExitCode;
 
+use crate::commands::clean::run_clean;
 use crate::commands::help::print_help_root;
+use crate::commands::status::print_status;
 use crate::commands::version::{print_version_command, print_version_flag};
 use crate::python_bridge::delegate_to_python;
 
@@ -24,8 +26,27 @@ enum CliAction {
     VersionCommand,
     /// Root --help with no subcommand
     HelpRoot,
+    /// `zenml status` subcommand
+    Status,
+    /// `zenml clean` subcommand
+    Clean { yes: bool, local: bool },
     /// Delegate to Python CLI
     Delegate,
+}
+
+fn parse_clean_flags(args: &[&str]) -> Option<(bool, bool)> {
+    let mut yes = false;
+    let mut local = false;
+
+    for arg in args {
+        match *arg {
+            "--yes" | "-y" => yes = true,
+            "--local" | "-l" => local = true,
+            _ => return None,
+        }
+    }
+
+    Some((yes, local))
 }
 
 /// Parse arguments and determine the appropriate action
@@ -39,6 +60,11 @@ fn classify_args(args: &[String]) -> CliAction {
         ["--help"] | ["-h"] => CliAction::HelpRoot,
         ["--version"] | ["-v"] => CliAction::VersionFlag,
         ["version"] => CliAction::VersionCommand,
+        ["status"] => CliAction::Status,
+        ["clean", rest @ ..] => match parse_clean_flags(rest) {
+            Some((yes, local)) => CliAction::Clean { yes, local },
+            None => CliAction::Delegate,
+        },
         // Version flag can appear anywhere (Click behavior)
         _ if args.contains(&"--version") || args.contains(&"-v") => CliAction::VersionFlag,
         // Everything else delegates to Python
@@ -86,6 +112,20 @@ pub fn run() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
+        CliAction::Status => {
+            if let Err(e) = print_status() {
+                eprintln!("Error printing status: {}", e);
+                return ExitCode::FAILURE;
+            }
+            ExitCode::SUCCESS
+        }
+        CliAction::Clean { yes, local } => {
+            if let Err(e) = run_clean(yes, local) {
+                eprintln!("Error running clean: {}", e);
+                return ExitCode::FAILURE;
+            }
+            ExitCode::SUCCESS
+        }
         CliAction::Delegate => {
             let args: Vec<String> = env::args().skip(1).collect();
             match delegate_to_python(&args) {
@@ -120,6 +160,52 @@ mod tests {
         assert_eq!(
             classify_args(&["zenml".into(), "version".into()]),
             CliAction::VersionCommand
+        );
+    }
+
+    #[test]
+    fn test_classify_status() {
+        assert_eq!(
+            classify_args(&["zenml".into(), "status".into()]),
+            CliAction::Status
+        );
+    }
+
+    #[test]
+    fn test_classify_clean_default() {
+        assert_eq!(
+            classify_args(&["zenml".into(), "clean".into()]),
+            CliAction::Clean {
+                yes: false,
+                local: false
+            }
+        );
+    }
+
+    #[test]
+    fn test_classify_clean_yes() {
+        assert_eq!(
+            classify_args(&["zenml".into(), "clean".into(), "--yes".into()]),
+            CliAction::Clean {
+                yes: true,
+                local: false
+            }
+        );
+    }
+
+    #[test]
+    fn test_classify_clean_yes_local() {
+        assert_eq!(
+            classify_args(&["zenml".into(), "clean".into(), "-y".into(), "-l".into()]),
+            CliAction::Clean { yes: true, local: true }
+        );
+    }
+
+    #[test]
+    fn test_classify_clean_unknown_flag_delegates() {
+        assert_eq!(
+            classify_args(&["zenml".into(), "clean".into(), "--unknown".into()]),
+            CliAction::Delegate
         );
     }
 
