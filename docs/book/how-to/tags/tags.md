@@ -26,7 +26,7 @@ add_tags(tags=["my_tag"], artifact="my_artifact_name_or_id")
 Alternatively, you can tag an artifact by using CLI as well:
 
 ```bash
-zenml artifacts update my_artifact -t my_tag
+zenml artifact update my_artifact -t my_tag
 ```
 
 ### Assigning tags to artifact versions
@@ -68,7 +68,7 @@ Moreover, you can tag an artifact version by using the CLI:
 
 ```bash
 # Tag the artifact version
-zenml artifacts versions update iris_dataset raw_2023 -t sklearn
+zenml artifact version update iris_dataset -t sklearn
 ```
 
 {% hint style="info" %}
