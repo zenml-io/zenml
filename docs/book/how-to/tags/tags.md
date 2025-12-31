@@ -68,7 +68,7 @@ Moreover, you can tag an artifact version by using the CLI:
 
 ```bash
 # Tag the artifact version
-zenml artifact version update iris_dataset -t sklearn
+zenml artifact version update iris_dataset -v raw_2023 -t sklearn
 ```
 
 {% hint style="info" %}
