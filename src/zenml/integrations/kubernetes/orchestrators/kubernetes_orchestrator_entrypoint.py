@@ -366,6 +366,34 @@ def main() -> None:
 
             return False
 
+        def _maybe_publish_failed_step_run(step_name: str) -> None:
+            step_runs = Client().list_run_steps(
+                name=step_name, pipeline_run_id=pipeline_run.id
+            )
+            if step_runs.total > 0:
+                # Step run already exists, we don't need to publish a new one
+                return
+
+            step_run_request = step_run_request_factory.create_request(
+                step_name
+            )
+            try:
+                step_run_request_factory.populate_request(step_run_request)
+            except Exception as e:
+                logger.error(
+                    "Failed to populate step run request for step `%s`: %s",
+                    step_name,
+                    e,
+                )
+                return
+
+            try:
+                Client().zen_store.create_run_step(step_run_request)
+            except Exception as e:
+                logger.error(
+                    "Failed to publish failed step run `%s`: %s", step_name, e
+                )
+
         startup_lock = threading.Lock()
         last_startup_time: float = 0.0
 
@@ -679,6 +707,7 @@ def main() -> None:
                     step_name,
                     error_message,
                 )
+                _maybe_publish_failed_step_run(step_name)
                 return NodeStatus.FAILED
             elif is_node_heartbeat_unhealthy(node):
                 logger.error(
