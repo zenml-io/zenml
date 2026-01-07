@@ -82,6 +82,7 @@ def step(
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
+    heartbeat_healthy_threshold: Optional[int] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -141,7 +142,8 @@ def step(
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
         retry: configuration of step retry in case of step failure.
-        substitutions: Extra placeholders for the step name.
+        substitutions: Extra substitutions for model and artifact name
+            placeholders.
         cache_policy: Cache policy for this step.
         runtime: The step runtime. If not configured, the step will
             run inline unless a step operator or docker/resource settings

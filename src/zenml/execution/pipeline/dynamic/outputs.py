@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline execution outputs."""
 
+from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from typing import Any, Iterator, List, Optional, Tuple, Union, overload
 
@@ -30,11 +31,65 @@ class OutputArtifact(ArtifactVersionResponse):
     chunk_index: Optional[int] = None
     chunk_size: Optional[int] = None
 
+    def chunk(self, index: int) -> "OutputArtifact":
+        """Get a chunk of the output artifact.
+
+        Args:
+            index: The index of the chunk.
+
+        Raises:
+            ValueError: If the output artifact can not be chunked or the index
+                is out of range.
+
+        Returns:
+            The artifact chunk.
+        """
+        if not self.item_count:
+            raise ValueError(
+                f"Output artifact `{self.output_name}` of step "
+                f"`{self.step_name}` can not be chunked."
+            )
+
+        if index < 0 or index >= self.item_count:
+            raise ValueError(
+                f"Chunk index `{index}` out of range for output artifact "
+                f"`{self.output_name}` of step `{self.step_name}`."
+            )
+
+        if self.chunk_index is not None and self.chunk_index != index:
+            raise ValueError(
+                f"Output artifact `{self.output_name}` of step "
+                f"`{self.step_name}` is already referring to a "
+                "different chunk."
+            )
+
+        return self.model_copy(update={"chunk_index": index, "chunk_size": 1})
+
 
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
 
 
-class _BaseStepRunFuture:
+class BaseFuture(ABC):
+    """Base future."""
+
+    @abstractmethod
+    def running(self) -> bool:
+        """Check if the future is running.
+
+        Returns:
+            True if the future is running, False otherwise.
+        """
+
+    @abstractmethod
+    def result(self) -> Any:
+        """Get the result of the future.
+
+        Returns:
+            The result of the future.
+        """
+
+
+class BaseStepRunFuture(BaseFuture):
     """Base step run future."""
 
     def __init__(
@@ -62,12 +117,16 @@ class _BaseStepRunFuture:
         """
         return self._invocation_id
 
-    def _wait(self) -> None:
-        """Wait for the step run future to complete."""
-        self._wrapped.result()
+    def running(self) -> bool:
+        """Check if the step run future is running.
+
+        Returns:
+            True if the step run future is running, False otherwise.
+        """
+        return self._wrapped.running()
 
 
-class ArtifactFuture(_BaseStepRunFuture):
+class ArtifactFuture(BaseStepRunFuture):
     """Future for a step run output artifact."""
 
     def __init__(
@@ -114,8 +173,22 @@ class ArtifactFuture(_BaseStepRunFuture):
         """
         return self.result().load(disable_cache=disable_cache)
 
+    def chunk(self, index: int) -> "OutputArtifact":
+        """Get a chunk of the output artifact.
 
-class StepRunOutputsFuture(_BaseStepRunFuture):
+        This method will wait for the future to complete and then return the
+        artifact chunk.
+
+        Args:
+            index: The index of the chunk.
+
+        Returns:
+            The artifact chunk.
+        """
+        return self.result().chunk(index=index)
+
+
+class StepRunOutputsFuture(BaseStepRunFuture):
     """Future for a step run output."""
 
     def __init__(
@@ -270,7 +343,7 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         return len(self._output_keys)
 
 
-class MapResultsFuture:
+class MapResultsFuture(BaseFuture):
     """Future that represents the results of a `step.map/product(...)` call."""
 
     def __init__(self, futures: List[StepRunOutputsFuture]) -> None:
@@ -281,6 +354,14 @@ class MapResultsFuture:
         """
         self.futures = futures
 
+    def running(self) -> bool:
+        """Check if the map results future is running.
+
+        Returns:
+            True if the map results future is running, False otherwise.
+        """
+        return any(future.running() for future in self.futures)
+
     def result(self) -> List[StepRunOutputs]:
         """Get the step run outputs this future represents.
 
@@ -288,6 +369,19 @@ class MapResultsFuture:
             The step run outputs.
         """
         return [future.result() for future in self.futures]
+
+    def load(self, disable_cache: bool = False) -> List[Any]:
+        """Load the step run output artifacts.
+
+        Args:
+            disable_cache: Whether to disable the artifact cache.
+
+        Returns:
+            The step run output artifacts.
+        """
+        return [
+            future.load(disable_cache=disable_cache) for future in self.futures
+        ]
 
     def unpack(self) -> Tuple[List[ArtifactFuture], ...]:
         """Unpack the map results future.
@@ -358,4 +452,6 @@ class MapResultsFuture:
         return len(self.futures)
 
 
-StepRunFuture = Union[ArtifactFuture, StepRunOutputsFuture, MapResultsFuture]
+AnyStepRunFuture = Union[
+    ArtifactFuture, StepRunOutputsFuture, MapResultsFuture
+]

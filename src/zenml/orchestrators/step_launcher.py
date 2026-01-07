@@ -317,6 +317,9 @@ class StepLauncher:
 
                 start_time = time.time()
                 with logs_context:
+                    logger.info(
+                        "Preparing to run step `%s`.", self._invocation_id
+                    )
                     try:
                         self._run_step(
                             pipeline_run=pipeline_run,
@@ -458,6 +461,7 @@ class StepLauncher:
                 step_runtime = get_step_runtime(
                     step_config=self._step.config,
                     pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+                    orchestrator=self._stack.orchestrator,
                 )
 
                 if step_runtime == StepRuntime.INLINE:

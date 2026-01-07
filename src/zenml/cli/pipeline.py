@@ -491,7 +491,8 @@ def deploy_pipeline(
         dashboard_url = get_deployment_url(deployment)
         if dashboard_url:
             cli_utils.declare(
-                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]",
+                no_wrap=True,
             )
 
         if attach:
@@ -646,7 +647,14 @@ def schedule() -> None:
 @schedule.command("list", help="List all pipeline schedules.")
 @list_options(
     ScheduleFilter,
-    default_columns=["id", "name", "pipeline", "cron_expression"],
+    default_columns=[
+        "id",
+        "name",
+        "pipeline",
+        "cron_expression",
+        "active",
+        "is_archived",
+    ],
 )
 def list_schedules(
     columns: str, output_format: OutputFormat, **kwargs: Any
@@ -677,7 +685,8 @@ def list_schedules(
     help="The cron expression to update the schedule with.",
 )
 def update_schedule(
-    schedule_name_or_id: str, cron_expression: Optional[str] = None
+    schedule_name_or_id: str,
+    cron_expression: str | None = None,
 ) -> None:
     """Update a pipeline schedule.
 
@@ -685,7 +694,11 @@ def update_schedule(
         schedule_name_or_id: The name or ID of the schedule to update.
         cron_expression: The cron expression to update the schedule with.
     """
-    if not cron_expression:
+    options = [
+        cron_expression,
+    ]
+
+    if not any(options):
         cli_utils.declare("No schedule update requested.")
         return
 
@@ -700,6 +713,42 @@ def update_schedule(
         cli_utils.declare(f"Updated schedule '{schedule_name_or_id}'.")
 
 
+@schedule.command("activate", help="Activate a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+def activate_schedule(schedule_name_or_id: str) -> None:
+    """Activate a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+    """
+    try:
+        Client().update_schedule(
+            name_id_or_prefix=schedule_name_or_id, active=True
+        )
+    except KeyError as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Activated schedule '{schedule_name_or_id}'.")
+
+
+@schedule.command("deactivate", help="Deactivate a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+def deactivate_schedule(schedule_name_or_id: str) -> None:
+    """Activate a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+    """
+    try:
+        Client().update_schedule(
+            name_id_or_prefix=schedule_name_or_id, active=False
+        )
+    except KeyError as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Deactivated schedule '{schedule_name_or_id}'.")
+
+
 @schedule.command("delete", help="Delete a pipeline schedule.")
 @click.argument("schedule_name_or_id", type=str, required=True)
 @click.option(
@@ -708,24 +757,37 @@ def update_schedule(
     is_flag=True,
     help="Don't ask for confirmation.",
 )
-def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
+@click.option("--hard", "-h", is_flag=True, help="Hard delete the schedule")
+def delete_schedule(
+    schedule_name_or_id: str, yes: bool = False, hard: bool = False
+) -> None:
     """Delete a pipeline schedule.
 
     Args:
         schedule_name_or_id: The name or ID of the schedule to delete.
         yes: If set, don't ask for confirmation.
+        hard: If set will trigger hard deletion of the schedule instead of archiving.
     """
     if not yes:
-        confirmation = cli_utils.confirmation(
-            f"Are you sure you want to delete schedule "
-            f"`{schedule_name_or_id}`?"
-        )
+        if not hard:
+            confirmation = cli_utils.confirmation(
+                f"Are you sure you want to delete schedule "
+                f"`{schedule_name_or_id}`?"
+            )
+        else:
+            confirmation = cli_utils.confirmation(
+                f"Are you sure you want to hard delete schedule "
+                f"`{schedule_name_or_id}`? Any historical data or references "
+                f"to this schedule will be lost."
+            )
         if not confirmation:
             cli_utils.declare("Schedule deletion canceled.")
             return
 
     try:
-        Client().delete_schedule(name_id_or_prefix=schedule_name_or_id)
+        Client().delete_schedule(
+            name_id_or_prefix=schedule_name_or_id, soft=not hard
+        )
     except KeyError as e:
         cli_utils.exception(e)
     else:
@@ -1272,7 +1334,8 @@ def deploy_snapshot(
             dashboard_url = get_deployment_url(deployment)
             if dashboard_url:
                 cli_utils.declare(
-                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]",
+                    no_wrap=True,
                 )
 
 

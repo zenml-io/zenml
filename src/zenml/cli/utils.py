@@ -2118,8 +2118,8 @@ def generate_deployment_row(
     """
     user_name = _get_user_name(deployment.user)
 
-    if deployment.snapshot is None or deployment.snapshot.pipeline is None:
-        pipeline_name = "unlisted"
+    if deployment.snapshot is None:
+        pipeline_name = "N/A"
     else:
         pipeline_name = deployment.snapshot.pipeline.name
 
@@ -2238,7 +2238,7 @@ def generate_pipeline_run_row(
         Dict with pipeline run data for display.
     """
     pipeline_name = (
-        pipeline_run.pipeline.name if pipeline_run.pipeline else "unlisted"
+        pipeline_run.pipeline.name if pipeline_run.pipeline else "N/A"
     )
     stack_name = pipeline_run.stack.name if pipeline_run.stack else "[DELETED]"
     user_name = _get_user_name(pipeline_run.user)
@@ -2363,9 +2363,14 @@ def pretty_print_deployment(
     if deployment.url:
         declare("\n[bold]Connection information:[/bold]")
 
-        endpoint_url = deployment.url.rstrip("/")
-        declare(f"\n[bold]Endpoint URL:[/bold] [link]{endpoint_url}[/link]")
-        declare(f"[bold]Swagger URL:[/bold] [link]{endpoint_url}/docs[/link]")
+        declare(
+            f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]",
+            no_wrap=True,
+        )
+        declare(
+            f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]",
+            no_wrap=True,
+        )
 
         # Auth key handling with proper security
         auth_key = deployment.auth_key

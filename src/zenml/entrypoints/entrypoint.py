@@ -14,8 +14,6 @@
 """Functionality to run ZenML steps or pipelines."""
 
 import argparse
-import logging
-import sys
 
 from zenml.entrypoints.base_entrypoint_configuration import (
     ENTRYPOINT_CONFIG_SOURCE_OPTION,
@@ -25,15 +23,8 @@ from zenml.execution.pipeline.utils import prevent_pipeline_execution
 from zenml.utils import source_utils
 
 
-def _setup_logging() -> None:
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    logging.getLogger().setLevel(logging.INFO)
-
-
 def main() -> None:
     """Runs the entrypoint configuration given by the command line arguments."""
-    _setup_logging()
-
     # Make sure this entrypoint does not run an entire pipeline when
     # importing user modules. This could happen if a pipeline is called in a
     # module without an `if __name__== "__main__":` check)

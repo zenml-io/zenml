@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import SerializeAsAny, field_validator
+from pydantic import SerializeAsAny
 
 from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.constants import (
@@ -41,8 +41,6 @@ if TYPE_CHECKING:
     )
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
-
-DISALLOWED_PIPELINE_NAMES = ["unlisted"]
 
 
 class PipelineConfigurationUpdate(FrozenBaseModel):
@@ -101,27 +99,6 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
     execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE
-
-    @field_validator("name")
-    @classmethod
-    def ensure_pipeline_name_allowed(cls, name: str) -> str:
-        """Ensures the pipeline name is allowed.
-
-        Args:
-            name: Name of the pipeline.
-
-        Returns:
-            The validated name of the pipeline.
-
-        Raises:
-            ValueError: If the name is not allowed.
-        """
-        if name in DISALLOWED_PIPELINE_NAMES:
-            raise ValueError(
-                f"Pipeline name '{name}' is not allowed since '{name}' is a "
-                "reserved key word. Please choose another name."
-            )
-        return name
 
     @property
     def docker_settings(self) -> "DockerSettings":

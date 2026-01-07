@@ -580,6 +580,10 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         logging_context = setup_run_logging(
             pipeline_run=placeholder_run,
             source="deployment",
+            # we explicitly don't block on exit here because we want to allow
+            # the response to be sent to the client without waiting for the logs
+            # to be flushed.
+            block_on_exit=False,
         )
 
         with logging_context:
@@ -694,6 +698,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 deployment_name=self.deployment.name,
                 pipeline_name=self.snapshot.pipeline_configuration.name,
                 run_id=run.id if run else None,
+                run_index=run.index if run else None,
                 run_name=run.name if run else None,
                 parameters_used=resolved_params,
                 snapshot_id=self.snapshot.id,

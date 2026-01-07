@@ -2363,15 +2363,17 @@ class RestZenStore(BaseZenStore):
             response_model=ScheduleResponse,
         )
 
-    def delete_schedule(self, schedule_id: UUID) -> None:
+    def delete_schedule(self, schedule_id: UUID, soft: bool = False) -> None:
         """Deletes a schedule.
 
         Args:
             schedule_id: The ID of the schedule to delete.
+            soft: Soft deletion will archive the schedule.
         """
         self._delete_resource(
             resource_id=schedule_id,
             route=SCHEDULES,
+            params={"soft": soft},
         )
 
     # --------------------------- Secrets ---------------------------

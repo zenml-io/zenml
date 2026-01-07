@@ -30,6 +30,7 @@ from uuid import UUID
 
 from pydantic import model_validator
 
+from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
@@ -43,6 +44,7 @@ from zenml.exceptions import (
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.orchestrators.exceptions import PipelineSubmissionError
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
     publish_pipeline_run_status_update,
@@ -169,8 +171,13 @@ class BaseOrchestrator(StackComponent, ABC):
     def get_orchestrator_run_id(self) -> str:
         """Returns the run id of the active orchestrator run.
 
-        Important: This needs to be a unique ID and return the same value for
+        Important:
+        - This needs to be a unique ID and return the same value for
         all steps of a pipeline run.
+        - For dynamic pipelines, this needs to be a unique ID which will be
+        fetched in the orchestration environment. If the orchestrator supports
+        retries of the orchestration environment, this ID needs to be the same
+        for all retries.
 
         Returns:
             The orchestrator run id.
@@ -261,6 +268,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
+            PipelineSubmissionError: If a pipeline submission failed on the
+                orchestrator.
         """
         self._prepare_run(snapshot=snapshot)
 
@@ -373,6 +382,7 @@ class BaseOrchestrator(StackComponent, ABC):
                         step_environments=step_environments,
                         placeholder_run=placeholder_run,
                     )
+
                 if placeholder_run:
                     publish_pipeline_run_status_update(
                         pipeline_run_id=placeholder_run.id,
@@ -425,7 +435,16 @@ class BaseOrchestrator(StackComponent, ABC):
                             raise RunMonitoringError(original_exception=e)
                         except BaseException as e:
                             raise RunMonitoringError(original_exception=e)
+        except PipelineSubmissionError as e:
+            # clean-up actions in case of failure
 
+            if snapshot.schedule:
+                # delete created DB schedules
+                Client().zen_store.delete_schedule(
+                    snapshot.schedule.id, soft=False
+                )
+
+            raise e
         finally:
             self._cleanup_run()
 

@@ -616,7 +616,7 @@ def main() -> None:
             from zenml.steps.heartbeat import is_heartbeat_unhealthy
 
             sr_ = client.list_run_steps(
-                name=node.id, pipeline_run_id=pipeline_run.id
+                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=True
             )
 
             if sr_.items:
