@@ -255,7 +255,7 @@ class BaseDatabaseBackupEngine(ABC):
         )
 
         try:
-            self.backup_database(overwrite=True)
+            self.backup_database(overwrite=False)
         except Exception as e:
             raise RuntimeError(
                 f"Failed to backup the database: {str(e)}."
