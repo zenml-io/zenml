@@ -358,6 +358,7 @@ class DynamicPipelineRunner:
             step=step,
             invocation_id=invocation_id,
             inputs=inputs,
+            pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
             after=after,
             config=step_config,
         )
@@ -525,6 +526,7 @@ def compile_dynamic_step_invocation(
     step: "BaseStep",
     invocation_id: str,
     inputs: Dict[str, Any],
+    pipeline_docker_settings: "DockerSettings",
     after: Union[
         "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
     ] = None,
@@ -538,6 +540,7 @@ def compile_dynamic_step_invocation(
         step: The step to compile.
         invocation_id: The invocation ID of the step.
         inputs: The inputs for the step function.
+        pipeline_docker_settings: The Docker settings of the parent pipeline.
         after: The step run output futures to wait for.
         config: The configuration for the step.
 
@@ -638,12 +641,35 @@ def compile_dynamic_step_invocation(
         parameters={},
     )
 
-    return Compiler()._compile_step_invocation(
+    compiled_step = Compiler()._compile_step_invocation(
         invocation=step_invocation,
         stack=Client().active_stack,
         step_config=config,
         pipeline=pipeline,
     )
+
+    if not compiled_step.config.docker_settings.skip_build:
+        if template:
+            if (
+                template.config.docker_settings
+                != compiled_step.config.docker_settings
+            ):
+                logger.warning(
+                    "Custom Docker settings specified for step %s will be "
+                    "ignored. The image built for template %s will be used "
+                    "instead.",
+                    invocation_id,
+                    template.spec.invocation_id,
+                )
+        elif compiled_step.config.docker_settings != pipeline_docker_settings:
+            logger.warning(
+                "Custom Docker settings specified for step %s will be "
+                "ignored. The image built for the pipeline will be used "
+                "instead.",
+                invocation_id,
+            )
+
+    return compiled_step
 
 
 def _load_step_run_outputs(step_run_id: UUID) -> StepRunOutputs:
