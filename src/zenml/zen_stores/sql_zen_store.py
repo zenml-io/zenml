@@ -1464,7 +1464,12 @@ class SqlZenStore(BaseZenStore):
             )
 
             backup_engine_class = MyDumperDatabaseBackupEngine
+        elif strategy == DatabaseBackupStrategy.DISABLED:
+            from zenml.zen_stores.migrations.backup.base import (
+                DisabledDatabaseBackupEngine,
+            )
 
+            backup_engine_class = DisabledDatabaseBackupEngine
         elif strategy == DatabaseBackupStrategy.CUSTOM:
             custom_backup_engine = self.config.custom_backup_engine
             if custom_backup_engine is None:

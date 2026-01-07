@@ -293,3 +293,49 @@ class BaseDatabaseBackupEngine(ABC):
             self.cleanup_database_backup()
         except Exception:
             logger.exception("Failed to cleanup the database backup.")
+
+
+class DisabledDatabaseBackupEngine(BaseDatabaseBackupEngine):
+    """Database backup engine that is disabled.
+
+    This is used when the backup strategy is set to disabled.
+    """
+
+    def backup_database(
+        self,
+        overwrite: bool = False,
+    ) -> None:
+        """Backup the database.
+
+        Args:
+            overwrite: Whether to overwrite an existing backup if it exists.
+                If set to False, the existing backup will be reused.
+
+        Raises:
+            NotImplementedError: Database backup is not implemented.
+        """
+        raise NotImplementedError("Database backup is disabled.")
+
+    def restore_database(
+        self,
+        cleanup: bool = False,
+    ) -> None:
+        """Restore the database.
+
+        Args:
+            cleanup: Whether to cleanup the backup after restoring the database.
+
+        Raises:
+            NotImplementedError: Database backup is not implemented.
+        """
+        raise NotImplementedError("Database backup is disabled.")
+
+    def cleanup_database_backup(
+        self,
+    ) -> None:
+        """Delete the database backup.
+
+        Raises:
+            NotImplementedError: Database backup is not implemented.
+        """
+        raise NotImplementedError("Database backup is disabled.")
