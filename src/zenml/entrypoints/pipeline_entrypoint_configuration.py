@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a pipeline."""
 
+import os
+
 from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
@@ -30,6 +32,13 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
+
+        # Change the working directory to make sure we're in the correct
+        # directory where the files in the Docker image should be included.
+        # This is necessary as some services overwrite the working directory
+        # configured in the Docker image itself.
+        os.makedirs("/app", exist_ok=True)
+        os.chdir("/app")
 
         self.download_code_if_necessary()
 
