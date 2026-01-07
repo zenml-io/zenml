@@ -1,0 +1,183 @@
+{
+  "generated_at": "2026-01-05T11:36:19.294839",
+  "year": 2025,
+  "core_stats": {
+    "total_runs": 340,
+    "successful_runs": 244,
+    "failed_runs": 67,
+    "success_rate": 71.8,
+    "unique_pipelines": 9,
+    "unique_users": 5,
+    "artifacts_produced": 35,
+    "models_created": 0,
+    "model_versions": 0,
+    "total_stacks": 4,
+    "active_schedules": 0,
+    "active_services": 0,
+    "status_breakdown": {
+      "completed": 244,
+      "failed": 67,
+      "provisioning": 17,
+      "initializing": 1,
+      "running": 7,
+      "stopped": 4
+    }
+  },
+  "time_analytics": {
+    "runs_per_month": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      213,
+      66,
+      0,
+      61,
+      0
+    ],
+    "busiest_month": "August",
+    "busiest_month_count": 213,
+    "busiest_day": "Tuesday",
+    "busiest_day_count": 176,
+    "busiest_hour": 16,
+    "busiest_hour_count": 97,
+    "first_run": "2025-08-07T13:34:17",
+    "last_run": "2025-11-18T10:23:14",
+    "weekend_runs": 19,
+    "weekday_runs": 321,
+    "day_distribution": {
+      "Monday": 25,
+      "Tuesday": 176,
+      "Wednesday": 36,
+      "Thursday": 31,
+      "Friday": 53,
+      "Saturday": 15,
+      "Sunday": 4
+    }
+  },
+  "top_pipelines": [
+    {
+      "name": "github_report_pipeline",
+      "runs": 169
+    },
+    {
+      "name": "zenpulse_agent",
+      "runs": 92
+    },
+    {
+      "name": "eval_pipeline",
+      "runs": 30
+    },
+    {
+      "name": "pulse_activity_agent",
+      "runs": 28
+    },
+    {
+      "name": "pulse_message_generator",
+      "runs": 13
+    },
+    {
+      "name": "autogen_travel_pipeline",
+      "runs": 4
+    },
+    {
+      "name": "weekly_summary_pipeline",
+      "runs": 2
+    },
+    {
+      "name": "crewai_travel_pipeline",
+      "runs": 1
+    },
+    {
+      "name": "hello_pipeline",
+      "runs": 1
+    }
+  ],
+  "awards": {
+    "pipeline_overlord": {
+      "title": "Pipeline Overlord",
+      "icon": "\ud83d\udc51",
+      "description": "Ruled the pipeline kingdom",
+      "user": "Alex Strick van Linschoten",
+      "user_email": "alex.ext@zenml.io",
+      "avatar": "https://avatars.githubusercontent.com/u/3348134?v=4",
+      "value": "213 runs"
+    },
+    "failure_champion": {
+      "title": "Failure Champion",
+      "icon": "\ud83d\udd25",
+      "description": "Learning through iteration",
+      "user": "Alex Strick van Linschoten",
+      "user_email": "alex.ext@zenml.io",
+      "avatar": "https://avatars.githubusercontent.com/u/3348134?v=4",
+      "value": "43 failed runs"
+    },
+    "success_streak": {
+      "title": "Success Streak",
+      "icon": "\u2b50",
+      "description": "The reliable one",
+      "user": "Alex Strick van Linschoten",
+      "user_email": "alex.ext@zenml.io",
+      "avatar": "https://avatars.githubusercontent.com/u/3348134?v=4",
+      "value": "69.5% success rate"
+    },
+    "weekend_warrior": {
+      "title": "Weekend Warrior",
+      "icon": "\ud83d\udcaa",
+      "description": "No rest for ML",
+      "user": "Hamza Tahir",
+      "user_email": "hamza@zenml.io",
+      "avatar": "https://lh3.googleusercontent.com/a/AAcHTtcDGJZA3eCcYkUyHFZbHUqaK9l1DWcKLgXlOVqiCxMV9A=s96-c",
+      "value": "13 weekend runs"
+    },
+    "variety_pack": {
+      "title": "Variety Pack",
+      "icon": "\ud83c\udfa8",
+      "description": "Jack of all pipelines",
+      "user": "Alex Strick van Linschoten",
+      "user_email": "alex.ext@zenml.io",
+      "avatar": "https://avatars.githubusercontent.com/u/3348134?v=4",
+      "value": "6 different pipelines"
+    }
+  },
+  "users": [
+    {
+      "id": "812a16b0-053c-475e-a13c-8b6140bf397d",
+      "name": "alex.ext@zenml.io",
+      "full_name": "Alex Strick van Linschoten",
+      "avatar": "https://avatars.githubusercontent.com/u/3348134?v=4",
+      "total_runs": 213,
+      "failed_runs": 43,
+      "completed_runs": 148,
+      "success_rate": 69.5,
+      "avg_hour": 13.3,
+      "weekend_runs": 0,
+      "unique_pipelines": 6
+    },
+    {
+      "id": "05aa87da-6efa-426c-bc98-b3494abb2940",
+      "name": "hamza@zenml.io",
+      "full_name": "Hamza Tahir",
+      "avatar": "https://lh3.googleusercontent.com/a/AAcHTtcDGJZA3eCcYkUyHFZbHUqaK9l1DWcKLgXlOVqiCxMV9A=s96-c",
+      "total_runs": 36,
+      "failed_runs": 15,
+      "completed_runs": 16,
+      "success_rate": 44.4,
+      "avg_hour": 13.8,
+      "weekend_runs": 13,
+      "unique_pipelines": 3
+    }
+  ],
+  "fun_facts": [
+    "Your team's first run of 2025 was on August 07 at 13:34",
+    "Tuesday was your most productive day with 176 runs",
+    "August was your busiest month with 213 pipeline runs",
+    "6% of your runs happened on weekends \ud83c\udf89",
+    "Your most-run pipeline was 'github_report_pipeline' with 169 executions",
+    "Your team's success rate was 71.8% - solid experimentation!",
+    "You hit triple digits with 340 pipeline runs!"
+  ]
+}
