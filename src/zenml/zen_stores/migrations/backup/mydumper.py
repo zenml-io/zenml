@@ -129,6 +129,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         """
         if self.url.password:
             return {"MYSQL_PWD": self.url.password}
+
         return None
 
     @staticmethod
