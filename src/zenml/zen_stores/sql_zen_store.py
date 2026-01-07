@@ -10894,9 +10894,7 @@ class SqlZenStore(BaseZenStore):
             is_dynamic_pipeline=is_dynamic_pipeline,
         )
 
-        if new_status == pipeline_run.status or (
-            pipeline_run.is_placeholder_run() and not new_status.is_finished
-        ):
+        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
             # The status hasn't changed -> no need to update the status.
             # If the pipeline run is a placeholder run (=no step has been started
             # for the run yet), this means the orchestrator hasn't started
