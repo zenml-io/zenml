@@ -210,9 +210,10 @@ for (const [fromToKey, group] of artifactsByFromTo.entries()) {
 
 ## Files Modified
 
+### Initial Implementation (Commit 1)
 ```
 claude-canvas/canvas/src/canvases/pipeline.tsx
-  - Updated RankRow component (flex row + spacers)
+  - Updated RankRow component (flex row + spacers instead of absolute positioning)
   - Updated handleUpdate to use parser
 
 claude-canvas/canvas/src/canvases/pipeline/layout.ts
@@ -226,6 +227,26 @@ claude-canvas/canvas/src/canvases/pipeline/zenml/parser.ts
 
 claude-canvas/canvas/src/canvases/pipeline/zenml/__tests__/parser.test.ts
   - NEW: Regression tests for named input slots scenario
+```
+
+### Post-Implementation Refinements (Commit 2)
+```
+claude-canvas/canvas/src/canvases/pipeline/zenml/types.ts
+  - Extended ZenMLArtifactVersion to accept top-level uri/artifact fields
+  - Improved isZenMLArtifactVersion to check both nested and top-level locations
+  - Updated getZenMLArtifactName/getZenMLArtifactUri to try both field locations
+
+claude-canvas/canvas/src/canvases/pipeline/zenml/parser.ts
+  - Enhanced buildPipelineConfigFromStepRuns producer extraction
+  - Now uses extractArtifactVersionIds on ALL outputs first
+  - Enriches metadata from full artifact versions when available
+  - Handles both lightweight refs and full-featured artifact objects
+
+claude-canvas/canvas/src/canvases/pipeline.tsx
+  - Enhanced ArrowRow with artifact connector lines
+  - Groups artifacts by (from,to) edge pair
+  - Draws horizontal lines linking artifact groups to target arrows
+  - Respects selection highlighting and canvas width
 ```
 
 ---
@@ -255,7 +276,46 @@ Type guards (`isPipelineConfig`, `isZenMLStepRun`, `isZenMLArtifactVersion`) ens
 
 ---
 
-## Future Improvements
+## Post-Implementation Improvements (Applied)
+
+### Issue: Missing `load_prompts` Outputs
+
+**Diagnosis**: Producer extraction was too strict—it only accepted artifact versions with full nested structure (`body.uri` AND `body.artifact.name`). Lightweight output refs like `{ artifact_version_id: "..." }` were never indexed, so downstream consumers couldn't form edges.
+
+**Solution**:
+- Modified `buildPipelineConfigFromStepRuns` to use `extractArtifactVersionIds(outputValue)` on ALL outputs first
+- Creates producer mappings even for lightweight refs
+- Then enriches with metadata when full artifact version objects are available
+- Producer map now includes both lightweight and full-featured output shapes
+
+**Result**: All `load_prompts` outputs now generate producer mappings, enabling complete fan-out to downstream steps.
+
+### Issue: Orphaned Artifact Labels
+
+**Diagnosis**: Artifacts were positioned correctly but had no visual connection to edges. The renderer doesn't draw full routed polylines (would be too complex for terminal), only vertical arrows under nodes. Artifacts positioned mid-edge looked disconnected.
+
+**Solution**:
+- Added artifact grouping in `ArrowRow` by `${from}::${to}` key
+- Draw horizontal connector lines from artifact group's span to target node's arrow column
+- Visual connection makes artifacts appear anchored to edges
+- Respects selection highlighting and canvas width constraints
+
+**Result**: Artifacts no longer appear orphaned; visual connector lines anchor them to their edges.
+
+### Issue: Type Tolerance
+
+**Diagnosis**: `ZenMLArtifactVersion` type and validators were too strict about nested structure. Different ZenML API versions may return `uri` and `artifact` fields at top level instead of nested under `body`.
+
+**Solution**:
+- Extended `ZenMLArtifactVersion` type to accept both nested and top-level fields
+- Improved `isZenMLArtifactVersion` heuristic to check either location
+- Updated `getZenMLArtifactName` and `getZenMLArtifactUri` to check both locations
+
+**Result**: Parser tolerates multiple ZenML payload shapes, improving robustness across API versions.
+
+---
+
+## Future Improvements (Optional Enhancements)
 
 1. **Artifact Count Limiting** (Optional polish)
    - Cap inline artifacts displayed per edge
@@ -273,6 +333,11 @@ Type guards (`isPipelineConfig`, `isZenMLStepRun`, `isZenMLArtifactVersion`) ens
 4. **Performance Optimization**
    - Memoize parser result if step-run JSON received frequently
    - Cache artifact version ID lookups for large pipelines
+
+5. **Bare ID Detection** (Edge case handling)
+   - Extend `tryGetArtifactVersionId` with safe heuristic for bare `{ id }` objects
+   - Current implementation requires at least a URI or artifact name hint
+   - If real payloads contain bare IDs, add conservative detection
 
 ---
 
