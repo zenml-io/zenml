@@ -6400,6 +6400,8 @@ class SqlZenStore(BaseZenStore):
                 can not be created.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
+        if pipeline_run.enable_heartbeat is None:
+            pipeline_run.enable_heartbeat = True
         snapshot = self._get_reference_schema_by_id(
             resource=pipeline_run,
             reference_schema=PipelineSnapshotSchema,
@@ -7029,8 +7031,12 @@ class SqlZenStore(BaseZenStore):
         )
 
     def disable_run_heartbeat(self, run_id: UUID) -> None:
-        with Session(self.engine) as session:
+        """Disables heartbeat for pipeline and all its running steps.
 
+        Args:
+            run_id: The id of the pipeline run.
+        """
+        with Session(self.engine) as session:
             existing_run = self._get_schema_by_id(
                 resource_id=run_id,
                 schema_class=PipelineRunSchema,
@@ -7044,11 +7050,11 @@ class SqlZenStore(BaseZenStore):
 
             stmt = (
                 update(StepRunSchema)
-                .where(StepRunSchema.c.pipeline_run_id == str(run_id))
+                .where(col(StepRunSchema.pipeline_run_id) == str(run_id))
                 .values(heartbeat_threshold=None)
             )
 
-            session.exec(stmt)
+            session.execute(stmt)
             session.commit()
 
     # ----------------------------- Run Metadata -----------------------------
@@ -10033,8 +10039,7 @@ class SqlZenStore(BaseZenStore):
             # cached top-level heartbeat config property (for fast validation).
             step_schema.heartbeat_threshold = (
                 step_config.config.heartbeat_healthy_threshold
-                if step_config.spec.enable_heartbeat
-                and run.enable_heartbeat
+                if step_config.spec.enable_heartbeat and run.enable_heartbeat
                 else None
             )
 
@@ -10368,8 +10373,10 @@ class SqlZenStore(BaseZenStore):
 
             return StepHeartbeatResponse(
                 id=existing_step_run.id,
-                status=existing_step_run.status,
+                status=ExecutionStatus(existing_step_run.status),
                 latest_heartbeat=existing_step_run.latest_heartbeat,
+                heartbeat_enabled=existing_step_run.heartbeat_threshold
+                is not None,
             )
 
     def validate_and_update_heartbeat(
@@ -10435,6 +10442,7 @@ class SqlZenStore(BaseZenStore):
                 status=ExecutionStatus(run.status),
                 latest_heartbeat=latest_heartbeat,
                 heartbeat_enabled=step_run.heartbeat_threshold is not None,
+                pipeline_run_status=ExecutionStatus(run.status),
             )
 
     def update_run_step(

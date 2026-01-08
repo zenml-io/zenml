@@ -72,6 +72,7 @@ from zenml.constants import (
     DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
@@ -115,7 +116,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
-    ZENML_PRO_API_KEY_PREFIX, DISABLE_HEARTBEAT,
+    ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import (
     APITokenType,

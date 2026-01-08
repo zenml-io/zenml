@@ -65,7 +65,7 @@ class PipelineRunConfiguration(
     )
     enable_heartbeat: bool | None = Field(
         default=None,
-        description="Whether to enable heartbeat for all steps of the pipeline run"
+        description="Whether to enable heartbeat for all steps of the pipeline run",
     )
     schedule: Optional[Schedule] = Field(
         default=None, description="The schedule on which to run the pipeline."

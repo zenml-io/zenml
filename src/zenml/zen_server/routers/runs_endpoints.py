@@ -516,7 +516,6 @@ def disable_run_heartbeat(
     Args:
         run_id: ID of the run.
     """
-
     run = verify_permissions_and_get_entity(
         id=run_id, get_method=zen_store().get_run, hydrate=False
     )

@@ -118,7 +118,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_column=Column(TEXT, nullable=True)
     )
     index: int = Field(nullable=False)
-    enable_heartbeat: bool | None = Field(nullable=False)
+    enable_heartbeat: bool = Field(nullable=False)
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -609,6 +609,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 else None,
                 is_templatable=is_templatable,
                 trigger_info=trigger_info,
+                enable_heartbeat=self.enable_heartbeat,
             )
 
         resources = None

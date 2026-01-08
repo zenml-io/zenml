@@ -487,9 +487,6 @@ class Pipeline:
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + list(secrets)
 
-        if enable_heartbeat is None:
-            enable_heartbeat = True
-
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,

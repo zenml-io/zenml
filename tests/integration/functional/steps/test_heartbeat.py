@@ -3,27 +3,23 @@ from datetime import datetime
 import pytest
 from tests.integration.functional.utils import sample_name
 
-from zenml import (
-    PipelineRequest,
-    PipelineRunRequest,
-    PipelineSnapshotRequest,
-    StepRunRequest,
-    StepRunUpdate,
-)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import ExecutionStatus, StoreType
+from zenml.exceptions import IllegalOperationError
+from zenml.models import (
+    PipelineRequest,
+    PipelineRunRequest,
+    PipelineSnapshotRequest,
+    StepRunRequest,
+    StepRunUpdate,
+)
 
 
-def test_heartbeat_rest_functionality():
-    if GlobalConfiguration().zen_store.config.type != StoreType.REST:
-        pytest.skip("Heartbeat testing requires REST")
-
-    client = Client()
-
+def create_data(client: Client, enable_pipeline_heartbeat: bool):
     pipeline_model = client.zen_store.create_pipeline(
         PipelineRequest(
             name=sample_name("pipeline"),
@@ -37,7 +33,8 @@ def test_heartbeat_rest_functionality():
             project=client.active_project.id,
             run_name_template=sample_name("foo"),
             pipeline_configuration=PipelineConfiguration(
-                name=sample_name("foo")
+                enable_heartbeat=enable_pipeline_heartbeat,
+                name=sample_name("foo"),
             ),
             stack=client.active_stack.id,
             pipeline=pipeline_model.id,
@@ -46,13 +43,18 @@ def test_heartbeat_rest_functionality():
             step_configurations={
                 step_name: Step(
                     spec=StepSpec(
+                        invocation_id=step_name,
                         source=Source(
                             module="acme.foo",
                             type=SourceType.INTERNAL,
                         ),
                         upstream_steps=[],
+                        enable_heartbeat=True,
                     ),
                     config=StepConfiguration(name=step_name),
+                    step_config_overrides=StepConfiguration(
+                        outputs={}, name=step_name
+                    ),
                 )
             },
         )
@@ -63,7 +65,7 @@ def test_heartbeat_rest_functionality():
             name=sample_name("foo"),
             snapshot=snapshot.id,
             status=ExecutionStatus.RUNNING,
-            enable_heartbeat=True,
+            enable_heartbeat=enable_pipeline_heartbeat,
         )
     )
     step_run = client.zen_store.create_run_step(
@@ -75,6 +77,17 @@ def test_heartbeat_rest_functionality():
             start_time=datetime.now(),
         )
     )
+
+    return pr, step_run
+
+
+def test_heartbeat_rest_functionality():
+    if GlobalConfiguration().zen_store.config.type != StoreType.REST:
+        pytest.skip("Heartbeat testing requires REST")
+
+    client = Client()
+
+    run, step_run = create_data(client, enable_pipeline_heartbeat=True)
 
     assert step_run.latest_heartbeat is None
 
@@ -90,16 +103,85 @@ def test_heartbeat_rest_functionality():
     assert hb_response.status == ExecutionStatus.RUNNING
     assert hb_response.latest_heartbeat is not None
     assert hb_response.pipeline_run_status == ExecutionStatus.RUNNING
-
-    assert (
-        client.zen_store.get_run_step(step_run_id=step_run.id).latest_heartbeat
-        == hb_response.latest_heartbeat
-    )
+    assert hb_response.heartbeat_enabled
 
     client.zen_store.update_run_step(
         step_run_id=step_run.id,
         step_run_update=StepRunUpdate(status=ExecutionStatus.COMPLETED),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(IllegalOperationError):
         client.zen_store.update_step_heartbeat(step_run_id=step_run.id)
+
+
+def test_disabled_heartbeat_functionality():
+    if GlobalConfiguration().zen_store.config.type != StoreType.REST:
+        pytest.skip("Heartbeat testing requires REST")
+
+    client = Client()
+
+    run, step_run = create_data(client, enable_pipeline_heartbeat=False)
+
+    assert run.enable_heartbeat is False
+
+    hb_response = client.zen_store.update_step_heartbeat(
+        step_run_id=step_run.id
+    )
+
+    assert not hb_response.heartbeat_enabled
+
+
+def test_heartbeat_null_value_set_default():
+    if GlobalConfiguration().zen_store.config.type != StoreType.REST:
+        pytest.skip("Heartbeat testing requires REST")
+
+    client = Client()
+
+    run, step_run = create_data(client, enable_pipeline_heartbeat=None)
+
+    assert run.enable_heartbeat is True
+
+    hb_response = client.zen_store.update_step_heartbeat(
+        step_run_id=step_run.id
+    )
+
+    assert hb_response.heartbeat_enabled
+
+
+def test_heartbeat_functionality_on_disable():
+    if GlobalConfiguration().zen_store.config.type != StoreType.REST:
+        pytest.skip("Heartbeat testing requires REST")
+
+    client = Client()
+
+    run, step_run = create_data(client, enable_pipeline_heartbeat=True)
+
+    assert run.enable_heartbeat
+
+    hb_response = client.zen_store.update_step_heartbeat(
+        step_run_id=step_run.id
+    )
+
+    assert hb_response.heartbeat_enabled
+
+    client.zen_store.disable_run_heartbeat(run_id=run.id)
+
+    # check heartbeat threshold is nullified
+
+    step_run = client.get_run_step(step_run_id=step_run.id)
+
+    assert step_run.heartbeat_threshold is None
+
+    # check run enable heartbeat is set to false
+
+    run = client.get_pipeline_run(name_id_or_prefix=run.id)
+
+    assert not run.enable_heartbeat
+
+    # check heartbeat receives proper heartbeat disabled message
+
+    hb_response = client.zen_store.update_step_heartbeat(
+        step_run_id=step_run.id
+    )
+
+    assert not hb_response.heartbeat_enabled
