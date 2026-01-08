@@ -4528,6 +4528,7 @@ class Client(metaclass=ClientMetaClass):
         catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
         run_once_start_time: Optional[Union[datetime, str]] = None,
+        is_archived: bool = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -4553,6 +4554,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             run_once_start_time: Use to filter by run once start time.
+            is_archived: Use to filter by archived status.
 
         Returns:
             A list of schedules.
@@ -4577,6 +4579,7 @@ class Client(metaclass=ClientMetaClass):
             interval_second=interval_second,
             catchup=catchup,
             run_once_start_time=run_once_start_time,
+            is_archived=is_archived,
         )
         return self.zen_store.list_schedules(
             schedule_filter_model=schedule_filter_model,
@@ -4663,6 +4666,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
+        soft: bool = True,
     ) -> None:
         """Delete a schedule.
 
@@ -4670,6 +4674,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix id of the schedule
                 to delete.
             project: The project name/ID to filter by.
+            soft: If set to true, archives the schedule. If false, hard deletes it.
         """
         schedule = self.get_schedule(
             name_id_or_prefix=name_id_or_prefix,
@@ -4691,7 +4696,13 @@ class Client(metaclass=ClientMetaClass):
         else:
             orchestrator.delete_schedule(schedule)
 
-        self.zen_store.delete_schedule(schedule_id=schedule.id)
+        if not soft:
+            logger.warning(
+                "You are deleting a schedule with option soft set to False. "
+                "All historical data and references to this schedule will be deleted."
+            )
+
+        self.zen_store.delete_schedule(schedule_id=schedule.id, soft=soft)
 
     # ----------------------------- Pipeline runs ------------------------------
 
