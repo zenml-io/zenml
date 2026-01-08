@@ -7030,36 +7030,21 @@ class SqlZenStore(BaseZenStore):
 
     def disable_run_heartbeat(self, run_id: UUID) -> None:
         with Session(self.engine) as session:
+
             existing_run = self._get_schema_by_id(
                 resource_id=run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
             )
 
-            if existing_run.get_pipeline_configuration().enable_heartbeat:
-                raise IllegalOperationError(
-                    f"The heartbeat flag for run {run_id} is already disabled."
-                )
-
-            # update run configuration - new step runs will set heartbeat flags to False
-
-            if existing_run.snapshot:
-                config = json.loads(
-                    existing_run.snapshot.pipeline_configuration
-                )
-            else:
-                config = json.loads(existing_run.pipeline_configuration)
-
-            config["enable_heartbeat"] = False
-            existing_run.snapshot.pipeline_configuration = json.dumps(config)
-
-            session.add(existing_run)
+            existing_run.enable_heartbeat = False
+            session.commit()
 
             # set heartbeat threshold to null for all created steps
 
             stmt = (
                 update(StepRunSchema)
-                .where(StepRunSchema.c.pipeline_run_id == str(existing_run.id))
+                .where(StepRunSchema.c.pipeline_run_id == str(run_id))
                 .values(heartbeat_threshold=None)
             )
 
@@ -10049,7 +10034,7 @@ class SqlZenStore(BaseZenStore):
             step_schema.heartbeat_threshold = (
                 step_config.config.heartbeat_healthy_threshold
                 if step_config.spec.enable_heartbeat
-                and run.get_pipeline_configuration().enable_heartbeat
+                and run.enable_heartbeat
                 else None
             )
 

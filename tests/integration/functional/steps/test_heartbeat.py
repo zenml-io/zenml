@@ -63,6 +63,7 @@ def test_heartbeat_rest_functionality():
             name=sample_name("foo"),
             snapshot=snapshot.id,
             status=ExecutionStatus.RUNNING,
+            enable_heartbeat=True,
         )
     )
     step_run = client.zen_store.create_run_step(

@@ -118,6 +118,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_column=Column(TEXT, nullable=True)
     )
     index: int = Field(nullable=False)
+    enable_heartbeat: bool | None = Field(nullable=False)
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -390,6 +391,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             trigger_execution_id=request.trigger_execution_id,
             triggered_by=triggered_by,
             triggered_by_type=triggered_by_type,
+            enable_heartbeat=request.enable_heartbeat,
         )
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:
