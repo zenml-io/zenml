@@ -496,6 +496,9 @@ def snapshot_request_from_source_snapshot(
     Returns:
         The generated snapshot request.
     """
+    assert source_snapshot.stack
+    assert source_snapshot.build
+
     pipeline_update_exclude = {"name"}
     if not source_snapshot.is_dynamic:
         pipeline_update_exclude.add("parameters")
@@ -590,8 +593,6 @@ def snapshot_request_from_source_snapshot(
         )
 
     zenml_version = zen_store().get_store_info().version
-    assert source_snapshot.stack
-    assert source_snapshot.build
 
     # Compute the source snapshot ID:
     # - If the source snapshot has a name, we use it as the source snapshot.
