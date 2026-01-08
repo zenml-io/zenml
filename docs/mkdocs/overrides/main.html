@@ -32,22 +32,30 @@
       }
     }
     
-    // Check userAgentData brands (modern bot detection)
+    // Check userAgentData (modern bot detection)
     try {
-      if (navigator.userAgentData && navigator.userAgentData.brands) {
+      if (navigator.userAgentData) {
+        // Empty brands array = spoofed browser (real browsers always populate this)
+        if (Array.isArray(navigator.userAgentData.brands) &&
+            navigator.userAgentData.brands.length === 0) {
+          return true;
+        }
+        // Empty platform = spoofed browser
+        if (navigator.userAgentData.platform === '') {
+          return true;
+        }
+        // Check brands for bot signatures
         const brands = navigator.userAgentData.brands;
         for (let brand of brands) {
-          // Check for specific bot signatures in brand names
-          if (brand.brand === 'HeadlessChrome' || 
-              /^Not.?A_Brand$/i.test(brand.brand) || // Matches 'Not?A_Brand' and similar variations
+          if (brand.brand === 'HeadlessChrome' ||
+              /^Not.{0,2}A.{0,2}Brand$/i.test(brand.brand) ||
               brand.brand.toLowerCase().includes('bot')) {
             return true;
           }
         }
       }
     } catch (e) {
-      // userAgentData API not supported or error accessing it
-      // Continue with other bot detection methods
+      // userAgentData API not supported - continue with other checks
     }
     
     // Check for webdriver (automated browser indicator)
