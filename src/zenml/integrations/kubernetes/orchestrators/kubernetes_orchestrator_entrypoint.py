@@ -79,6 +79,7 @@ from zenml.utils.logging_utils import (
     is_pipeline_logging_enabled,
     setup_run_logging,
 )
+from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
 
@@ -378,7 +379,9 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(step_run_request)
+                step_run_request_factory.populate_request(
+                    step_run_request, step_runs=step_runs
+                )
             except Exception as e:
                 logger.error(
                     "Failed to populate step run request for step `%s`: %s",
@@ -386,6 +389,9 @@ def main() -> None:
                     e,
                 )
                 return
+
+            step_run_request.status = ExecutionStatus.FAILED
+            step_run_request.end_time = utc_now()
 
             try:
                 Client().zen_store.create_run_step(step_run_request)
