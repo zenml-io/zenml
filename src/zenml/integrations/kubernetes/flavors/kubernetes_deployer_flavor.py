@@ -23,10 +23,11 @@ from zenml.deployers.base_deployer import (
     BaseDeployerFlavor,
     BaseDeployerSettings,
 )
-from zenml.enums import KubernetesServiceType, KubernetesUrlPreference
+from zenml.enums import KubernetesServiceType
 from zenml.integrations.kubernetes import (
     KUBERNETES_DEPLOYER_FLAVOR,
 )
+from zenml.integrations.kubernetes.kube_utils import KubernetesUrlPreference
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements

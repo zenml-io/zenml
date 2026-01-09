@@ -23,6 +23,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    Union,
     cast,
 )
 
@@ -49,10 +50,10 @@ from zenml.entrypoints.base_entrypoint_configuration import (
 from zenml.enums import (
     DeploymentStatus,
     KubernetesServiceType,
-    KubernetesUrlPreference,
     StackComponentType,
 )
 from zenml.integrations.kubernetes import kube_utils
+from zenml.integrations.kubernetes.constants import GATEWAY_API_VERSIONS
 from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
     KubernetesDeployerConfig,
     KubernetesDeployerSettings,
@@ -61,6 +62,11 @@ from zenml.integrations.kubernetes.k8s_applier import (
     KubernetesApplier,
     ProvisioningError,
     ResourceInventoryItem,
+)
+from zenml.integrations.kubernetes.kube_utils import (
+    KubernetesUrlPreference,
+    get_httproute_parent_refs,
+    httproute_references_service,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
     build_namespace_manifest,
@@ -94,22 +100,27 @@ MAX_LOAD_BALANCER_TIMEOUT = 600  # 10 minutes
 def _filter_inventory(
     inventory: List[ResourceInventoryItem],
     kind: str,
-    api_version: str,
+    api_versions: Union[str, List[str]],
 ) -> List[ResourceInventoryItem]:
-    """Filter inventory items by kind and API version.
+    """Filter inventory items by kind and API version(s).
 
     Args:
         inventory: The resource inventory to filter.
         kind: The Kubernetes resource kind to filter by.
-        api_version: The API version to filter by.
+        api_versions: Single API version string or list of versions to match.
+                     Examples: "v1" or ["gateway.networking.k8s.io/v1",
+                              "gateway.networking.k8s.io/v1beta1"]
 
     Returns:
         Filtered list of inventory items matching the criteria.
     """
+    if isinstance(api_versions, str):
+        api_versions = [api_versions]
+
     return [
         item
         for item in inventory
-        if item.kind == kind and item.api_version == api_version
+        if item.kind == kind and item.api_version in api_versions
     ]
 
 
@@ -1175,10 +1186,10 @@ class KubernetesDeployer(ContainerizedDeployer):
             inventory, "Ingress", "networking.k8s.io/v1"
         )
         gateway_items = _filter_inventory(
-            inventory, "Gateway", "gateway.networking.k8s.io/v1beta1"
+            inventory, "Gateway", GATEWAY_API_VERSIONS
         )
         httproute_items = _filter_inventory(
-            inventory, "HTTPRoute", "gateway.networking.k8s.io/v1beta1"
+            inventory, "HTTPRoute", GATEWAY_API_VERSIONS
         )
 
         for service_item in service_items:
@@ -1234,7 +1245,8 @@ class KubernetesDeployer(ContainerizedDeployer):
         """Discover Gateway API URL for a service.
 
         Searches HTTPRoutes that reference the given service and finds the
-        corresponding Gateway to build the URL.
+        corresponding Gateway to build the URL. Supports multiple Gateway API
+        versions (v1, v1beta1, v1alpha2).
 
         Args:
             service_item: The service inventory item to find a URL for.
@@ -1251,50 +1263,35 @@ class KubernetesDeployer(ContainerizedDeployer):
             if httproute_namespace != service_namespace:
                 continue
 
-            k8s_httproute = self.k8s_applier.get_resource(
-                name=httproute_item.name,
-                namespace=httproute_namespace,
-                kind="HTTPRoute",
-                api_version="gateway.networking.k8s.io/v1beta1",
-            )
+            k8s_httproute = None
+            for api_version in GATEWAY_API_VERSIONS:
+                k8s_httproute = self.k8s_applier.get_resource(
+                    name=httproute_item.name,
+                    namespace=httproute_namespace,
+                    kind="HTTPRoute",
+                    api_version=api_version,
+                )
+                if k8s_httproute:
+                    break
 
             if not k8s_httproute:
                 continue
 
-            httproute_dict = normalize_resource_to_dict(k8s_httproute)
-            httproute_spec = httproute_dict.get("spec", {})
-            httproute_rules = httproute_spec.get("rules", [])
-
-            routes_to_service = False
-            for rule in httproute_rules:
-                backend_refs = rule.get("backendRefs", [])
-                for backend_ref in backend_refs:
-                    backend_service_name = backend_ref.get("name")
-                    backend_namespace = (
-                        backend_ref.get("namespace") or httproute_namespace
-                    )
-
-                    if (
-                        backend_service_name == service_item.name
-                        and backend_namespace == service_namespace
-                    ):
-                        routes_to_service = True
-                        break
-                if routes_to_service:
-                    break
-
-            if not routes_to_service:
+            if not httproute_references_service(
+                httproute=k8s_httproute,
+                service_name=service_item.name,
+                service_namespace=service_namespace,
+                httproute_namespace=httproute_namespace,
+            ):
                 continue
 
-            parent_refs = httproute_spec.get("parentRefs", [])
+            parent_refs = get_httproute_parent_refs(k8s_httproute)
             if not parent_refs:
                 continue
 
             parent_ref = parent_refs[0]
-            gateway_name = parent_ref.get("name")
-            if not gateway_name:
-                continue
-            gateway_namespace = parent_ref.get("namespace") or namespace
+            gateway_name = parent_ref.name
+            gateway_namespace = parent_ref.namespace or namespace
 
             matching_gateway = None
             for gateway_item in gateway_items:
@@ -1303,12 +1300,15 @@ class KubernetesDeployer(ContainerizedDeployer):
                     gateway_item.name == gateway_name
                     and gateway_item_namespace == gateway_namespace
                 ):
-                    matching_gateway = self.k8s_applier.get_resource(
-                        name=gateway_item.name,
-                        namespace=gateway_item_namespace,
-                        kind="Gateway",
-                        api_version="gateway.networking.k8s.io/v1beta1",
-                    )
+                    for api_version in GATEWAY_API_VERSIONS:
+                        matching_gateway = self.k8s_applier.get_resource(
+                            name=gateway_item.name,
+                            namespace=gateway_item_namespace,
+                            kind="Gateway",
+                            api_version=api_version,
+                        )
+                        if matching_gateway:
+                            break
                     break
 
             if matching_gateway:

@@ -2421,7 +2421,7 @@ def pretty_print_deployment(
         curl_headers.append('-H "Content-Type: application/json"')
         headers_str = "\\\n  ".join(curl_headers)
 
-        curl_command = f"""curl -X POST {endpoint_url}/invoke \\
+        curl_command = f"""curl -X POST {deployment.url}/invoke \\
   {headers_str} \\
   -d '{{
     "parameters": {curl_params}

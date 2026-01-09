@@ -559,17 +559,6 @@ class KubernetesServiceType(StrEnum):
     CLUSTER_IP = "ClusterIP"
 
 
-class KubernetesUrlPreference(StrEnum):
-    """URL preference for Kubernetes deployer when multiple URL types are available."""
-
-    GATEWAY_API = "gateway_api"
-    INGRESS = "ingress"
-    LOAD_BALANCER = "load_balancer"
-    NODE_PORT = "node_port"
-    CLUSTER_IP = "cluster_ip"
-    AUTO = "auto"
-
-
 class StepRuntime(StrEnum):
     """All possible runtime modes for a step."""
 
