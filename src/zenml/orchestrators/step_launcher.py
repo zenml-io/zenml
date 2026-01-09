@@ -397,7 +397,6 @@ class StepLauncher:
             orchestrator_environment=get_run_environment_dict(),
             start_time=start_time,
             tags=self._snapshot.pipeline_configuration.tags,
-            enable_heartbeat=self._snapshot.pipeline_configuration.enable_heartbeat,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 

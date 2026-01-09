@@ -164,13 +164,14 @@ This enables ZenML to:
  - Heartbeats are enabled only for steps executed in isolated environments. This excludes:
     - `Inline` steps in `dynamic` pipelines.
     - Steps run via the `local` orchestrator.
+    - Heartbeat is enabled by default.
 - A step that becomes unhealthy automatically triggers a graceful shutdown (currently supported for the `kubernetes` orchestrator).
 - When using `CONTINUE_ON_FAILURE` execution mode, heartbeat status is also used to decide whether execution tokens should be invalidated.
 
 *Configuration*
 
 You can configure how long a step may go without sending a heartbeat before it is considered unhealthy using the `heartbeat_healthy_threshold` step parameter.
-The default value currently applied is the system's maximum allowed value (30 minutes).
+The default value currently applied is 30 minutes.
 
 ```python
 from zenml import step
@@ -178,7 +179,26 @@ from zenml import step
 @step(heartbeat_healthy_threshold=30)
 def my_step():
     ...
+```
 
+You can disable heartbeat on the pipeline level if you pass the following configuration parameter:
+
+```python
+from zenml import pipeline
+
+@pipeline(enable_heartbeat=False)
+def my_pipeline():
+    ...
+```
+
+If you want to disable heartbeats for a *running* pipeline you can use the following ZenML store utility:
+
+```python
+from zenml.client import Client
+
+client = Client()
+
+client.zen_store.disable_run_heartbeat(run_id="run.id")
 ```
 
 ## Data & Output Management

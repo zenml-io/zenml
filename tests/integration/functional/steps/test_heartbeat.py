@@ -19,7 +19,7 @@ from zenml.models import (
 )
 
 
-def create_data(client: Client, enable_pipeline_heartbeat: bool):
+def create_data(client: Client, enable_pipeline_heartbeat: bool | None):
     pipeline_model = client.zen_store.create_pipeline(
         PipelineRequest(
             name=sample_name("pipeline"),
@@ -59,13 +59,13 @@ def create_data(client: Client, enable_pipeline_heartbeat: bool):
             },
         )
     )
+
     pr, _ = client.zen_store.get_or_create_run(
         PipelineRunRequest(
             project=client.active_project.id,
-            name=sample_name("foo"),
+            name=sample_name("foo", random_factor=5),
             snapshot=snapshot.id,
             status=ExecutionStatus.RUNNING,
-            enable_heartbeat=enable_pipeline_heartbeat,
         )
     )
     step_run = client.zen_store.create_run_step(
@@ -122,7 +122,7 @@ def test_disabled_heartbeat_functionality():
 
     run, step_run = create_data(client, enable_pipeline_heartbeat=False)
 
-    assert run.enable_heartbeat is False
+    assert not run.enable_heartbeat
 
     hb_response = client.zen_store.update_step_heartbeat(
         step_run_id=step_run.id

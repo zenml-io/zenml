@@ -345,7 +345,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def from_request(
-        cls, request: "PipelineRunRequest", pipeline_id: UUID, index: int
+        cls,
+        request: "PipelineRunRequest",
+        pipeline_id: UUID,
+        index: int,
+        enable_heartbeat: bool,
     ) -> "PipelineRunSchema":
         """Convert a `PipelineRunRequest` to a `PipelineRunSchema`.
 
@@ -353,6 +357,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             request: The request to convert.
             pipeline_id: The ID of the pipeline.
             index: The index of the pipeline run.
+            enable_heartbeat: Whether the heartbeat should be enabled.
 
         Returns:
             The created `PipelineRunSchema`.
@@ -391,7 +396,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             trigger_execution_id=request.trigger_execution_id,
             triggered_by=triggered_by,
             triggered_by_type=triggered_by_type,
-            enable_heartbeat=request.enable_heartbeat,
+            enable_heartbeat=enable_heartbeat,
         )
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:

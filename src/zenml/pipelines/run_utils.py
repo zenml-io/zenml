@@ -112,7 +112,6 @@ def create_placeholder_run(
         tags=snapshot.pipeline_configuration.tags,
         logs=logs,
         trigger_info=trigger_info,
-        enable_heartbeat=snapshot.pipeline_configuration.enable_heartbeat,
     )
     run, _ = Client().zen_store.get_or_create_run(run_request)
     return run

@@ -145,9 +145,6 @@ class PipelineRunRequest(ProjectScopedRequest):
         default=None,
         title="Logs of the pipeline run.",
     )
-    enable_heartbeat: bool | None = Field(
-        default=None, title="Enable heartbeat flag for run."
-    )
 
     @property
     def is_placeholder_request(self) -> bool:

@@ -1,3 +1,4 @@
+import logging
 import time
 import uuid
 from datetime import datetime, timezone
@@ -20,23 +21,37 @@ from zenml.models import (
 )
 from zenml.steps.heartbeat import StepHeartbeatWorker
 
+logger = logging.getLogger(__name__)
+
 
 class FakeServerHeartbeat:
-    def __init__(self):
+    def __init__(self, step_id):
         self.execution_status = ExecutionStatus.RUNNING
         self.heartbeat_enabled = True
         self._call_count = 0
+        self.step_id = step_id
 
     def update_step_heartbeat(self, step_run_id) -> StepHeartbeatResponse:
-        self._call_count += 1
+        if self.step_id == step_run_id:
+            self._call_count += 1
 
-        return StepHeartbeatResponse(
-            status=self.execution_status,
-            pipeline_run_status=self.execution_status,
-            id=step_run_id,
-            latest_heartbeat=datetime.now(tz=timezone.utc),
-            heartbeat_enabled=self.heartbeat_enabled,
-        )
+            return StepHeartbeatResponse(
+                status=self.execution_status,
+                pipeline_run_status=self.execution_status,
+                id=step_run_id,
+                latest_heartbeat=datetime.now(tz=timezone.utc),
+                heartbeat_enabled=self.heartbeat_enabled,
+            )
+
+        else:
+            logger.info(f"Race condition for {step_run_id} was met")
+            return StepHeartbeatResponse(
+                status=ExecutionStatus.RUNNING,
+                pipeline_run_status=ExecutionStatus.RUNNING,
+                id=step_run_id,
+                latest_heartbeat=datetime.now(tz=timezone.utc),
+                heartbeat_enabled=True,
+            )
 
 
 def test_heartbeat_worker_with_remote_stopping(monkeypatch):
@@ -46,7 +61,7 @@ def test_heartbeat_worker_with_remote_stopping(monkeypatch):
 
     worker._heartbeat_interval_seconds = 0.1
 
-    fake_server = FakeServerHeartbeat()
+    fake_server = FakeServerHeartbeat(step_id=step_run_id)
 
     assert not worker.is_terminated
     assert not worker.is_running
@@ -81,7 +96,7 @@ def test_heartbeat_worker_with_eager_stopping(monkeypatch):
 
     worker.STEP_HEARTBEAT_INTERVAL_SECONDS = 0.1
 
-    fake_server = FakeServerHeartbeat()
+    fake_server = FakeServerHeartbeat(step_id=step_run_id)
 
     assert not worker.is_terminated
     assert not worker.is_running
@@ -113,7 +128,7 @@ def test_worker_with_disabled_heartbeat(monkeypatch):
 
     worker._heartbeat_interval_seconds = 0.1
 
-    fake_server = FakeServerHeartbeat()
+    fake_server = FakeServerHeartbeat(step_id=step_run_id)
 
     assert not worker.is_terminated
     assert not worker.is_running

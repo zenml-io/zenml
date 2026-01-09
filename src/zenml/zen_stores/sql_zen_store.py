@@ -6380,6 +6380,17 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         return index
 
+    @staticmethod
+    def _get_enable_run_heartbeat(snapshot: PipelineSnapshotSchema) -> bool:
+        value = json.loads(snapshot.pipeline_configuration).get(
+            "enable_heartbeat"
+        )
+
+        if value is None:
+            return True
+        else:
+            return bool(value)
+
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -6400,8 +6411,7 @@ class SqlZenStore(BaseZenStore):
                 can not be created.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
-        if pipeline_run.enable_heartbeat is None:
-            pipeline_run.enable_heartbeat = True
+
         snapshot = self._get_reference_schema_by_id(
             resource=pipeline_run,
             reference_schema=PipelineSnapshotSchema,
@@ -6412,8 +6422,12 @@ class SqlZenStore(BaseZenStore):
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )
+
         new_run = PipelineRunSchema.from_request(
-            pipeline_run, pipeline_id=snapshot.pipeline_id, index=index
+            pipeline_run,
+            pipeline_id=snapshot.pipeline_id,
+            index=index,
+            enable_heartbeat=self._get_enable_run_heartbeat(snapshot),
         )
 
         session.add(new_run)
