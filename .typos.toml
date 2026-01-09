@@ -22,6 +22,7 @@ Louvre = "Louvre"
 [default.extend-words]
 # Don't correct the surname "Teh"
 aks = "aks"
+cros = "cros"  # Chrome OS identifier in user agent strings
 hashi = "hashi"
 womens = "womens"
 prepend = "prepend"
