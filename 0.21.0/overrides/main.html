@@ -5,61 +5,140 @@
 <script>
   // Load Segment analytics library first
   !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
-  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
-  
+  // (Removed line) analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+
   // Bot detection function
   function isBotTraffic() {
     const userAgent = navigator.userAgent || '';
-    
-    // Check for specific bot signatures found in your traffic
+    const userAgentLower = userAgent.toLowerCase();
+
+    function getChromeMajor(ua) {
+      const match = /Chrome\/(\d+)\./.exec(ua);
+      return match ? parseInt(match[1], 10) : null;
+    }
+
+    function guessOsFromUserAgent(uaLower) {
+      if (uaLower.includes('windows nt')) return 'Windows';
+      if (uaLower.includes('android')) return 'Android';
+      if (uaLower.includes('iphone') || uaLower.includes('ipad') || uaLower.includes('ipod')) return 'iOS';
+      if (uaLower.includes('macintosh') || uaLower.includes('mac os x')) return 'macOS';
+      if (uaLower.includes('cros')) return 'Unknown';
+      if (uaLower.includes('linux')) return 'Linux';
+      return 'Unknown';
+    }
+
+    function normalizeUadPlatform(value) {
+      const p = (value || '').toLowerCase();
+      if (p === '') return 'Unknown';
+      if (p.startsWith('win')) return 'Windows';
+      if (p === 'macos' || p.startsWith('mac')) return 'macOS';
+      if (p.startsWith('linux')) return 'Linux';
+      if (p.startsWith('android')) return 'Android';
+      if (p === 'ios') return 'iOS';
+      if (p.includes('cros') || p.includes('chrome os')) return 'Unknown';
+      return 'Unknown';
+    }
+
     const botSignatures = [
-      'ClaudeBot',           // The main culprit from your debugger data
-      'HeadlessChrome',      // Also found in your userAgentData
+      'claudebot',
+      'headlesschrome',
+      'phantomjs',
+      'slimerjs',
       'crawler',
       'spider',
-      'bot',
       'scraper',
-      'Googlebot',
-      'Bingbot',
-      'SemrushBot',
-      'AhrefsBot'
+      'googlebot',
+      'bingbot',
+      'semrushbot',
+      'ahrefsbot',
+      'bot',
     ];
-    
-    // Check user agent string
-    for (let signature of botSignatures) {
-      if (userAgent.toLowerCase().includes(signature.toLowerCase())) {
+
+    for (const signature of botSignatures) {
+      if (userAgentLower.includes(signature)) {
         return true;
       }
     }
-    
-    // Check userAgentData brands (modern bot detection)
-    try {
-      if (navigator.userAgentData && navigator.userAgentData.brands) {
-        const brands = navigator.userAgentData.brands;
-        for (let brand of brands) {
-          // Check for specific bot signatures in brand names
-          if (brand.brand === 'HeadlessChrome' || 
-              /^Not.?A_Brand$/i.test(brand.brand) || // Matches 'Not?A_Brand' and similar variations
-              brand.brand.toLowerCase().includes('bot')) {
-            return true;
-          }
-        }
-      }
-    } catch (e) {
-      // userAgentData API not supported or error accessing it
-      // Continue with other bot detection methods
-    }
-    
-    // Check for webdriver (automated browser indicator)
+
     if (navigator.webdriver === true) {
       return true;
     }
-    
+
+    const uad = navigator.userAgentData;
+    if (!uad) {
+      return false;
+    }
+
+    const platform = typeof uad.platform === 'string' ? uad.platform : '';
+    const brands = Array.isArray(uad.brands) ? uad.brands : [];
+
+    // Observed spoofed crawlers present a Chrome-like UA but return empty Client Hints fields.
+    if (brands.length === 0 && platform === '') {
+      return true;
+    }
+
+    const normalizedUaPlatform = guessOsFromUserAgent(userAgentLower);
+    const normalizedUadPlatform = normalizeUadPlatform(platform);
+    if (
+      normalizedUaPlatform !== 'Unknown' &&
+      normalizedUadPlatform !== 'Unknown' &&
+      normalizedUaPlatform !== normalizedUadPlatform
+    ) {
+      return true;
+    }
+
+    const notABrandPattern = /^Not.{0,2}A.{0,2}Brand$/i;
+    let hasChromiumBrand = false;
+    let sawBrandBotSignal = false;
+    let sawEmptyExpectedBrandVersion = false;
+    let validBrandCount = 0;
+    let greasedBrandCount = 0;
+
+    for (const entry of brands) {
+      if (!entry || typeof entry.brand !== 'string') {
+        continue;
+      }
+
+      const brand = entry.brand;
+      const brandLower = brand.toLowerCase();
+      validBrandCount += 1;
+
+      if (brand === 'HeadlessChrome' || brandLower.includes('bot')) {
+        sawBrandBotSignal = true;
+      }
+
+      if (/chrom(e|ium)/i.test(brand)) {
+        hasChromiumBrand = true;
+        if (typeof entry.version === 'string' && entry.version.trim() === '') {
+          sawEmptyExpectedBrandVersion = true;
+        }
+      }
+
+      if (notABrandPattern.test(brand)) {
+        greasedBrandCount += 1;
+      }
+    }
+
+    if (sawBrandBotSignal) {
+      return true;
+    }
+
+    // GREASE "Not A Brand" entries are expected in Chromium; it's only suspicious if it's the only brand signal present.
+    if (validBrandCount > 0 && greasedBrandCount === validBrandCount && !hasChromiumBrand) {
+      return true;
+    }
+
+    // Aggressive tier: if the UA claims Chrome but Client Hints omit versions for expected Chromium brands, treat as spoofed.
+    if (getChromeMajor(userAgent) !== null && hasChromiumBrand && sawEmptyExpectedBrandVersion) {
+      return true;
+    }
+
     return false;
   }
-  
+
   // Only send analytics data if this is NOT bot traffic
   if (!isBotTraffic()) {
+    analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
     analytics.page();
   } else {
     // Optional: Log for debugging (only in non-production environments)
