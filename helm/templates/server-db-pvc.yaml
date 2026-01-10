@@ -1,4 +1,4 @@
-{{- if and (eq .Values.zenml.database.backupStrategy "dump-file") .Values.zenml.database.backupPVStorageSize }}
+{{- if and (or (eq .Values.zenml.database.backupStrategy "dump-file") (eq .Values.zenml.database.backupStrategy "mydumper")) .Values.zenml.database.backupPVStorageSize }}
 {{- $pvc_name := printf "%s-db-backup" (include "zenml.fullname" .) -}}
 {{- $pvc := (lookup "v1" "PersistentVolumeClaim" .Release.Namespace $pvc_name) }}
 {{- if not $pvc }}

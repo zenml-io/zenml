@@ -108,6 +108,7 @@ connectors-azure = [
     "azure-mgmt-resource>=21.0.0",
     "kubernetes>=18.20.0",
     "requests>=2.27.11,<3.0.0",
+    "marshmallow<4.0.0",
 ]
 sagemaker = [
     "sagemaker>=2.237.3,<3.0.0",
