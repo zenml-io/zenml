@@ -368,10 +368,10 @@ def main() -> None:
             return False
 
         def _maybe_publish_failed_step_run(step_name: str) -> None:
-            step_runs = Client().list_run_steps(
+            steps = Client().list_run_steps(
                 name=step_name, pipeline_run_id=pipeline_run.id
             )
-            if step_runs.total > 0:
+            if steps.total > 0:
                 # Step run already exists, we don't need to publish a new one
                 return
 
