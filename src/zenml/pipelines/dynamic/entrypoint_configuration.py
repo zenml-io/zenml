@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration to run a dynamic pipeline."""
 
-import os
 from typing import Any, Dict, List
 from uuid import UUID
 
@@ -65,14 +64,7 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        # Change the working directory to make sure we're in the correct
-        # directory where the files in the Docker image should be included.
-        # This is necessary as some services overwrite the working directory
-        # configured in the Docker image itself.
-        os.makedirs("/app", exist_ok=True)
-        os.chdir("/app")
-
-        self.download_code_if_necessary()
+        self.prepare_code_environment()
 
         run = None
         if run_id := self.entrypoint_args.get(RUN_ID_OPTION, None):
