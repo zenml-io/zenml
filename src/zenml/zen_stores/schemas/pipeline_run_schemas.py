@@ -381,6 +381,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             orchestrator_run_id=request.orchestrator_run_id,
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
+            end_time=request.end_time,
             status=request.status.value,
             index=index,
             in_progress=not request.status.is_finished,
@@ -707,7 +708,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 pass
             else:
                 self.status = run_update.status.value
-                self.end_time = run_update.end_time
 
                 if run_update.status_reason:
                     self.status_reason = run_update.status_reason
@@ -721,6 +721,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 pass
             else:
                 self.in_progress = self._check_if_run_in_progress()
+
+            if not self.in_progress:
+                # Only set the end time if the run is not in progress anymore.
+                self.end_time = run_update.end_time
 
         if run_update.orchestrator_run_id:
             if (

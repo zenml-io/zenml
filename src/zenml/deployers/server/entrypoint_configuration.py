@@ -145,7 +145,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         integration_registry.activate_integrations()
 
         # Download code if necessary (for remote execution environments)
-        self.download_code_if_necessary()
+        self.prepare_code_environment()
 
         app_runner = BaseDeploymentAppRunner.load_app_runner(self.deployment)
         app_runner.run()

@@ -16,7 +16,6 @@
 
 import copy
 import inspect
-import os
 from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
@@ -32,9 +31,6 @@ from zenml.artifacts.utils import _store_artifact_data_and_prepare_request
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
-from zenml.constants import (
-    ENV_ZENML_STEP_OPERATOR,
-)
 from zenml.enums import ArtifactSaveType, ExecutionStatus
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
@@ -102,15 +98,22 @@ class StepRunner:
         self,
         step: "Step",
         stack: "Stack",
+        publish_exception_info: bool = True,
     ):
         """Initializes the step runner.
 
         Args:
             step: The step to run.
             stack: The stack on which the step should run.
+            publish_exception_info: Whether to publish the exception info for
+                the step run. If set to False, the exception info will be
+                stored in the `publish_utils.step_exception_info` context
+                variable instead, and the caller is responsible for publishing
+                the exception info.
         """
         self._step = step
         self._stack = stack
+        self._publish_exception_info = publish_exception_info
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -257,9 +260,7 @@ class StepRunner:
                             )
                         )
 
-                        if ENV_ZENML_STEP_OPERATOR in os.environ:
-                            # We're running in a step operator environment, so we can't
-                            # depend on the step launcher to publish the exception info
+                        if self._publish_exception_info:
                             Client().zen_store.update_run_step(
                                 step_run_id=step_run_info.step_run_id,
                                 step_run_update=StepRunUpdate(
@@ -267,7 +268,6 @@ class StepRunner:
                                 ),
                             )
                         else:
-                            # This will be published by the step launcher
                             step_exception_info.set(exception_info)
 
                         if not step_run.is_retriable:
