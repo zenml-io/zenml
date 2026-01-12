@@ -295,6 +295,7 @@ def test_fetching_cached_step_run_queries_cache_candidates(
         status=ExecutionStatus.COMPLETED,
         sort_by=f"{SorterOps.DESCENDING}:created",
         size=1,
+        hydrate=True,
     )
 
 
