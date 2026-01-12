@@ -10744,7 +10744,6 @@ class SqlZenStore(BaseZenStore):
         )
 
         if pipeline_run.is_placeholder_run() and not new_status.is_finished:
-            # The status hasn't changed -> no need to update the status.
             # If the pipeline run is a placeholder run (=no step has been started
             # for the run yet), this means the orchestrator hasn't started
             # running yet, and this method is most likely being called as
