@@ -118,6 +118,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_column=Column(TEXT, nullable=True)
     )
     index: int = Field(nullable=False)
+    enable_heartbeat: bool = Field(nullable=False)
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -344,7 +345,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def from_request(
-        cls, request: "PipelineRunRequest", pipeline_id: UUID, index: int
+        cls,
+        request: "PipelineRunRequest",
+        pipeline_id: UUID,
+        index: int,
+        enable_heartbeat: bool,
     ) -> "PipelineRunSchema":
         """Convert a `PipelineRunRequest` to a `PipelineRunSchema`.
 
@@ -352,6 +357,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             request: The request to convert.
             pipeline_id: The ID of the pipeline.
             index: The index of the pipeline run.
+            enable_heartbeat: Whether the heartbeat should be enabled.
 
         Returns:
             The created `PipelineRunSchema`.
@@ -391,6 +397,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             trigger_execution_id=request.trigger_execution_id,
             triggered_by=triggered_by,
             triggered_by_type=triggered_by_type,
+            enable_heartbeat=enable_heartbeat,
         )
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:
@@ -608,6 +615,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 else None,
                 is_templatable=is_templatable,
                 trigger_info=trigger_info,
+                enable_heartbeat=self.enable_heartbeat,
             )
 
         resources = None
@@ -828,15 +836,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         status: ExecutionStatus = ExecutionStatus(step_run.status)
 
-        return not (
-            status.is_finished
-            or is_heartbeat_unhealthy(
-                step_run_id=step_run.id,
-                status=status,
-                heartbeat_threshold=step_run.heartbeat_threshold,
-                start_time=step_run.start_time,
-                latest_heartbeat=step_run.latest_heartbeat,
-            )
+        return not is_heartbeat_unhealthy(
+            step_run_id=step_run.id,
+            status=status,
+            heartbeat_threshold=step_run.heartbeat_threshold,
+            start_time=step_run.start_time,
+            latest_heartbeat=step_run.latest_heartbeat,
         )
 
     def _check_if_run_in_progress(self) -> bool:
@@ -895,7 +900,18 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                                 find_all_downstream_steps(failed_step, dag)
                             )
 
-                        steps_to_skip.update(failed_steps)
+                        completed_steps = {
+                            name
+                            for _, name, status in step_run_statuses
+                            if ExecutionStatus(status).is_finished
+                        }
+
+                        steps_to_skip.update(
+                            failed_steps
+                        )  # skip downstream steps
+                        steps_to_skip.update(
+                            completed_steps
+                        )  # skip completed steps
 
                         steps_statuses = {
                             name: ExecutionStatus(status)
@@ -921,7 +937,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     else:
                         in_progress = any(
                             not ExecutionStatus(status).is_finished
-                            for _, status in step_run_statuses
+                            for _, _, status in step_run_statuses
                         )
                         return in_progress
                 else:

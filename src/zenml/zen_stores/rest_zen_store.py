@@ -72,6 +72,7 @@ from zenml.constants import (
     DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
@@ -2270,6 +2271,17 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=run_id,
             route=RUNS,
+        )
+
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables heartbeat for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+        """
+        self.put(
+            path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
+            timeout=10,
         )
 
     # ----------------------------- Run Metadata -----------------------------

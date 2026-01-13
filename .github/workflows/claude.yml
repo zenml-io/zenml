@@ -69,12 +69,9 @@ jobs:
             actions: read
           prompt: |
             You are a helpful assistant for the ZenML repository. Help the user with whatever they asked.
-
             If the user is asking for a code review (e.g., "@claude /full-review", "@claude review this", or similar), follow the detailed review guidelines below. Otherwise, just help them with their question or request.
-
             ---
             CODE REVIEW GUIDELINES (use when reviewing PRs):
-
             Focus on ensuring the changes are sound, clean, intentional, and void of regressions.
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}

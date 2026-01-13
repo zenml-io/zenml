@@ -39,7 +39,12 @@ class StepHeartBeatTerminationException(Exception):
 class StepHeartbeatWorker:
     """Worker class implementing heartbeat polling and remote termination."""
 
-    STEP_HEARTBEAT_INTERVAL_SECONDS = 60
+    STEP_HEARTBEAT_INTERVAL_SECONDS = (
+        60 * 2
+    )  # submit heartbeats every 2 minutes.
+
+    MAX_HEARTBEAT_INTERVAL_SECONDS = 60 * 5
+    MAX_CONSECUTIVE_FAILURES = 3
 
     def __init__(self, step_id: UUID):
         """Heartbeat worker constructor.
@@ -52,6 +57,11 @@ class StepHeartbeatWorker:
         self._thread: threading.Thread | None = None
         self._running: bool = False
         self._terminated: bool = False
+
+        self._consecutive_failures: int = 0
+        self._heartbeat_interval_seconds: int = (
+            self.STEP_HEARTBEAT_INTERVAL_SECONDS
+        )
 
     # properties
 
@@ -80,7 +90,7 @@ class StepHeartbeatWorker:
         Returns:
             The heartbeat polling interval value.
         """
-        return self.STEP_HEARTBEAT_INTERVAL_SECONDS
+        return self._heartbeat_interval_seconds
 
     @property
     def name(self) -> str:
@@ -139,6 +149,7 @@ class StepHeartbeatWorker:
             while self._running:
                 try:
                     self._heartbeat()
+                    self._consecutive_failures = 0
                     # One-shot: signal the main thread and stop the loop.
                     if self._terminated:
                         logger.info(
@@ -150,10 +161,24 @@ class StepHeartbeatWorker:
                     # Ensure we stop our own loop as well.
 
                 except Exception as exc:
+                    self._consecutive_failures += 1
                     # Log-and-continue policy for all other errors.
                     logger.debug(
                         "%s heartbeat() failed with %s", self.name, str(exc)
                     )
+
+                    if (
+                        self._consecutive_failures
+                        == self.MAX_CONSECUTIVE_FAILURES
+                    ):
+                        logger.debug(
+                            "Reached %s consecutive failures - applying increased heartbeat interval..",
+                            self.MAX_CONSECUTIVE_FAILURES,
+                        )
+                        self._heartbeat_interval_seconds = (
+                            self.MAX_HEARTBEAT_INTERVAL_SECONDS
+                        )
+
                 # Sleep after each attempt (even after errors, unless stopped).
                 if self._running:
                     time.sleep(self.interval)
@@ -166,6 +191,11 @@ class StepHeartbeatWorker:
         store = GlobalConfiguration().zen_store
 
         response = store.update_step_heartbeat(step_run_id=self.step_id)
+
+        if not response.heartbeat_enabled:
+            logger.debug("Heartbeat set to disabled - stopping worker")
+            self.stop()
+            return
 
         if response.pipeline_run_status in {
             ExecutionStatus.STOPPED,

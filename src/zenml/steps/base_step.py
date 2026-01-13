@@ -178,7 +178,7 @@ class BaseStep:
                 pipelines.
             heartbeat_healthy_threshold: The amount of time (in minutes) that a
                 running step has not received heartbeat and is considered healthy.
-                By default, set to the maximum value (30 minutes).",
+                By default, set to 30 minutes.",
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -988,7 +988,7 @@ class BaseStep:
                 method for an example.
             heartbeat_healthy_threshold: The amount of time (in minutes) that a
                 running step has not received heartbeat and is considered healthy.
-                By default, set to the maximum value (30 minutes).",
+                By default, set to 30 minutes.",
 
         Returns:
             The step instance that this method was called on.
@@ -1132,7 +1132,7 @@ class BaseStep:
                 pipelines.
             heartbeat_healthy_threshold: The amount of time (in minutes) that a
                 running step has not received heartbeat and is considered healthy.
-                By default, set to the maximum value (30 minutes).",
+                By default, set to 30 minutes.",
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
