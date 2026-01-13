@@ -1,5 +1,9 @@
 <!-- markdown-link-check-disable -->
 
+> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
+
+---
+
 # 0.93.1
 
 ## What's Changed
@@ -31,10 +35,6 @@
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.0...0.93.1
 
-
-> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
-
----
 
 # 0.93.0
 
