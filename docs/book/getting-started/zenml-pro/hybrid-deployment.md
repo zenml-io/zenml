@@ -214,10 +214,6 @@ Your ZenML representative will provide you with a tailored migration checklist, 
 
 A workspace deep copy feature for migrating pipelines and artifacts between workspaces is coming soon.
 
-## Detailed Architecture Diagram
-
-![ZenML Pro Hybrid SaaS detailed architecture](.gitbook/assets/cloud_architecture_scenario_1_2.png)
-
 ## Related Resources
 
 - [System Architecture](system-architecture.md)

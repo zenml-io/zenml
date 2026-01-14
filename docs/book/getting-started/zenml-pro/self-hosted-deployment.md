@@ -74,36 +74,29 @@ In Self-hosted deployment, users authenticate via your internal identity provide
 
 ## Key Benefits
 
-### 🔒 Maximum Security & Control
+### Maximum Security & Control
 
-* **Complete air-gap**: No internet connectivity required for operation
-* **Zero external dependencies**: All components self-contained
-* **Custom security policies**: Full control over all security configurations
-* **Network isolation**: Operates within your security perimeter
-* **Audit compliance**: Complete logging and monitoring within your infrastructure
+* Complete air-gap - No internet connectivity required for operation
+* Zero external dependencies - All components self-contained
+* Custom security policies - Full control over all security configurations
+* Network isolation - Operates within your security perimeter
+* Audit compliance - Complete logging and monitoring within your infrastructure
 
-### 🏛️ Regulatory Compliance
+### Regulatory Compliance
 
-* **Data residency**: All data stays within your jurisdiction
-* **ITAR/EAR compliance**: Suitable for controlled data environments
-* **HIPAA/GDPR ready**: Meet healthcare and privacy regulations
-* **Government/Defense**: Suitable for classified environments
-* **Financial services**: Meet banking and financial regulations
+* Data residency - All data stays within your jurisdiction
+* ITAR/EAR compliance - Suitable for controlled data environments
+* HIPAA/GDPR ready - Meet healthcare and privacy regulations
+* Government/Defense - Suitable for classified environments
+* Financial services - Meet banking and financial regulations
 
-### 🎯 Enterprise Control
+### Enterprise Control
 
-* **Custom identity provider**: Integrate with your LDAP/AD/OIDC
-* **Infrastructure flexibility**: Deploy on any infrastructure (cloud, on-prem, edge)
-* **Version control**: Control update schedules and versions
-* **Backup strategy**: Implement your own backup and DR policies
-* **Resource optimization**: Full control over resource allocation and costs
-
-### 🛡️ Certified & Documented
-
-* **SOC 2 & ISO 27001 certified software**: Meets enterprise security and compliance benchmarks for your peace of mind
-* **Vulnerability Assessment Reports**: Available on request
-* **Software Bill of Materials (SBOM)**: Complete dependency inventory
-* **Architecture documentation**: Comprehensive deployment guides
+* Custom identity provider - Integrate with your LDAP/AD/OIDC
+* Infrastructure flexibility - Deploy on any infrastructure (cloud, on-prem, edge)
+* Version control - Control update schedules and versions
+* Backup strategy - Implement your own backup and DR policies
+* Resource optimization - Full control over resource allocation and costs
 
 ## Ideal Use Cases
 
