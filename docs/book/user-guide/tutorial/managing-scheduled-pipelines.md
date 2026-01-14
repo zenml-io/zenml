@@ -187,22 +187,22 @@ Sometimes we need to modify an existing schedule. Since ZenML doesn't support di
 
 #### Step 4.1: Delete the Existing Schedule
 
-First, delete the schedule from ZenML:
+First, delete the schedule from ZenML (this archives the schedule by default):
 
 ```python
-# Delete from ZenML
+# Archive the schedule from ZenML
 client.delete_schedule("daily-data-processing")
 ```
 
 Using the CLI:
 
 ```bash
-# Delete a specific schedule
+# Archive a specific schedule (soft delete)
 zenml pipeline schedule delete daily-data-processing
 ```
 
 {% hint style="warning" %}
-**Important**: You must also delete the schedule from the orchestrator. ZenML's delete command never removes the underlying orchestrator schedule.
+**Important**: For orchestrators that don't support native schedule deletion (like Vertex AI), you must also manually delete the schedule from the orchestrator. For orchestrators that do support it (like Kubernetes), ZenML will handle the orchestrator-side deletion automatically.
 {% endhint %}
 
 For Vertex AI, you need to delete the orchestrator schedule:
@@ -299,17 +299,28 @@ When you're done with a scheduled pipeline, proper cleanup is essential to preve
 
 #### Step 6.1: Delete the Schedule from ZenML
 
-First, let's delete the schedule from ZenML:
+First, let's delete the schedule from ZenML. By default, deletion archives the schedule (soft delete), which preserves references in historical pipeline runs:
 
 ```python
+# Archive the schedule (soft delete - preserves historical references)
 client.delete_schedule("daily-data-processing")
 
 # Verify deletion from ZenML
 schedules = client.list_schedules()
 if not any(s.name == "daily-data-processing" for s in schedules):
-    print("Schedule deleted successfully from ZenML!")
+    print("Schedule archived successfully in ZenML!")
 else:
     print("Schedule still exists in ZenML!")
+```
+
+Using the CLI, you can also perform a hard delete if you want to permanently remove all references:
+
+```bash
+# Soft delete (archive) - default behavior
+zenml pipeline schedule delete daily-data-processing
+
+# Hard delete - permanently removes all references
+zenml pipeline schedule delete daily-data-processing --hard
 ```
 
 #### Step 6.2: Delete the Schedule from the Orchestrator (Required)
