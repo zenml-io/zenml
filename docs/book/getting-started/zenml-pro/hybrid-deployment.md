@@ -40,34 +40,32 @@ The Hybrid deployment model is designed for organizations that need to keep sens
 
 ## Key Benefits
 
-### 🔒 Enhanced Security & Compliance
+### Enhanced Security & Compliance
 
-* **Data sovereignty**: All metadata and artifacts stay within your infrastructure
-* **Secret isolation**: Credentials never leave your environment
-* **VPN/Firewall compatible**: Workspaces operate behind your security perimeter
-* **Audit trails**: Complete logging within your infrastructure
-* **SOC 2 & ISO 27001 certified software**: Meets enterprise security and compliance benchmarks for your peace of mind
+* Data sovereignty - All metadata stay within your infrastructure
+* Secret isolation - Credentials never leave your environment
+* VPN/Firewall compatible - Workspaces operate behind your security perimeter
 
-### 🎯 Centralized Governance
 
-* **Unified user management**: Single control plane for all workspaces
-* **Consistent RBAC**: Centrally managed permissions across teams
-* **SSO integration**: Connect with your identity provider once
-* **Global visibility**: Platform teams see across all workspaces
-* **Standardized policies**: Enforce organizational standards
+### Centralized Governance
 
-### ⚖️ Balanced Control
+* Unified user management - Single control plane for all workspaces
+* Consistent RBAC - Centrally managed permissions across teams
+* SSO integration - Connect with your identity provider once
+* Global visibility - Platform teams see across all workspaces
+* Standardized policies - Enforce organizational standards
 
-* **Infrastructure control**: Full control over workspace configuration and resources
-* **Reduced operational overhead**: ZenML manages the control plane
-* **Customization freedom**: Configure workspaces to specific team needs
-* **Network isolation**: Workspaces can be fully isolated per team/department
-* **Cost optimization**: Pay only for what you use in your infrastructure
+### Balanced Control
 
-### 🚀 Production Ready
+* Infrastructure control - Full control over workspace configuration and resources
+* Reduced operational overhead (compared to self-hosted)
+* Customization freedom - Configure workspace resources to specific team needs
+* Network isolation - Workspaces can be fully isolated per team/department/entitiy
 
-* **Automatic updates**: Control plane and UI maintained by ZenML
-* **Professional support**: Direct access to ZenML experts
+### Production Ready
+
+* Automatic updates - Control plane and UI maintained by ZenML
+* Professional support - Direct access to ZenML experts
 
 ## Ideal Use Cases
 
@@ -100,27 +98,6 @@ Each workspace can be:
 * Configured with different security policies
 * Managed independently by different teams
 
-### Authentication & Authorization Flow
-
-This is meant to serve as a simplification of the typical authentication and authorization flow. Not every request will follow this exact pattern.
-
-```mermaid
-graph LR
-    A[User] -->|1. Login| B[Control Plane<br/>ZenML Infrastructure]
-    B -->|2. Auth Credentials| A
-    A -->|3. Access Workspace| C[Workspace<br/>Your Infrastructure]
-    C -->|4. Validate Credentials| B
-    B -->|5. Authorization| C
-    C -->|6. Execute| D[Your Resources]
-```
-
-1. User authenticates with ZenML control plane (SSO)
-2. Control plane issues authentication credentials
-3. User accesses workspace with credentials
-4. Workspace validates credentials with control plane
-5. Control plane confirms authentication and authorization (RBAC)
-6. Workspace executes operations on your infrastructure
-
 ### Data Residency
 
 | Data Type         | Storage Location    | Purpose                             |
@@ -133,80 +110,13 @@ graph LR
 | Secrets           | Your Infrastructure | Cloud credentials, API keys         |
 | Logs              | Your Infrastructure | Step outputs, debug information     |
 
-## Deployment Architecture
-
-### Single Organization, Multiple Workspaces
-
-```mermaid
-graph TB
-    subgraph clients["Client Machines (Developer Laptops/CI)"]
-        C1[Data Scientist]
-        C2[ML Engineer]
-        C3[CI/CD Pipeline]
-    end
-
-    subgraph zenml["ZenML Infrastructure"]
-        CP[Control Plane<br/>- Authentication SSO<br/>- RBAC Management<br/>- Workspace Registry]
-    end
-
-    subgraph customer["Your Infrastructure"]
-        subgraph ws1["Workspace 1 - Team A"]
-            W1[ZenML Server<br/>Metadata DB<br/>Secrets Store]
-            R1[Your Resources<br/>Orchestrator<br/>Artifact Store]
-        end
-
-        subgraph ws2["Workspace 2 - Team B"]
-            W2[ZenML Server<br/>Metadata DB<br/>Secrets Store]
-            R2[Your Resources<br/>Orchestrator<br/>Artifact Store]
-        end
-
-        subgraph wsn["Workspace N - Platform"]
-            WN[ZenML Server<br/>Metadata DB<br/>Secrets Store]
-            RN[Your Resources<br/>Orchestrator<br/>Artifact Store]
-        end
-    end
-
-    C1 -->|1. Authenticate| CP
-    C2 -->|1. Authenticate| CP
-    C3 -->|1. Authenticate| CP
-
-    CP -->|2. RBAC Token| C1
-    CP -->|2. RBAC Token| C2
-    CP -->|2. RBAC Token| C3
-
-    C1 -->|3. Run Pipeline| W1
-    C2 -->|3. Run Pipeline| W2
-    C3 -->|3. Run Pipeline| WN
-
-    W1 -.->|Validate Token| CP
-    W2 -.->|Validate Token| CP
-    WN -.->|Validate Token| CP
-
-    W1 -->|Execute| R1
-    W2 -->|Execute| R2
-    WN -->|Execute| RN
-
-    style zenml fill:#e1f5ff
-    style customer fill:#f0f0f0
-    style clients fill:#fff4e6
-```
-
-### Multi-Region Support
-
-Deploy workspaces across different regions while maintaining centralized control:
-
-* Workspaces in US, EU, APAC regions
-* Data residency compliance per region
-* Centralized user management
-* Consistent RBAC across regions
-
 ## Setup Process
 
 ### 1. Initial Configuration
 
 [Book a demo](https://www.zenml.io/book-your-demo) to get started. The ZenML team will:
 
-* Help set up your organization in the control plane
+* Set up your organization in the control plane
 * Establish secure communication channels
 * (optional) Configure SSO integration
 
@@ -228,100 +138,7 @@ Deploy ZenML workspaces in your infrastructure. Workspaces can be deployed on:
 
 **Deployment Tools:**
 
-* **Kubernetes**: We provide officially supported Helm charts
-* **Non-Kubernetes environments**: We recommend using infrastructure-as-code tools like Terraform, Pulumi, or CloudFormation to manage server lifecycle
-
-### 3. Configure Infrastructure Access
-
-Once your workspace is deployed, configure access to your cloud resources using ZenML's infrastructure abstractions:
-
-**Stack Components**: Individual infrastructure elements that your pipelines need to run - orchestrators (Kubernetes, Airflow, etc.), artifact stores (S3, GCS, Azure Blob), container registries, experiment trackers, model deployers, and more. Each component type has multiple "flavors" supporting different technologies.
-
-**Stacks**: A stack is a named collection of components that define where and how your pipelines run. By combining different components into stacks, you can easily switch between environments (development, staging, production) or infrastructure providers without changing your pipeline code.
-
-**Service Connectors**: Service connectors provide secure, reusable authentication to cloud providers and services. Instead of managing credentials manually in each component, connectors handle authentication centrally and can be shared across your team with appropriate access controls.
-
-Learn more:
-
-* [Stack Components Documentation](https://docs.zenml.io/stacks) - Available components and how to configure them
-* [Stacks Documentation](https://docs.zenml.io/user-guide/production-guide/understand-stacks) - Complete guide to configuring and managing stacks
-* [Service Connectors Documentation](https://docs.zenml.io/how-to/auth-management/service-connectors-guide) - How to set up authentication to cloud providers
-
-### 4. Set Up Users & Teams
-
-Manage users through the control plane:
-
-* Invite team members via email
-* Assign roles and permissions
-* Create teams for different departments
-* Configure workspace access
-
-## Organizational Structure
-
-### Recommended Hierarchy
-
-```mermaid
-graph TB
-    subgraph cp["Control Plane (ZenML Infrastructure)"]
-        ORG[Organization]
-        PT[Platform Team<br/>Org Admins]
-    end
-
-    subgraph infra["Your Infrastructure"]
-        subgraph ws1["DS Team 1 Workspace"]
-            W1[ZenML Server<br/>Metadata DB]
-            T1[Team Members]
-            S1[Stacks<br/>managed by Platform Team]
-        end
-
-        subgraph ws2["DS Team 2 Workspace"]
-            W2[ZenML Server<br/>Metadata DB]
-            T2[Team Members]
-            S2[Stacks<br/>managed by Platform Team]
-        end
-    end
-
-    ORG --> PT
-    PT -.->|Configure & Manage| S1
-    PT -.->|Configure & Manage| S2
-    PT -.->|Cross-workspace<br/>Admin Access| W1
-    PT -.->|Cross-workspace<br/>Admin Access| W2
-
-    T1 -->|Use Stacks<br/>Run Pipelines<br/>Create Projects| W1
-    T2 -->|Use Stacks<br/>Run Pipelines<br/>Create Projects| W2
-
-    style cp fill:#e1f5ff
-    style infra fill:#f0f0f0
-    style PT fill:#ffd700
-    style T1 fill:#98fb98
-    style T2 fill:#98fb98
-```
-
-**Access Model:**
-
-* **Platform Team**: Organization admins with cross-workspace access. They configure and manage stacks, service connectors, and infrastructure across all workspaces
-* **DS/ML Teams**: Limited workspace-level access. Can use pre-configured stacks to run pipelines, create projects, and manage workspace-level secrets, but cannot modify stack configurations or global settings
-* **Workspace Isolation**: Each workspace runs independently in your infrastructure with its own ZenML server and metadata store
-
-## Cost Considerations
-
-### Infrastructure Costs
-
-You control costs by managing:
-
-* Compute resources (scale up/down as needed)
-* Storage (artifact stores, databases)
-* Networking (data transfer, load balancers)
-* Backups and disaster recovery
-
-### ZenML Costs
-
-ZenML provides:
-
-* Control plane management (included)
-* Professional support (included)
-* Regular updates and security patches
-* Usage-based pricing per workspace
+For Kubernetes environments, we provide officially [supported Helm charts](https://artifacthub.io/packages/helm/zenml/zenml) to simplify deployment. If you are deploying to a non-Kubernetes environment, we recommend managing the ZenML server lifecycle using infrastructure-as-code tools such as Terraform, Pulumi, or AWS CloudFormation.
 
 ## Security Documentation
 
