@@ -12,7 +12,7 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 ## Quick Comparison
 
 | Entity | SaaS | Hybrid SaaS | Self-hosted |
-|-------------------|---------|------|-------------|-------------|
+|-------------------|------|-------------|-------------|
 | **ZenML Workspace Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
 | **ZenML Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
 | **ZenML Pro UI** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
@@ -101,7 +101,7 @@ Consider these factors when deciding:
 3. **Time to Value**: How quickly do you need to be productive?
    - Within 1 hour → **SaaS**
    - Within 4 hours → **Hybrid**
-   - Within 8 hours (or longer planning period) → **Self-hosted**
+   - Hours to Days (depending on your complexity) → **Self-hosted**
 
 4. **Compliance Requirements**: What regulations apply to your organization?
    - General business → **SaaS**
