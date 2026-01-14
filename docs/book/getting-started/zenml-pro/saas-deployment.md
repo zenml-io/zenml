@@ -36,33 +36,33 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
 
 ## Key Benefits
 
-### ⚡ Fastest Setup
+### Fastest Setup
 
-* **Minutes to production**: No infrastructure provisioning required for ZenML services
-* **Low maintenance**: Updates and patches handled automatically
-* **Instant scaling**: Infrastructure scales with your needs
+* Minutes to production - No infrastructure provisioning required for ZenML services
+* Low maintenance - Updates and patches handled automatically
+* Instant scaling - Infrastructure scales with your needs
 
-### 🛡️ Security & Compliance
+### Security & Compliance
 
-* **SOC 2 Type II certified**: Enterprise-grade security controls
-* **ISO 27001 certified**: International security management standards
-* **Data sovereignty**: Your ML data stays in your infrastructure
-* **Encrypted communications**: All data in transit is encrypted
-* **Custom secret stores**: Optionally use your own secret management solution
+* SOC 2 Type II certified - Enterprise-grade security controls
+* ISO 27001 certified - International security management standards
+* Data sovereignty - Your ML data stays in your infrastructure
+* Encrypted communications - All data in transit is encrypted
+* Custom secret stores - Optionally use your own secret management solution
 
-### 🚀 Production Ready from Day 1
+### Production Ready from Day 1
 
-* **High availability**: Built-in redundancy and failover
-* **Automatic backups**: Metadata backed up continuously
-* **Monitoring included**: Health checks and alerting configured
-* **Professional support**: Direct access to ZenML experts
+* High availability - Built-in redundancy and failover
+* Automatic backups - Metadata backed up continuously
+* Monitoring included - Health checks and alerting configured
+* Professional support - Direct access to ZenML experts
 
-### 👥 Collaboration Features
+### Collaboration Features
 
-* **Multi-user support**: Full team collaboration capabilities
-* **SSO integration**: Connect with your identity provider
-* **Role-based access control**: Granular permissions management
-* **Workspaces & projects**: Organize teams and resources
+* Multi-user support - Full team collaboration capabilities
+* SSO integration - Connect with your identity provider
+* Role-based access control - Granular permissions management
+* Workspaces & projects - Organize teams and resources
 
 ## Ideal Use Cases
 
