@@ -86,7 +86,7 @@ By default, ZenML Pro SaaS stores your cloud credentials securely in our managed
 
 ### Alternative: Customer-Managed Secrets Store
 
-For organizations with strict security requirements, you can configure ZenML to use your own (secrets management)\[..deploying-zenml/secret-management] solution:
+For organizations with strict security requirements, you can configure ZenML to use your own (secrets management)[..deploying-zenml/secret-management] solution:
 
 * AWS Secrets Manager
 * Google Cloud Secret Manager
