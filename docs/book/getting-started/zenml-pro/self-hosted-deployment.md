@@ -37,34 +37,6 @@ In a Self-hosted deployment, every component of ZenML Pro runs within your isola
 
 ### Complete Isolation
 
-```mermaid
-flowchart TB
-  subgraph infra["Your Infrastructure (Self-hosted)"]
-    direction TB
-
-    control_plane["<b>ZenML Pro Control Plane</b><br/>- Authentication & Authorization<br/>- RBAC Management<br/>- Workspace Coordination<br/>- Pro Metadata Store"]
-
-    subgraph workspaces[" "]
-      direction LR
-      ws1["<b>Workspace 1</b><br/>- Server<br/>- Metadata<br/>- Secrets"]
-      ws2["<b>Workspace 2</b><br/>- Server<br/>- Metadata<br/>- Secrets"]
-      wsn["<b>...<br/>- Server<br/>- Metadata<br/>- Secrets</b>"]
-    end
-
-    compute["<b>Your Compute & Storage Resources</b><br/>- Kubernetes / VMs / Cloud<br/>- Artifact Stores<br/>- ML Data & Models"]
-  end
-
-  control_plane --> ws1
-  control_plane --> ws2
-  control_plane --> wsn
-  ws1 --> compute
-  ws2 --> compute
-  wsn --> compute
-
-  note[/"⚠️ No External Communication Required"/]
-  infra --- note
-```
-
 {% hint style="success" %}
 **Complete data sovereignty**: Zero data leaves your environment. All components, metadata, and ML artifacts remain within your infrastructure boundaries.
 {% endhint %}
@@ -140,81 +112,47 @@ Deploy across multiple environments:
 * Edge + datacenter hybrid
 * Maintain complete isolation across all environments
 
-### Edge Deployments
-
-Deploy at edge locations:
-
-* Manufacturing facilities
-* Remote research stations
-* Mobile/tactical deployments
-* Disconnected field operations
 
 ## Deployment Architecture
 
-### Architecture Diagram
+[Complete ZenML Services diagram on top of Kubernetes](.gitbook/assets/full_zenml_infra.png)
 
 The diagram above illustrates a complete Self-hosted ZenML Pro deployment with all components running within your organization's VPC. This architecture ensures zero external communication while providing full enterprise MLOps capabilities.
 
 ### Architecture Components
 
-**Client SDK** (top center): The ZenML Python SDK runs on developer laptops, CI/CD systems, or notebooks. It communicates with all layers to:
+#### Client Access
 
-* Authenticate users via your Identity Provider
-* Submit pipeline runs to workspaces
-* Push Docker images to your Container Registry
-* Access the Organization Platform Layer components
+* Browser Tab - Access the ZenML UI dashboard
+* Developer Laptop / CI - Connect to workspaces 
 
-**Organization Platform Layer** (left, pink): Your existing ML infrastructure components that ZenML integrates with:
+#### Kubernetes Cluster (Compute and Services Layer)
 
-* **Container Registry**: Store pipeline Docker images (AWS ECR, Dockerhub, Google Artifact Registry, Azure Container Registry)
-* **Artifact Store**: Store ML artifacts, models, and datasets (S3, GCS, Azure Blob Storage, ADLS)
-* **Code Repository**: Version control for pipeline code (GitHub Enterprise, GitLab, Bitbucket)
-* **Orchestrator**: Execute pipeline workloads (Vertex AI, Sagemaker, AzureML, Kubernetes)
+**zenml-controlplane-namespace**
 
-**Infrastructure Layer** (top, cyan): Core infrastructure services:
+* UI Pod - Hosts the ZenML Pro dashboard, connects to control plane and all workspaces
+* Control Plane Pod - API Server and User Management / RBAC
 
-* **Identity Provider**: LDAP, Active Directory, or OIDC provider for user authentication
-* **Load Balancer**: Distributes traffic to ZenML services for high availability
+**zenml-workspace-namespace**
 
-**ZenML Control Plane** (center, blue): The management layer running in Kubernetes:
+* Workspace Server Pod - ZenML Server with API Server and Workload Manager
+* Manages pipelines, stacks, snapshots, etc...
 
-* **ZenML FE**: React-based Pro dashboard for pipeline visualization and model management
-* **ZenML Control Plane**: Coordinates workspaces, handles authentication/RBAC, manages organization settings
+**zenml-runners-namespace**
 
-**ZenML Application Plane** (center, purple): Individual workspace servers running in Kubernetes:
+* Runner Pods - Created on-demand for snapshots 
 
-* **Multiple Workspaces**: Isolated environments for different teams (DS Team 1, DS Team 2, etc.)
-* Each workspace has its own server instance, metadata database, and secrets store
-* Workspaces are orchestrated by the Control Plane but run independently
+**orchestrator-namespace**
 
-**ZenML Storage Plane** (bottom, pink): Persistent storage for ZenML services:
+* Orchestrator Pods - Pipeline execution environment in case of Kubernetes orchestrator
 
-* **Secret Store**: Vault or cloud secrets manager for storing credentials securely
-* **Database**: PostgreSQL or MySQL for storing workspace metadata, pipeline runs, and control plane data
+#### Data and Storage Layer
 
-### Data Flow
+* MySQL Database - Stores workspace and control plane metadata (TCP 3306)
+* Secrets Backend - AWS Secrets Manager or Vault (optional)
+* Artifact Store - S3, GCS, or Azure Blob for models, datasets, and artifacts
+* Container Registry - AWS ECR, Google Artifact Registry, or Azure for pipeline images
 
-All arrows in the diagram represent communication flows that occur entirely within your VPC:
-
-1. Client SDK authenticates with Identity Provider
-2. Client SDK connects to ZenML Control Plane for workspace access
-3. Control Plane manages and coordinates workspaces
-4. Workspaces orchestrate pipeline execution on your Orchestrator
-5. Pipelines write artifacts to your Artifact Store
-6. Workspaces store metadata in the Database
-7. All components access secrets from the Secret Store
-
-**Key Security Feature**: The entire system operates without any external internet connectivity. All Docker images, dependencies, and updates are transferred to your environment through secure offline channels.
-
-### High Availability Configuration
-
-For mission-critical deployments:
-
-* **Active-active** control plane for zero downtime
-* **Database replication** for metadata stores
-* **Load balancers** for workspace servers
-* **Backup sites** for disaster recovery
-* **Monitoring and alerting** for all components
 
 ## Pre-requisites
 
@@ -240,19 +178,19 @@ Before deployment, ensure you have:
 ```yaml
 # Minimum requirements
 Control Plane:
-  CPU: 4 cores
-  Memory: 16GB RAM
-  Storage: 100GB
+  CPU: xx cores
+  Memory: xxGB RAM
+  Storage: xxxGB
 
 Per Workspace:
-  CPU: 2 cores
-  Memory: 8GB RAM
-  Storage: 50GB + metadata
+  CPU: xx cores
+  Memory: xxGB RAM
+  Storage: xxGB + metadata
 
 Database:
-  CPU: 4 cores
-  Memory: 16GB RAM
-  Storage: 500GB (scalable)
+  CPU: xx cores
+  Memory: xxGB RAM
+  Storage: xxxGB (scalable)
 ```
 
 ## Operations & Maintenance
