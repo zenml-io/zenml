@@ -44,18 +44,18 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
 
 ### Security & Compliance
 
-* SOC 2 Type II certified - Enterprise-grade security controls
-* ISO 27001 certified - International security management standards
-* Data sovereignty - Your ML data stays in your infrastructure
+* SOC 2 Type II certified
+* ISO 27001 certified 
+* You keep data sovereignty - Your ML data stays in your infrastructure
 * Encrypted communications - All data in transit is encrypted
-* Custom secret stores - Optionally use your own secret management solution
+* Optionally use your own secret management solution to store secrets
 
 ### Production Ready from Day 1
 
 * High availability - Built-in redundancy and failover
 * Automatic backups - Metadata backed up continuously
 * Monitoring included - Health checks and alerting configured
-* Professional support - Direct access to ZenML experts
+* Professional support - Direct access to ZenML engineers
 
 ### Collaboration Features
 
@@ -99,16 +99,14 @@ This keeps all credentials within your infrastructure while still benefiting fro
 
 ## Network Architecture
 
-### Outbound-Only Communication
+### No ingress required
 
-ZenML Pro SaaS uses outbound-only connections from your infrastructure to ZenML services:
+ZenML Pro SaaS requires no inbound connectivity into your infrastructure—all communication is initiated from your environment to ZenML, keeping your systems protected behind your firewall.
 
-* No inbound connections required to your infrastructure
-* Limited compatibility with firewall and VPN restrictions
 
-### Artifact Store Access
+### (optional) Artifact Store Access
 
-The ZenML UI requires read access to your artifact store to display:
+To enable the following features, you must whitelist ZenML to access your artifact store:
 
 * Pipeline visualizations
 * Model comparison views
@@ -133,15 +131,6 @@ Configure access to your cloud infrastructure:
 
 ### 3. You're ready to run your pipelines and monitor them through the Frontend
 
-## Security Documentation
-
-For software deployed on your infrastructure, ZenML provides:
-
-* **Vulnerability Assessment Reports**: Comprehensive security analysis available on request
-* **Software Bill of Materials (SBOM)**: Complete dependency inventory for compliance
-* **Compliance documentation**: Support for your security audits and certifications
-
-Contact [cloud@zenml.io](mailto:cloud@zenml.io) to request security documentation.
 
 ## Pricing & Support
 
@@ -171,9 +160,6 @@ ZenML Pro SaaS includes:
 
 Already running ZenML OSS? Migrating to SaaS is possible with the assistance of the ZenML support team. Reach out to us at hello@zenml.io or on (slack)\[https://zenml.io/slack] to learn more.
 
-## Detailed Architecture Diagram
-
-<img src=".gitbook/assets/cloud_architecture_saas_detailed.png" alt="ZenML Pro Full SaaS deployment with ZenML secret store" data-size="original">
 
 ## Related Resources
 
