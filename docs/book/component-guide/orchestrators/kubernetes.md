@@ -411,17 +411,40 @@ To view your scheduled jobs and their status:
 kubectl get cronjobs -n zenml
 ```
 
-To update a schedule, use the following command:
+To update a schedule's cron expression:
 ```bash
-# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
 zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='0 4 * * *'
+```
+
+#### Pausing and resuming a scheduled pipeline
+
+You can temporarily pause a scheduled pipeline without deleting it using the deactivate command. This sets the CronJob's `suspend` field to `true`, preventing any new executions while preserving the CronJob resource:
+
+```bash
+# Pause the schedule (sets suspend=true on the CronJob)
+zenml pipeline schedule deactivate <SCHEDULE_NAME_OR_ID>
+
+# Resume the schedule (sets suspend=false on the CronJob)
+zenml pipeline schedule activate <SCHEDULE_NAME_OR_ID>
+```
+
+You can verify the suspend status using kubectl:
+```shell
+kubectl get cronjob <cronjob-name> -n zenml -o jsonpath='{.spec.suspend}'
+```
 
 #### Deleting a scheduled pipeline
 
-When you no longer need a scheduled pipeline, you can delete the schedule as follows:
+When you no longer need a scheduled pipeline, you can delete the schedule. By default, deletion archives the schedule (soft delete), which preserves references in historical pipeline runs:
+
 ```bash
-# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
+# Archive the schedule (soft delete - default)
+# This removes the CronJob from Kubernetes and archives the schedule in ZenML
 zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+
+# Permanently delete the schedule (hard delete)
+# This removes the CronJob and permanently deletes all schedule references
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID> --hard
 ```
 
 #### Troubleshooting
