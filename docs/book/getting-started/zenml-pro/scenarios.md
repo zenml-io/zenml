@@ -11,15 +11,15 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 
 ## Quick Comparison
 
-| Entity | Purpose | SaaS | Hybrid SaaS | Self-hosted |
+| Entity | SaaS | Hybrid SaaS | Self-hosted |
 |-------------------|---------|------|-------------|-------------|
-| **ZenML Workspace Server** | Stores pipeline metadata and serves the API that your SDK and UI connect to | ZenML infrastructure | Your infrastructure | Your infrastructure |
-| **ZenML Control Plane** | Manages authentication, RBAC, and organization-level settings across workspaces | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
-| **ZenML Pro UI** | Web UI for visualizing pipelines, artifacts, and managing your ML workflows | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
-| **Stack (Compute & Data)** | Your ML training infrastructure, models, datasets, and artifacts | Your infrastructure | Your infrastructure | Your infrastructure |
-| **Setup Time** | Time to get your first pipeline running | ⚡ ~1 hour | ~4 hours | ~8 hours |
-| **Maintenance** | Ongoing operational responsibility | Fully managed | Partially managed (workspace maintenance required) | Customer managed |
-| **Best For** | Recommended use case | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and on-premises control |
+| **ZenML Workspace Server** | ZenML infrastructure | Your infrastructure | Your infrastructure |
+| **ZenML Control Plane** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
+| **ZenML Pro UI** | ZenML infrastructure | ZenML infrastructure | Your infrastructure |
+| **Stack (Pipeline Compute & Data)** | Your infrastructure | Your infrastructure | Your infrastructure |
+| **Setup Time** | ⚡ ~1 hour | ~4 hours | ~8 hours |
+| **Maintenance Responsibility** | Fully managed | Partially managed (workspace maintenance required) | Fully customer managed |
+| **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and on-premises control |
 
 {% hint style="info" %}
 In all of these cases the client SDK that you pip install into your development environment is the same one found here: https://pypi.org/project/zenml/
@@ -88,7 +88,7 @@ Choose **Self-hosted** if you need complete control with no external dependencie
 
 Consider these factors when deciding:
 
-1. **Data Location Requirements**: Where must your ML metadata and run data reside?
+1. **Metadata Storage Requirements**: Where must your ML metadata and run data reside?
    - Cloud-hosted is acceptable → **SaaS**
    - Must stay in your infrastructure → **Hybrid**
    - Must be completely isolated on-premises → **Self-hosted**
