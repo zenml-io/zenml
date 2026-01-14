@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import String, UniqueConstraint
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import Session, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, select
@@ -27,7 +28,7 @@ from sqlmodel import TEXT, Column, Field, Relationship, select
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
-from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
@@ -119,6 +120,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     index: int = Field(nullable=False)
     enable_heartbeat: bool = Field(nullable=False)
+    exception_info: Optional[str] = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -398,6 +407,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             triggered_by=triggered_by,
             triggered_by_type=triggered_by_type,
             enable_heartbeat=enable_heartbeat,
+            exception_info=request.exception_info.model_dump_json()
+            if request.exception_info
+            else None,
         )
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:
@@ -616,6 +628,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 is_templatable=is_templatable,
                 trigger_info=trigger_info,
                 enable_heartbeat=self.enable_heartbeat,
+                exception_info=json.loads(self.exception_info)
+                if self.exception_info
+                else None,
             )
 
         resources = None
@@ -745,6 +760,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     f"({self.orchestrator_run_id}) is not allowed."
                 )
             self.orchestrator_run_id = run_update.orchestrator_run_id
+
+        if run_update.exception_info:
+            self.exception_info = run_update.exception_info.model_dump_json()
 
         self.updated = utc_now()
         return self

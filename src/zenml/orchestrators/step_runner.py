@@ -255,7 +255,7 @@ class StepRunner:
                         )
                     else:
                         exception_info = (
-                            exception_utils.collect_exception_information(
+                            exception_utils.collect_step_exception_information(
                                 step_exception, step_instance
                             )
                         )

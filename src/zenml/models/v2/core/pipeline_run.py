@@ -47,6 +47,7 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.logs import LogsRequest
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.utils import pagination_utils
 from zenml.utils.tag_utils import Tag
 
@@ -145,6 +146,10 @@ class PipelineRunRequest(ProjectScopedRequest):
         default=None,
         title="Logs of the pipeline run.",
     )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the pipeline run.",
+    )
 
     @property
     def is_placeholder_request(self) -> bool:
@@ -179,8 +184,12 @@ class PipelineRunUpdate(BaseUpdate):
         title="Whether the pipeline run is finished.",
     )
     orchestrator_run_id: Optional[str] = None
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the pipeline run.",
+    )
     # TODO: we should maybe have a different update model here, the upper
-    #  three attributes should only be for internal use
+    #  attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(
         default=None, title="New tags to add to the pipeline run."
     )
@@ -280,6 +289,10 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     )
     enable_heartbeat: bool = Field(
         title="Enable heartbeat flag for run.",
+    )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the pipeline run.",
     )
 
 
@@ -526,6 +539,24 @@ class PipelineRunResponse(
         return self.get_metadata().trigger_info
 
     @property
+    def enable_heartbeat(self) -> bool:
+        """The `enable_heartbeat` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().enable_heartbeat
+
+    @property
+    def exception_info(self) -> Optional[ExceptionInfo]:
+        """The `exception_info` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().exception_info
+
+    @property
     def triggered_by_deployment(self) -> bool:
         """The `triggered_by_deployment` property.
 
@@ -635,15 +666,6 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().log_collection
-
-    @property
-    def enable_heartbeat(self) -> bool:
-        """The `enable_heartbeat` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().enable_heartbeat
 
 
 # ------------------ Filter Model ------------------

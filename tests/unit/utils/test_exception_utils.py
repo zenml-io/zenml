@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from zenml.utils.exception_utils import (
-    collect_exception_information,
+    collect_step_exception_information,
 )
 
 
@@ -39,7 +39,9 @@ def test_regex_pattern_no_syntax_warning():
 
         # This should not produce any SyntaxWarning
         with pytest.warns(None) as warning_list:
-            result = collect_exception_information(test_exception, mock_step)
+            result = collect_step_exception_information(
+                test_exception, mock_step
+            )
 
         # Check that no SyntaxWarning was raised
         syntax_warnings = [
