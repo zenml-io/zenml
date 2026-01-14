@@ -61,7 +61,7 @@ You can update your schedule's cron expression:
 zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='* * * * *'
 ```
 
-### Activate/Deactivate a schedule
+### Activate and deactivate a schedule
 
 You can temporarily pause a schedule without deleting it using the deactivate command, and resume it later with activate:
 
