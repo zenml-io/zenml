@@ -16,10 +16,11 @@
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
+from sqlalchemy import TEXT, VARCHAR, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
+    LogsRequest,
     LogsResponse,
     LogsResponseBody,
     LogsResponseMetadata,
@@ -35,14 +36,6 @@ class LogsSchema(BaseSchema, table=True):
     """SQL Model for logs."""
 
     __tablename__ = "logs"
-    __table_args__ = (
-        UniqueConstraint(
-            "source",
-            "pipeline_run_id",
-            "step_run_id",
-            name="unique_source_per_run_and_step",
-        ),
-    )
 
     # Fields
     uri: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
@@ -88,6 +81,25 @@ class LogsSchema(BaseSchema, table=True):
     )
     step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
 
+    def from_request(self, request: LogsRequest) -> "LogsSchema":
+        """Create a `LogsSchema` from a `LogsRequest`.
+
+        Args:
+            request: The `LogsRequest` to create the `LogsSchema` from.
+
+        Returns:
+            The created `LogsSchema`.
+        """
+        return LogsSchema(
+            id=request.id,
+            uri=request.uri,
+            source=request.source,
+            pipeline_run_id=request.pipeline_run_id,
+            step_run_id=request.step_run_id,
+            artifact_store_id=request.artifact_store_id,
+            log_store_id=request.log_store_id,
+        )
+    
     def to_model(
         self,
         include_metadata: bool = False,

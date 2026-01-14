@@ -22,11 +22,13 @@ from zenml.constants import (
     LOGS,
     VERSION_1,
 )
-from zenml.models.v2.core.logs import LogsResponse
+from zenml.models import LogsRequest, LogsResponse, LogsUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_get_entity,
+    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -38,6 +40,29 @@ router = APIRouter(
     tags=["logs"],
     responses={401: error_response, 403: error_response},
 )
+
+
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def create_logs(
+    logs: LogsRequest,
+    _: AuthContext = Security(authorize),
+) -> LogsResponse:
+    """Create a new logs entry.
+
+    Args:
+        logs: The logs entry to create.
+
+    Returns:
+        The created logs entry.
+    """
+    return verify_permissions_and_create_entity(
+        request_model=logs,
+        create_method=zen_store().create_logs,
+    )
 
 
 @router.get(
@@ -62,4 +87,34 @@ def get_logs(
     """
     return verify_permissions_and_get_entity(
         id=logs_id, get_method=zen_store().get_logs, hydrate=hydrate
+    )
+
+
+@router.put(
+    "/{logs_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def update_logs(
+    logs_id: UUID,
+    logs_update: LogsUpdate,
+    _: AuthContext = Security(authorize),
+) -> LogsResponse:
+    """Update an existing logs entry.
+
+    Only supports associating an existing logs entry with a pipeline run and/or
+    a step run.
+
+    Args:
+        logs_id: ID of the logs entry to update.
+        logs_update: Update to apply to the logs entry.
+
+    Returns:
+        The updated logs entry.
+    """
+    return verify_permissions_and_update_entity(
+        id=logs_id,
+        update_model=logs_update,
+        get_method=zen_store().get_logs,
+        update_method=zen_store().update_logs,
     )

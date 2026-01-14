@@ -64,7 +64,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    LogsRequest,
     LogsResponse,
+    LogsUpdate,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -1119,6 +1121,20 @@ class ZenStoreInterface(ABC):
 
     # -------------------- Logs --------------------
     @abstractmethod
+    def create_logs(self, logs: LogsRequest) -> LogsResponse:
+        """Create a logs entry.
+
+        Args:
+            logs: The logs entry to create.
+
+        Returns:
+            The created logs entry.
+
+        Raises:
+            EntityExistsError: if the logs entry already exists.
+        """
+
+    @abstractmethod
     def get_logs(self, logs_id: UUID, hydrate: bool = True) -> LogsResponse:
         """Get logs by its unique ID.
 
@@ -1129,6 +1145,23 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The logs with the given ID.
+
+        Raises:
+            KeyError: if the logs doesn't exist.
+        """
+
+    @abstractmethod
+    def update_logs(
+        self, logs_id: UUID, logs_update: LogsUpdate
+    ) -> LogsResponse:
+        """Update an existing logs entry.
+
+        Args:
+            logs_id: The ID of the logs entry to update.
+            logs_update: The update to be applied to the logs entry.
+
+        Returns:
+            The updated logs entry.
 
         Raises:
             KeyError: if the logs doesn't exist.

@@ -230,6 +230,8 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    LogsRequest,
+    LogsUpdate,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -4383,6 +4385,56 @@ class SqlZenStore(BaseZenStore):
 
     # ------------------------ Logs ------------------------
 
+    def create_logs(self, logs: LogsRequest) -> LogsResponse:
+        """Create a logs entry.
+
+        Args:
+            logs: The logs entry to create.
+
+        Returns:
+            The created logs entry.
+
+        Raises:
+            EntityExistsError: If a logs entry with the same ID already exists.
+            ValueError: If neither an artifact store nor a log store ID is set.
+        """
+        with Session(self.engine) as session:
+            if logs.artifact_store_id:
+                self._get_reference_schema_by_id(
+                    resource=logs,
+                    reference_schema=StackComponentSchema,
+                    reference_id=logs.artifact_store_id,
+                    session=session,
+                    reference_type="logs artifact store",
+                )
+            elif logs.log_store_id:
+                self._get_reference_schema_by_id(
+                    resource=logs,
+                    reference_schema=StackComponentSchema,
+                    reference_id=logs.log_store_id,
+                    session=session,
+                    reference_type="logs log store",
+                )
+            else:
+                raise ValueError(
+                    "Either an `artifact_store_id` or a `log_store_id` must be set."
+                )
+
+            log_entry = LogsSchema.from_request(
+                id=logs.id,
+                uri=logs.uri,
+                source=logs.source,
+                artifact_store_id=logs.artifact_store_id,
+                log_store_id=logs.log_store_id,
+            )
+            session.add(log_entry)
+            session.commit()
+            session.refresh(log_entry)
+
+            return log_entry.to_model(
+                include_metadata=True, include_resources=True
+            )
+
     def get_logs(self, logs_id: UUID, hydrate: bool = True) -> LogsResponse:
         """Gets logs with the given ID.
 
@@ -4402,6 +4454,69 @@ class SqlZenStore(BaseZenStore):
             )
             return logs.to_model(
                 include_metadata=hydrate, include_resources=True
+            )
+
+    def update_logs(self, logs_id: UUID, logs_update: LogsUpdate) -> LogsResponse:
+        """Update an existing logs entry.
+
+        Args:
+            logs_id: The ID of the logs entry to update.
+            logs_update: Update to be applied to the logs entry.
+
+        Returns:
+            The updated logs entry.
+
+        Raises:
+            KeyError: If the logs entry does not exist.
+            ValueError: If no association IDs are provided or the association is inconsistent.
+        """
+        with Session(self.engine) as session:
+            logs_schema = self._get_schema_by_id(
+                resource_id=logs_id,
+                schema_class=LogsSchema,
+                session=session,
+            )
+
+            if (
+                logs_update.pipeline_run_id is None
+                and logs_update.step_run_id is None
+            ):
+                raise ValueError(
+                    "At least one of `pipeline_run_id` or `step_run_id` must be set."
+                )
+
+            pipeline_run_id = logs_update.pipeline_run_id
+
+            if logs_update.step_run_id is not None:
+                step_run_schema = self._get_schema_by_id(
+                    resource_id=logs_update.step_run_id,
+                    schema_class=StepRunSchema,
+                    session=session,
+                )
+                logs_schema.step_run_id = step_run_schema.id
+
+                if pipeline_run_id is not None and (
+                    pipeline_run_id != step_run_schema.pipeline_run_id
+                ):
+                    raise ValueError(
+                        "The provided `pipeline_run_id` does not match the pipeline run "
+                        "that the step run belongs to."
+                    )
+                pipeline_run_id = step_run_schema.pipeline_run_id
+
+            if pipeline_run_id is not None:
+                self._get_schema_by_id(
+                    resource_id=pipeline_run_id,
+                    schema_class=PipelineRunSchema,
+                    session=session,
+                )
+                logs_schema.pipeline_run_id = pipeline_run_id
+
+            session.add(logs_schema)
+            session.commit()
+            session.refresh(logs_schema)
+            return logs_schema.to_model(
+                include_metadata=True, include_resources=True
             )
 
     # ----------------------------- Pipelines -----------------------------
@@ -6438,45 +6553,69 @@ class SqlZenStore(BaseZenStore):
                 "already exists."
             )
 
-        # Add logs entry for the run if exists
+        # Add logs entry for the run
         if pipeline_run.logs is not None:
-            if pipeline_run.logs.artifact_store_id:
-                self._get_reference_schema_by_id(
-                    resource=pipeline_run,
-                    reference_schema=StackComponentSchema,
-                    reference_id=pipeline_run.logs.artifact_store_id,
-                    session=session,
-                    reference_type="logs artifact store",
-                )
-            else:
-                self._get_reference_schema_by_id(
-                    resource=pipeline_run,
-                    reference_schema=StackComponentSchema,
-                    reference_id=pipeline_run.logs.log_store_id,
-                    session=session,
-                    reference_type="logs log store",
-                )
-
-            log_entry = LogsSchema(
-                id=pipeline_run.logs.id,
-                uri=pipeline_run.logs.uri,
-                # TODO: Remove fallback when not supporting
-                # clients <0.84.0 anymore
-                source=pipeline_run.logs.source or "client",
-                pipeline_run_id=new_run.id,
-                artifact_store_id=pipeline_run.logs.artifact_store_id,
-                log_store_id=pipeline_run.logs.log_store_id,
-            )
-            try:
-                session.add(log_entry)
+            if isinstance(pipeline_run.logs, UUID):
+                existing_log_entry = session.get(LogsSchema, pipeline_run.logs)
+                if existing_log_entry is None:
+                    raise KeyError(
+                        f"Logs entry with ID '{pipeline_run.logs}' does not exist."
+                    )
+                if (
+                    existing_log_entry.pipeline_run_id is not None
+                    or existing_log_entry.step_run_id is not None
+                ):
+                    raise IllegalOperationError(
+                        "Unable to associate logs entry to a pipeline run: "
+                        f"logs '{existing_log_entry.id}' is already associated "
+                        "with another resource."
+                    )
+                existing_log_entry.pipeline_run_id = new_run.id
+                session.add(existing_log_entry)
                 session.commit()
-            except IntegrityError:
-                session.rollback()
-                raise EntityExistsError(
-                    "Unable to create log entry: A log entry with this "
-                    f"source '{pipeline_run.logs.source}' already exists "
-                    f"within the scope of the same pipeline run '{new_run.id}'."
+            else:
+                logs_request = pipeline_run.logs
+
+                if logs_request.artifact_store_id:
+                    self._get_reference_schema_by_id(
+                        resource=pipeline_run,
+                        reference_schema=StackComponentSchema,
+                        reference_id=logs_request.artifact_store_id,
+                        session=session,
+                        reference_type="logs artifact store",
+                    )
+                elif logs_request.log_store_id:
+                    self._get_reference_schema_by_id(
+                        resource=pipeline_run,
+                        reference_schema=StackComponentSchema,
+                        reference_id=logs_request.log_store_id,
+                        session=session,
+                        reference_type="logs log store",
+                    )
+                else:
+                    raise ValueError(
+                        "Either an `artifact_store_id` or a `log_store_id` must be set."
+                    )
+
+                log_entry = LogsSchema(
+                    id=logs_request.id,
+                    uri=logs_request.uri,
+                    # TODO: Remove fallback when not supporting
+                    # clients <0.84.0 anymore
+                    source=logs_request.source or "client",
+                    pipeline_run_id=new_run.id,
+                    artifact_store_id=logs_request.artifact_store_id,
+                    log_store_id=logs_request.log_store_id,
                 )
+                session.add(log_entry)
+                try:
+                    session.commit()
+                except IntegrityError as e:
+                    session.rollback()
+                    raise EntityExistsError(
+                        "Unable to create logs entry for pipeline run: "
+                        f"logs with ID '{logs_request.id}' already exists."
+                    ) from e
 
         try:
             model_version_id = self._get_or_create_model_version_for_run(
@@ -10024,45 +10163,73 @@ class SqlZenStore(BaseZenStore):
                     f"'{step_run.pipeline_run_id}'."
                 )
 
-            # Add logs entry for the step if exists
+            # Add logs entry for the step
             if step_run.logs is not None:
-                if step_run.logs.artifact_store_id:
-                    self._get_reference_schema_by_id(
-                        resource=step_run,
-                        reference_schema=StackComponentSchema,
-                        reference_id=step_run.logs.artifact_store_id,
-                        session=session,
-                        reference_type="logs artifact store",
-                    )
+                if isinstance(step_run.logs, UUID):
+                    existing_log_entry = session.get(LogsSchema, step_run.logs)
+                    if existing_log_entry is None:
+                        raise KeyError(
+                            f"Logs entry with ID '{step_run.logs}' does not exist."
+                        )
+                    if (
+                        existing_log_entry.pipeline_run_id is not None
+                        or existing_log_entry.step_run_id is not None
+                    ):
+                        raise IllegalOperationError(
+                            "Unable to associate logs entry to a step run: "
+                            f"logs '{existing_log_entry.id}' is already associated "
+                            "with another resource."
+                        )
+                    existing_log_entry.step_run_id = step_schema.id
+                    existing_log_entry.pipeline_run_id = step_schema.pipeline_run_id
+                    session.add(existing_log_entry)
+                    session.commit()
                 else:
-                    self._get_reference_schema_by_id(
-                        resource=step_run,
-                        reference_schema=StackComponentSchema,
-                        reference_id=step_run.logs.log_store_id,
-                        session=session,
-                        reference_type="logs log store",
+                    logs_request = step_run.logs
+
+                    if logs_request.artifact_store_id:
+                        self._get_reference_schema_by_id(
+                            resource=step_run,
+                            reference_schema=StackComponentSchema,
+                            reference_id=logs_request.artifact_store_id,
+                            session=session,
+                            reference_type="logs artifact store",
+                        )
+                    elif logs_request.log_store_id:
+                        self._get_reference_schema_by_id(
+                            resource=step_run,
+                            reference_schema=StackComponentSchema,
+                            reference_id=logs_request.log_store_id,
+                            session=session,
+                            reference_type="logs log store",
+                        )
+                    else:
+                        raise ValueError(
+                            "Either an `artifact_store_id` or a `log_store_id` must be set."
+                        )
+
+                    log_entry = LogsSchema(
+                        id=logs_request.id,
+                        uri=logs_request.uri,
+                        # TODO: Remove fallback when not supporting
+                        # clients <0.93.0 anymore
+                        source=logs_request.source or "step",
+                        pipeline_run_id=step_schema.pipeline_run_id,
+                        step_run_id=step_schema.id,
+                        artifact_store_id=logs_request.artifact_store_id,
+                        log_store_id=logs_request.log_store_id,
                     )
 
-                log_entry = LogsSchema(
-                    id=step_run.logs.id,
-                    uri=step_run.logs.uri,
-                    # TODO: Remove fallback when not supporting
-                    # clients <0.93.0 anymore
-                    source=step_run.logs.source or "step",
-                    step_run_id=step_schema.id,
-                    artifact_store_id=step_run.logs.artifact_store_id,
-                    log_store_id=step_run.logs.log_store_id,
-                )
-                try:
                     session.add(log_entry)
-                    session.commit()
-                except IntegrityError:
-                    session.rollback()
-                    raise EntityExistsError(
-                        "Unable to create log entry: A log entry with this "
-                        f"source '{step_run.logs.source}' already exists "
-                        f"within the scope of the same step '{step_schema.id}'."
-                    )
+                    try:
+                        session.commit()
+                    except IntegrityError as e:
+                        session.rollback()
+                        raise EntityExistsError(
+                            "Unable to create logs entry for step:" 
+                            f"logs with ID '{logs_request.id}' already exists."
+                        ) from e
+            
             # If cached, attach metadata of the original step
             if (
                 step_run.status == ExecutionStatus.CACHED

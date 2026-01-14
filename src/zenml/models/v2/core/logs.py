@@ -25,6 +25,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
+    BaseUpdate,
 )
 
 # ------------------ Request Model ------------------
@@ -77,7 +78,19 @@ class LogsRequest(BaseRequest):
 
 # ------------------ Update Model ------------------
 
-# There is no update model for logs.
+
+class LogsUpdate(BaseUpdate):
+    """Update model for logs."""
+
+    pipeline_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The pipeline run ID to associate the logs with.",
+    )
+    step_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The step run ID to associate the logs with.",
+    )
+
 
 # ------------------ Response Model ------------------
 

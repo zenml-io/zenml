@@ -195,6 +195,7 @@ from zenml.models.v2.core.flavor import (
 )
 from zenml.models.v2.core.logs import (
     LogsRequest,
+    LogsUpdate,
     LogsResponse,
     LogsResponseBody,
     LogsResponseMetadata,
@@ -697,6 +698,7 @@ __all__ = [
     "FlavorResponseMetadata",
     "FlavorResponseResources",
     "LogsRequest",
+    "LogsUpdate",
     "LogsResponse",
     "LogsResponseBody",
     "LogsResponseMetadata",
