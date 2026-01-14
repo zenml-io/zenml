@@ -1,5 +1,5 @@
 ---
-description: Learn how to set, pause and stop a schedule for pipelines.
+description: Learn how to create, update, activate, deactivate, and delete schedules for pipelines.
 ---
 
 # Schedule a pipeline
@@ -54,19 +54,48 @@ my_pipeline()
 Check out our [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.schedule) to learn more about the different scheduling options.
 {% endhint %}
 
-### Update/Pause/Stop a schedule
+### Update a schedule
 
-You can update or delete your schedules using the following CLI commands:
+You can update your schedule's cron expression:
 ```bash
-# Update the cron expression of the schedule
 zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='* * * * *'
-
-# Delete a schedule
-zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
 ```
 
-The functionality of these commands changes depending on whether the orchestrator that is running the schedule
-supports schedule updates/deletions:
+### Activate and deactivate a schedule
+
+You can temporarily pause a schedule without deleting it using the deactivate command, and resume it later with activate:
+
+```bash
+# Pause a schedule (stops future executions)
+zenml pipeline schedule deactivate <SCHEDULE_NAME_OR_ID>
+
+# Resume a paused schedule
+zenml pipeline schedule activate <SCHEDULE_NAME_OR_ID>
+```
+
+{% hint style="info" %}
+For the Kubernetes orchestrator, activate/deactivate controls the CronJob's `suspend` field - this is a native Kubernetes feature that pauses schedule execution without removing the CronJob resource.
+{% endhint %}
+
+### Delete a schedule
+
+Deleting a schedule archives it by default (soft delete), which preserves references in historical pipeline runs that were triggered by this schedule:
+
+```bash
+# Archive a schedule (soft delete - default behavior)
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+
+# Permanently delete a schedule and remove all references (hard delete)
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID> --hard
+```
+
+{% hint style="warning" %}
+Using `--hard` permanently removes the schedule and any historical references to it. Pipeline runs that were triggered by this schedule will no longer show the schedule association.
+{% endhint %}
+
+### Orchestrator support for schedule management
+
+The functionality of these commands changes depending on whether the orchestrator supports schedule updates/deletions:
 - If the orchestrator supports it, this will update/delete the actual schedule as well as the schedule information stored in ZenML
 - If the orchestrator does not support it, this will only update/delete the schedule information stored in ZenML
 
