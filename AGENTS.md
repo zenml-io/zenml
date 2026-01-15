@@ -341,6 +341,10 @@ This ensures migrations handle existing data correctly. CI does basic migration 
   - `bug`: For bug fixes
   - `dependencies`: For dependency updates
   - `enhancement`: For new features or improvements
+- **REQUIRED: Release Notes Labels** - Every PR must have exactly one of these labels:
+  - `release-notes`: For user-facing features, significant updates, or changes that should appear in the changelog. Use this for new features, important bug fixes affecting users, API changes, or anything users should know about.
+  - `no-release-notes`: For internal changes, CI fixes, refactoring, minor bug fixes, documentation-only changes, or anything that doesn't need to be surfaced to users.
+  - The CI will block merging if neither label is present. When in doubt, use `no-release-notes` for internal/maintenance work.
 
 ### Continuous Integration
 - ZenML uses a two-tier CI approach:
