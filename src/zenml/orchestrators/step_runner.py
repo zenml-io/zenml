@@ -153,6 +153,8 @@ class StepRunner:
         logs_context = nullcontext()
         if is_step_logging_enabled(step_run.config, pipeline_run.config):
             log_request = generate_logs_request(source="step")
+            log_request.step_run_id = step_run.id
+            log_request.pipeline_run_id = pipeline_run.id
             log_response = Client().zen_store.create_logs(log_request)
             log_metadata = get_step_log_metadata(step_run=step_run)
             log_metadata.update(

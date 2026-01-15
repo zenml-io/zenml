@@ -63,6 +63,7 @@ from zenml.execution.step.utils import launch_step
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
+    LogsUpdate,
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotResponse,
@@ -81,8 +82,10 @@ from zenml.steps.step_invocation import StepInvocation
 from zenml.steps.utils import OutputSignature
 from zenml.utils import source_utils
 from zenml.utils.logging_utils import (
+    LoggingContext,
+    generate_logs_request,
+    get_run_log_metadata,
     is_pipeline_logging_enabled,
-    setup_run_logging,
 )
 
 if TYPE_CHECKING:
@@ -184,48 +187,68 @@ class DynamicPipelineRunner:
 
     def run_pipeline(self) -> None:
         """Run the pipeline."""
-        if self._run:
-            if self._run.status.is_finished:
-                logger.info("Run `%s` is already finished.", str(self._run.id))
-                return
-            if self._run.orchestrator_run_id:
-                logger.info("Continuing existing run `%s`.", str(self._run.id))
-                run = self._run
-            else:
-                run = Client().zen_store.update_run(
-                    run_id=self._run.id,
-                    run_update=PipelineRunUpdate(
-                        orchestrator_run_id=self._orchestrator_run_id,
-                    ),
-                )
-        else:
-            existing_runs = Client().list_pipeline_runs(
-                snapshot_id=self._snapshot.id,
-                orchestrator_run_id=self._orchestrator_run_id,
-            )
-            if existing_runs.total == 1:
-                run = existing_runs.items[0]
-                if run.status.is_finished:
-                    logger.info("Run `%s` is already finished.", str(run.id))
-                    return
-                else:
-                    logger.info("Continuing existing run `%s`.", str(run.id))
-            else:
-                run = create_placeholder_run(
-                    snapshot=self._snapshot,
-                    orchestrator_run_id=self._orchestrator_run_id,
-                )
-
-        logging_context = nullcontext()
-        if not run.triggered_by_deployment and is_pipeline_logging_enabled(
+        logs_context = nullcontext()
+        if logs_enabled := is_pipeline_logging_enabled(
             self._snapshot.pipeline_configuration
         ):
-            logging_context = setup_run_logging(
-                pipeline_run=run,
-                source="orchestrator",
+            log_request = generate_logs_request(source="orchestrator")
+            log_response = Client().zen_store.create_logs(log_request)
+            logs_context = LoggingContext(
+                name=str(log_response.id),
+                log_model=log_response,
             )
+        with logs_context as l_context:
+            if self._run:
+                if self._run.status.is_finished:
+                    logger.info(
+                        "Run `%s` is already finished.", str(self._run.id)
+                    )
+                    return
+                if self._run.orchestrator_run_id:
+                    logger.info(
+                        "Continuing existing run `%s`.", str(self._run.id)
+                    )
+                    run = self._run
+                else:
+                    run = Client().zen_store.update_run(
+                        run_id=self._run.id,
+                        run_update=PipelineRunUpdate(
+                            orchestrator_run_id=self._orchestrator_run_id,
+                        ),
+                    )
+            else:
+                existing_runs = Client().list_pipeline_runs(
+                    snapshot_id=self._snapshot.id,
+                    orchestrator_run_id=self._orchestrator_run_id,
+                )
+                if existing_runs.total == 1:
+                    run = existing_runs.items[0]
+                    if run.status.is_finished:
+                        logger.info(
+                            "Run `%s` is already finished.", str(run.id)
+                        )
+                        return
+                    else:
+                        logger.info(
+                            "Continuing existing run `%s`.", str(run.id)
+                        )
+                else:
+                    run = create_placeholder_run(
+                        snapshot=self._snapshot,
+                        orchestrator_run_id=self._orchestrator_run_id,
+                    )
 
-        with logging_context:
+            if logs_enabled:
+                run = Client().zen_store.update_logs(
+                    logs_id=log_response.id,
+                    logs_update=LogsUpdate(
+                        pipeline_run_id=run.id,
+                    ),
+                )
+                l_context.origin.metadata.update(
+                    **get_run_log_metadata(pipeline_run=run)
+                )
+
             with InMemoryArtifactCache():
                 with DynamicPipelineRunContext(
                     pipeline=self.pipeline,

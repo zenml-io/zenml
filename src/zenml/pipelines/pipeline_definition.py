@@ -86,6 +86,7 @@ from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import (
+    LogsUpdate,
     code_repository_utils,
     code_utils,
     dashboard_utils,
@@ -97,10 +98,11 @@ from zenml.utils import (
     yaml_utils,
 )
 from zenml.utils.logging_utils import (
+    LoggingContext,
+    generate_logs_request,
     is_pipeline_logging_enabled,
-    setup_run_logging,
 )
-from zenml.utils.string_utils import format_name_template
+from zenml.utils.string_utils import format_name_template, get_run_log_metadata
 from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
@@ -1039,29 +1041,45 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             logger.info("Preventing execution of pipeline '%s'.", self.name)
             return None
 
-        logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
-
-        with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            stack = Client().active_stack
-
-            snapshot = self._create_snapshot(**self._run_args)
-            self.log_pipeline_snapshot_metadata(snapshot)
-
-            run = (
-                create_placeholder_run(snapshot=snapshot)
-                if not snapshot.schedule
-                else None
+        logging_context = nullcontext()
+        if logs_enabled := is_pipeline_logging_enabled(self.configuration):
+            log_request = generate_logs_request(source="client")
+            log_response = Client().zen_store.create_logs(log_request)
+            logging_context = LoggingContext(
+                name=str(log_response.id),
+                log_model=log_response,
             )
 
-            logs_context = nullcontext()
-            if run and is_pipeline_logging_enabled(
-                snapshot.pipeline_configuration
-            ):
-                logs_context = setup_run_logging(
-                    pipeline_run=run, source="client"
+        with logging_context:
+            logger.info(
+                f"Initiating a new run for the pipeline: `{self.name}`."
+            )
+
+            with track_handler(
+                AnalyticsEvent.RUN_PIPELINE
+            ) as analytics_handler:
+                stack = Client().active_stack
+
+                snapshot = self._create_snapshot(**self._run_args)
+                self.log_pipeline_snapshot_metadata(snapshot)
+
+                run = (
+                    create_placeholder_run(snapshot=snapshot)
+                    if not snapshot.schedule
+                    else None
                 )
 
-            with logs_context:
+                if run and logs_enabled:
+                    Client().zen_store.update_logs(
+                        logs_id=log_response.id,
+                        logs_update=LogsUpdate(
+                            pipeline_run_id=run.id,
+                        ),
+                    )
+                    logging_context.origin.metadata.update(
+                        **get_run_log_metadata(pipeline_run=run)
+                    )
+
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(
                         snapshot=snapshot,

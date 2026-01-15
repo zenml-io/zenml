@@ -100,7 +100,6 @@ class LogsSchema(BaseSchema, table=True):
             log_store_id=request.log_store_id,
         )
 
-
     def to_model(
         self,
         include_metadata: bool = False,

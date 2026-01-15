@@ -63,7 +63,11 @@ from zenml.orchestrators.local.local_orchestrator import (
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
-from zenml.utils.logging_utils import setup_run_logging
+from zenml.utils.logging_utils import (
+    LoggingContext,
+    generate_logs_request,
+    get_run_log_metadata,
+)
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
@@ -552,41 +556,48 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         Raises:
             RuntimeError: If the orchestrator has not been initialized.
             RuntimeError: If the pipeline cannot be executed.
-
         """
-        active_stack: Stack = self._client.active_stack
-
-        orchestrator = self.orchestrator_class(
-            name="deployment-local",
-            id=uuid4(),
-            config=LocalOrchestratorConfig(),
-            flavor="local",
-            type=StackComponentType.ORCHESTRATOR,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
+        logs_request = generate_logs_request(source="deployment")
+        logs_request.pipeline_run_id = placeholder_run.id
+        logs_response = self._client.zen_store.create_logs(logs_request)
+        log_metadata = get_run_log_metadata(pipeline_run=placeholder_run)
+        log_metadata.update(
+            {
+                "deployment.id": self.deployment.id,
+                "deployment.name": self.deployment.name,
+            }
         )
-
-        # Start deployment runtime context with parameters (still needed for
-        # in-memory materializer)
-        runtime.start(
-            request_id=str(uuid4()),
-            snapshot=deployment_snapshot,
-            parameters=resolved_params,
-            skip_artifact_materialization=skip_artifact_materialization,
-        )
-
-        captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
-        logging_context = setup_run_logging(
-            pipeline_run=placeholder_run,
-            source="deployment",
-            # we explicitly don't block on exit here because we want to allow
-            # the response to be sent to the client without waiting for the logs
-            # to be flushed.
+        logging_context = LoggingContext(
+            name=str(logs_response.id),
+            log_model=logs_response,
             block_on_exit=False,
+            **log_metadata,
         )
 
         with logging_context:
+            active_stack: Stack = self._client.active_stack
+
+            orchestrator = self.orchestrator_class(
+                name="deployment-local",
+                id=uuid4(),
+                config=LocalOrchestratorConfig(),
+                flavor="local",
+                type=StackComponentType.ORCHESTRATOR,
+                user=uuid4(),
+                created=datetime.now(),
+                updated=datetime.now(),
+            )
+
+            # Start deployment runtime context with parameters (still needed for
+            # in-memory materializer)
+            runtime.start(
+                request_id=str(uuid4()),
+                snapshot=deployment_snapshot,
+                parameters=resolved_params,
+                skip_artifact_materialization=skip_artifact_materialization,
+            )
+
+            captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
             try:
                 # Use the new deployment snapshot with pre-configured settings
                 orchestrator.run(
