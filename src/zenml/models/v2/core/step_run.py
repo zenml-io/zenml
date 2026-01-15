@@ -242,6 +242,10 @@ class StepRunResponseBody(ProjectScopedResponseBody):
         title="The substitutions of the step run.",
         default={},
     )
+    heartbeat_threshold: Optional[int] = Field(
+        title="The applied heartbeat healthiness threshold ",
+        default=None,
+    )
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -620,9 +624,7 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        if self.get_metadata().spec.enable_heartbeat:
-            return self.get_metadata().config.heartbeat_healthy_threshold
-        return None
+        return self.get_body().heartbeat_threshold
 
     @property
     def snapshot_id(self) -> UUID:
@@ -842,3 +844,4 @@ class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     status: ExecutionStatus
     latest_heartbeat: datetime
     pipeline_run_status: ExecutionStatus | None = None
+    heartbeat_enabled: bool

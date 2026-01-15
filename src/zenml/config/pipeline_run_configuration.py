@@ -63,6 +63,10 @@ class PipelineRunConfiguration(
         default=None,
         description="Whether to enable pipeline logs for the pipeline run.",
     )
+    enable_heartbeat: bool | None = Field(
+        default=None,
+        description="Whether to enable heartbeat for all steps of the pipeline run",
+    )
     schedule: Optional[Schedule] = Field(
         default=None, description="The schedule on which to run the pipeline."
     )

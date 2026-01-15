@@ -340,6 +340,8 @@ def main() -> None:
             ),
         }
 
+        step_run_skip_hb_set = set()
+
         def _cache_step_run_if_possible(step_name: str) -> bool:
             if not step_run_request_factory.has_caching_enabled(step_name):
                 return False
@@ -659,11 +661,20 @@ def main() -> None:
         def is_node_heartbeat_unhealthy(node: Node) -> bool:
             from zenml.steps.heartbeat import is_heartbeat_unhealthy
 
+            if node.id in step_run_skip_hb_set:
+                return False
+
             sr_ = client.list_run_steps(
-                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=True
+                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=False
             )
 
             if sr_.items:
+                if (
+                    sr_.items[0].heartbeat_threshold is None
+                ):  # heartbeat disabled/unset - skip next checks
+                    step_run_skip_hb_set.add(node.id)
+                    return False
+
                 return is_heartbeat_unhealthy(
                     step_run_id=sr_.items[0].id,
                     status=sr_.items[0].status,
@@ -715,7 +726,10 @@ def main() -> None:
                 )
                 _maybe_publish_failed_step_run(step_name)
                 return NodeStatus.FAILED
-            elif is_node_heartbeat_unhealthy(node):
+            elif (
+                snapshot.pipeline_configuration.enable_heartbeat
+                and is_node_heartbeat_unhealthy(node)
+            ):
                 logger.error(
                     "Heartbeat for step `%s` indicates unhealthy status.",
                     step_name,

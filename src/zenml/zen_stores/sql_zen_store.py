@@ -6497,6 +6497,17 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         return index
 
+    @staticmethod
+    def _get_enable_run_heartbeat(snapshot: PipelineSnapshotSchema) -> bool:
+        value = json.loads(snapshot.pipeline_configuration).get(
+            "enable_heartbeat"
+        )
+
+        if value is None:
+            return True
+        else:
+            return bool(value)
+
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -6517,6 +6528,7 @@ class SqlZenStore(BaseZenStore):
                 can not be created.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
+
         snapshot = self._get_reference_schema_by_id(
             resource=pipeline_run,
             reference_schema=PipelineSnapshotSchema,
@@ -6527,8 +6539,12 @@ class SqlZenStore(BaseZenStore):
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )
+
         new_run = PipelineRunSchema.from_request(
-            pipeline_run, pipeline_id=snapshot.pipeline_id, index=index
+            pipeline_run,
+            pipeline_id=snapshot.pipeline_id,
+            index=index,
+            enable_heartbeat=self._get_enable_run_heartbeat(snapshot),
         )
 
         session.add(new_run)
@@ -7168,6 +7184,33 @@ class SqlZenStore(BaseZenStore):
         return self._count_entity(
             schema=PipelineRunSchema, filter_model=filter_model
         )
+
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables heartbeat for pipeline and all its running steps.
+
+        Args:
+            run_id: The id of the pipeline run.
+        """
+        with Session(self.engine) as session:
+            existing_run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+
+            existing_run.enable_heartbeat = False
+            session.commit()
+
+            # set heartbeat threshold to null for all created steps
+
+            stmt = (
+                update(StepRunSchema)
+                .where(col(StepRunSchema.pipeline_run_id) == str(run_id))
+                .values(heartbeat_threshold=None)
+            )
+
+            session.execute(stmt)
+            session.commit()
 
     # ----------------------------- Run Metadata -----------------------------
 
@@ -10151,7 +10194,7 @@ class SqlZenStore(BaseZenStore):
             # cached top-level heartbeat config property (for fast validation).
             step_schema.heartbeat_threshold = (
                 step_config.config.heartbeat_healthy_threshold
-                if step_config.spec.enable_heartbeat
+                if step_config.spec.enable_heartbeat and run.enable_heartbeat
                 else None
             )
 
@@ -10515,8 +10558,76 @@ class SqlZenStore(BaseZenStore):
 
             return StepHeartbeatResponse(
                 id=existing_step_run.id,
-                status=existing_step_run.status,
+                status=ExecutionStatus(existing_step_run.status),
                 latest_heartbeat=existing_step_run.latest_heartbeat,
+                heartbeat_enabled=existing_step_run.heartbeat_threshold
+                is not None,
+            )
+
+    def validate_and_update_heartbeat(
+        self,
+        step_run_id: UUID,
+        token_run_id: UUID | None = None,
+        token_schedule_id: UUID | None = None,
+    ) -> StepHeartbeatResponse:
+        """Updates & Validates a step run heartbeat value.
+
+        Lightweight function for fast updates as heartbeats may be received at bulk.
+
+        Args:
+            step_run_id: ID of the step run.
+            token_run_id: Pipeline run id of the auth context
+            token_schedule_id: Schedule id of the auth context
+
+        Returns:
+            Step heartbeat response (minimal info, id, status & latest_heartbeat).
+
+        Raises:
+            AuthorizationException: If token identifiers do not much step information.
+            IllegalOperationError: If update heartbeat is called for a finished step.
+        """
+        with Session(self.engine) as session:
+            step_run = self._get_schema_by_id(
+                resource_id=step_run_id,
+                schema_class=StepRunSchema,
+                session=session,
+            )
+
+            if ExecutionStatus(step_run.status).is_finished:
+                raise IllegalOperationError(
+                    "Can not update heartbeat for finished steps."
+                )
+
+            run = self._get_schema_by_id(
+                resource_id=step_run.pipeline_run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+
+            if token_run_id:
+                if step_run.pipeline_run_id != token_run_id:
+                    raise AuthorizationException(
+                        f"Authentication token provided is invalid for step: {step_run_id}"
+                    )
+            elif token_schedule_id:
+                if not (run.schedule_id == token_schedule_id):
+                    raise AuthorizationException(
+                        f"Authentication token provided is invalid for step: {step_run_id}"
+                    )
+            else:
+                # un-scoped token. Soon to-be-deprecated, we will ignore validation temporarily.
+                pass
+
+            latest_heartbeat = datetime.now(timezone.utc)
+            step_run.latest_heartbeat = latest_heartbeat
+            session.commit()
+
+            return StepHeartbeatResponse(
+                id=step_run_id,
+                status=ExecutionStatus(run.status),
+                latest_heartbeat=latest_heartbeat,
+                heartbeat_enabled=step_run.heartbeat_threshold is not None,
+                pipeline_run_status=ExecutionStatus(run.status),
             )
 
     def update_run_step(

@@ -278,6 +278,9 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="Trigger information for the pipeline run.",
     )
+    enable_heartbeat: bool = Field(
+        title="Enable heartbeat flag for run.",
+    )
 
 
 class PipelineRunResponseResources(ProjectScopedResponseResources):
@@ -632,6 +635,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().log_collection
+
+    @property
+    def enable_heartbeat(self) -> bool:
+        """The `enable_heartbeat` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().enable_heartbeat
 
 
 # ------------------ Filter Model ------------------

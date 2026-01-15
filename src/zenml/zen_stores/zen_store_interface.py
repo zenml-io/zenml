@@ -1837,6 +1837,17 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
+    @abstractmethod
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables the run's heartbeat.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Returns:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     # -------------------- Run metadata --------------------
 
     @abstractmethod
