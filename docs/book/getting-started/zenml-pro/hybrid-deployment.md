@@ -70,7 +70,7 @@ Each workspace can be deployed in separate VPCs or networks, isolated per team, 
 
 | Data Type | Storage Location | Purpose |
 |-----------|------------------|---------|
-| User metadata | Control Plane | Authentication only |
+| Account metadata | Control Plane | Authentication only |
 | RBAC policies | Control Plane | Authorization decisions |
 | Pipeline metadata | Your Infrastructure | Run history, metrics, parameters |
 | Model metadata | Your Infrastructure | Model versions, stages, annotations |
