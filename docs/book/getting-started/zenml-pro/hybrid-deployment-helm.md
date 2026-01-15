@@ -34,12 +34,46 @@ This guide provides step-by-step instructions for deploying ZenML Pro in a Hybri
 - MySQL database (managed or self-hosted)
 - Outbound HTTPS access to `cloudapi.zenml.io`
 
+**Tools (on a machine with internet access for initial setup):**
+- Docker
+- Helm (3.0+)
+- Access to pull ZenML Pro images from private registries (contact [cloud@zenml.io](mailto:cloud@zenml.io))
+
 Before starting, complete the setup described in [Hybrid Deployment Overview](hybrid-deployment.md):
 - Step 1: Set up ZenML Pro organization
 - Step 2: Configure your infrastructure (database, networking, TLS)
 - Step 3: Obtain Pro credentials from ZenML Support
 
-## Step 1: Prepare Helm Chart
+## Step 1: Prepare Helm Chart and docker images
+
+### Pull Container Images
+
+Access and pull from the ZenML Pro container registries:
+
+1. Authenticate to the ZenML Pro container registries (AWS ECR or GCP Artifact Registry)
+   - Use the credentials that you provided to the ZenML Support to access the private zenml container registry
+
+2. Pull all required images:
+   - **Workspace Server image (AWS ECR):**
+     - `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>`
+   - **Workspace Server image (GCP Artifact Registry):**
+     - `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server:<version>`
+   - **Client image (for pipelines):**
+     - `zenmldocker/zenml:<version>`
+
+   Example pull commands (AWS ECR):
+   ```bash
+   docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>
+   docker pull zenmldocker/zenml:<version>
+   ```
+
+   Example pull commands (GCP Artifact Registry):
+   ```bash
+   docker pull europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server:<version>
+   docker pull zenmldocker/zenml:<version>
+   ```
+
+### Pull Helm chart
 
 For OCI-based Helm charts, you can either pull the chart or install directly. To pull the chart first:
 
@@ -225,7 +259,6 @@ zenml:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
         ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<ZENML_OSS_VERSION>
 ```
 
 **Option B: AWS-based (if running on EKS)**
@@ -268,9 +301,10 @@ zenml:
 ### 4. Redeploy with Updated Values
 
 ```bash
-helm upgrade zenml zenml/zenml \
+helm upgrade zenml oci://public.ecr.aws/zenml/zenml \
   --namespace zenml-hybrid \
-  --values zenml-hybrid-values.yaml
+  --values zenml-hybrid-values.yaml \
+  --version <ZENML_OSS_VERSION>
 ```
 
 ## Domain Name
@@ -416,17 +450,25 @@ zenml:
       secretName: zenml-tls
 ```
 
-## Persistent Storage (Optional)
+## Database Backup Strategy (Optional)
 
-If you need persistent storage for the ZenML server:
+ZenML supports backing up the database before migrations are performed. Configure the backup strategy in your values file:
 
 ```yaml
-persistence:
-  enabled: true
-  storageClassName: standard
-  accessMode: ReadWriteOnce
-  size: 10Gi
+zenml:
+  database:
+    # Backup strategy: in-memory (default), dump-file, database, or disabled
+    backupStrategy: in-memory
+    # For dump-file strategy with persistent storage:
+    # backupPVStorageClass: standard
+    # backupPVStorageSize: 1Gi
+    # For database strategy (MySQL only):
+    # backupDatabase: "zenml_backup"
 ```
+
+{% hint style="info" %}
+Local SQLite persistence (`zenml.database.persistence`) is only relevant when not using an external MySQL database. For hybrid deployments with external MySQL, configure backups at the database level.
+{% endhint %}
 
 ## Scaling & High Availability
 
@@ -435,14 +477,6 @@ persistence:
 ```yaml
 zenml:
   replicaCount: 3
-```
-
-### Pod Disruption Budget
-
-```yaml
-podDisruptionBudget:
-  enabled: true
-  minAvailable: 1
 ```
 
 ### Horizontal Pod Autoscaler
@@ -457,25 +491,18 @@ autoscaling:
 
 ## Monitoring & Logging
 
-### Prometheus Metrics
+### Debug Logging
+
+Enable verbose debug logging in the ZenML server:
 
 ```yaml
 zenml:
-  metrics:
-    enabled: true
-    port: 8001
+  debug: true  # Sets ZENML_LOGGING_VERBOSITY to DEBUG
 ```
 
-### Logging Configuration
+### Collecting Logs
 
-```yaml
-zenml:
-  logging:
-    level: INFO
-    format: json
-```
-
-Collect logs with:
+View server logs with:
 
 ```bash
 kubectl -n zenml-hybrid logs deployment/zenml -f
@@ -506,7 +533,7 @@ For the latest available ZenML Helm chart versions, visit: https://artifacthub.i
 3. Upgrade:
 
 ```bash
-helm upgrade zenml zenml/zenml \
+helm upgrade zenml oci://public.ecr.aws/zenml/zenml \
   --namespace zenml-hybrid \
   --values zenml-hybrid-values.yaml \
   --version <new-version>
