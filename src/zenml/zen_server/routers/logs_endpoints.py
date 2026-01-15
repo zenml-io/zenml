@@ -51,13 +51,13 @@ def create_logs(
     logs: LogsRequest,
     _: AuthContext = Security(authorize),
 ) -> LogsResponse:
-    """Create a new logs entry.
+    """Create a new log model.
 
     Args:
-        logs: The logs entry to create.
+        logs: The log model to create.
 
     Returns:
-        The created logs entry.
+        The created log model.
     """
     return verify_permissions_and_create_entity(
         request_model=logs,
@@ -75,15 +75,15 @@ def get_logs(
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> LogsResponse:
-    """Returns the requested logs.
+    """Returns the requested log model.
 
     Args:
-        logs_id: ID of the logs.
+        logs_id: ID of the log model.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        The requested logs.
+        The requested log model.
     """
     return verify_permissions_and_get_entity(
         id=logs_id, get_method=zen_store().get_logs, hydrate=hydrate
@@ -100,17 +100,14 @@ def update_logs(
     logs_update: LogsUpdate,
     _: AuthContext = Security(authorize),
 ) -> LogsResponse:
-    """Update an existing logs entry.
-
-    Only supports associating an existing logs entry with a pipeline run and/or
-    a step run.
+    """Update an existing log model.
 
     Args:
-        logs_id: ID of the logs entry to update.
-        logs_update: Update to apply to the logs entry.
+        logs_id: ID of the log model to update.
+        logs_update: Update to apply to the log model.
 
     Returns:
-        The updated logs entry.
+        The updated log model.
     """
     return verify_permissions_and_update_entity(
         id=logs_id,
