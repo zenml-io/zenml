@@ -63,7 +63,6 @@ from zenml.execution.step.utils import launch_step
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
-    LogsUpdate,
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotResponse,
@@ -83,9 +82,8 @@ from zenml.steps.utils import OutputSignature
 from zenml.utils import source_utils
 from zenml.utils.logging_utils import (
     LoggingContext,
-    generate_logs_request,
-    get_run_log_metadata,
     is_pipeline_logging_enabled,
+    setup_logging_context,
 )
 
 if TYPE_CHECKING:
@@ -188,15 +186,9 @@ class DynamicPipelineRunner:
     def run_pipeline(self) -> None:
         """Run the pipeline."""
         logs_context = nullcontext()
-        if logs_enabled := is_pipeline_logging_enabled(
-            self._snapshot.pipeline_configuration
-        ):
-            log_request = generate_logs_request(source="orchestrator")
-            log_response = Client().zen_store.create_logs(log_request)
-            logs_context = LoggingContext(
-                name=str(log_response.id),
-                log_model=log_response,
-            )
+        if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
+            logs_context = setup_logging_context(source="orchestrator")
+
         with logs_context as l_context:
             if self._run:
                 if self._run.status.is_finished:
@@ -238,16 +230,8 @@ class DynamicPipelineRunner:
                         orchestrator_run_id=self._orchestrator_run_id,
                     )
 
-            if logs_enabled:
-                run = Client().zen_store.update_logs(
-                    logs_id=log_response.id,
-                    logs_update=LogsUpdate(
-                        pipeline_run_id=run.id,
-                    ),
-                )
-                l_context.origin.metadata.update(
-                    **get_run_log_metadata(pipeline_run=run)
-                )
+            if isinstance(l_context, LoggingContext):
+                l_context.update_context(pipeline_run=run)
 
             with InMemoryArtifactCache():
                 with DynamicPipelineRunContext(

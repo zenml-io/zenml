@@ -16,7 +16,6 @@
 
 import copy
 import inspect
-from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -69,13 +68,6 @@ from zenml.utils import (
     source_utils,
     string_utils,
     tag_utils,
-)
-from zenml.utils.logging_utils import (
-    LoggingContext,
-    generate_logs_request,
-    get_run_log_metadata,
-    get_step_log_metadata,
-    is_step_logging_enabled,
 )
 from zenml.utils.typing_utils import get_args, get_origin, is_union
 
@@ -149,23 +141,11 @@ class StepRunner:
             StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
         """
         from zenml.deployers.server import runtime
+        from zenml.utils.logging_utils import setup_logging_context
 
-        logs_context = nullcontext()
-        if is_step_logging_enabled(step_run.config, pipeline_run.config):
-            log_request = generate_logs_request(source="step")
-            log_request.step_run_id = step_run.id
-            log_request.pipeline_run_id = pipeline_run.id
-            log_response = Client().zen_store.create_logs(log_request)
-            log_metadata = get_step_log_metadata(step_run=step_run)
-            log_metadata.update(
-                get_run_log_metadata(pipeline_run=pipeline_run)
-            )
-
-            logs_context = LoggingContext(
-                name=str(log_response.id),
-                log_model=log_response,
-                **log_metadata,
-            )
+        logs_context = setup_logging_context(
+            source="step", step_run=step_run, pipeline_run=pipeline_run
+        )
 
         with logs_context:
             step_instance = self._load_step()

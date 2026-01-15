@@ -39,6 +39,7 @@ from zenml.logger import get_logger
 from zenml.models import (
     LogsRequest,
     LogsResponse,
+    LogsUpdate,
     PipelineRunResponse,
     StepRunResponse,
 )
@@ -167,6 +168,35 @@ class LoggingContext(context_utils.BaseContext):
                 logger.debug("Failed to emit log record", exc_info=True)
             finally:
                 context._disabled = False
+
+    def update_context(
+        self,
+        step_run: Optional["StepRunResponse"] = None,
+        pipeline_run: Optional["PipelineRunResponse"] = None,
+    ) -> None:
+        """Update the metadata of the logging context.
+
+        Args:
+            step_run: The step run.
+            pipeline_run: The pipeline run.
+        """
+        log_update = LogsUpdate()
+
+        if step_run:
+            log_update.step_run_id = step_run.id
+            self._origin.metadata.update(
+                get_step_log_metadata(step_run=step_run)
+            )
+
+        if pipeline_run:
+            log_update.pipeline_run_id = pipeline_run.id
+            self._origin.metadata.update(
+                get_run_log_metadata(pipeline_run=pipeline_run)
+            )
+
+        Client().zen_store.update_logs(
+            logs_id=self.name, logs_update=log_update
+        )
 
     def __enter__(self) -> "LoggingContext":
         """Enter the context and set as active.
@@ -477,3 +507,40 @@ def fetch_logs(
         return log_store.fetch(logs_model=logs, limit=limit)
     finally:
         log_store.cleanup()
+
+
+def setup_logging_context(
+    source: str,
+    pipeline_run: Optional["PipelineRunResponse"] = None,
+    step_run: Optional["StepRunResponse"] = None,
+    block_on_exit: bool = True,
+) -> LoggingContext:
+    """Setup a logging context for a given source.
+
+    Args:
+        source: The source of the logs.
+        pipeline_run: The pipeline run.
+        step_run: The step run.
+        block_on_exit: Whether to block until all logs are flushed when the
+            context is exited, if there are no more logging contexts active.
+    """
+    log_metadata = {}
+
+    logs_request = generate_logs_request(source=source)
+
+    if pipeline_run:
+        log_metadata.update(get_run_log_metadata(pipeline_run=pipeline_run))
+        logs_request.pipeline_run_id = pipeline_run.id
+
+    if step_run:
+        log_metadata.update(get_step_log_metadata(step_run=step_run))
+        logs_request.step_run_id = step_run.id
+
+    logs_response = Client().zen_store.create_logs(logs_request)
+
+    return LoggingContext(
+        name=str(logs_response.id),
+        log_model=logs_response,
+        block_on_exit=block_on_exit,
+        **log_metadata,
+    )

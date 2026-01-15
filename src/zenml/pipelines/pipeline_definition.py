@@ -86,7 +86,6 @@ from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import (
-    LogsUpdate,
     code_repository_utils,
     code_utils,
     dashboard_utils,
@@ -99,10 +98,10 @@ from zenml.utils import (
 )
 from zenml.utils.logging_utils import (
     LoggingContext,
-    generate_logs_request,
     is_pipeline_logging_enabled,
+    setup_logging_context,
 )
-from zenml.utils.string_utils import format_name_template, get_run_log_metadata
+from zenml.utils.string_utils import format_name_template
 from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
@@ -1042,13 +1041,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return None
 
         logging_context = nullcontext()
-        if logs_enabled := is_pipeline_logging_enabled(self.configuration):
-            log_request = generate_logs_request(source="client")
-            log_response = Client().zen_store.create_logs(log_request)
-            logging_context = LoggingContext(
-                name=str(log_response.id),
-                log_model=log_response,
-            )
+        if is_pipeline_logging_enabled(self.configuration):
+            logging_context = setup_logging_context(source="client")
 
         with logging_context:
             logger.info(
@@ -1069,16 +1063,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     else None
                 )
 
-                if run and logs_enabled:
-                    Client().zen_store.update_logs(
-                        logs_id=log_response.id,
-                        logs_update=LogsUpdate(
-                            pipeline_run_id=run.id,
-                        ),
-                    )
-                    logging_context.origin.metadata.update(
-                        **get_run_log_metadata(pipeline_run=run)
-                    )
+                if run and isinstance(logging_context, LoggingContext):
+                    logging_context.update_context(pipeline_run=run)
 
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(

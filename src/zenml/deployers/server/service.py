@@ -63,11 +63,7 @@ from zenml.orchestrators.local.local_orchestrator import (
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
-from zenml.utils.logging_utils import (
-    LoggingContext,
-    generate_logs_request,
-    get_run_log_metadata,
-)
+from zenml.utils.logging_utils import setup_logging_context
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
@@ -557,21 +553,8 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             RuntimeError: If the orchestrator has not been initialized.
             RuntimeError: If the pipeline cannot be executed.
         """
-        logs_request = generate_logs_request(source="deployment")
-        logs_request.pipeline_run_id = placeholder_run.id
-        logs_response = self._client.zen_store.create_logs(logs_request)
-        log_metadata = get_run_log_metadata(pipeline_run=placeholder_run)
-        log_metadata.update(
-            {
-                "deployment.id": self.deployment.id,
-                "deployment.name": self.deployment.name,
-            }
-        )
-        logging_context = LoggingContext(
-            name=str(logs_response.id),
-            log_model=logs_response,
-            block_on_exit=False,
-            **log_metadata,
+        logging_context = setup_logging_context(
+            source="deployment", block_on_exit=False
         )
 
         with logging_context:

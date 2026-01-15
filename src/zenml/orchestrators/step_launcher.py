@@ -43,10 +43,8 @@ from zenml.steps import StepHeartBeatTerminationException
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
     LoggingContext,
-    generate_logs_request,
-    get_run_log_metadata,
-    get_step_log_metadata,
     is_step_logging_enabled,
+    setup_logging_context,
 )
 from zenml.utils.time_utils import utc_now
 
@@ -261,24 +259,18 @@ class StepLauncher:
         """
         publish_utils.step_exception_info.set(None)
 
-        logging_context = nullcontext()
+        logs_context = nullcontext()
         if logs_enabled := is_step_logging_enabled(
             step_configuration=self._step.config,
             pipeline_configuration=self._snapshot.pipeline_configuration,
         ):
-            log_request = generate_logs_request(source="prepare_step")
-            log_response = Client().zen_store.create_logs(log_request)
-            logging_context = LoggingContext(
-                name=str(log_response.id),
-                log_model=log_response,
-                block_on_exit=True,
-            )
+            logs_context = setup_logging_context(source="prepare_step")
 
-        with logging_context as l_context:
+        with logs_context as l_context:
             pipeline_run, run_was_created = self._create_or_reuse_run()
-            l_context.origin.metadata.update(
-                **get_run_log_metadata(pipeline_run=pipeline_run)
-            )
+
+            if isinstance(l_context, LoggingContext):
+                l_context.update_context(pipeline_run=pipeline_run)
 
             if run_was_created:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
@@ -303,8 +295,6 @@ class StepLauncher:
                 invocation_id=self._invocation_id,
                 dynamic_config=dynamic_config,
             )
-            if logs_enabled:
-                step_run_request.logs = log_response.id
 
             try:
                 request_factory.populate_request(request=step_run_request)
@@ -322,11 +312,8 @@ class StepLauncher:
                 step_run = Client().zen_store.create_run_step(step_run_request)
 
                 if logs_enabled:
-                    l_context.origin.metadata.update(
-                        **get_step_log_metadata(
-                            step_run=step_run, pipeline_run=pipeline_run
-                        )
-                    )
+                    l_context.update_context(step_run=step_run)
+
                 self._step_run = step_run
                 if model_version := step_run.model_version:
                     step_run_utils.log_model_version_dashboard_url(

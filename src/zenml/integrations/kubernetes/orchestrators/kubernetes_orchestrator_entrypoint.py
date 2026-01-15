@@ -77,9 +77,8 @@ from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.utils import env_utils
 from zenml.utils.logging_utils import (
     LoggingContext,
-    generate_logs_request,
-    get_run_log_metadata,
     is_pipeline_logging_enabled,
+    setup_logging_context,
 )
 from zenml.utils.time_utils import utc_now
 
@@ -216,15 +215,8 @@ def main() -> None:
     snapshot = client.get_snapshot(args.snapshot_id)
 
     logs_context = nullcontext()
-    if logs_enabled := is_pipeline_logging_enabled(
-        snapshot.pipeline_configuration
-    ):
-        logs_request = generate_logs_request(source="orchestrator")
-        logs_response = client.zen_store.create_logs(logs_request)
-        logs_context = LoggingContext(
-            name=str(logs_response.id),
-            log_model=logs_response,
-        )
+    if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
+        logs_context = setup_logging_context(source="orchestrator")
 
     with logs_context:
         logger.info("Orchestrator pod started.")
@@ -311,10 +303,8 @@ def main() -> None:
                 for step_name, step in snapshot.step_configurations.items()
             ]
 
-        if logs_enabled:
-            logs_context.origin.metadata.update(
-                **get_run_log_metadata(pipeline_run=pipeline_run)
-            )
+        if isinstance(logs_context, LoggingContext):
+            logs_context.update_context(pipeline_run=pipeline_run)
 
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local
