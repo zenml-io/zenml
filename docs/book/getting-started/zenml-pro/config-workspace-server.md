@@ -167,14 +167,6 @@ rules:
   verbs: ["create", "get", "delete"]
 ```
 
-## Resource Recommendations
-
-| Deployment Size | CPU | Memory | Storage |
-|-----------------|-----|--------|---------|
-| Small (< 100 runs/day) | xx cores | xxGB | xxGB |
-| Medium (100-1000 runs/day) | xx cores | xxGB | xxGB |
-| Large (> 1000 runs/day) | xx cores | xxGB | xxGB |
-
 ## High Availability
 
 For production deployments, consider multiple replicas (2+) behind a load balancer, database replication with read replicas, liveness/readiness probes, and auto-scaling based on CPU/memory utilization.

@@ -30,13 +30,6 @@ The Control Plane must accept connections from and reach the following:
 | **Egress** | Identity providers | HTTPS | SSO authentication flows |
 | **Egress** | Database | TCP | Persistent storage |
 
-## Resource Recommendations
-
-| Deployment Size | CPU | Memory | Notes |
-|-----------------|-----|--------|-------|
-| Small (< 50 users) | xx cores | xxGB | Single instance sufficient |
-| Medium (50-500 users) | xx cores | xxGB | Consider high-availability setup |
-| Large (> 500 users) | xx cores | xxGB | Multi-replica with load balancing |
 
 ## Security
 
