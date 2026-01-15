@@ -99,7 +99,7 @@ class LogsSchema(BaseSchema, table=True):
             artifact_store_id=request.artifact_store_id,
             log_store_id=request.log_store_id,
         )
-    
+
     def to_model(
         self,
         include_metadata: bool = False,

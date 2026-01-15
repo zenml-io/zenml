@@ -71,8 +71,11 @@ from zenml.utils import (
     tag_utils,
 )
 from zenml.utils.logging_utils import (
+    LoggingContext,
+    generate_logs_request,
+    get_run_log_metadata,
+    get_step_log_metadata,
     is_step_logging_enabled,
-    setup_step_logging,
 )
 from zenml.utils.typing_utils import get_args, get_origin, is_union
 
@@ -149,10 +152,17 @@ class StepRunner:
 
         logs_context = nullcontext()
         if is_step_logging_enabled(step_run.config, pipeline_run.config):
-            logs_context = setup_step_logging(
-                step_run=step_run,
-                pipeline_run=pipeline_run,
-                source="step",
+            log_request = generate_logs_request(source="step")
+            log_response = Client().zen_store.create_logs(log_request)
+            log_metadata = get_step_log_metadata(step_run=step_run)
+            log_metadata.update(
+                get_run_log_metadata(pipeline_run=pipeline_run)
+            )
+
+            logs_context = LoggingContext(
+                name=str(log_response.id),
+                log_model=log_response,
+                **log_metadata,
             )
 
         with logs_context:

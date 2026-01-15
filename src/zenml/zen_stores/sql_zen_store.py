@@ -231,8 +231,8 @@ from zenml.models import (
     FlavorResponse,
     FlavorUpdate,
     LogsRequest,
-    LogsUpdate,
     LogsResponse,
+    LogsUpdate,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -4456,7 +4456,9 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate, include_resources=True
             )
 
-    def update_logs(self, logs_id: UUID, logs_update: LogsUpdate) -> LogsResponse:
+    def update_logs(
+        self, logs_id: UUID, logs_update: LogsUpdate
+    ) -> LogsResponse:
         """Update an existing logs entry.
 
         Args:
@@ -10181,7 +10183,9 @@ class SqlZenStore(BaseZenStore):
                             "with another resource."
                         )
                     existing_log_entry.step_run_id = step_schema.id
-                    existing_log_entry.pipeline_run_id = step_schema.pipeline_run_id
+                    existing_log_entry.pipeline_run_id = (
+                        step_schema.pipeline_run_id
+                    )
                     session.add(existing_log_entry)
                     session.commit()
                 else:
@@ -10226,10 +10230,10 @@ class SqlZenStore(BaseZenStore):
                     except IntegrityError as e:
                         session.rollback()
                         raise EntityExistsError(
-                            "Unable to create logs entry for step:" 
+                            "Unable to create logs entry for step:"
                             f"logs with ID '{logs_request.id}' already exists."
                         ) from e
-            
+
             # If cached, attach metadata of the original step
             if (
                 step_run.status == ExecutionStatus.CACHED
