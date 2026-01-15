@@ -59,6 +59,7 @@ class DownloadType(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     STEP_LOGS = "step_logs"
     RUN_LOGS = "run_logs"
+    SNAPSHOT_CODE = "snapshot_code"
 
 
 class VisualizationType(StrEnum):

@@ -117,3 +117,23 @@ def create_artifact_archive(
                     tar.addfile(tarinfo, fileobj=f)
 
         return temp_file.name
+
+
+def download_snapshot_code_archive(
+    code_path: str,
+    artifact_store: "BaseArtifactStore",
+) -> str:
+    """Download the given snapshot code.
+
+    Args:
+        code_path: The path to the code to download.
+        artifact_store: The artifact store to use for the download.
+
+    Returns:
+        The path to the downloaded code.
+    """
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        with artifact_store.open(code_path, "rb") as f:
+            temp_file.write(f.read())
+
+        return temp_file.name
