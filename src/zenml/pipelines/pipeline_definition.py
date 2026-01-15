@@ -1040,11 +1040,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             logger.info("Preventing execution of pipeline '%s'.", self.name)
             return None
 
-        logging_context = nullcontext()
+        logs_context = nullcontext()
         if is_pipeline_logging_enabled(self.configuration):
-            logging_context = setup_logging_context(source="client")
+            logs_context = setup_logging_context(source="client")
 
-        with logging_context:
+        with logs_context:
             logger.info(
                 f"Initiating a new run for the pipeline: `{self.name}`."
             )
@@ -1063,8 +1063,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     else None
                 )
 
-                if run and isinstance(logging_context, LoggingContext):
-                    logging_context.update_context(pipeline_run=run)
+                if run and isinstance(logs_context, LoggingContext):
+                    logs_context.update(pipeline_run=run)
+                    logs_context.attach(run)
 
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(

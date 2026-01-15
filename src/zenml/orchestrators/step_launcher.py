@@ -266,11 +266,11 @@ class StepLauncher:
         ):
             logs_context = setup_logging_context(source="prepare_step")
 
-        with logs_context as l_context:
+        with logs_context:
             pipeline_run, run_was_created = self._create_or_reuse_run()
 
-            if isinstance(l_context, LoggingContext):
-                l_context.update_context(pipeline_run=pipeline_run)
+            if isinstance(logs_context, LoggingContext):
+                logs_context.update(pipeline_run=pipeline_run)
 
             if run_was_created:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
@@ -312,7 +312,8 @@ class StepLauncher:
                 step_run = Client().zen_store.create_run_step(step_run_request)
 
                 if logs_enabled:
-                    l_context.update_context(step_run=step_run)
+                    logs_context.update(step_run=step_run)
+                    logs_context.attach(step_run)
 
                 self._step_run = step_run
                 if model_version := step_run.model_version:
