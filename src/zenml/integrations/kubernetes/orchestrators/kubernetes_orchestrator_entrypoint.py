@@ -304,7 +304,8 @@ def main() -> None:
             ]
 
         if isinstance(logs_context, LoggingContext):
-            logs_context.update_context(pipeline_run=pipeline_run)
+            logs_context.update(pipeline_run=pipeline_run)
+            logs_context.attach(pipeline_run)
 
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local
