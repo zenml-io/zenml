@@ -189,7 +189,7 @@ class DynamicPipelineRunner:
         if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
             logs_context = setup_logging_context(source="orchestrator")
 
-        with logs_context as l_context:
+        with logs_context:
             if self._run:
                 if self._run.status.is_finished:
                     logger.info(
@@ -230,8 +230,9 @@ class DynamicPipelineRunner:
                         orchestrator_run_id=self._orchestrator_run_id,
                     )
 
-            if isinstance(l_context, LoggingContext):
-                l_context.update_context(pipeline_run=run)
+            if isinstance(logs_context, LoggingContext):
+                logs_context.update(pipeline_run=run)
+                logs_context.attach(run)
 
             with InMemoryArtifactCache():
                 with DynamicPipelineRunContext(

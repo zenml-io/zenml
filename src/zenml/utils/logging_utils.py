@@ -19,7 +19,7 @@ import threading
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -169,7 +169,7 @@ class LoggingContext(context_utils.BaseContext):
             finally:
                 context._disabled = False
 
-    def update_context(
+    def update(
         self,
         step_run: Optional["StepRunResponse"] = None,
         pipeline_run: Optional["PipelineRunResponse"] = None,
@@ -180,19 +180,32 @@ class LoggingContext(context_utils.BaseContext):
             step_run: The step run.
             pipeline_run: The pipeline run.
         """
-        log_update = LogsUpdate()
-
         if step_run:
-            log_update.step_run_id = step_run.id
             self._origin.metadata.update(
                 get_step_log_metadata(step_run=step_run)
             )
-
         if pipeline_run:
-            log_update.pipeline_run_id = pipeline_run.id
             self._origin.metadata.update(
                 get_run_log_metadata(pipeline_run=pipeline_run)
             )
+
+    def attach(
+        self, response: Union["StepRunResponse", "PipelineRunResponse"]
+    ) -> None:
+        """Attach the logging context to a step run or pipeline run.
+
+        Args:
+            response: The step run or pipeline run.
+
+        Raises:
+            ValueError: If the response is not a step run or pipeline run.
+        """
+        if isinstance(response, StepRunResponse):
+            log_update = LogsUpdate(step_run_id=response.id)
+        elif isinstance(response, PipelineRunResponse):
+            log_update = LogsUpdate(pipeline_run_id=response.id)
+        else:
+            raise ValueError("Response must be a step run or pipeline run.")
 
         Client().zen_store.update_logs(
             logs_id=self.name, logs_update=log_update
