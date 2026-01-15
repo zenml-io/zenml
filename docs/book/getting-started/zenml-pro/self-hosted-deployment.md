@@ -170,9 +170,6 @@ If you're interested in migrating from ZenML OSS to a Self-hosted Pro deployment
 
 If you're moving from SaaS or Hybrid to Self-hosted, migration paths can vary significantly depending on your organization's size, data residency requirements, and current ZenML setup. We recommend discussing your plans with a ZenML solutions architect. [Book a migration consultation](https://www.zenml.io/book-your-demo) or email us at [cloud@zenml.io](mailto:cloud@zenml.io). Your ZenML representative will provide you with a tailored migration checklist, technical documentation, and direct support to ensure a smooth transition with minimal downtime.
 
-## Detailed Architecture Diagram
-
-<img src=".gitbook/assets/cloud_architecture_self_hosted_detailed (1).png" alt="ZenML Pro self-hosted deployment details" data-size="original">
 
 ## Related Resources
 
