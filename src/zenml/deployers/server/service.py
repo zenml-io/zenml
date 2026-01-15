@@ -554,7 +554,9 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             RuntimeError: If the pipeline cannot be executed.
         """
         logging_context = setup_logging_context(
-            source="deployment", block_on_exit=False
+            source="deployment", 
+            pipeline_run=placeholder_run, 
+            block_on_exit=False
         )
 
         with logging_context:
