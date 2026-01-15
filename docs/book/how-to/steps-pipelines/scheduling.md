@@ -8,23 +8,27 @@ description: Learn how to create, update, activate, deactivate, and delete sched
 Schedules don't work for all orchestrators. Here is a list of all supported orchestrators.
 {% endhint %}
 
-| Orchestrator                                                                     | Scheduling Support | Supported Schedule Types                       |
-|----------------------------------------------------------------------------------|--------------------|-------------------------------------------------|
-| [AirflowOrchestrator](https://docs.zenml.io/stacks/orchestrators/airflow)            | ✅                 | Cron, Interval                                  |
-| [AzureMLOrchestrator](https://docs.zenml.io/stacks/orchestrators/azureml)            | ✅                 | Cron, Interval                                  |
-| [DatabricksOrchestrator](https://docs.zenml.io/stacks/orchestrators/databricks)      | ✅                 | Cron only                                       |
-| [HyperAIOrchestrator](https://docs.zenml.io/stacks/orchestrators/hyperai)            | ✅                 | Cron, One-time                                  |
-| [KubeflowOrchestrator](https://docs.zenml.io/stacks/orchestrators/kubeflow)          | ✅                 | Cron, Interval                                  |
-| [KubernetesOrchestrator](https://docs.zenml.io/stacks/orchestrators/kubernetes)      | ✅                 | Cron only                                       |
-| [LocalOrchestrator](https://docs.zenml.io/stacks/orchestrators/local)                | ⛔️                 | N/A                                             |
-| [LocalDockerOrchestrator](https://docs.zenml.io/stacks/orchestrators/local-docker)   | ⛔️                 | N/A                                             |
-| [SagemakerOrchestrator](https://docs.zenml.io/stacks/orchestrators/sagemaker)        | ✅                 | Cron, Interval, One-time                        |
-| [SkypilotAWSOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)    | ⛔️                 | N/A                                             |
-| [SkypilotAzureOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)  | ⛔️                 | N/A                                             |
-| [SkypilotGCPOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)    | ⛔️                 | N/A                                             |
-| [SkypilotLambdaOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm) | ⛔️                 | N/A                                             |
-| [TektonOrchestrator](https://docs.zenml.io/stacks/orchestrators/tekton)              | ⛔️                 | N/A                                             |
-| [VertexOrchestrator](https://docs.zenml.io/stacks/orchestrators/vertex)              | ✅                 | Cron only                                       |
+| Orchestrator                                                                     | Scheduling Support | Supported Schedule Types     | Native Schedule Management |
+|----------------------------------------------------------------------------------|--------------------|-------------------------------------------------|----------------------------|
+| [AirflowOrchestrator](https://docs.zenml.io/stacks/orchestrators/airflow)            | ✅                 | Cron, Interval               | ⛔️                          |
+| [AzureMLOrchestrator](https://docs.zenml.io/stacks/orchestrators/azureml)            | ✅                 | Cron, Interval               | ⛔️                          |
+| [DatabricksOrchestrator](https://docs.zenml.io/stacks/orchestrators/databricks)      | ✅                 | Cron only                    | ⛔️                          |
+| [HyperAIOrchestrator](https://docs.zenml.io/stacks/orchestrators/hyperai)            | ✅                 | Cron, One-time               | ⛔️                          |
+| [KubeflowOrchestrator](https://docs.zenml.io/stacks/orchestrators/kubeflow)          | ✅                 | Cron, Interval               | ⛔️                          |
+| [KubernetesOrchestrator](https://docs.zenml.io/stacks/orchestrators/kubernetes)      | ✅                 | Cron only                    | ✅                          |
+| [LocalOrchestrator](https://docs.zenml.io/stacks/orchestrators/local)                | ⛔️                 | N/A                          | N/A                        |
+| [LocalDockerOrchestrator](https://docs.zenml.io/stacks/orchestrators/local-docker)   | ⛔️                 | N/A                          | N/A                        |
+| [SagemakerOrchestrator](https://docs.zenml.io/stacks/orchestrators/sagemaker)        | ✅                 | Cron, Interval, One-time     | ⛔️                          |
+| [SkypilotAWSOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)    | ⛔️                 | N/A                          | N/A                        |
+| [SkypilotAzureOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)  | ⛔️                 | N/A                          | N/A                        |
+| [SkypilotGCPOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)    | ⛔️                 | N/A                          | N/A                        |
+| [SkypilotLambdaOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm) | ⛔️                 | N/A                          | N/A                        |
+| [TektonOrchestrator](https://docs.zenml.io/stacks/orchestrators/tekton)              | ⛔️                 | N/A                          | N/A                        |
+| [VertexOrchestrator](https://docs.zenml.io/stacks/orchestrators/vertex)              | ✅                 | Cron only                    | ⛔️                          |
+
+{% hint style="info" %}
+**Native Schedule Management** means the orchestrator supports updating and deleting schedules directly through ZenML commands. When supported, commands like `zenml pipeline schedule update` and `zenml pipeline schedule delete` will automatically update/delete the schedule on the orchestrator platform (e.g., Kubernetes CronJobs). For orchestrators without this support, you'll need to manually manage schedules on the orchestrator side.
+{% endhint %}
 
 Check out [our tutorial on
 scheduling](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
@@ -95,11 +99,11 @@ Using `--hard` permanently removes the schedule and any historical references to
 
 ### Orchestrator support for schedule management
 
-The functionality of these commands changes depending on whether the orchestrator supports schedule updates/deletions:
-- If the orchestrator supports it, this will update/delete the actual schedule as well as the schedule information stored in ZenML
-- If the orchestrator does not support it, this will only update/delete the schedule information stored in ZenML
+The functionality of these commands changes depending on whether the orchestrator supports schedule updates/deletions (see the "Native Schedule Management" column in the table above):
+- **Kubernetes orchestrator**: Fully supports native schedule management. Update and delete commands will modify/remove the actual CronJob on the cluster as well as the schedule information in ZenML.
+- **Other schedulable orchestrators**: Only update/delete the schedule information stored in ZenML. The actual schedule on the orchestrator remains unchanged.
 
-If the orchestrator **does not** support schedule management, maintaining the lifecycle of the schedule is the responsibility of the user.
+If the orchestrator **does not** support native schedule management, maintaining the lifecycle of the schedule on the orchestrator side is the responsibility of the user.
 In these cases, we recommend the following steps:
 
 1. Find schedule on ZenML
