@@ -77,7 +77,7 @@ Deploy across multiple environments combining on-premises infrastructure with pr
 
 ## Deployment Architecture
 
-![Complete ZenML Services diagram on top of Kubernetes](.gitbook/assets/full_zenml_infra.png)
+![Complete ZenML Services diagram on top of Kubernetes](.gitbook/assets/full_zenml_infra.avif)
 
 The diagram above illustrates a complete Self-hosted ZenML Pro deployment with all components running within your organization's VPC. This architecture ensures zero external communication while providing full enterprise MLOps capabilities.
 

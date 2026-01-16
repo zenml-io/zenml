@@ -17,7 +17,6 @@ layout:
 
 This guide provides step-by-step instructions for deploying ZenML Pro in a Hybrid setup using Kubernetes and Helm charts. In this deployment model, the Workspace Server runs in your infrastructure while the Control Plane is managed by ZenML.
 
-<!-- DIAGRAM: Hybrid deployment architecture showing Control Plane (ZenML) connected to Workspace Server (your K8s cluster), database, and workload manager pods -->
 
 **What you'll configure:**
 - Workspace Server with database connection
