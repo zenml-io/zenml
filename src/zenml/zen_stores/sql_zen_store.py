@@ -4480,12 +4480,16 @@ class SqlZenStore(BaseZenStore):
             )
 
             if (
-                logs_update.pipeline_run_id is None
-                and logs_update.step_run_id is None
+                logs_schema.pipeline_run_id is not None
+                or logs_schema.step_run_id is not None
             ):
-                raise ValueError(
-                    "At least one of `pipeline_run_id` or `step_run_id` must be set."
-                )
+                if (
+                    logs_schema.pipeline_run_id != logs_update.pipeline_run_id
+                    or logs_schema.step_run_id != logs_update.step_run_id
+                ):
+                    raise IllegalOperationError(
+                        "The logs entry is already associated with a different entity."
+                    )
 
             pipeline_run_id = logs_update.pipeline_run_id
 

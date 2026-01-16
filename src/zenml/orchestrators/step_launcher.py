@@ -295,6 +295,8 @@ class StepLauncher:
                 invocation_id=self._invocation_id,
                 dynamic_config=dynamic_config,
             )
+            if logs_enabled:
+                step_run_request.logs = logs_context.log_model.id
 
             try:
                 request_factory.populate_request(request=step_run_request)
@@ -313,7 +315,6 @@ class StepLauncher:
 
                 if logs_enabled:
                     logs_context.update(step_run=step_run)
-                    logs_context.attach(step_run)
 
                 self._step_run = step_run
                 if model_version := step_run.model_version:

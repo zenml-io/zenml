@@ -16,7 +16,7 @@
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
@@ -90,6 +90,22 @@ class LogsUpdate(BaseUpdate):
         default=None,
         title="The step run ID to associate the logs with.",
     )
+
+    @model_validator(mode="after")
+    def validate_association_ids(self) -> "LogsUpdate":
+        """Validate the IDs.
+
+        Raises:
+            ValueError: If both `pipeline_run_id` and `step_run_id` are not set.
+
+        Returns:
+            self
+        """
+        if self.pipeline_run_id is None and self.step_run_id is None:
+            raise ValueError(
+                "At least one of `pipeline_run_id` or `step_run_id` must be set."
+            )
+        return self
 
 
 # ------------------ Response Model ------------------
