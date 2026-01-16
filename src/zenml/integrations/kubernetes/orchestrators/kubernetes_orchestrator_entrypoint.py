@@ -19,7 +19,7 @@ import socket
 import threading
 import time
 from contextlib import nullcontext
-from typing import List, Optional, Tuple, cast
+from typing import Dict, List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -62,6 +62,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
     RunMetadataResource,
+    StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.step_run_utils import (
@@ -78,6 +79,7 @@ from zenml.utils.logging_utils import (
     is_pipeline_logging_enabled,
     setup_run_logging,
 )
+from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
 
@@ -327,7 +329,7 @@ def main() -> None:
             pipeline_run=pipeline_run,
             stack=active_stack,
         )
-        step_runs = {}
+        step_runs: Dict[str, StepRunResponse] = {}
 
         base_labels = {
             "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
@@ -338,6 +340,8 @@ def main() -> None:
             ),
         }
 
+        step_run_skip_hb_set = set()
+
         def _cache_step_run_if_possible(step_name: str) -> bool:
             if not step_run_request_factory.has_caching_enabled(step_name):
                 return False
@@ -346,7 +350,9 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(step_run_request)
+                step_run_request_factory.populate_request(
+                    step_run_request, step_runs=step_runs
+                )
             except Exception as e:
                 logger.error(
                     f"Failed to populate step run request for step {step_name}: {e}"
@@ -362,6 +368,39 @@ def main() -> None:
                 return True
 
             return False
+
+        def _maybe_publish_failed_step_run(step_name: str) -> None:
+            steps = Client().list_run_steps(
+                name=step_name, pipeline_run_id=pipeline_run.id
+            )
+            if steps.total > 0:
+                # Step run already exists, we don't need to publish a new one
+                return
+
+            step_run_request = step_run_request_factory.create_request(
+                step_name
+            )
+            try:
+                step_run_request_factory.populate_request(
+                    step_run_request, step_runs=step_runs
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to populate step run request for step `%s`: %s",
+                    step_name,
+                    e,
+                )
+                return
+
+            step_run_request.status = ExecutionStatus.FAILED
+            step_run_request.end_time = utc_now()
+
+            try:
+                Client().zen_store.create_run_step(step_run_request)
+            except Exception as e:
+                logger.error(
+                    "Failed to publish failed step run `%s`: %s", step_name, e
+                )
 
         startup_lock = threading.Lock()
         last_startup_time: float = 0.0
@@ -525,15 +564,22 @@ def main() -> None:
                 job_manifest=job_manifest,
             )
 
-            Client().create_run_metadata(
-                metadata={"step_jobs": {step_name: job_name}},
-                resources=[
-                    RunMetadataResource(
-                        id=pipeline_run.id,
-                        type=MetadataResourceTypes.PIPELINE_RUN,
-                    )
-                ],
-            )
+            try:
+                Client().create_run_metadata(
+                    metadata={"step_jobs": {step_name: job_name}},
+                    resources=[
+                        RunMetadataResource(
+                            id=pipeline_run.id,
+                            type=MetadataResourceTypes.PIPELINE_RUN,
+                        )
+                    ],
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to create run metadata for step `%s`: %s",
+                    step_name,
+                    str(e),
+                )
 
             node.metadata["job_name"] = job_name
 
@@ -615,11 +661,20 @@ def main() -> None:
         def is_node_heartbeat_unhealthy(node: Node) -> bool:
             from zenml.steps.heartbeat import is_heartbeat_unhealthy
 
+            if node.id in step_run_skip_hb_set:
+                return False
+
             sr_ = client.list_run_steps(
-                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=True
+                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=False
             )
 
             if sr_.items:
+                if (
+                    sr_.items[0].heartbeat_threshold is None
+                ):  # heartbeat disabled/unset - skip next checks
+                    step_run_skip_hb_set.add(node.id)
+                    return False
+
                 return is_heartbeat_unhealthy(
                     step_run_id=sr_.items[0].id,
                     status=sr_.items[0].status,
@@ -669,8 +724,12 @@ def main() -> None:
                     step_name,
                     error_message,
                 )
+                _maybe_publish_failed_step_run(step_name)
                 return NodeStatus.FAILED
-            elif is_node_heartbeat_unhealthy(node):
+            elif (
+                snapshot.pipeline_configuration.enable_heartbeat
+                and is_node_heartbeat_unhealthy(node)
+            ):
                 logger.error(
                     "Heartbeat for step `%s` indicates unhealthy status.",
                     step_name,

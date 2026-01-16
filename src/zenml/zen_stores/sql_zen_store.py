@@ -13,7 +13,11 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+from contextlib import nullcontext
+
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
+from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 
 try:
     import sqlalchemy  # noqa
@@ -45,6 +49,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    ContextManager,
     Dict,
     ForwardRef,
     List,
@@ -341,7 +346,7 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
-from zenml.utils import tag_utils, uuid_utils
+from zenml.utils import source_utils, tag_utils, uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -361,7 +366,6 @@ from zenml.zen_stores.dag_generator import DAGGeneratorHelper
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
-from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
     ActionSchema,
     APIKeySchema,
@@ -642,6 +646,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_pre_ping: bool = True
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
+    custom_backup_engine: Optional[str] = None
+    custom_backup_engine_config: Optional[Dict[str, Any]] = None
     # database backup directory
     backup_directory: str = Field(
         default_factory=lambda: os.path.join(
@@ -650,6 +656,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         )
     )
     backup_database: Optional[str] = None
+
+    mydumper_threads: Optional[int] = None
+    mydumper_compress: Optional[bool] = None
+    mydumper_extra_args: Optional[List[str]] = None
+    myloader_threads: Optional[int] = None
+    myloader_extra_args: Optional[List[str]] = None
 
     @field_validator("secrets_store")
     @classmethod
@@ -689,7 +701,48 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "backup strategy is set to use a backup database."
             )
 
+        if (
+            self.backup_strategy == DatabaseBackupStrategy.CUSTOM
+            and not self.custom_backup_engine
+        ):
+            raise ValueError(
+                "The `custom_backup_engine` attribute must also be set if the "
+                "backup strategy is set to use a custom backup engine."
+            )
+
         return self
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def validate_json_args(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate the secrets store configuration.
+
+        Args:
+            data: The values of the store configuration.
+
+        Returns:
+            The values of the store configuration.
+
+        Raises:
+            ValueError: if a JSON attribute value cannot be decoded.
+        """
+        for attr in [
+            "custom_backup_engine_config",
+            "mydumper_extra_args",
+            "myloader_extra_args",
+        ]:
+            value = data.get(attr)
+            if isinstance(value, str):
+                try:
+                    data[attr] = json.loads(value)
+                except json.JSONDecodeError:
+                    raise ValueError(
+                        f"The value set to the {attr} attribute is not a valid "
+                        "JSON string."
+                    )
+
+        return data
 
     @model_validator(mode="after")
     def _validate_url(self) -> "SqlZenStoreConfiguration":
@@ -978,7 +1031,7 @@ class SqlZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
-    _migration_utils: Optional[MigrationUtils] = None
+    _db_backup_engine: Optional[BaseDatabaseBackupEngine] = None
     _alembic: Optional[Alembic] = None
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
@@ -1028,18 +1081,18 @@ class SqlZenStore(BaseZenStore):
         return self._engine
 
     @property
-    def migration_utils(self) -> MigrationUtils:
-        """The migration utils.
+    def db_backup_engine(self) -> BaseDatabaseBackupEngine:
+        """The database backup engine.
 
         Returns:
-            The migration utils.
+            The database backup engine.
 
         Raises:
-            ValueError: If the store is not initialized.
+            ValueError: If the database backup engine is not initialized.
         """
-        if not self._migration_utils:
-            raise ValueError("Store not initialized")
-        return self._migration_utils
+        if not self._db_backup_engine:
+            raise ValueError("Database backup engine not initialized")
+        return self._db_backup_engine
 
     @property
     def alembic(self) -> Alembic:
@@ -1266,11 +1319,7 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
-        self._migration_utils = MigrationUtils(
-            url=url,
-            connect_args=connect_args,
-            engine_args=engine_args,
-        )
+        self._db_backup_engine = self.initialize_database_backup_engine()
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
         # automatically create the database.
@@ -1289,8 +1338,8 @@ class SqlZenStore(BaseZenStore):
             self.config.driver == SQLDatabaseDriver.MYSQL
             and self.config.database
         ):
-            if not self.migration_utils.database_exists():
-                self.migration_utils.create_database()
+            if not self.db_backup_engine.database_exists():
+                self.db_backup_engine.create_database()
 
         self._alembic = Alembic(self.engine)
 
@@ -1361,210 +1410,84 @@ class SqlZenStore(BaseZenStore):
         # Send user enriched events that we missed due to a bug in 0.57.0
         self._send_user_enriched_events_if_necessary()
 
-    def _get_db_backup_file_path(self) -> str:
-        """Get the path to the database backup file.
-
-        Returns:
-            The path to the configured database backup file.
-        """
-        if self.config.driver == SQLDatabaseDriver.SQLITE:
-            return os.path.join(
-                self.config.backup_directory,
-                # Add the -backup suffix to the database filename
-                ZENML_SQLITE_DB_FILENAME[:-3] + "-backup.db",
-            )
-
-        # For a MySQL database, we need to dump the database to a JSON
-        # file
-        return os.path.join(
-            self.config.backup_directory,
-            f"{self.engine.url.database}-backup.json",
-        )
-
-    def backup_database(
+    def initialize_database_backup_engine(
         self,
         strategy: Optional[DatabaseBackupStrategy] = None,
         location: Optional[str] = None,
-        overwrite: bool = False,
-    ) -> Tuple[str, Any]:
-        """Backup the database.
+    ) -> BaseDatabaseBackupEngine:
+        """Initialize the database backup engine.
 
         Args:
-            strategy: Custom backup strategy to use. If not set, the backup
+            strategy: Backup strategy to use. If not set, the backup
                 strategy from the store configuration will be used.
             location: Custom target location to backup the database to. If not
                 set, the configured backup location will be used. Depending on
                 the backup strategy, this can be a file path or a database name.
-            overwrite: Whether to overwrite an existing backup if it exists.
-                If set to False, the existing backup will be reused.
 
         Returns:
-            The location where the database was backed up to and an accompanying
-            user-friendly message that describes the backup location, or None
-            if no backup was created (i.e. because the backup already exists).
+            The initialized database backup engine.
 
         Raises:
-            ValueError: If the backup database name is not set when the backup
-                database is requested or if the backup strategy is invalid.
+            ValueError: If the backup strategy or arguments are invalid.
         """
         strategy = strategy or self.config.backup_strategy
+
+        backup_engine_class: Type[BaseDatabaseBackupEngine]
 
         if (
             strategy == DatabaseBackupStrategy.DUMP_FILE
             or self.config.driver == SQLDatabaseDriver.SQLITE
         ):
-            dump_file = location or self._get_db_backup_file_path()
-
-            if not overwrite and os.path.isfile(dump_file):
-                logger.warning(
-                    f"A previous backup file already exists at '{dump_file}'. "
-                    "Reusing the existing backup."
-                )
-            else:
-                self.migration_utils.backup_database_to_file(
-                    dump_file=dump_file
-                )
-            return f"the '{dump_file}' backup file", dump_file
-        elif strategy == DatabaseBackupStrategy.DATABASE:
-            backup_db_name = location or self.config.backup_database
-            if not backup_db_name:
-                raise ValueError(
-                    "The backup database name must be set in the store "
-                    "configuration to use the backup database strategy."
-                )
-
-            if not overwrite and self.migration_utils.database_exists(
-                backup_db_name
-            ):
-                logger.warning(
-                    "A previous backup database already exists at "
-                    f"'{backup_db_name}'. Reusing the existing backup."
-                )
-            else:
-                self.migration_utils.backup_database_to_db(
-                    backup_db_name=backup_db_name
-                )
-            return f"the '{backup_db_name}' backup database", backup_db_name
-        elif strategy == DatabaseBackupStrategy.IN_MEMORY:
-            return (
-                "memory",
-                self.migration_utils.backup_database_to_memory(),
+            from zenml.zen_stores.migrations.backup.sqlalchemy import (
+                FileDatabaseBackupEngine,
             )
 
+            backup_engine_class = FileDatabaseBackupEngine
+
+        elif strategy == DatabaseBackupStrategy.DATABASE:
+            from zenml.zen_stores.migrations.backup.sqlalchemy import (
+                DBCloneDatabaseBackupEngine,
+            )
+
+            backup_engine_class = DBCloneDatabaseBackupEngine
+
+        elif strategy == DatabaseBackupStrategy.IN_MEMORY:
+            from zenml.zen_stores.migrations.backup.sqlalchemy import (
+                InMemoryDatabaseBackupEngine,
+            )
+
+            backup_engine_class = InMemoryDatabaseBackupEngine
+
+        elif strategy == DatabaseBackupStrategy.MYDUMPER:
+            from zenml.zen_stores.migrations.backup.mydumper import (
+                MyDumperDatabaseBackupEngine,
+            )
+
+            backup_engine_class = MyDumperDatabaseBackupEngine
+        elif strategy == DatabaseBackupStrategy.DISABLED:
+            from zenml.zen_stores.migrations.backup.base import (
+                DisabledDatabaseBackupEngine,
+            )
+
+            backup_engine_class = DisabledDatabaseBackupEngine
+        elif strategy == DatabaseBackupStrategy.CUSTOM:
+            custom_backup_engine = self.config.custom_backup_engine
+            if custom_backup_engine is None:
+                raise ValueError("Custom backup engine not set.")
+
+            try:
+                backup_engine_class = source_utils.load(custom_backup_engine)
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to load custom backup engine `{custom_backup_engine}`"
+                ) from e
         else:
             raise ValueError(f"Invalid backup strategy: {strategy}.")
 
-    def restore_database(
-        self,
-        strategy: Optional[DatabaseBackupStrategy] = None,
-        location: Optional[Any] = None,
-        cleanup: bool = False,
-    ) -> None:
-        """Restore the database.
-
-        Args:
-            strategy: Custom backup strategy to use. If not set, the backup
-                strategy from the store configuration will be used.
-            location: Custom target location to restore the database from. If
-                not set, the configured backup location will be used. Depending
-                on the backup strategy, this can be a file path, a database
-                name or an in-memory database representation.
-            cleanup: Whether to cleanup the backup after restoring the database.
-
-        Raises:
-            ValueError: If the backup database name is not set when the backup
-                database is requested or if the backup strategy is invalid.
-        """
-        strategy = strategy or self.config.backup_strategy
-
-        if (
-            strategy == DatabaseBackupStrategy.DUMP_FILE
-            or self.config.driver == SQLDatabaseDriver.SQLITE
-        ):
-            dump_file = location or self._get_db_backup_file_path()
-            self.migration_utils.restore_database_from_file(
-                dump_file=dump_file
-            )
-        elif strategy == DatabaseBackupStrategy.DATABASE:
-            backup_db_name = location or self.config.backup_database
-            if not backup_db_name:
-                raise ValueError(
-                    "The backup database name must be set in the store "
-                    "configuration to use the backup database strategy."
-                )
-
-            self.migration_utils.restore_database_from_db(
-                backup_db_name=backup_db_name
-            )
-        elif strategy == DatabaseBackupStrategy.IN_MEMORY:
-            if location is None or not isinstance(location, list):
-                raise ValueError(
-                    "The in-memory database representation must be provided "
-                    "to restore the database from an in-memory backup."
-                )
-            self.migration_utils.restore_database_from_memory(db_dump=location)
-
-        else:
-            raise ValueError(f"Invalid backup strategy: {strategy}.")
-
-        if cleanup:
-            self.cleanup_database_backup()
-
-    def cleanup_database_backup(
-        self,
-        strategy: Optional[DatabaseBackupStrategy] = None,
-        location: Optional[Any] = None,
-    ) -> None:
-        """Delete the database backup.
-
-        Args:
-            strategy: Custom backup strategy to use. If not set, the backup
-                strategy from the store configuration will be used.
-            location: Custom target location to delete the database backup
-                from. If not set, the configured backup location will be used.
-                Depending on the backup strategy, this can be a file path or a
-                database name.
-
-        Raises:
-            ValueError: If the backup database name is not set when the backup
-                database is requested.
-        """
-        strategy = strategy or self.config.backup_strategy
-
-        if (
-            strategy == DatabaseBackupStrategy.DUMP_FILE
-            or self.config.driver == SQLDatabaseDriver.SQLITE
-        ):
-            dump_file = location or self._get_db_backup_file_path()
-            if dump_file is not None and os.path.isfile(dump_file):
-                try:
-                    os.remove(dump_file)
-                except OSError:
-                    logger.warning(
-                        f"Failed to cleanup database dump file {dump_file}."
-                    )
-                else:
-                    logger.info(
-                        f"Successfully cleaned up database dump file "
-                        f"{dump_file}."
-                    )
-        elif strategy == DatabaseBackupStrategy.DATABASE:
-            backup_db_name = location or self.config.backup_database
-
-            if not backup_db_name:
-                raise ValueError(
-                    "The backup database name must be set in the store "
-                    "configuration to use the backup database strategy."
-                )
-            if self.migration_utils.database_exists(backup_db_name):
-                # Drop the backup database
-                self.migration_utils.drop_database(
-                    database=backup_db_name,
-                )
-                logger.info(
-                    f"Successfully cleaned up backup database "
-                    f"{backup_db_name}."
-                )
+        return backup_engine_class(
+            config=self.config,
+            location=location,
+        )
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the python package.
@@ -1621,94 +1544,20 @@ class SqlZenStore(BaseZenStore):
                 self.config.backup_strategy != DatabaseBackupStrategy.DISABLED
                 and set(current_revisions) != set(head_revisions)
             )
-            backup_location: Optional[Any] = None
-            backup_location_msg: Optional[str] = None
 
+            backup_context: ContextManager[None] = nullcontext()
             if backup_enabled:
+                backup_context = (
+                    self.db_backup_engine.backup_database_context()
+                )
+
+            with backup_context:
                 try:
-                    logger.info("Backing up the database before migration.")
-                    (
-                        backup_location_msg,
-                        backup_location,
-                    ) = self.backup_database(overwrite=True)
+                    self.alembic.upgrade()
                 except Exception as e:
-                    # The database backup feature was not entirely functional
-                    # in ZenML 0.56.3 and earlier, due to inconsistencies in the
-                    # database schema. If the database is at version 0.56.3
-                    # or earlier and if the backup fails, we only log the
-                    # exception and leave the upgrade process to proceed.
-                    allow_backup_failures = False
-                    try:
-                        if version.parse(
-                            current_revisions[0]
-                        ) <= version.parse("0.56.3"):
-                            allow_backup_failures = True
-                    except version.InvalidVersion:
-                        # This can happen if the database is not currently
-                        # stamped with an official ZenML version (e.g. in
-                        # development environments).
-                        pass
-
-                    if allow_backup_failures:
-                        logger.exception(
-                            "Failed to backup the database. The database "
-                            "upgrade will proceed without a backup."
-                        )
-                    else:
-                        raise RuntimeError(
-                            f"Failed to backup the database: {str(e)}. "
-                            "Please check the logs for more details. "
-                            "If you would like to disable the database backup "
-                            "functionality, set the `backup_strategy` attribute "
-                            "of the store configuration to `disabled`."
-                        ) from e
-                else:
-                    if backup_location is not None:
-                        logger.info(
-                            "Database successfully backed up to "
-                            f"{backup_location_msg}. If something goes wrong "
-                            "with the upgrade, ZenML will attempt to restore "
-                            "the database from this backup automatically."
-                        )
-
-            try:
-                self.alembic.upgrade()
-            except Exception as e:
-                if backup_enabled and backup_location:
-                    logger.exception(
-                        "Failed to migrate the database. Attempting to restore "
-                        f"the database from {backup_location_msg}."
-                    )
-                    try:
-                        self.restore_database(location=backup_location)
-                    except Exception:
-                        logger.exception(
-                            "Failed to restore the database from "
-                            f"{backup_location_msg}. Please "
-                            "check the logs for more details. You might need "
-                            "to restore the database manually."
-                        )
-                    else:
-                        raise RuntimeError(
-                            "The database migration failed, but the database "
-                            "was successfully restored from the backup. "
-                            "You can safely retry the upgrade or revert to "
-                            "the previous version of ZenML. Please check the "
-                            "logs for more details."
-                        ) from e
-                raise RuntimeError(
-                    f"The database migration failed: {str(e)}"
-                ) from e
-
-            else:
-                # We always remove the backup after a successful upgrade,
-                # not just to avoid cluttering the disk, but also to avoid
-                # reusing an outdated database from the backup in case of
-                # future upgrade failures.
-                try:
-                    self.cleanup_database_backup()
-                except Exception:
-                    logger.exception("Failed to cleanup the database backup.")
+                    raise RuntimeError(
+                        f"The database migration failed: {str(e)}"
+                    ) from e
 
         elif self.alembic.db_is_empty():
             # Case 1: the database is empty. We can just create the
@@ -6531,6 +6380,17 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         return index
 
+    @staticmethod
+    def _get_enable_run_heartbeat(snapshot: PipelineSnapshotSchema) -> bool:
+        value = json.loads(snapshot.pipeline_configuration).get(
+            "enable_heartbeat"
+        )
+
+        if value is None:
+            return True
+        else:
+            return bool(value)
+
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -6551,6 +6411,7 @@ class SqlZenStore(BaseZenStore):
                 can not be created.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
+
         snapshot = self._get_reference_schema_by_id(
             resource=pipeline_run,
             reference_schema=PipelineSnapshotSchema,
@@ -6561,8 +6422,12 @@ class SqlZenStore(BaseZenStore):
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )
+
         new_run = PipelineRunSchema.from_request(
-            pipeline_run, pipeline_id=snapshot.pipeline_id, index=index
+            pipeline_run,
+            pipeline_id=snapshot.pipeline_id,
+            index=index,
+            enable_heartbeat=self._get_enable_run_heartbeat(snapshot),
         )
 
         session.add(new_run)
@@ -7179,6 +7044,33 @@ class SqlZenStore(BaseZenStore):
             schema=PipelineRunSchema, filter_model=filter_model
         )
 
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables heartbeat for pipeline and all its running steps.
+
+        Args:
+            run_id: The id of the pipeline run.
+        """
+        with Session(self.engine) as session:
+            existing_run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+
+            existing_run.enable_heartbeat = False
+            session.commit()
+
+            # set heartbeat threshold to null for all created steps
+
+            stmt = (
+                update(StepRunSchema)
+                .where(col(StepRunSchema.pipeline_run_id) == str(run_id))
+                .values(heartbeat_threshold=None)
+            )
+
+            session.execute(stmt)
+            session.commit()
+
     # ----------------------------- Run Metadata -----------------------------
 
     def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
@@ -7367,6 +7259,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated schedule.
+
+        Raises:
+            IllegalOperationError: If the update cannot be applied (e.g. schedule is archived).
         """
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
@@ -7375,6 +7270,11 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ScheduleSchema,
                 session=session,
             )
+
+            if existing_schedule.is_archived:
+                raise IllegalOperationError(
+                    "Archived schedules can not be updated."
+                )
 
             self._verify_name_uniqueness(
                 resource=schedule_update,
@@ -7390,11 +7290,12 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
-    def delete_schedule(self, schedule_id: UUID) -> None:
+    def delete_schedule(self, schedule_id: UUID, soft: bool = False) -> None:
         """Deletes a schedule.
 
         Args:
             schedule_id: The ID of the schedule to delete.
+            soft: Soft deletion will archive the schedule.
         """
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
@@ -7404,8 +7305,15 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Delete the schedule
-            session.delete(schedule)
+            if not soft:
+                # Hard delete the schedule
+                session.delete(schedule)
+            else:
+                # Soft deletion - set is_archived
+                schedule.is_archived = True
+                schedule.active = False
+                session.add(schedule)
+
             session.commit()
 
     # ------------------------- Secrets -------------------------
@@ -10145,7 +10053,7 @@ class SqlZenStore(BaseZenStore):
             # cached top-level heartbeat config property (for fast validation).
             step_schema.heartbeat_threshold = (
                 step_config.config.heartbeat_healthy_threshold
-                if step_config.spec.enable_heartbeat
+                if step_config.spec.enable_heartbeat and run.enable_heartbeat
                 else None
             )
 
@@ -10479,8 +10387,76 @@ class SqlZenStore(BaseZenStore):
 
             return StepHeartbeatResponse(
                 id=existing_step_run.id,
-                status=existing_step_run.status,
+                status=ExecutionStatus(existing_step_run.status),
                 latest_heartbeat=existing_step_run.latest_heartbeat,
+                heartbeat_enabled=existing_step_run.heartbeat_threshold
+                is not None,
+            )
+
+    def validate_and_update_heartbeat(
+        self,
+        step_run_id: UUID,
+        token_run_id: UUID | None = None,
+        token_schedule_id: UUID | None = None,
+    ) -> StepHeartbeatResponse:
+        """Updates & Validates a step run heartbeat value.
+
+        Lightweight function for fast updates as heartbeats may be received at bulk.
+
+        Args:
+            step_run_id: ID of the step run.
+            token_run_id: Pipeline run id of the auth context
+            token_schedule_id: Schedule id of the auth context
+
+        Returns:
+            Step heartbeat response (minimal info, id, status & latest_heartbeat).
+
+        Raises:
+            AuthorizationException: If token identifiers do not much step information.
+            IllegalOperationError: If update heartbeat is called for a finished step.
+        """
+        with Session(self.engine) as session:
+            step_run = self._get_schema_by_id(
+                resource_id=step_run_id,
+                schema_class=StepRunSchema,
+                session=session,
+            )
+
+            if ExecutionStatus(step_run.status).is_finished:
+                raise IllegalOperationError(
+                    "Can not update heartbeat for finished steps."
+                )
+
+            run = self._get_schema_by_id(
+                resource_id=step_run.pipeline_run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+
+            if token_run_id:
+                if step_run.pipeline_run_id != token_run_id:
+                    raise AuthorizationException(
+                        f"Authentication token provided is invalid for step: {step_run_id}"
+                    )
+            elif token_schedule_id:
+                if not (run.schedule_id == token_schedule_id):
+                    raise AuthorizationException(
+                        f"Authentication token provided is invalid for step: {step_run_id}"
+                    )
+            else:
+                # un-scoped token. Soon to-be-deprecated, we will ignore validation temporarily.
+                pass
+
+            latest_heartbeat = datetime.now(timezone.utc)
+            step_run.latest_heartbeat = latest_heartbeat
+            session.commit()
+
+            return StepHeartbeatResponse(
+                id=step_run_id,
+                status=ExecutionStatus(run.status),
+                latest_heartbeat=latest_heartbeat,
+                heartbeat_enabled=step_run.heartbeat_threshold is not None,
+                pipeline_run_status=ExecutionStatus(run.status),
             )
 
     def update_run_step(
@@ -10878,10 +10854,7 @@ class SqlZenStore(BaseZenStore):
             is_dynamic_pipeline=is_dynamic_pipeline,
         )
 
-        if new_status == pipeline_run.status or (
-            pipeline_run.is_placeholder_run() and not new_status.is_finished
-        ):
-            # The status hasn't changed -> no need to update the status.
+        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
             # If the pipeline run is a placeholder run (=no step has been started
             # for the run yet), this means the orchestrator hasn't started
             # running yet, and this method is most likely being called as

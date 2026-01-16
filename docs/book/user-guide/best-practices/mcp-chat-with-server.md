@@ -55,25 +55,51 @@ It also allows you to trigger new pipeline runs through existing run templates.
 
 ## Getting Started
 
-For the most up-to-date setup instructions and code, please refer to the [ZenML\
-MCP Server GitHub repository](https://github.com/zenml-io/mcp-zenml). We\
-recommend using the `uv` package manager to install the dependencies since it's\
-the most reliable and fastest setup experience.
+The easiest way to set up the ZenML MCP Server is through the **MCP Settings page** in the ZenML dashboard. This provides a guided experience for configuring your IDE or AI assistant to connect to your ZenML server.
 
-The setup process for the ZenML MCP Server is straightforward:‍
+### Using the Dashboard Settings Page (Recommended)
 
-### Prerequisites:
+Both ZenML OSS and ZenML Pro include an MCP settings page that generates the correct configuration for your environment.
 
-* Access to a ZenML Cloud server
+![MCP Settings Page](../../.gitbook/assets/mcp-settings-page.gif)
+
+Navigate to **Settings → MCP** in your ZenML dashboard to access the configuration page. The page provides:
+
+* **Token configuration**: Enter or generate the API token needed for authentication
+* **IDE-specific instructions**: Tabbed configuration for VS Code, Claude Desktop, Cursor, Claude Code, OpenAI Codex, and other MCP clients
+* **Multiple installation methods**: Deep links for automatic setup, CLI commands, and manual JSON configuration options
+* **Docker and uv options**: Choose your preferred runtime for the MCP server
+
+#### ZenML Pro vs OSS Setup Differences
+
+| Feature | ZenML Pro | ZenML OSS |
+|---------|-----------|-----------|
+| Token generation | One-click PAT generation within the settings page | Paste a service account token (create via Settings → Service Accounts) |
+| Project selection | Select which project to connect to | Single project (automatic) |
+| Configuration output | Includes project ID in generated configs | Simplified configuration |
+
+{% hint style="info" %}
+**ZenML Pro users** can generate a Personal Access Token (PAT) directly from the MCP settings page with a single click. The token will be automatically included in the generated configuration snippets.
+
+**ZenML OSS users** need to first create a service account token via **Settings → Service Accounts**, then paste it into the MCP settings page.
+{% endhint %}
+
+### Manual Setup
+
+For manual setup or the most up-to-date instructions, please refer to the [ZenML MCP Server GitHub repository](https://github.com/zenml-io/mcp-zenml). We recommend using the `uv` package manager to install the dependencies since it's the most reliable and fastest setup experience.
+
+#### Prerequisites:
+
+* Access to a ZenML server (Cloud or self-hosted)
 * [`uv`](https://docs.astral.sh/uv/) installed locally
 * A local clone of the repository
 
-### Configuration:
+#### Configuration:
 
 * Create an MCP config file with your ZenML server details
-* Configure your preferred MCP client (Claude Desktop or Cursor)
+* Configure your preferred MCP client (Claude Desktop, Cursor, VS Code, etc.)
 
-For detailed setup instructions, please refer to the [GitHub repository](https://github.com/zenml-io/mcp-zenml).
+For detailed manual setup instructions, please refer to the [GitHub repository](https://github.com/zenml-io/mcp-zenml).
 
 ## Example Usage
 

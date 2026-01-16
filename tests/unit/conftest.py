@@ -439,6 +439,7 @@ def sample_pipeline_run(
             config=PipelineConfiguration(name="aria_pipeline"),
             is_templatable=False,
             steps_substitutions=defaultdict(lambda: substitutions.copy()),
+            enable_heartbeat=True,
         ),
         resources=PipelineRunResponseResources(tags=[]),
     )

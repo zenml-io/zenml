@@ -440,7 +440,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
             if snapshot.schedule:
                 # delete created DB schedules
-                Client().zen_store.delete_schedule(snapshot.schedule.id)
+                Client().zen_store.delete_schedule(
+                    snapshot.schedule.id, soft=False
+                )
 
             raise e
         finally:

@@ -31,7 +31,7 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        self.download_code_if_necessary()
+        self.prepare_code_environment()
 
         orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(snapshot=snapshot)

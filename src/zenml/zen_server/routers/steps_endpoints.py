@@ -16,7 +16,7 @@
 from typing import Any, Dict, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -28,7 +28,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import AuthorizationException
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.models import (
     Page,
@@ -210,7 +209,7 @@ def update_step(
     "/{step_run_id}" + HEARTBEAT,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper(deduplicate=True)
+@async_fastapi_endpoint_wrapper(deduplicate=False)
 def update_heartbeat(
     step_run_id: UUID,
     auth_context: AuthContext = Security(authorize),
@@ -223,47 +222,12 @@ def update_heartbeat(
 
     Returns:
         The step heartbeat response (id, status, last_heartbeat).
-
-    Raises:
-        HTTPException: If the step is finished raises with 422 status code.
     """
-    step = zen_store().get_run_step(step_run_id, hydrate=False)
-
-    if step.status.is_finished:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Step {step.id} is finished - can not update heartbeat.",
-        )
-
-    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
-
-    def validate_token_access(ctx: AuthContext) -> None:
-        token_run_id = ctx.access_token.pipeline_run_id  # type: ignore[union-attr]
-        token_schedule_id = ctx.access_token.schedule_id  # type: ignore[union-attr]
-
-        if token_run_id:
-            if step.pipeline_run_id != token_run_id:
-                raise AuthorizationException(
-                    f"Authentication token provided is invalid for step: {step.id}"
-                )
-        elif token_schedule_id:
-            if not (
-                pipeline_run.schedule
-                and pipeline_run.schedule.id == token_schedule_id
-            ):
-                raise AuthorizationException(
-                    f"Authentication token provided is invalid for step: {step.id}"
-                )
-        else:
-            # un-scoped token. Soon to-be-deprecated, we will ignore validation temporarily.
-            pass
-
-    validate_token_access(ctx=auth_context)
-
-    hb = zen_store().update_step_heartbeat(step_run_id=step_run_id)
-    hb.pipeline_run_status = pipeline_run.status
-
-    return hb
+    return zen_store().validate_and_update_heartbeat(
+        step_run_id=step_run_id,
+        token_run_id=auth_context.access_token.pipeline_run_id,  # type: ignore[union-attr]
+        token_schedule_id=auth_context.access_token.schedule_id,  # type: ignore[union-attr]
+    )
 
 
 @router.get(

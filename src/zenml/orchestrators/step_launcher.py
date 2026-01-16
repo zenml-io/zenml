@@ -585,7 +585,9 @@ class StepLauncher:
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
-        runner = StepRunner(step=self._step, stack=self._stack)
+        runner = StepRunner(
+            step=self._step, stack=self._stack, publish_exception_info=False
+        )
         runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,

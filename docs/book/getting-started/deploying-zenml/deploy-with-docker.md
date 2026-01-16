@@ -467,13 +467,20 @@ Several database backup strategies are supported, depending on where and how the
 * `in-memory` - the database schema and data are stored in memory. This is the fastest backup strategy, but the backup is not persisted across container restarts, so no manual intervention is possible in case the automatic DB recovery fails after a failed DB migration. Adequate memory resources should be allocated to the ZenML server container when using this backup strategy with larger databases. This is the default backup strategy.
 * `database` - the database is copied to a backup database in the same database server. This requires the `ZENML_STORE_BACKUP_DATABASE` environment variable to be set to the name of the backup database. This backup strategy is only supported for MySQL compatible databases and the user specified in the database URL must have permissions to manage (create, drop, and modify) the backup database in addition to the main database.
 * `dump-file` - the database schema and data are dumped to a filesystem location inside the ZenML server container. This location can be customized by means of the `ZENML_STORE_BACKUP_DIRECTORY` environment variable. When this strategy is configured, users should mount a host directory in the container and point the `ZENML_STORE_BACKUP_DIRECTORY` variable to where it's mounted inside the container. If a host directory is not mounted, the dump file will be stored in the container's filesystem and will be lost when the container is removed.
+* `mydumper` - the database is backed up using mydumper/myloader. This requires the `mydumper` and `myloader` utilities to be installed in the ZenML server container. The `ZENML_STORE_MYDUMPER_THREADS`, `ZENML_STORE_MYDUMPER_COMPRESS`, `ZENML_STORE_MYDUMPER_EXTRA_ARGS`, `ZENML_STORE_MYLOADER_THREADS`, and `ZENML_STORE_MYLOADER_EXTRA_ARGS` environment variables can be used to configure the backup and restore processes.
+* `custom` - use a custom backup engine. This requires the `ZENML_STORE_CUSTOM_BACKUP_ENGINE` environment variable to be set to the class path of the custom backup engine. The class should extend from the `zenml.zen_stores.migrations.backup.base_backup_engine.BaseBackupEngine` base class and be importable from the container image that you are using for the ZenML server. Arguments for the custom backup engine can be passed using the `ZENML_STORE_CUSTOM_BACKUP_ENGINE_CONFIG` environment variable.
 
 The following additional rules are applied concerning the creation and lifetime of the backup:
 
 * a backup is not attempted if the database doesn't need to undergo a migration (e.g. when the ZenML server is upgraded to a new version that doesn't require a database schema change or if the ZenML version doesn't change at all).
-* a backup file or database is created before every database migration attempt (i.e. when the container starts). If a backup already exists (i.e. persisted in a mounted host directory or backup database), it is overwritten.
+* a backup file or database is created before every database migration attempt (i.e. when the container starts). If a backup already exists (i.e. persisted in a mounted host directory or backup database), it is NOT overwritten. Instead, the existing backup is used to rollback the database to the previous state in case the migration fails again.
 * the persistent backup file or database is cleaned up after the migration is completed successfully or if the database doesn't need to undergo a migration. This includes backups created by previous failed migration attempts.
 * the persistent backup file or database is NOT cleaned up after a failed migration. This allows the user to manually inspect and/or apply the backup if the automatic recovery fails.
+
+{% hint style="warning" %}
+When running in production where database sizes are large, you should use the `mydumper` backup strategy or write
+your own custom backup engine. The other backup strategies are not recommended because they are inefficient and will take a long time and consume a lot of resources to handle large databases.
+{% endhint %}
 
 The following example shows how to deploy the ZenML server to use a mounted host directory to persist the database backup file during a database migration:
 

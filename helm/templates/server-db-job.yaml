@@ -65,7 +65,7 @@ spec:
         {{- else }}
           emptyDir: {}
         {{- end }}
-      {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
+      {{- if or (eq .Values.zenml.database.backupStrategy "dump-file") (eq .Values.zenml.database.backupStrategy "mydumper") }}
         # define a volume that will hold a backup of the database
         - name: db-backup
         # if a storage PVC is configured, then use it
@@ -136,7 +136,7 @@ spec:
           volumeMounts:
             - name: zenml-config
               mountPath: /zenml/.zenconfig
-          {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
+          {{- if or (eq .Values.zenml.database.backupStrategy "dump-file") (eq .Values.zenml.database.backupStrategy "mydumper") }}
             - name: db-backup
               mountPath: /backups
           {{- end }}
