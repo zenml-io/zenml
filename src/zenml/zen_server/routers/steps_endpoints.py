@@ -22,13 +22,13 @@ from zenml.constants import (
     API,
     HEARTBEAT,
     LOGS,
+    LOGS_MAX_ENTRIES_PER_REQUEST,
     STATUS,
     STEP_CONFIGURATION,
     STEPS,
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.models import (
     Page,
     StepRunFilter,
@@ -321,7 +321,7 @@ def get_step_logs(
             return fetch_logs(
                 logs=logs,
                 zen_store=store,
-                limit=MAX_ENTRIES_PER_REQUEST,
+                limit=LOGS_MAX_ENTRIES_PER_REQUEST,
             )
 
     raise KeyError(f"No logs found for source '{source}' in step {step_id}")
