@@ -11,7 +11,7 @@ This section covers upgrading ZenML Pro components for all deployment types. Eac
 Always upgrade the Control Plane first, then upgrade Workspace Servers. This ensures compatibility and prevents potential issues.
 {% endhint %}
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Control Plane</strong></td><td>Upgrade procedures for the Control Plane across SaaS, Hybrid, and Self-hosted deployments.</td><td><a href="upgrades-control-plane.md">upgrades-control-plane.md</a></td></tr><tr><td><strong>Workspace Server</strong></td><td>Upgrade procedures for Workspace Servers across all deployment scenarios.</td><td><a href="upgrades-workspace-server.md">upgrades-workspace-server.md</a></td></tr><tr><td><strong>Workload Manager</strong></td><td>Upgrade procedures for Workload Managers and runner images.</td><td><a href="upgrades-workload-manager.md">upgrades-workload-manager.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Control Plane</strong></td><td>Upgrade procedures for the Control Plane across SaaS, Hybrid, and Self-hosted deployments.</td><td><a href="upgrades-control-plane.md">upgrades-control-plane.md</a></td></tr><tr><td><strong>Workspace Server</strong></td><td>Upgrade procedures for Workspace Servers across all deployment scenarios (includes Workload Manager updates).</td><td><a href="upgrades-workspace-server.md">upgrades-workspace-server.md</a></td></tr></tbody></table>
 
 ## Before You Upgrade
 
