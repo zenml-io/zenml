@@ -241,8 +241,8 @@ class BaseEntrypointConfiguration(ABC):
         snapshot_id = UUID(self.entrypoint_args[SNAPSHOT_ID_OPTION])
         return Client().zen_store.get_snapshot(snapshot_id=snapshot_id)
 
-    def download_code_if_necessary(self) -> None:
-        """Downloads user code if necessary.
+    def prepare_code_environment(self) -> None:
+        """Prepares the code environment.
 
         Raises:
             CustomFlavorImportError: If the artifact store flavor can't be
@@ -250,43 +250,54 @@ class BaseEntrypointConfiguration(ABC):
             RuntimeError: If the current environment requires code download
                 but the snapshot does not have a reference to any code.
         """
-        if not self.should_download_code:
-            return
+        # Change the working directory to make sure we're in the correct
+        # directory where the files in the Docker image should be included.
+        # This is necessary as some services overwrite the working directory
+        # configured in the Docker image itself.
+        os.makedirs("/app", exist_ok=True)
+        os.chdir("/app")
 
-        if code_path := self.snapshot.code_path:
-            # Load the artifact store not from the active stack but separately.
-            # This is required in case the stack has custom flavor components
-            # (other than the artifact store) for which the flavor
-            # implementations will only be available once the download finishes.
-            try:
-                artifact_store = self._load_active_artifact_store()
-            except CustomFlavorImportError as e:
-                raise CustomFlavorImportError(
-                    "Failed to import custom artifact store flavor. The "
-                    "artifact store flavor is needed to download your code, "
-                    "but it looks like it might be part of the files "
-                    "that we're trying to download. If this is the case, you "
-                    "should disable downloading code from the artifact store "
-                    "using `DockerSettings(allow_download_from_artifact_store=False)` "
-                    "or make sure the artifact flavor files are included in "
-                    "Docker image by using a custom parent image or installing "
-                    "them as part of a pip dependency."
-                ) from e
-            code_utils.download_code_from_artifact_store(
-                code_path=code_path, artifact_store=artifact_store
-            )
-        elif code_reference := self.snapshot.code_reference:
-            # TODO: This might fail if the code repository had unpushed changes
-            # at the time the pipeline run was started.
-            self.download_code_from_code_repository(
-                code_reference=code_reference
-            )
-        else:
-            raise RuntimeError(
-                "Code download required but no code reference or path provided."
-            )
+        if self.should_download_code:
+            if code_path := self.snapshot.code_path:
+                # Load the artifact store not from the active stack but separately.
+                # This is required in case the stack has custom flavor components
+                # (other than the artifact store) for which the flavor
+                # implementations will only be available once the download finishes.
+                try:
+                    artifact_store = self._load_active_artifact_store()
+                except CustomFlavorImportError as e:
+                    raise CustomFlavorImportError(
+                        "Failed to import custom artifact store flavor. The "
+                        "artifact store flavor is needed to download your code, "
+                        "but it looks like it might be part of the files "
+                        "that we're trying to download. If this is the case, you "
+                        "should disable downloading code from the artifact store "
+                        "using `DockerSettings(allow_download_from_artifact_store=False)` "
+                        "or make sure the artifact flavor files are included in "
+                        "Docker image by using a custom parent image or installing "
+                        "them as part of a pip dependency."
+                    ) from e
+                code_utils.download_code_from_artifact_store(
+                    code_path=code_path, artifact_store=artifact_store
+                )
+            elif code_reference := self.snapshot.code_reference:
+                # TODO: This might fail if the code repository had unpushed changes
+                # at the time the pipeline run was started.
+                self.download_code_from_code_repository(
+                    code_reference=code_reference
+                )
+            else:
+                raise RuntimeError(
+                    "Code download required but no code reference or path provided."
+                )
 
-        logger.info("Code download finished.")
+            logger.info("Code download finished.")
+
+        # If the working directory is not in the sys.path, we include it to make
+        # sure user code gets correctly imported.
+        cwd = os.getcwd()
+        if cwd not in sys.path:
+            sys.path.insert(0, cwd)
 
     def download_code_from_code_repository(
         self, code_reference: "CodeReferenceResponse"

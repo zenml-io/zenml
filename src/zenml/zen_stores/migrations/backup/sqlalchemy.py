@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,194 +11,52 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML database migration, backup and recovery utilities."""
+"""JSON database backup engine."""
 
 import json
 import os
 import re
 import shutil
+from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
     Generator,
-    List,
-    Optional,
-    cast,
+    TextIO,
 )
 
-import pymysql
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy import MetaData, func, text
-from sqlalchemy.engine import URL, Engine
-from sqlalchemy.exc import (
-    OperationalError,
-)
+from sqlalchemy import Engine, MetaData, func, text
 from sqlalchemy.schema import CreateIndex, CreateTable
 from sqlmodel import (
-    create_engine,
     select,
 )
 
 from zenml.logger import get_logger
 from zenml.utils.json_utils import pydantic_encoder
+from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 
 logger = get_logger(__name__)
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
-class MigrationUtils(BaseModel):
-    """Utilities for database migration, backup and recovery."""
 
-    url: URL
-    connect_args: Dict[str, Any]
-    engine_args: Dict[str, Any]
-
-    _engine: Optional[Engine] = None
-    _master_engine: Optional[Engine] = None
-
-    def create_engine(self, database: Optional[str] = None) -> Engine:
-        """Get the SQLAlchemy engine for a database.
-
-        Args:
-            database: The name of the database. If not set, a master engine
-                will be returned.
-
-        Returns:
-            The SQLAlchemy engine.
-        """
-        url = self.url._replace(database=database)
-        return create_engine(
-            url=url,
-            connect_args=self.connect_args,
-            **self.engine_args,
-        )
-
-    @property
-    def engine(self) -> Engine:
-        """The SQLAlchemy engine.
-
-        Returns:
-            The SQLAlchemy engine.
-        """
-        if self._engine is None:
-            self._engine = self.create_engine(database=self.url.database)
-        return self._engine
-
-    @property
-    def master_engine(self) -> Engine:
-        """The SQLAlchemy engine for the master database.
-
-        Returns:
-            The SQLAlchemy engine for the master database.
-        """
-        if self._master_engine is None:
-            self._master_engine = self.create_engine()
-        return self._master_engine
-
-    @classmethod
-    def is_mysql_missing_database_error(cls, error: OperationalError) -> bool:
-        """Checks if the given error is due to a missing database.
-
-        Args:
-            error: The error to check.
-
-        Returns:
-            If the error because the MySQL database doesn't exist.
-        """
-        from pymysql.constants.ER import BAD_DB_ERROR
-
-        if not isinstance(error.orig, pymysql.err.OperationalError):
-            return False
-
-        error_code = cast(int, error.orig.args[0])
-        return error_code == BAD_DB_ERROR
-
-    def database_exists(
-        self,
-        database: Optional[str] = None,
-    ) -> bool:
-        """Check if a database exists.
-
-        Args:
-            database: The name of the database to check. If not set, the
-                database name from the configuration will be used.
-
-        Returns:
-            Whether the database exists.
-
-        Raises:
-            OperationalError: If connecting to the database failed.
-        """
-        database = database or self.url.database
-
-        engine = self.create_engine(database=database)
-        try:
-            engine.connect()
-        except OperationalError as e:
-            if self.is_mysql_missing_database_error(e):
-                return False
-            else:
-                logger.exception(
-                    f"Failed to connect to mysql database `{database}`.",
-                )
-                raise
-        else:
-            return True
-
-    def drop_database(
-        self,
-        database: Optional[str] = None,
-    ) -> None:
-        """Drops a mysql database.
-
-        Args:
-            database: The name of the database to drop. If not set, the
-                database name from the configuration will be used.
-        """
-        database = database or self.url.database
-        with self.master_engine.connect() as conn:
-            # drop the database if it exists
-            logger.info(f"Dropping database '{database}'")
-            conn.execute(text(f"DROP DATABASE IF EXISTS `{database}`"))
-
-    def create_database(
-        self,
-        database: Optional[str] = None,
-        drop: bool = False,
-    ) -> None:
-        """Creates a mysql database.
-
-        Args:
-            database: The name of the database to create. If not set, the
-                database name from the configuration will be used.
-            drop: Whether to drop the database if it already exists.
-        """
-        database = database or self.url.database
-        if drop:
-            self.drop_database(database=database)
-
-        with self.master_engine.connect() as conn:
-            logger.info(f"Creating database '{database}'")
-            conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{database}`"))
+class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
+    """Base class for SQLAlchemy-based database backup engines."""
 
     def backup_database_to_storage(
-        self, store_db_info: Callable[[Dict[str, Any]], None]
+        self,
+        **store_db_kwargs: Any,
     ) -> None:
         """Backup the database to a storage location.
 
         Backup the database to an abstract storage location. The storage
-        location is specified by a function that is called repeatedly to
-        store the database information. The function is called with a single
-        argument, which is a dictionary containing either the table schema or
-        table data. The dictionary contains the following keys:
-
-            * `table`: The name of the table.
-            * `create_stmt`: The table creation statement.
-            * `data`: A list of rows in the table.
+        location is implemented by the `store_database_data` method that is
+        called repeatedly to store the database information.
 
         Args:
-            store_db_info: The function to call to store the database
-                information.
+            store_db_kwargs: Additional keyword arguments to pass to the
+                `store_database_data` method.
         """
         metadata = MetaData()
         metadata.reflect(bind=self.engine)
@@ -315,20 +173,22 @@ class MigrationUtils(BaseModel):
                         break
 
                 # Store the table schema
-                store_db_info(
+                self.store_database_data(
                     dict(
                         table=table.name,
                         create_stmt=create_table_stmt,
                         self_references=has_self_referential_foreign_keys,
-                    )
+                    ),
+                    **store_db_kwargs,
                 )
 
                 for stmt in index_create_statements:
-                    store_db_info(
+                    self.store_database_data(
                         dict(
                             table=table.name,
                             index_create_stmt=stmt,
-                        )
+                        ),
+                        **store_db_kwargs,
                     )
 
                 # 2. extract the table data in batches
@@ -350,33 +210,28 @@ class MigrationUtils(BaseModel):
                             .offset(i)
                         ).fetchall()
 
-                        store_db_info(
+                        self.store_database_data(
                             dict(
                                 table=table.name,
                                 data=[row._asdict() for row in rows],
                             ),
+                            **store_db_kwargs,
                         )
 
     def restore_database_from_storage(
-        self, load_db_info: Callable[[], Generator[Dict[str, Any], None, None]]
+        self,
+        **load_db_kwargs: Any,
     ) -> None:
         """Restore the database from a backup storage location.
 
         Restores the database from an abstract storage location. The storage
-        location is specified by a function that is called repeatedly to
-        load the database information from the external storage chunk by chunk.
-        The function must yield a dictionary containing either the table schema
-        or table data. The dictionary contains the following keys:
-
-            * `table`: The name of the table.
-            * `create_stmt`: The table creation statement.
-            * `data`: A list of rows in the table.
-
-        The function must return `None` when there is no more data to load.
+        location is implemented by the `load_database_data` method that is
+        called repeatedly to load the database information from the external
+        storage chunk by chunk.
 
         Args:
-            load_db_info: The function to call to load the database
-                information.
+            load_db_kwargs: Additional keyword arguments to pass to the
+                `load_database_data` method.
         """
         # Drop and re-create the primary database
         self.create_database(drop=True)
@@ -385,8 +240,8 @@ class MigrationUtils(BaseModel):
 
         with self.engine.begin() as connection:
             # read the DB information one JSON object at a time
-            self_references: Dict[str, bool] = {}
-            for table_dump in load_db_info():
+            self_references: dict[str, bool] = {}
+            for table_dump in self.load_database_data(**load_db_kwargs):
                 table_name = table_dump["table"]
                 if "create_stmt" in table_dump:
                     # execute the table creation statement
@@ -440,22 +295,18 @@ class MigrationUtils(BaseModel):
                         # Re-enable the foreign key checks after inserting the rows
                         connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
 
-    def backup_database_to_file(self, dump_file: str) -> None:
-        """Backup the database to a file.
+    @abstractmethod
+    def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
+        """Store the database data.
 
-        This method dumps the entire database into a JSON file. Instead of
-        using a SQL dump, we use a proprietary JSON dump because:
+        This method is called repeatedly to store the database information. It
+        is called with a single argument, which is a dictionary containing
+        either the table schema or table data. The dictionary contains the
+        following keys:
 
-            * it is (mostly) not dependent on the SQL dialect or database version
-            * it is safer with respect to SQL injection attacks
-            * it is easier to read and debug
-
-        The JSON file contains a list of JSON objects instead of a single JSON
-        object, because it allows for buffered reading and writing of the file
-        and thus reduces the memory footprint. Each JSON object can contain
-        either schema or data information about a single table. For tables with
-        a large amount of data, the data is split into multiple JSON objects
-        with the first object always containing the schema.
+            * `table`: The name of the table.
+            * `create_stmt`: The table creation statement.
+            * `data`: A list of rows in the table.
 
         The format of the dump is as depicted in the following example:
 
@@ -496,12 +347,225 @@ class MigrationUtils(BaseModel):
         ```
 
         Args:
-            dump_file: The path to the dump file.
+            data: The database data to store.
+            kwargs: Additional keyword arguments passed to the method.
         """
-        # create the directory if it does not exist
-        dump_path = os.path.dirname(os.path.abspath(dump_file))
-        if not os.path.exists(dump_path):
-            os.makedirs(dump_path)
+
+    @abstractmethod
+    def load_database_data(
+        self, **kwargs: Any
+    ) -> Generator[dict[str, Any], None, None]:
+        """Generator that loads the database data.
+
+        This method is called repeatedly to load the database data. It must
+        yield a dictionary containing either the table schema or table data,
+        as documented in the `store_database_data` method.
+
+        Yields:
+            The loaded database data.
+
+        Args:
+            kwargs: Additional keyword arguments passed to the method.
+        """
+
+
+class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
+    """In-memory database backup engine."""
+
+    def __init__(
+        self,
+        config: "SqlZenStoreConfiguration",
+        location: str | None = None,
+    ) -> None:
+        """Initialize the in-memory database backup engine.
+
+        Args:
+            config: The configuration of the store.
+            location: The custom location to store the backup.
+        """
+        super().__init__(config, location or "memory")
+        self.database_data: list[dict[str, Any]] = []
+
+    def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
+        """Store the database data.
+
+        Args:
+            data: The database data to store.
+            kwargs: Additional keyword arguments passed to the method.
+        """
+        self.database_data.append(data)
+
+    def load_database_data(
+        self, **kwargs: Any
+    ) -> Generator[dict[str, Any], None, None]:
+        """Generator that loads the database data.
+
+        Yields:
+            The loaded database data.
+
+        Args:
+            kwargs: Additional keyword arguments passed to the method.
+        """
+        for data in self.database_data:
+            yield data
+
+    def backup_database(
+        self,
+        overwrite: bool = False,
+    ) -> None:
+        """Backup the database.
+
+        Args:
+            overwrite: Whether to overwrite an existing backup if it exists.
+                If set to False, the existing backup will be reused.
+        """
+        if len(self.database_data) > 0:
+            if not overwrite:
+                logger.warning(
+                    "An existing backup already exists. Reusing the existing backup."
+                )
+                return
+
+            self.cleanup_database_backup()
+
+        self.backup_database_to_storage()
+
+        logger.debug("Database backed up to memory.")
+
+    def restore_database(
+        self,
+        cleanup: bool = False,
+    ) -> None:
+        """Restore the database.
+
+        Args:
+            cleanup: Whether to cleanup the backup after restoring the database.
+
+        Raises:
+            RuntimeError: If no in-memory backup exists.
+        """
+        if len(self.database_data) == 0:
+            raise RuntimeError(
+                "No in-memory backup exists. Please backup the database first."
+            )
+
+        self.restore_database_from_storage()
+
+        logger.debug("Database restored from memory.")
+
+        if cleanup:
+            self.cleanup_database_backup()
+
+    def cleanup_database_backup(
+        self,
+    ) -> None:
+        """Delete the database backup."""
+        self.database_data = []
+
+        logger.debug("In-memory database backup cleaned up.")
+
+
+class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
+    """Database backup engine that stores the database data in a file."""
+
+    def __init__(
+        self,
+        config: "SqlZenStoreConfiguration",
+        location: str | None = None,
+    ) -> None:
+        """Initialize the file database backup engine.
+
+        Args:
+            config: The configuration of the store.
+            location: The custom location to store the backup.
+        """
+        super().__init__(config, location)
+        if self._backup_location is None:
+            self._backup_location = self._get_db_backup_file_path()
+
+    def _get_db_backup_file_path(self) -> str:
+        """Get the path to the database backup.
+
+        Returns:
+            The path to the configured database backup.
+        """
+        from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
+
+        assert self.url.database is not None
+
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            return os.path.join(
+                self.config.backup_directory,
+                # Add the -backup suffix to the database filename
+                self.url.database[:-3] + "-backup.db",
+            )
+
+        return os.path.join(
+            self.config.backup_directory,
+            f"{self.url.database}-backup.json",
+        )
+
+    def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
+        """Store the database data.
+
+        Args:
+            data: The database data to store.
+            **kwargs: Must include `dump_file` (TextIO) - the file handle
+                to store the database data.
+        """
+        dump_file: TextIO = kwargs["dump_file"]
+        # Write the data to the JSON file. Use an encoder that
+        # can handle datetime, Decimal and other types.
+        json.dump(
+            data,
+            dump_file,
+            indent=4,
+            default=pydantic_encoder,
+        )
+        dump_file.write("\n")
+
+    def load_database_data(
+        self, **kwargs: Any
+    ) -> Generator[dict[str, Any], None, None]:
+        """Generator that loads the database data.
+
+        Args:
+            **kwargs: Must include `dump_file` (TextIO) - the file handle
+                to load the database data from.
+
+        Yields:
+            The loaded database data.
+        """
+        dump_file: TextIO = kwargs["dump_file"]
+        buffer = ""
+        while True:
+            chunk = dump_file.readline()
+            if not chunk:
+                break
+            buffer += chunk
+            if chunk.rstrip() == "}":
+                yield json.loads(buffer)
+                buffer = ""
+
+    def backup_database(
+        self,
+        overwrite: bool = False,
+    ) -> None:
+        """Backup the database.
+
+        Args:
+            overwrite: Whether to overwrite an existing backup if it exists.
+                If set to False, the existing backup will be reused.
+        """
+        if os.path.isfile(self.backup_location):
+            if not overwrite:
+                logger.warning(
+                    f"A previous backup file already exists at `{self.backup_location}`. "
+                    "Reusing the existing backup."
+                )
+                return
+
+            self.cleanup_database_backup()
 
         if self.url.drivername == "sqlite":
             # For a sqlite database, we can just make a copy of the database
@@ -509,50 +573,31 @@ class MigrationUtils(BaseModel):
             assert self.url.database is not None
             shutil.copyfile(
                 self.url.database,
-                dump_file,
+                self.backup_location,
             )
             return
 
-        with open(dump_file, "w") as f:
+        with open(self.backup_location, "w") as f:
+            self.backup_database_to_storage(dump_file=f)
 
-            def json_dump(obj: Dict[str, Any]) -> None:
-                """Dump a JSON object to the dump file.
+        logger.debug(f"Database backed up to file `{self.backup_location}`.")
 
-                Args:
-                    obj: The JSON object to dump.
-                """
-                # Write the data to the JSON file. Use an encoder that
-                # can handle datetime, Decimal and other types.
-                json.dump(
-                    obj,
-                    f,
-                    indent=4,
-                    default=pydantic_encoder,
-                )
-                f.write("\n")
-
-            # Call the generic backup method with a function that dumps the
-            # JSON objects to the dump file
-            self.backup_database_to_storage(json_dump)
-
-        logger.debug(f"Database backed up to {dump_file}")
-
-    def restore_database_from_file(self, dump_file: str) -> None:
-        """Restore the database from a backup dump file.
-
-        See the documentation of the `backup_database_to_file` method for
-        details on the format of the dump file.
+    def restore_database(
+        self,
+        cleanup: bool = False,
+    ) -> None:
+        """Restore the database.
 
         Args:
-            dump_file: The path to the dump file.
+            cleanup: Whether to cleanup the backup after restoring the database.
 
         Raises:
-            RuntimeError: If the database cannot be restored successfully.
+            RuntimeError: If the backup file does not exist or is not accessible.
         """
-        if not os.path.exists(dump_file):
+        if not os.path.isfile(self.backup_location):
             raise RuntimeError(
-                f"Database backup file '{dump_file}' does not "
-                f"exist or is not accessible."
+                f"Database backup file `{self.backup_location}` does not "
+                "exist or is not accessible."
             )
 
         if self.url.drivername == "sqlite":
@@ -560,101 +605,63 @@ class MigrationUtils(BaseModel):
             # with the backup file
             assert self.url.database is not None
             shutil.copyfile(
-                dump_file,
+                self.backup_location,
                 self.url.database,
             )
             return
 
-        # read the DB dump file one JSON object at a time
-        with open(dump_file, "r") as f:
+        with open(self.backup_location, "r") as f:
+            self.restore_database_from_storage(dump_file=f)
 
-            def json_load() -> Generator[Dict[str, Any], None, None]:
-                """Generator that loads the JSON objects in the dump file.
+        logger.debug(f"Database restored from file `{self.backup_location}`.")
 
-                Yields:
-                    The loaded JSON objects.
-                """
-                buffer = ""
-                while True:
-                    chunk = f.readline()
-                    if not chunk:
-                        break
-                    buffer += chunk
-                    if chunk.rstrip() == "}":
-                        yield json.loads(buffer)
-                        buffer = ""
+        if cleanup:
+            self.cleanup_database_backup()
 
-            # Call the generic restore method with a function that loads the
-            # JSON objects from the dump file
-            self.restore_database_from_storage(json_load)
-
-        logger.info(f"Database successfully restored from '{dump_file}'")
-
-    def backup_database_to_memory(self) -> List[Dict[str, Any]]:
-        """Backup the database in memory.
-
-        Returns:
-            The in-memory representation of the database backup.
-
-        Raises:
-            RuntimeError: If the database cannot be backed up successfully.
-        """
-        if self.url.drivername == "sqlite":
-            # For a sqlite database, this is not supported.
-            raise RuntimeError(
-                "In-memory backup is not supported for sqlite databases."
-            )
-
-        db_dump: List[Dict[str, Any]] = []
-
-        def store_in_mem(obj: Dict[str, Any]) -> None:
-            """Store a JSON object in the in-memory database backup.
-
-            Args:
-                obj: The JSON object to store.
-            """
-            db_dump.append(obj)
-
-        # Call the generic backup method with a function that stores the
-        # JSON objects in the in-memory database backup
-        self.backup_database_to_storage(store_in_mem)
-
-        logger.debug("Database backed up in memory")
-
-        return db_dump
-
-    def restore_database_from_memory(
-        self, db_dump: List[Dict[str, Any]]
+    def cleanup_database_backup(
+        self,
     ) -> None:
-        """Restore the database from an in-memory backup.
+        """Delete the database backup."""
+        if os.path.isfile(self.backup_location):
+            try:
+                os.remove(self.backup_location)
+            except OSError:
+                logger.warning(
+                    f"Failed to cleanup database dump file `{self.backup_location}`."
+                )
+            else:
+                logger.info(
+                    f"Successfully cleaned up database dump file "
+                    f"`{self.backup_location}`."
+                )
+
+
+class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
+    """Database backup engine that copies the database to a new database."""
+
+    def __init__(
+        self,
+        config: "SqlZenStoreConfiguration",
+        location: str | None = None,
+    ) -> None:
+        """Initialize the database backup engine.
 
         Args:
-            db_dump: The in-memory database backup to restore from generated
-                by the `backup_database_to_memory` method.
+            config: The configuration of the store.
+            location: The custom location to store the backup.
 
         Raises:
-            RuntimeError: If the database cannot be restored successfully.
+            ValueError: If the backup database name is not set in the store
+                configuration.
         """
-        if self.url.drivername == "sqlite":
-            # For a sqlite database, this is not supported.
-            raise RuntimeError(
-                "In-memory backup is not supported for sqlite databases."
-            )
-
-        def load_from_mem() -> Generator[Dict[str, Any], None, None]:
-            """Generator that loads the JSON objects from the in-memory backup.
-
-            Yields:
-                The loaded JSON objects.
-            """
-            for obj in db_dump:
-                yield obj
-
-        # Call the generic restore method with a function that loads the
-        # JSON objects from the in-memory database backup
-        self.restore_database_from_storage(load_from_mem)
-
-        logger.info("Database successfully restored from memory")
+        super().__init__(config, location)
+        if self._backup_location is None:
+            if self.config.backup_database is None:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+            self._backup_location = self.config.backup_database
 
     @classmethod
     def _copy_database(cls, src_engine: Engine, dst_engine: Engine) -> None:
@@ -728,51 +735,78 @@ class MigrationUtils(BaseModel):
                                 insert, [row._asdict() for row in rows]
                             )
 
-    def backup_database_to_db(self, backup_db_name: str) -> None:
-        """Backup the database to a backup database.
+    def backup_database(
+        self,
+        overwrite: bool = False,
+    ) -> None:
+        """Backup the database.
 
         Args:
-            backup_db_name: Backup database name to backup to.
+            overwrite: Whether to overwrite an existing backup if it exists.
+                If set to False, the existing backup will be reused.
         """
-        # Re-create the backup database
+        if self.database_exists(database=self.backup_location):
+            if not overwrite:
+                logger.warning(
+                    f"A previous backup database already exists at "
+                    f"`{self.backup_location}`. Reusing the existing backup."
+                )
+                return
+
+            self.cleanup_database_backup()
+
         self.create_database(
-            database=backup_db_name,
+            database=self.backup_location,
             drop=True,
         )
 
-        backup_engine = self.create_engine(database=backup_db_name)
+        backup_engine = self.create_engine(database=self.backup_location)
 
         self._copy_database(self.engine, backup_engine)
 
         logger.debug(
-            f"Database backed up to the `{backup_db_name}` backup database."
+            f"Database backed up to the `{self.backup_location}` backup database."
         )
 
-    def restore_database_from_db(self, backup_db_name: str) -> None:
-        """Restore the database from the backup database.
+    def restore_database(
+        self,
+        cleanup: bool = False,
+    ) -> None:
+        """Restore the database.
 
         Args:
-            backup_db_name: Backup database name to restore from.
+            cleanup: Whether to cleanup the backup after restoring the database.
 
         Raises:
             RuntimeError: If the backup database does not exist.
         """
-        if not self.database_exists(database=backup_db_name):
+        if not self.database_exists(database=self.backup_location):
             raise RuntimeError(
-                f"Backup database `{backup_db_name}` does not exist."
+                f"Backup database `{self.backup_location}` does not exist."
             )
 
-        backup_engine = self.create_engine(database=backup_db_name)
+        backup_engine = self.create_engine(database=self.backup_location)
 
-        # Drop and re-create the primary database
-        self.create_database(
-            drop=True,
-        )
+        self.create_database(drop=True)
 
         self._copy_database(backup_engine, self.engine)
 
         logger.debug(
-            f"Database restored from the `{backup_db_name}` backup database."
+            f"Database restored from the `{self.backup_location}` backup database."
         )
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+        if cleanup:
+            self.cleanup_database_backup()
+
+    def cleanup_database_backup(
+        self,
+    ) -> None:
+        """Delete the database backup."""
+        if self.database_exists(database=self.backup_location):
+            self.drop_database(
+                database=self.backup_location,
+            )
+            logger.debug(
+                f"Successfully cleaned up backup database "
+                f"{self.backup_location}."
+            )

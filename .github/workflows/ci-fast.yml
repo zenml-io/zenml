@@ -5,10 +5,22 @@ on:
   workflow_call:
   push:
     branches: [main]
-    paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
+    paths-ignore:
+      - docs/**
+      - '*'
+      - '!pyproject.toml'
+      - '**.md'
+      - .github/workflows/claude.yml
+      - .claude/**
   pull_request:
     types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
+    paths-ignore:
+      - docs/**
+      - '*'
+      - '!pyproject.toml'
+      - '**.md'
+      - .github/workflows/claude.yml
+      - .claude/**
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}

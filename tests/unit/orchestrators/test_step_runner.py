@@ -157,7 +157,9 @@ def test_running_a_failing_step(
         force_write_logs=lambda: None,
     )
 
-    runner = StepRunner(step=step, stack=local_stack)
+    runner = StepRunner(
+        step=step, stack=local_stack, publish_exception_info=False
+    )
     with pytest.raises(RuntimeError):
         runner.run(
             pipeline_run=sample_pipeline_run,

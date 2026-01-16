@@ -59,6 +59,12 @@ class StepRunInfo(FrozenBaseModel):
             )
 
         if self.snapshot.is_dynamic:
+            if self.config.docker_settings.skip_build:
+                # If there are custom Docker settings for the step and no
+                # build is required, we can use the parent image directly.
+                assert self.config.docker_settings.parent_image
+                return self.config.docker_settings.parent_image
+
             step_key = self.config.template
             if not step_key:
                 logger.warning(

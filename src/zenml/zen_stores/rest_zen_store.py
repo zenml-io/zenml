@@ -72,6 +72,7 @@ from zenml.constants import (
     DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
@@ -2272,6 +2273,17 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
         )
 
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables heartbeat for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+        """
+        self.put(
+            path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
+            timeout=10,
+        )
+
     # ----------------------------- Run Metadata -----------------------------
 
     def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
@@ -2363,15 +2375,17 @@ class RestZenStore(BaseZenStore):
             response_model=ScheduleResponse,
         )
 
-    def delete_schedule(self, schedule_id: UUID) -> None:
+    def delete_schedule(self, schedule_id: UUID, soft: bool = False) -> None:
         """Deletes a schedule.
 
         Args:
             schedule_id: The ID of the schedule to delete.
+            soft: Soft deletion will archive the schedule.
         """
         self._delete_resource(
             resource_id=schedule_id,
             route=SCHEDULES,
+            params={"soft": soft},
         )
 
     # --------------------------- Secrets ---------------------------

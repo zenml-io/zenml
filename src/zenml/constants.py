@@ -389,6 +389,7 @@ DEACTIVATE = "/deactivate"
 DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
+DISABLE_HEARTBEAT = "/disable_heartbeat"
 DOWNLOAD_TOKEN = "/download-token"
 EMAIL_ANALYTICS = "/email-opt-in"
 EVENT_FLAVORS = "/event-flavors"
@@ -461,6 +462,7 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
 # orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
+ENV_ZENML_DAG_RUNNER_WORKER_COUNT = "ZENML_DAG_RUNNER_WORKER_COUNT"
 
 # deployer constants
 DEPLOYER_DOCKER_IMAGE_KEY = "deployer"

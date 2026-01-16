@@ -4,6 +4,38 @@
 
 ---
 
+# 0.93.1
+
+## What's Changed
+* Add version 0.92.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4356
+* Misc release workflow fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4353
+* Add 0.93.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4357
+* Stop & Resume schedule on Kubernetes by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4328
+* Enable orchestration environment restarts for dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4270
+* Remove remaining unlisted runs references by @schustmi in https://github.com/zenml-io/zenml/pull/4352
+* Fix the run count DB migration by @stefannica in https://github.com/zenml-io/zenml/pull/4360
+* Apply per-step compute settings if available by @htahir1 in https://github.com/zenml-io/zenml/pull/4362
+* Allow image template for kubernetes init containers by @schustmi in https://github.com/zenml-io/zenml/pull/4361
+* Misc improvements by @schustmi in https://github.com/zenml-io/zenml/pull/4359
+* Support for dynamic pipelines on AzureML by @bcdurak in https://github.com/zenml-io/zenml/pull/4363
+* Schedule archiving support by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4339
+* Minor typos in cli commands from documentation by @tmorgansl in https://github.com/zenml-io/zenml/pull/4374
+* Add mydumper/myloader DB backup and restore support by @stefannica in https://github.com/zenml-io/zenml/pull/4358
+* Fix Azure dependencies in server image by @schustmi in https://github.com/zenml-io/zenml/pull/4383
+* Merge Claude workflows into single flexible workflow by @strickvl in https://github.com/zenml-io/zenml/pull/4343
+* Document MCP Settings page in dashboard by @strickvl in https://github.com/zenml-io/zenml/pull/4364
+* Improve bot detection for Segment analytics by @strickvl in https://github.com/zenml-io/zenml/pull/4381
+* Allow configuring parent image at runtime by @schustmi in https://github.com/zenml-io/zenml/pull/4377
+* Kubernetes orchestrator caching efficiency + reliability by @schustmi in https://github.com/zenml-io/zenml/pull/4368
+* Misc fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4379
+* Heartbeat - performance improvements by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4372
+
+## New Contributors
+* @tmorgansl made their first contribution in https://github.com/zenml-io/zenml/pull/4374
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.0...0.93.1
+
+
 # 0.93.0
 
 ## ⚠️ Breaking Changes

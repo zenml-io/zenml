@@ -57,6 +57,7 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
+    enable_heartbeat: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
     enable_pipeline_logs: Optional[bool] = None,
@@ -85,6 +86,7 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
+    enable_heartbeat: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
     enable_pipeline_logs: Optional[bool] = None,
@@ -113,6 +115,7 @@ def pipeline(
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
         enable_step_logs: If step logs should be enabled for this pipeline.
+        enable_heartbeat: If heartbeat should be enabled for this pipeline.
         environment: Environment variables to set when running this pipeline.
         secrets: Secrets to set as environment variables when running this
             pipeline.
@@ -173,6 +176,7 @@ def pipeline(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_step_logs=enable_step_logs,
+            enable_heartbeat=enable_heartbeat,
             environment=environment,
             secrets=secrets,
             enable_pipeline_logs=enable_pipeline_logs,
