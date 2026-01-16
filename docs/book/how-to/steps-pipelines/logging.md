@@ -213,6 +213,24 @@ These prefixes only appear in console output, not in stored logs. Disable them w
 ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 ```
 
+### Limitations on the dashboard
+
+When viewing logs in the dashboard, ZenML currently loads logs **in bulk** and
+pagination/filtering happens on the client side. To keep the response size and
+server memory usage bounded (especially when logs are stored in remote artifact
+stores), the dashboard is limited to **500 pages** (**100 log entries per
+page**, i.e. **50,000 entries** total) by default.
+
+You can adjust this limit by setting `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` in the
+environment when you are deploying your ZenML workspace.
+
+Downloading logs from the dashboard will also only include up to this limit.
+
+{% hint style="info" %}
+We’re actively working on improving log loading to remove the need for this cap.
+We'll update the documentation as this evolves with future releases.
+{% endhint %}
+
 ## Best Practices for Logging
 
 1. **Use appropriate log levels**:
