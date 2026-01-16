@@ -3,3 +3,6 @@ root: .
 structure:
   readme: README.md
   summary: toc.md
+
+redirects:
+  deployments/self-hosted: README.md
