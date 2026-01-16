@@ -4395,7 +4395,6 @@ class SqlZenStore(BaseZenStore):
             The created logs entry.
 
         Raises:
-            EntityExistsError: If a logs entry with the same ID already exists.
             ValueError: If neither an artifact store nor a log store ID is set.
         """
         with Session(self.engine) as session:
@@ -4420,13 +4419,7 @@ class SqlZenStore(BaseZenStore):
                     "Either an `artifact_store_id` or a `log_store_id` must be set."
                 )
 
-            log_entry = LogsSchema.from_request(
-                id=logs.id,
-                uri=logs.uri,
-                source=logs.source,
-                artifact_store_id=logs.artifact_store_id,
-                log_store_id=logs.log_store_id,
-            )
+            log_entry = LogsSchema.from_request(logs)
             session.add(log_entry)
             session.commit()
             session.refresh(log_entry)
@@ -4469,8 +4462,10 @@ class SqlZenStore(BaseZenStore):
             The updated logs entry.
 
         Raises:
-            KeyError: If the logs entry does not exist.
-            ValueError: If no association IDs are provided or the association is inconsistent.
+            IllegalOperationError: If the log entry is already associated with a
+                different entity.
+            ValueError: If the run id doesn't match the run id that the step id
+                belongs to.
         """
         with Session(self.engine) as session:
             logs_schema = self._get_schema_by_id(
@@ -10055,6 +10050,7 @@ class SqlZenStore(BaseZenStore):
                 with the same source already exists within the scope of the
                 same step.
             IllegalOperationError: if the pipeline run is stopped or stopping.
+            KeyError: If the logs entry in the request model does not exist.
         """
         if step_run.status in {
             ExecutionStatus.RETRIED,

@@ -180,11 +180,11 @@ class LoggingContext(context_utils.BaseContext):
             step_run: The step run.
             pipeline_run: The pipeline run.
         """
-        if step_run:
+        if step_run and self._origin:
             self._origin.metadata.update(
                 get_step_log_metadata(step_run=step_run)
             )
-        if pipeline_run:
+        if pipeline_run and self._origin:
             self._origin.metadata.update(
                 get_run_log_metadata(pipeline_run=pipeline_run)
             )
@@ -208,7 +208,7 @@ class LoggingContext(context_utils.BaseContext):
             raise ValueError("Response must be a step run or pipeline run.")
 
         Client().zen_store.update_logs(
-            logs_id=self.name, logs_update=log_update
+            logs_id=self.log_model.id, logs_update=log_update
         )
 
     def __enter__(self) -> "LoggingContext":

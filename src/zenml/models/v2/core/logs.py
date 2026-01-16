@@ -52,6 +52,14 @@ class LogsRequest(BaseRequest):
         default=None,
         title="The log store ID that collected these logs",
     )
+    pipeline_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The pipeline run ID to associate the logs with.",
+    )
+    step_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The step run ID to associate the logs with.",
+    )
 
     @field_validator("uri")
     @classmethod

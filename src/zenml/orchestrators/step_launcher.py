@@ -16,7 +16,16 @@
 import signal
 import time
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ContextManager,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -259,8 +268,9 @@ class StepLauncher:
         """
         publish_utils.step_exception_info.set(None)
 
-        logs_context = nullcontext()
-        if logs_enabled := is_step_logging_enabled(
+        logs_context: ContextManager[Any] = nullcontext()
+
+        if is_step_logging_enabled(
             step_configuration=self._step.config,
             pipeline_configuration=self._snapshot.pipeline_configuration,
         ):
@@ -295,7 +305,7 @@ class StepLauncher:
                 invocation_id=self._invocation_id,
                 dynamic_config=dynamic_config,
             )
-            if logs_enabled:
+            if isinstance(logs_context, LoggingContext):
                 step_run_request.logs = logs_context.log_model.id
 
             try:
@@ -313,7 +323,7 @@ class StepLauncher:
             finally:
                 step_run = Client().zen_store.create_run_step(step_run_request)
 
-                if logs_enabled:
+                if isinstance(logs_context, LoggingContext):
                     logs_context.update(step_run=step_run)
 
                 self._step_run = step_run

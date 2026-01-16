@@ -81,7 +81,8 @@ class LogsSchema(BaseSchema, table=True):
     )
     step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
 
-    def from_request(self, request: LogsRequest) -> "LogsSchema":
+    @classmethod
+    def from_request(cls, request: LogsRequest) -> "LogsSchema":
         """Create a `LogsSchema` from a `LogsRequest`.
 
         Args:

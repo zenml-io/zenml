@@ -22,6 +22,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ContextManager,
     Dict,
     Iterator,
     List,
@@ -1040,7 +1041,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             logger.info("Preventing execution of pipeline '%s'.", self.name)
             return None
 
-        logs_context = nullcontext()
+        logs_context: ContextManager[Any] = nullcontext()
         if is_pipeline_logging_enabled(self.configuration):
             logs_context = setup_logging_context(source="client")
 

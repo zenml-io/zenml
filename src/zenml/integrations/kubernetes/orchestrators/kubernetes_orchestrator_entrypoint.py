@@ -19,7 +19,7 @@ import socket
 import threading
 import time
 from contextlib import nullcontext
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Any, ContextManager, Dict, List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -214,7 +214,7 @@ def main() -> None:
     client = Client()
     snapshot = client.get_snapshot(args.snapshot_id)
 
-    logs_context = nullcontext()
+    logs_context: ContextManager[Any] = nullcontext()
     if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
         logs_context = setup_logging_context(source="orchestrator")
 
