@@ -1,0 +1,157 @@
+# Hierarchical Document Search Agent Configuration
+
+# Pipeline Parameters
+pipeline_config:
+  name: "hierarchical_search"
+  enable_cache: true
+  enable_artifact_metadata: true
+
+# Search Parameters
+search_config:
+  # Maximum number of parallel agents for deep search
+  max_agents: 3
+
+  # Maximum traversal depth for each agent
+  max_depth: 4
+
+  # Budget per agent (number of documents to explore)
+  agent_budget: 10
+
+  # Similarity threshold for document relevance
+  relevance_threshold: 0.7
+
+  # Maximum documents to include in final evidence pack
+  max_evidence_items: 20
+
+# AI Model Configuration (via LiteLLM)
+model_config:
+  # Model provider and name
+  # Supported: openai/gpt-4, openai/gpt-3.5-turbo, anthropic/claude-3-sonnet, etc.
+  model_name: "openai/gpt-4"
+
+  # Model parameters for stable demo behavior
+  temperature: 0.0  # Deterministic for demo stability
+  max_tokens: 1024
+
+  # Timeout settings
+  timeout: 30
+
+  # Retry configuration
+  max_retries: 3
+  retry_delay: 1.0
+
+# Intent Detection Settings
+intent_detection:
+  # Threshold for complex vs simple query classification
+  complexity_threshold: 0.6
+
+  # Keywords that suggest simple queries
+  simple_query_indicators:
+    - "what is"
+    - "define"
+    - "introduction to"
+    - "basics of"
+    - "overview of"
+
+  # Keywords that suggest complex queries
+  complex_query_indicators:
+    - "relationship between"
+    - "how do"
+    - "compare"
+    - "comprehensive"
+    - "latest developments"
+    - "applications"
+
+# Document Graph Settings
+document_config:
+  # Path to document graph data
+  doc_graph_path: "data/doc_graph.json"
+
+  # Relationship types to follow during traversal
+  relationship_types:
+    - "leads_to"
+    - "prerequisite"
+    - "references"
+    - "related"
+
+  # Document types to prioritize
+  priority_types:
+    - "research_paper"
+    - "tutorial"
+    - "technical_guide"
+
+# Output Settings
+output_config:
+  # Artifact storage format
+  trace_format: "json"
+  evidence_format: "markdown"
+
+  # Include debug information in artifacts
+  include_debug_info: true
+
+  # Evidence pack sections
+  evidence_sections:
+    - "summary"
+    - "key_findings"
+    - "source_documents"
+    - "traversal_path"
+    - "related_topics"
+
+# Performance Settings
+performance_config:
+  # Step resource requirements
+  step_resources:
+    intent_detection:
+      cpu: "500m"
+      memory: "512Mi"
+
+    traverse_node:
+      cpu: "1000m"
+      memory: "1Gi"
+
+    aggregate_findings:
+      cpu: "500m"
+      memory: "512Mi"
+
+  # Parallel execution limits
+  max_concurrent_steps: 5
+
+  # Caching configuration
+  cache_strategy: "content_hash"
+  cache_ttl: "7d"
+
+# Environment Settings
+environment:
+  # ZenML configuration
+  zenml_debug: false
+  zenml_logging_verbosity: "INFO"
+
+  # Disable analytics for demo
+  zenml_analytics_opt_in: false
+  auto_open_dashboard: false
+
+  # LLM provider environment variables (set these externally)
+  # OPENAI_API_KEY: "your-key"
+  # ANTHROPIC_API_KEY: "your-key"
+  # Or other LiteLLM-supported provider keys
+
+# Demo Scenarios
+demo_scenarios:
+  quick_demo:
+    max_agents: 2
+    max_depth: 3
+    agent_budget: 5
+    description: "Fast demo with limited resources"
+
+  full_demo:
+    max_agents: 4
+    max_depth: 5
+    agent_budget: 15
+    description: "Comprehensive demo showcasing full capabilities"
+
+  caching_demo:
+    # Use same parameters as previous run to demonstrate caching
+    max_agents: 3
+    max_depth: 4
+    agent_budget: 10
+    description: "Repeat scenario to show caching behavior"
