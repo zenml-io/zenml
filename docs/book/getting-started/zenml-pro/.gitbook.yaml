@@ -5,4 +5,4 @@ structure:
   summary: toc.md
 
 redirects:
-  deployments/self-hosted: README.md
+  deployments/self-hosted: self-hosted-deployment.md
