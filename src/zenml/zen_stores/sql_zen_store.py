@@ -6525,6 +6525,10 @@ class SqlZenStore(BaseZenStore):
                 scope of the same pipeline run.
             KeyError: If the run requires a model version that doesn't exist and
                 can not be created.
+            IllegalOperationError: If the logs entry is already associated with a
+                different entity.
+            ValueError: If the run id doesn't match the run id that the step id
+                belongs to.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
 
