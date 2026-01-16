@@ -502,9 +502,9 @@ To remove the deployment:
 ## Next Steps
 
 - [Configure your organization in ZenML Cloud](https://cloud.zenml.io)
-- [Set up users and teams](../organization.md)
+- [Set up users and teams](organization.md)
 - [Configure stacks and service connectors](https://docs.zenml.io/stacks)
-- [Run your first pipeline](https://docs.zenml.io/getting-started/quickstart)
+- [Run your first pipeline](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 
 ## Related Documentation
 
