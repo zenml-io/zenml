@@ -30,6 +30,11 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_get_entity,
     verify_permissions_and_update_entity,
 )
+from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     zen_store,
@@ -59,6 +64,27 @@ def create_logs(
     Returns:
         The created log model.
     """
+    if LogsRequest.pipeline_run_id:
+        verify_permission_for_model(
+            model=zen_store().get_run(logs.pipeline_run_id),
+            action=Action.UPDATE,
+        )
+
+    read_verify_models = []
+    if logs.artifact_store_id:
+        read_verify_models.append(
+            zen_store().get_stack_component(logs.artifact_store_id)
+        )
+    if logs.log_store_id:
+        read_verify_models.append(
+            zen_store().get_stack_component(logs.log_store_id)
+        )
+
+    batch_verify_permissions_for_models(
+        models=read_verify_models,
+        action=Action.READ,
+    )
+
     return verify_permissions_and_create_entity(
         request_model=logs,
         create_method=zen_store().create_logs,
@@ -109,6 +135,12 @@ def update_logs(
     Returns:
         The updated log model.
     """
+    if LogsRequest.pipeline_run_id:
+        verify_permission_for_model(
+            model=zen_store().get_run(logs_update.pipeline_run_id),
+            action=Action.UPDATE,
+        )
+
     return verify_permissions_and_update_entity(
         id=logs_id,
         update_model=logs_update,

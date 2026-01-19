@@ -6577,7 +6577,13 @@ class SqlZenStore(BaseZenStore):
         # Add logs entry for the run
         if pipeline_run.logs is not None:
             if isinstance(pipeline_run.logs, UUID):
-                existing_log_entry = session.get(LogsSchema, pipeline_run.logs)
+                existing_log_entry = self._get_reference_schema_by_id(
+                    resource=pipeline_run,
+                    reference_schema=LogsSchema,
+                    reference_id=pipeline_run.logs,
+                    reference_type="logs",
+                    session=session,
+                )
                 if existing_log_entry is None:
                     raise KeyError(
                         f"Logs entry with ID '{pipeline_run.logs}' does not exist."
@@ -10215,7 +10221,13 @@ class SqlZenStore(BaseZenStore):
             # Add logs entry for the step
             if step_run.logs is not None:
                 if isinstance(step_run.logs, UUID):
-                    existing_log_entry = session.get(LogsSchema, step_run.logs)
+                    existing_log_entry = self._get_reference_schema_by_id(
+                        resource=step_run,
+                        reference_schema=LogsSchema,
+                        reference_id=step_run.logs,
+                        session=session,
+                        reference_type="logs",
+                    )
                     if existing_log_entry is None:
                         raise KeyError(
                             f"Logs entry with ID '{step_run.logs}' does not exist."

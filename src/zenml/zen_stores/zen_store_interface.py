@@ -1129,9 +1129,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The created logs entry.
-
-        Raises:
-            EntityExistsError: if the logs entry already exists.
         """
 
     @abstractmethod
@@ -1162,9 +1159,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The updated logs entry.
-
-        Raises:
-            KeyError: if the logs doesn't exist.
         """
 
     # -------------------- Pipelines --------------------
