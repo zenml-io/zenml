@@ -44,7 +44,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source, SourceWithValidator
-from zenml.enums import StepRuntime
+from zenml.enums import GroupType, StepRuntime
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
@@ -56,6 +56,14 @@ if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineConfiguration
 
 logger = get_logger(__name__)
+
+
+class GroupInfo(FrozenBaseModel):
+    """Class representing group information."""
+
+    id: str
+    name: Optional[str] = None
+    type: GroupType = GroupType.MANUAL
 
 
 class PartialArtifactConfiguration(FrozenBaseModel):
@@ -228,6 +236,10 @@ class StepConfigurationUpdate(FrozenBaseModel):
         "set to 30 minutes.",
         ge=10,
         le=60,
+    )
+    group: Optional[GroupInfo] = Field(
+        default=None,
+        description="The group information for the step.",
     )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}

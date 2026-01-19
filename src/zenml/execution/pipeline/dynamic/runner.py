@@ -33,14 +33,14 @@ from typing import (
     Union,
     overload,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from zenml import ExternalArtifact
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
+from zenml.config.step_configurations import GroupInfo, StepConfigurationUpdate
+from zenml.enums import ExecutionMode, ExecutionStatus, GroupType, StepRuntime
 from zenml.execution.pipeline.dynamic.outputs import (
     AnyStepRunFuture,
     ArtifactFuture,
@@ -284,6 +284,7 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
         ] = None,
+        group: Optional["GroupInfo"] = None,
         concurrent: Literal[False] = False,
     ) -> StepRunOutputs: ...
 
@@ -297,6 +298,7 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
         ] = None,
+        group: Optional["GroupInfo"] = None,
         concurrent: Literal[True] = True,
     ) -> "StepRunOutputsFuture": ...
 
@@ -309,6 +311,7 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
         ] = None,
+        group: Optional["GroupInfo"] = None,
         concurrent: bool = False,
     ) -> Union[StepRunOutputs, "StepRunOutputsFuture"]:
         """Launch a step.
@@ -319,6 +322,7 @@ class DynamicPipelineRunner:
             args: The arguments for the step function.
             kwargs: The keyword arguments for the step function.
             after: The step run output futures to wait for.
+            group: The group information for this step.
             concurrent: Whether to launch the step concurrently.
 
         Returns:
@@ -333,6 +337,11 @@ class DynamicPipelineRunner:
                 step_operator=None,
                 parameters={},
                 runtime=StepRuntime.INLINE,
+                group=group,
+            )
+        elif group:
+            step_config = StepConfigurationUpdate(
+                group=group,
             )
 
         inputs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
@@ -499,6 +508,15 @@ class DynamicPipelineRunner:
         kwargs = await_step_inputs(kwargs)
         step_inputs = expand_mapped_inputs(kwargs, product=product)
 
+        # This will overwrite any user-configured groups for the step, but
+        # capturing the mapping information is more important until we introduce
+        # a more flexible group system.
+        group_info = GroupInfo(
+            id=str(uuid4()),
+            name=step.name,
+            type=GroupType.MAP,
+        )
+
         step_run_futures = [
             self.launch_step(
                 step,
@@ -506,6 +524,7 @@ class DynamicPipelineRunner:
                 args=(),
                 kwargs=inputs,
                 after=after,
+                group=group_info,
                 concurrent=True,
             )
             for inputs in step_inputs
