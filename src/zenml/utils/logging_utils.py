@@ -536,6 +536,9 @@ def setup_logging_context(
         step_run: The step run.
         block_on_exit: Whether to block until all logs are flushed when the
             context is exited, if there are no more logging contexts active.
+
+    Returns:
+        A LoggingContext object.
     """
     log_metadata = {}
 
