@@ -59,7 +59,7 @@ To learn more about the core concepts for ZenML Pro, go [here](https://docs.zenm
 
 ### ZenML Pro SaaS Architecture
 
-![ZenML Pro SaaS deployment with ZenML secret store](../.gitbook/assets/cloud_architecture_scenario_1.png)
+![ZenML Pro SaaS deployment with ZenML secret store](../.gitbook/assets/cloud_architecture_scenario_1.avif)
 
 For the ZenML Pro SaaS deployment case, all ZenML services are hosted on infrastructure hosted by the ZenML Team. Customer secrets and credentials required to access customer infrastructure are stored and managed by the ZenML Pro Control Plane.
 
@@ -69,25 +69,10 @@ Your workspace only needs permissions to read from this data to display artifact
 
 The advantage of this setup is that it is a fully-managed service, and is very easy to get started with. However, for some clients, even some metadata can be sensitive; these clients should refer to the other architecture diagram.
 
-<details>
-
-<summary>Detailed Architecture Diagram for SaaS deployment</summary>
-
-<img src="../.gitbook/assets/cloud_architecture_saas_detailed.png" alt="ZenML Pro Full SaaS deployment with ZenML secret store" data-size="original">
-
-</details>
-
-<details>
-
-<summary>Detailed Architecture Diagram for SaaS deployment with custom secret store configuration</summary>
-
-<img src="../.gitbook/assets/cloud_architecture_saas_detailed_2.png" alt="ZenML Pro Full SaaS deployment with customer secret store" data-size="original">
-
-</details>
 
 ### ZenML Pro Hybrid SaaS
 
-![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_1_2.png)
+![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_1_2.avif)
 
 The partially self-hosted architecture offers a balanced approach that combines the benefits of cloud-hosted control with on-premises data sovereignty. In this configuration, while the ZenML Pro control plane remains hosted by ZenML (handling user management, authentication, RBAC and global workspace coordination), all other components - including services, data, and secrets - are deployed within your own cloud infrastructure.
 
@@ -110,7 +95,7 @@ This architecture strikes a balance between convenience and control, making it a
 
 ### ZenML Pro Self-Hosted Architecture
 
-![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_2.png)
+![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_2.avif)
 
 In the case of self-hosting ZenML Pro, all services, data, and secrets are deployed on the customer\
 cloud. This is meant for customers who require completely air-gapped deployments, for the tightest security standards. [Reach out to us](mailto:cloud@zenml.io) if you want to set this up.

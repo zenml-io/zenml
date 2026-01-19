@@ -29,8 +29,8 @@ The Hybrid deployment model is designed for organizations that need to keep sens
 | ZenML Pro Server(s) | Your Infrastructure | Handles pipeline orchestration and execution |
 | Metadata Store | Your Infrastructure | Stores all pipeline runs, model metadata, and tracking information |
 | Secrets Store | Your Infrastructure | Stores all credentials and sensitive configuration |
-| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
-| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
+| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Executes pipeline steps and training jobs |
+| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Stores datasets, models, and pipeline artifacts |
 
 {% hint style="success" %}
 All metadata, secrets, and ML artifacts remain within your infrastructure. Only authentication and authorization data flows to the ZenML control plane.

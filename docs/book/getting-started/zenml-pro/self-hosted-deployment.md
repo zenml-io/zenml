@@ -32,8 +32,8 @@ In a Self-hosted deployment, every component of ZenML Pro runs within your isola
 | Secrets Store | Your Infrastructure | Stores all credentials and sensitive configuration |
 | Identity Provider | Your Infrastructure | Handles authentication (OIDC/LDAP/SAML) |
 | Pro Dashboard | Your Infrastructure | Web interface for all ZenML Pro features |
-| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
-| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
+| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Executes pipeline steps and training jobs |
+| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Stores datasets, models, and pipeline artifacts |
 
 {% hint style="success" %}
 Zero data leaves your environment. All components, metadata, and ML artifacts remain within your infrastructure boundaries.
@@ -77,7 +77,7 @@ Deploy across multiple environments combining on-premises infrastructure with pr
 
 ## Deployment Architecture
 
-![Complete ZenML Services diagram on top of Kubernetes](.gitbook/assets/full_zenml_infra.png)
+![Complete ZenML Services diagram on top of Kubernetes](.gitbook/assets/full_zenml_infra.avif)
 
 The diagram above illustrates a complete Self-hosted ZenML Pro deployment with all components running within your organization's VPC. This architecture ensures zero external communication while providing full enterprise MLOps capabilities.
 
