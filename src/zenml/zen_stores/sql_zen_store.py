@@ -6124,6 +6124,9 @@ class SqlZenStore(BaseZenStore):
                 step_id = None
                 metadata: Dict[str, Any] = {}
 
+                if group_info := step.config.group:
+                    metadata["group"] = group_info.model_dump(mode="json")
+
                 step_run = step_runs.get(step_name)
                 if step_run:
                     step_id = step_run.id

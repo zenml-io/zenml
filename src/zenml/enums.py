@@ -569,3 +569,10 @@ class StepRuntime(StrEnum):
 
     INLINE = "inline"
     ISOLATED = "isolated"
+
+
+class GroupType(StrEnum):
+    """Enum representing different types of group."""
+
+    MANUAL = "manual"
+    MAP = "map"
