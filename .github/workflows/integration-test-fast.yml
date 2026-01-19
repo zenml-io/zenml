@@ -209,7 +209,7 @@ jobs:
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Install kubectl on Linux
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          curl -L -o kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
       - name: Install kubectl on MacOS
