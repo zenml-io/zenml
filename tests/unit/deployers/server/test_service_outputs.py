@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Unit tests for PipelineDeploymentService output mapping with in-memory mode."""
 
+from contextlib import nullcontext
 from types import SimpleNamespace
 from typing import Generator, List
 from uuid import uuid4
@@ -132,7 +133,6 @@ class _DummyOrchestrator:
 @pytest.fixture(autouse=True)
 def clean_runtime_state() -> Generator[None, None, None]:
     """Ensure runtime state is reset before and after each test."""
-
     runtime.stop()
     yield
     runtime.stop()
@@ -142,7 +142,6 @@ def _make_service(
     monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
 ) -> PipelineDeploymentService:
     """Construct a deployment service instance backed by dummy artifacts."""
-
     deployment = _DummyDeployment()
 
     class DummyZenStore:
@@ -156,7 +155,6 @@ def _make_service(
 
         def create_snapshot(self, request: object) -> _DummySnapshot:  # noqa: D401
             """Return the snapshot that would be created in the real store."""
-
             return deployment.snapshot
 
     class DummyClient:
@@ -170,11 +168,14 @@ def _make_service(
             self, *args: object, **kwargs: object
         ) -> _DummyRun:  # noqa: D401
             """Return a dummy pipeline run."""
-
             return _DummyRun()
 
     monkeypatch.setattr("zenml.deployers.server.service.Client", DummyClient)
     monkeypatch.setattr("zenml.deployers.server.app.Client", DummyClient)
+    monkeypatch.setattr(
+        "zenml.deployers.server.service.setup_logging_context",
+        lambda *args, **kwargs: nullcontext(),
+    )
 
     service = PipelineDeploymentService(
         _DummyDeploymentAppRunner(deployment.id)
@@ -189,7 +190,6 @@ def test_service_captures_in_memory_outputs(
     monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
 ) -> None:
     """Service should capture in-memory outputs before stopping runtime."""
-
     service = _make_service(monkeypatch, mocker)
 
     placeholder_run = _DummyRun()
