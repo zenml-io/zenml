@@ -42,7 +42,7 @@ from zenml.deployers.server.service import PipelineDeploymentService
 class _DummyParams(BaseModel):
     """Minimal params model to bypass real pipeline loading."""
 
-    city: str = "Berlin"
+    city: str = "Munich"
 
 
 class _DummySnapshot:
