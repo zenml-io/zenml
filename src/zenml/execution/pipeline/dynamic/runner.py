@@ -256,9 +256,11 @@ class DynamicPipelineRunner:
                         # them and raise any exceptions that occurred.
                         self.await_all_step_run_futures()
                     except Exception as e:
-                        exception_info = exception_utils.collect_pipeline_exception_information(
-                            exception=e,
-                            pipeline_instance=self.pipeline,
+                        exception_info = (
+                            exception_utils.collect_exception_information(
+                                exception=e,
+                                user_func=self.pipeline.entrypoint,
+                            )
                         )
                         # TODO: this call already invalidates the token, so
                         # the steps will keep running but won't be able to

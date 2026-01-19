@@ -290,7 +290,7 @@ class StepLauncher:
             step_run_request.status = ExecutionStatus.FAILED
             step_run_request.end_time = utc_now()
             step_run_request.exception_info = (
-                exception_utils.collect_step_exception_information(e)
+                exception_utils.collect_exception_information(e)
             )
             raise
         finally:
