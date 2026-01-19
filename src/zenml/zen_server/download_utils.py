@@ -137,3 +137,31 @@ def download_snapshot_code_archive(
             temp_file.write(f.read())
 
         return temp_file.name
+
+
+def verify_file_is_downloadable(
+    file_path: str,
+    artifact_store: "BaseArtifactStore",
+) -> None:
+    """Verify that the given file is downloadable.
+
+    Args:
+        file_path: The path to the file to verify.
+        artifact_store: The artifact store to use for the verification.
+
+    Raises:
+        IllegalOperationError: If the file is too large to be downloaded.
+        KeyError: If the file does not exist in the artifact store.
+    """
+    if not artifact_store.exists(file_path):
+        raise KeyError(f"The file '{file_path}' does not exist.")
+
+    size = artifact_store.size(file_path)
+    max_download_size = server_config().file_download_size_limit
+
+    if size and size > max_download_size:
+        raise IllegalOperationError(
+            f"The file '{file_path}' is too large to be downloaded. "
+            f"The maximum download size allowed by your ZenML server is "
+            f"{max_download_size} bytes."
+        )

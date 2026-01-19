@@ -49,7 +49,10 @@ from zenml.zen_server.auth import (
     generate_download_token,
     verify_download_token,
 )
-from zenml.zen_server.download_utils import download_snapshot_code_archive
+from zenml.zen_server.download_utils import (
+    download_snapshot_code_archive,
+    verify_file_is_downloadable,
+)
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
@@ -270,10 +273,17 @@ def get_snapshot_code_download_token(
     artifact_store_id = snapshot.stack.components[
         StackComponentType.ARTIFACT_STORE
     ][0].id
-    artifact_store = zen_store().get_stack_component(artifact_store_id)
+    artifact_store_model = zen_store().get_stack_component(artifact_store_id)
 
-    models: List[BaseModel] = [snapshot, snapshot.stack, artifact_store]
+    models: List[BaseModel] = [snapshot, snapshot.stack, artifact_store_model]
     batch_verify_permissions_for_models(models=models, action=Action.READ)
+
+    artifact_store = load_artifact_store(
+        artifact_store_id=artifact_store_id, zen_store=zen_store()
+    )
+    verify_file_is_downloadable(
+        file_path=snapshot.code_path, artifact_store=artifact_store
+    )
 
     # The code download is handled in a separate tab by the browser. In this
     # tab, we do not have the ability to set any headers and therefore cannot
