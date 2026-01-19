@@ -13,11 +13,11 @@ ZenML uses GitBook for documentation. The URL structure does **not** directly mi
 2. **URLs follow TOC hierarchy, not file paths**: The `toc.md` file determines the URL structure. Child pages are nested under their parent's URL path.
 
    Example from `zenml-pro/toc.md`:
-   ```
+   ```text
    ## Deployments
-   * [Scenarios](scenarios.md)
-     * [SaaS](saas-deployment.md)
-     * [Self-hosted](self-hosted-deployment.md)
+   * Scenarios        -> scenarios.md
+     * SaaS           -> saas-deployment.md
+     * Self-hosted    -> self-hosted-deployment.md
    ```
 
    This creates:
