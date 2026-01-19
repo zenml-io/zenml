@@ -35,7 +35,15 @@ zenml secret create agent_tools_secret \
     --google_search_api_key=AIza... \
     --weather_api_key=abc123 \
     --database_url=postgresql://user:pass@host/db
+
+# Create a private secret (only you can access it)
+zenml secret create my_private_secret --private \
+    --api_key=secret-value
 ```
+
+{% hint style="info" %}
+By default, secrets are public (visible to other users based on RBAC). Use `--private` or `-p` to create a secret only you can access. See [Private and public secrets](#private-and-public-secrets) for more details.
+{% endhint %}
 
 Alternatively, you can create the secret in an interactive session (in which ZenML will query you for the secret keys and values) by passing the `--interactive/-i` parameter:
 
@@ -89,26 +97,129 @@ client.create_secret(
         "organization_id": "org-..."
     }
 )
+
+# Create a private secret (only you can access it)
+client.create_secret(
+    name="my_private_secret",
+    values={"api_key": "secret-value"},
+    private=True,
+)
 ```
+
+{% hint style="info" %}
+By default, secrets are public (`private=False`). Set `private=True` to create a secret only you can access. See [Private and public secrets](#private-and-public-secrets) for more details.
+{% endhint %}
 
 Other Client methods used for secrets management include `get_secret` to fetch a secret by name or id, `update_secret` to update an existing secret, `list_secrets` to query the secrets store using a variety of filtering and sorting criteria, and `delete_secret` to delete a secret. The full Client API reference is available [here](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html).
 {% endtab %}
 {% endtabs %}
 
-## Set scope for secrets
+## Private and public secrets
 
-ZenML secrets can be scoped to a user. This allows you to create secrets that are only accessible to one user.
+ZenML secrets can be either **private** or **public**:
 
-By default, all created secrets are scoped to the active user. To create a secret and scope it to your active user instead, you can pass the `--scope` argument to the CLI command:
+- **Private secrets** are only accessible to the user who created them. No other user can view, use, or manage a private secret, regardless of their role or permissions.
+- **Public secrets** (the default) are accessible to other users based on your RBAC configuration. On ZenML Pro, access to public secrets is governed by your role-based access control settings.
 
+{% hint style="info" %}
+The `private` property takes precedence over RBAC. A private secret is **only** visible to its creator, even if RBAC would otherwise grant access to other users.
+{% endhint %}
+
+### Creating private secrets
+
+By default, secrets are created as public (`private=False`). To create a private secret:
+
+{% tabs %}
+{% tab title="CLI" %}
 ```shell
-zenml secret create <SECRET_NAME> \
-    --scope user \
+# Use the --private or -p flag
+zenml secret create <SECRET_NAME> --private \
     --<KEY_1>=<VALUE_1> \
     --<KEY_2>=<VALUE_2>
-```
 
-Scopes also act as individual namespaces. When you are referencing a secret by name in your pipelines and stacks, ZenML will look for a secret with that name scoped to the active user.
+# Short form
+zenml secret create <SECRET_NAME> -p \
+    --<KEY_1>=<VALUE_1>
+```
+{% endtab %}
+
+{% tab title="Python SDK" %}
+```python
+from zenml.client import Client
+
+client = Client()
+client.create_secret(
+    name="my_private_secret",
+    values={"api_key": "..."},
+    private=True,  # Makes this secret private
+)
+```
+{% endtab %}
+{% endtabs %}
+
+{% hint style="warning" %}
+Currently, setting the private status is only available via the CLI and Python SDK. The dashboard UI does not yet support creating or modifying private secrets.
+{% endhint %}
+
+### Fetching secrets with the same name
+
+Since private and public secrets exist in separate namespaces, you can have both a private and a public secret with the same name. When fetching a secret by name without specifying its visibility:
+
+- ZenML searches **private secrets first**, then public secrets
+- The first match is returned
+
+To explicitly fetch a secret of a specific visibility:
+
+{% tabs %}
+{% tab title="CLI" %}
+```shell
+# Explicitly fetch a private secret
+zenml secret get my_secret --private=true
+
+# Explicitly fetch a public secret
+zenml secret get my_secret --private=false
+```
+{% endtab %}
+
+{% tab title="Python SDK" %}
+```python
+from zenml.client import Client
+
+client = Client()
+
+# Explicitly fetch a private secret
+private_secret = client.get_secret("my_secret", private=True)
+
+# Explicitly fetch a public secret
+public_secret = client.get_secret("my_secret", private=False)
+```
+{% endtab %}
+{% endtabs %}
+
+### Updating secret visibility
+
+You can change a secret's visibility after creation:
+
+{% tabs %}
+{% tab title="CLI" %}
+```shell
+# Make a public secret private
+zenml secret update my_secret --private=true
+
+# Make a private secret public
+zenml secret update my_secret --private=false
+```
+{% endtab %}
+
+{% tab title="Python SDK" %}
+```python
+from zenml.client import Client
+
+client = Client()
+client.update_secret("my_secret", update_private=True)  # Make private
+```
+{% endtab %}
+{% endtabs %}
 
 ## Accessing registered secrets
 
