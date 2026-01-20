@@ -21,6 +21,7 @@ from zenml.config import DeploymentSettings
 deployment_settings = DeploymentSettings(
     app_title="Hierarchical Document Search",
     app_description="ZenML orchestration + Pydantic AI agents",
+    dashboard_files_path="ui",
 )
 
 
@@ -96,7 +97,7 @@ def hierarchical_search_pipeline(
                         )
 
         results = aggregate_results(
-            traversal_results=[r.load() for r in traversal_results],
+            traversal_results=traversal_results,
             query=query,
         )
 
