@@ -16,7 +16,7 @@
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, VARCHAR, Column
+from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -40,6 +40,14 @@ class LogsSchema(BaseSchema, table=True):
     # Fields
     uri: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     source: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
+    log_key: str = Field(sa_column=Column(VARCHAR(255), nullable=True))
+
+    __table_args__ = (
+        UniqueConstraint(
+            "log_key",
+            name="unique_log_key",
+        ),
+    )
 
     # Foreign Keys
     pipeline_run_id: Optional[UUID] = build_foreign_key_field(
@@ -91,6 +99,10 @@ class LogsSchema(BaseSchema, table=True):
         Returns:
             The created `LogsSchema`.
         """
+        log_key = None
+        if request.pipeline_run_id or request.step_run_id:
+            log_key = f"{request.pipeline_run_id}-{request.step_run_id}-{request.source}"
+
         return LogsSchema(
             id=request.id,
             uri=request.uri,
@@ -99,6 +111,7 @@ class LogsSchema(BaseSchema, table=True):
             step_run_id=request.step_run_id,
             artifact_store_id=request.artifact_store_id,
             log_store_id=request.log_store_id,
+            log_key=log_key,
         )
 
     def to_model(

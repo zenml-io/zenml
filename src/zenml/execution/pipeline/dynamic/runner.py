@@ -193,10 +193,14 @@ class DynamicPipelineRunner:
         with logs_context:
             if self._run:
                 if self._run.status.is_finished:
-                    logger.info("Run `%s` is already finished.", str(self._run.id))
+                    logger.info(
+                        "Run `%s` is already finished.", str(self._run.id)
+                    )
                     return
                 if self._run.orchestrator_run_id:
-                    logger.info("Continuing existing run `%s`.", str(self._run.id))
+                    logger.info(
+                        "Continuing existing run `%s`.", str(self._run.id)
+                    )
                     run = self._run
                 else:
                     run = Client().zen_store.update_run(
@@ -213,7 +217,9 @@ class DynamicPipelineRunner:
                 if existing_runs.total == 1:
                     run = existing_runs.items[0]
                     if run.status.is_finished:
-                        logger.info("Run `%s` is already finished.", str(run.id))
+                        logger.info(
+                            "Run `%s` is already finished.", str(run.id)
+                        )
                         return
                     else:
                         logger.info(

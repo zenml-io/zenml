@@ -201,7 +201,10 @@ class LoggingContext(context_utils.BaseContext):
             ValueError: If the response is not a step run or pipeline run.
         """
         if isinstance(response, StepRunResponse):
-            log_update = LogsUpdate(step_run_id=response.id)
+            log_update = LogsUpdate(
+                step_run_id=response.id,
+                pipeline_run_id=response.pipeline_run_id,
+            )
         elif isinstance(response, PipelineRunResponse):
             log_update = LogsUpdate(pipeline_run_id=response.id)
         else:

@@ -83,6 +83,22 @@ class LogsRequest(BaseRequest):
             )
         return value
 
+    @model_validator(mode="after")
+    def validate_stack_component_ids(self) -> "LogsRequest":
+        """Validate the stack component IDs.
+
+        Raises:
+            ValueError: If both `artifact_store_id` and `log_store_id` are not set.
+
+        Returns:
+            self
+        """
+        if self.artifact_store_id is None and self.log_store_id is None:
+            raise ValueError(
+                "Either an `artifact_store_id` or a `log_store_id` must be set."
+            )
+        return self
+
 
 # ------------------ Update Model ------------------
 
@@ -90,30 +106,13 @@ class LogsRequest(BaseRequest):
 class LogsUpdate(BaseUpdate):
     """Update model for logs."""
 
-    pipeline_run_id: Optional[UUID] = Field(
-        default=None,
+    pipeline_run_id: UUID = Field(
         title="The pipeline run ID to associate the logs with.",
     )
     step_run_id: Optional[UUID] = Field(
         default=None,
         title="The step run ID to associate the logs with.",
     )
-
-    @model_validator(mode="after")
-    def validate_association_ids(self) -> "LogsUpdate":
-        """Validate the IDs.
-
-        Raises:
-            ValueError: If both `pipeline_run_id` and `step_run_id` are not set.
-
-        Returns:
-            self
-        """
-        if self.pipeline_run_id is None and self.step_run_id is None:
-            raise ValueError(
-                "At least one of `pipeline_run_id` or `step_run_id` must be set."
-            )
-        return self
 
 
 # ------------------ Response Model ------------------
