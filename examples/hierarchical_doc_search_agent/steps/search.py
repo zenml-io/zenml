@@ -1,6 +1,22 @@
+# Apache Software License 2.0
+#
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Search steps for hierarchical document traversal."""
 
 import json
+import logging
 from pathlib import Path
 from typing import Annotated, Any, Dict, List, Tuple
 
@@ -9,6 +25,8 @@ from pydantic_ai import Agent
 
 from zenml import step
 from zenml.types import HTMLString
+
+logger = logging.getLogger(__name__)
 
 # --- Data loading ---
 
@@ -21,7 +39,8 @@ def _load_documents() -> Dict[str, Any]:
     ]
     for p in paths:
         if p.exists():
-            return json.load(open(p))["documents"]
+            with open(p) as f:
+                return json.load(f)["documents"]
     return {}
 
 
@@ -163,8 +182,12 @@ def traverse_node(
     try:
         result = traversal_agent.run_sync(prompt)
         decision = result.output
-    except Exception:
-        # Fallback if no API key
+    except Exception as e:
+        # Fallback to keyword matching if LLM unavailable (e.g., no API key)
+        logger.warning(
+            f"LLM agent failed, using fallback mode: {e}. "
+            "Set OPENAI_API_KEY for full functionality."
+        )
         has_answer = any(
             w in doc.get("content", "").lower() for w in query.lower().split()
         )
@@ -172,7 +195,7 @@ def traverse_node(
             has_answer=has_answer,
             answer=doc.get("content", "")[:200] if has_answer else "",
             traverse_to=related[:2] if not has_answer else [],
-            reasoning="Fallback mode",
+            reasoning="Fallback mode (LLM unavailable)",
         )
 
     result_dict = {

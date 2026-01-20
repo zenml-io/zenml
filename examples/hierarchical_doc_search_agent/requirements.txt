@@ -1,2 +1,3 @@
 zenml[server]
 pydantic-ai
+openai

@@ -725,13 +725,17 @@
           }
 
           const outputs = data.outputs || {};
-          const searchResults = outputs.search_results || null;
+          const searchKey = Object.keys(outputs).find((k) =>
+            k.includes("search_results")
+          );
 
-          if (!searchResults) {
+          if (!searchKey) {
             messageEl.textContent = "No results returned.";
             messageEl.className = "message info";
             return;
           }
+
+          const searchResults = outputs[searchKey];
 
           renderMetrics(searchResults);
           renderResults(searchResults);

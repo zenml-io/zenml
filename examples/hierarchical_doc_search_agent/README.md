@@ -56,7 +56,7 @@ python run.py --query "Compare ML approaches" --max-agents 5 --max-depth 3
 
 ```python
 # Pydantic AI makes decisions
-traversal_agent = Agent("openai:gpt-4o-mini", result_type=TraversalDecision)
+traversal_agent = Agent("openai:gpt-4o-mini", output_type=TraversalDecision)
 
 @step
 def traverse_node(query, doc_id, budget, visited):
