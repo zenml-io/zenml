@@ -364,10 +364,12 @@ class BaseOrchestrator(StackComponent, ABC):
                         invocation_id,
                         step,
                     ) in snapshot.step_configurations.items():
-                        from zenml.utils.env_utils import get_step_environment
+                        from zenml.utils.env_utils import (
+                            get_runtime_environment,
+                        )
 
-                        step_environment = get_step_environment(
-                            step_config=step.config,
+                        step_environment = get_runtime_environment(
+                            config=step.config,
                             stack=stack,
                         )
 
