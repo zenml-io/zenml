@@ -64,7 +64,7 @@ def create_logs(
     Returns:
         The created log model.
     """
-    if LogsRequest.pipeline_run_id:
+    if logs.pipeline_run_id:
         verify_permission_for_model(
             model=zen_store().get_run(logs.pipeline_run_id),
             action=Action.UPDATE,
