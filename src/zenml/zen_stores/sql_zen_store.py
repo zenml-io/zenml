@@ -4416,36 +4416,28 @@ class SqlZenStore(BaseZenStore):
             The created logs entry.
         """
         if logs.artifact_store_id:
-            self._get_reference_schema_by_id(
-                resource=logs,
-                reference_schema=StackComponentSchema,
-                reference_id=logs.artifact_store_id,
+            self._get_schema_by_id(
+                resource_id=logs.artifact_store_id,
+                schema_class=StackComponentSchema,
                 session=session,
-                reference_type="logs artifact store",
             )
         if logs.log_store_id:
-            self._get_reference_schema_by_id(
-                resource=logs,
-                reference_schema=StackComponentSchema,
-                reference_id=logs.log_store_id,
+            self._get_schema_by_id(
+                resource_id=logs.log_store_id,
+                schema_class=StackComponentSchema,
                 session=session,
-                reference_type="logs log store",
             )
         if logs.pipeline_run_id:
-            self._get_reference_schema_by_id(
-                resource=logs,
-                reference_schema=PipelineRunSchema,
-                reference_id=logs.pipeline_run_id,
+            self._get_schema_by_id(
+                resource_id=logs.pipeline_run_id,
+                schema_class=PipelineRunSchema,
                 session=session,
-                reference_type="logs pipeline run",
             )
         if logs.step_run_id:
-            self._get_reference_schema_by_id(
-                resource=logs,
-                reference_schema=StepRunSchema,
-                reference_id=logs.step_run_id,
+            self._get_schema_by_id(
+                resource_id=logs.step_run_id,
+                schema_class=StepRunSchema,
                 session=session,
-                reference_type="logs step run",
             )
         log_entry = LogsSchema.from_request(logs)
 
@@ -4499,20 +4491,16 @@ class SqlZenStore(BaseZenStore):
                     "The logs entry is already associated with a different entity."
                 )
 
-        self._get_reference_schema_by_id(
-            resource=logs_schema,
-            reference_id=logs_update.pipeline_run_id,
-            reference_schema=PipelineRunSchema,
+        self._get_schema_by_id(
+            resource_id=logs_update.pipeline_run_id,
+            schema_class=PipelineRunSchema,
             session=session,
-            reference_type="logs pipeline run",
         )
         if logs_update.step_run_id:
-            step_schema = self._get_reference_schema_by_id(
-                resource=logs_schema,
-                reference_id=logs_update.step_run_id,
-                reference_schema=StepRunSchema,
+            step_schema = self._get_schema_by_id(
+                resource_id=logs_update.step_run_id,
+                schema_class=StepRunSchema,
                 session=session,
-                reference_type="logs step run",
             )
             if step_schema.pipeline_run_id != logs_update.pipeline_run_id:
                 raise ValueError(
