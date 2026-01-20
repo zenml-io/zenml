@@ -4,6 +4,7 @@ ZenML controls: fan-out, budget limits, step orchestration
 Pydantic AI controls: agent decisions (traverse deeper or return answer?)
 """
 
+import os
 from typing import Annotated, Any, Dict
 
 from steps import (
@@ -16,7 +17,12 @@ from steps import (
 )
 
 from zenml import pipeline
-from zenml.config import DeploymentSettings
+from zenml.config import DeploymentSettings, DockerSettings
+
+docker_settings = DockerSettings(
+    requirements=["pydantic-ai", "openai"],
+    prevent_build_reuse=True,
+)
 
 deployment_settings = DeploymentSettings(
     app_title="Hierarchical Document Search",
@@ -24,11 +30,20 @@ deployment_settings = DeploymentSettings(
     dashboard_files_path="ui",
 )
 
+# Pass OpenAI API key to deployed container
+environment = {}
+if os.getenv("OPENAI_API_KEY"):
+    environment["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
 
 @pipeline(
     dynamic=True,
     enable_cache=True,
-    settings={"deployment": deployment_settings},
+    settings={
+        "docker": docker_settings,
+        "deployment": deployment_settings,
+    },
+    environment=environment,
 )
 def hierarchical_search_pipeline(
     query: str = "How does quantum computing relate to machine learning?",
