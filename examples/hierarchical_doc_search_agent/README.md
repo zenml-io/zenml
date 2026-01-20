@@ -99,7 +99,8 @@ The UI automatically connects to your deployed pipeline endpoint.
 
 ## Files
 
-- `pipelines/hierarchical_search_pipeline.py` - Pipeline + steps (~250 lines)
+- `pipelines/hierarchical_search_pipeline.py` - Pipeline orchestration logic
+- `steps/search.py` - All step implementations + Pydantic AI agent
 - `data/doc_graph.json` - Sample documents with relationships
 - `ui/index.html` - Web UI for deployed pipeline
 - `run.py` - CLI
