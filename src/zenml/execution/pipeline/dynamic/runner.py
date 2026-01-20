@@ -185,7 +185,11 @@ class DynamicPipelineRunner:
         return self._pipeline
 
     def run_pipeline(self) -> None:
-        """Run the pipeline."""
+        """Run the pipeline.
+        
+        Raises:
+            Exception: If the pipeline run failed.
+        """
         logs_context: ContextManager[Any] = nullcontext()
         if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
             logs_context = setup_logging_context(source="orchestrator")
