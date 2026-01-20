@@ -41,7 +41,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-e2e-batch
-        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
+        uses: zenml-io/template-e2e-batch@b6d727e6f0fedff6f37f5ac43c1f4949480d1160  # main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
@@ -57,7 +57,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-e2e-batch compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh E2E template
@@ -70,14 +70,16 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          if git diff --quiet "origin/${{ github.event.pull_request.head.ref }}"; then
+          if git diff --quiet "origin/${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}"; then
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
             echo "vvv Active Git changes found vvv"
             echo "changes=true" >> $GITHUB_OUTPUT
-            git diff "origin/${{ github.event.pull_request.head.ref }}"
+            git diff "origin/${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}"
           fi
+        env:
+          GITHUB_EVENT_PULL_REQUEST_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
         run: |
@@ -85,10 +87,12 @@ jobs:
           git config --global user.email "actions@github.com"
           git add .
           git commit -am "Auto-update of E2E template"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push origin HEAD:${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}
+        env:
+          GITHUB_EVENT_PULL_REQUEST_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - name: Create PR comment
         if: steps.check_changes.outputs.changes == 'true'
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -113,7 +117,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-nlp
-        uses: zenml-io/template-nlp/.github/actions/nlp_template_test@main
+        uses: zenml-io/template-nlp@e894b3e02b02ebb9b3b2a6cf798028817b114ee2  # main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
@@ -129,7 +133,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-nlp compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh NLP template
@@ -141,14 +145,16 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          if git diff --quiet "origin/${{ github.event.pull_request.head.ref }}"; then
+          if git diff --quiet "origin/${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}"; then
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
             echo "vvv Active Git changes found vvv"
             echo "changes=true" >> $GITHUB_OUTPUT
-            git diff "origin/${{ github.event.pull_request.head.ref }}"
+            git diff "origin/${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}"
           fi
+        env:
+          GITHUB_EVENT_PULL_REQUEST_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
         run: |
@@ -156,10 +162,12 @@ jobs:
           git config --global user.email "actions@github.com"
           git add .
           git commit -am "Auto-update of NLP template"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push origin HEAD:${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}
+        env:
+          GITHUB_EVENT_PULL_REQUEST_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - name: Create PR comment
         if: steps.check_changes.outputs.changes == 'true'
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -184,7 +192,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-starter
-        uses: zenml-io/template-starter/.github/actions/starter_template_test@main
+        uses: zenml-io/template-starter@74cf22b8923e34c928df3fd0c9068fe5a4ebcb9c  # main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
@@ -201,7 +209,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-starter compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh Starter template
@@ -214,14 +222,16 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          if git diff --quiet "origin/${{ github.event.pull_request.head.ref }}"; then
+          if git diff --quiet "origin/${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}"; then
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
             echo "vvv Active Git changes found vvv"
             echo "changes=true" >> $GITHUB_OUTPUT
-            git diff "origin/${{ github.event.pull_request.head.ref }}"
+            git diff "origin/${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}"
           fi
+        env:
+          GITHUB_EVENT_PULL_REQUEST_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
         run: |
@@ -229,10 +239,12 @@ jobs:
           git config --global user.email "actions@github.com"
           git add .
           git commit -am "Auto-update of Starter template"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push origin HEAD:${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}
+        env:
+          GITHUB_EVENT_PULL_REQUEST_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - name: Create PR comment
         if: steps.check_changes.outputs.changes == 'true'
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |-
@@ -257,7 +269,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-llm-finetuning
-        uses: zenml-io/template-llm-finetuning/.github/actions/llm_finetuning_template_test@main
+        uses: zenml-io/template-llm-finetuning@cc84d60fe04d732a9e423bbf2679d95b704ee945  # main
         with:
           python-version: ${{ inputs.python-version }}
           ref-zenml: ${{ github.ref }}
@@ -272,7 +284,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-llm-finetuning compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh LLM Finetuning template
@@ -285,14 +297,16 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          if git diff --quiet "origin/${{ github.event.pull_request.head.ref }}"; then
+          if git diff --quiet "origin/${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}"; then
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
             echo "vvv Active Git changes found vvv"
             echo "changes=true" >> $GITHUB_OUTPUT
-            git diff "origin/${{ github.event.pull_request.head.ref }}"
+            git diff "origin/${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}"
           fi
+        env:
+          GITHUB_EVENT_PULL_REQUEST_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
         run: |
@@ -300,10 +314,12 @@ jobs:
           git config --global user.email "actions@github.com"
           git add .
           git commit -am "Auto-update of LLM Finetuning template"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push origin HEAD:${GITHUB_EVENT_PULL_REQUEST_HEAD_REF}
+        env:
+          GITHUB_EVENT_PULL_REQUEST_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - name: Create PR comment
         if: steps.check_changes.outputs.changes == 'true'
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |-

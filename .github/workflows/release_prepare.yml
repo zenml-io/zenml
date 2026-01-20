@@ -25,7 +25,7 @@ jobs:
       # Check out main to get the old version
       - name: Checkout code
         id: checkout-code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: main
       # Configure Git
@@ -47,7 +47,7 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       # Configure Git
       - name: Configure git
         shell: bash
@@ -58,10 +58,12 @@ jobs:
       - name: Validate new version
         shell: bash
         run: |
-          scripts/validate-new-version.sh ${{ needs.fetch-versions.outputs.new_version }}
+          scripts/validate-new-version.sh ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
       # Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: '3.12'
       # Install ZenML
@@ -77,14 +79,19 @@ jobs:
         if: ${{ github.event.created }}
         shell: bash
         run: |
-          alembic merge -m "Release" heads --rev-id ${{ needs.fetch-versions.outputs.new_version }}
+          alembic merge -m "Release" heads --rev-id ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}
           scripts/format.sh
           git add src/zenml/zen_stores/migrations/versions
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
       # Update the README, pyproject.toml, version and helm files
       - name: Update main files
         run: |
-          sed -i "s/${{ needs.fetch-versions.outputs.old_version }}/${{ needs.fetch-versions.outputs.new_version }}/g" README.md pyproject.toml src/zenml/VERSION helm/Chart.yaml helm/README.md
+          sed -i "s/${NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION}/${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}/g" README.md pyproject.toml src/zenml/VERSION helm/Chart.yaml helm/README.md
           git add README.md pyproject.toml src/zenml/VERSION helm/Chart.yaml helm/README.md
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
       # Update the Quickstart references
       - name: Replace the references in the quickstart example
         run: |
@@ -92,30 +99,36 @@ jobs:
           while IFS= read -r -d '' file; do
             if [[ "$file" == *.ipynb ]]; then
               # For .ipynb files, we need to parse JSON
-              jq --arg OLD ${{ needs.fetch-versions.outputs.old_version }} --arg NEW ${{ needs.fetch-versions.outputs.new_version }} \
+              jq --arg OLD ${NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION} --arg NEW ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION} \
                 '(.cells[] | select(.cell_type == "code") | .source) |= map(gsub($OLD; $NEW))' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
             else
               # For .txt and .yaml files, we can use sed
-              sed -i "s/${{ needs.fetch-versions.outputs.old_version }}/${{ needs.fetch-versions.outputs.new_version }}/g" "$file"
+              sed -i "s/${NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION}/${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}/g" "$file"
             fi
           done
           git add examples/quickstart
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
       # Generate and append release notes
       - name: Generate release notes
         # Only run this part once when the release branch is created
         if: ${{ github.event.created }}
         run: |
-          RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${{ needs.fetch-versions.outputs.new_version }} -F target_commitish=${{ github.sha }} -F previous_tag_name=${{ needs.fetch-versions.outputs.old_version }} | jq -r '.body')
+          RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION} -F target_commitish=${{ github.sha }} -F previous_tag_name=${NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION} | jq -r '.body')
           {
           head -n 1 RELEASE_NOTES.md
           echo ""
-          echo "# ${{ needs.fetch-versions.outputs.new_version }}"
+          echo "# ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
           echo ""
           echo "$RELEASE_NOTES"
           echo ""
           tail -n +2 RELEASE_NOTES.md
           } > RELEASE_NOTES.md.new && mv RELEASE_NOTES.md.new RELEASE_NOTES.md
           git add RELEASE_NOTES.md
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
+          NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
       # Push the changes
       - name: Push the changes
         run: |
@@ -123,17 +136,19 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Adding the new version to the necessary files."
-            git push origin HEAD:${{ github.ref }}
+            git push origin HEAD:${GITHUB_REF}
           fi
       # Create a PR
       - name: Create a pull request
         # Only run this part once when the release branch is created
         if: ${{ github.event.created }}
         run: |
-          gh pr create --base "develop" --head "${{ github.ref }}" \
-            --title "Prepare release ${{ needs.fetch-versions.outputs.new_version }}" \
-            --body "This PR prepares the release of version ${{ needs.fetch-versions.outputs.new_version }}." \
+          gh pr create --base "develop" --head "${GITHUB_REF}" \
+            --title "Prepare release ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}" \
+            --body "This PR prepares the release of version ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}." \
             --label "internal" --label "run-slow-ci" --label "release" --label "no-release-notes"
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
       # Send a message to Discord to alert everyone for the release
       - name: Send message to Discord
         # Only run this part once when the release branch is created
@@ -142,10 +157,13 @@ jobs:
           curl -X POST \
            -H "Content-Type: application/json" \
            -d '{
-             "content": "${{ github.event.sender.login }} is preparing the release .\n\n@growth and @product, please do not merge anything to develop until the process is completed.",
-             "thread_name": "Preparing release: ${{ needs.fetch-versions.outputs.new_version }}"
+             "content": "${GITHUB_EVENT_SENDER_LOGIN} is preparing the release .\n\n@growth and @product, please do not merge anything to develop until the process is completed.",
+             "thread_name": "Preparing release: ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
            }' \
            ${{ secrets.DISCORD_WEBHOOK_RELEASE }}
+        env:
+          GITHUB_EVENT_SENDER_LOGIN: ${{ github.event.sender.login }}
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
   build-test-images:
     runs-on: ubuntu-latest
     needs: [fetch-versions, prepare-changes]
@@ -155,9 +173,9 @@ jobs:
     steps:
       # Check out the prepare-release branch
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       # Sign in to Google
-      - uses: google-github-actions/setup-gcloud@v0
+      - uses: google-github-actions/setup-gcloud@20c93dacc1d70ddbce76c63ab32c35595345bdd1 # v0
         with:
           service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
           service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
@@ -168,7 +186,9 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=release-cloudbuild-preparation.yaml \
-            --substitutions=_ZENML_NEW_VERSION=${{ needs.fetch-versions.outputs.new_version }}
+            --substitutions=_ZENML_NEW_VERSION=${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
   setup-prep-release-tenant:
     needs: [fetch-versions, build-test-images]
     env:
@@ -178,10 +198,10 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       # Setting up Python
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2
         with:
           python-version: '3.12'
       # Install requests
@@ -213,7 +233,7 @@ jobs:
           - cloud: gcp
     steps:
       - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@v10
+        uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c # v10
         with:
           root-reserve-mb: 20000
           swap-size-mb: 1024
@@ -224,9 +244,9 @@ jobs:
       - name: Reload Docker
         run: sudo systemctl restart docker
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2
         with:
           python-version: '3.12'
       - name: Install ZenML
@@ -236,4 +256,6 @@ jobs:
         run: |
           scripts/qs_run_release_flow.sh \
             --cloud "${{ matrix.cloud }}" \
-            --new-version "${{ needs.fetch-versions.outputs.new_version }}"
+            --new-version "${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}

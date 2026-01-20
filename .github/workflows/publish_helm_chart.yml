@@ -17,28 +17,28 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       # The following sed command replaces the version number in Chart.yaml with the tag version.
       # It replaces the line that starts with "version: " with "version: <tag version>"
       - name: Add tag version to Chart.yaml
         run: |
-          sed -i "s/version: .*/version: \"${{ github.ref_name }}\"/" helm/Chart.yaml
+          sed -i "s/version: .*/version: \"${GITHUB_REF_NAME}\"/" helm/Chart.yaml
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355  # v2
         with:
           role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-helm
           aws-region: us-east-1
       - name: Login to Amazon ECR Public
         id: login-ecr-public
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076  # v2
         with:
           mask-password: 'true'
           registry-type: public
 
       # TODO: revisit the pinned helm version + find a higher version
       - name: install helm with version 3.9.2
-        uses: azure/setup-helm@v3.5
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78  # v3.5
         with:
           version: v3.9.2  # default is latest (stable)
         id: install-helm
@@ -49,4 +49,4 @@ jobs:
           REPOSITORY: zenml
         run: |-
           helm package ./helm
-          helm push $REPOSITORY-${{ github.ref_name }}.tgz oci://$REGISTRY/$REGISTRY_ALIAS
+          helm push $REPOSITORY-${GITHUB_REF_NAME}.tgz oci://$REGISTRY/$REGISTRY_ALIAS

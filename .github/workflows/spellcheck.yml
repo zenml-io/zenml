@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       - name: Spelling checker
-        uses: crate-ci/typos@v1.17.0
+        uses: crate-ci/typos@2361394247a38536a5f2376a05181ca001dd9e26  # v1.17.0
         with:
           files: .
           config: ./.typos.toml
