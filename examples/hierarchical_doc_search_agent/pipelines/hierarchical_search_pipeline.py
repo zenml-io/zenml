@@ -19,9 +19,14 @@ from steps import (
 from zenml import pipeline
 from zenml.config import DeploymentSettings, DockerSettings
 
+# Pass OpenAI API key to deployed container
+environment = {}
+if os.getenv("OPENAI_API_KEY"):
+    environment["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+    
 docker_settings = DockerSettings(
     requirements=["pydantic-ai", "openai"],
-    prevent_build_reuse=True,
+    environment=environment,
 )
 
 deployment_settings = DeploymentSettings(
@@ -29,11 +34,6 @@ deployment_settings = DeploymentSettings(
     app_description="ZenML orchestration + Pydantic AI agents",
     dashboard_files_path="ui",
 )
-
-# Pass OpenAI API key to deployed container
-environment = {}
-if os.getenv("OPENAI_API_KEY"):
-    environment["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
 
 @pipeline(
@@ -43,7 +43,6 @@ if os.getenv("OPENAI_API_KEY"):
         "docker": docker_settings,
         "deployment": deployment_settings,
     },
-    environment=environment,
 )
 def hierarchical_search_pipeline(
     query: str = "How does quantum computing relate to machine learning?",
