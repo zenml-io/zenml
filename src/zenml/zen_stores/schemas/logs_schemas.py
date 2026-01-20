@@ -40,7 +40,9 @@ class LogsSchema(BaseSchema, table=True):
     # Fields
     uri: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     source: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
-    log_key: str = Field(sa_column=Column(VARCHAR(255), nullable=True))
+    log_key: Optional[str] = Field(
+        sa_column=Column(VARCHAR(255), nullable=True)
+    )
 
     __table_args__ = (
         UniqueConstraint(

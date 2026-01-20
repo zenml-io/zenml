@@ -26,7 +26,6 @@ def upgrade() -> None:
             )
         )
         batch_op.create_unique_constraint("unique_log_key", ["log_key"])
-
         batch_op.drop_constraint(
             "unique_source_per_run_and_step", type_="unique"
         )

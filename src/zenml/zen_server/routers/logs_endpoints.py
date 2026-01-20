@@ -135,7 +135,7 @@ def update_logs(
     Returns:
         The updated log model.
     """
-    if LogsRequest.pipeline_run_id:
+    if logs_id.pipeline_run_id:
         verify_permission_for_model(
             model=zen_store().get_run(logs_update.pipeline_run_id),
             action=Action.UPDATE,
