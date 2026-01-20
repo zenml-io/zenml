@@ -135,11 +135,10 @@ def update_logs(
     Returns:
         The updated log model.
     """
-    if logs_id.pipeline_run_id:
-        verify_permission_for_model(
-            model=zen_store().get_run(logs_update.pipeline_run_id),
-            action=Action.UPDATE,
-        )
+    verify_permission_for_model(
+        model=zen_store().get_run(logs_update.pipeline_run_id),
+        action=Action.UPDATE,
+    )
 
     return verify_permissions_and_update_entity(
         id=logs_id,
