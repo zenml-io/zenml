@@ -4473,6 +4473,12 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated logs entry.
+
+        Raises:
+            IllegalOperationError: If the log entry is already associated
+                with a different entity.
+            ValueError: If the provided pipeline run id does not match
+                the provided step run id.
         """
         logs_schema = self._get_schema_by_id(
             resource_id=logs_id,
@@ -6543,10 +6549,6 @@ class SqlZenStore(BaseZenStore):
                 scope of the same pipeline run.
             KeyError: If the run requires a model version that doesn't exist and
                 can not be created.
-            IllegalOperationError: If the logs entry is already associated with a
-                different entity.
-            ValueError: If the run id doesn't match the run id that the step id
-                belongs to.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
 
@@ -7031,8 +7033,6 @@ class SqlZenStore(BaseZenStore):
             The updated pipeline run.
 
         Raises:
-            EntityExistsError: If a log entry with the same source already
-                exists within the scope of the same pipeline run.
             IllegalOperationError: If the orchestrator run id is being updated
                 on a non-placeholder run or if the orchestrator run id is
                 already set and is different from the new orchestrator run id.
@@ -10003,7 +10003,6 @@ class SqlZenStore(BaseZenStore):
                 with the same source already exists within the scope of the
                 same step.
             IllegalOperationError: if the pipeline run is stopped or stopping.
-            KeyError: If the logs entry in the request model does not exist.
         """
         if step_run.status in {
             ExecutionStatus.RETRIED,
@@ -10556,7 +10555,6 @@ class SqlZenStore(BaseZenStore):
             step_run_update: The update to be applied to the step.
 
         Raises:
-            EntityExistsError: If the log entry already exists.
             ValueError: If trying to update the step status to retried.
 
         Returns:
