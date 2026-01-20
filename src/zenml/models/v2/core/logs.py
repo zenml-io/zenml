@@ -99,6 +99,19 @@ class LogsRequest(BaseRequest):
             )
         return self
 
+    @model_validator(mode="after")
+    def validate_pipeline_id_and_step_id(self) -> "LogsRequest":
+        """Validate the log key.
+
+        Returns:
+            self
+        """
+        if self.step_run_id and self.pipeline_run_id is None:
+            raise ValueError(
+                "If a `step_run_id` is set, a `pipeline_run_id` must also be set."
+            )
+        return self
+
 
 # ------------------ Update Model ------------------
 
