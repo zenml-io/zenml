@@ -5,10 +5,10 @@ rules:
   # These are ZenML's own templates and are intentionally unpinned
   unpinned-uses:
     ignore:
-      - update-templates-to-examples.yml:46  # zenml-io/template-e2e-batch
-      - update-templates-to-examples.yml:123  # zenml-io/template-nlp
-      - update-templates-to-examples.yml:199  # zenml-io/template-starter
-      - update-templates-to-examples.yml:277  # zenml-io/template-llm-finetuning
+      - update-templates-to-examples.yml:44  # zenml-io/template-e2e-batch
+      - update-templates-to-examples.yml:120  # zenml-io/template-nlp
+      - update-templates-to-examples.yml:195  # zenml-io/template-starter
+      - update-templates-to-examples.yml:272  # zenml-io/template-llm-finetuning
       - weekly-agent-pipelines-test.yml:101  # Ilshidur/action-discord uses @master, can't be SHA-pinned
 
   # excessive-permissions: These workflows use default permissions.
@@ -30,8 +30,8 @@ rules:
   # (step outputs within same workflow are trusted)
   template-injection:
     ignore:
-      - release.yml:176  # VERSION from step output
-      - release.yml:177  # sha from step output
+      - release.yml:169  # VERSION from step output
+      - release.yml:170  # sha from step output
       - snack-it.yml:352  # issue_number from step output
       - snack-it.yml:353  # continuation of above
       - snack-it.yml:354  # project_added from step output

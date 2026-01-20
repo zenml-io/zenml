@@ -41,7 +41,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-e2e-batch
-        uses: zenml-io/template-e2e-batch@b6d727e6f0fedff6f37f5ac43c1f4949480d1160  # main
+        uses: zenml-io/template-e2e-batch@main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
@@ -117,7 +117,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-nlp
-        uses: zenml-io/template-nlp@e894b3e02b02ebb9b3b2a6cf798028817b114ee2  # main
+        uses: zenml-io/template-nlp@main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
@@ -192,7 +192,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-starter
-        uses: zenml-io/template-starter@74cf22b8923e34c928df3fd0c9068fe5a4ebcb9c  # main
+        uses: zenml-io/template-starter@main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
@@ -269,7 +269,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-llm-finetuning
-        uses: zenml-io/template-llm-finetuning@cc84d60fe04d732a9e423bbf2679d95b704ee945  # main
+        uses: zenml-io/template-llm-finetuning@main
         with:
           python-version: ${{ inputs.python-version }}
           ref-zenml: ${{ github.ref }}
