@@ -105,6 +105,9 @@ class LogsRequest(BaseRequest):
 
         Returns:
             self
+
+        Raises:
+            ValueError: If a `step_run_id` is set and a `pipeline_run_id` is not set.
         """
         if self.step_run_id and self.pipeline_run_id is None:
             raise ValueError(
