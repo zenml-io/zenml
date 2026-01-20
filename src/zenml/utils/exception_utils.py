@@ -18,7 +18,7 @@ import os
 import re
 import textwrap
 import traceback
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.logger import get_logger
@@ -27,19 +27,19 @@ from zenml.models import (
 )
 
 if TYPE_CHECKING:
-    from zenml.steps import BaseStep
+    pass
 
 logger = get_logger(__name__)
 
 
 def collect_exception_information(
-    exception: BaseException, step_instance: Optional["BaseStep"] = None
+    exception: BaseException, user_func: Optional[Callable[..., Any]] = None
 ) -> ExceptionInfo:
     """Collects the exception information.
 
     Args:
         exception: The exception to collect information from.
-        step_instance: The step instance that is currently running.
+        user_func: The user function that was called.
 
     Returns:
         The exception information.
@@ -48,15 +48,11 @@ def collect_exception_information(
     line_number = None
     start_index = None
 
-    if step_instance and (
-        source_file := inspect.getsourcefile(step_instance.entrypoint)
-    ):
+    if user_func and (source_file := inspect.getsourcefile(user_func)):
         try:
             source_file = os.path.abspath(source_file)
 
-            lines, start_line = inspect.getsourcelines(
-                step_instance.entrypoint
-            )
+            lines, start_line = inspect.getsourcelines(user_func)
             end_line = start_line + len(lines)
 
             line_pattern = re.compile(
@@ -75,7 +71,7 @@ def collect_exception_information(
                         start_index = index
                         break
         except Exception as e:
-            logger.debug("Failed to detect step code line: %s", e)
+            logger.debug("Failed to detect code line: %s", e)
 
     if start_index is not None:
         # If the code failed while executing user code, we remove the initial
@@ -89,5 +85,5 @@ def collect_exception_information(
         # Ignore errors when decoding in case we cut off in the middle of an
         # encoded character.
         traceback=tb_bytes.decode(errors="ignore"),
-        step_code_line=line_number,
+        user_code_line=line_number,
     )

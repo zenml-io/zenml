@@ -79,7 +79,7 @@ from zenml.stack import Stack
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.steps.utils import OutputSignature
-from zenml.utils import source_utils
+from zenml.utils import exception_utils, source_utils
 from zenml.utils.logging_utils import (
     is_pipeline_logging_enabled,
     setup_run_logging,
@@ -183,7 +183,11 @@ class DynamicPipelineRunner:
         return self._pipeline
 
     def run_pipeline(self) -> None:
-        """Run the pipeline."""
+        """Run the pipeline.
+
+        Raises:
+            Exception: If the pipeline run failed.
+        """
         if self._run:
             if self._run.status.is_finished:
                 logger.info("Run `%s` is already finished.", str(self._run.id))
@@ -251,11 +255,19 @@ class DynamicPipelineRunner:
                         # steps might still be running. We now wait for all of
                         # them and raise any exceptions that occurred.
                         self.await_all_step_run_futures()
-                    except:
+                    except Exception as e:
+                        exception_info = (
+                            exception_utils.collect_exception_information(
+                                exception=e,
+                                user_func=self.pipeline.entrypoint,
+                            )
+                        )
                         # TODO: this call already invalidates the token, so
                         # the steps will keep running but won't be able to
                         # report their status back to ZenML.
-                        publish_failed_pipeline_run(run.id)
+                        publish_failed_pipeline_run(
+                            run.id, exception_info=exception_info
+                        )
                         logger.error(
                             "Pipeline run failed. All in-progress step runs "
                             "will still finish executing."
