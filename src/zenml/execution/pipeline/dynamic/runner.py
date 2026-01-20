@@ -186,7 +186,7 @@ class DynamicPipelineRunner:
 
     def run_pipeline(self) -> None:
         """Run the pipeline.
-        
+
         Raises:
             Exception: If the pipeline run failed.
         """
