@@ -194,15 +194,17 @@ Creates tracking issues from PRs when `snack-it` label is applied. Adds to GitHu
 
 2. **Template repos stay unpinned**: The 4 template repositories in `update-templates-to-examples.yml` intentionally use `@main` - don't SHA-pin them
 
-3. **secrets: inherit is intentional**: Zizmor warns about this but it's the correct pattern for first-party reusable workflows
+3. **Template actions use subdirectory paths**: These actions reference nested paths like `zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main` - zizmor's auto-fix incorrectly strips subdirectory paths, so never run `zizmor --fix` on these lines
 
-4. **Run format.sh before commits**: YAML files must pass yamlfix (`bash scripts/format.sh .github/`)
+4. **secrets: inherit is intentional**: Zizmor warns about this but it's the correct pattern for first-party reusable workflows
 
-5. **Two-tier CI requires label**: Full CI only runs with `run-slow-ci` label - maintainers add this for thorough testing
+5. **Run format.sh before commits**: YAML files must pass yamlfix (`bash scripts/format.sh .github/`)
 
-6. **Release waits are intentional**: The 4-minute sleeps in release.yml allow PyPI CDN propagation
+6. **Two-tier CI requires label**: Full CI only runs with `run-slow-ci` label - maintainers add this for thorough testing
 
-7. **Don't modify examples/ directly**: This folder is auto-updated by CI from template repos
+7. **Release waits are intentional**: The 4-minute sleeps in release.yml allow PyPI CDN propagation
+
+8. **Don't modify examples/ directly**: This folder is auto-updated by CI from template repos
 
 ## Formatting Workflows
 
