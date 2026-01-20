@@ -158,11 +158,13 @@ def publish_successful_pipeline_run(
 
 def publish_failed_pipeline_run(
     pipeline_run_id: "UUID",
+    exception_info: Optional[ExceptionInfo] = None,
 ) -> "PipelineRunResponse":
     """Publishes a failed pipeline run.
 
     Args:
         pipeline_run_id: The ID of the pipeline run to update.
+        exception_info: The exception information of the pipeline run.
 
     Returns:
         The updated pipeline run.
@@ -173,6 +175,7 @@ def publish_failed_pipeline_run(
             status=ExecutionStatus.FAILED,
             end_time=utc_now(),
             is_finished=True,
+            exception_info=exception_info,
         ),
     )
 
