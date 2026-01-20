@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hierarchical Document Search | ZenML</title>
+
+    <!-- ZenML Brand Fonts (Fontsource CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/jetbrains-mono@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ===== CSS Variables - ZenML Design System ===== */
+      :root {
+        /* Primary Colors */
+        --zenml-purple: #7a3ef4;
+        --zenml-purple-dark: #431d93;
+        --zenml-purple-light: #e4d8fd;
+        --zenml-purple-lighter: #f1ebfe;
+        --zenml-purple-mid: #9565f6;
+
+        /* Neutral Colors */
+        --text-primary: #0d061d;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --surface-primary: #ffffff;
+        --surface-secondary: #f9fafb;
+        --surface-tertiary: #f3f4f6;
+
+        /* Semantic Colors */
+        --success: #1cbf4a;
+        --success-light: #d2f2db;
+        --warning: #f98b0a;
+        --warning-light: #fff6ea;
+        --error: #eb483d;
+        --error-light: #fbdad8;
+
+        /* Border Colors */
+        --border-moderate: #e5e7eb;
+        --border-bold: #6b7280;
+
+        /* Typography */
+        --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", Monaco, "Courier New",
+          monospace;
+
+        /* Spacing Scale (8pt grid) */
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --spacing-2xl: 48px;
+
+        /* Shadows */
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-standard: 0 2px 8px rgba(0, 0, 0, 0.1);
+        --shadow-emphasized: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+        /* Border Radius */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-full: 999px;
+      }
+
+      /* ===== Reset & Base Styles ===== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-ui);
+        background: var(--surface-secondary);
+        color: var(--text-primary);
+        padding: var(--spacing-xl);
+        font-size: 16px;
+        line-height: 24px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* ===== Layout ===== */
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-lg);
+        box-shadow: var(--shadow-standard);
+      }
+
+      /* ===== Hero Section ===== */
+      .hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-moderate);
+      }
+
+      .hero-copy {
+        flex: 1;
+      }
+
+      .title {
+        margin: 0 0 var(--spacing-sm) 0;
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 36px;
+        color: var(--text-primary);
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-secondary);
+      }
+
+      .hero-art svg {
+        display: block;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.08));
+      }
+
+      /* ===== Section ===== */
+      .section {
+        margin-top: var(--spacing-lg);
+      }
+
+      .section h2 {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-md);
+      }
+
+      /* ===== Form ===== */
+      .form-row {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: var(--spacing-md);
+      }
+
+      .input {
+        flex: 1;
+        min-width: 200px;
+        padding: 12px 16px;
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-primary);
+        background: var(--surface-primary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .input::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      .input:focus {
+        outline: none;
+        border-color: var(--zenml-purple);
+        box-shadow: 0 0 0 3px rgba(122, 62, 244, 0.1);
+      }
+
+      .input-small {
+        width: 80px;
+        min-width: 80px;
+        flex: 0;
+      }
+
+      .input-label {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-right: var(--spacing-xs);
+      }
+
+      /* ===== Buttons ===== */
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 20px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      /* Primary Button */
+      .btn:not(.secondary) {
+        background: var(--zenml-purple);
+        color: var(--surface-primary);
+      }
+
+      .btn:not(.secondary):hover:not(:disabled) {
+        background: var(--zenml-purple-dark);
+        box-shadow: var(--shadow-standard);
+      }
+
+      /* Secondary Button */
+      .btn.secondary {
+        background: var(--surface-primary);
+        color: var(--zenml-purple);
+        border: 1px solid var(--border-moderate);
+      }
+
+      .btn.secondary:hover:not(:disabled) {
+        background: var(--surface-tertiary);
+      }
+
+      /* ===== Status Pill ===== */
+      .status-pill {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 18px;
+        margin-top: var(--spacing-sm);
+      }
+
+      .status-pill.auth-set {
+        background: var(--success-light);
+        color: var(--success);
+      }
+
+      .status-pill.auth-required {
+        background: var(--warning-light);
+        color: var(--warning);
+      }
+
+      /* ===== Messages ===== */
+      .message {
+        margin-top: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .message:empty {
+        display: none;
+      }
+
+      .message.info {
+        background: var(--zenml-purple-lighter);
+        color: var(--zenml-purple);
+        border: 1px solid var(--zenml-purple-light);
+      }
+
+      .message.error {
+        background: var(--error-light);
+        color: var(--error);
+        border: 1px solid var(--error);
+      }
+
+      /* ===== Metrics Grid ===== */
+      .metrics {
+        margin-top: var(--spacing-lg);
+      }
+
+      .metrics:empty {
+        display: none;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--spacing-md);
+      }
+
+      .metric-card {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        box-shadow: var(--shadow-subtle);
+      }
+
+      .metric-icon {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+      }
+
+      .metric-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        flex: 1;
+      }
+
+      .metric-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 18px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+
+      .metric-value {
+        font-weight: 600;
+        font-size: 20px;
+        line-height: 28px;
+        color: var(--text-primary);
+      }
+
+      /* Severity color coding */
+      .sev-simple {
+        border-color: var(--success);
+        background: var(--success-light);
+      }
+
+      .sev-deep {
+        border-color: var(--zenml-purple-light);
+        background: var(--zenml-purple-lighter);
+      }
+
+      /* ===== Results Display ===== */
+      .results {
+        margin-top: var(--spacing-lg);
+      }
+
+      .results:empty {
+        display: none;
+      }
+
+      .results h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: var(--spacing-md);
+        color: var(--text-primary);
+      }
+
+      .result-card {
+        padding: var(--spacing-md);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        background: var(--surface-secondary);
+        margin-bottom: var(--spacing-md);
+      }
+
+      .result-card:last-child {
+        margin-bottom: 0;
+      }
+
+      .result-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--zenml-purple);
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .result-answer {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-primary);
+      }
+
+      .result-meta {
+        margin-top: var(--spacing-sm);
+        font-size: 12px;
+        color: var(--text-tertiary);
+      }
+
+      .no-results {
+        text-align: center;
+        padding: var(--spacing-xl);
+        color: var(--text-secondary);
+      }
+
+      /* ===== Example Queries ===== */
+      .examples {
+        margin-top: var(--spacing-md);
+      }
+
+      .examples-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .example-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+      }
+
+      .example-chip {
+        padding: 6px 12px;
+        background: var(--surface-tertiary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .example-chip:hover {
+        background: var(--zenml-purple-lighter);
+        border-color: var(--zenml-purple-light);
+        color: var(--zenml-purple);
+      }
+
+      /* ===== Footer ===== */
+      .footer {
+        text-align: center;
+        padding: var(--spacing-lg);
+        background: var(--surface-secondary);
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 20px;
+        border-top: 1px solid var(--border-moderate);
+        margin: var(--spacing-lg) calc(var(--spacing-lg) * -1)
+          calc(var(--spacing-lg) * -1);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+      }
+
+      .footer strong {
+        color: var(--zenml-purple);
+        font-weight: 600;
+      }
+
+      /* ===== Responsive Design ===== */
+      @media (max-width: 768px) {
+        body {
+          padding: var(--spacing-md);
+        }
+
+        .hero {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .hero-art {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+
+        .form-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .input {
+          min-width: 100%;
+        }
+
+        .input-small {
+          width: 100%;
+        }
+
+        .btn {
+          width: 100%;
+        }
+
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <!-- Hero Section -->
+        <div class="hero">
+          <div class="hero-copy">
+            <h1 class="title">Hierarchical Document Search</h1>
+            <p class="subtitle">
+              AI agents traverse a document graph to find answers. ZenML orchestrates, Pydantic AI decides.
+            </p>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <!-- Document graph illustration -->
+            <svg
+              width="140"
+              height="100"
+              viewBox="0 0 140 100"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#cab2fb" />
+                  <stop offset="100%" stop-color="#f1ebfe" />
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="140" height="100" rx="12" fill="url(#bg)" />
+              <!-- Central node -->
+              <circle cx="70" cy="50" r="12" fill="#7a3ef4" />
+              <!-- Connected nodes -->
+              <circle cx="30" cy="30" r="8" fill="#9565f6" />
+              <circle cx="110" cy="30" r="8" fill="#9565f6" />
+              <circle cx="30" cy="70" r="8" fill="#9565f6" />
+              <circle cx="110" cy="70" r="8" fill="#9565f6" />
+              <!-- Leaf nodes -->
+              <circle cx="15" cy="50" r="5" fill="#e4d8fd" />
+              <circle cx="125" cy="50" r="5" fill="#e4d8fd" />
+              <!-- Connections -->
+              <g stroke="#431d93" stroke-width="1.5" opacity="0.5">
+                <line x1="70" y1="50" x2="30" y2="30" />
+                <line x1="70" y1="50" x2="110" y2="30" />
+                <line x1="70" y1="50" x2="30" y2="70" />
+                <line x1="70" y1="50" x2="110" y2="70" />
+                <line x1="30" y1="30" x2="15" y2="50" />
+                <line x1="30" y1="70" x2="15" y2="50" />
+                <line x1="110" y1="30" x2="125" y2="50" />
+                <line x1="110" y1="70" x2="125" y2="50" />
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Form Section -->
+        <div class="section">
+          <h2>Search Documents</h2>
+          <div class="form-row">
+            <input
+              id="query-input"
+              class="input"
+              type="text"
+              placeholder="Enter your search query..."
+            />
+            <button id="search-btn" class="btn">Search</button>
+          </div>
+          <div class="form-row">
+            <span class="input-label">Max Agents:</span>
+            <input
+              id="max-agents"
+              class="input input-small"
+              type="number"
+              value="3"
+              min="1"
+              max="10"
+            />
+            <span class="input-label">Max Depth:</span>
+            <input
+              id="max-depth"
+              class="input input-small"
+              type="number"
+              value="2"
+              min="1"
+              max="5"
+            />
+            <button
+              id="set-key-btn"
+              class="btn secondary"
+              style="display: none"
+            >
+              Set API Key
+            </button>
+          </div>
+          <div
+            id="auth-status"
+            class="status-pill auth-required"
+            style="display: none"
+          >
+            Auth required
+          </div>
+
+          <!-- Example Queries -->
+          <div class="examples">
+            <div class="examples-label">Try an example:</div>
+            <div class="example-chips">
+              <span class="example-chip" data-query="What is Python?">What is Python?</span>
+              <span class="example-chip" data-query="How does quantum computing relate to machine learning?">Quantum + ML</span>
+              <span class="example-chip" data-query="Compare deep learning approaches">Compare deep learning</span>
+              <span class="example-chip" data-query="What is data science?">Data science basics</span>
+            </div>
+          </div>
+
+          <div id="message" class="message"></div>
+
+          <!-- Metrics Display -->
+          <div id="metrics" class="metrics"></div>
+
+          <!-- Results Display -->
+          <div id="results" class="results"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          Powered by <strong>ZenML</strong> Pipeline Deployments | Dynamic orchestration + Pydantic AI agents
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+    <script>
+      if (typeof marked !== "undefined" && typeof marked.setOptions === "function") {
+        marked.setOptions({ gfm: true, breaks: true });
+      }
+
+      const INVOKE_URL = "{{ service_info.app.invoke_url_path }}";
+      const AUTH_ENABLED = {{ 'true' if service_info.deployment.auth_enabled else 'false' }};
+
+      const queryInput = document.getElementById("query-input");
+      const searchBtn = document.getElementById("search-btn");
+      const maxAgentsInput = document.getElementById("max-agents");
+      const maxDepthInput = document.getElementById("max-depth");
+      const messageEl = document.getElementById("message");
+      const metricsEl = document.getElementById("metrics");
+      const resultsEl = document.getElementById("results");
+      const setKeyBtn = document.getElementById("set-key-btn");
+      const authStatus = document.getElementById("auth-status");
+      const API_KEY_STORAGE = "doc_search_api_key";
+
+      // Example chips click handlers
+      document.querySelectorAll(".example-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          queryInput.value = chip.dataset.query;
+          performSearch();
+        });
+      });
+
+      function setLoading(isLoading) {
+        searchBtn.disabled = isLoading;
+        searchBtn.textContent = isLoading ? "Searching..." : "Search";
+        if (isLoading) {
+          messageEl.textContent = "Agents are traversing the document graph...";
+          messageEl.className = "message info";
+        }
+      }
+
+      function showError(text) {
+        messageEl.textContent = text;
+        messageEl.className = "message error";
+      }
+
+      function clearMessage() {
+        messageEl.textContent = "";
+        messageEl.className = "message";
+      }
+
+      initAuthUI();
+
+      async function performSearch() {
+        const query = queryInput.value.trim();
+        if (!query) {
+          showError("Please enter a search query.");
+          return;
+        }
+
+        if (AUTH_ENABLED && !getApiKey()) {
+          await promptForApiKey();
+          if (!getApiKey()) {
+            showError("API key is required to call the service.");
+            return;
+          }
+        }
+
+        const maxAgents = parseInt(maxAgentsInput.value) || 3;
+        const maxDepth = parseInt(maxDepthInput.value) || 2;
+
+        setLoading(true);
+        metricsEl.innerHTML = "";
+        resultsEl.innerHTML = "";
+
+        try {
+          const headers = { "Content-Type": "application/json" };
+          const key = getApiKey();
+          if (AUTH_ENABLED && key) headers["Authorization"] = `Bearer ${key}`;
+
+          const res = await fetch(INVOKE_URL, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              parameters: {
+                query: query,
+                max_agents: maxAgents,
+                max_depth: maxDepth,
+              },
+            }),
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error("Request failed: " + res.status + " " + text);
+          }
+
+          const data = await res.json();
+          if (!data.success) {
+            const err = data.error || "Unknown error from service.";
+            throw new Error(err);
+          }
+
+          const outputs = data.outputs || {};
+          const searchResults = outputs.search_results || null;
+
+          if (!searchResults) {
+            messageEl.textContent = "No results returned.";
+            messageEl.className = "message info";
+            return;
+          }
+
+          renderMetrics(searchResults);
+          renderResults(searchResults);
+          clearMessage();
+        } catch (e) {
+          showError(e.message || String(e));
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      searchBtn.addEventListener("click", performSearch);
+      queryInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          performSearch();
+        }
+      });
+
+      function initAuthUI() {
+        if (!AUTH_ENABLED) return;
+        setKeyBtn.style.display = "";
+        authStatus.style.display = "";
+        updateAuthStatus();
+        setKeyBtn.addEventListener("click", promptForApiKey);
+      }
+
+      async function promptForApiKey() {
+        const current = getApiKey() || "";
+        const entered = prompt(
+          "Enter API Key (Bearer token):",
+          current ? "********" : ""
+        );
+        if (entered === null) return;
+        if (entered === "********") return;
+        const trimmed = (entered || "").trim();
+        if (!trimmed) {
+          localStorage.removeItem(API_KEY_STORAGE);
+        } else {
+          localStorage.setItem(API_KEY_STORAGE, trimmed);
+        }
+        updateAuthStatus();
+      }
+
+      function getApiKey() {
+        return localStorage.getItem(API_KEY_STORAGE);
+      }
+
+      function updateAuthStatus() {
+        const hasKey = !!getApiKey();
+        authStatus.textContent = hasKey ? "API key set" : "Auth required";
+        authStatus.style.background = hasKey ? "#ecfdf5" : "#eef2ff";
+        authStatus.style.color = hasKey ? "#065f46" : "#3730a3";
+        setKeyBtn.textContent = hasKey ? "Update API Key" : "Set API Key";
+      }
+
+      function renderMetrics(data) {
+        const searchType = data.type || "unknown";
+        const isSimple = searchType === "simple";
+
+        const tiles = [];
+        tiles.push(
+          renderMetricTile(
+            "Search Type",
+            isSimple ? "Simple" : "Deep",
+            searchIcon(),
+            isSimple ? "sev-simple" : "sev-deep"
+          )
+        );
+        tiles.push(
+          renderMetricTile(
+            "Agents Used",
+            String(data.agents_used || 0),
+            agentIcon(),
+            ""
+          )
+        );
+        tiles.push(
+          renderMetricTile(
+            "Docs Explored",
+            String(data.documents_explored || data.results?.length || 0),
+            docIcon(),
+            ""
+          )
+        );
+        tiles.push(
+          renderMetricTile(
+            "Results Found",
+            String(data.results?.length || 0),
+            resultIcon(),
+            ""
+          )
+        );
+
+        metricsEl.innerHTML = `
+          <div class="metrics-grid">
+            ${tiles.join("")}
+          </div>
+        `;
+      }
+
+      function renderMetricTile(label, value, iconSvg, sevClass) {
+        const classes = `metric-card ${sevClass}`;
+        return `
+          <div class="${classes}">
+            <div class="metric-icon">${iconSvg}</div>
+            <div class="metric-content">
+              <div class="metric-label">${label}</div>
+              <div class="metric-value">${value}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderResults(data) {
+        const results = data.results || [];
+        if (results.length === 0) {
+          resultsEl.innerHTML = `
+            <h3>Search Results</h3>
+            <div class="no-results">No matching documents found. Try a different query or increase max depth.</div>
+          `;
+          return;
+        }
+
+        const cards = results
+          .map((r) => {
+            const title = r.title || r.doc_id || "Unknown Document";
+            const answer = r.answer || "";
+            const score = r.score ? `Score: ${(r.score * 100).toFixed(0)}%` : "";
+
+            return `
+            <div class="result-card">
+              <div class="result-title">${escapeHtml(title)}</div>
+              ${answer ? `<div class="result-answer">${escapeHtml(answer)}</div>` : ""}
+              ${score ? `<div class="result-meta">${score}</div>` : ""}
+            </div>
+          `;
+          })
+          .join("");
+
+        resultsEl.innerHTML = `
+          <h3>Search Results</h3>
+          ${cards}
+        `;
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Icons
+      function searchIcon() {
+        return `
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="11" cy="11" r="7" stroke="#7a3ef4" stroke-width="2"/>
+          <path d="M16 16l4 4" stroke="#7a3ef4" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+      }
+
+      function agentIcon() {
+        return `
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="8" r="4" fill="#e4d8fd" stroke="#7a3ef4" stroke-width="1.5"/>
+          <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="#7a3ef4" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>`;
+      }
+
+      function docIcon() {
+        return `
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="2" width="16" height="20" rx="2" fill="#e4d8fd" stroke="#7a3ef4" stroke-width="1.5"/>
+          <line x1="8" y1="8" x2="16" y2="8" stroke="#7a3ef4" stroke-width="1.5"/>
+          <line x1="8" y1="12" x2="16" y2="12" stroke="#7a3ef4" stroke-width="1.5"/>
+          <line x1="8" y1="16" x2="12" y2="16" stroke="#7a3ef4" stroke-width="1.5"/>
+        </svg>`;
+      }
+
+      function resultIcon() {
+        return `
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 12l2 2 4-4" stroke="#1cbf4a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="12" r="9" stroke="#1cbf4a" stroke-width="1.5"/>
+        </svg>`;
+      }
+    </script>
+  </body>
+</html>

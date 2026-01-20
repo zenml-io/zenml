@@ -1,11 +1,2 @@
-# Core dependencies for Hierarchical Document Search Agent Demo
-zenml[server]>=0.90.0
-pydantic-ai>=0.0.7
-litellm>=1.0.0
-numpy>=1.20.0
-pandas>=1.3.0
-
-# Optional: For enhanced functionality in production
-# scikit-learn>=1.0.0
-# matplotlib>=3.5.0
-# plotly>=5.0.0
+zenml[server]
+pydantic-ai
