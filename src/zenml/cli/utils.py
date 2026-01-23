@@ -124,6 +124,7 @@ if TYPE_CHECKING:
         PipelineSnapshotResponse,
         ProjectResponse,
         ResourceTypeModel,
+        ScheduleResponse,
         ServiceConnectorRequest,
         ServiceConnectorResourcesModel,
         ServiceConnectorResponse,
@@ -2100,6 +2101,9 @@ def _get_extra_columns_for_filter(filter_name: str) -> List[str]:
             "resource_types",
             "auth_method",
         ],
+        "ScheduleFilter": [
+            "pipeline",
+        ],
     }
     return extra_columns_map.get(filter_name, [])
 
@@ -2251,6 +2255,34 @@ def generate_pipeline_run_row(
         "status": status_emoji if output_format == "table" else str(status),
         "stack": stack_name,
         "owner": user_name,
+    }
+
+
+def generate_schedule_row(
+    schedule: "ScheduleResponse",
+    output_format: OutputFormat,
+) -> Dict[str, Any]:
+    """Generate row data for schedule display.
+
+    Args:
+        schedule: The schedule response.
+        output_format: The output format.
+
+    Returns:
+        Dict with schedule data for display including resolved pipeline name.
+    """
+    pipeline_name: str = "N/A"
+    if schedule.pipeline_id:
+        try:
+            from zenml.client import Client
+
+            pipeline = Client().get_pipeline(schedule.pipeline_id)
+            pipeline_name = pipeline.name
+        except Exception:
+            pipeline_name = str(schedule.pipeline_id)
+
+    return {
+        "pipeline": pipeline_name,
     }
 
 

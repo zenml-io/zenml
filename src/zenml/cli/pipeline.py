@@ -671,6 +671,7 @@ def list_schedules(
         schedules,
         columns,
         output_format,
+        row_formatter=cli_utils.generate_schedule_row,
         empty_message="No schedules found for this filter.",
     )
 
