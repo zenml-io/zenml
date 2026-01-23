@@ -1,0 +1,38 @@
+{
+  "name": "zenml",
+  "owner": {
+    "name": "ZenML GmbH",
+    "email": "support@zenml.io",
+    "url": "https://zenml.io"
+  },
+  "metadata": {
+    "description": "MLOps workflow automation tools for ZenML users",
+    "version": "1.0.0",
+    "homepage": "https://docs.zenml.io",
+    "repository": "https://github.com/zenml-io/zenml"
+  },
+  "plugins": [
+    {
+      "name": "zenml-quick-wins",
+      "source": "./.claude/skills/zenml-quick-wins",
+      "description": "Guided implementation of ZenML MLOps best practices including metadata logging, experiment tracking, alerters, scheduling, secrets management, and Model Control Plane setup",
+      "version": "1.0.0",
+      "author": {
+        "name": "ZenML Team",
+        "url": "https://github.com/zenml-io"
+      },
+      "homepage": "https://docs.zenml.io",
+      "repository": "https://github.com/zenml-io/zenml",
+      "license": "Apache-2.0",
+      "category": "mlops",
+      "keywords": [
+        "zenml",
+        "mlops",
+        "pipelines",
+        "metadata",
+        "experiment-tracking",
+        "model-governance"
+      ]
+    }
+  ]
+}
