@@ -2274,8 +2274,6 @@ def generate_schedule_row(
     pipeline_name: str = "N/A"
     if schedule.pipeline_id:
         try:
-            from zenml.client import Client
-
             pipeline = Client().get_pipeline(schedule.pipeline_id)
             pipeline_name = pipeline.name
         except Exception:
