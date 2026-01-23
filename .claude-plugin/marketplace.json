@@ -2,11 +2,11 @@
   "name": "zenml",
   "owner": {
     "name": "ZenML GmbH",
-    "email": "support@zenml.io",
+    "email": "hello@zenml.io",
     "url": "https://zenml.io"
   },
   "metadata": {
-    "description": "MLOps workflow automation tools for ZenML users",
+    "description": "MLOps and LLMOps workflow automation tools for ZenML users",
     "version": "1.0.0",
     "homepage": "https://docs.zenml.io",
     "repository": "https://github.com/zenml-io/zenml"
