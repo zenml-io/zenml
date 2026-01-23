@@ -14,7 +14,6 @@ import re
 import sys
 from typing import List, Tuple
 
-
 # Files to exclude from link checking (AI guidance files, not user-facing docs)
 EXCLUDED_FILES = {"CLAUDE.md", "AGENTS.md"}
 
