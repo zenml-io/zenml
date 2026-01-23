@@ -161,9 +161,14 @@ zenml stack update <stack_name> -e wandb_tracker
 
 ```bash
 zenml integration install slack -y
+
+# Store the token securely (recommended)
+zenml secret create slack_credentials --token=$SLACK_BOT_TOKEN
+
+# Register alerter using secret reference
 zenml alerter register slack_alerter \
     --flavor=slack \
-    --slack_token=<SLACK_BOT_TOKEN> \
+    --slack_token={{slack_credentials.token}} \
     --default_slack_channel_id=<CHANNEL_ID>
 zenml stack update <stack_name> -al slack_alerter
 ```
@@ -188,9 +193,14 @@ def training_pipeline():
 
 ```bash
 zenml integration install discord -y
+
+# Store the token securely (recommended)
+zenml secret create discord_credentials --token=$DISCORD_BOT_TOKEN
+
+# Register alerter using secret reference
 zenml alerter register discord_alerter \
     --flavor=discord \
-    --discord_token=<BOT_TOKEN> \
+    --discord_token={{discord_credentials.token}} \
     --default_discord_channel_id=<CHANNEL_ID>
 ```
 
@@ -481,16 +491,14 @@ zenml pipeline runs untag <run_id> --tag="test"
 ```bash
 zenml integration install github  # or gitlab
 
+# Create token secret first (recommended)
+zenml secret create github_secret --token=$GITHUB_TOKEN
+
+# Register code repository using secret reference
 zenml code-repository register project_repo \
     --type=github \
     --url=https://github.com/your/repo.git \
     --token={{github_secret.token}}
-```
-
-### Create Token Secret First
-
-```bash
-zenml secret create github_secret --token=$GITHUB_TOKEN
 ```
 
 ### What You Get
@@ -505,6 +513,10 @@ zenml secret create github_secret --token=$GITHUB_TOKEN
 ```bash
 zenml integration install gitlab
 
+# Create token secret first
+zenml secret create gitlab_secret --token=$GITLAB_TOKEN
+
+# Register code repository using secret reference
 zenml code-repository register project_repo \
     --type=gitlab \
     --url=https://gitlab.com/your/repo.git \

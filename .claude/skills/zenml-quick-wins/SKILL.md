@@ -66,7 +66,7 @@ Look for these patterns in Python files:
 | `@pipeline` without `tags=` | No tagging | #9 Tags |
 | `@step` without `log_metadata` | No metadata | #1 Metadata |
 | No `HTMLString` imports | No HTML reports | #11 Reports |
-| No `Model()` usage | No MCP | #12 Model Control Plane |
+| No `Model()` usage | No model governance | #12 Model Control Plane |
 | Hardcoded credentials | Security risk | #7 Secrets |
 | No `Schedule` imports | Manual runs | #5 Scheduling |
 
@@ -87,21 +87,21 @@ If ZenML MCP server is available, use it for deeper exploration:
 
 | # | Quick Win | Complexity | Impact | Prerequisites |
 |---|-----------|------------|--------|---------------|
-| 1 | [Metadata logging](#1-metadata-logging) | ⭐ | 🔥🔥🔥 | None |
-| 2 | [Experiment comparison](#2-experiment-comparison) | ⭐ | 🔥🔥 | #1 + Pro |
-| 3 | [Autologging](#3-autologging) | ⭐⭐ | 🔥🔥 | Exp tracker |
-| 4 | [Slack/Discord alerts](#4-alerts) | ⭐⭐ | 🔥🔥 | Slack/Discord |
-| 5 | [Cron scheduling](#5-scheduling) | ⭐⭐ | 🔥🔥🔥 | Orchestrator |
-| 6 | [Warm pools](#6-warm-pools) | ⭐ | 🔥🔥 | SageMaker/Vertex |
-| 7 | [Secrets management](#7-secrets) | ⭐⭐ | 🔥🔥🔥 | None |
-| 8 | [Local smoke tests](#8-smoke-tests) | ⭐⭐ | 🔥🔥 | Docker |
-| 9 | [Tags](#9-tags) | ⭐ | 🔥🔥 | None |
-| 10 | [Git repo hooks](#10-git-hooks) | ⭐⭐ | 🔥🔥🔥 | GitHub/GitLab |
-| 11 | [HTML reports](#11-html-reports) | ⭐ | 🔥🔥 | None |
-| 12 | [Model Control Plane](#12-model-control-plane) | ⭐⭐ | 🔥🔥🔥 | None |
-| 13 | [Parent Docker images](#13-parent-images) | ⭐⭐⭐ | 🔥🔥 | Container reg |
-| 14 | [ZenML docs MCP](#14-docs-mcp) | ⭐ | 🔥🔥 | IDE with MCP |
-| 15 | [CLI export formats](#15-cli-export) | ⭐ | 🔥 | None |
+| 1 | [Metadata logging](quick-wins-catalog.md#1-metadata-logging) | ⭐ | 🔥🔥🔥 | None |
+| 2 | [Experiment comparison](quick-wins-catalog.md#2-experiment-comparison-zenml-pro) | ⭐ | 🔥🔥 | #1 + Pro |
+| 3 | [Autologging](quick-wins-catalog.md#3-autologging-experiment-trackers) | ⭐⭐ | 🔥🔥 | Exp tracker |
+| 4 | [Slack/Discord alerts](quick-wins-catalog.md#4-alerts-slackdiscord) | ⭐⭐ | 🔥🔥 | Slack/Discord |
+| 5 | [Cron scheduling](quick-wins-catalog.md#5-cron-scheduling) | ⭐⭐ | 🔥🔥🔥 | Orchestrator |
+| 6 | [Warm pools](quick-wins-catalog.md#6-warm-pools--persistent-resources) | ⭐ | 🔥🔥 | SageMaker/Vertex |
+| 7 | [Secrets management](quick-wins-catalog.md#7-secrets-management) | ⭐⭐ | 🔥🔥🔥 | None |
+| 8 | [Local smoke tests](quick-wins-catalog.md#8-local-smoke-tests) | ⭐⭐ | 🔥🔥 | Docker |
+| 9 | [Tags](quick-wins-catalog.md#9-tags) | ⭐ | 🔥🔥 | None |
+| 10 | [Git repo hooks](quick-wins-catalog.md#10-git-repository-hooks) | ⭐⭐ | 🔥🔥🔥 | GitHub/GitLab |
+| 11 | [HTML reports](quick-wins-catalog.md#11-html-reports) | ⭐ | 🔥🔥 | None |
+| 12 | [Model Control Plane](quick-wins-catalog.md#12-model-control-plane) | ⭐⭐ | 🔥🔥🔥 | None |
+| 13 | [Parent Docker images](quick-wins-catalog.md#13-parent-docker-images) | ⭐⭐⭐ | 🔥🔥 | Container reg |
+| 14 | [ZenML docs MCP server](quick-wins-catalog.md#14-zenml-docs-mcp-server) | ⭐ | 🔥🔥 | IDE with MCP |
+| 15 | [CLI export formats](quick-wins-catalog.md#15-cli-export-formats) | ⭐ | 🔥 | None |
 
 ### Prioritization Matrix
 
@@ -133,7 +133,7 @@ Ask the user which quick wins they want to implement based on their findings and
 
 ## Phase 3: Implementation
 
-See [references/quick-wins-catalog.md](references/quick-wins-catalog.md) for detailed implementation guides for each quick win.
+See [quick-wins-catalog.md](quick-wins-catalog.md) for detailed implementation guides for each quick win.
 
 ### Implementation Checklist Pattern
 
