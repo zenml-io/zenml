@@ -99,7 +99,7 @@ ZenML skills work with tools that support the Agent Skills format:
 
 | Tool | Type | Skills support |
 |------|------|----------------|
-| [Claude Code](https://claude.ai/code) | Anthropic's CLI agent | Native plugin marketplace |
+| [Claude Code](https://code.claude.com/) | Anthropic's CLI agent | Native plugin marketplace |
 | [OpenAI Codex CLI](https://github.com/openai/codex) | OpenAI's terminal agent | Native skills support |
 | [GitHub Copilot](https://github.com/features/copilot) | IDE coding assistant | Agent Skills integration |
 | [OpenCode](https://github.com/opencode-ai/opencode) | Open source AI agent | Native skills support |
