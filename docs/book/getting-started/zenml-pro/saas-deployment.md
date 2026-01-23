@@ -72,11 +72,11 @@ This keeps all credentials within your infrastructure while still benefiting fro
 
 ### Core Platform
 
-ZenML Pro SaaS requires no inbound connectivity into your infrastructure. All communication is initiated from your environment to ZenML, keeping your systems protected behind your firewall.
+ZenML Pro SaaS generally requires no inbound connectivity into your infrastructure. All communication is initiated from your environment to ZenML, keeping your systems protected behind your firewall.
 
 ### Features Requiring Limited Ingress
 
-Some features require you to whitelist ZenML to access specific resources in your environment. These include artifact visualizations (which need limited access to your artifact store), step logs (which need limited access to your artifact store or log collector), and running Snapshots (which relies on limited access to your orchestration environment). You control this access by configuring appropriate cloud IAM permissions.
+Some optional features may require you to whitelist ZenML to access specific resources in your environment. These include artifact visualizations (which need limited access to your artifact store), step logs (which need limited access to your artifact store or log collector), and running Snapshots (which relies on limited access to your orchestration environment). You control this access by configuring appropriate cloud IAM permissions.
 
 ## Getting Started
 
