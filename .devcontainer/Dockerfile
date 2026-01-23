@@ -25,6 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
     ca-certificates \
+    # Required for adding apt repositories (e.g., Terraform)
+    gnupg \
     # Common native library headers for Python packages
     libffi-dev \
     libssl-dev \
