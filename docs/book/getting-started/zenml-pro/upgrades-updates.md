@@ -48,7 +48,7 @@ After upgrading any component:
 
 ## Related Documentation
 
-- [Configuration Details](configuration-details.md) - Component configuration reference
+- [Deployment Details](deploy-details.md) - Component configuration reference
 - [System Architecture](system-architecture.md) - Understand component interactions
 - [Scenarios](scenarios.md) - Deployment scenarios and guides
 
