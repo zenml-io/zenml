@@ -719,23 +719,30 @@
           }
 
           const data = await res.json();
+          console.log("Response data:", JSON.stringify(data, null, 2));
+
           if (!data.success) {
             const err = data.error || "Unknown error from service.";
             throw new Error(err);
           }
 
           const outputs = data.outputs || {};
+          console.log("Outputs:", JSON.stringify(outputs, null, 2));
+          console.log("Output keys:", Object.keys(outputs));
+
           const searchKey = Object.keys(outputs).find((k) =>
             k.includes("search_results")
           );
 
           if (!searchKey) {
-            messageEl.textContent = "No results returned.";
+            messageEl.textContent =
+              "No results returned. Keys found: " + Object.keys(outputs).join(", ");
             messageEl.className = "message info";
             return;
           }
 
           const searchResults = outputs[searchKey];
+          console.log("Search results:", JSON.stringify(searchResults, null, 2));
 
           renderMetrics(searchResults);
           renderResults(searchResults);
