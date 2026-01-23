@@ -24,6 +24,107 @@ command (preferably in a fresh virtual environment):
 ./scripts/install-zenml-dev.sh -i yes
 ```
 
+## Using VS Code Dev Containers for CI-Parity Debugging
+
+If you're debugging a CI failure or want to ensure your local environment
+exactly matches what runs in GitHub Actions, the easiest approach is to use
+VS Code Dev Containers. This gives you an Ubuntu environment with the same
+Python version, dependencies, and environment variables as CI.
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/products/docker-desktop/) installed and running
+- [VS Code](https://code.visualstudio.com/) with the
+  [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+### Opening the Dev Container
+
+1. Open the ZenML repository in VS Code
+2. Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Windows/Linux)
+3. Select **"Dev Containers: Reopen in Container"**
+4. Choose the Python version that matches your CI failure:
+   - `ZenML CI Environment (Ubuntu, Python 3.11)` - **Default**
+   - `ZenML CI Environment (Ubuntu, Python 3.10)`
+   - `ZenML CI Environment (Ubuntu, Python 3.12)`
+   - `ZenML CI Environment (Ubuntu, Python 3.13)`
+
+The first time you open a container, it will:
+- Build the Docker image (takes 5-10 minutes)
+- Run `scripts/install-zenml-dev.sh --system --integrations yes` (the exact
+  same command CI runs)
+- Install all VS Code extensions for Python development
+
+Subsequent opens are much faster due to Docker layer caching and the persistent
+uv cache volume.
+
+### Running CI-Parity Commands
+
+Once inside the dev container, you can run the exact same commands that CI runs:
+
+**Linting (matches CI linting job):**
+```bash
+bash scripts/lint.sh
+```
+
+**Unit tests (matches CI unit-test job):**
+```bash
+bash scripts/test-coverage-xml.sh unit
+```
+
+**Run specific unit tests:**
+```bash
+pytest tests/unit/path/to/test_file.py -v
+```
+
+**Integration tests (matches CI integration-test job):**
+```bash
+# First, provision the test environment
+./zen-test environment provision docker-server
+
+# Then run integration tests
+pytest tests/integration --environment docker-server --no-provision --cleanup-docker
+```
+
+**Formatting:**
+```bash
+bash scripts/format.sh
+```
+
+### CI Environment Variables
+
+The dev container automatically sets the same environment variables as CI:
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `ZENML_DEBUG` | `1` | Enable debug logging |
+| `ZENML_ANALYTICS_OPT_IN` | `false` | Disable analytics |
+| `PYTHONIOENCODING` | `utf-8` | Ensure UTF-8 encoding |
+| `UV_HTTP_TIMEOUT` | `600` | Extended timeout for package downloads |
+
+### Docker-in-Docker Support
+
+The dev container includes Docker-in-Docker (DinD) support, which means you can
+run integration tests that require Docker (like the `docker-server` test
+environment) directly inside the container. Docker commands work just like
+they would on your host machine.
+
+### Python Version-Specific Integration Skipping
+
+Just like in CI, some integrations are automatically skipped on certain Python
+versions. For example, on Python 3.12 and 3.13, `tensorflow` and `deepchecks`
+are not installed because they don't yet support these Python versions. This
+is expected behavior and matches CI exactly.
+
+### Limitations
+
+- **macOS and Windows CI environments cannot be replicated** - Dev containers
+  run Linux, so if your CI failure is specific to macOS or Windows runners,
+  you'll need to test on those platforms directly.
+- **First build is slow** - The initial container build takes 5-10 minutes.
+  Consider using GitHub Codespaces for faster startup if you have access.
+- **Large disk usage** - The full development environment with all integrations
+  requires several gigabytes of disk space.
+
 Running unit tests is as simple as running `pytest` from the root of the
 repository. This will run all unit tests in the `tests/unit` directory:
 
