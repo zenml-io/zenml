@@ -129,15 +129,6 @@ codex plugin add zenml-io/zenml
 codex plugin install zenml-quick-wins@zenml
 ```
 
-#### Other tools
-
-Most tools supporting Agent Skills can install directly from the ZenML GitHub repository. Check your tool's documentation for the specific command, or use the [agent-skills-cli](https://github.com/Karanjot786/agent-skills-cli) universal installer:
-
-```bash
-# Universal installer works with Claude Code, Codex, Copilot, OpenCode, Amp, etc.
-npx agent-skills-cli install zenml-io/zenml --skill zenml-quick-wins
-```
-
 ### Available skills
 
 #### `zenml-quick-wins`
@@ -173,7 +164,7 @@ We're developing additional skills to help with common ZenML workflows:
 - **Pipeline creation** - Scaffolding new pipelines from templates
 - **Stack setup** - Guided stack component configuration
 - **Debugging** - Investigating pipeline failures and performance issues
-- **Migration** - Upgrading between ZenML versions
+- **Migration** - Migrating from other MLOps platforms and orchestrators to ZenML
 
 ### Combining MCP + Skills
 
