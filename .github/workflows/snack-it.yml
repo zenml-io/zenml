@@ -28,7 +28,7 @@ on:
         default: false
 permissions:
   issues: write  # creating issues + comments
-  pull-requests: read  # reading PR data
+  pull-requests: write  # reading PR data + commenting on PRs
   contents: read  # reading repo contents if needed
 jobs:
   create-snack-issue:
