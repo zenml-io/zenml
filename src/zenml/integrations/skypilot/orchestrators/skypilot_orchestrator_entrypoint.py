@@ -207,8 +207,8 @@ def main() -> None:
                 )
                 step_env = shared_env.copy()
                 step_env.update(
-                    env_utils.get_step_environment(
-                        step_config=step.config, stack=active_stack
+                    env_utils.get_runtime_environment(
+                        config=step.config, stack=active_stack
                     )
                 )
                 # For now, we don't support separating secrets from environment

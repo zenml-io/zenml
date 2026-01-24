@@ -199,11 +199,11 @@ class StepRunner:
                 # orchestrator. But for some orchestrators, this is not possible and
                 # we therefore make sure to set them here so they're at least
                 # available for the user code.
-                step_environment = env_utils.get_step_environment(
-                    step_config=step_run.config, stack=self._stack
+                step_environment = env_utils.get_runtime_environment(
+                    config=step_run.config, stack=self._stack
                 )
-                secret_environment = env_utils.get_step_secret_environment(
-                    step_config=step_run.config, stack=self._stack
+                secret_environment = env_utils.get_runtime_secret_environment(
+                    config=step_run.config, stack=self._stack
                 )
                 step_environment.update(secret_environment)
 
@@ -233,6 +233,12 @@ class StepRunner:
                             snapshot=pipeline_run.snapshot
                         )
 
+                    # Get all step environment variables. For most
+                    # orchestrators, the non-secret environment variables have
+                    # been set before by the orchestrator. But for some
+                    # orchestrators, this is not possible and we therefore make
+                    # sure to set them here so they're at least available for
+                    # the user code.
                     with env_utils.temporary_environment(step_environment):
                         return_values = step_instance.call_entrypoint(
                             **function_params
@@ -256,7 +262,7 @@ class StepRunner:
                     else:
                         exception_info = (
                             exception_utils.collect_exception_information(
-                                step_exception, step_instance
+                                step_exception, step_instance.entrypoint
                             )
                         )
 

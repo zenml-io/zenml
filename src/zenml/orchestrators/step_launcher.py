@@ -525,8 +525,8 @@ class StepLauncher:
         environment.update(secrets)
 
         environment.update(
-            env_utils.get_step_environment(
-                step_config=step_run_info.config,
+            env_utils.get_runtime_environment(
+                config=step_run_info.config,
                 stack=self._stack,
             )
         )
@@ -558,8 +558,8 @@ class StepLauncher:
         environment.update(secrets)
 
         environment.update(
-            env_utils.get_step_environment(
-                step_config=step_run_info.config,
+            env_utils.get_runtime_environment(
+                config=step_run_info.config,
                 stack=self._stack,
             )
         )

@@ -14,13 +14,16 @@ import re
 import sys
 from typing import List, Tuple
 
+# Files to exclude from link checking (AI guidance files, not user-facing docs)
+EXCLUDED_FILES = {"CLAUDE.md", "AGENTS.md"}
+
 
 def find_markdown_files(directory: str) -> List[str]:
     """Find all markdown files in the given directory and its subdirectories."""
     markdown_files = []
     for root, _, files in os.walk(directory):
         for file in files:
-            if file.endswith(".md"):
+            if file.endswith(".md") and file not in EXCLUDED_FILES:
                 markdown_files.append(os.path.join(root, file))
     return markdown_files
 

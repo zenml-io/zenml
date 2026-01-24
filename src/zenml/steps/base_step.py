@@ -47,7 +47,7 @@ from zenml.constants import (
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     handle_bool_env_var,
 )
-from zenml.enums import StepRuntime
+from zenml.enums import GroupType, StepRuntime
 from zenml.exceptions import SourceValidationException, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     )
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.step_configurations import (
+        GroupInfo,
         PartialArtifactConfiguration,
         PartialStepConfiguration,
         StepConfiguration,
@@ -138,6 +139,7 @@ class BaseStep:
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
         heartbeat_healthy_threshold: Optional[int] = None,
+        group: Optional[Union["GroupInfo", str]] = None,
     ) -> None:
         """Initializes a step.
 
@@ -179,6 +181,7 @@ class BaseStep:
             heartbeat_healthy_threshold: The amount of time (in minutes) that a
                 running step has not received heartbeat and is considered healthy.
                 By default, set to 30 minutes.",
+            group: The group information for this step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -247,6 +250,7 @@ class BaseStep:
             cache_policy=cache_policy,
             runtime=runtime,
             heartbeat_healthy_threshold=heartbeat_healthy_threshold,
+            group=group,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -934,8 +938,9 @@ class BaseStep:
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
-        merge: bool = True,
+        group: Optional[Union["GroupInfo", str]] = None,
         heartbeat_healthy_threshold: Optional[int] = None,
+        merge: bool = True,
     ) -> T:
         """Configures the step.
 
@@ -981,14 +986,15 @@ class BaseStep:
             cache_policy: Cache policy for this step.
             runtime: The step runtime. This is only applicable for dynamic
                 pipelines.
+            heartbeat_healthy_threshold: The amount of time (in minutes) that a
+                running step has not received heartbeat and is considered healthy.
+                By default, set to 30 minutes.
+            group: The group information for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-            heartbeat_healthy_threshold: The amount of time (in minutes) that a
-                running step has not received heartbeat and is considered healthy.
-                By default, set to 30 minutes.",
 
         Returns:
             The step instance that this method was called on.
@@ -1042,6 +1048,9 @@ class BaseStep:
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + list(secrets)
 
+        if isinstance(group, str):
+            group = GroupInfo(id=group, name=group, type=GroupType.MANUAL)
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -1064,6 +1073,7 @@ class BaseStep:
                 "cache_policy": cache_policy,
                 "runtime": runtime,
                 "heartbeat_healthy_threshold": heartbeat_healthy_threshold,
+                "group": group,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -1094,6 +1104,7 @@ class BaseStep:
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
         heartbeat_healthy_threshold: Optional[int] = None,
+        group: Optional[Union["GroupInfo", str]] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -1132,7 +1143,8 @@ class BaseStep:
                 pipelines.
             heartbeat_healthy_threshold: The amount of time (in minutes) that a
                 running step has not received heartbeat and is considered healthy.
-                By default, set to 30 minutes.",
+                By default, set to 30 minutes.
+            group: The group information for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -1164,6 +1176,7 @@ class BaseStep:
             cache_policy=cache_policy,
             runtime=runtime,
             heartbeat_healthy_threshold=heartbeat_healthy_threshold,
+            group=group,
             merge=merge,
         )
         return step_copy

@@ -383,9 +383,6 @@ def download_artifact_data(
 
     Returns:
         The artifact data.
-
-    Raises:
-        KeyError: If the artifact version has no artifact store.
     """
     verify_download_token(
         token=token,
@@ -393,18 +390,7 @@ def download_artifact_data(
         resource_id=artifact_version_id,
     )
 
-    store = zen_store()
-    artifact_version = store.get_artifact_version(artifact_version_id)
-    if artifact_version.artifact_store_id:
-        artifact_store = store.get_stack_component(
-            artifact_version.artifact_store_id
-        )
-    else:
-        raise KeyError(
-            f"Artifact version {artifact_version_id} has no artifact store"
-        )
-    models: Sequence[BaseModel] = [artifact_version, artifact_store]
-    batch_verify_permissions_for_models(models=models, action=Action.READ)
+    artifact_version = zen_store().get_artifact_version(artifact_version_id)
 
     archive_path = create_artifact_archive(artifact_version)
     return FileResponse(

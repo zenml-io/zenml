@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
+    from zenml.config.step_configurations import GroupInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model import Model
     from zenml.steps import BaseStep
@@ -83,6 +84,7 @@ def step(
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
     heartbeat_healthy_threshold: Optional[int] = None,
+    group: Optional[Union["GroupInfo", str]] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -109,6 +111,7 @@ def step(
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
     heartbeat_healthy_threshold: Optional[int] = None,
+    group: Optional[Union["GroupInfo", str]] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -151,7 +154,8 @@ def step(
             pipelines.
         heartbeat_healthy_threshold: The amount of time (in minutes) that a
             running step has not received heartbeat and is considered healthy.
-            By default, set to 30 minutes.",
+            By default, set to 30 minutes.
+        group: The group information for this step.
 
     Returns:
         The step instance.
@@ -191,6 +195,7 @@ def step(
             cache_policy=cache_policy,
             runtime=runtime,
             heartbeat_healthy_threshold=heartbeat_healthy_threshold,
+            group=group,
         )
 
         return step_instance
