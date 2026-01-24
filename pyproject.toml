@@ -122,6 +122,9 @@ vertex = [
 azureml = [
     "azure-ai-ml==1.23.1",
 ]
+runai = [
+    "runapy>=0.1.0",
+]
 dev = [
     "bandit>=1.7.5,<2.0.0",
     "ruff>=0.1.7",
