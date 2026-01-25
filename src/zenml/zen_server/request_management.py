@@ -257,7 +257,6 @@ class RequestManager:
         - Adaptive batch sizing based on execution time
         - Graceful shutdown via the shutdown event
         """
-        from starlette.concurrency import run_in_threadpool
 
         # Random initial delay (0-interval seconds) to stagger pod startup
         initial_jitter = random.uniform(0, self._cleanup_interval)
@@ -277,7 +276,9 @@ class RequestManager:
                 (
                     deleted_count,
                     duration,
-                ) = await run_in_threadpool(self._cleanup_expired_transactions)
+                ) = await asyncio.get_event_loop().run_in_executor(
+                    None, self._cleanup_expired_transactions
+                )
 
                 # self._adapt_batch_size(deleted_count, duration)
 
