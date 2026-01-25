@@ -45,7 +45,6 @@ class RunAIOrchestratorSettings(BaseSettings):
         "returns immediately and executes asynchronously",
     )
 
-    # GPU configuration - key feature for Run:AI
     gpu_devices_request: int = Field(
         default=1,
         ge=0,
@@ -67,7 +66,6 @@ class RunAIOrchestratorSettings(BaseSettings):
         "via gpu_portion_request. 'device' allocates whole GPUs via gpu_devices_request",
     )
 
-    # CPU and memory configuration
     cpu_core_request: float = Field(
         default=1.0,
         ge=0.1,
@@ -80,18 +78,25 @@ class RunAIOrchestratorSettings(BaseSettings):
         "Examples: '4G' for 4 gigabytes, '512M' for 512 megabytes, '8Gi' for 8 gibibytes",
     )
 
-    # Environment variables
     environment_variables: Dict[str, str] = Field(
         default_factory=dict,
         description="Environment variables to set in the Run:AI workload container. "
         "Example: {'LOG_LEVEL': 'DEBUG', 'BATCH_SIZE': '32'}",
     )
 
-    # Workload type (for future inference support)
     workload_type: Literal["training", "inference"] = Field(
         default="training",
         description="Run:AI workload type. 'training' for batch ML training jobs. "
         "'inference' for long-running inference services (experimental)",
+    )
+
+    cleanup_created_credentials: bool = Field(
+        default=False,
+        description="If true, the orchestrator deletes auto-created Run:AI registry credentials "
+        "after a synchronous run finishes. Disabled by default to encourage reuse "
+        "and avoid API rate limits. Has effect only when the stack container registry "
+        "provides credentials and the orchestrator can create project-scoped Run:AI "
+        "Docker credentials automatically.",
     )
 
     @field_validator("cpu_memory_request")
@@ -136,7 +141,6 @@ class RunAIOrchestratorConfig(
     including authentication and project configuration.
     """
 
-    # Run:AI authentication
     client_id: str = Field(
         ...,
         description="Run:AI client ID for API authentication. Obtain from Run:AI "
@@ -154,7 +158,6 @@ class RunAIOrchestratorConfig(
         "Example: 'https://my-org.run.ai'",
     )
 
-    # Run:AI project configuration
     project_name: str = Field(
         ...,
         description="Run:AI project name for workload submission. The project must "
@@ -168,7 +171,6 @@ class RunAIOrchestratorConfig(
         "deployments, specify the target cluster explicitly",
     )
 
-    # Monitoring configuration
     monitoring_interval: PositiveFloat = Field(
         default=30.0,
         description="Interval in seconds to poll Run:AI API for workload status. "
@@ -260,7 +262,6 @@ class RunAIOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        # Using Run:AI official logo
         return "https://www.run.ai/wp-content/uploads/2023/01/runai-logo.svg"
 
     @property
