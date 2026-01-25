@@ -33,6 +33,11 @@ from zenml.constants import (
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_MAX_BATCH_SIZE,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_MIN_BATCH_SIZE,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TARGET_DURATION,
     DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
@@ -250,6 +255,17 @@ class ServerConfiguration(BaseModel):
         server_request_timeout: The timeout for server requests in seconds. If
             not specified, the default value of 20 seconds will be used. This
             value should be lower than the client's request timeout.
+        api_transaction_cleanup_batch_size: The initial batch size for cleaning
+            up expired API transactions.
+        api_transaction_cleanup_interval: The interval in seconds between
+            cleanup batches.
+        api_transaction_cleanup_min_batch_size: The minimum batch size for the
+            adaptive cleanup algorithm.
+        api_transaction_cleanup_max_batch_size: The maximum batch size for the
+            adaptive cleanup algorithm.
+        api_transaction_cleanup_target_duration: The target duration in seconds
+            for each cleanup batch. The batch size is adjusted to try to meet
+            this target.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -346,6 +362,22 @@ class ServerConfiguration(BaseModel):
     request_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT
     request_deduplication: bool = True
     request_cache_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
+
+    api_transaction_cleanup_batch_size: int = (
+        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE
+    )
+    api_transaction_cleanup_interval: int = (
+        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL
+    )
+    api_transaction_cleanup_min_batch_size: int = (
+        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_MIN_BATCH_SIZE
+    )
+    api_transaction_cleanup_max_batch_size: int = (
+        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_MAX_BATCH_SIZE
+    )
+    api_transaction_cleanup_target_duration: float = (
+        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TARGET_DURATION
+    )
 
     max_request_body_size_in_bytes: int = (
         DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
