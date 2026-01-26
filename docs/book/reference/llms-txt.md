@@ -113,7 +113,7 @@ ZenML skills work with tools that support the Agent Skills format:
 
 ```bash
 # Add the ZenML marketplace (one-time setup)
-/plugin marketplace add zenml-io/zenml
+/plugin marketplace add zenml-io/skills
 
 # Install available skills
 /plugin install zenml-quick-wins@zenml
@@ -123,7 +123,7 @@ ZenML skills work with tools that support the Agent Skills format:
 
 ```bash
 # Add the ZenML marketplace
-codex plugin add zenml-io/zenml
+codex plugin add zenml-io/skills
 
 # Install skills
 codex plugin install zenml-quick-wins@zenml

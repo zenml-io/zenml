@@ -14,7 +14,7 @@ micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 
 ```bash
 # Example for Claude Code - add the ZenML marketplace (one-time)
-/plugin marketplace add zenml-io/zenml
+/plugin marketplace add zenml-io/skills
 
 # Install the skill
 /plugin install zenml-quick-wins@zenml
