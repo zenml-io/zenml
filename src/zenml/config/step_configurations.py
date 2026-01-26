@@ -48,8 +48,8 @@ from zenml.enums import GroupType, StepRuntime
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
-from zenml.utils import deprecation_utils
-from zenml.utils.pydantic_utils import before_validator_handler, update_model
+from zenml.utils import deprecation_utils, dict_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
@@ -392,34 +392,10 @@ class StepConfiguration(PartialStepConfiguration):
             },
             exclude_none=True,
         )
-        if pipeline_values:
-            original_values = self.model_dump(
-                include={
-                    "settings",
-                    "extra",
-                    "failure_hook_source",
-                    "success_hook_source",
-                    "retry",
-                    "substitutions",
-                    "environment",
-                    "secrets",
-                    "cache_policy",
-                },
-                exclude_none=True,
-            )
-
-            original_values["secrets"] = pipeline_values.get(
-                "secrets", []
-            ) + original_values.get("secrets", [])
-
-            updated_config_dict = {
-                **self.model_dump(),
-                **pipeline_values,
-            }
-            updated_config = self.model_validate(updated_config_dict)
-            return update_model(updated_config, original_values)
-        else:
-            return self.model_copy(deep=True)
+        merged_config_dict = _apply_pipeline_configuration(
+            self.model_dump(), pipeline_values
+        )
+        return self.model_validate(merged_config_dict)
 
 
 class InputSpec(FrozenBaseModel):
@@ -556,25 +532,65 @@ class Step(FrozenBaseModel):
             The instantiated object.
         """
         if "config" not in data:
-            config = StepConfiguration.model_validate(
-                data["step_config_overrides"]
+            pipeline_dict = pipeline_configuration.model_dump(
+                include={
+                    "settings",
+                    "extra",
+                    "failure_hook_source",
+                    "success_hook_source",
+                    "retry",
+                    "substitutions",
+                    "environment",
+                    "secrets",
+                    "cache_policy",
+                },
+                exclude_none=True,
             )
-            data["config"] = config.apply_pipeline_configuration(
-                pipeline_configuration
+
+            merged_config_dict = _apply_pipeline_configuration(
+                data["step_config_overrides"], pipeline_dict
             )
+            data["config"] = merged_config_dict
         else:
             # We still need to apply the pipeline substitutions for legacy step
             # objects which include the full config object.
-            from zenml.config.pipeline_configurations import (
-                PipelineConfiguration,
+            merged_config_dict = _apply_pipeline_configuration(
+                data["config"],
+                {"substitutions": pipeline_configuration.substitutions},
             )
-
-            config = StepConfiguration.model_validate(data["config"])
-            data["config"] = config.apply_pipeline_configuration(
-                PipelineConfiguration(
-                    name=pipeline_configuration.name,
-                    substitutions=pipeline_configuration.substitutions,
-                )
-            )
+            data["config"] = merged_config_dict
 
         return cls.model_validate(data)
+
+
+def _apply_pipeline_configuration(
+    config_dict: Dict[str, Any], pipeline_dict: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Apply the pipeline configuration to the step config dictionary.
+
+    Args:
+        config_dict: The config dictionary to apply the pipeline configuration to.
+        pipeline_dict: The pipeline configuration dictionary.
+
+    Returns:
+        The merged config dictionary.
+    """
+    if not pipeline_dict:
+        return config_dict
+
+    combined_dict = {
+        **config_dict,
+        **pipeline_dict,
+    }
+    step_overrides = {
+        key: value
+        for key, value in config_dict.items()
+        if key in pipeline_dict and value is not None
+    }
+    step_overrides["secrets"] = pipeline_dict.get(
+        "secrets", []
+    ) + step_overrides.get("secrets", [])
+    merged_config_dict = dict_utils.recursive_update(
+        combined_dict, update=step_overrides
+    )
+    return merged_config_dict
