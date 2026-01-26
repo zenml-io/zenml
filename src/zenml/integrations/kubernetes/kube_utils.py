@@ -69,10 +69,16 @@ from zenml.integrations.kubernetes.serialization_utils import (
     normalize_resource_to_dict,
 )
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.config.resource_settings import ResourceSettings
+    from zenml.integrations.kubernetes.gateway_api_models import (
+        Gateway,
+        HTTPRoute,
+        ParentRef,
+    )
 
 logger = get_logger(__name__)
 
@@ -128,6 +134,17 @@ class JobStatus(enum.Enum):
     RUNNING = "Running"
     SUCCEEDED = "Succeeded"
     FAILED = "Failed"
+
+
+class KubernetesUrlPreference(StrEnum):
+    """URL preference for Kubernetes deployer when multiple URL types are available."""
+
+    GATEWAY_API = "gateway_api"
+    INGRESS = "ingress"
+    LOAD_BALANCER = "load_balancer"
+    NODE_PORT = "node_port"
+    CLUSTER_IP = "cluster_ip"
+    AUTO = "auto"
 
 
 def is_inside_kubernetes() -> bool:
@@ -1248,6 +1265,158 @@ def convert_resource_settings_to_k8s_format(
 
 
 # ============================================================================
+# Gateway API Helper Functions
+# ============================================================================
+
+
+def _parse_httproute(httproute: Any) -> "HTTPRoute":
+    """Parse an HTTPRoute resource into a typed model.
+
+    Args:
+        httproute: HTTPRoute resource (DynamicClient object or dict).
+
+    Returns:
+        Parsed HTTPRoute model.
+    """
+    from zenml.integrations.kubernetes.gateway_api_models import HTTPRoute
+
+    httproute_dict = normalize_resource_to_dict(httproute)
+    return HTTPRoute.from_dict(httproute_dict)
+
+
+def _parse_gateway(gateway: Any) -> "Gateway":
+    """Parse a Gateway resource into a typed model.
+
+    Args:
+        gateway: Gateway resource (DynamicClient object or dict).
+
+    Returns:
+        Parsed Gateway model.
+    """
+    from zenml.integrations.kubernetes.gateway_api_models import Gateway
+
+    gateway_dict = normalize_resource_to_dict(gateway)
+    return Gateway.from_dict(gateway_dict)
+
+
+def get_httproute_hostnames(httproute: Any) -> List[str]:
+    """Extract hostnames from HTTPRoute spec.
+
+    Args:
+        httproute: HTTPRoute resource (DynamicClient object or dict).
+
+    Returns:
+        List of hostnames defined in the HTTPRoute.
+    """
+    parsed = _parse_httproute(httproute)
+    return parsed.spec.hostnames
+
+
+def get_httproute_parent_refs(httproute: Any) -> List["ParentRef"]:
+    """Extract parent refs from HTTPRoute spec.
+
+    Args:
+        httproute: HTTPRoute resource (DynamicClient object or dict).
+
+    Returns:
+        List of ParentRef objects with name, namespace, and section_name fields.
+    """
+    from zenml.integrations.kubernetes.gateway_api_models import ParentRef
+
+    parsed = _parse_httproute(httproute)
+    return parsed.spec.parent_refs
+
+
+def get_httproute_first_path(httproute: Any) -> str:
+    """Extract the first path from HTTPRoute rules.
+
+    Args:
+        httproute: HTTPRoute resource (DynamicClient object or dict).
+
+    Returns:
+        The first path defined in the HTTPRoute, or "/" if none found.
+    """
+    parsed = _parse_httproute(httproute)
+
+    if not parsed.spec.rules:
+        return "/"
+
+    first_rule = parsed.spec.rules[0]
+    if not first_rule.matches:
+        return "/"
+
+    first_match = first_rule.matches[0]
+    if first_match.path is None:
+        return "/"
+
+    return first_match.path.value
+
+
+def get_gateway_listener_protocol(
+    gateway: Any,
+    section_name: Optional[str] = None,
+) -> str:
+    """Get protocol for a Gateway listener.
+
+    Args:
+        gateway: Gateway resource (DynamicClient object or dict).
+        section_name: Optional listener name to find specific listener.
+
+    Returns:
+        Protocol string (e.g., "http", "https"). Defaults to "http".
+    """
+    parsed = _parse_gateway(gateway)
+
+    if parsed.status is None or not parsed.status.listeners:
+        return "http"
+
+    listeners = parsed.status.listeners
+
+    if section_name:
+        for listener in listeners:
+            if listener.name == section_name:
+                return listener.protocol.lower()
+
+    for listener in listeners:
+        protocol = listener.protocol.lower()
+        if protocol in ("https", "tls"):
+            return protocol
+
+    return listeners[0].protocol.lower()
+
+
+def httproute_references_service(
+    httproute: Any,
+    service_name: str,
+    service_namespace: str,
+    httproute_namespace: str,
+) -> bool:
+    """Check if HTTPRoute references a specific service.
+
+    Args:
+        httproute: HTTPRoute resource (DynamicClient object or dict).
+        service_name: Name of the service to check.
+        service_namespace: Namespace of the service.
+        httproute_namespace: Namespace of the HTTPRoute (for namespace defaulting).
+
+    Returns:
+        True if HTTPRoute has any backend ref pointing to the service.
+    """
+    parsed = _parse_httproute(httproute)
+
+    for rule in parsed.spec.rules:
+        for backend_ref in rule.backend_refs:
+            backend_namespace = backend_ref.namespace or httproute_namespace
+            if (
+                backend_ref.name == service_name
+                and backend_namespace == service_namespace
+            ):
+                return True
+
+    return False
+
+
+# ============================================================================
 # URL Building Utilities
 # ============================================================================
 
@@ -1355,3 +1524,38 @@ def build_service_url(
         return f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
 
     return None
+
+
+def build_gateway_api_url(
+    gateway: Any,
+    httproute: Any,
+) -> Optional[str]:
+    """Build URL from Gateway API Gateway and HTTPRoute resources.
+
+    Gateway API is the newer Kubernetes standard for ingress/routing.
+    It uses Gateway (entry point) + HTTPRoute (routing rules) instead of Ingress.
+
+    Args:
+        gateway: Gateway resource (gateway.networking.k8s.io).
+        httproute: HTTPRoute resource (gateway.networking.k8s.io).
+
+    Returns:
+        Service URL from Gateway API, or None if URL cannot be determined.
+    """
+    hostnames = get_httproute_hostnames(httproute)
+    if not hostnames:
+        return None
+
+    hostname = hostnames[0]
+
+    parent_refs = get_httproute_parent_refs(httproute)
+    section_name = parent_refs[0].section_name if parent_refs else None
+    protocol = get_gateway_listener_protocol(gateway, section_name)
+    if protocol in ("https", "tls"):
+        protocol = "https"
+    else:
+        protocol = "http"
+
+    path = get_httproute_first_path(httproute)
+
+    return f"{protocol}://{hostname}{path}"

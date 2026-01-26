@@ -25,3 +25,15 @@ RUN_ID_ANNOTATION_KEY = "zenml.io/run-id"
 ORCHESTRATOR_RUN_ID_ANNOTATION_KEY = "zenml.io/orchestrator-run-id"
 STEP_NAME_ANNOTATION_KEY = "zenml.io/step-name"
 STEP_OPERATOR_ANNOTATION_KEY = "zenml.io/step-operator"
+
+# Gateway API versions
+GATEWAY_API_V1 = "gateway.networking.k8s.io/v1"
+GATEWAY_API_V1BETA1 = "gateway.networking.k8s.io/v1beta1"
+GATEWAY_API_V1ALPHA2 = "gateway.networking.k8s.io/v1alpha2"
+
+# Ordered list of Gateway API versions to try (newest first)
+GATEWAY_API_VERSIONS = [
+    GATEWAY_API_V1,
+    GATEWAY_API_V1BETA1,
+    GATEWAY_API_V1ALPHA2,
+]
