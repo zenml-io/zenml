@@ -38,15 +38,11 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
-    PluginSubType,
     StackComponentType,
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.login.credentials_store import CredentialsStore
 from zenml.models import (
-    ActionFilter,
-    ActionRequest,
-    ActionUpdate,
     APIKeyRequest,
     ArtifactFilter,
     ArtifactRequest,
@@ -64,9 +60,6 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentUpdate,
-    EventSourceFilter,
-    EventSourceRequest,
-    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     ModelFilter,
@@ -104,9 +97,6 @@ from zenml.models import (
     StackRequest,
     StepRunFilter,
     StepRunResponse,
-    TriggerFilter,
-    TriggerRequest,
-    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserUpdate,
@@ -1396,61 +1386,6 @@ run_template_test_config = CrudTestConfig(
         "source_snapshot_id": deepcopy(remote_snapshot_crud_test_config),
     },
 )
-event_source_crud_test_config = CrudTestConfig(
-    create_model=EventSourceRequest(
-        name=sample_name("blupus_cat_cam"),
-        configuration={},
-        description="Best event source ever",
-        flavor="github",  # TODO: Implementations can be parametrized later
-        plugin_subtype=PluginSubType.WEBHOOK,
-        project=uuid.uuid4(),
-    ),
-    update_model=EventSourceUpdate(
-        name=sample_name("updated_sample_component")
-    ),
-    filter_model=EventSourceFilter,
-    entity_name="event_source",
-    supported_zen_stores=(RestZenStore,),
-)
-action_crud_test_config = CrudTestConfig(
-    create_model=ActionRequest(
-        name=sample_name("blupus_feeder"),
-        description="Feeds blupus when he meows.",
-        service_account_id=uuid.uuid4(),  # will be overridden in create()
-        configuration={"snapshot_id": uuid.uuid4()},
-        plugin_subtype=PluginSubType.PIPELINE_RUN,
-        flavor="builtin",
-        project=uuid.uuid4(),
-    ),
-    update_model=ActionUpdate(name=sample_name("updated_blupus_feeder")),
-    filter_model=ActionFilter,
-    entity_name="action",
-    supported_zen_stores=(RestZenStore,),
-    conditional_entities={
-        "service_account_id": deepcopy(service_account_crud_test_config),
-        "configuration.snapshot_id": deepcopy(
-            remote_snapshot_crud_test_config
-        ),
-    },
-)
-trigger_crud_test_config = CrudTestConfig(
-    create_model=TriggerRequest(
-        name=sample_name("blupus_feeder"),
-        description="Feeds blupus when he meows.",
-        action_id=uuid.uuid4(),  # will be overridden in create()
-        event_filter={},
-        event_source_id=uuid.uuid4(),  # will be overridden in create()
-        project=uuid.uuid4(),
-    ),
-    update_model=TriggerUpdate(name=sample_name("updated_sample_component")),
-    filter_model=TriggerFilter,
-    entity_name="trigger",
-    supported_zen_stores=(RestZenStore,),
-    conditional_entities={
-        "action_id": deepcopy(action_crud_test_config),
-        "event_source_id": deepcopy(event_source_crud_test_config),
-    },
-)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -1487,7 +1422,4 @@ list_of_entities = [
     service_connector_crud_test_config,
     model_crud_test_config,
     run_template_test_config,
-    event_source_crud_test_config,
-    action_crud_test_config,
-    trigger_crud_test_config,
 ]
