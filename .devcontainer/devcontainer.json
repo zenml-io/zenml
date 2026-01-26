@@ -1,0 +1,81 @@
+{
+    "name": "ZenML CI Environment (Ubuntu, Python 3.11)",
+
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "..",
+        "args": {
+            "PYTHON_VERSION": "3.11"
+        }
+    },
+
+    // Docker-in-Docker support for integration tests that require Docker
+    // This matches CI where Docker is available on the runner
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "dockerDashComposeVersion": "v2"
+        }
+    },
+
+    // Required for Docker-in-Docker to work
+    "runArgs": ["--privileged"],
+
+    // CI environment variables (from .github/workflows/unit-test.yml and linting.yml)
+    // These are set to match the CI environment exactly
+    "containerEnv": {
+        "ZENML_DEBUG": "1",
+        "ZENML_ANALYTICS_OPT_IN": "false",
+        "PYTHONIOENCODING": "utf-8",
+        "UV_HTTP_TIMEOUT": "600",
+        // Harmless on Linux, but keeps parity with CI config
+        "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"
+    },
+
+    // Run the EXACT same install command that CI uses
+    // This ensures Python environment parity with CI
+    "postCreateCommand": "scripts/install-zenml-dev.sh --system --integrations yes",
+
+    // Run as root to allow --system installs (matches CI behavior)
+    "remoteUser": "root",
+
+    // Persist uv cache between container rebuilds for faster subsequent builds
+    "mounts": [
+        "source=zenml-uv-cache,target=/root/.cache/uv,type=volume"
+    ],
+
+    // VS Code customizations for Python development
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "ms-azuretools.vscode-docker",
+                "eamodio.gitlens"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.testing.pytestEnabled": true,
+                "python.testing.pytestArgs": [
+                    "tests/unit"
+                ],
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": "explicit"
+                },
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff"
+                }
+            }
+        }
+    },
+
+    // Forward the ZenML server port if running locally
+    "forwardPorts": [8080],
+
+    // Helpful labels for the container
+    "containerLabels": {
+        "zenml.devcontainer": "true",
+        "zenml.python-version": "3.11"
+    }
+}

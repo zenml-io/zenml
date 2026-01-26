@@ -1,0 +1,64 @@
+{
+    "name": "ZenML CI Environment (Ubuntu, Python 3.12)",
+
+    "build": {
+        "dockerfile": "../Dockerfile",
+        "context": "../..",
+        "args": {
+            "PYTHON_VERSION": "3.12"
+        }
+    },
+
+    // Docker-in-Docker support for integration tests
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "dockerDashComposeVersion": "v2"
+        }
+    },
+
+    "runArgs": ["--privileged"],
+
+    // CI environment variables (matches .github/workflows/unit-test.yml)
+    "containerEnv": {
+        "ZENML_DEBUG": "1",
+        "ZENML_ANALYTICS_OPT_IN": "false",
+        "PYTHONIOENCODING": "utf-8",
+        "UV_HTTP_TIMEOUT": "600",
+        "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"
+    },
+
+    // Run the EXACT same install command that CI uses
+    // Note: Some integrations (tensorflow, deepchecks) are automatically
+    // skipped on Python 3.12+ by the install script
+    "postCreateCommand": "scripts/install-zenml-dev.sh --system --integrations yes",
+
+    "remoteUser": "root",
+
+    "mounts": [
+        "source=zenml-uv-cache-py312,target=/root/.cache/uv,type=volume"
+    ],
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "ms-azuretools.vscode-docker",
+                "eamodio.gitlens"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.testing.pytestEnabled": true,
+                "python.testing.pytestArgs": ["tests/unit"]
+            }
+        }
+    },
+
+    "forwardPorts": [8080],
+
+    "containerLabels": {
+        "zenml.devcontainer": "true",
+        "zenml.python-version": "3.12"
+    }
+}
