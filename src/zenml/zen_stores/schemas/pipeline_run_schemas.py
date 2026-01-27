@@ -67,7 +67,6 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
-from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -231,20 +230,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    trigger_execution_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=TriggerExecutionSchema.__tablename__,
-        source_column="trigger_execution_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
 
     stack: Optional["StackSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()
-    trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
     triggered_by: Optional[UUID] = None
     triggered_by_type: Optional[str] = None
 
@@ -403,7 +393,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             status_reason=request.status_reason,
             pipeline_id=pipeline_id,
             snapshot_id=request.snapshot,
-            trigger_execution_id=request.trigger_execution_id,
             triggered_by=triggered_by,
             triggered_by_type=triggered_by_type,
             enable_heartbeat=enable_heartbeat,
@@ -681,11 +670,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 build=build,
                 schedule=schedule,
                 code_reference=code_reference,
-                trigger_execution=(
-                    self.trigger_execution.to_model()
-                    if self.trigger_execution
-                    else None
-                ),
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
