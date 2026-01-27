@@ -16,11 +16,22 @@
 import contextvars
 import threading
 from contextvars import ContextVar
-from typing import Any, ClassVar, Generic, List, Optional, TypeVar
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Generic,
+    List,
+    Optional,
+    TypeVar,
+)
 
-from typing_extensions import Self
+from typing_extensions import ParamSpec, Self
 
 T = TypeVar("T")
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 class BaseContext:
@@ -124,3 +135,20 @@ class ContextVarList(Generic[T]):
             if any(x is item for x in current_list):
                 new_list = [x for x in current_list if x is not item]
                 self._context_var.set(new_list)
+
+
+def run_in_current_context(
+    func: Callable[P, R], *args: P.args, **kwargs: P.kwargs
+) -> R:
+    """Run a function in the current context.
+
+    Args:
+        func: The function to run.
+        *args: The arguments to pass to the function.
+        **kwargs: The keyword arguments to pass to the function.
+
+    Returns:
+        The result of the function.
+    """
+    ctx = contextvars.copy_context()
+    return ctx.run(func, *args, **kwargs)
