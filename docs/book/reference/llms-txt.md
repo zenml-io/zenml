@@ -1,7 +1,15 @@
 ---
 icon: robot
-description: Access ZenML documentation via MCP server or llms.txt
+description: LLM tooling for ZenML - MCP servers, llms.txt, and Agent Skills
 ---
+
+# LLM Tooling
+
+ZenML provides multiple ways to enhance your AI-assisted development workflow:
+
+- **MCP servers** for real-time doc queries and server interaction
+- **llms.txt** for grounding LLMs with ZenML documentation
+- **Agent Skills** for guided implementation of ZenML features
 
 ## About llms.txt
 The llms.txt file format was proposed by [llmstxt.org](https://llmstxt.org/) as a standard way to provide information to help LLMs answer questions about a product/website. From their website:
@@ -80,3 +88,90 @@ following tools:
 - [GitMCP](https://gitmcp.io/) - A way to quickly create an MCP server for a github repository (e.g. for `zenml-io/zenml`)
 - [mcp-llms](https://github.com/parlance-labs/mcp-llms.txt/) - This shows how to use an MCP server to iteratively explore the llms.txt file with your MCP client
 - [mcp-llms-txt-explorer](https://github.com/thedaviddias/mcp-llms-txt-explorer) -  A tool to help you explore and discover websites that have llms.txt files
+
+## ZenML Agent Skills
+
+Agent Skills are modular capabilities that help AI coding agents perform specific tasks. ZenML publishes skills through a plugin marketplace that works with many popular agentic coding tools.
+
+### Supported tools
+
+ZenML skills work with tools that support the Agent Skills format:
+
+| Tool | Type | Skills support |
+|------|------|----------------|
+| [Claude Code](https://code.claude.com/) | Anthropic's CLI agent | Native plugin marketplace |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | OpenAI's terminal agent | Native skills support |
+| [GitHub Copilot](https://github.com/features/copilot) | IDE coding assistant | Agent Skills integration |
+| [OpenCode](https://github.com/opencode-ai/opencode) | Open source AI agent | Native skills support |
+| [Amp](https://amp.dev) | AI coding assistant | Agent Skills integration |
+| [Cursor](https://cursor.sh) | AI-powered IDE | Via settings configuration |
+| [Gemini CLI](https://github.com/google/gemini-cli) | Google's terminal agent | Skills support |
+
+### Installing ZenML skills
+
+#### Claude Code
+
+```bash
+# Add the ZenML marketplace (one-time setup)
+/plugin marketplace add zenml-io/skills
+
+# Install available skills
+/plugin install zenml-quick-wins@zenml
+```
+
+#### OpenAI Codex CLI
+
+```bash
+# Add the ZenML marketplace
+codex plugin add zenml-io/skills
+
+# Install skills
+codex plugin install zenml-quick-wins@zenml
+```
+
+### Available skills
+
+#### `zenml-quick-wins`
+
+Guides you through discovering and implementing high-impact ZenML features. The skill investigates your current setup, recommends priorities based on your stack, and helps implement improvements interactively.
+
+**Use when:**
+- You want to improve your ZenML setup
+- You're looking for MLOps best practices to adopt
+- You need help with features like experiment tracking, alerting, scheduling, or model governance
+
+**What it does:**
+1. **Investigate** - Analyzes your stack configuration and codebase
+2. **Recommend** - Prioritizes quick wins based on your current setup
+3. **Implement** - Helps you apply selected improvements
+4. **Verify** - Confirms the implementation works
+
+**Example prompts:**
+```
+Use zenml-quick-wins to analyze this repo and recommend the top 3 quick wins.
+
+Implement metadata logging and tags across my pipelines.
+
+Set up Slack alerts for pipeline failures.
+```
+
+See the [Quick Wins guide](../user-guide/best-practices/quick-wins.md) for the full catalog of improvements this skill can help implement.
+
+### Coming soon
+
+We're developing additional skills to help with common ZenML workflows:
+
+- **Pipeline creation** - Scaffolding new pipelines from templates
+- **Stack setup** - Guided stack component configuration
+- **Debugging** - Investigating pipeline failures and performance issues
+- **Migration** - Migrating from other MLOps platforms and orchestrators to ZenML
+
+### Combining MCP + Skills
+
+For the best AI-assisted ZenML development experience, combine:
+
+1. **GitBook MCP server** (`https://docs.zenml.io/~gitbook/mcp`) - For doc-grounded answers
+2. **ZenML server MCP** ([setup guide](../user-guide/best-practices/mcp-chat-with-server.md)) - For querying your live pipelines, runs, and stacks
+3. **Agent Skills** - For guided implementation of features
+
+This gives your AI assistant access to documentation, your actual ZenML data, and structured workflows for making changes.

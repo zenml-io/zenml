@@ -28,11 +28,11 @@ jobs:
       CURRENT_VENV: .venv-current
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           fetch-depth: 0  # Fetch all history for all branches and tags
       - name: Set up Python
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
         with:
           python-version: '3.11'
       - name: Install system dependencies
@@ -43,12 +43,12 @@ jobs:
       - name: Get target branch name
         id: get-target-branch
         run: |
-          echo "TARGET_BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
+          echo "TARGET_BRANCH=${GITHUB_BASE_REF}" >> $GITHUB_ENV
 
       # Profile target branch with isolated environment
       - name: Checkout target branch
         run: |
-          git checkout ${{ github.base_ref }}
+          git checkout ${GITHUB_BASE_REF}
       - name: Setup target virtual environment
         run: |
           python -m venv ${{ env.TARGET_VENV }}
@@ -64,7 +64,7 @@ jobs:
       - name: Profile target branch
         id: profile-target
         run: |
-          echo "Running profiling for target branch (${{ github.base_ref }})"
+          echo "Running profiling for target branch (${GITHUB_BASE_REF})"
           source ${{ env.TARGET_VENV }}/bin/activate
           chmod +x scripts/profile-cli.sh
           ./scripts/profile-cli.sh -o $TARGET_RESULTS_FILE -v -t $COMMAND_TIMEOUT -s $SLOW_THRESHOLD
@@ -72,7 +72,7 @@ jobs:
       # Profile current branch with isolated environment
       - name: Checkout current branch
         run: |
-          git checkout ${{ github.head_ref }}
+          git checkout ${GITHUB_HEAD_REF}
       - name: Setup current virtual environment
         run: |
           python -m venv ${{ env.CURRENT_VENV }}
@@ -94,7 +94,7 @@ jobs:
       - name: Profile current branch
         id: profile-current
         run: |
-          echo "Running profiling for current branch (${{ github.head_ref }})"
+          echo "Running profiling for current branch (${GITHUB_HEAD_REF})"
           source ${{ env.CURRENT_VENV }}/bin/activate
           chmod +x scripts/profile-cli.sh
           ./scripts/profile-cli.sh -o $CURRENT_RESULTS_FILE -v -t $COMMAND_TIMEOUT -s $SLOW_THRESHOLD
@@ -109,8 +109,8 @@ jobs:
             --current-file ${{ env.CURRENT_RESULTS_FILE }} \
             --threshold ${{ env.PERFORMANCE_THRESHOLD_SECONDS }} \
             --timeout ${{ env.COMMAND_TIMEOUT }} \
-            --target-branch "${{ github.base_ref }}" \
-            --current-branch "${{ github.head_ref }}" \
+            --target-branch "${GITHUB_BASE_REF}" \
+            --current-branch "${GITHUB_HEAD_REF}" \
             --output performance_report.md
 
           # Set output variables for use in later steps
@@ -125,7 +125,7 @@ jobs:
           cat performance_report.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       - name: Find existing comment
-        uses: peter-evans/find-comment@v2
+        uses: peter-evans/find-comment@a54c31d7fa095754bfef525c0c8e5e5674c4b4b1  # v2
         if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues
           == 'true'
         id: find-comment
@@ -134,7 +134,7 @@ jobs:
           comment-author: github-actions[bot]
           body-includes: <!-- PERFORMANCE_REPORT -->
       - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@v2
+        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d  # v2
         if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues
           == 'true'
         with:
@@ -145,7 +145,7 @@ jobs:
 
       # Upload results as artifacts
       - name: Upload profiling results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: profiling-results
           path: |

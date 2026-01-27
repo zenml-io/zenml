@@ -25,6 +25,7 @@ from typing import (
     Match,
     Optional,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -33,7 +34,9 @@ from zenml.logger import get_logger
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.config.pipeline_configurations import PipelineConfiguration
     from zenml.config.step_configurations import StepConfiguration
+    from zenml.models import StackResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -203,24 +206,29 @@ def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
                     os.environ[key] = previous_value
 
 
-def get_step_environment(
-    step_config: "StepConfiguration", stack: "Stack"
+def get_runtime_environment(
+    config: Union["PipelineConfiguration", "StepConfiguration"],
+    stack: Union["Stack", "StackResponse"],
 ) -> Dict[str, str]:
-    """Get the environment variables for a step.
+    """Get the runtime environment variables.
 
     Args:
-        step_config: The step configuration.
-        stack: The stack on which the step will run.
+        config: The configuration.
+        stack: The stack on which the pipeline/step will run.
 
     Returns:
         A dictionary of environment variables.
     """
     environment = {}
     for component in stack.components.values():
-        environment.update(component.environment)
+        if isinstance(component, list):
+            for item in component:
+                environment.update(item.environment)
+        else:
+            environment.update(component.environment)
 
     environment.update(stack.environment)
-    environment.update(step_config.environment)
+    environment.update(config.environment)
 
     for key, value in environment.items():
         environment[key] = str(value)
@@ -228,26 +236,32 @@ def get_step_environment(
     return environment
 
 
-def get_step_secret_environment(
-    step_config: "StepConfiguration", stack: "Stack"
+def get_runtime_secret_environment(
+    config: Union["PipelineConfiguration", "StepConfiguration"],
+    stack: Union["Stack", "StackResponse"],
 ) -> Dict[str, str]:
-    """Get the environment variables for a step.
+    """Get the runtime secret environment variables.
 
     Args:
-        step_config: The step configuration.
-        stack: The stack on which the step will run.
+        config: The configuration.
+        stack: The stack on which the pipeline/step will run.
 
     Returns:
         A dictionary of environment variables.
     """
-    # The step secrets contain the pipeline secrets first, followed by the
-    # actual secrets defined on the step. We reverse the list to make sure the
-    # step secrets override the pipeline secrets.
-    secrets = list(reversed(step_config.secrets))
+    # We reverse the secrets to make sure the last defined secrets
+    # override previous ones.
+    # In the case of a step, the secrets will be the pipeline secrets followed
+    # by the step secrets.
+    secrets = list(reversed(config.secrets))
     secrets.extend(stack.secrets)
 
     for component in stack.components.values():
-        secrets.extend(component.secrets)
+        if isinstance(component, list):
+            for item in component:
+                secrets.extend(item.secrets)
+        else:
+            secrets.extend(component.secrets)
 
     # Removes duplicates while preserving order, only the first occurrence of
     # each secret will be kept. We then reverse the list to make sure the
@@ -281,3 +295,25 @@ def get_step_secret_environment(
             environment[key] = str(value)
 
     return environment
+
+
+@contextlib.contextmanager
+def temporary_runtime_environment(
+    config: Union["PipelineConfiguration", "StepConfiguration"],
+    stack: Union["Stack", "StackResponse"],
+) -> Iterator[None]:
+    """Temporarily set runtime environment variables.
+
+    Args:
+        config: The configuration.
+        stack: The stack on which the pipeline/step will run.
+
+    Yields:
+        Nothing.
+    """
+    env = get_runtime_environment(config, stack)
+    secret_env = get_runtime_secret_environment(config, stack)
+    env.update(secret_env)
+
+    with temporary_environment(env):
+        yield
