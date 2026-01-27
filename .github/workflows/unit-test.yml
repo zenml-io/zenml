@@ -80,12 +80,14 @@ jobs:
       - name: Maximize space
         uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c  # v10
         with:
-          root-reserve-mb: 20000
+          root-reserve-mb: 30000
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
-          build-mount-path: /var/lib/docker/
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+          build-mount-path: /opt
         if: inputs.os == 'ubuntu-latest'
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
