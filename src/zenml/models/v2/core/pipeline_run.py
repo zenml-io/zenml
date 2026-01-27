@@ -54,7 +54,6 @@ from zenml.utils.tag_utils import Tag
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
     from zenml.models.v2.core.curated_visualization import (
@@ -129,10 +128,6 @@ class PipelineRunRequest(ProjectScopedRequest):
             "Environment of the orchestrator that executed this pipeline run "
             "(OS, Python version, etc.)."
         ),
-    )
-    trigger_execution_id: Optional[UUID] = Field(
-        default=None,
-        title="ID of the trigger execution that triggered this run.",
     )
     trigger_info: Optional[PipelineRunTriggerInfo] = Field(
         default=None,
@@ -315,9 +310,6 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     )
     code_reference: Optional["CodeReferenceResponse"] = Field(
         default=None, title="The code reference that was used for this run."
-    )
-    trigger_execution: Optional["TriggerExecutionResponse"] = Field(
-        default=None, title="The trigger execution that triggered this run."
     )
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
@@ -621,15 +613,6 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().schedule
-
-    @property
-    def trigger_execution(self) -> Optional["TriggerExecutionResponse"]:
-        """The `trigger_execution` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().trigger_execution
 
     @property
     def code_reference(self) -> Optional["CodeReferenceResponse"]:

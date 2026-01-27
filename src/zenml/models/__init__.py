@@ -53,21 +53,6 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
-from zenml.models.v2.core.action import (
-    ActionFilter,
-    ActionRequest,
-    ActionResponse,
-    ActionResponseBody,
-    ActionResponseMetadata,
-    ActionResponseResources,
-    ActionUpdate,
-)
-from zenml.models.v2.core.action_flavor import (
-    ActionFlavorResponse,
-    ActionFlavorResponseBody,
-    ActionFlavorResponseMetadata,
-    ActionFlavorResponseResources,
-)
 from zenml.models.v2.core.api_key import (
     APIKey,
     APIKeyRequest,
@@ -148,12 +133,6 @@ from zenml.models.v2.core.component import (
     ComponentResponseMetadata,
     ComponentResponseResources,
     DefaultComponentRequest,
-)
-from zenml.models.v2.core.event_source_flavor import (
-    EventSourceFlavorResponse,
-    EventSourceFlavorResponseBody,
-    EventSourceFlavorResponseMetadata,
-    EventSourceFlavorResponseResources,
 )
 from zenml.models.v2.core.deployment import (
     DeploymentRequest,
@@ -277,7 +256,6 @@ from zenml.models.v2.core.run_template import (
     RunTemplateResponseResources,
     RunTemplateFilter,
 )
-from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
 )
@@ -394,32 +372,6 @@ from zenml.models.v2.misc.server_models import (
     ServerLoadInfo,
     ServerModel,
 )
-from zenml.models.v2.core.trigger import (
-    TriggerRequest,
-    TriggerFilter,
-    TriggerUpdate,
-    TriggerResponse,
-    TriggerResponseBody,
-    TriggerResponseMetadata,
-    TriggerResponseResources,
-)
-from zenml.models.v2.core.trigger_execution import (
-    TriggerExecutionRequest,
-    TriggerExecutionFilter,
-    TriggerExecutionResponse,
-    TriggerExecutionResponseBody,
-    TriggerExecutionResponseMetadata,
-    TriggerExecutionResponseResources,
-)
-from zenml.models.v2.core.event_source import (
-    EventSourceRequest,
-    EventSourceFilter,
-    EventSourceUpdate,
-    EventSourceResponse,
-    EventSourceResponseBody,
-    EventSourceResponseMetadata,
-    EventSourceResponseResources,
-)
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
@@ -471,8 +423,6 @@ from zenml.models.v2.misc.exception_info import ExceptionInfo
 # ----------------------------- Forward References -----------------------------
 
 # V2
-ActionResponseResources.model_rebuild()
-ActionResponseMetadata.model_rebuild()
 APIKeyResponseBody.model_rebuild()
 ApiTransactionResponse.model_rebuild()
 ArtifactResponse.model_rebuild()
@@ -502,9 +452,6 @@ CuratedVisualizationResponseBody.model_rebuild()
 CuratedVisualizationResponseMetadata.model_rebuild()
 CuratedVisualizationResponseResources.model_rebuild()
 CuratedVisualizationResponse.model_rebuild()
-EventSourceResponseBody.model_rebuild()
-EventSourceResponseMetadata.model_rebuild()
-EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
 FlavorResponseResources.model_rebuild()
@@ -560,11 +507,6 @@ StepRunResponseMetadata.model_rebuild()
 StepRunResponseResources.model_rebuild()
 TagResponseBody.model_rebuild()
 TagResponseResources.model_rebuild()
-TriggerExecutionResponseResources.model_rebuild()
-TriggerResponseBody.model_rebuild()
-TriggerResponseMetadata.model_rebuild()
-TriggerResponseResources.model_rebuild()
-TriggerResponseResources.model_rebuild()
 ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
@@ -582,7 +524,6 @@ __all__ = [
     "BaseResponseResources",
     "BaseDatedResponseBody",
     "BaseZenModel",
-    "BasePluginFlavorResponse",
     "UserScopedRequest",
     "UserScopedFilter",
     "UserScopedResponse",
@@ -604,17 +545,6 @@ __all__ = [
     "RunMetadataFilterMixin",
     "Page",
     # V2 Core
-    "ActionFilter",
-    "ActionRequest",
-    "ActionResponse",
-    "ActionResponseBody",
-    "ActionResponseMetadata",
-    "ActionResponseResources",
-    "ActionUpdate",
-    "ActionFlavorResponse",
-    "ActionFlavorResponseBody",
-    "ActionFlavorResponseMetadata",
-    "ActionFlavorResponseResources",
     "APIKey",
     "APIKeyRequest",
     "APIKeyUpdate",
@@ -685,10 +615,6 @@ __all__ = [
     "CuratedVisualizationResponseMetadata",
     "CuratedVisualizationResponseResources",
     "CuratedVisualizationUpdate",
-    "EventSourceFlavorResponse",
-    "EventSourceFlavorResponseBody",
-    "EventSourceFlavorResponseMetadata",
-    "EventSourceFlavorResponseResources",
     "FlavorRequest",
     "FlavorUpdate",
     "FlavorFilter",
@@ -837,26 +763,6 @@ __all__ = [
     "TagResponseResources",
     "TagRequest",
     "TagUpdate",
-    "TriggerResponse",
-    "TriggerRequest",
-    "TriggerFilter",
-    "TriggerUpdate",
-    "TriggerResponseBody",
-    "TriggerResponseMetadata",
-    "TriggerResponseResources",
-    "TriggerExecutionRequest",
-    "TriggerExecutionFilter",
-    "TriggerExecutionResponse",
-    "TriggerExecutionResponseBody",
-    "TriggerExecutionResponseMetadata",
-    "TriggerExecutionResponseResources",
-    "EventSourceResponse",
-    "EventSourceRequest",
-    "EventSourceFilter",
-    "EventSourceUpdate",
-    "EventSourceResponseBody",
-    "EventSourceResponseMetadata",
-    "EventSourceResponseResources",
     "UserRequest",
     "UserUpdate",
     "UserFilter",

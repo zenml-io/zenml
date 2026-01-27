@@ -31,12 +31,10 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
-        ActionSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
         CuratedVisualizationSchema,
         DeploymentSchema,
-        EventSourceSchema,
         ModelSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
@@ -47,7 +45,6 @@ if TYPE_CHECKING:
         ScheduleSchema,
         ServiceSchema,
         StepRunSchema,
-        TriggerSchema,
     )
 
 
@@ -90,18 +87,6 @@ class ProjectSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
-        back_populates="project",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    actions: List["ActionSchema"] = Relationship(
-        back_populates="project",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    triggers: List["TriggerSchema"] = Relationship(
-        back_populates="project",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    event_sources: List["EventSourceSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )

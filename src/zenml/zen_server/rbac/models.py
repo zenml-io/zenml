@@ -50,11 +50,9 @@ class Action(StrEnum):
 class ResourceType(StrEnum):
     """Resource types of the server API."""
 
-    ACTION = "action"
     ARTIFACT = "artifact"
     ARTIFACT_VERSION = "artifact_version"
     CODE_REPOSITORY = "code_repository"
-    EVENT_SOURCE = "event_source"
     FLAVOR = "flavor"
     MODEL = "model"
     MODEL_VERSION = "model_version"
@@ -74,8 +72,6 @@ class ResourceType(StrEnum):
     STACK = "stack"
     STACK_COMPONENT = "stack_component"
     TAG = "tag"
-    TRIGGER = "trigger"
-    TRIGGER_EXECUTION = "trigger_execution"
     PROJECT = "project"
     # Deactivated for now
     # USER = "user"
