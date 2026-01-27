@@ -560,3 +560,21 @@ class GroupType(StrEnum):
 
     MANUAL = "manual"
     MAP = "map"
+
+
+class TriggerType(StrEnum):
+    """Enum representing fundamental trigger types."""
+
+    schedule = "schedule"
+
+
+class ScheduleEngine(StrEnum):
+    """Enum representing schedule engines."""
+
+    native = "native"
+
+
+class TriggerCategory(StrEnum):
+    """Enum representing trigger categories."""
+
+    native_schedule = "native schedule"
