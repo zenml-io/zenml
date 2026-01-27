@@ -620,14 +620,15 @@ def download_artifact_files_from_response(
                     with artifact_store.open(
                         file_path, mode="rb"
                     ) as store_file:
-                        # Use a loop to read and write chunks of the file
-                        # instead of reading the entire file into memory
+                        # Stream file in chunks directly to ZIP without loading
+                        # entire file into memory
                         CHUNK_SIZE = 8192
-                        while True:
-                            if file_content := store_file.read(CHUNK_SIZE):
-                                zipf.writestr(file_str, file_content)
-                            else:
-                                break
+                        with zipf.open(file_str, mode="w") as zip_file:
+                            while True:
+                                if chunk := store_file.read(CHUNK_SIZE):
+                                    zip_file.write(chunk)
+                                else:
+                                    break
         except Exception as e:
             logger.error(
                 f"Failed to save artifact '{artifact.id}' to zip file "
