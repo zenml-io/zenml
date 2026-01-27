@@ -307,6 +307,18 @@ from zenml.models.v2.core.stack import (
     StackResponseMetadata,
     StackResponseResources
 )
+from zenml.models.v2.core.triggers import (
+    TriggerRequest,
+    TriggerUpdate,
+    SchedulePayload,
+    ScheduleUpdatePayload,
+    ScheduleResponsePayload,
+    TriggerResponse,
+    TriggerResponseBody,
+    TriggerResponseMetadata,
+    TriggerResponseResources,
+    TriggerFilter,
+)
 from zenml.models.v2.misc.param_groups import (
     PipelineRunIdentifier,
     StepRunIdentifier,
@@ -775,6 +787,16 @@ __all__ = [
     "ProjectResponse",
     "ProjectResponseBody",
     "ProjectResponseMetadata",
+    "TriggerRequest",
+    "TriggerUpdate",
+    "SchedulePayload",
+    "ScheduleUpdatePayload",
+    "TriggerResponse",
+    "TriggerResponseBody",
+    "TriggerResponseMetadata",
+    "TriggerResponseResources",
+    "TriggerFilter",
+    "ScheduleResponsePayload",
     # V2 Misc
     "AuthenticationMethodModel",
     "DeployedStack",

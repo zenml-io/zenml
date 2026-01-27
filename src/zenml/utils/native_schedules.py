@@ -18,6 +18,9 @@ from datetime import datetime, timedelta, timezone
 
 from croniter import croniter
 
+from zenml import SchedulePayload
+from zenml.enums import ScheduleEngine
+
 
 def next_occurrence_for_interval(
     interval: int | float, start: datetime, base: datetime | None = None
@@ -66,3 +69,31 @@ def next_occurrence_for_cron(
         base = base.replace(tzinfo=timezone.utc)
 
     return croniter(expression, base).get_next(datetime)
+
+
+def calculate_first_occurrence(schedule: SchedulePayload) -> datetime | None:
+    """Calculate the first occurrence of a schedule.
+
+    Args:
+        schedule: A schedule payload object.
+
+    Returns:
+        The first occurrence of a schedule.
+    """
+    if not schedule.engine == ScheduleEngine.native:
+        return None
+
+    if schedule.cron_expression:
+        schedule.next_occurrence = next_occurrence_for_cron(
+            expression=schedule.cron_expression,
+            base=schedule.start_time or datetime.now(timezone.utc),
+        )
+    elif schedule.start_time and schedule.interval_second:
+        schedule.next_occurrence = next_occurrence_for_interval(
+            interval=schedule.interval_second.total_seconds(),
+            start=schedule.start_time,
+        )
+    elif schedule.run_once_start_time:
+        schedule.next_occurrence = schedule.run_once_start_time
+
+    return schedule.next_occurrence
