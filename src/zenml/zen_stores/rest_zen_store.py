@@ -53,7 +53,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
-    ACTIONS,
     API,
     API_KEY_ROTATE,
     API_KEYS,
@@ -74,7 +73,6 @@ from zenml.constants import (
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
-    EVENT_SOURCES,
     FLAVORS,
     HEARTBEAT,
     INFO,
@@ -112,8 +110,6 @@ from zenml.constants import (
     STEPS,
     TAG_RESOURCES,
     TAGS,
-    TRIGGER_EXECUTIONS,
-    TRIGGERS,
     USERS,
     VERSION_1,
     ZENML_PRO_API_KEY_PREFIX,
@@ -139,10 +135,6 @@ from zenml.login.pro.utils import (
     get_troubleshooting_instructions,
 )
 from zenml.models import (
-    ActionFilter,
-    ActionRequest,
-    ActionResponse,
-    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -177,10 +169,6 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
-    EventSourceFilter,
-    EventSourceRequest,
-    EventSourceResponse,
-    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -274,12 +262,6 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
-    TriggerExecutionFilter,
-    TriggerExecutionResponse,
-    TriggerFilter,
-    TriggerRequest,
-    TriggerResponse,
-    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -604,100 +586,6 @@ class RestZenStore(BaseZenStore):
         """
         response_body = self.put(SERVER_SETTINGS, body=settings_update)
         return ServerSettingsResponse.model_validate(response_body)
-
-    # -------------------- Actions  --------------------
-
-    def create_action(self, action: ActionRequest) -> ActionResponse:
-        """Create an action.
-
-        Args:
-            action: The action to create.
-
-        Returns:
-            The created action.
-        """
-        return self._create_resource(
-            resource=action,
-            route=ACTIONS,
-            response_model=ActionResponse,
-        )
-
-    def get_action(
-        self,
-        action_id: UUID,
-        hydrate: bool = True,
-    ) -> ActionResponse:
-        """Get an action by ID.
-
-        Args:
-            action_id: The ID of the action to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The action.
-        """
-        return self._get_resource(
-            resource_id=action_id,
-            route=ACTIONS,
-            response_model=ActionResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_actions(
-        self,
-        action_filter_model: ActionFilter,
-        hydrate: bool = False,
-    ) -> Page[ActionResponse]:
-        """List all actions matching the given filter criteria.
-
-        Args:
-            action_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all actions matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=ACTIONS,
-            response_model=ActionResponse,
-            filter_model=action_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_action(
-        self,
-        action_id: UUID,
-        action_update: ActionUpdate,
-    ) -> ActionResponse:
-        """Update an existing action.
-
-        Args:
-            action_id: The ID of the action to update.
-            action_update: The update to be applied to the action.
-
-        Returns:
-            The updated action.
-        """
-        return self._update_resource(
-            resource_id=action_id,
-            resource_update=action_update,
-            route=ACTIONS,
-            response_model=ActionResponse,
-        )
-
-    def delete_action(self, action_id: UUID) -> None:
-        """Delete an action.
-
-        Args:
-            action_id: The ID of the action to delete.
-        """
-        self._delete_resource(
-            resource_id=action_id,
-            route=ACTIONS,
-        )
 
     # ----------------------------- API Keys -----------------------------
 
@@ -2102,102 +1990,6 @@ class RestZenStore(BaseZenStore):
 
         return PipelineRunResponse.model_validate(response_body)
 
-    # -------------------- Event Sources  --------------------
-
-    def create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Create an event_source.
-
-        Args:
-            event_source: The event_source to create.
-
-        Returns:
-            The created event_source.
-        """
-        return self._create_resource(
-            resource=event_source,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-        )
-
-    def get_event_source(
-        self,
-        event_source_id: UUID,
-        hydrate: bool = True,
-    ) -> EventSourceResponse:
-        """Get an event_source by ID.
-
-        Args:
-            event_source_id: The ID of the event_source to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The event_source.
-        """
-        return self._get_resource(
-            resource_id=event_source_id,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_event_sources(
-        self,
-        event_source_filter_model: EventSourceFilter,
-        hydrate: bool = False,
-    ) -> Page[EventSourceResponse]:
-        """List all event_sources matching the given filter criteria.
-
-        Args:
-            event_source_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all event_sources matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-            filter_model=event_source_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_event_source(
-        self,
-        event_source_id: UUID,
-        event_source_update: EventSourceUpdate,
-    ) -> EventSourceResponse:
-        """Update an existing event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to update.
-            event_source_update: The update to be applied to the event_source.
-
-        Returns:
-            The updated event_source.
-        """
-        return self._update_resource(
-            resource_id=event_source_id,
-            resource_update=event_source_update,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-        )
-
-    def delete_event_source(self, event_source_id: UUID) -> None:
-        """Delete an event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to delete.
-        """
-        self._delete_resource(
-            resource_id=event_source_id,
-            route=EVENT_SOURCES,
-        )
-
     # ----------------------------- Pipeline runs -----------------------------
 
     def get_or_create_run(
@@ -3453,158 +3245,6 @@ class RestZenStore(BaseZenStore):
         )
 
         return StepHeartbeatResponse.model_validate(response_body)
-
-    # -------------------- Triggers  --------------------
-
-    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
-        """Create an trigger.
-
-        Args:
-            trigger: The trigger to create.
-
-        Returns:
-            The created trigger.
-        """
-        return self._create_resource(
-            resource=trigger,
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-        )
-
-    def get_trigger(
-        self,
-        trigger_id: UUID,
-        hydrate: bool = True,
-    ) -> TriggerResponse:
-        """Get a trigger by ID.
-
-        Args:
-            trigger_id: The ID of the trigger to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The trigger.
-        """
-        return self._get_resource(
-            resource_id=trigger_id,
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_triggers(
-        self,
-        trigger_filter_model: TriggerFilter,
-        hydrate: bool = False,
-    ) -> Page[TriggerResponse]:
-        """List all triggers matching the given filter criteria.
-
-        Args:
-            trigger_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all triggers matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-            filter_model=trigger_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_trigger(
-        self,
-        trigger_id: UUID,
-        trigger_update: TriggerUpdate,
-    ) -> TriggerResponse:
-        """Update an existing trigger.
-
-        Args:
-            trigger_id: The ID of the trigger to update.
-            trigger_update: The update to be applied to the trigger.
-
-        Returns:
-            The updated trigger.
-        """
-        return self._update_resource(
-            resource_id=trigger_id,
-            resource_update=trigger_update,
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-        )
-
-    def delete_trigger(self, trigger_id: UUID) -> None:
-        """Delete an trigger.
-
-        Args:
-            trigger_id: The ID of the trigger to delete.
-        """
-        self._delete_resource(
-            resource_id=trigger_id,
-            route=TRIGGERS,
-        )
-
-    # -------------------- Trigger Executions --------------------
-
-    def get_trigger_execution(
-        self,
-        trigger_execution_id: UUID,
-        hydrate: bool = True,
-    ) -> TriggerExecutionResponse:
-        """Get an trigger execution by ID.
-
-        Args:
-            trigger_execution_id: The ID of the trigger execution to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The trigger execution.
-        """
-        return self._get_resource(
-            resource_id=trigger_execution_id,
-            route=TRIGGER_EXECUTIONS,
-            response_model=TriggerExecutionResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_trigger_executions(
-        self,
-        trigger_execution_filter_model: TriggerExecutionFilter,
-        hydrate: bool = False,
-    ) -> Page[TriggerExecutionResponse]:
-        """List all trigger executions matching the given filter criteria.
-
-        Args:
-            trigger_execution_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all trigger executions matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=TRIGGER_EXECUTIONS,
-            response_model=TriggerExecutionResponse,
-            filter_model=trigger_execution_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
-        """Delete a trigger execution.
-
-        Args:
-            trigger_execution_id: The ID of the trigger execution to delete.
-        """
-        self._delete_resource(
-            resource_id=trigger_execution_id,
-            route=TRIGGER_EXECUTIONS,
-        )
 
     # ----------------------------- Users -----------------------------
 

@@ -44,10 +44,6 @@ class AnalyticsEvent(str, Enum):
     REGISTERED_STACK = "Stack registered"
     UPDATED_STACK = "Stack updated"
 
-    # Trigger
-    CREATED_TRIGGER = "Trigger created"
-    UPDATED_TRIGGER = "Trigger updated"
-
     # Templates
     CREATED_RUN_TEMPLATE = "Run template created"
     EXECUTED_RUN_TEMPLATE = "Run templated executed"
