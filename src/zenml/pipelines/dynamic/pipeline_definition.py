@@ -177,13 +177,6 @@ class DynamicPipeline(Pipeline):
                 "support dynamic pipelines. "
             )
 
-        logger.warning(
-            "Dynamic pipelines are currently an experimental feature. There "
-            "are known issues and limitations and the interface is subject to "
-            "change. If you encounter any issues or have feedback, please "
-            "let us know at https://github.com/zenml-io/zenml/issues."
-        )
-
         self.prepare(*args, **kwargs)
         return self._run()
 
