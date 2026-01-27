@@ -162,9 +162,7 @@ def test_running_a_failing_step(
         step_run=sample_step_run,
     )
 
-    runner = StepRunner(
-        step=step, stack=local_stack, publish_exception_info=False
-    )
+    runner = StepRunner(step=step, stack=local_stack)
     with pytest.raises(RuntimeError):
         runner.run(
             pipeline_run=sample_pipeline_run,

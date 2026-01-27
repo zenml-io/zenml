@@ -100,22 +100,15 @@ class StepRunner:
         self,
         step: "Step",
         stack: "Stack",
-        publish_exception_info: bool = True,
     ):
         """Initializes the step runner.
 
         Args:
             step: The step to run.
             stack: The stack on which the step should run.
-            publish_exception_info: Whether to publish the exception info for
-                the step run. If set to False, the exception info will be
-                stored in the `publish_utils.step_exception_info` context
-                variable instead, and the caller is responsible for publishing
-                the exception info.
         """
         self._step = step
         self._stack = stack
-        self._publish_exception_info = publish_exception_info
 
     @property
     def configuration(self) -> StepConfiguration:

@@ -99,7 +99,6 @@ from zenml.utils import (
     string_utils,
 )
 from zenml.utils.logging_utils import (
-    LoggingContext,
     is_pipeline_logging_enabled,
     setup_logging_context,
 )
@@ -435,7 +434,7 @@ class DynamicPipelineRunner:
         logs_context: ContextManager[Any] = nullcontext()
         if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
             logs_context = setup_logging_context(source="orchestrator")
-        
+
         with logs_context:
             if self._run.status.is_finished:
                 logger.info("Run `%s` is already finished.", str(self._run.id))
@@ -482,9 +481,11 @@ class DynamicPipelineRunner:
                     # them and raise any exceptions that occurred.
                     self.await_all_step_futures()
                 except Exception as e:
-                    exception_info = exception_utils.collect_exception_information(
-                        exception=e,
-                        user_func=self.pipeline.entrypoint,
+                    exception_info = (
+                        exception_utils.collect_exception_information(
+                            exception=e,
+                            user_func=self.pipeline.entrypoint,
+                        )
                     )
                     # TODO: this call already invalidates the token, so
                     # the steps will keep running but won't be able to
