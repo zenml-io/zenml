@@ -77,24 +77,39 @@ class ProducerBase(ABC):
     def config(self) -> ProducerConfig:
         """Implements the 'config' property.
 
-        Returns: The producer config object.
+        Returns:
+            The producer config object.
         """
         return self._cfg
 
     @abstractmethod
     async def build_message(self, payload: MessagePayload) -> Any:
-        """Convert payload into a backend-specific message object."""
+        """Convert the message to a broker-specific payload.
+
+        Args:
+            payload: A MessagePayload object.
+
+        Returns:
+            A broker-specific message.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def send_message(self, message: Any) -> Any:
-        """Send/publish the backend-specific message."""
+        """Sends a message to the broker.
+
+        Args:
+            message: A broker-specific message.
+
+        Returns:
+            A broker-specific response, most usually message ID.
+        """
         raise NotImplementedError
 
     async def handle_critical_event(self, event: CriticalEvent) -> None:
         """Critical event handler.
 
-        A critical event indicates that the application behaviour has degraded.
+        A critical event indicates that the application behavior has degraded.
         For instance, the inability to serialize the message to a broker-compatible format
         is extremely severe as it most probably repeats across messages meaning no messages
         are published for execution at all.
@@ -122,8 +137,8 @@ class ProducerBase(ABC):
             Backend-specific send result/receipt.
 
         Raises:
-            ProducerEncodeError: If encoding/building fails.
-            ProducerSendError: If sending fails after retries.
+            MessageEncodeError: If encoding/building fails.
+            MessageSubmissionError: If sending fails after retries.
         """
         try:
             message = await self.build_message(payload)
@@ -193,7 +208,8 @@ class ConsumerBase(ABC):
     def config(self) -> ConsumerRuntimeConfig:
         """Implements the 'config' property.
 
-        Returns: The consumer config object.
+        Returns:
+            The consumer config object.
         """
         return self._cfg
 
@@ -201,30 +217,58 @@ class ConsumerBase(ABC):
 
     @abstractmethod
     async def preprocess_message(self, raw_message: Any) -> MessageEnvelope:
-        """Decode/validate raw broker message into MessageEnvelope."""
+        """Decode/Validate broker message and wrap to MessageEnvelope.
+
+        Args:
+            raw_message: Broker-specific message.
+
+        Returns:
+            A MessageEnvelope object.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def process_message(self, message: MessageEnvelope) -> None:
-        """Business logic for a decoded message."""
+        """Execution of message payload.
+
+        You can choose to either point to a callable to separate executor
+        from consumer or do execution here making the executor & consumer one
+        component.
+
+        Args:
+            message: A MessageEnvelope object.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def acknowledge_message(
         self, message_id: str, raw_message: Any
     ) -> None:
-        """Ack/delete message from the backend."""
+        """Acks/Deletes message from the queue.
+
+        Args:
+            message_id: The ID of the message.
+            raw_message: The raw broker-specific message.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def handle_invalid_message(self, raw_message: Any) -> None:
-        """Handle raw messages that cannot be decoded."""
+        """Handles message of invalid format (not suitable for execution).
+
+        Messages that are invalid should still be acked to avoid
+        looping execution and system poisoning.
+
+        Args:
+            raw_message: The raw broker-specific message.
+
+        """
         raise NotImplementedError
 
     async def handle_critical_event(self, event: CriticalEvent) -> None:
         """Critical event handler.
 
-        A critical event indicates that the application behaviour has degraded.
+        A critical event indicates that the application behavior has degraded.
         For instance, the inability to serialize the message to a broker-compatible format
         is extremely severe as it most probably repeats across messages meaning no messages
         are published for execution at all.
@@ -243,10 +287,10 @@ class ConsumerBase(ABC):
         logger.error("Critical event handler received event: %s", event)
 
     async def handle_raw_message(self, raw_message: Any) -> None:
-        """Run the full pipeline for one raw message.
+        """Handles one message at a time.
 
-        Polling consumers call this per message they received.
-        Push consumers call this from their subscription callback.
+        Args:
+            raw_message: A raw broker-specific message.
         """
         try:
             msg = await self.preprocess_message(raw_message)
@@ -357,7 +401,8 @@ class PollingConsumer(ConsumerBase, ABC):
     def polling_interval(self) -> float:
         """Implement the 'polling_interval' property.
 
-        Returns: The polling interval value.
+        Returns:
+            The polling interval value.
         """
         return self._polling_interval
 

@@ -87,10 +87,12 @@ async def create_redis_client(settings: RedisSettings) -> Redis:
     Raises:
         ConnectionError: If Redis is unreachable or unhealthy.
     """
-    client = Redis.from_url(url=settings.url, auto_close_connection_pool=True)
+    client: Redis = Redis.from_url(
+        url=settings.url, auto_close_connection_pool=True
+    )
 
     try:
-        pong = await client.ping()
+        pong = await client.ping()  # type: ignore[misc]
         if not pong:
             raise ConnectionError(
                 f"Redis health check failed (ping returned {pong!r})."
@@ -115,6 +117,9 @@ async def ensure_stream_and_group(
     Args:
         client: Async Redis client.
         config: The consumer group configuration.
+
+    Raises:
+        ResponseError: If consumer group creation is blocked.
     """
     # 1) Ensure stream exists (create a minimal entry if missing, then delete it).
     if not await client.exists(config.stream_name):
@@ -169,7 +174,10 @@ class IntegerHashTable:
     """
 
     def __init__(
-        self, hash_table_name: str, client: Redis, max_size: int | None = None
+        self,
+        hash_table_name: str,
+        client: Redis,
+        max_size: int | None = None,
     ) -> None:
         """Integer hash table constructor.
 
@@ -188,9 +196,9 @@ class IntegerHashTable:
         Returns:
             The number of records in the hash table.
         """
-        return int(await self._client.hlen(self._hash_table_name))
+        return int(await self._client.hlen(self._hash_table_name))  # type: ignore[misc]
 
-    async def exists(self, record_id) -> bool:
+    async def exists(self, record_id: str) -> bool:
         """Check if record exists in the hash table.
 
         Args:
@@ -199,7 +207,7 @@ class IntegerHashTable:
         Returns:
             True if the record exists in the hash table.
         """
-        return await self._client.hexists(self._hash_table_name, record_id)
+        return await self._client.hexists(self._hash_table_name, record_id)  # type: ignore[misc,no-any-return]
 
     async def create_record(self, record_id: str) -> None:
         """Create a record with default value = 1.
@@ -211,7 +219,7 @@ class IntegerHashTable:
             record_id: The id of the record.
 
         Raises:
-            ValueError: If max_size is set and creating a new record would exceed it.
+            HashTableSizeError: If max_size is set and creating a new record would exceed it.
         """
         if self._max_size is not None:
             if not await self.exists(record_id):
@@ -221,7 +229,7 @@ class IntegerHashTable:
                         f"hash '{self._hash_table_name}' is at max_size={self._max_size}."
                     )
 
-        await self._client.hset(self._hash_table_name, record_id, "1")
+        await self._client.hset(self._hash_table_name, record_id, "1")  # type: ignore[misc]
 
     async def increment_record(self, record_id: str) -> int:
         """Increments a record's value by 1.
@@ -232,9 +240,7 @@ class IntegerHashTable:
         Returns:
             The incremented value.
         """
-        return int(
-            await self._client.hincrby(self._hash_table_name, record_id, 1)
-        )
+        return await self._client.hincrby(self._hash_table_name, record_id, 1)  # type: ignore[misc,no-any-return]
 
     async def remove_record(self, record_id: str) -> None:
         """Removes a record from the hash.
@@ -242,7 +248,7 @@ class IntegerHashTable:
         Args:
             record_id: The id of the record.
         """
-        await self._client.hdel(self._hash_table_name, record_id)
+        await self._client.hdel(self._hash_table_name, record_id)  # type: ignore[misc]
 
     async def get_value(self, record_id: str) -> int | None:
         """Gets the value of a record.
@@ -253,7 +259,7 @@ class IntegerHashTable:
         Returns:
             The value of the record.
         """
-        value = await self._client.hget(self._hash_table_name, record_id)
+        value = await self._client.hget(self._hash_table_name, record_id)  # type: ignore[misc]
         if value is None:
             return None
         return int(value)
@@ -283,13 +289,19 @@ class RedisStreamsProducer(ProducerBase):
         Args:
             config: RedisStreams producer configuration.
             client: Redis client instance.
-
-        Raises:
-            MessageSubmissionError: If ping_on_start is enabled and Redis is unreachable.
         """
         super().__init__(config=config)
         self._cfg: RedisProducerConfig = config
         self._client = client
+
+    @property
+    def config(self) -> RedisProducerConfig:
+        """Implements the 'config' property.
+
+        Returns:
+            The Producer config object.
+        """
+        return self._cfg
 
     async def start(self) -> None:
         """Optionally verify Redis connectivity.
@@ -297,14 +309,12 @@ class RedisStreamsProducer(ProducerBase):
         Raises:
             MessageSubmissionError: If ping fails.
         """
-        if not self._cfg.ping_on_start:
+        if not self.config.ping_on_start:
             return
         try:
-            await self._client.ping()
+            await self._client.ping()  # type: ignore[misc]
         except Exception as exc:
-            raise MessageSubmissionError(
-                f"Redis ping failed for {self._cfg.url}"
-            ) from exc
+            raise MessageSubmissionError("Redis ping failed.") from exc
 
     async def close(self) -> None:
         """Close the underlying Redis connection pool."""
@@ -353,23 +363,20 @@ class RedisStreamsProducer(ProducerBase):
 
         Returns:
             Redis Stream entry id as a string.
-
-        Raises:
-            Exception: Redis client errors (caught/retried by ProducerBase.publish).
         """
         # Approximate trimming is usually fine for queues; set maxlen=None to disable.
         if self._cfg.max_len is not None:
             entry_id = await self._client.xadd(
-                name=self._cfg.stream,
-                fields=message,
+                name=self.config.stream_name,
+                fields=message,  # type: ignore[arg-type]
                 id="*",
-                maxlen=self._cfg.max_len,
+                maxlen=self.config.max_len,
                 approximate=True,
             )
         else:
             entry_id = await self._client.xadd(
-                name=self._cfg.stream_name,
-                fields=message,
+                name=self.config.stream_name,
+                fields=message,  # type: ignore[arg-type]
                 id="*",
             )
 
@@ -418,6 +425,15 @@ class RedisPollingConsumer(PollingConsumer):
         self._deliveries_hash = deliveries_hash
         self._executor = executor
 
+    @property
+    def config(self) -> RedisStreamsPollingConfig:
+        """Implement the 'config' property.
+
+        Returns:
+            The config object.
+        """
+        return self._cfg  # type: ignore[return-value]
+
     async def receive_messages(self) -> list[RawRedisStreamMessage]:
         """Fetch a batch of raw messages from Redis.
 
@@ -427,11 +443,11 @@ class RedisPollingConsumer(PollingConsumer):
         raw_msgs = []
 
         resp = await self._client.xreadgroup(
-            groupname=self._cfg.group_name,
-            consumername=f"{self._cfg.group_name}-{str(uuid4())[:8]}",
-            streams={self._cfg.stream_name: ">"},
-            count=self._cfg.batch_size,
-            block=self._cfg.polling_threshold,
+            groupname=self.config.group_name,
+            consumername=f"{self.config.group_name}-{str(uuid4())[:8]}",
+            streams={self.config.stream_name: ">"},
+            count=self.config.batch_size,
+            block=self.config.polling_threshold,
         )
 
         if resp:
@@ -464,6 +480,9 @@ class RedisPollingConsumer(PollingConsumer):
 
         Returns:
             A MessageEnvelope suitable instance suitable for consumer operations.
+
+        Raises:
+            MessageDecodeError: If the message could not be decoded.
         """
         payload_bytes = raw_message["fields"].get(b"payload")
         if payload_bytes is None:
@@ -510,7 +529,7 @@ class RedisPollingConsumer(PollingConsumer):
 
         """
         await self._client.xack(
-            self._cfg.stream_name, self._cfg.group_name, message_id
+            self.config.stream_name, self.config.group_name, message_id
         )
         await self._deliveries_hash.remove_record(message_id)
 
