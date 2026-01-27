@@ -25,11 +25,11 @@ jobs:
       PYTHON_VERSION: '3.11'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with:
           python-version: '3.11'
       - name: Install uv
@@ -53,7 +53,7 @@ jobs:
           fi
       - name: Upload results artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: agent-examples-results
           path: |
@@ -65,15 +65,17 @@ jobs:
       - name: Fail if any example failed
         if: ${{ fromJSON(steps.run_examples.outputs.fail_count) > 0 }}
         run: |
-          echo "One or more agent examples failed: ${{ steps.run_examples.outputs.fail_list }}"
+          echo "One or more agent examples failed: ${STEPS_RUN_EXAMPLES_OUTPUTS_FAIL_LIST}"
           exit 1
+        env:
+          STEPS_RUN_EXAMPLES_OUTPUTS_FAIL_LIST: ${{ steps.run_examples.outputs.fail_list }}
   notify-discord:
     needs: test-agent-examples
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     steps:
       - name: Download results artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: agent-examples-results
           path: ./agent-examples-results
@@ -97,7 +99,7 @@ jobs:
             echo "${DELIMITER}"
           } >> "$GITHUB_OUTPUT"
       - name: Send Discord notification on failure
-        uses: Ilshidur/action-discord@master
+        uses: Ilshidur/action-discord@d2594079a10f1d6739ee50a2471f0ca57418b554  # master
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_SRE }}
         with:

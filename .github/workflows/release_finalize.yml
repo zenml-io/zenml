@@ -26,15 +26,17 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Check out develop
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: develop
       # Create the release branch
       - name: Release branch
         run: |
           git pull
-          git checkout -b release/${{ github.event.inputs.new_version }}
-          git push --set-upstream origin release/${{ github.event.inputs.new_version }}
+          git checkout -b release/${GITHUB_EVENT_INPUTS_NEW_VERSION}
+          git push --set-upstream origin release/${GITHUB_EVENT_INPUTS_NEW_VERSION}
+        env:
+          GITHUB_EVENT_INPUTS_NEW_VERSION: ${{ github.event.inputs.new_version }}
   add-docs-warning-header:
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +48,7 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Check out the previous release branch
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: release/${{ github.event.inputs.latest_version }}
       # Create the docs update PR
@@ -54,7 +56,9 @@ jobs:
         shell: bash
         run: |
           git pull
-          bash scripts/add-docs-warning.sh ${{ github.event.inputs.latest_version }}
+          bash scripts/add-docs-warning.sh ${GITHUB_EVENT_INPUTS_LATEST_VERSION}
+        env:
+          GITHUB_EVENT_INPUTS_LATEST_VERSION: ${{ github.event.inputs.latest_version }}
   add-new-version-to-migration-tests:
     runs-on: ubuntu-latest
     steps:
@@ -66,11 +70,11 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Check out develop
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: develop
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2
         with:
           python-version: '3.12'
       - name: Install ZenML
@@ -81,7 +85,10 @@ jobs:
         shell: bash
         run: |-
           git pull
-          bash scripts/add-migration-test-version.sh ${{ github.event.inputs.latest_version }} ${{ github.event.inputs.new_version }}
+          bash scripts/add-migration-test-version.sh ${GITHUB_EVENT_INPUTS_LATEST_VERSION} ${GITHUB_EVENT_INPUTS_NEW_VERSION}
+        env:
+          GITHUB_EVENT_INPUTS_LATEST_VERSION: ${{ github.event.inputs.latest_version }}
+          GITHUB_EVENT_INPUTS_NEW_VERSION: ${{ github.event.inputs.new_version }}
   add-legacy-docs-version:
     runs-on: ubuntu-latest
     steps:
@@ -93,29 +100,35 @@ jobs:
           git config --global user.name "ZenML GmbH"
       # Check out develop
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: develop
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2
         with:
           python-version: '3.12'
       # Run script to add version to legacy docs
       - name: Add version to legacy docs
         run: |
-          git checkout -b legacy_docs_update_${{ github.event.inputs.latest_version }}
-          python scripts/add_version_to_legacy_docs.py ${{ github.event.inputs.latest_version }}
+          git checkout -b legacy_docs_update_${GITHUB_EVENT_INPUTS_LATEST_VERSION}
+          python scripts/add_version_to_legacy_docs.py ${GITHUB_EVENT_INPUTS_LATEST_VERSION}
+        env:
+          GITHUB_EVENT_INPUTS_LATEST_VERSION: ${{ github.event.inputs.latest_version }}
       # Commit and push changes
       - name: Commit and push changes
         run: |
           git add docs/book/reference/legacy-docs.md
-          git commit -m "Add version ${{ github.event.inputs.latest_version }} to legacy docs"
-          git push --set-upstream origin legacy_docs_update_${{ github.event.inputs.latest_version }}
+          git commit -m "Add version ${GITHUB_EVENT_INPUTS_LATEST_VERSION} to legacy docs"
+          git push --set-upstream origin legacy_docs_update_${GITHUB_EVENT_INPUTS_LATEST_VERSION}
+        env:
+          GITHUB_EVENT_INPUTS_LATEST_VERSION: ${{ github.event.inputs.latest_version }}
       # Create PR
       - name: Create PR
         run: |
-          gh pr create --title "Add version ${{ github.event.inputs.latest_version }} to legacy docs" \
-                      --body "This PR adds version ${{ github.event.inputs.latest_version }} to the legacy documentation reference table." \
+          gh pr create --title "Add version ${GITHUB_EVENT_INPUTS_LATEST_VERSION} to legacy docs" \
+                      --body "This PR adds version ${GITHUB_EVENT_INPUTS_LATEST_VERSION} to the legacy documentation reference table." \
                       --base develop \
-                      --head legacy_docs_update_${{ github.event.inputs.latest_version }} \
+                      --head legacy_docs_update_${GITHUB_EVENT_INPUTS_LATEST_VERSION} \
                       --label "no-release-notes"
+        env:
+          GITHUB_EVENT_INPUTS_LATEST_VERSION: ${{ github.event.inputs.latest_version }}

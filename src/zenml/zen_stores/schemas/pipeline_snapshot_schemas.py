@@ -46,7 +46,10 @@ from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -74,6 +77,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             "pipeline_id",
             "name",
             name="unique_name_for_pipeline_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["source_snapshot_id"],
         ),
     )
 

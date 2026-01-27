@@ -9,6 +9,22 @@ Below is a menu of 5-minute quick wins you can sprinkle into an existing ZenML
 project with almost no code changes. Each entry explains why it matters, the
 micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 
+{% hint style="info" %}
+**Automate with AI coding agents:** If you use an agentic coding tool (Claude Code, OpenAI Codex, GitHub Copilot, OpenCode, Amp, Cursor, etc.), install the `zenml-quick-wins` skill to analyze your repo and stack, get personalized recommendations, and implement quick wins interactively.
+
+```bash
+# Example for Claude Code - add the ZenML marketplace (one-time)
+/plugin marketplace add zenml-io/skills
+
+# Install the skill
+/plugin install zenml-quick-wins@zenml
+```
+
+Then ask: *"Use zenml-quick-wins to analyze this repo and recommend the top 3 quick wins to implement."*
+
+See [LLM tooling](../../reference/llms-txt.md) for setup instructions across different tools.
+{% endhint %}
+
 | Quick Win | What it does | Why you need it |
 |-----------|--------------|----------------|
 | [Log rich metadata](#id-1-log-rich-metadata-on-every-run) | Track params, metrics, and properties on every run | Foundation for reproducibility and analytics |
