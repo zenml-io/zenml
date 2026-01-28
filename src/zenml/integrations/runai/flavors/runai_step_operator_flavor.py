@@ -50,18 +50,19 @@ class RunAIStepOperatorSettings(BaseSettings):
     gpu_devices_request: int = Field(
         default=1,
         ge=0,
-        description="Number of GPUs to request for the workload. Set to 0 "
-        "for CPU-only execution. Examples: 1 for single GPU, 2 for dual GPU, "
-        "0 for CPU-only. Note: Use gpu_request_type='portion' with "
-        "gpu_portion_request=1.0 for full GPU allocation",
+        description="Number of GPUs to request for the workload. Default 1 "
+        "requests a whole device; set to 0 for CPU-only or keep 1 with "
+        "gpu_portion_request < 1.0 to request a fractional share. Examples: "
+        "1 for single GPU, 2 for dual GPU, 0 for CPU-only. Pair with "
+        "gpu_request_type='portion' to control fractional allocation.",
     )
     gpu_portion_request: float = Field(
         default=1.0,
         ge=0.0,
         le=1.0,
         description="Fractional GPU allocation as a decimal (0.0-1.0). "
-        "Enables sharing GPUs across workloads. Examples: 1.0 for full GPU, "
-        "0.5 for half GPU, 0.25 for quarter GPU. Used when gpu_request_type='portion'",
+        "Default 1.0 requests a full device; lower values (e.g., 0.5 or 0.25) "
+        "share a GPU across workloads. Used when gpu_request_type='portion'.",
     )
     gpu_request_type: Literal["portion", "memory"] = Field(
         default="portion",
@@ -103,8 +104,10 @@ class RunAIStepOperatorSettings(BaseSettings):
     )
     cpu_memory_request: str = Field(
         default="4G",
-        description="Memory to request in Kubernetes format. Valid units: K, M, G, T, Ki, Mi, Gi, Ti. "
-        "Examples: '4G' for 4 gigabytes, '512M' for 512 megabytes, '8Gi' for 8 gibibytes",
+        description="RAM to request for the workload container. Must use Kubernetes "
+        "format with valid units: K, M, G, T, Ki, Mi, Gi, Ti. Examples: '4G' "
+        "for 4 gigabytes, '512M' for 512 megabytes, '8Gi' for 8 gibibytes. "
+        "Default is sufficient for most training jobs.",
     )
     cpu_memory_limit: Optional[str] = Field(
         default=None,

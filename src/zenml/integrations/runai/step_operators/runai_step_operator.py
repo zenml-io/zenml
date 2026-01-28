@@ -338,18 +338,24 @@ class RunAIStepOperator(BaseStepOperator):
     ) -> Tuple[str, Optional[str]]:
         """Build the command and arguments for Run:AI.
 
+        ZenML step entrypoints are typically generated as
+        `["python", "-m", "zenml.entrypoints.step_entrypoint", ...args...]`.
+        We split after the first three tokens to keep the interpreter/module
+        invocation intact while passing the remaining tokens as arguments.
+        If the layout ever changes, consider sending the full list instead.
+
         Args:
             entrypoint_command: The full entrypoint command list.
 
         Returns:
             Tuple of (command_str, args_str).
         """
-        command_str = " ".join(entrypoint_command[:3])
-        args_str = (
-            " ".join(entrypoint_command[3:])
-            if len(entrypoint_command) > 3
-            else None
-        )
+        if len(entrypoint_command) <= 3:
+            command_str = " ".join(entrypoint_command)
+            args_str = None
+        else:
+            command_str = " ".join(entrypoint_command[:3])
+            args_str = " ".join(entrypoint_command[3:])
         return command_str, args_str
 
     def _build_environment_variables(
