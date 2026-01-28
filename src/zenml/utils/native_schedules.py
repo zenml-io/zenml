@@ -18,8 +18,8 @@ from datetime import datetime, timedelta, timezone
 
 from croniter import croniter
 
-from zenml import SchedulePayload
 from zenml.enums import ScheduleEngine
+from zenml.models import SchedulePayload
 
 
 def next_occurrence_for_interval(
@@ -84,16 +84,18 @@ def calculate_first_occurrence(schedule: SchedulePayload) -> datetime | None:
         return None
 
     if schedule.cron_expression:
-        schedule.next_occurrence = next_occurrence_for_cron(
+        next_occurrence = next_occurrence_for_cron(
             expression=schedule.cron_expression,
             base=schedule.start_time or datetime.now(timezone.utc),
         )
-    elif schedule.start_time and schedule.interval_second:
-        schedule.next_occurrence = next_occurrence_for_interval(
-            interval=schedule.interval_second.total_seconds(),
+    elif schedule.start_time and schedule.interval:
+        next_occurrence = next_occurrence_for_interval(
+            interval=schedule.interval,
             start=schedule.start_time,
         )
     elif schedule.run_once_start_time:
-        schedule.next_occurrence = schedule.run_once_start_time
+        next_occurrence = schedule.run_once_start_time
+    else:
+        return None
 
-    return schedule.next_occurrence
+    return next_occurrence

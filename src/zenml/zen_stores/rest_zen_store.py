@@ -48,6 +48,7 @@ from pydantic import (
 from requests.adapters import HTTPAdapter, Retry
 
 import zenml
+from zenml import TriggerFilter, TriggerRequest, TriggerResponse, TriggerUpdate
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -110,6 +111,7 @@ from zenml.constants import (
     STEPS,
     TAG_RESOURCES,
     TAGS,
+    TRIGGERS,
     USERS,
     VERSION_1,
     ZENML_PRO_API_KEY_PREFIX,
@@ -2085,6 +2087,138 @@ class RestZenStore(BaseZenStore):
             run_metadata: The run metadata to create.
         """
         self.post(RUN_METADATA, body=run_metadata)
+
+    # ----------------------------- Triggers ------------------------------
+
+    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
+        """Creates a new trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+        """
+        return self._create_resource(
+            resource=trigger,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+        )
+
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TriggerResponse:
+        """Retrieves a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            The trigger.
+
+        Raises:
+            KeyError: if the trigger does not exist.
+        """
+        return self._get_resource(
+            resource_id=trigger_id,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_triggers(
+        self, triggers_filter_model: TriggerFilter, hydrate: bool = False
+    ) -> Page[TriggerResponse]:
+        """List all triggers.
+
+        Args:
+            triggers_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+            filter_model=triggers_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TriggerResponse:
+        """Updates a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        return self._update_resource(
+            resource_id=trigger_id,
+            resource_update=trigger_update,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+        )
+
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Deletes a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag deciding whether to soft-delete the trigger.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        self._delete_resource(
+            resource_id=trigger_id,
+            route=TRIGGERS,
+            params={"soft": soft},
+        )
+
+    def attach_trigger_to_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Attaches (links) a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        self.put(
+            path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            timeout=5,
+        )
+
+    def detach_trigger_from_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Detaches (unlinks) a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        self.delete(
+            path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            timeout=5,
+        )
 
     # ----------------------------- Schedules -----------------------------
 

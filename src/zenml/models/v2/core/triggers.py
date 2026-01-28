@@ -15,7 +15,7 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, ClassVar, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Optional, TypeVar
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -29,7 +29,6 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
-    UserScopedResponseBody,
 )
 
 if TYPE_CHECKING:
@@ -94,13 +93,13 @@ class SchedulePayload(BaseModel):
                 provided.
         """
         cron_expression = self.cron_expression
-        periodic_schedule = self.start_time and self.interval_second
+        periodic_schedule = self.start_time and self.interval
         run_once_starts_at = self.run_once_start_time
 
         if cron_expression and periodic_schedule:
             logger.warning(
                 "This schedule was created with a cron expression as well as "
-                "values for `start_time` and `interval_seconds`. The resulting "
+                "values for `start_time` and `interval`. The resulting "
                 "behavior depends on the concrete orchestrator implementation "
                 "but will usually ignore the interval and use the cron "
                 "expression."
@@ -118,7 +117,7 @@ class SchedulePayload(BaseModel):
             return self
         else:
             raise ValueError(
-                "Either a cron expression, a start time and interval seconds "
+                "Either a cron expression, a start time and interval "
                 "or a run once start time "
                 "need to be set for a valid schedule."
             )
@@ -198,8 +197,7 @@ class TriggerResponseMetadata(ProjectScopedResponseMetadata):
 class TriggerResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
-    user: UserScopedResponseBody | None = None
-    snapshots: "list[PipelineSnapshotResponse] | None" = None
+    snapshots: Optional[list["PipelineSnapshotResponse"]] = None
 
 
 class TriggerResponse(
