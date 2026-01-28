@@ -902,9 +902,9 @@ class BaseFilter(BaseModel):
         """
         return self.size * (self.page - 1)
 
-    def generate_filter(
+    def generate_filters(
         self, table: Type["AnySchema"]
-    ) -> Union["ColumnElement[bool]"]:
+    ) -> List["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
         Args:
@@ -912,12 +912,7 @@ class BaseFilter(BaseModel):
 
         Returns:
             The filter expression for the query.
-
-        Raises:
-            RuntimeError: If a valid logical operator is not supplied.
         """
-        from sqlmodel import and_, or_
-
         filters = []
         for column_filter in self.list_of_filters:
             filters.append(
@@ -925,12 +920,8 @@ class BaseFilter(BaseModel):
             )
         for custom_filter in self.get_custom_filters(table):
             filters.append(custom_filter)
-        if self.logical_operator == LogicalOperators.OR:
-            return or_(False, *filters)
-        elif self.logical_operator == LogicalOperators.AND:
-            return and_(True, *filters)
-        else:
-            raise RuntimeError("No valid logical operator was supplied.")
+
+        return filters
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
@@ -961,16 +952,52 @@ class BaseFilter(BaseModel):
 
         Returns:
             The query with filter applied.
+
+        Raises:
+            RuntimeError: If a valid logical operator is not supplied.
         """
+        from sqlmodel import and_, col, select, union
+
         rbac_filter = self.generate_rbac_filter(table=table)
 
         if rbac_filter is not None:
             query = query.where(rbac_filter)
 
-        filters = self.generate_filter(table=table)
+        filters = self.generate_filters(table=table)
 
-        if filters is not None:
-            query = query.where(filters)
+        if not filters:
+            return query
+
+        if len(filters) == 1:
+            query = query.where(filters[0])
+            return query
+
+        if self.logical_operator == LogicalOperators.AND:
+            query = query.where(and_(*filters))
+            return query
+
+        if self.logical_operator != LogicalOperators.OR:
+            raise RuntimeError("No valid logical operator was supplied.")
+
+        # In the case of OR, we use UNION for better query optimization.
+        # Each filter gets its own query, then we UNION the IDs and join back
+        # to the main query. This avoids the cartesian product that OR semantics
+        # would otherwise produce, which doesn't scale well.
+        id_queries = []
+        for filter_condition in filters:
+            id_query = (
+                select(col(table.id))
+                .select_from(table)
+                .where(filter_condition)
+            )
+            id_queries.append(id_query)
+
+        matched_ids_subquery = union(*id_queries).subquery("matched_ids")
+
+        query = query.join(
+            matched_ids_subquery,
+            col(table.id) == matched_ids_subquery.c.id,
+        )
 
         return query
 
