@@ -156,6 +156,8 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         },
     )
 
+    user: UserSchema | None = Relationship(back_populates="triggers")
+
     # ------------------ FLAT DATA FIELDS FOR FAST FILTERING ----------------------
 
     next_occurrence: datetime | None = Field(
@@ -248,7 +250,7 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
             self.name = trigger_update.name
 
         if trigger_update.data is not None:
-            if self.type == TriggerType.schedule.value:
+            if self.trigger_type == TriggerType.schedule.value:
                 if not isinstance(trigger_update.data, ScheduleUpdatePayload):
                     raise ValueError(
                         "Expected ScheduleUpdatePayload update object for schedule trigger"

@@ -7035,6 +7035,21 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
+            snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
+
+            if not snapshot:
+                raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
+
+            trigger = session.get(TriggerSchema, trigger_id)
+
+            if not trigger:
+                raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.is_archived:
+                raise IllegalOperationError(
+                    f"Can not attach snapshot {snapshot_id} to archived trigger {trigger_id}."
+                )
+
             new_assoc = TriggerSnapshotSchema(
                 trigger_id=trigger_id,
                 snapshot_id=snapshot_id,
@@ -7056,10 +7071,14 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
-            assoc = TriggerSnapshotSchema.get(
-                trigger_id=trigger_id,
-                snapshot_id=snapshot_id,
+            assoc = session.get(
+                TriggerSnapshotSchema, (trigger_id, snapshot_id)
             )
+
+            if assoc is None:
+                raise KeyError(
+                    f"No snapshot {snapshot_id} association found for trigger {trigger_id}"
+                )
 
             session.delete(assoc)
             session.commit()
