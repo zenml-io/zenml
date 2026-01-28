@@ -546,13 +546,14 @@ def setup_logging_context(
 
     logs_request = generate_logs_request(source=source)
 
-    if pipeline_run:
-        log_metadata.update(get_run_log_metadata(pipeline_run=pipeline_run))
-        logs_request.pipeline_run_id = pipeline_run.id
-
     if step_run:
         log_metadata.update(get_step_log_metadata(step_run=step_run))
         logs_request.step_run_id = step_run.id
+
+    if pipeline_run:
+        log_metadata.update(get_run_log_metadata(pipeline_run=pipeline_run))
+        if step_run is None:
+            logs_request.pipeline_run_id = pipeline_run.id
 
     logs_response = Client().zen_store.create_logs(logs_request)
 
