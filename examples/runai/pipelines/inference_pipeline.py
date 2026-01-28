@@ -47,8 +47,8 @@ runai_deployer_settings = RunAIDeployerSettings(
             parent_image="safoinext/zenml:runai",
             build_config=DockerBuildConfig(
                 build_options=DockerBuildOptions(platform="linux/amd64"),
-            ),  
-        )
+            ),
+        ),
     },
 )
 def inference_pipeline(

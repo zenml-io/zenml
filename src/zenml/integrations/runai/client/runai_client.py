@@ -490,16 +490,14 @@ class RunAIClient:
                 # Check if status is nested
                 status_field = data.get("status")
                 if not status and isinstance(status_field, dict):
-                    status = (
-                        status_field.get("phase") or status_field.get("state")
+                    status = status_field.get("phase") or status_field.get(
+                        "state"
                     )
                 elif not status and isinstance(status_field, str):
                     status = status_field
 
                 if not status:
-                    logger.warning(
-                        f"No status in inference workload: {data}"
-                    )
+                    logger.warning(f"No status in inference workload: {data}")
                 return cast(Optional[str], status)
             return None
         except Exception as exc:

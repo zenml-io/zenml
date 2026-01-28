@@ -91,12 +91,12 @@ def main() -> None:
         print(f"  Status: {deployment.status}")
         if deployment.url:
             print(f"  URL: {deployment.url}")
-            print(f"\nInvoke via CLI:")
+            print("Invoke via CLI:")
             print(
                 f"  zenml deployment invoke {deployment.name} "
                 f"--features='[0.5, -0.3, 1.2, 0.8]'"
             )
-            print(f"\nOr via HTTP:")
+            print("Or via HTTP:")
             print(f"  curl -X POST {deployment.url}/invoke \\")
             print('    -H "Content-Type: application/json" \\')
             print(
