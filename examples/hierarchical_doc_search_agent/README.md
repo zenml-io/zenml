@@ -29,10 +29,16 @@ detect_intent
                               └── aggregate_results → create_report
 ```
 
+## Prerequisites
+
+- **OPENAI_API_KEY**: Required for full LLM-powered search. Without it, the example falls back to keyword matching.
+- **LLM_MODEL** (optional): Override the default model (`openai:gpt-4o-mini`). Example: `LLM_MODEL=openai:gpt-4o`
+
 ## Quick Start
 
 ```bash
 pip install -r requirements.txt
+export OPENAI_API_KEY="your-api-key"  # Required for LLM-powered search
 zenml init && zenml login
 
 # Simple query (fast path)

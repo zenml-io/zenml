@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2026. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,8 @@
 """Hierarchical Document Search Agent."""
 
 import argparse
-import sys
-from pathlib import Path
 
-sys.path.append(str(Path(__file__).parent))
-from pipelines import hierarchical_search_pipeline
+from pipelines.hierarchical_search_pipeline import hierarchical_search_pipeline
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--query", "-q", required=True, help="Search query")

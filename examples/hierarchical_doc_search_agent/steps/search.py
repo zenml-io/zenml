@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2026. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,30 +17,61 @@
 
 import json
 import logging
+import os
 from pathlib import Path
-from typing import Annotated, Any, Dict, List, Tuple
+from typing import Annotated, Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
-from pydantic_ai import Agent
 
 from zenml import step
 from zenml.types import HTMLString
 
 logger = logging.getLogger(__name__)
 
+# --- Configuration ---
+
+DEFAULT_MODEL = "openai:gpt-4o-mini"
+LLM_MODEL = os.getenv("LLM_MODEL", DEFAULT_MODEL)
+
+# Lazy-initialized agent (avoid import-time failure when API key is missing)
+_traversal_agent: Optional[Any] = None
+
+
+def _get_traversal_agent() -> Any:
+    """Lazily initialize the Pydantic AI agent."""
+    global _traversal_agent
+    if _traversal_agent is None:
+        from pydantic_ai import Agent
+
+        _traversal_agent = Agent(
+            LLM_MODEL,
+            output_type=TraversalDecision,
+            system_prompt="""You are a document search agent. Given a query and document content,
+            decide whether this document answers the query or if you should explore related documents.
+
+            If the document answers the query: set has_answer=True and provide the answer.
+            If not: set has_answer=False and list document IDs to explore in traverse_to.""",
+        )
+    return _traversal_agent
+
+
 # --- Data loading ---
 
 
 def _load_documents() -> Dict[str, Any]:
     """Load document graph from JSON file."""
-    paths = [
+    search_paths = [
         Path(__file__).parent.parent / "data" / "doc_graph.json",
-        Path("data/doc_graph.json"),
+        Path("/app/data/doc_graph.json"),  # Docker container path
+        Path("data/doc_graph.json"),  # Relative fallback
     ]
-    for p in paths:
-        if p.exists():
-            with open(p) as f:
-                return json.load(f)["documents"]
+    for doc_path in search_paths:
+        if doc_path.exists():
+            with open(doc_path) as f:
+                data: Dict[str, Any] = json.load(f)
+                docs: Dict[str, Any] = data["documents"]
+                return docs
+    logger.warning(f"Document graph not found in any of: {search_paths}")
     return {}
 
 
@@ -54,17 +85,6 @@ class TraversalDecision(BaseModel):
     answer: str = ""
     traverse_to: List[str] = []  # doc IDs to explore next
     reasoning: str = ""
-
-
-traversal_agent = Agent(
-    "openai:gpt-4o-mini",
-    output_type=TraversalDecision,
-    system_prompt="""You are a document search agent. Given a query and document content,
-    decide whether this document answers the query or if you should explore related documents.
-
-    If the document answers the query: set has_answer=True and provide the answer.
-    If not: set has_answer=False and list document IDs to explore in traverse_to.""",
-)
 
 
 # --- Steps ---
@@ -91,6 +111,13 @@ def simple_search(
     _ = search_type  # Creates DAG edge from detect_intent
     docs = _load_documents()
     words = set(query.lower().split())
+    if not words:
+        return {
+            "query": query,
+            "type": "simple",
+            "results": [],
+            "agents_used": 0,
+        }
     results = []
     for doc_id, doc in docs.items():
         text = f"{doc.get('title', '')} {doc.get('content', '')}".lower()
@@ -116,6 +143,8 @@ def plan_search(
     _ = search_type  # Creates DAG edge from detect_intent
     docs = _load_documents()
     words = set(query.lower().split())
+    if not words:
+        return []
     scored = []
     for doc_id, doc in docs.items():
         text = f"{doc.get('title', '')} {doc.get('content', '')}".lower()
@@ -180,7 +209,8 @@ def traverse_node(
     """
 
     try:
-        result = traversal_agent.run_sync(prompt)
+        agent = _get_traversal_agent()
+        result = agent.run_sync(prompt)
         decision = result.output
     except Exception as e:
         # Fallback to keyword matching if LLM unavailable (e.g., no API key)

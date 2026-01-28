@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2026. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ Pydantic AI controls: agent decisions (traverse deeper or return answer?)
 """
 
 import os
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any, Dict, List, Tuple
 
 from steps import (
     aggregate_results,
@@ -32,16 +32,20 @@ from steps import (
 )
 
 from zenml import pipeline
-from zenml.config import DeploymentSettings, DockerSettings
+from zenml.config import (
+    DeploymentSettings,
+    DockerSettings,
+    PythonPackageInstaller,
+)
 
-# Pass OpenAI API key to deployed container
-environment = {}
-if os.getenv("OPENAI_API_KEY"):
-    environment["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-
+# Pass environment variables to deployed container
 docker_settings = DockerSettings(
-    requirements=["pydantic-ai", "openai"],
-    environment=environment,
+    python_package_installer=PythonPackageInstaller.UV,
+    requirements="requirements.txt",
+    environment={
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "LLM_MODEL": os.getenv("LLM_MODEL", "openai:gpt-4o-mini"),
+    },
 )
 
 deployment_settings = DeploymentSettings(
@@ -85,7 +89,7 @@ def hierarchical_search_pipeline(
 
         # Tuple: (doc_id_chunk, budget, visited)
         # .chunk(idx) creates DAG edge AND provides the doc_id value
-        pending = [
+        pending: List[Tuple[Any, int, List[str]]] = [
             (seed_nodes.chunk(idx), max_depth, [])
             for idx in range(len(seed_nodes.load()))
         ]
@@ -131,4 +135,4 @@ def hierarchical_search_pipeline(
         )
 
     create_report(results=results)
-    return results
+    return results  # type: ignore[no-any-return]
