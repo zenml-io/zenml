@@ -18,6 +18,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
+from zenml import TriggerFilter, TriggerRequest, TriggerResponse, TriggerUpdate
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import StackDeploymentProvider
 from zenml.models import (
@@ -1648,6 +1649,112 @@ class ZenStoreInterface(ABC):
 
         Returns:
             None
+        """
+
+    # -------------------- Triggers ---------------------
+
+    @abstractmethod
+    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
+        """Creates a new trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+        """
+
+    @abstractmethod
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TriggerResponse:
+        """Retrieves a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            The trigger.
+
+        Raises:
+            KeyError: if the trigger does not exist.
+        """
+
+    @abstractmethod
+    def list_triggers(
+        self,
+        triggers_filter_model: TriggerFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerResponse]:
+        """List all triggers.
+
+        Args:
+            triggers_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TriggerResponse:
+        """Updates a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Deletes a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag deciding whether to soft-delete the trigger.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
+    @abstractmethod
+    def attach_trigger_to_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Attaches (links) a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        pass
+
+    @abstractmethod
+    def detach_trigger_from_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Detaches (unlinks) a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
         """
 
     # -------------------- Schedules --------------------

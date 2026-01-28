@@ -18,7 +18,6 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.drop_constraint(
             "fk_pipeline_run_trigger_execution_id_trigger_execution",

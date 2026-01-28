@@ -183,7 +183,6 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             A list of query options.
         """
-
         options = []
 
         if include_resources:
