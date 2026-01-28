@@ -529,10 +529,6 @@ class RunAIDeployer(ContainerizedDeployer):
             if existing_workload:
                 current_name = existing_workload.get("name")
                 if current_name != workload_name:
-                    logger.debug(
-                        f"Deleting existing workload {existing_metadata.workload_id} "
-                        f"(name changed from {current_name} to {workload_name})"
-                    )
                     try:
                         client = self._get_runai_client()
                         client.delete_inference_workload(
@@ -543,9 +539,6 @@ class RunAIDeployer(ContainerizedDeployer):
                             f"Failed to delete existing workload: {e}"
                         )
                 else:
-                    logger.debug(
-                        f"Updating existing inference workload: {workload_name}"
-                    )
                     try:
                         client = self._get_runai_client()
                         client.delete_inference_workload(
@@ -596,6 +589,25 @@ class RunAIDeployer(ContainerizedDeployer):
                 f"'{deployment.name}': {e}"
             ) from e
 
+    def _check_deployment_health(
+        self,
+        deployment: DeploymentResponse,
+    ) -> bool:
+        """Check if the Run:AI deployment is healthy.
+
+        Run:AI inference endpoints are typically inside a Kubernetes cluster
+        and not accessible from the client machine. We trust the Run:AI API's
+        reported status (actualPhase=Running) rather than attempting a local
+        HTTP health check.
+
+        Args:
+            deployment: The deployment to check.
+
+        Returns:
+            True, since we trust Run:AI's status reporting.
+        """
+        return True
+
     def do_get_deployment_state(
         self,
         deployment: DeploymentResponse,
@@ -636,7 +648,12 @@ class RunAIDeployer(ContainerizedDeployer):
                 f"Run:AI workload for deployment '{deployment.name}' not found"
             )
 
-        status_str = workload.get("actualPhase") or workload.get("status")
+        status_str = workload.get("actualPhase") or workload.get("phase")
+        status_field = workload.get("status")
+        if not status_str and isinstance(status_field, dict):
+            status_str = status_field.get("phase") or status_field.get("state")
+        elif not status_str and isinstance(status_field, str):
+            status_str = status_field
         status = map_runai_inference_status_to_deployment_status(
             status_str or ""
         )

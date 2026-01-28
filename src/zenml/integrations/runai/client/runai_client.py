@@ -462,7 +462,8 @@ class RunAIClient:
                 workload_id
             )
             if response.data and isinstance(response.data, dict):
-                return cast(Dict[str, Any], response.data)
+                data = cast(Dict[str, Any], response.data)
+                return data
             return {}
         except Exception as exc:
             raise RunAIClientError(
@@ -483,9 +484,22 @@ class RunAIClient:
                 workload_id
             )
             if response.data and isinstance(response.data, dict):
-                status = response.data.get("actualPhase") or response.data.get(
-                    "status"
-                )
+                data = response.data
+                # Try various field names
+                status = data.get("actualPhase") or data.get("phase")
+                # Check if status is nested
+                status_field = data.get("status")
+                if not status and isinstance(status_field, dict):
+                    status = (
+                        status_field.get("phase") or status_field.get("state")
+                    )
+                elif not status and isinstance(status_field, str):
+                    status = status_field
+
+                if not status:
+                    logger.warning(
+                        f"No status in inference workload: {data}"
+                    )
                 return cast(Optional[str], status)
             return None
         except Exception as exc:
