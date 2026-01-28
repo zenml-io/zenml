@@ -1,0 +1,199 @@
+{
+  "documents": {
+    "python_intro": {
+      "id": "python_intro",
+      "title": "Introduction to Python Programming",
+      "content": "Python is a high-level, interpreted programming language known for its simplicity and readability. It was created by Guido van Rossum and first released in 1991.",
+      "type": "tutorial",
+      "relationships": {
+        "leads_to": ["python_advanced", "web_development", "data_science_basics"],
+        "references": ["programming_concepts", "software_engineering"]
+      },
+      "metadata": {
+        "difficulty": "beginner",
+        "tags": ["python", "programming", "tutorial"],
+        "last_updated": "2024-01-15"
+      }
+    },
+    "python_advanced": {
+      "id": "python_advanced",
+      "title": "Advanced Python Concepts",
+      "content": "Advanced Python features include decorators, metaclasses, async programming, and performance optimization techniques. These concepts enable sophisticated software architecture patterns.",
+      "type": "tutorial",
+      "relationships": {
+        "prerequisite": ["python_intro"],
+        "leads_to": ["framework_development", "performance_optimization"],
+        "related": ["design_patterns", "software_architecture"]
+      },
+      "metadata": {
+        "difficulty": "advanced",
+        "tags": ["python", "advanced", "programming"],
+        "last_updated": "2024-02-10"
+      }
+    },
+    "quantum_computing_intro": {
+      "id": "quantum_computing_intro",
+      "title": "Introduction to Quantum Computing",
+      "content": "Quantum computing leverages quantum mechanical phenomena like superposition and entanglement to process information. Unlike classical bits, quantum bits (qubits) can exist in multiple states simultaneously.",
+      "type": "research_paper",
+      "relationships": {
+        "leads_to": ["quantum_algorithms", "quantum_applications", "quantum_hardware"],
+        "references": ["quantum_physics", "computer_science_theory"]
+      },
+      "metadata": {
+        "difficulty": "intermediate",
+        "tags": ["quantum", "computing", "physics"],
+        "last_updated": "2024-03-01"
+      }
+    },
+    "quantum_algorithms": {
+      "id": "quantum_algorithms",
+      "title": "Quantum Algorithms and Applications",
+      "content": "Key quantum algorithms include Shor's algorithm for factoring, Grover's search algorithm, and variational quantum eigensolvers. These algorithms demonstrate quantum advantage over classical computing.",
+      "type": "research_paper",
+      "relationships": {
+        "prerequisite": ["quantum_computing_intro"],
+        "leads_to": ["quantum_cryptography", "quantum_simulation"],
+        "related": ["algorithm_design", "computational_complexity"]
+      },
+      "metadata": {
+        "difficulty": "advanced",
+        "tags": ["quantum", "algorithms", "cryptography"],
+        "last_updated": "2024-03-15"
+      }
+    },
+    "quantum_applications": {
+      "id": "quantum_applications",
+      "title": "Real-World Quantum Computing Applications",
+      "content": "Quantum computing applications span drug discovery, financial modeling, optimization problems, and machine learning. Current NISQ devices show promise for near-term applications.",
+      "type": "industry_report",
+      "relationships": {
+        "prerequisite": ["quantum_computing_intro"],
+        "references": ["quantum_algorithms", "quantum_hardware"],
+        "leads_to": ["quantum_machine_learning", "quantum_optimization"]
+      },
+      "metadata": {
+        "difficulty": "intermediate",
+        "tags": ["quantum", "applications", "industry"],
+        "last_updated": "2024-03-20"
+      }
+    },
+    "machine_learning_basics": {
+      "id": "machine_learning_basics",
+      "title": "Machine Learning Fundamentals",
+      "content": "Machine learning enables computers to learn patterns from data without explicit programming. Key categories include supervised learning, unsupervised learning, and reinforcement learning.",
+      "type": "tutorial",
+      "relationships": {
+        "leads_to": ["deep_learning", "data_science_advanced", "ml_engineering"],
+        "references": ["statistics", "linear_algebra", "python_intro"]
+      },
+      "metadata": {
+        "difficulty": "beginner",
+        "tags": ["machine-learning", "AI", "data-science"],
+        "last_updated": "2024-02-05"
+      }
+    },
+    "deep_learning": {
+      "id": "deep_learning",
+      "title": "Deep Learning and Neural Networks",
+      "content": "Deep learning uses multi-layered neural networks to learn complex patterns. Applications include computer vision, natural language processing, and generative AI.",
+      "type": "research_paper",
+      "relationships": {
+        "prerequisite": ["machine_learning_basics"],
+        "leads_to": ["computer_vision", "nlp_advanced", "generative_ai"],
+        "related": ["neural_architecture", "optimization_theory"]
+      },
+      "metadata": {
+        "difficulty": "advanced",
+        "tags": ["deep-learning", "neural-networks", "AI"],
+        "last_updated": "2024-03-10"
+      }
+    },
+    "quantum_machine_learning": {
+      "id": "quantum_machine_learning",
+      "title": "Quantum Machine Learning",
+      "content": "Quantum machine learning combines quantum computing with ML algorithms. Potential advantages include exponential speedups for certain problems and novel optimization landscapes.",
+      "type": "research_paper",
+      "relationships": {
+        "prerequisite": ["quantum_computing_intro", "machine_learning_basics"],
+        "references": ["quantum_algorithms", "deep_learning"],
+        "leads_to": ["quantum_neural_networks", "variational_quantum_classifiers"]
+      },
+      "metadata": {
+        "difficulty": "expert",
+        "tags": ["quantum", "machine-learning", "hybrid-computing"],
+        "last_updated": "2024-03-25"
+      }
+    },
+    "web_development": {
+      "id": "web_development",
+      "title": "Modern Web Development",
+      "content": "Web development involves creating applications that run in web browsers. Modern frameworks like React, Vue, and Angular enable sophisticated user interfaces.",
+      "type": "tutorial",
+      "relationships": {
+        "prerequisite": ["python_intro"],
+        "leads_to": ["fullstack_development", "web_security", "performance_optimization"],
+        "references": ["javascript_fundamentals", "html_css_basics"]
+      },
+      "metadata": {
+        "difficulty": "intermediate",
+        "tags": ["web-development", "javascript", "frontend"],
+        "last_updated": "2024-02-20"
+      }
+    },
+    "data_science_basics": {
+      "id": "data_science_basics",
+      "title": "Data Science Fundamentals",
+      "content": "Data science combines statistics, programming, and domain knowledge to extract insights from data. Key tools include Python, R, SQL, and visualization libraries.",
+      "type": "tutorial",
+      "relationships": {
+        "prerequisite": ["python_intro"],
+        "leads_to": ["machine_learning_basics", "statistical_analysis", "big_data_processing"],
+        "references": ["statistics", "data_visualization"]
+      },
+      "metadata": {
+        "difficulty": "beginner",
+        "tags": ["data-science", "analytics", "statistics"],
+        "last_updated": "2024-01-30"
+      }
+    },
+    "distributed_systems": {
+      "id": "distributed_systems",
+      "title": "Distributed Systems Architecture",
+      "content": "Distributed systems involve multiple computers working together to solve problems. Key challenges include consistency, availability, and partition tolerance (CAP theorem).",
+      "type": "technical_guide",
+      "relationships": {
+        "prerequisite": ["software_engineering"],
+        "leads_to": ["microservices", "cloud_architecture", "blockchain_technology"],
+        "references": ["networking", "database_systems"]
+      },
+      "metadata": {
+        "difficulty": "advanced",
+        "tags": ["distributed-systems", "architecture", "scalability"],
+        "last_updated": "2024-02-15"
+      }
+    },
+    "software_engineering": {
+      "id": "software_engineering",
+      "title": "Software Engineering Principles",
+      "content": "Software engineering encompasses the systematic approach to designing, developing, and maintaining software systems. Key principles include modularity, abstraction, and testing.",
+      "type": "technical_guide",
+      "relationships": {
+        "prerequisite": ["programming_concepts"],
+        "leads_to": ["distributed_systems", "software_architecture", "testing_strategies"],
+        "references": ["design_patterns", "project_management"]
+      },
+      "metadata": {
+        "difficulty": "intermediate",
+        "tags": ["software-engineering", "best-practices", "development"],
+        "last_updated": "2024-01-20"
+      }
+    }
+  },
+  "graph_metadata": {
+    "version": "1.0",
+    "total_documents": 12,
+    "creation_date": "2024-03-25",
+    "description": "Sample hierarchical document graph for demonstration of traversal algorithms"
+  }
+}

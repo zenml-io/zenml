@@ -2,14 +2,10 @@
 description: Write dynamic pipelines
 ---
 
-# Dynamic Pipelines (Experimental)
-
-{% hint style="warning" %}
-**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local`, `local_docker`, `kubernetes`, `sagemaker`, `vertex`, and `azureml` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
-{% endhint %}
+# Dynamic Pipelines
 
 {% hint style="info" %}
-**Important**: Before using dynamic pipelines, please review the [Limitations and Known Issues](#limitations-and-known-issues) section below. This section contains critical information about requirements and known bugs that may affect your pipeline execution, especially when running remotely.
+Dynamic pipelines are supported by the `local`, `local_docker`, `kubernetes`, `sagemaker`, `vertex`, and `azureml` orchestrators. Review the [Limitations and Known Issues](#limitations-and-known-issues) section for important details about running remotely.
 {% endhint %}
 
 ## Why Dynamic Pipelines?
@@ -386,4 +382,14 @@ Dynamic pipelines are ideal for:
 - **Multi-agent and collaborative AI workflows**: Building flexible, adaptive workflows where agents or LLM-driven components can be dynamically spawned, routed, or looped based on outputs, results, or user input
 
 For most standard ML workflows, traditional static pipelines are simpler and more maintainable. Use dynamic pipelines when you specifically need runtime flexibility that static pipelines cannot provide.
+
+## Real-World Example: Hierarchical Document Search
+
+The [`examples/hierarchical_doc_search_agent`](https://github.com/zenml-io/zenml/tree/main/examples/hierarchical_doc_search_agent) example combines dynamic pipelines with Pydantic AI agents for intelligent document traversal. It demonstrates:
+
+- Using `.with_options()` to pass parameters vs artifacts
+- The `.chunk()` vs `.load()` pattern for dynamic fan-out
+- Spawning steps dynamically based on AI agent decisions
+
+Each `traverse_node` call appears as a separate step in the DAG, created at runtime based on what the agent decides to explore.
 
