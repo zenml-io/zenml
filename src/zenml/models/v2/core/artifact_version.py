@@ -56,6 +56,7 @@ from zenml.models.v2.core.tag import TagResponse
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
+    from zenml.models.v2.base.filter import AnyQuery
     from zenml.models.v2.core.artifact_visualization import (
         ArtifactVisualizationRequest,
         ArtifactVisualizationResponse,
@@ -627,6 +628,80 @@ class ArtifactVersionFilter(
 
     model_config = ConfigDict(protected_namespaces=())
 
+    def apply_filter(
+        self,
+        query: "AnyQuery",
+        table: Type["AnySchema"],
+    ) -> "AnyQuery":
+        """Applies the filter to a query.
+
+        Overrides the base class to handle pipeline_run filtering via JOIN
+        instead of IN (subquery) for better query performance.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from sqlmodel import select, union
+
+        from zenml.zen_stores.schemas import (
+            ArtifactVersionSchema,
+            PipelineRunSchema,
+            StepRunInputArtifactSchema,
+            StepRunOutputArtifactSchema,
+            StepRunSchema,
+        )
+
+        query = super().apply_filter(query=query, table=table)
+
+        if self.pipeline_run:
+            pipeline_run_condition = self.generate_name_or_id_query_conditions(
+                value=self.pipeline_run, table=PipelineRunSchema
+            )
+
+            output_artifact_ids = (
+                select(StepRunOutputArtifactSchema.artifact_id)
+                .join(
+                    StepRunSchema,
+                    StepRunOutputArtifactSchema.step_id == StepRunSchema.id,
+                )
+                .join(
+                    PipelineRunSchema,
+                    StepRunSchema.pipeline_run_id == PipelineRunSchema.id,
+                )
+                .where(pipeline_run_condition)
+            )
+
+            input_artifact_ids = (
+                select(StepRunInputArtifactSchema.artifact_id)
+                .join(
+                    StepRunSchema,
+                    StepRunInputArtifactSchema.step_id == StepRunSchema.id,
+                )
+                .join(
+                    PipelineRunSchema,
+                    StepRunSchema.pipeline_run_id == PipelineRunSchema.id,
+                )
+                .where(pipeline_run_condition)
+            )
+
+            # Materialize the UNION as a derived table and JOIN to it.
+            # This forces the optimizer to execute the subquery once and
+            # hash-join, avoiding the DEPENDENT SUBQUERY trap with IN().
+            combined_subquery = union(
+                output_artifact_ids, input_artifact_ids
+            ).subquery("matched_artifacts")
+
+            query = query.join(
+                combined_subquery,
+                ArtifactVersionSchema.id == combined_subquery.c.artifact_id,
+            )
+
+        return query
+
     def get_custom_filters(
         self, table: Type["AnySchema"]
     ) -> List[Union["ColumnElement[bool]"]]:
@@ -640,7 +715,7 @@ class ArtifactVersionFilter(
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_, or_, select
+        from sqlmodel import and_, select
 
         from zenml.zen_stores.schemas import (
             ArtifactSchema,
@@ -648,10 +723,8 @@ class ArtifactVersionFilter(
             ModelSchema,
             ModelVersionArtifactSchema,
             ModelVersionSchema,
-            PipelineRunSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
-            StepRunSchema,
         )
 
         if self.artifact:
@@ -708,28 +781,6 @@ class ArtifactVersionFilter(
                 ),
             )
             custom_filters.append(model_filter)
-
-        if self.pipeline_run:
-            pipeline_run_filter = and_(
-                or_(
-                    and_(
-                        ArtifactVersionSchema.id
-                        == StepRunOutputArtifactSchema.artifact_id,
-                        StepRunOutputArtifactSchema.step_id
-                        == StepRunSchema.id,
-                    ),
-                    and_(
-                        ArtifactVersionSchema.id
-                        == StepRunInputArtifactSchema.artifact_id,
-                        StepRunInputArtifactSchema.step_id == StepRunSchema.id,
-                    ),
-                ),
-                StepRunSchema.pipeline_run_id == PipelineRunSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.pipeline_run, table=PipelineRunSchema
-                ),
-            )
-            custom_filters.append(pipeline_run_filter)
 
         return custom_filters
 
