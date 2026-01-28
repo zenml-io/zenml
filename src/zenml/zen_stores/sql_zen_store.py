@@ -1217,7 +1217,9 @@ class SqlZenStore(BaseZenStore):
         # Sorting is not applied here since it's irrelevant for counting.
         custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
-            custom_fetch_result = custom_fetch(session, query, filter_model)
+            custom_fetch_result = custom_fetch(
+                session, query.distinct(), filter_model
+            )
             total = len(custom_fetch_result)
         else:
             # For counting, we only need distinct IDs. Selecting only the ID
