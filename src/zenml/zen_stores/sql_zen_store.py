@@ -1212,19 +1212,24 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
-        query = filter_model.apply_sorting(query=query, table=table)
-        query = query.distinct()
 
-        # Get the total amount of items in the database for a given query
+        # Get the total amount of items in the database for a given query.
+        # Sorting is not applied here since it's irrelevant for counting.
         custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
         else:
+            # For counting, we only need distinct IDs. Selecting only the ID
+            # column dramatically improves performance when the query involves
+            # JOINs and many columns.
+            count_query = (
+                query.with_only_columns(col(table.id))
+                .distinct()
+                .options(noload("*"))
+            )
             result = session.scalar(
-                select(func.count()).select_from(
-                    query.options(noload("*")).subquery()
-                )
+                select(func.count()).select_from(count_query.subquery())
             )
 
             if result:
@@ -1246,12 +1251,6 @@ class SqlZenStore(BaseZenStore):
                 f"{total_pages}."
             )
 
-        query_options = table.get_query_options(
-            include_metadata=hydrate, include_resources=True
-        )
-        if apply_query_options_from_schema and query_options:
-            query = query.options(*query_options)
-
         # Get a page of the actual data
         item_schemas: Sequence[AnySchema]
         if custom_fetch:
@@ -1262,6 +1261,17 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
+            # Apply sorting and distinct for the data fetch
+            query = filter_model.apply_sorting(
+                query=query, table=table
+            ).distinct()
+
+            query_options = table.get_query_options(
+                include_metadata=hydrate, include_resources=True
+            )
+            if apply_query_options_from_schema and query_options:
+                query = query.options(*query_options)
+
             query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
             )
