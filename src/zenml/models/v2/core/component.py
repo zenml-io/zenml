@@ -29,7 +29,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import LogicalOperators, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
@@ -435,40 +435,38 @@ class ComponentFilter(UserScopedFilter):
         """
         self.scope_type = component_type
 
-    def generate_filter(
+    def get_custom_filters(
         self, table: Type["AnySchema"]
-    ) -> Union["ColumnElement[bool]"]:
-        """Generate the filter for the query.
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
 
-        Stack components can be scoped by type to narrow the search.
+        This can be overridden by subclasses to define custom filters that are
+        not based on the columns of the underlying table.
 
         Args:
-            table: The Table that is being queried from.
+            table: The query table.
 
         Returns:
-            The filter expression for the query.
+            A list of custom filters.
         """
-        from sqlmodel import and_, or_
+        custom_filters = super().get_custom_filters(table)
+
+        from sqlmodel import and_, col
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
             StackCompositionSchema,
         )
 
-        base_filter = super().generate_filter(table)
         if self.scope_type:
-            type_filter = getattr(table, "type") == self.scope_type
-            return and_(base_filter, type_filter)
+            type_filter = col(StackComponentSchema.type) == self.scope_type
+            custom_filters.append(type_filter)
 
         if self.stack_id:
-            operator = (
-                or_ if self.logical_operator == LogicalOperators.OR else and_
-            )
-
             stack_filter = and_(
                 StackCompositionSchema.stack_id == self.stack_id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,
             )
-            base_filter = operator(base_filter, stack_filter)
+            custom_filters.append(stack_filter)
 
-        return base_filter
+        return custom_filters

@@ -20,6 +20,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -54,6 +55,7 @@ from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy import Select
     from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.base.filter import AnyQuery
@@ -635,8 +637,7 @@ class ArtifactVersionFilter(
     ) -> "AnyQuery":
         """Applies the filter to a query.
 
-        Overrides the base class to handle pipeline_run filtering via JOIN
-        instead of IN (subquery) for better query performance.
+        Overrides the base class to handle pipeline_run filtering.
 
         Args:
             query: The query to which to apply the filter.
@@ -645,66 +646,117 @@ class ArtifactVersionFilter(
         Returns:
             The query with filter applied.
         """
-        from sqlmodel import select, union
+        from sqlmodel import and_, col, select, union
+
+        from zenml.enums import LogicalOperators
+        from zenml.zen_stores.schemas import ArtifactVersionSchema
+
+        if not self.pipeline_run:
+            return super().apply_filter(query=query, table=table)
+
+        rbac_filter = self.generate_rbac_filter(table=table)
+        if rbac_filter is not None:
+            query = query.where(rbac_filter)
+
+        filters = self.generate_filters(table=table)
+
+        pipeline_run_id_query = self._build_pipeline_run_id_query()
+
+        if self.logical_operator == LogicalOperators.OR:
+            id_queries = []
+
+            if pipeline_run_id_query is not None:
+                id_queries.append(pipeline_run_id_query)
+
+            for filter_condition in filters:
+                id_query = (
+                    select(col(table.id))
+                    .select_from(table)
+                    .where(filter_condition)
+                )
+                id_queries.append(id_query)
+
+            if id_queries:
+                if len(id_queries) == 1:
+                    matched_ids = id_queries[0].subquery("matched_ids")
+                else:
+                    matched_ids = union(*id_queries).subquery("matched_ids")
+
+                query = query.join(
+                    matched_ids,
+                    col(ArtifactVersionSchema.id) == matched_ids.c.id,
+                )
+        else:
+            if filters:
+                query = query.where(and_(*filters))
+
+            matched_artifacts = pipeline_run_id_query.subquery(
+                "matched_artifacts"
+            )
+            query = query.join(
+                matched_artifacts,
+                col(ArtifactVersionSchema.id) == matched_artifacts.c.id,
+            )
+
+        return query
+
+    def _build_pipeline_run_id_query(self) -> Any:
+        """Build a query that returns artifact IDs for the pipeline_run filter.
+
+        Returns:
+            A SELECT query returning artifact IDs (labeled as 'id') that are
+            inputs or outputs of steps in the specified pipeline run.
+        """
+        from sqlmodel import col, select, union
 
         from zenml.zen_stores.schemas import (
-            ArtifactVersionSchema,
             PipelineRunSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
             StepRunSchema,
         )
 
-        query = super().apply_filter(query=query, table=table)
+        assert self.pipeline_run is not None
 
-        if self.pipeline_run:
-            pipeline_run_condition = self.generate_name_or_id_query_conditions(
-                value=self.pipeline_run, table=PipelineRunSchema
+        pipeline_run_condition = self.generate_name_or_id_query_conditions(
+            value=self.pipeline_run, table=PipelineRunSchema
+        )
+
+        output_artifact_ids: "Select[Tuple[Any]]" = (
+            select(col(StepRunOutputArtifactSchema.artifact_id).label("id"))
+            .join(
+                StepRunSchema,
+                col(StepRunOutputArtifactSchema.step_id)
+                == col(StepRunSchema.id),
             )
-
-            output_artifact_ids = (
-                select(StepRunOutputArtifactSchema.artifact_id)
-                .join(
-                    StepRunSchema,
-                    StepRunOutputArtifactSchema.step_id == StepRunSchema.id,
-                )
-                .join(
-                    PipelineRunSchema,
-                    StepRunSchema.pipeline_run_id == PipelineRunSchema.id,
-                )
-                .where(pipeline_run_condition)
+            .join(
+                PipelineRunSchema,
+                col(StepRunSchema.pipeline_run_id)
+                == col(PipelineRunSchema.id),
             )
+            .where(pipeline_run_condition)
+        )
 
-            input_artifact_ids = (
-                select(StepRunInputArtifactSchema.artifact_id)
-                .join(
-                    StepRunSchema,
-                    StepRunInputArtifactSchema.step_id == StepRunSchema.id,
-                )
-                .join(
-                    PipelineRunSchema,
-                    StepRunSchema.pipeline_run_id == PipelineRunSchema.id,
-                )
-                .where(pipeline_run_condition)
+        input_artifact_ids: "Select[Tuple[Any]]" = (
+            select(col(StepRunInputArtifactSchema.artifact_id).label("id"))
+            .join(
+                StepRunSchema,
+                col(StepRunInputArtifactSchema.step_id)
+                == col(StepRunSchema.id),
             )
-
-            # Materialize the UNION as a derived table and JOIN to it.
-            # This forces the optimizer to execute the subquery once and
-            # hash-join, avoiding the DEPENDENT SUBQUERY trap with IN().
-            combined_subquery = union(
-                output_artifact_ids, input_artifact_ids
-            ).subquery("matched_artifacts")
-
-            query = query.join(
-                combined_subquery,
-                ArtifactVersionSchema.id == combined_subquery.c.artifact_id,
+            .join(
+                PipelineRunSchema,
+                col(StepRunSchema.pipeline_run_id)
+                == col(PipelineRunSchema.id),
             )
+            .where(pipeline_run_condition)
+        )
 
-        return query
+        return union(output_artifact_ids, input_artifact_ids)
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
-    ) -> List[Union["ColumnElement[bool]"]]:
+    ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:
