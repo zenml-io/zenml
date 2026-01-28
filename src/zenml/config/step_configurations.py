@@ -591,6 +591,6 @@ def _apply_pipeline_configuration(
         "secrets", []
     ) + step_overrides.get("secrets", [])
     merged_config_dict = dict_utils.recursive_update(
-        combined_dict, update=step_overrides
+        combined_dict, update=step_overrides, ignore_none=True
     )
     return merged_config_dict
