@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       - name: zenml-Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.19.0
+        uses: aquasecurity/trivy-action@d710430a6722f083d3b36b8339ff66b32f22ee55  # 0.19.0
         with:
           image-ref: docker.io/zenmldocker/zenml:latest
           format: sarif
@@ -24,6 +24,6 @@ jobs:
           # packages)
           ignore-unfixed: true
       - name: Upload Trivy zenml scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action@4bdb89f48054571735e3792627da6195c57459e2  # v3
         with:
           sarif_file: trivy-results-zenml.sarif

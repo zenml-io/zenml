@@ -20,9 +20,9 @@ jobs:
       exit_code: ${{ steps.check-absolute.outputs.exit_code }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c  # v4
         with:
           python-version: '3.11'
       - name: Install dependencies
@@ -49,9 +49,9 @@ jobs:
       exit_code: ${{ steps.check-relative.outputs.exit_code }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c  # v4
         with:
           python-version: '3.11'
       - name: Check Relative Links
@@ -88,7 +88,7 @@ jobs:
           EOL
 
           # Check for failures in absolute links job
-          if [[ "${{ needs.check-absolute-links.outputs.exit_code }}" != "0" ]]; then
+          if [[ "${NEEDS_CHECK_ABSOLUTE_LINKS_OUTPUTS_EXIT_CODE}" != "0" ]]; then
             echo "❌ **Absolute links check failed**" >> $GITHUB_STEP_SUMMARY
             echo "There are broken absolute links in the documentation. Please check the job logs for details." >> $GITHUB_STEP_SUMMARY
             cat << 'EOL' > comment_absolute.txt
@@ -104,7 +104,7 @@ jobs:
           fi
 
           # Check for failures in relative links job
-          if [[ "${{ needs.check-relative-links.outputs.exit_code }}" != "0" ]]; then
+          if [[ "${NEEDS_CHECK_RELATIVE_LINKS_OUTPUTS_EXIT_CODE}" != "0" ]]; then
             echo "❌ **Relative links check failed**" >> $GITHUB_STEP_SUMMARY
             echo "There are broken relative links in the documentation. Please check the job logs for details." >> $GITHUB_STEP_SUMMARY
             cat << 'EOL' > comment_relative.txt
@@ -134,10 +134,13 @@ jobs:
 
           # Save failed status to output
           echo "failed=$FAILED" >> $GITHUB_OUTPUT
+        env:
+          NEEDS_CHECK_ABSOLUTE_LINKS_OUTPUTS_EXIT_CODE: ${{ needs.check-absolute-links.outputs.exit_code }}
+          NEEDS_CHECK_RELATIVE_LINKS_OUTPUTS_EXIT_CODE: ${{ needs.check-relative-links.outputs.exit_code }}
 
           # Do not exit with error - we want to post the comment first
       - name: Find Comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@3eae4d37986fb5a8592848f6a574fdf654e61f9e  # v3
         if: github.event_name == 'pull_request'
         id: find-comment
         with:
@@ -145,7 +148,7 @@ jobs:
           comment-author: github-actions[bot]
           body-includes: Documentation Link Check Results
       - name: Create or Update Comment
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043  # v4
         if: github.event_name == 'pull_request'
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
