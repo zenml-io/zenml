@@ -88,14 +88,14 @@ def gpu_trainer(data: Tuple[np.ndarray, np.ndarray]) -> Dict[str, Any]:
     X, y = data
 
     logger.info("Starting GPU training step...")
-    
+
     # Detailed CUDA diagnostics
     logger.info(f"PyTorch version: {torch.__version__}")
     logger.info(f"CUDA available: {torch.cuda.is_available()}")
     logger.info(f"CUDA version: {torch.version.cuda}")
     logger.info(f"cuDNN version: {torch.backends.cudnn.version()}")
     logger.info(f"Number of GPUs: {torch.cuda.device_count()}")
-    
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {device}")
 
@@ -158,5 +158,3 @@ def gpu_trainer(data: Tuple[np.ndarray, np.ndarray]) -> Dict[str, Any]:
             else None
         ),
     }
-
-
