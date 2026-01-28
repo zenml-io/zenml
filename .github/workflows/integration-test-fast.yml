@@ -113,9 +113,13 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Maximize space
+      - name: Maximize space (/opt)
         uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c  # v10
         with:
+          # Python from actions/setup-python lives under /opt/hostedtoolcache on Linux runners,
+          # and this workflow installs ZenML via `--system` into that interpreter.
+          # Mounting the expanded build volume at /opt prevents toolcache + site-packages
+          # installs from exhausting the root filesystem.
           root-reserve-mb: 30000
           swap-size-mb: 1024
           remove-dotnet: 'true'
@@ -125,16 +129,50 @@ jobs:
           remove-docker-images: 'true'
           build-mount-path: /opt
         if: inputs.os == 'ubuntu-latest'
-      - name: Reload Docker
-        run: sudo systemctl restart docker
+      - name: Set uv cache + temp dirs (/opt)
+        if: inputs.os == 'ubuntu-latest'
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Move Docker data-root to /opt
         if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        run: |
+          sudo mkdir -p /etc/docker
+          sudo mkdir -p /opt/docker
+
+          # Ensure Docker stores images/layers on the expanded /opt volume.
+          if [ -f /etc/docker/daemon.json ]; then
+            sudo python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("/etc/docker/daemon.json")
+          data = json.loads(path.read_text())
+          data["data-root"] = "/opt/docker"
+          path.write_text(json.dumps(data))
+          PY
+          else
+            echo '{"data-root":"/opt/docker"}' | sudo tee /etc/docker/daemon.json >/dev/null
+          fi
+      - name: Restart Docker (with /opt data-root)
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
+          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        run: |
+          sudo systemctl stop docker || true
+          # Free up space previously used by Docker's default root on the OS disk.
+          sudo rm -rf /var/lib/docker/* || true
+          sudo systemctl start docker
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       - name: Restore uv cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
         with:
-          path: ~/.cache/uv
+          path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
           key: |
             uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
           restore-keys: |
