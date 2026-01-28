@@ -15,6 +15,7 @@
 
 from contextlib import nullcontext
 
+from zenml import TriggerFilter, TriggerRequest, TriggerResponse, TriggerUpdate
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
@@ -392,6 +393,8 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
     TagResourceSchema,
     TagSchema,
+    TriggerSchema,
+    TriggerSnapshotSchema,
     UserSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
@@ -6861,6 +6864,205 @@ class SqlZenStore(BaseZenStore):
                         session.add(rm_resource_link)
                         session.commit()
         return None
+
+    # -------------------- Triggers ---------------------
+
+    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
+        """Creates a new trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(request_model=trigger, session=session)
+
+            self._verify_name_uniqueness(
+                resource=trigger,
+                schema=TriggerSchema,
+                session=session,
+            )
+
+            new_trigger = TriggerSchema.from_request(trigger_request=trigger)
+            session.add(new_trigger)
+            session.commit()
+            return new_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TriggerResponse:
+        """Retrieves a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            The trigger.
+
+        Raises:
+            KeyError: if the trigger does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+                query_options=TriggerSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
+            )
+            return trigger.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_triggers(
+        self,
+        triggers_filter_model: TriggerFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerResponse]:
+        """List all triggers.
+
+        Args:
+            triggers_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=triggers_filter_model,
+                session=session,
+            )
+            query = select(TriggerSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerSchema,
+                filter_model=triggers_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TriggerResponse:
+        """Updates a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            existing_trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+
+            if existing_trigger.is_archived:
+                raise IllegalOperationError(
+                    "Archived schedules can not be updated."
+                )
+
+            self._verify_name_uniqueness(
+                resource=trigger_update,
+                schema=TriggerSchema,
+                session=session,
+            )
+
+            # Update the schedule
+            existing_trigger = existing_trigger.update(trigger_update)
+            session.add(existing_trigger)
+            session.commit()
+            return existing_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Deletes a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag deciding whether to soft delete the trigger.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+
+            if not soft:
+                # Hard delete the schedule
+                session.delete(trigger)
+            else:
+                # Soft deletion - set is_archived
+                trigger.is_archived = True
+                trigger.active = False
+                session.add(trigger)
+
+            session.commit()
+
+    def attach_trigger_to_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Attaches (links) a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            new_assoc = TriggerSnapshotSchema(
+                trigger_id=trigger_id,
+                snapshot_id=snapshot_id,
+            )
+
+            session.add(new_assoc)
+            session.commit()
+
+    def detach_trigger_from_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Detaches (unlinks) a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            assoc = TriggerSnapshotSchema.get(
+                trigger_id=trigger_id,
+                snapshot_id=snapshot_id,
+            )
+
+            session.delete(assoc)
+            session.commit()
 
     # ----------------------------- Schedules -----------------------------
 
