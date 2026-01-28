@@ -38,17 +38,16 @@ gpu_docker_settings = DockerSettings(
 
 # Run:AI step operator settings showcasing multiple features
 runai_settings = RunAIStepOperatorSettings(
-    # GPU allocation - fractional GPU
-    gpu_portion_request=0.5,
+    # GPU allocation - request 1 full GPU using portion (1.0 = 100%)
+    gpu_portion_request=1.0,
     gpu_request_type="portion",
-    # CPU resources with burst capability
-    cpu_core_request=2.0,
-    cpu_core_limit=4.0,
-    cpu_memory_request="4Gi",
-    cpu_memory_limit="8Gi",
+    # Reduced CPU resources to improve schedulability
+    cpu_core_request=1.0,
+    cpu_core_limit=2.0,
+    cpu_memory_request="2Gi",
+    cpu_memory_limit="4Gi",
     # Scheduling preferences
-    preemptibility="preemptible",
-    priority_class="train",
+    preemptibility="non-preemptible",
     # PyTorch DataLoader compatibility
     large_shm_request=True,
     # Execution control
@@ -89,6 +88,14 @@ def gpu_trainer(data: Tuple[np.ndarray, np.ndarray]) -> Dict[str, Any]:
     X, y = data
 
     logger.info("Starting GPU training step...")
+    
+    # Detailed CUDA diagnostics
+    logger.info(f"PyTorch version: {torch.__version__}")
+    logger.info(f"CUDA available: {torch.cuda.is_available()}")
+    logger.info(f"CUDA version: {torch.version.cuda}")
+    logger.info(f"cuDNN version: {torch.backends.cudnn.version()}")
+    logger.info(f"Number of GPUs: {torch.cuda.device_count()}")
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {device}")
 
@@ -96,6 +103,14 @@ def gpu_trainer(data: Tuple[np.ndarray, np.ndarray]) -> Dict[str, Any]:
         logger.info(f"GPU: {torch.cuda.get_device_name(0)}")
         logger.info(
             f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB"
+        )
+    else:
+        logger.warning(
+            "CUDA not available! This could be due to:\n"
+            "  1. Running on a cluster with simulated/fake GPUs (run.ai/fake.gpu=true)\n"
+            "  2. GPU not allocated by Run:AI scheduler\n"
+            "  3. NVIDIA drivers not installed/compatible\n"
+            "Check Run:AI workload logs and node labels with kubectl."
         )
 
     # Convert to tensors and move to GPU
@@ -143,3 +158,5 @@ def gpu_trainer(data: Tuple[np.ndarray, np.ndarray]) -> Dict[str, Any]:
             else None
         ),
     }
+
+

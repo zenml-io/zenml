@@ -52,7 +52,8 @@ class RunAIStepOperatorSettings(BaseSettings):
         ge=0,
         description="Number of GPUs to request for the workload. Set to 0 "
         "for CPU-only execution. Examples: 1 for single GPU, 2 for dual GPU, "
-        "0 for CPU-only. Used when gpu_request_type='device'",
+        "0 for CPU-only. Note: Use gpu_request_type='portion' with "
+        "gpu_portion_request=1.0 for full GPU allocation",
     )
     gpu_portion_request: float = Field(
         default=1.0,
@@ -62,10 +63,10 @@ class RunAIStepOperatorSettings(BaseSettings):
         "Enables sharing GPUs across workloads. Examples: 1.0 for full GPU, "
         "0.5 for half GPU, 0.25 for quarter GPU. Used when gpu_request_type='portion'",
     )
-    gpu_request_type: Literal["portion", "device", "memory"] = Field(
+    gpu_request_type: Literal["portion", "memory"] = Field(
         default="portion",
-        description="GPU allocation method. 'portion' for fractional sharing "
-        "(gpu_portion_request). 'device' for whole GPUs (gpu_devices_request). "
+        description="GPU allocation method. 'portion' for fractional GPU sharing "
+        "(use gpu_portion_request: 1.0 for full GPU, 0.5 for half). "
         "'memory' for exact memory allocation (gpu_memory_request)",
     )
     gpu_memory_request: Optional[str] = Field(
@@ -262,8 +263,7 @@ class RunAIStepOperatorConfig(
     """Configuration for the Run:AI step operator.
 
     This step operator enables running individual pipeline steps on Run:AI
-    clusters with fractional GPU allocation. Use this with a Kubernetes
-    orchestrator for selective GPU offloading.
+    clusters with fractional GPU allocation.
 
     Example stack configuration:
     ```bash

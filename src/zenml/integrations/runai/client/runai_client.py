@@ -127,7 +127,7 @@ class RunAIClient:
             return importlib.import_module(module_path)
         except ImportError as exc:
             raise RuntimeError(
-                "The runapy package is required to use the Run:AI orchestrator. "
+                "The runapy package is required to use the Run:AI client. "
                 "Please install it with: pip install runapy"
             ) from exc
 

@@ -19,6 +19,10 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
+from zenml.integrations.runai.client.runai_client import (
+    RunAIClient,
+    RunAIClientError,
+)
 from zenml.integrations.runai.constants import (
     MAX_WORKLOAD_NAME_LENGTH,
     is_failure_status,
@@ -27,10 +31,6 @@ from zenml.integrations.runai.constants import (
 from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
     RunAIStepOperatorConfig,
     RunAIStepOperatorSettings,
-)
-from zenml.integrations.runai.orchestrators.runai_client import (
-    RunAIClient,
-    RunAIClientError,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -50,11 +50,7 @@ class RunAIStepOperator(BaseStepOperator):
     """Step operator to run individual steps on Run:AI.
 
     This step operator enables selective GPU offloading by running
-    individual pipeline steps on Run:AI clusters. Use this with a
-    Kubernetes orchestrator for the recommended pattern:
-
-    - Run data preprocessing steps on Kubernetes (CPU)
-    - Offload GPU-intensive training steps to Run:AI
+    individual pipeline steps on Run:AI clusters.
 
     Example usage:
     ```python
@@ -63,9 +59,6 @@ class RunAIStepOperator(BaseStepOperator):
         # GPU-intensive training runs on Run:AI
         ...
 
-    @step  # Runs on default orchestrator
-    def preprocess_data():
-        ...
     ```
     """
 

@@ -11,13 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Run:AI integration for ZenML.
-
-The Run:AI integration provides a step operator that allows you to run
-individual pipeline steps on Run:AI clusters with support for fractional
-GPU allocation. Use this with a Kubernetes orchestrator for selective
-GPU offloading.
-"""
+"""Run:AI integration for ZenML."""
 
 from typing import List, Type
 

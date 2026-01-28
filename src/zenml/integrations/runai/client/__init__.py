@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Run:AI client utilities."""
 
-from zenml.integrations.runai.orchestrators.runai_client import (
+from zenml.integrations.runai.client.runai_client import (
     RunAIClient,
     RunAIClientError,
     RunAICluster,
