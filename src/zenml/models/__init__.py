@@ -195,9 +195,11 @@ from zenml.models.v2.core.flavor import (
 )
 from zenml.models.v2.core.logs import (
     LogsRequest,
+    LogsUpdate,
     LogsResponse,
     LogsResponseBody,
     LogsResponseMetadata,
+    LogsResponseResources,
 )
 from zenml.models.v2.core.model import (
     ModelFilter,
@@ -508,6 +510,11 @@ EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
 FlavorResponseResources.model_rebuild()
+LogsRequest.model_rebuild()
+LogsUpdate.model_rebuild()
+LogsResponseResources.model_rebuild()
+LogsResponseBody.model_rebuild()
+LogsResponseMetadata.model_rebuild()
 LazyArtifactVersionResponse.model_rebuild()
 ModelResponseBody.model_rebuild()
 ModelResponseMetadata.model_rebuild()
@@ -697,9 +704,11 @@ __all__ = [
     "FlavorResponseMetadata",
     "FlavorResponseResources",
     "LogsRequest",
+    "LogsUpdate",
     "LogsResponse",
     "LogsResponseBody",
     "LogsResponseMetadata",
+    "LogsResponseResources",
     "ModelFilter",
     "ModelRequest",
     "ModelResponse",

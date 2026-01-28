@@ -157,7 +157,7 @@ class StepRunRequest(ProjectScopedRequest):
         title="The IDs of the output artifact versions of the step run.",
         default_factory=dict,
     )
-    logs: Optional["LogsRequest"] = Field(
+    logs: Optional[Union[UUID, "LogsRequest"]] = Field(
         title="Logs associated with this step run.",
         default=None,
     )

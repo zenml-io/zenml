@@ -185,7 +185,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    LogsRequest,
     LogsResponse,
+    LogsUpdate,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -1475,6 +1477,40 @@ class RestZenStore(BaseZenStore):
             route=LOGS,
             response_model=LogsResponse,
             params={"hydrate": hydrate},
+        )
+
+    def create_logs(self, logs: LogsRequest) -> LogsResponse:
+        """Create a logs entry.
+
+        Args:
+            logs: The logs entry to create.
+
+        Returns:
+            The created logs entry.
+        """
+        return self._create_resource(
+            resource=logs,
+            route=LOGS,
+            response_model=LogsResponse,
+        )
+
+    def update_logs(
+        self, logs_id: UUID, logs_update: LogsUpdate
+    ) -> LogsResponse:
+        """Update an existing logs entry.
+
+        Args:
+            logs_id: The ID of the logs entry to update.
+            logs_update: The update to be applied to the logs entry.
+
+        Returns:
+            The updated logs entry.
+        """
+        return self._update_resource(
+            resource_id=logs_id,
+            resource_update=logs_update,
+            route=LOGS,
+            response_model=LogsResponse,
         )
 
     # ----------------------------- Pipelines -----------------------------
