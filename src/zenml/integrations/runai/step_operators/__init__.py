@@ -11,16 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Run:AI integration flavors."""
+"""Run:AI step operators."""
 
-from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
-    RunAIStepOperatorConfig,
-    RunAIStepOperatorFlavor,
-    RunAIStepOperatorSettings,
+from zenml.integrations.runai.step_operators.runai_step_operator import (
+    RunAIStepOperator,
 )
 
 __all__ = [
-    "RunAIStepOperatorConfig",
-    "RunAIStepOperatorFlavor",
-    "RunAIStepOperatorSettings",
+    "RunAIStepOperator",
 ]

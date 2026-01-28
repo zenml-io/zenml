@@ -11,12 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Run:AI orchestrators."""
+"""Run:AI client utilities."""
 
-from zenml.integrations.runai.orchestrators.runai_orchestrator import (
-    RunAIOrchestrator,
+from zenml.integrations.runai.orchestrators.runai_client import (
+    RunAIClient,
+    RunAIClientError,
+    RunAICluster,
+    RunAIClusterNotFoundError,
+    RunAIProject,
+    RunAIProjectNotFoundError,
+    WorkloadSubmissionResult,
 )
 
 __all__ = [
-    "RunAIOrchestrator",
+    "RunAIClient",
+    "RunAIClientError",
+    "RunAICluster",
+    "RunAIClusterNotFoundError",
+    "RunAIProject",
+    "RunAIProjectNotFoundError",
+    "WorkloadSubmissionResult",
 ]
