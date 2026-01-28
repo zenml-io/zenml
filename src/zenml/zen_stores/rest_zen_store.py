@@ -2196,7 +2196,7 @@ class RestZenStore(BaseZenStore):
             snapshot_id: The ID of the snapshot.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            KeyError: if the entities don't exist.
         """
         self.put(
             path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
@@ -2213,10 +2213,31 @@ class RestZenStore(BaseZenStore):
             snapshot_id: The ID of the snapshot.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            KeyError: if the entities don't exist.
         """
         self.delete(
             path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            timeout=5,
+        )
+
+    def create_trigger_execution(
+        self,
+        trigger_id: UUID,
+        pipeline_run_id: UUID,
+    ) -> None:
+        """Creates a trigger execution object.
+
+        Comment: Useful to associate triggers & runs.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            pipeline_run_id: The ID of the pipeline run.
+
+        Raises:
+            KeyError: if the entities don't exist.
+        """
+        self.put(
+            path=f"{TRIGGERS}/{trigger_id}/{RUNS}/{pipeline_run_id}",
             timeout=5,
         )
 

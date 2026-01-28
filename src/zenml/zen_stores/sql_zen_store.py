@@ -19,6 +19,7 @@ from zenml import TriggerFilter, TriggerRequest, TriggerResponse, TriggerUpdate
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
+from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
 
 try:
     import sqlalchemy  # noqa
@@ -7032,7 +7033,7 @@ class SqlZenStore(BaseZenStore):
             snapshot_id: The ID of the snapshot.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            KeyError: if the entities don't exist.
         """
         with Session(self.engine) as session:
             snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
@@ -7068,7 +7069,7 @@ class SqlZenStore(BaseZenStore):
             snapshot_id: The ID of the snapshot.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            KeyError: if the entities don't exist.
         """
         with Session(self.engine) as session:
             assoc = session.get(
@@ -7081,6 +7082,48 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(assoc)
+            session.commit()
+
+    def create_trigger_execution(
+        self,
+        trigger_id: UUID,
+        pipeline_run_id: UUID,
+    ) -> None:
+        """Creates a trigger execution object.
+
+        Comment: Useful to associate triggers & runs.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            pipeline_run_id: The ID of the pipeline run.
+
+        Raises:
+            KeyError: if the entities don't exist.
+        """
+        with Session(self.engine) as session:
+            run = session.get(PipelineRunSchema, pipeline_run_id)
+
+            if not run:
+                raise KeyError(
+                    f"Pipeline run {pipeline_run_id} doesn't exist."
+                )
+
+            trigger = session.get(TriggerSchema, trigger_id)
+
+            if not trigger:
+                raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.is_archived:
+                raise IllegalOperationError(
+                    f"Can not create trigger execution for archived trigger {trigger_id}."
+                )
+
+            new_assoc = TriggerExecutionSchema(
+                trigger_id=trigger_id,
+                pipeline_run_id=pipeline_run_id,
+            )
+
+            session.add(new_assoc)
             session.commit()
 
     # ----------------------------- Schedules -----------------------------
