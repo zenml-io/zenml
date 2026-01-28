@@ -19,19 +19,19 @@ from uuid import UUID, uuid4
 from pydantic import Field, field_validator, model_validator
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
-    BaseResponseResources,
-    BaseUpdate,
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.scoped import (
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 
 # ------------------ Request Model ------------------
 
 
-class LogsRequest(BaseRequest):
+class LogsRequest(ProjectScopedRequest):
     """Request model for logs."""
 
     id: UUID = Field(
@@ -107,11 +107,11 @@ class LogsRequest(BaseRequest):
             self
 
         Raises:
-            ValueError: If a `step_run_id` is set and a `pipeline_run_id` is not set.
+            ValueError: If two different IDs are set at the same time.
         """
-        if self.step_run_id and self.pipeline_run_id is None:
+        if self.step_run_id and self.pipeline_run_id:
             raise ValueError(
-                "If a `step_run_id` is set, a `pipeline_run_id` must also be set."
+                "Two different IDs can not be set at the same time."
             )
         return self
 
@@ -122,7 +122,8 @@ class LogsRequest(BaseRequest):
 class LogsUpdate(BaseUpdate):
     """Update model for logs."""
 
-    pipeline_run_id: UUID = Field(
+    pipeline_run_id: Optional[UUID] = Field(
+        default=None,
         title="The pipeline run ID to associate the logs with.",
     )
     step_run_id: Optional[UUID] = Field(
@@ -130,11 +131,27 @@ class LogsUpdate(BaseUpdate):
         title="The step run ID to associate the logs with.",
     )
 
+    @model_validator(mode="after")
+    def validate_pipeline_id_and_step_id(self) -> "LogsUpdate":
+        """Validate the log key.
+
+        Returns:
+            self
+
+        Raises:
+            ValueError: If two different IDs are set at the same time.
+        """
+        if self.step_run_id and self.pipeline_run_id:
+            raise ValueError(
+                "Two different IDs can not be set at the same time."
+            )
+        return self
+
 
 # ------------------ Response Model ------------------
 
 
-class LogsResponseBody(BaseDatedResponseBody):
+class LogsResponseBody(ProjectScopedResponseBody):
     """Response body for logs."""
 
     uri: Optional[str] = Field(
@@ -148,7 +165,7 @@ class LogsResponseBody(BaseDatedResponseBody):
     )
 
 
-class LogsResponseMetadata(BaseResponseMetadata):
+class LogsResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for logs."""
 
     step_run_id: Optional[UUID] = Field(
@@ -171,12 +188,12 @@ class LogsResponseMetadata(BaseResponseMetadata):
     )
 
 
-class LogsResponseResources(BaseResponseResources):
+class LogsResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the Logs entity."""
 
 
 class LogsResponse(
-    BaseIdentifiedResponse[
+    ProjectScopedResponse[
         LogsResponseBody, LogsResponseMetadata, LogsResponseResources
     ]
 ):

@@ -213,7 +213,61 @@ These prefixes only appear in console output, not in stored logs. Disable them w
 ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 ```
 
-### Limitations on the dashboard
+## Limitations
+
+### on Steps and pipelines
+
+When running steps and pipelines, ZenML only captures logs emitted from the
+thread that executes the corresponding function. If your step code spawns additional
+threads or runs async code, logs from those execution contexts may not be captured.
+
+For instance, only the log emitted directly in the step function is captured:
+
+```python
+import logging
+import threading
+
+from zenml import step
+
+logger = logging.getLogger(__name__)
+
+
+@step
+def async_step() -> None:
+    def _process() -> None:
+        logger.info("This log is NOT captured")
+
+    logger.info("This log is captured")
+    thread = threading.Thread(target=_process)
+    thread.start()
+    thread.join()
+```
+
+As a workaournd, you can run it under the copied `contextvars` context so
+ZenML can associate the log records with the running step:
+
+```python
+import contextvars
+import logging
+import threading
+
+from zenml import step
+
+logger = logging.getLogger(__name__)
+
+
+@step
+def async_step() -> None:
+    def _process() -> None:
+        logger.info("This log is now captured")
+
+    ctx = contextvars.copy_context()
+    thread = threading.Thread(target=lambda: ctx.run(_process))
+    thread.start()
+    thread.join()
+```
+
+### on the Dashboard
 
 When viewing logs in the dashboard, ZenML currently loads logs **in bulk** and
 pagination/filtering happens on the client side. To keep the response size and
@@ -230,6 +284,8 @@ Downloading logs from the dashboard will also only include up to this limit.
 We’re actively working on improving log loading to remove the need for this cap.
 We'll update the documentation as this evolves with future releases.
 {% endhint %}
+
+
 
 ## Best Practices for Logging
 

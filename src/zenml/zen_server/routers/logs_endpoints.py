@@ -22,6 +22,7 @@ from zenml.constants import (
     LOGS,
     VERSION_1,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.models import LogsRequest, LogsResponse, LogsUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -69,6 +70,12 @@ def create_logs(
             model=zen_store().get_run(logs.pipeline_run_id),
             action=Action.UPDATE,
         )
+    elif logs.step_run_id:
+        step = zen_store().get_run_step(logs.step_run_id)
+        verify_permission_for_model(
+            model=zen_store().get_run(step.pipeline_run_id),
+            action=Action.UPDATE,
+        )
 
     read_verify_models = []
     if logs.artifact_store_id:
@@ -111,6 +118,25 @@ def get_logs(
     Returns:
         The requested log model.
     """
+    logs = zen_store().get_logs(logs_id)
+
+    if logs.pipeline_run_id:
+        verify_permission_for_model(
+            model=zen_store().get_run(logs.pipeline_run_id),
+            action=Action.READ,
+        )
+    elif logs.step_run_id:
+        step = zen_store().get_run_step(logs.step_run_id)
+        verify_permission_for_model(
+            model=zen_store().get_run(step.pipeline_run_id),
+            action=Action.READ,
+        )
+    else:
+        raise IllegalOperationError(
+            "Logs must be associated with a pipeline run or step run "
+            "before fetching."
+        )
+
     return verify_permissions_and_get_entity(
         id=logs_id, get_method=zen_store().get_logs, hydrate=hydrate
     )
@@ -135,10 +161,17 @@ def update_logs(
     Returns:
         The updated log model.
     """
-    verify_permission_for_model(
-        model=zen_store().get_run(logs_update.pipeline_run_id),
-        action=Action.UPDATE,
-    )
+    if logs_update.pipeline_run_id:
+        verify_permission_for_model(
+            model=zen_store().get_run(logs_update.pipeline_run_id),
+            action=Action.UPDATE,
+        )
+    elif logs_update.step_run_id:
+        step = zen_store().get_run_step(logs_update.step_run_id)
+        verify_permission_for_model(
+            model=zen_store().get_run(step.pipeline_run_id),
+            action=Action.UPDATE,
+        )
 
     return verify_permissions_and_update_entity(
         id=logs_id,

@@ -4416,27 +4416,31 @@ class SqlZenStore(BaseZenStore):
             The created logs entry.
         """
         if logs.artifact_store_id:
-            self._get_schema_by_id(
-                resource_id=logs.artifact_store_id,
-                schema_class=StackComponentSchema,
+            self._get_reference_schema_by_id(
+                resource=logs,
+                reference_schema=StackComponentSchema,
+                reference_id=logs.artifact_store_id,
                 session=session,
             )
         if logs.log_store_id:
-            self._get_schema_by_id(
-                resource_id=logs.log_store_id,
-                schema_class=StackComponentSchema,
+            self._get_reference_schema_by_id(
+                resource=logs,
+                reference_schema=StackComponentSchema,
+                reference_id=logs.log_store_id,
                 session=session,
             )
         if logs.pipeline_run_id:
-            self._get_schema_by_id(
-                resource_id=logs.pipeline_run_id,
-                schema_class=PipelineRunSchema,
+            self._get_reference_schema_by_id(
+                resource=logs,
+                reference_schema=PipelineRunSchema,
+                reference_id=logs.pipeline_run_id,
                 session=session,
             )
         if logs.step_run_id:
-            self._get_schema_by_id(
-                resource_id=logs.step_run_id,
-                schema_class=StepRunSchema,
+            self._get_reference_schema_by_id(
+                resource=logs,
+                reference_schema=StepRunSchema,
+                reference_id=logs.step_run_id,
                 session=session,
             )
         log_entry = LogsSchema.from_request(logs)
@@ -4456,18 +4460,22 @@ class SqlZenStore(BaseZenStore):
             The created logs entry.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=logs, session=session)
             log_schema = self._create_logs(logs, session)
             return log_schema.to_model(
                 include_metadata=True, include_resources=True
             )
 
     def _update_logs(
-        self, logs_id: UUID, logs_update: LogsUpdate, session: Session
+        self,
+        logs_schema: LogsSchema,
+        logs_update: LogsUpdate,
+        session: Session,
     ) -> LogsSchema:
         """Update a logs entry.
 
         Args:
-            logs_id: The ID of the logs entry to update.
+            logs_schema: The logs entry to update.
             logs_update: The update to be applied to the logs entry.
             session: The session to use.
 
@@ -4477,14 +4485,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             IllegalOperationError: If the log entry is already associated
                 with a different entity.
-            ValueError: If the provided pipeline run id does not match
-                the provided step run id.
         """
-        logs_schema = self._get_schema_by_id(
-            resource_id=logs_id,
-            schema_class=LogsSchema,
-            session=session,
-        )
         if (
             logs_schema.pipeline_run_id is not None
             or logs_schema.step_run_id is not None
@@ -4497,26 +4498,29 @@ class SqlZenStore(BaseZenStore):
                     "The logs entry is already associated with a different entity."
                 )
 
-        self._get_schema_by_id(
-            resource_id=logs_update.pipeline_run_id,
-            schema_class=PipelineRunSchema,
-            session=session,
-        )
-        if logs_update.step_run_id:
-            step_schema = self._get_schema_by_id(
-                resource_id=logs_update.step_run_id,
-                schema_class=StepRunSchema,
+        if logs_update.pipeline_run_id:
+            self._get_reference_schema_by_id(
+                resource=logs_schema,
+                reference_schema=PipelineRunSchema,
+                reference_id=logs_update.pipeline_run_id,
                 session=session,
             )
-            if step_schema.pipeline_run_id != logs_update.pipeline_run_id:
-                raise ValueError(
-                    "The provided `pipeline_run_id` does not match the pipeline run "
-                    "that the step run belongs to."
-                )
+            logs_schema.pipeline_run_id = logs_update.pipeline_run_id
+            logs_schema.log_key = (
+                f"{logs_update.pipeline_run_id}-{logs_schema.source}"
+            )
 
-        logs_schema.pipeline_run_id = logs_update.pipeline_run_id
-        logs_schema.step_run_id = logs_update.step_run_id
-        logs_schema.log_key = f"{logs_update.pipeline_run_id}-{logs_update.step_run_id}-{logs_schema.source}"
+        if logs_update.step_run_id:
+            self._get_reference_schema_by_id(
+                resource=logs_schema,
+                reference_schema=StepRunSchema,
+                reference_id=logs_update.step_run_id,
+                session=session,
+            )
+            logs_schema.step_run_id = logs_update.step_run_id
+            logs_schema.log_key = (
+                f"{logs_update.step_run_id}-{logs_schema.source}"
+            )
 
         session.add(logs_schema)
         session.commit()
@@ -4536,7 +4540,12 @@ class SqlZenStore(BaseZenStore):
             The updated logs entry.
         """
         with Session(self.engine) as session:
-            logs_schema = self._update_logs(logs_id, logs_update, session)
+            logs_schema = self._get_schema_by_id(
+                resource_id=logs_id,
+                schema_class=LogsSchema,
+                session=session,
+            )
+            logs_schema = self._update_logs(logs_schema, logs_update, session)
             return logs_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -6596,8 +6605,14 @@ class SqlZenStore(BaseZenStore):
 
         if pipeline_run.logs is not None:
             if isinstance(pipeline_run.logs, UUID):
+                logs = self._get_reference_schema_by_id(
+                    resource=pipeline_run,
+                    reference_schema=LogsSchema,
+                    reference_id=pipeline_run.logs,
+                    session=session,
+                )
                 self._update_logs(
-                    logs_id=pipeline_run.logs,
+                    logs_schema=logs,
                     logs_update=LogsUpdate(pipeline_run_id=new_run.id),
                     session=session,
                 )
@@ -6609,6 +6624,10 @@ class SqlZenStore(BaseZenStore):
                     logs=LogsRequest(
                         id=logs_request.id,
                         uri=logs_request.uri,
+                        # If we are sending a pipeline run request with a logs request
+                        # object, we need to tie it to the same user and project.
+                        project=pipeline_run.project,
+                        user=pipeline_run.user,
                         # TODO: Remove fallback when not supporting
                         # clients <0.84.0 anymore
                         source=logs_request.source or "client",
@@ -7074,6 +7093,10 @@ class SqlZenStore(BaseZenStore):
                         logs=LogsRequest(
                             id=log_request.id,
                             uri=log_request.uri,
+                            # If we are sending a pipeline run request with a logs request
+                            # object, we need to tie it to the same user and project.
+                            project=existing_run.project,
+                            user=existing_run.user,
                             # TODO: Remove fallback when not supporting
                             # clients <0.84.0 anymore
                             source=log_request.source or "orchestrator",
@@ -10163,12 +10186,15 @@ class SqlZenStore(BaseZenStore):
             # Add logs entry for the step
             if step_run.logs is not None:
                 if isinstance(step_run.logs, UUID):
+                    logs_schema = self._get_reference_schema_by_id(
+                        resource=step_run,
+                        reference_schema=LogsSchema,
+                        reference_id=step_run.logs,
+                        session=session,
+                    )
                     self._update_logs(
-                        logs_id=step_run.logs,
-                        logs_update=LogsUpdate(
-                            step_run_id=step_schema.id,
-                            pipeline_run_id=step_schema.pipeline_run_id,
-                        ),
+                        logs_schema=logs_schema,
+                        logs_update=LogsUpdate(step_run_id=step_schema.id),
                         session=session,
                     )
                 else:
@@ -10179,6 +10205,10 @@ class SqlZenStore(BaseZenStore):
                         logs=LogsRequest(
                             id=logs_request.id,
                             uri=logs_request.uri,
+                            # If we are sending a step run request with a logs request
+                            # object, we need to tie it to the same user and project.
+                            project=step_run.project,
+                            user=step_run.user,
                             # TODO: Remove fallback when not supporting
                             # clients <0.93.0 anymore
                             source=logs_request.source or "step",
@@ -10640,11 +10670,14 @@ class SqlZenStore(BaseZenStore):
                         logs=LogsRequest(
                             id=log_request.id,
                             uri=log_request.uri,
+                            # If we are sending a pipeline run request with a logs request
+                            # object, we need to tie it to the same user and project.
+                            project=existing_step_run.project,
+                            user=existing_step_run.user,
                             # TODO: Remove fallback when not supporting
                             # clients <0.93.0 anymore
                             source=log_request.source or "step",
                             step_run_id=existing_step_run.id,
-                            pipeline_run_id=existing_step_run.pipeline_run_id,
                             artifact_store_id=log_request.artifact_store_id,
                             log_store_id=log_request.log_store_id,
                         ),

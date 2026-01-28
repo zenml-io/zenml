@@ -201,10 +201,7 @@ class LoggingContext(context_utils.BaseContext):
             ValueError: If the response is not a step run or pipeline run.
         """
         if isinstance(response, StepRunResponse):
-            log_update = LogsUpdate(
-                step_run_id=response.id,
-                pipeline_run_id=response.pipeline_run_id,
-            )
+            log_update = LogsUpdate(step_run_id=response.id)
         elif isinstance(response, PipelineRunResponse):
             log_update = LogsUpdate(pipeline_run_id=response.id)
         else:
@@ -288,6 +285,7 @@ def generate_logs_request(source: str) -> LogsRequest:
         artifact_store = client.active_stack.artifact_store
         return LogsRequest(
             id=log_id,
+            project=client.active_project.id,
             source=source,
             uri=prepare_logs_uri(
                 artifact_store=artifact_store,
@@ -298,6 +296,7 @@ def generate_logs_request(source: str) -> LogsRequest:
     else:
         return LogsRequest(
             id=log_id,
+            project=client.active_project.id,
             source=source,
             log_store_id=log_store.id if log_store else None,
         )
