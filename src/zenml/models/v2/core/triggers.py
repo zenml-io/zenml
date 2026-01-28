@@ -33,8 +33,6 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
     from zenml.models import PipelineSnapshotResponse
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
@@ -292,36 +290,3 @@ class TriggerFilter(ProjectScopedFilter):
         description="Whether or not the schedule is archived",
     )
     trigger_type: TriggerType
-    next_occurrence_upper_bound: datetime | None = Field(
-        default=None,
-        description="Upper bound filter on next occurrence (occurrence must be lesser/older than upper bound).",
-    )
-
-    def get_custom_filters(
-        self, table: type["AnySchema"]
-    ) -> list["ColumnElement[bool]"]:
-        """Overrides custom filters functionality.
-
-        Args:
-            table: The table to filter.
-
-        Returns:
-            A list of column filter expressions.
-        """
-        from sqlalchemy import or_
-        from sqlmodel import col
-
-        from zenml.zen_stores.schemas import TriggerSchema
-
-        custom_filters = super().get_custom_filters(table)
-
-        if self.next_occurrence_upper_bound is not None:
-            custom_filters.append(
-                or_(
-                    col(TriggerSchema.next_occurrence).is_(None),
-                    col(TriggerSchema.next_occurrence)
-                    <= self.next_occurrence_upper_bound,
-                )
-            )
-
-        return custom_filters

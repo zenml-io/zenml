@@ -52,7 +52,7 @@ from zenml.zen_stores.schemas.schema_utils import (
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
-from zenml.zen_stores.schemas.trigger_snapshots import TriggerSnapshotSchema
+from zenml.zen_stores.schemas.trigger_assoc import TriggerSnapshotSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
@@ -256,6 +256,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     triggers: list["TriggerSchema"] = Relationship(
         back_populates="snapshots",
         link_model=TriggerSnapshotSchema,
+        sa_relationship_kwargs={"viewonly": True},
     )
 
     @property
