@@ -86,6 +86,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+    from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
 
 logger = get_logger(__name__)
 
@@ -269,6 +270,16 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     ] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+
+    trigger_execution: Optional["TriggerExecutionSchema"] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "single_parent": True,
+            "passive_deletes": True,
+            "uselist": False,  # 1-to-1
+        },
     )
 
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]

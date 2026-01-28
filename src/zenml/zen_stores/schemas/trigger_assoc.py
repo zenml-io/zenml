@@ -10,7 +10,11 @@ from sqlmodel import Field, Relationship, SQLModel
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import PipelineSnapshotSchema, TriggerSchema
+    from zenml.zen_stores.schemas import (
+        PipelineRunSchema,
+        PipelineSnapshotSchema,
+        TriggerSchema,
+    )
 
 
 class TriggerSnapshotSchema(SQLModel, table=True):
@@ -49,4 +53,45 @@ class TriggerSnapshotSchema(SQLModel, table=True):
     trigger: "TriggerSchema" = Relationship(back_populates="snapshot_links")
     snapshot: "PipelineSnapshotSchema" = Relationship(
         back_populates="trigger_links"
+    )
+
+
+class TriggerExecutionSchema(SQLModel, table=True):
+    """Association table linking triggers to pipeline snapshots.
+
+    - Enforces uniqueness per (trigger_id, snapshot_id)
+    - Cascades deletes from either parent row (DB-level ON DELETE CASCADE)
+    """
+
+    __tablename__ = "trigger_execution"
+    __table_args__ = (
+        UniqueConstraint(
+            "trigger_id",
+            "pipeline_run_id",
+            name="unique_trigger_execution",
+        ),
+    )
+
+    trigger_id: int = Field(
+        sa_column=Column(
+            ForeignKey("trigger.id", ondelete="CASCADE"),
+            nullable=False,
+            primary_key=True,
+        ),
+    )
+    pipeline_run_id: int = Field(
+        sa_column=Column(
+            ForeignKey("pipeline_run.id", ondelete="CASCADE"),
+            nullable=False,
+            primary_key=True,
+        ),
+    )
+
+    created_at: datetime = Field(default_factory=utc_now)
+
+    trigger: "TriggerSchema" = Relationship(
+        back_populates="trigger_executions"
+    )
+    pipeline_run: "PipelineRunSchema" = Relationship(
+        back_populates="trigger_execution"
     )

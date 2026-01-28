@@ -64,7 +64,7 @@ from zenml.zen_stores.schemas.step_run_schemas import (
 )
 from zenml.zen_stores.schemas.tag_schemas import TagSchema, TagResourceSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
-from zenml.zen_stores.schemas.trigger_snapshots import TriggerSnapshotSchema
+from zenml.zen_stores.schemas.trigger_assoc import TriggerSnapshotSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.model_schemas import (

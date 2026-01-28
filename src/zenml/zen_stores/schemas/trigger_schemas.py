@@ -20,6 +20,7 @@ from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.mysql.types import MEDIUMTEXT
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import VARCHAR, String
@@ -36,7 +37,6 @@ from zenml.models import (
     TriggerResponseResources,
     TriggerUpdate,
 )
-from zenml.utils.native_schedules import calculate_first_occurrence
 from zenml.zen_stores.schemas import PipelineSnapshotSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -44,10 +44,14 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
 )
-from zenml.zen_stores.schemas.trigger_snapshots import TriggerSnapshotSchema
+from zenml.zen_stores.schemas.trigger_assoc import (
+    TriggerExecutionSchema,
+    TriggerSnapshotSchema,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
+    jl_arg,
 )
 
 
@@ -138,9 +142,18 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         },
     )
 
-    snapshots: list["PipelineSnapshotSchema"] = Relationship(
+    snapshots: list[PipelineSnapshotSchema] = Relationship(
         back_populates="triggers",
         link_model=TriggerSnapshotSchema,
+        sa_relationship_kwargs={"viewonly": True},
+    )
+
+    trigger_executions: list[TriggerExecutionSchema] = Relationship(
+        back_populates="trigger",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
     )
 
     # ------------------ FLAT DATA FIELDS FOR FAST FILTERING ----------------------
@@ -158,7 +171,36 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
-        pass
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+
+        options = []
+
+        if include_resources:
+            options.extend(
+                [
+                    selectinload(jl_arg(TriggerSchema.snapshots)).joinedload(
+                        jl_arg(PipelineSnapshotSchema.triggers), innerjoin=True
+                    ),
+                    selectinload(
+                        jl_arg(TriggerSchema.trigger_executions)
+                    ).joinedload(
+                        jl_arg(TriggerExecutionSchema.trigger), innerjoin=True
+                    ),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(cls, trigger_request: TriggerRequest) -> "TriggerSchema":
@@ -170,6 +212,8 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             A TriggerSchema object.
         """
+        from zenml.utils.native_schedules import calculate_first_occurrence
+
         if trigger_request.trigger_type == TriggerType.schedule:
             next_occurrence = calculate_first_occurrence(trigger_request.data)
         else:
@@ -229,12 +273,11 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             include_metadata: Flag - to include metadata.
             include_resources: Flag - include resources.
-            **kwargs:
+            **kwargs: Keyword arguments
 
         Returns:
             A TriggerResponse object.
         """
-
         if self.trigger_type == TriggerType.schedule.value:
             data = ScheduleUpdatePayload(**json.loads(self.data))
         else:
