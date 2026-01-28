@@ -157,6 +157,23 @@ class ScheduleUpdatePayload(BaseUpdate):
     interval: int | None = None
     next_occurrence: datetime | None = None
 
+    @model_validator(mode="after")
+    def check_mutual_exclusive_options(self) -> "ScheduleUpdatePayload":
+        """Validates that mutual exclusive options are not both provided.
+
+        Returns:
+            The instance of the ScheduleUpdatePayload.
+
+        Raises:
+            ValueError: If mutual exclusive options are provided.
+        """
+        if self.interval is not None and self.next_occurrence is not None:
+            raise ValueError(
+                "The interval and next_occurrence schedule options are mutually exclusive. "
+            )
+
+        return self
+
 
 class TriggerUpdate(BaseUpdate):
     """Update model for triggers."""
