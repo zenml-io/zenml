@@ -1739,7 +1739,7 @@ class ZenStoreInterface(ABC):
             snapshot_id: The ID of the snapshot.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            KeyError: if the entities don't exist.
         """
         pass
 
@@ -1754,7 +1754,25 @@ class ZenStoreInterface(ABC):
             snapshot_id: The ID of the snapshot.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            KeyError: if the entities don't exist.
+        """
+
+    @abstractmethod
+    def create_trigger_execution(
+        self,
+        trigger_id: UUID,
+        pipeline_run_id: UUID,
+    ) -> None:
+        """Creates a trigger execution object.
+
+        Comment: Useful to associate triggers & runs.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            pipeline_run_id: The ID of the pipeline run.
+
+        Raises:
+            KeyError: if the entities don't exist.
         """
 
     # -------------------- Schedules --------------------

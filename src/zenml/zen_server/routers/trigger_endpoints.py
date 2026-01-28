@@ -18,7 +18,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, PIPELINE_SNAPSHOTS, TRIGGERS, VERSION_1
+from zenml.constants import API, PIPELINE_SNAPSHOTS, RUNS, TRIGGERS, VERSION_1
 from zenml.models import (
     Page,
     TriggerFilter,
@@ -261,4 +261,31 @@ def detach_trigger_from_snapshot(
     zen_store().detach_trigger_from_snapshot(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
+    )
+
+
+@router.put(
+    "/{trigger_id}}" + RUNS + "/{pipeline_run_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def create_trigger_execution(
+    trigger_id: UUID,
+    pipeline_run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Creates a trigger execution object.
+
+    Args:
+        trigger_id: The ID of the trigger.
+        pipeline_run_id: The ID of the pipeline run.
+    """
+    verify_permission_for_model(
+        model=zen_store().get_trigger(trigger_id=trigger_id, hydrate=True),
+        action=Action.UPDATE,
+    )
+
+    zen_store().create_trigger_execution(
+        trigger_id=trigger_id,
+        pipeline_run_id=pipeline_run_id,
     )
