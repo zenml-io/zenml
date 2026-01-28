@@ -11,26 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Run:AI client utilities."""
+"""Run:AI deployers."""
 
-from zenml.integrations.runai.client.runai_client import (
-    InferenceWorkloadResult,
-    RunAIClient,
-    RunAIClientError,
-    RunAICluster,
-    RunAIClusterNotFoundError,
-    RunAIProject,
-    RunAIProjectNotFoundError,
-    WorkloadSubmissionResult,
-)
+from zenml.integrations.runai.deployers.runai_deployer import RunAIDeployer
 
-__all__ = [
-    "InferenceWorkloadResult",
-    "RunAIClient",
-    "RunAIClientError",
-    "RunAICluster",
-    "RunAIClusterNotFoundError",
-    "RunAIProject",
-    "RunAIProjectNotFoundError",
-    "WorkloadSubmissionResult",
-]
+__all__ = ["RunAIDeployer"]

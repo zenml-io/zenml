@@ -13,6 +13,11 @@
 #  permissions and limitations under the License.
 """Run:AI integration flavors."""
 
+from zenml.integrations.runai.flavors.runai_deployer_flavor import (
+    RunAIDeployerConfig,
+    RunAIDeployerFlavor,
+    RunAIDeployerSettings,
+)
 from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
     RunAIStepOperatorConfig,
     RunAIStepOperatorFlavor,
@@ -20,6 +25,9 @@ from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
 )
 
 __all__ = [
+    "RunAIDeployerConfig",
+    "RunAIDeployerFlavor",
+    "RunAIDeployerSettings",
     "RunAIStepOperatorConfig",
     "RunAIStepOperatorFlavor",
     "RunAIStepOperatorSettings",

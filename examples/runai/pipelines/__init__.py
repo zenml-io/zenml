@@ -12,3 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Run:AI example pipelines."""
+
+from pipelines.gpu_training_pipeline import gpu_training_pipeline
+from pipelines.inference_pipeline import inference_pipeline
+
+__all__ = ["gpu_training_pipeline", "inference_pipeline"]

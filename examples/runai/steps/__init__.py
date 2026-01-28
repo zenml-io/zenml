@@ -15,5 +15,6 @@
 
 from steps.data_loader import data_loader
 from steps.gpu_trainer import gpu_trainer
+from steps.inference import predict
 
-__all__ = ["data_loader", "gpu_trainer"]
+__all__ = ["data_loader", "gpu_trainer", "predict"]

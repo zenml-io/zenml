@@ -14,8 +14,9 @@
 """Run:AI API client wrapper with typed responses."""
 
 import importlib
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, cast
+
+from pydantic import BaseModel
 
 from zenml.logger import get_logger
 
@@ -62,29 +63,34 @@ class RunAIClusterNotFoundError(RunAIClientError):
         )
 
 
-@dataclass
-class RunAIProject:
+class RunAIProject(BaseModel):
     """Typed representation of a Run:AI project."""
 
     id: str
     name: str
-    cluster_id: Optional[str]
+    cluster_id: Optional[str] = None
 
 
-@dataclass
-class RunAICluster:
+class RunAICluster(BaseModel):
     """Typed representation of a Run:AI cluster."""
 
     id: str
     name: str
 
 
-@dataclass
-class WorkloadSubmissionResult:
+class WorkloadSubmissionResult(BaseModel):
     """Result of submitting a workload to Run:AI."""
 
     workload_id: str
     workload_name: str
+
+
+class InferenceWorkloadResult(BaseModel):
+    """Result of creating an inference workload on Run:AI."""
+
+    workload_id: str
+    workload_name: str
+    endpoint_url: Optional[str] = None
 
 
 class RunAIClient:
@@ -232,7 +238,7 @@ class RunAIClient:
 
         return [
             RunAICluster(
-                id=c.get("id", ""),
+                id=c.get("uuid", c.get("id", "")),
                 name=c.get("name", ""),
             )
             for c in clusters_data
@@ -383,4 +389,141 @@ class RunAIClient:
         except Exception as exc:
             raise RunAIClientError(
                 f"Failed to query Run:AI workload {workload_id}: {exc}"
+            ) from exc
+
+    def create_inference_workload(
+        self, request: Any
+    ) -> InferenceWorkloadResult:
+        """Submit an inference workload to Run:AI.
+
+        Args:
+            request: InferenceCreationRequest from runai.models.
+
+        Returns:
+            InferenceWorkloadResult with the workload ID and endpoint URL.
+
+        Raises:
+            RunAIClientError: If submission fails.
+        """
+        try:
+            response = self._raw_client.workloads.inferences.create_inference1(
+                inference_creation_request=request
+            )
+            workload_id = self._extract_workload_id(response)
+            endpoint_url = self._extract_endpoint_url(response)
+            return InferenceWorkloadResult(
+                workload_id=workload_id or request.name,
+                workload_name=request.name,
+                endpoint_url=endpoint_url,
+            )
+        except Exception as exc:
+            raise RunAIClientError(
+                f"Failed to submit Run:AI inference workload: {exc}"
+            ) from exc
+
+    def _extract_endpoint_url(self, response: Any) -> Optional[str]:
+        """Extract endpoint URL from API response.
+
+        Args:
+            response: The API response object.
+
+        Returns:
+            The endpoint URL or None.
+        """
+        if not response.data:
+            return None
+
+        if isinstance(response.data, dict):
+            return (
+                response.data.get("endpointUrl")
+                or response.data.get("endpoint_url")
+                or response.data.get("url")
+            )
+        return (
+            getattr(response.data, "endpointUrl", None)
+            or getattr(response.data, "endpoint_url", None)
+            or getattr(response.data, "url", None)
+        )
+
+    def get_inference_workload(self, workload_id: str) -> Dict[str, Any]:
+        """Get full inference workload details.
+
+        Args:
+            workload_id: The workload ID to query.
+
+        Returns:
+            The workload data dictionary.
+
+        Raises:
+            RunAIClientError: If the query fails.
+        """
+        try:
+            response = self._raw_client.workloads.inferences.get_inference(
+                workload_id
+            )
+            if response.data and isinstance(response.data, dict):
+                return cast(Dict[str, Any], response.data)
+            return {}
+        except Exception as exc:
+            raise RunAIClientError(
+                f"Failed to query Run:AI inference workload {workload_id}: {exc}"
+            ) from exc
+
+    def get_inference_workload_status(self, workload_id: str) -> Optional[str]:
+        """Get the status of an inference workload.
+
+        Args:
+            workload_id: The workload ID to query.
+
+        Returns:
+            The workload status string or None.
+        """
+        try:
+            response = self._raw_client.workloads.inferences.get_inference(
+                workload_id
+            )
+            if response.data and isinstance(response.data, dict):
+                status = response.data.get("actualPhase") or response.data.get(
+                    "status"
+                )
+                return cast(Optional[str], status)
+            return None
+        except Exception as exc:
+            logger.error(f"Failed to get inference workload status: {exc}")
+            return None
+
+    def get_inference_endpoint_url(self, workload_id: str) -> Optional[str]:
+        """Get the endpoint URL of an inference workload.
+
+        Args:
+            workload_id: The workload ID to query.
+
+        Returns:
+            The endpoint URL or None.
+        """
+        try:
+            workload = self.get_inference_workload(workload_id)
+            return (
+                workload.get("endpointUrl")
+                or workload.get("endpoint_url")
+                or workload.get("url")
+            )
+        except RunAIClientError:
+            return None
+
+    def delete_inference_workload(self, workload_id: str) -> None:
+        """Delete an inference workload.
+
+        Args:
+            workload_id: The workload ID to delete.
+
+        Raises:
+            RunAIClientError: If deletion fails.
+        """
+        try:
+            self._raw_client.workloads.inferences.delete_inference(workload_id)
+            logger.debug(f"Deleted inference workload {workload_id}")
+        except Exception as exc:
+            raise RunAIClientError(
+                f"Failed to delete Run:AI inference workload {workload_id}: {exc}"
             ) from exc

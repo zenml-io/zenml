@@ -1,51 +1,28 @@
-# Run:AI Step Operator Example
+# Run:AI Integration Example
 
-This example demonstrates the **step operator pattern** with Run:AI - selectively offloading only GPU-intensive steps to Run:AI while running other steps on a standard Kubernetes orchestrator.
+This example demonstrates two powerful Run:AI integration patterns with ZenML:
+
+1. **Step Operator** - Selectively offload GPU-intensive training steps to Run:AI
+2. **Deployer** - Deploy inference pipelines as HTTP services on Run:AI with fractional GPU and autoscaling
 
 ## Overview
 
-This pipeline showcases selective GPU offloading:
+### Step Operator Pattern (Training)
 
-1. **Data Loader** - Runs on Kubernetes (CPU) - lightweight data preparation
-2. **GPU Trainer** - Offloaded to Run:AI with fractional GPU - PyTorch training
+Selectively offload only GPU-intensive steps to Run:AI while running other steps on a standard Kubernetes orchestrator:
 
-The key pattern: only steps that need GPU resources are offloaded to Run:AI, while CPU-only steps run on the regular orchestrator. This is more cost-effective than running the entire pipeline on GPU nodes.
+- **Data Loader** - Runs on Kubernetes (CPU) - lightweight data preparation
+- **GPU Trainer** - Offloaded to Run:AI with fractional GPU - PyTorch training
 
-## Step Operator Settings Showcase
+This is more cost-effective than running the entire pipeline on GPU nodes.
 
-The `gpu_trainer` step demonstrates various Run:AI settings:
+### Deployer Pattern (Inference)
 
-```python
-RunAIStepOperatorSettings(
-    # Fractional GPU allocation
-    gpu_portion_request=0.5,
-    gpu_request_type="portion",
+Deploy inference pipelines as HTTP services on Run:AI with:
 
-    # CPU resources with burst capability
-    cpu_core_request=2.0,
-    cpu_core_limit=4.0,
-    cpu_memory_request="4Gi",
-    cpu_memory_limit="8Gi",
-
-    # Scheduling preferences
-    preemptibility="preemptible",
-    priority_class="train",
-
-    # PyTorch DataLoader compatibility
-    large_shm_request=True,
-
-    # Execution control
-    backoff_limit=2,
-    termination_grace_period_seconds=60,
-
-    # Metadata for tracking
-    labels={"team": "ml-platform", "framework": "pytorch"},
-    annotations={"zenml.io/example": "runai-step-operator"},
-
-    # Environment variables
-    environment_variables={"PYTORCH_CUDA_ALLOC_CONF": "max_split_size_mb:512"},
-)
-```
+- **Fractional GPU** - Share GPUs across multiple inference workloads (e.g., 0.25 GPU per service)
+- **Autoscaling** - Automatically scale replicas based on request load
+- **HTTP API** - Access predictions via REST endpoints
 
 ## Prerequisites
 
@@ -74,28 +51,36 @@ zenml init
 
 ### Step 1: Register Required Stack Components
 
-#### Kubernetes Orchestrator (for CPU steps)
-
-```bash
-zenml orchestrator register k8s_orch \
-    --flavor=kubernetes \
-    --kubernetes_context=<YOUR_K8S_CONTEXT>
-```
-
-#### Run:AI Step Operator (for GPU steps)
+#### Run:AI Step Operator (for GPU training steps)
 
 ```bash
 zenml step-operator register runai \
     --flavor=runai \
-    --client_id=id \
-    --client_secret=secret \
-    --runai_base_url=url\
-    --project_name=project
+    --client_id=<YOUR_CLIENT_ID> \
+    --client_secret=<YOUR_CLIENT_SECRET> \
+    --runai_base_url=https://<YOUR_ORG>.run.ai \
+    --project_name=<YOUR_PROJECT>
+```
+
+#### Run:AI Deployer (for inference deployments)
+
+```bash
+zenml deployer register runai \
+    --flavor=runai \
+    --client_id=<YOUR_CLIENT_ID> \
+    --client_secret=<YOUR_CLIENT_SECRET> \
+    --runai_base_url=https://<YOUR_ORG>.run.ai \
+    --project_name=<YOUR_PROJECT>
 ```
 
 #### Other Required Components
 
 ```bash
+# Kubernetes orchestrator (for CPU steps)
+zenml orchestrator register k8s_orch \
+    --flavor=kubernetes \
+    --kubernetes_context=<YOUR_K8S_CONTEXT>
+
 # Artifact store (GCS example)
 zenml artifact-store register gcs_store \
     --flavor=gcp \
@@ -117,6 +102,7 @@ zenml image-builder register local_builder \
 zenml stack register runai_stack \
     -o k8s_orch \
     -s runai \
+    -d runai \
     -a gcs_store \
     -c gcr_registry \
     -i local_builder \
@@ -125,67 +111,195 @@ zenml stack register runai_stack \
 
 ## Running the Example
 
+### Training with Step Operator
+
 ```bash
 cd examples/runai/
-python run.py
+python run.py --train
 ```
 
-### Expected Output
+This runs the training pipeline where:
+- `data_loader` runs on Kubernetes (CPU)
+- `gpu_trainer` is offloaded to Run:AI (GPU)
 
-1. **Data Loader** (runs on Kubernetes):
-   ```
-   Generating synthetic data...
-     Total samples: 1000
-     Features: 20
-   Data loaded successfully
-   ```
+### Deploying Inference Pipeline
 
-2. **GPU Trainer** (runs on Run:AI):
-   ```
-   Starting GPU training step...
-   Using device: cuda
-   GPU: NVIDIA A100-SXM4-40GB
-   Training for 100 epochs...
-   Epoch 25/100, Loss: 0.4521
-   Epoch 50/100, Loss: 0.3012
-   Epoch 75/100, Loss: 0.2234
-   Epoch 100/100, Loss: 0.1856
-   Training complete! Accuracy: 92.50%
-   ```
+#### Option 1: Using Python SDK
 
-## Customizing GPU Allocation
+```bash
+python run.py --deploy --deployment-name my-inference
+```
 
-### Fractional GPU Examples
+#### Option 2: Using CLI
+
+```bash
+# Deploy the pipeline
+zenml pipeline deploy pipelines.inference_pipeline --name my-inference
+
+# Or deploy with a specific snapshot
+zenml pipeline snapshot create inference_pipeline --name my-snapshot
+zenml pipeline snapshot deploy my-snapshot --deployment my-inference
+```
+
+### Invoking Deployments
+
+```bash
+# Via CLI
+zenml deployment invoke my-inference --features='[0.5, -0.3, 1.2, 0.8]'
+
+# Via HTTP
+curl -X POST <ENDPOINT_URL>/invoke \
+    -H "Content-Type: application/json" \
+    -d '{"parameters": {"features": [0.5, -0.3, 1.2, 0.8]}}'
+```
+
+### Managing Deployments
+
+```bash
+# List all deployments
+zenml deployment list
+
+# View deployment details
+zenml deployment describe my-inference
+
+# View deployment logs
+zenml deployment logs my-inference
+
+# Deprovision (stop but keep record)
+zenml deployment deprovision my-inference
+
+# Re-provision (restart)
+zenml deployment provision my-inference
+
+# Delete completely
+zenml deployment delete my-inference
+```
+
+## Configuration Examples
+
+### Step Operator Settings
 
 ```python
-# Quarter GPU
+from zenml.integrations.runai.flavors import RunAIStepOperatorSettings
+
 RunAIStepOperatorSettings(
+    # Fractional GPU allocation
+    gpu_portion_request=0.5,
+    gpu_request_type="portion",
+
+    # CPU resources with burst capability
+    cpu_core_request=2.0,
+    cpu_core_limit=4.0,
+    cpu_memory_request="4Gi",
+    cpu_memory_limit="8Gi",
+
+    # Scheduling preferences
+    preemptibility="preemptible",
+    priority_class="train",
+
+    # PyTorch DataLoader compatibility
+    large_shm_request=True,
+
+    # Metadata
+    labels={"team": "ml-platform"},
+)
+```
+
+### Deployer Settings
+
+```python
+from zenml.integrations.runai.flavors import RunAIDeployerSettings
+
+@pipeline(settings={"deployer": RunAIDeployerSettings(
+    # Fractional GPU for cost-effective inference
     gpu_portion_request=0.25,
     gpu_request_type="portion",
-)
+
+    # CPU resources
+    cpu_core_request=1.0,
+    cpu_memory_request="2Gi",
+
+    # Autoscaling
+    min_replicas=1,
+    max_replicas=5,
+
+    # Metadata
+    labels={"app": "inference-service"},
+)})
+def my_inference_pipeline(input: str = "default") -> str:
+    return process(input=input)
+```
+
+### GPU Allocation Examples
+
+```python
+# Quarter GPU (cost-effective inference)
+RunAIDeployerSettings(gpu_portion_request=0.25)
+
+# Half GPU
+RunAIDeployerSettings(gpu_portion_request=0.5)
 
 # Full GPU
-RunAIStepOperatorSettings(
-    gpu_portion_request=1.0,
-    gpu_request_type="portion",
-)
-
-# Multiple whole GPUs
-RunAIStepOperatorSettings(
-    gpu_devices_request=2,
-    gpu_request_type="device",
-)
+RunAIDeployerSettings(gpu_portion_request=1.0)
 
 # Memory-based allocation
-RunAIStepOperatorSettings(
+RunAIDeployerSettings(
     gpu_memory_request="20Gi",
     gpu_request_type="memory",
 )
 ```
 
-### CPU-Only Steps
+## Pipeline Requirements for Deployment
 
-Steps without `step_operator="runai"` run on the Kubernetes orchestrator without GPU access. This is the default for the `data_loader` step.
+### Input Parameters
+
+All parameters must have default values for deployment:
+
+```python
+@pipeline
+def inference_pipeline(
+    features: List[float] = [0.0, 0.0, 0.0, 0.0]  # Default required
+) -> Dict[str, float]:
+    return predict(features=features)
+```
+
+### Return Values
+
+Pipeline outputs must be JSON-serializable step outputs:
+
+```python
+from typing import Annotated
+
+@step
+def predict(features: List[float]) -> Annotated[Dict[str, float], "prediction"]:
+    return {"probability": 0.85, "class": 1}
+
+@pipeline
+def inference_pipeline(features: List[float] = []) -> Dict[str, float]:
+    return predict(features=features)
+```
+
+### Sample Response
+
+```json
+{
+    "success": true,
+    "outputs": {
+        "prediction_result": {
+            "prediction": 1.0,
+            "probability": 0.85,
+            "num_features": 4.0
+        }
+    },
+    "execution_time": 0.234,
+    "metadata": {
+        "deployment_name": "my-inference",
+        "parameters_used": {
+            "features": [0.5, -0.3, 1.2, 0.8]
+        }
+    }
+}
+```
 
 ## Monitoring
 
@@ -196,11 +310,18 @@ zenml pipeline runs list
 zenml pipeline runs describe <RUN_NAME>
 ```
 
+### View Deployments
+
+```bash
+zenml deployment list
+zenml deployment describe <DEPLOYMENT_NAME>
+```
+
 ### View Run:AI Dashboard
 
 1. Log in to your Run:AI control plane
-2. Navigate to **Workloads > Training**
-3. Find your workload (labeled with `framework: pytorch`)
+2. Navigate to **Workloads > Training** (for step operator jobs)
+3. Navigate to **Workloads > Inference** (for deployed services)
 4. View logs, resource usage, and GPU metrics
 
 ## Troubleshooting
@@ -211,6 +332,14 @@ zenml pipeline runs describe <RUN_NAME>
 ```bash
 zenml step-operator list
 zenml stack describe
+```
+
+### Issue: "No deployer configured in active stack"
+
+**Solution**: Register and add a Run:AI deployer to your stack:
+```bash
+zenml deployer register runai --flavor=runai ...
+zenml stack update -d runai
 ```
 
 ### Issue: "Project not found in Run:AI"
@@ -224,16 +353,24 @@ zenml stack describe
 2. Reduce `gpu_portion_request` (e.g., 0.25)
 3. Wait for other workloads to complete
 
-### Issue: GPU not available in step
+### Issue: Deployment not getting endpoint URL
 
-**Solution**: Ensure your Run:AI project has real GPU nodes (not fake GPUs) and sufficient quota.
+**Solution**: Check Run:AI workload status in the UI. The endpoint URL is assigned once the workload reaches "Running" state.
 
-### Issue: PyTorch DataLoader fails with shared memory error
+### Issue: "Parameters must have default values"
 
-**Solution**: The example already sets `large_shm_request=True`. If using custom code with `num_workers > 0`, ensure this setting is enabled.
+**Solution**: All pipeline parameters must have default values for deployment:
+```python
+# Wrong
+def my_pipeline(features: List[float]) -> ...:
+
+# Correct
+def my_pipeline(features: List[float] = []) -> ...:
+```
 
 ## Resources
 
 - [Run:AI Documentation](https://docs.run.ai/)
+- [ZenML Deployment Guide](https://docs.zenml.io/concepts/deployment)
 - [ZenML Step Operators Guide](https://docs.zenml.io/component-guide/step-operators)
-- [ZenML Run:AI Integration](https://docs.zenml.io/component-guide/step-operators/runai)
+- [ZenML Deployers Guide](https://docs.zenml.io/component-guide/deployers)
