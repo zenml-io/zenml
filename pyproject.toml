@@ -170,6 +170,9 @@ dev = [
     "types-psutil>=5.8.13",
     "types-passlib>=1.7.7",
 ]
+native-schedules = [
+    "croniter>=6.0.0",
+]
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
