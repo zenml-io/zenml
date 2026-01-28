@@ -2,14 +2,10 @@
 description: Write dynamic pipelines
 ---
 
-# Dynamic Pipelines (Experimental)
-
-{% hint style="warning" %}
-**Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local`, `local_docker`, `kubernetes`, `sagemaker`, `vertex`, and `azureml` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
-{% endhint %}
+# Dynamic Pipelines
 
 {% hint style="info" %}
-**Important**: Before using dynamic pipelines, please review the [Limitations and Known Issues](#limitations-and-known-issues) section below. This section contains critical information about requirements and known bugs that may affect your pipeline execution, especially when running remotely.
+Dynamic pipelines are supported by the `local`, `local_docker`, `kubernetes`, `sagemaker`, `vertex`, and `azureml` orchestrators. Review the [Limitations and Known Issues](#limitations-and-known-issues) section for important details about running remotely.
 {% endhint %}
 
 ## Why Dynamic Pipelines?
@@ -386,4 +382,82 @@ Dynamic pipelines are ideal for:
 - **Multi-agent and collaborative AI workflows**: Building flexible, adaptive workflows where agents or LLM-driven components can be dynamically spawned, routed, or looped based on outputs, results, or user input
 
 For most standard ML workflows, traditional static pipelines are simpler and more maintainable. Use dynamic pipelines when you specifically need runtime flexibility that static pipelines cannot provide.
+
+## Real-World Example: Hierarchical Document Search
+
+The [`examples/hierarchical_doc_search_agent`](https://github.com/zenml-io/zenml/tree/main/examples/hierarchical_doc_search_agent) directory contains a complete example combining dynamic pipelines with Pydantic AI agents for intelligent document traversal.
+
+### The Pattern
+
+This example demonstrates a clean separation of concerns:
+
+| ZenML Controls | AI Agent Controls |
+|----------------|-------------------|
+| Fan-out (spawn N traversal steps) | "Does this document answer the query?" |
+| Budget/depth limits | "Should I traverse deeper?" |
+| Step orchestration & DAG | "Which documents to explore next?" |
+
+### Key Implementation Patterns
+
+**1. Using `.with_options()` for parameters**
+
+In dynamic pipelines, step inputs are assumed to be artifacts (creating DAG edges). To pass raw values as parameters, use `.with_options()`:
+
+```python
+# Configure the step to receive 'query' as a parameter, not an artifact
+traverse_node_step = traverse_node.with_options(
+    parameters={"query": query}
+)
+
+# Now call the step - doc_id creates a DAG edge, query is a parameter
+result, next_docs = traverse_node_step(
+    doc_id=doc_id_chunk,
+    budget=budget,
+    visited=visited,
+)
+```
+
+**2. The `.chunk()` vs `.load()` pattern**
+
+When iterating over artifact collections, use both patterns together:
+
+| Method | Purpose | When to Use |
+|--------|---------|-------------|
+| `.chunk(idx)` | Creates a **DAG edge** | Pass to downstream steps |
+| `.load()` | Gets the **actual value** | Make control-flow decisions |
+
+```python
+seed_nodes = plan_search(query=query, ...)
+
+# Build queue: .chunk() for DAG edges, .load() for the count
+pending = [
+    (seed_nodes.chunk(idx), max_depth, [])
+    for idx in range(len(seed_nodes.load()))
+]
+
+while pending:
+    doc_id_chunk, budget, visited = pending.pop(0)
+
+    result, traverse_to = traverse_node_step(doc_id=doc_id_chunk, ...)
+
+    # .load() to make decisions about spawning more steps
+    result_data = result.load()
+    if not result_data["found_answer"] and result_data["budget"] > 0:
+        for idx in range(len(traverse_to.load())):
+            pending.append((traverse_to.chunk(idx), ...))
+```
+
+The key insight: `.chunk(idx)` tells the orchestrator "this step depends on item X from the upstream output." `.load()` just retrieves the value for Python logic.
+
+### Try It
+
+```bash
+cd examples/hierarchical_doc_search_agent
+pip install -r requirements.txt
+export OPENAI_API_KEY="your-key"
+
+python run.py --query "How does quantum computing relate to ML?"
+```
+
+Each `traverse_node` call appears as a separate step in the DAG, dynamically created based on agent decisions.
 

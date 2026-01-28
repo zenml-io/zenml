@@ -1,16 +1,19 @@
 # Hierarchical Document Search Agent
 
-**ZenML orchestration + Pydantic AI agents** - each controls what it's best at.
+A showcase for ZenML's **Dynamic Pipelines** feature, demonstrating how to combine ZenML orchestration with Pydantic AI agents.
 
-## The Pattern
+## The Core Idea
 
-```
-ZenML controls:           Pydantic AI controls:
-├── Fan-out (spawn N)     ├── "Should I traverse deeper?"
-├── Budget limits         ├── "Does this answer the query?"
-├── Step orchestration    └── "Which docs to explore next?"
-└── DAG visualization
-```
+This example splits responsibilities between two systems:
+
+| ZenML Controls | Pydantic AI Controls |
+|----------------|---------------------|
+| Fan-out (spawn N agents) | "Does this document answer the query?" |
+| Budget/depth limits | "Should I traverse deeper?" |
+| Step orchestration & DAG | "Which documents to explore next?" |
+| Artifact tracking | Natural language reasoning |
+
+The result: each `traverse_node` call appears as a **separate step** in the DAG, dynamically created at runtime based on agent decisions.
 
 ## What You'll See in the DAG
 
@@ -22,8 +25,8 @@ detect_intent
      └── [deep] → plan_search
                       │
                       ├── traverse_node (doc_1)  ─┐
-                      ├── traverse_node (doc_2)   ├── Each appears as
-                      ├── traverse_node (doc_3)   │   separate step!
+                      ├── traverse_node (doc_2)   ├── Each is a separate
+                      ├── traverse_node (doc_3)   │   step in the DAG!
                       └── traverse_node (doc_4)  ─┘
                               │
                               └── aggregate_results → create_report
@@ -31,56 +34,107 @@ detect_intent
 
 ## Prerequisites
 
-- **OPENAI_API_KEY**: Required for full LLM-powered search. Without it, the example falls back to keyword matching.
-- **LLM_MODEL** (optional): Override the default model (`openai:gpt-4o-mini`). Example: `LLM_MODEL=openai:gpt-4o`
+- **OPENAI_API_KEY**: Required for LLM-powered search. Without it, falls back to keyword matching.
+- **LLM_MODEL** (optional): Override the default model. Example: `LLM_MODEL=openai:gpt-4o`
 
 ## Quick Start
 
 ```bash
 pip install -r requirements.txt
-export OPENAI_API_KEY="your-api-key"  # Required for LLM-powered search
+export OPENAI_API_KEY="your-api-key"
 zenml init && zenml login
 
-# Simple query (fast path)
+# Simple query (fast keyword search)
 python run.py --query "What is Python?"
 
-# Deep query (agents traverse documents)
+# Deep query (agents traverse the document graph)
 python run.py --query "How does quantum computing relate to machine learning?"
 
-# Control fan-out
+# Control fan-out and depth
 python run.py --query "Compare ML approaches" --max-agents 5 --max-depth 3
 ```
 
-## How It Works
+---
 
-1. **Intent Detection**: Simple vs deep search
-2. **Plan Search**: Find starting documents
-3. **Fan-out**: Spawn N traversal agents (each is a ZenML step)
-4. **Pydantic AI Decision**: Each agent decides - answer found or traverse deeper?
-5. **Follow-up**: If agent says "traverse", spawn more steps
-6. **Aggregate**: Combine all findings
+## Understanding Dynamic Pipelines
+
+This is the most important section. Dynamic pipelines change how you handle **Artifacts vs. Parameters**.
+
+### 1. Parameters vs. Artifacts: Use `.with_options()`
+
+In dynamic pipelines, ZenML assumes step inputs are **Artifacts** (creating DAG edges). To pass a raw value as a **Parameter**, use `.with_options()`:
 
 ```python
-# Pydantic AI makes decisions
-traversal_agent = Agent("openai:gpt-4o-mini", output_type=TraversalDecision)
+# ❌ WRONG: ZenML expects 'query' to be an artifact from upstream
+traverse_node(doc_id=..., query=query)
 
-@step
-def traverse_node(query, doc_id, budget, visited):
-    # Pydantic AI decides: answer or traverse?
-    decision = traversal_agent.run_sync(prompt)
-    return {"found_answer": decision.has_answer, "traverse_to": decision.traverse_to}
-
-# ZenML controls orchestration
-for doc_id in seeds:
-    result = traverse_node(...)  # Each call = separate DAG node
-    for next_doc in result.load()["traverse_to"]:
-        traverse_node(...)  # More DAG nodes spawned dynamically
+# ✅ CORRECT: Explicitly define 'query' as a parameter
+traverse_node_step = traverse_node.with_options(
+    parameters={"query": query}
+)
+traverse_node_step(doc_id=..., budget=..., visited=...)
 ```
 
-## Deploy
+### 2. The `.chunk()` vs `.load()` Pattern
+
+When looping through artifact lists, you need two different operations:
+
+| Method | Purpose | When to Use |
+|--------|---------|-------------|
+| `.chunk(idx)` | Creates a **DAG edge** | Pass to downstream steps |
+| `.load()` | Gets the **actual value** | Make control-flow decisions |
+
+```python
+# Get seed documents from plan_search step
+seed_nodes = plan_search(query=query, ...)
+
+# Build initial queue using BOTH patterns:
+pending = [
+    (seed_nodes.chunk(idx), max_depth, [])  # .chunk() for DAG edge
+    for idx in range(len(seed_nodes.load()))  # .load() to get count
+]
+
+while pending:
+    doc_id_chunk, budget, visited = pending.pop(0)
+
+    # Pass the chunk as input (creates DAG edge)
+    result, traverse_to = traverse_node_step(
+        doc_id=doc_id_chunk,  # This is a chunk, not a raw value
+        budget=budget,
+        visited=visited,
+    )
+
+    # Load values to make decisions about spawning more steps
+    result_data = result.load()
+    traverse_to_data = traverse_to.load()
+
+    if not result_data["found_answer"] and result_data["budget"] > 0:
+        for idx in range(len(traverse_to_data)):
+            # Use .chunk() again for the next iteration
+            pending.append((
+                traverse_to.chunk(idx),
+                result_data["budget"],
+                result_data["visited"],
+            ))
+```
+
+**Key insight**: `.chunk(idx)` tells the orchestrator "Step B depends on item X from Step A's output list." `.load()` just gets the value for your Python logic.
+
+---
+
+## How It Works
+
+1. **Intent Detection** — Classifies query as "simple" or "deep"
+2. **Plan Search** — Finds starting documents (seed nodes)
+3. **Fan-out** — Spawns traversal agents for each seed
+4. **Agent Decision** — Pydantic AI decides: answer found or traverse deeper?
+5. **Dynamic Expansion** — If "traverse", new steps are added to the DAG
+6. **Aggregate** — Combines all findings into final results
+
+## Deploy as HTTP Service
 
 ```bash
-zenml pipeline deploy pipelines.hierarchical_search_pipeline.hierarchical_search_pipeline --name search
+zenml pipeline deploy hierarchical_search_pipeline --name search
 
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
@@ -89,24 +143,29 @@ curl -X POST http://localhost:8000/invoke \
 
 ## Web UI
 
-A Jinja2-templated HTML UI is included for deployed pipelines:
+The `ui/` directory contains a ready-to-use web interface for deployed pipelines:
 
-```
-ui/index.html
-```
-
-Features:
 - Search input with example queries
-- Configurable max_agents and max_depth
+- Configurable max_agents and max_depth sliders
 - Real-time metrics (search type, agents used, docs explored)
 - Result cards with answers
 
-The UI automatically connects to your deployed pipeline endpoint.
+## Project Structure
 
-## Files
+```
+├── run.py                           # CLI entry point
+├── requirements.txt                 # Dependencies
+├── pipelines/
+│   └── hierarchical_search_pipeline.py  # Dynamic pipeline logic
+├── steps/
+│   └── search.py                    # Step implementations + Pydantic AI agent
+├── data/
+│   └── doc_graph.json               # Sample document graph
+└── ui/
+    └── index.html                   # Web UI for deployed pipeline
+```
 
-- `pipelines/hierarchical_search_pipeline.py` - Pipeline orchestration logic
-- `steps/search.py` - All step implementations + Pydantic AI agent
-- `data/doc_graph.json` - Sample documents with relationships
-- `ui/index.html` - Web UI for deployed pipeline
-- `run.py` - CLI
+## Further Reading
+
+- [ZenML Dynamic Pipelines Documentation](https://docs.zenml.io)
+- [Pydantic AI Documentation](https://ai.pydantic.dev)
