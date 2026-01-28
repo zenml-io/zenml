@@ -1,0 +1,76 @@
+---
+rules:
+  # Require SHA pinning for all actions (security best practice)
+  # Ignores: First-party template repos that need to stay on main branch
+  # These are ZenML's own templates and are intentionally unpinned
+  unpinned-uses:
+    ignore:
+      - update-templates-to-examples.yml:44  # zenml-io/template-e2e-batch
+      - update-templates-to-examples.yml:120  # zenml-io/template-nlp
+      - update-templates-to-examples.yml:195  # zenml-io/template-starter
+      - update-templates-to-examples.yml:272  # zenml-io/template-llm-finetuning
+      - weekly-agent-pipelines-test.yml:101  # Ilshidur/action-discord uses @master, can't be SHA-pinned
+
+  # excessive-permissions: These workflows use default permissions.
+  # While explicit permissions are recommended, these are internal workflows
+  # with controlled triggers. Address permissions incrementally in future PRs.
+  # TODO: Audit workflows and add explicit permissions blocks
+  excessive-permissions:
+    disable: true
+
+  # artipacked: Require persist-credentials: false on checkout
+  # Disabled: Many ZenML workflows need credentials for pushing commits back to PRs
+  # (template updates, auto-formatting). Address incrementally in future PRs.
+  # TODO: Audit workflows and add persist-credentials: false where safe
+  artipacked:
+    disable: true
+
+  # Detect dangerous template expansions
+  # Ignores: Low-confidence findings for step outputs used in github-script
+  # (step outputs within same workflow are trusted)
+  template-injection:
+    ignore:
+      - release.yml:169  # VERSION from step output
+      - release.yml:170  # sha from step output
+      - snack-it.yml:352  # issue_number from step output
+      - snack-it.yml:353  # continuation of above
+      - snack-it.yml:354  # project_added from step output
+      - validate-changelog.yml:37  # step output
+      - notify-changelog.yml:27  # inputs.release_tag is workflow_dispatch input (authorized users only)
+
+  # Detect cache poisoning vulnerabilities
+  # Ignores: Low-confidence findings for protected publish workflows
+  cache-poisoning:
+    ignore:
+      - publish_api_docs.yml:24  # Protected release branch, docs only (setup-node caching)
+      - publish_api_docs.yml:27  # Protected release branch, docs only
+
+  # Detect malformed conditionals
+  unsound-condition: {}
+
+  # PyPI publishing suggestions (informational)
+  # Ignored: ZenML uses token-based publishing, trusted publishing is a future consideration
+  use-trusted-publishing:
+    ignore:
+      - publish_to_pypi_nightly.yml
+      - publish_to_pypi.yml
+
+  # secrets-inherit: Intentional for ZenML's internal reusable workflow pattern
+  # All ignored files are first-party workflows calling other first-party workflows
+  secrets-inherit:
+    ignore:
+      - ci-fast.yml
+      - ci-slow.yml
+      - linting.yml
+      - unit-test.yml
+      - integration-test-fast.yml
+      - integration-test-fast-services.yml
+      - integration-test-slow.yml
+      - integration-test-slow-services.yml
+      - base-package-functionality.yml
+      - update-templates-to-examples.yml
+      - templates-test.yml
+      - vscode-tutorial-pipelines-test.yml
+      - weekly-agent-pipelines-test.yml
+      - nightly_build.yml
+      - release.yml

@@ -42,14 +42,13 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }} && github.repository
-      == 'zenml-io/zenml'
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && github.repository == 'zenml-io/zenml' }}
     defaults:
       run:
         shell: bash
     steps:
       - name: Run template tests for ${{ matrix.template-repo.repo }}
-        uses: jenseng/dynamic-uses@v1
+        uses: jenseng/dynamic-uses@8bc24f0360175e710da532c4d19eafdbed489a06  # v1
         with:
           uses: ${{ matrix.template-repo.repo }}/${{ matrix.template-repo.path }}@main
           with: '{ "python-version": "${{ inputs.python-version }}", "stack-name":
