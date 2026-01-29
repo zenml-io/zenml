@@ -122,10 +122,7 @@ class RunAIClient:
             RuntimeError: If the runapy package is not installed.
             ValueError: If module_path is not from the runai package.
         """
-        allowed_prefixes = ("runai.", "runai")
-        if not any(
-            module_path.startswith(prefix) for prefix in allowed_prefixes
-        ):
+        if not module_path.startswith("runai"):
             raise ValueError(
                 f"Invalid module path '{module_path}'. "
                 f"Only 'runai' package modules are allowed."
@@ -319,6 +316,8 @@ class RunAIClient:
                 workload_id=workload_id or request.name,
                 workload_name=request.name,
             )
+        except RunAIClientError:
+            raise
         except Exception as exc:
             raise RunAIClientError(
                 f"Failed to submit Run:AI workload: {exc}"
@@ -368,13 +367,14 @@ class RunAIClient:
                 )
                 return cast(Optional[str], status)
             return None
+        except RunAIClientError:
+            raise
         except Exception as exc:
             error_msg = str(exc).lower()
             if "not found" in error_msg or "404" in error_msg:
                 logger.warning(f"Workload {workload_id} not found")
                 return None
             else:
-                logger.error(f"Failed to get workload status: {exc}")
                 raise RunAIClientError(
                     f"Failed to query workload status: {exc}"
                 ) from exc
@@ -398,6 +398,8 @@ class RunAIClient:
             if response.data and isinstance(response.data, dict):
                 return cast(Dict[str, Any], response.data)
             return {}
+        except RunAIClientError:
+            raise
         except Exception as exc:
             raise RunAIClientError(
                 f"Failed to query Run:AI workload {workload_id}: {exc}"
@@ -414,7 +416,8 @@ class RunAIClient:
         """
         try:
             self._raw_client.workloads.trainings.delete_training(workload_id)
-            logger.info(f"Successfully deleted workload {workload_id}")
+        except RunAIClientError:
+            raise
         except Exception as exc:
             raise RunAIClientError(
                 f"Failed to delete Run:AI workload {workload_id}: {exc}"

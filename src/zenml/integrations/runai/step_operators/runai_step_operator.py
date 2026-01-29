@@ -240,13 +240,11 @@ class RunAIStepOperator(BaseStepOperator):
 
         try:
             result = client.create_training_workload(training_request)
-        except RunAIClientError as exc:
-            safe_message = str(exc).replace(
-                self.config.client_secret.get_secret_value(), "***"
-            )
+        except RunAIClientError:
             raise RuntimeError(
-                f"Failed to submit step '{info.pipeline_step_name}' to Run:AI: {safe_message}"
-            ) from exc
+                f"Failed to submit step '{info.pipeline_step_name}' to Run:AI. "
+                "Check logs for details. Verify credentials, project name, cluster access, and quota."
+            )
 
         logger.info(
             "Waiting for Run:AI workload '%s' to complete...",
@@ -330,7 +328,7 @@ class RunAIStepOperator(BaseStepOperator):
             base_name = f"z{base_name}"
 
         run_id_suffix = str(info.run_id)[:8]
-        timestamp = datetime.now(timezone.utc).strftime("%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%H%M%S%f")[:9]
 
         identifier_len = len(run_id_suffix) + len(timestamp) + 2
         max_base_len = MAX_WORKLOAD_NAME_LENGTH - identifier_len
@@ -355,7 +353,17 @@ class RunAIStepOperator(BaseStepOperator):
 
         Returns:
             Tuple of (command, args) as lists.
+
+        Raises:
+            ValueError: If entrypoint_command format is invalid.
         """
+        if len(entrypoint_command) < 3:
+            raise ValueError(
+                f"Expected entrypoint command with at least 3 elements "
+                f"(e.g., ['python', '-m', 'module_name']), but got "
+                f"{len(entrypoint_command)} elements: {entrypoint_command}"
+            )
+
         command = entrypoint_command[:3]
         args = entrypoint_command[3:]
         return command, args
@@ -541,6 +549,7 @@ class RunAIStepOperator(BaseStepOperator):
         max_missing_status_checks = 3
 
         while True:
+            sleep_time = base_interval
             if timeout and (time.time() - start_time) > timeout:
                 logger.warning(
                     f"Attempting to stop timed-out workload {workload_id}"
@@ -557,7 +566,7 @@ class RunAIStepOperator(BaseStepOperator):
 
             try:
                 status = client.get_training_workload_status(workload_id)
-                retry_count = 0  # Reset on success
+                retry_count = 0
 
                 if status is None:
                     missing_status_retries += 1
@@ -584,6 +593,12 @@ class RunAIStepOperator(BaseStepOperator):
 
                 elif status and is_failure_status(status):
                     missing_status_retries = 0
+                    try:
+                        client.delete_training_workload(workload_id)
+                    except Exception as cleanup_exc:
+                        logger.error(
+                            f"Failed to cleanup workload {workload_id}: {cleanup_exc}"
+                        )
                     raise RuntimeError(
                         f"Run:AI workload {workload_id} failed with status: {status}"
                     )
@@ -594,9 +609,15 @@ class RunAIStepOperator(BaseStepOperator):
             except RunAIClientError as exc:
                 retry_count += 1
                 if retry_count > max_retries:
+                    try:
+                        client.delete_training_workload(workload_id)
+                    except Exception as cleanup_exc:
+                        logger.error(
+                            f"Failed to cleanup workload {workload_id}: {cleanup_exc}"
+                        )
                     raise RuntimeError(
                         f"Failed to check status after {max_retries} retries: {exc}"
-                    ) from exc
+                    )
 
                 sleep_time = min(base_interval * (2**retry_count), 300)
                 sleep_time += random.uniform(0, 0.1 * sleep_time)
