@@ -14,7 +14,6 @@
 """Run:AI client utilities."""
 
 from zenml.integrations.runai.client.runai_client import (
-    InferenceWorkloadResult,
     RunAIClient,
     RunAIClientError,
     RunAICluster,
@@ -25,7 +24,6 @@ from zenml.integrations.runai.client.runai_client import (
 )
 
 __all__ = [
-    "InferenceWorkloadResult",
     "RunAIClient",
     "RunAIClientError",
     "RunAICluster",
