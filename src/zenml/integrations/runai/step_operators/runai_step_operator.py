@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Run:AI step operator implementation."""
 
+import random
 import time
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from zenml.config.base_settings import BaseSettings
@@ -35,7 +37,6 @@ from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils.string_utils import random_str
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -180,9 +181,7 @@ class RunAIStepOperator(BaseStepOperator):
 
         image_pull_secrets = self._build_image_pull_secrets(client)
 
-        command_str, args_str = self._build_command_and_args(
-            entrypoint_command
-        )
+        command, args = self._build_command_and_args(entrypoint_command)
 
         models = client.models
         TrainingCreationRequest = models.TrainingCreationRequest
@@ -194,12 +193,12 @@ class RunAIStepOperator(BaseStepOperator):
 
         spec_dict: Dict[str, Any] = {
             "image": image,
-            "command": command_str,
+            "command": command,
             "compute": compute,
             "environmentVariables": env_vars,
         }
-        if args_str:
-            spec_dict["args"] = args_str
+        if args:
+            spec_dict["args"] = args
         if image_pull_secrets:
             spec_dict["imagePullSecrets"] = image_pull_secrets
 
@@ -242,8 +241,11 @@ class RunAIStepOperator(BaseStepOperator):
         try:
             result = client.create_training_workload(training_request)
         except RunAIClientError as exc:
+            safe_message = str(exc).replace(
+                self.config.client_secret.get_secret_value(), "***"
+            )
             raise RuntimeError(
-                f"Failed to submit step '{info.pipeline_step_name}' to Run:AI: {exc}"
+                f"Failed to submit step '{info.pipeline_step_name}' to Run:AI: {safe_message}"
             ) from exc
 
         logger.info(
@@ -327,36 +329,36 @@ class RunAIStepOperator(BaseStepOperator):
         if base_name and not base_name[0].isalpha():
             base_name = f"z{base_name}"
 
-        suffix = random_str(8).lower()
-        max_base_len = MAX_WORKLOAD_NAME_LENGTH - len(suffix) - 1
+        run_id_suffix = str(info.run_id)[:8]
+        timestamp = datetime.now(timezone.utc).strftime("%H%M%S")
+
+        identifier_len = len(run_id_suffix) + len(timestamp) + 2
+        max_base_len = MAX_WORKLOAD_NAME_LENGTH - identifier_len
         base_name = base_name[:max_base_len].rstrip("-")
 
-        return f"{base_name}-{suffix}"
+        return f"{base_name}-{run_id_suffix}-{timestamp}"
 
     def _build_command_and_args(
         self, entrypoint_command: List[str]
-    ) -> Tuple[str, Optional[str]]:
+    ) -> Tuple[List[str], List[str]]:
         """Build the command and arguments for Run:AI.
 
         ZenML step entrypoints are typically generated as
         `["python", "-m", "zenml.entrypoints.step_entrypoint", ...args...]`.
         We split after the first three tokens to keep the interpreter/module
         invocation intact while passing the remaining tokens as arguments.
-        If the layout ever changes, consider sending the full list instead.
+
+        This follows the same pattern as the Kubernetes step operator.
 
         Args:
             entrypoint_command: The full entrypoint command list.
 
         Returns:
-            Tuple of (command_str, args_str).
+            Tuple of (command, args) as lists.
         """
-        if len(entrypoint_command) <= 3:
-            command_str = " ".join(entrypoint_command)
-            args_str = None
-        else:
-            command_str = " ".join(entrypoint_command[:3])
-            args_str = " ".join(entrypoint_command[3:])
-        return command_str, args_str
+        command = entrypoint_command[:3]
+        args = entrypoint_command[3:]
+        return command, args
 
     def _build_environment_variables(
         self,
@@ -433,6 +435,11 @@ class RunAIStepOperator(BaseStepOperator):
         """
         if not self.config.image_pull_secret_name:
             return None
+
+        logger.info(
+            f"Using image pull secret '{self.config.image_pull_secret_name}'. "
+            f"Ensure this secret exists in your Run:AI project."
+        )
 
         ImagePullSecret = client.models.ImagePullSecret
         return [
@@ -527,21 +534,49 @@ class RunAIStepOperator(BaseStepOperator):
         """
         start_time = time.time()
         timeout = self.config.workload_timeout
+        retry_count = 0
+        max_retries = 3
+        base_interval = self.config.monitoring_interval
 
         while True:
             if timeout and (time.time() - start_time) > timeout:
+                logger.warning(
+                    f"Attempting to stop timed-out workload {workload_id}"
+                )
+                try:
+                    client.delete_training_workload(workload_id)
+                except Exception as cleanup_exc:
+                    logger.error(
+                        f"Failed to cleanup workload {workload_id}: {cleanup_exc}"
+                    )
                 raise RuntimeError(
                     f"Run:AI workload {workload_id} timed out after {timeout} seconds"
                 )
 
-            status = client.get_training_workload_status(workload_id)
+            try:
+                status = client.get_training_workload_status(workload_id)
+                retry_count = 0  # Reset on success
 
-            if status and is_success_status(status):
-                return
+                if status and is_success_status(status):
+                    return
 
-            if status and is_failure_status(status):
-                raise RuntimeError(
-                    f"Run:AI workload {workload_id} failed with status: {status}"
+                if status and is_failure_status(status):
+                    raise RuntimeError(
+                        f"Run:AI workload {workload_id} failed with status: {status}"
+                    )
+
+                sleep_time = base_interval
+            except RunAIClientError as exc:
+                retry_count += 1
+                if retry_count > max_retries:
+                    raise RuntimeError(
+                        f"Failed to check status after {max_retries} retries: {exc}"
+                    ) from exc
+
+                sleep_time = min(base_interval * (2**retry_count), 300)
+                sleep_time += random.uniform(0, 0.1 * sleep_time)
+                logger.warning(
+                    f"Status check failed (retry {retry_count}/{max_retries}): {exc}"
                 )
 
-            time.sleep(self.config.monitoring_interval)
+            time.sleep(sleep_time)

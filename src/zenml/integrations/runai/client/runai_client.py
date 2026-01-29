@@ -120,7 +120,17 @@ class RunAIClient:
 
         Raises:
             RuntimeError: If the runapy package is not installed.
+            ValueError: If module_path is not from the runai package.
         """
+        allowed_prefixes = ("runai.", "runai")
+        if not any(
+            module_path.startswith(prefix) for prefix in allowed_prefixes
+        ):
+            raise ValueError(
+                f"Invalid module path '{module_path}'. "
+                f"Only 'runai' package modules are allowed."
+            )
+
         try:
             return importlib.import_module(module_path)
         except ImportError as exc:
@@ -343,7 +353,10 @@ class RunAIClient:
             workload_id: The workload ID to query.
 
         Returns:
-            The workload status string or None.
+            The workload status string or None if not available.
+
+        Raises:
+            RunAIClientError: If the API call fails (not for missing workload).
         """
         try:
             response = self._raw_client.workloads.trainings.get_training(
@@ -356,8 +369,15 @@ class RunAIClient:
                 return cast(Optional[str], status)
             return None
         except Exception as exc:
-            logger.error(f"Failed to get workload status: {exc}")
-            return None
+            error_msg = str(exc).lower()
+            if "not found" in error_msg or "404" in error_msg:
+                logger.warning(f"Workload {workload_id} not found")
+                return None
+            else:
+                logger.error(f"Failed to get workload status: {exc}")
+                raise RunAIClientError(
+                    f"Failed to query workload status: {exc}"
+                ) from exc
 
     def get_training_workload(self, workload_id: str) -> Dict[str, Any]:
         """Get full training workload details.
@@ -381,4 +401,21 @@ class RunAIClient:
         except Exception as exc:
             raise RunAIClientError(
                 f"Failed to query Run:AI workload {workload_id}: {exc}"
+            ) from exc
+
+    def delete_training_workload(self, workload_id: str) -> None:
+        """Delete a training workload.
+
+        Args:
+            workload_id: The workload ID to delete.
+
+        Raises:
+            RunAIClientError: If deletion fails.
+        """
+        try:
+            self._raw_client.workloads.trainings.delete_training(workload_id)
+            logger.info(f"Successfully deleted workload {workload_id}")
+        except Exception as exc:
+            raise RunAIClientError(
+                f"Failed to delete Run:AI workload {workload_id}: {exc}"
             ) from exc

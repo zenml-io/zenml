@@ -15,7 +15,7 @@
 
 from enum import Enum
 
-from zenml.enums import DeploymentStatus, ExecutionStatus
+from zenml.enums import ExecutionStatus
 
 # Workload name constraints
 MAX_WORKLOAD_NAME_LENGTH = 50

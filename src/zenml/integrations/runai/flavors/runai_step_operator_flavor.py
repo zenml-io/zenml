@@ -222,19 +222,16 @@ class RunAIStepOperatorSettings(BaseSettings):
         if value is None:
             return None
 
-        valid_units = ["K", "M", "G", "T", "Ki", "Mi", "Gi", "Ti"]
-        if not any(value.endswith(unit) for unit in valid_units):
-            raise ValueError(
-                f"Invalid memory format: {value}. Must end with one of: {valid_units}"
-            )
+        import re
 
-        numeric_part = value.rstrip("KMGTi")
-        try:
-            float(numeric_part)
-        except ValueError as exc:
+        # Use regex for stricter validation
+        pattern = r"^(\d+(?:\.\d+)?)(K|M|G|T|Ki|Mi|Gi|Ti)$"
+        if not re.match(pattern, value):
             raise ValueError(
-                f"Invalid memory format: {value}. Numeric part must be a valid number"
-            ) from exc
+                f"Invalid memory format: {value}. "
+                f"Must be a number followed by one of: K, M, G, T, Ki, Mi, Gi, Ti. "
+                f"Examples: '4G', '512M', '8Gi'"
+            )
 
         return value
 
