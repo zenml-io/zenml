@@ -3,6 +3,11 @@ description: Configuration reference for the ZenML Control Plane.
 icon: shield-halved
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Control Plane Configuration
 
 This page provides the configuration reference for the ZenML Control Plane. For an overview of what the Control Plane does, see [System Architecture](system-architecture.md#control-plane).

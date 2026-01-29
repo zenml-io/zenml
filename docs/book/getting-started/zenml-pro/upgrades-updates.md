@@ -3,6 +3,11 @@ description: How to upgrade ZenML Pro components.
 icon: arrow-up-right-dots
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Upgrades and Updates
 
 This section covers upgrading ZenML Pro components for all deployment types. Each component has its own upgrade procedures and considerations.

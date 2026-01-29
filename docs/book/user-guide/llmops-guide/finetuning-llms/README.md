@@ -2,6 +2,11 @@
 description: Finetune LLMs for specific tasks or to improve performance and cost.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Finetuning LLMs with ZenML
 
 So far in our LLMOps journey we've learned [how to use RAG with ZenML](../rag-with-zenml/), how to [evaluate our RAG systems](../evaluation/), how to [use reranking to improve retrieval](../reranking/), and how to[finetune embeddings](../finetuning-embeddings/) to support and improve our RAG systems. In this section we will explore LLM finetuning itself. So far we've been using APIs like OpenAI and Anthropic, but there are some scenarios where it makes sense to finetune an LLM on your own data. We'll get into those scenarios and how to finetune an LLM in the pages that follow.

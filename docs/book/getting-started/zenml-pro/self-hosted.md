@@ -3,6 +3,11 @@ description: Guide for installing ZenML Pro self-hosted in a Kubernetes cluster.
 icon: box
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Self-hosted deployment
 
 This page provides instructions for installing ZenML Pro - the ZenML Pro Control
