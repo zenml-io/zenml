@@ -537,6 +537,8 @@ class RunAIStepOperator(BaseStepOperator):
         retry_count = 0
         max_retries = 3
         base_interval = self.config.monitoring_interval
+        missing_status_retries = 0
+        max_missing_status_checks = 3
 
         while True:
             if timeout and (time.time() - start_time) > timeout:
@@ -557,15 +559,38 @@ class RunAIStepOperator(BaseStepOperator):
                 status = client.get_training_workload_status(workload_id)
                 retry_count = 0  # Reset on success
 
-                if status and is_success_status(status):
+                if status is None:
+                    missing_status_retries += 1
+                    if missing_status_retries > max_missing_status_checks:
+                        raise RuntimeError(
+                            "Run:AI workload "
+                            f"{workload_id} is missing or returned no status "
+                            f"after {max_missing_status_checks} checks. The "
+                            "workload might have been deleted or failed to "
+                            "start."
+                        )
+
+                    logger.warning(
+                        "No status returned for Run:AI workload %s "
+                        "(attempt %d/%d); retrying.",
+                        workload_id,
+                        missing_status_retries,
+                        max_missing_status_checks,
+                    )
+                    sleep_time = base_interval
+                elif status and is_success_status(status):
+                    missing_status_retries = 0
                     return
 
-                if status and is_failure_status(status):
+                elif status and is_failure_status(status):
+                    missing_status_retries = 0
                     raise RuntimeError(
                         f"Run:AI workload {workload_id} failed with status: {status}"
                     )
 
-                sleep_time = base_interval
+                else:
+                    missing_status_retries = 0
+                    sleep_time = base_interval
             except RunAIClientError as exc:
                 retry_count += 1
                 if retry_count > max_retries:
