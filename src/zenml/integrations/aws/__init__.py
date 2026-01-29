@@ -45,6 +45,8 @@ class AWSIntegration(Integration):
         "sagemaker>=2.237.3,<3.0.0",
         "kubernetes",
         "aws-profile-manager",
+        # Sagemaker doesn't install this, but crashes without it
+        "pytz>=2021.1",
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
