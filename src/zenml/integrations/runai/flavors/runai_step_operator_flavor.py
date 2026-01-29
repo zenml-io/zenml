@@ -174,7 +174,7 @@ class RunAIStepOperatorSettings(BaseSettings):
     )
     terminate_after_preemption: Optional[bool] = Field(
         default=None,
-        description="If True, terminate workload after preemption instead of requeueing. "
+        description="If True, terminate workload after preemption instead of requeuing. "
         "Default is False (workload gets rescheduled)",
     )
     working_dir: Optional[str] = Field(
