@@ -117,6 +117,10 @@ def get_logs(
 
     Returns:
         The requested log model.
+
+    Raises:
+        IllegalOperationError: If the logs are not associated 
+            with a pipeline run or step run before fetching.
     """
     logs = zen_store().get_logs(logs_id)
 
