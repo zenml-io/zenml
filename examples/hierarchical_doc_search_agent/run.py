@@ -17,21 +17,33 @@
 """Hierarchical Document Search Agent."""
 
 import argparse
+from typing import Optional, Sequence
 
 from pipelines.hierarchical_search_pipeline import hierarchical_search_pipeline
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--query", "-q", required=True, help="Search query")
-parser.add_argument(
-    "--max-agents", "-a", type=int, default=3, help="Max parallel agents"
-)
-parser.add_argument(
-    "--max-depth", "-d", type=int, default=2, help="Max traversal depth"
-)
-args = parser.parse_args()
 
-hierarchical_search_pipeline(
-    query=args.query,
-    max_agents=args.max_agents,
-    max_depth=args.max_depth,
-)
+def main(argv: Optional[Sequence[str]] = None) -> None:
+    """Run the hierarchical search pipeline.
+
+    Args:
+        argv: Command-line arguments. If None, uses sys.argv.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--query", "-q", required=True, help="Search query")
+    parser.add_argument(
+        "--max-agents", "-a", type=int, default=3, help="Max parallel agents"
+    )
+    parser.add_argument(
+        "--max-depth", "-d", type=int, default=2, help="Max traversal depth"
+    )
+    args = parser.parse_args(argv)
+
+    hierarchical_search_pipeline(
+        query=args.query,
+        max_agents=args.max_agents,
+        max_depth=args.max_depth,
+    )
+
+
+if __name__ == "__main__":
+    main()

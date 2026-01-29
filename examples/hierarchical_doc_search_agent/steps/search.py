@@ -172,11 +172,26 @@ def _load_documents() -> Dict[str, Any]:
     ]
     for doc_path in search_paths:
         if doc_path.exists():
-            with open(doc_path) as f:
-                data: Dict[str, Any] = json.load(f)
+            try:
+                raw = doc_path.read_text(encoding="utf-8")
+                data: Dict[str, Any] = json.loads(raw)
                 docs: Dict[str, Any] = data["documents"]
                 return docs
-    logger.warning(f"Document graph not found in any of: {search_paths}")
+            except json.JSONDecodeError as e:
+                # Provide helpful context for debugging malformed JSON
+                lines = raw.splitlines()
+                error_line = lines[e.lineno - 1] if e.lineno <= len(lines) else ""
+                # Truncate long lines for readability
+                if len(error_line) > 120:
+                    error_line = error_line[:120] + "..."
+                logger.error(
+                    f"Invalid JSON in {doc_path} at line {e.lineno}, "
+                    f"column {e.colno}: {e.msg}\n"
+                    f"  Line content: {error_line}"
+                )
+                # Continue to try other paths
+                continue
+    logger.warning(f"Document graph not found or invalid in any of: {search_paths}")
     return {}
 
 
