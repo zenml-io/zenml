@@ -26,6 +26,7 @@ from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import VARCHAR, String
 from sqlmodel import Field, Relationship
 
+from zenml import ScheduleResponsePayload
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import TriggerCategory, TriggerType
 from zenml.models import (
@@ -122,6 +123,8 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+
+    project: ProjectSchema = Relationship(back_populates="triggers")
 
     user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
@@ -225,7 +228,7 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
             project_id=trigger_request.project,
             user_id=trigger_request.user,
             active=trigger_request.active,
-            data=trigger_request.data,
+            data=trigger_request.data.model_dump_json(),
             trigger_type=trigger_request.trigger_type,
             category=trigger_request.category,
             next_occurrence=next_occurrence,
@@ -243,6 +246,8 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             ValueError: If trigger_update is invalid.
         """
+        from zenml.models.v2.core.triggers import apply_schedule_update
+
         if trigger_update.active is not None:
             self.active = trigger_update.active
 
@@ -256,10 +261,20 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
                         "Expected ScheduleUpdatePayload update object for schedule trigger"
                     )
 
-                if trigger_update.data.next_occurrence:
-                    self.next_occurrence = trigger_update.data.next_occurrence
+                current = ScheduleResponsePayload(**json.loads(self.data))
+                current.next_occurrence = self.next_occurrence
 
-            self.data = trigger_update.data.model_dump_json()
+                data = apply_schedule_update(
+                    update=trigger_update.data,
+                    current=current,
+                    re_activated=bool(
+                        trigger_update.active
+                    ),  # if None or False re_activated=False
+                )
+
+                self.next_occurrence = data.next_occurrence
+
+                self.data = data.model_dump_json()
 
         return self
 
@@ -280,7 +295,8 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
             A TriggerResponse object.
         """
         if self.trigger_type == TriggerType.schedule.value:
-            data = ScheduleUpdatePayload(**json.loads(self.data))
+            data = ScheduleResponsePayload(**json.loads(self.data))
+            data.next_occurrence = self.next_occurrence
         else:
             data = None
 
@@ -304,7 +320,15 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_resources:
             resources = TriggerResponseResources(
                 user=self.user.to_model() if self.user else None,
-                snapshots=[s.to_model() for s in self.snapshots],
+                snapshots=[
+                    s.to_model(
+                        include_resources=False,
+                        include_metadata=False,
+                        include_config_schema=False,
+                        include_python_packages=False,
+                    )
+                    for s in self.snapshots
+                ],
             )
 
         return TriggerResponse(

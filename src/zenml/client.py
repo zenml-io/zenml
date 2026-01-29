@@ -3916,6 +3916,7 @@ class Client(metaclass=ClientMetaClass):
         active: bool | None = None,
         cron_expression: str | None = None,
         interval: int | None = None,
+        start_time: datetime | None = None,
     ) -> TriggerResponse:
         """Update a native schedule trigger.
 
@@ -3925,6 +3926,7 @@ class Client(metaclass=ClientMetaClass):
             active: The new active status of the trigger.
             cron_expression: The new cron_expression of the trigger.
             interval: The new interval of the trigger.
+            start_time: The new start time of the trigger.
 
         Returns:
             The updated trigger.
@@ -3939,6 +3941,7 @@ class Client(metaclass=ClientMetaClass):
                 data=ScheduleUpdatePayload(
                     cron_expression=cron_expression,
                     interval=interval,
+                    start_time=start_time,
                 ),
             ),
         )

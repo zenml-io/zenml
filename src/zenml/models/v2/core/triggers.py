@@ -32,7 +32,7 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse
+    from zenml.models import PipelineSnapshotResponse, UserResponse
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -156,6 +156,7 @@ class ScheduleUpdatePayload(BaseUpdate):
     cron_expression: str | None = None
     interval: int | None = None
     next_occurrence: datetime | None = None
+    start_time: datetime | None = None
 
     @model_validator(mode="after")
     def check_mutual_exclusive_options(self) -> "ScheduleUpdatePayload":
@@ -215,6 +216,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
     snapshots: Optional[list["PipelineSnapshotResponse"]] = None
+    user: Optional["UserResponse"] = None
 
 
 class TriggerResponse(
@@ -270,15 +272,42 @@ class TriggerResponse(
         return self.get_body().trigger_type
 
     @property
-    def schedule(self) -> SchedulePayload | None:
+    def schedule(self) -> ScheduleResponsePayload:
         """The 'schedule` property.
 
         Returns:
             The schedule object data
+
+        Raises:
+            ValueError: If not a trigger of schedule type.
         """
         if self.trigger_type == TriggerType.schedule:
-            return self.get_body().data
-        return None
+            return self.get_body().data  # type: ignore[return-value]
+
+        raise ValueError(
+            f"Trigger of type {self.trigger_type} does not have schedule data."
+        )
+
+    @property
+    def data(self) -> ScheduleResponsePayload | None:
+        """The 'data' property.
+
+        It would be best to avoid using this property and opt to use properties
+        with specific return types like 'schedule'
+
+        Returns:
+            The trigger dynamic data.
+        """
+        return self.get_body().data
+
+    @property
+    def snapshots(self) -> list["PipelineSnapshotResponse"]:
+        """Implements he 'snapshots' property.
+
+        Returns:
+            A list of associated snapshots.
+        """
+        return self.get_resources().snapshots or []
 
 
 # ------------------ Filter Model ------------------
@@ -305,3 +334,68 @@ class TriggerFilter(ProjectScopedFilter):
         description="Whether or not the schedule is archived",
     )
     trigger_type: TriggerType
+
+
+def apply_schedule_update(
+    update: ScheduleUpdatePayload,
+    current: ScheduleResponsePayload,
+    re_activated: bool,
+) -> ScheduleResponsePayload:
+    """Apply schedule update to a current schedule.
+
+    Validates transition state, resets state on frequency option transition,
+    re-calculates next occurrence if necessary.
+
+    Args:
+        update: A ScheduleUpdatePayload object.
+        current: A ScheduleResponsePayload object.
+        re_activated: Whether the schedule is being re-activated.
+
+    Returns:
+        The updated ScheduleResponsePayload object.
+
+    Raises:
+        ValueError:
+    """
+    from zenml.utils.native_schedules import calculate_first_occurrence
+
+    data = current.model_dump()
+
+    need_to_recalculate_next_occurrence = re_activated
+
+    if update.start_time:
+        need_to_recalculate_next_occurrence = True
+        data["start_time"] = update.start_time
+
+    if update.interval:
+        need_to_recalculate_next_occurrence = True
+        data["interval"] = update.interval
+
+        if data[
+            "cron_expression"
+        ]:  # If we switch option, we should clean-up previous values
+            data["cron_expression"] = None
+        if data["run_once_start_time"]:
+            data["run_once_start_time"] = None
+        if not data["start_time"]:
+            raise ValueError("To set interval, you must specify a start time.")
+
+    if update.cron_expression:
+        need_to_recalculate_next_occurrence = True
+        data["cron_expression"] = update.cron_expression
+
+        if data[
+            "interval"
+        ]:  # If we switch option, we should clean-up previous values
+            data["interval"] = None
+        if data["run_once_start_time"]:
+            data["run_once_start_time"] = None
+
+    response = ScheduleResponsePayload(**data)
+
+    if need_to_recalculate_next_occurrence:
+        response.next_occurrence = calculate_first_occurrence(
+            schedule=response
+        )
+
+    return response

@@ -15,7 +15,6 @@
 
 from contextlib import nullcontext
 
-from zenml import TriggerFilter, TriggerRequest, TriggerResponse, TriggerUpdate
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
@@ -322,6 +321,10 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerResponse,
+    TriggerUpdate,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -6982,7 +6985,7 @@ class SqlZenStore(BaseZenStore):
 
             self._verify_name_uniqueness(
                 resource=trigger_update,
-                schema=TriggerSchema,
+                schema=existing_trigger,
                 session=session,
             )
 
@@ -7020,6 +7023,13 @@ class SqlZenStore(BaseZenStore):
                 trigger.is_archived = True
                 trigger.active = False
                 session.add(trigger)
+
+                # archival does not cascade - need to delete associations
+                session.exec(
+                    delete(TriggerSnapshotSchema).where(
+                        col(TriggerSnapshotSchema.trigger_id) == trigger_id
+                    )
+                )  # type: ignore[call-overload]
 
             session.commit()
 

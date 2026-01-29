@@ -83,16 +83,29 @@ def calculate_first_occurrence(schedule: SchedulePayload) -> datetime | None:
     if not schedule.engine == ScheduleEngine.native:
         return None
 
+    now_plus_1_sec = datetime.now(timezone.utc).replace(
+        tzinfo=None
+    ) + timedelta(seconds=1)
+
     if schedule.cron_expression:
+        if schedule.start_time and schedule.start_time > now_plus_1_sec:
+            base = schedule.start_time
+        else:
+            base = now_plus_1_sec
+
         next_occurrence = next_occurrence_for_cron(
             expression=schedule.cron_expression,
-            base=schedule.start_time or datetime.now(timezone.utc),
+            base=base,
         )
     elif schedule.start_time and schedule.interval:
-        next_occurrence = next_occurrence_for_interval(
-            interval=schedule.interval,
-            start=schedule.start_time,
-        )
+        if schedule.start_time > now_plus_1_sec:
+            next_occurrence = schedule.start_time
+        else:
+            next_occurrence = next_occurrence_for_interval(
+                interval=schedule.interval,
+                start=schedule.start_time,
+                base=now_plus_1_sec,
+            )
     elif schedule.run_once_start_time:
         next_occurrence = schedule.run_once_start_time
     else:

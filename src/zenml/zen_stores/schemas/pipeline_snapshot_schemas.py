@@ -624,6 +624,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     )
                     for visualization in self.visualizations
                 ],
+                triggers=[
+                    trigger.to_model(include_resources=False)
+                    for trigger in self.triggers
+                ],
             )
 
         return PipelineSnapshotResponse(

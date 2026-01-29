@@ -523,6 +523,10 @@ ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
 ResourcesInfo.model_rebuild()
+TriggerRequest.model_rebuild()
+TriggerResponseBody.model_rebuild()
+TriggerResponseMetadata.model_rebuild()
+TriggerResponseResources.model_rebuild()
 
 
 __all__ = [
