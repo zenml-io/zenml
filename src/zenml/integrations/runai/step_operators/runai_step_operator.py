@@ -240,11 +240,11 @@ class RunAIStepOperator(BaseStepOperator):
 
         try:
             result = client.create_training_workload(training_request)
-        except RunAIClientError:
+        except RunAIClientError as exc:
             raise RuntimeError(
-                f"Failed to submit step '{info.pipeline_step_name}' to Run:AI. "
-                "Check logs for details. Verify credentials, project name, cluster access, and quota."
-            )
+                f"Failed to submit step '{info.pipeline_step_name}' to Run:AI: {exc}. "
+                "Verify credentials, project name, cluster access, and quota."
+            ) from exc
 
         logger.info(
             "Waiting for Run:AI workload '%s' to complete...",

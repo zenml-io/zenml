@@ -122,10 +122,19 @@ class RunAIClient:
             RuntimeError: If the runapy package is not installed.
             ValueError: If module_path is not from the runai package.
         """
-        if not module_path.startswith("runai"):
+        ALLOWED_MODULES = frozenset(
+            [
+                "runai.api_client",
+                "runai.configuration",
+                "runai.runai_client",
+                "runai.models",
+            ]
+        )
+
+        if module_path not in ALLOWED_MODULES:
             raise ValueError(
-                f"Invalid module path '{module_path}'. "
-                f"Only 'runai' package modules are allowed."
+                f"Module '{module_path}' is not in the allowed list. "
+                f"Allowed modules: {ALLOWED_MODULES}"
             )
 
         try:
