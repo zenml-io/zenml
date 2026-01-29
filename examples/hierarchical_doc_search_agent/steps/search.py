@@ -18,10 +18,13 @@
 import json
 import logging
 import os
+import random
+import time
 from pathlib import Path
 from typing import Annotated, Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pydantic_ai.exceptions import AgentRunError, ModelAPIError, ModelHTTPError
 
 from zenml import step
 from zenml.types import HTMLString
@@ -55,6 +58,91 @@ def _get_traversal_agent() -> Any:
     return _traversal_agent
 
 
+def _llm_available() -> bool:
+    """Check if LLM calls should be attempted (API key present)."""
+    return bool(os.getenv("OPENAI_API_KEY", "").strip())
+
+
+# Module-level flag to log "LLM unavailable" only once
+_llm_unavailable_logged = False
+
+
+def _is_transient_error(exc: BaseException) -> bool:
+    """Return True if the exception is likely transient (retryable)."""
+    if isinstance(exc, ModelHTTPError):
+        # Retry on rate limits and server errors
+        return exc.status_code in (429, 500, 502, 503, 504)
+    # Network-level errors are also transient
+    if isinstance(exc, (TimeoutError, ConnectionError, OSError)):
+        return True
+    return False
+
+
+def _run_agent_with_retry(
+    agent: Any,
+    prompt: str,
+    *,
+    max_retries: int = 3,
+    initial_backoff_s: float = 0.5,
+    max_backoff_s: float = 8.0,
+) -> Any:
+    """Run agent.run_sync(prompt) with exponential backoff on transient errors."""
+    last_exception: Optional[BaseException] = None
+
+    for attempt in range(max_retries + 1):
+        try:
+            return agent.run_sync(prompt)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except (ModelHTTPError, ModelAPIError, AgentRunError) as e:
+            last_exception = e
+            if not _is_transient_error(e) or attempt == max_retries:
+                raise
+            # Exponential backoff with jitter
+            delay = min(max_backoff_s, initial_backoff_s * (2**attempt))
+            delay *= random.uniform(0.8, 1.2)
+            logger.info(
+                f"Transient error (attempt {attempt + 1}), retrying in {delay:.1f}s: {e}"
+            )
+            time.sleep(delay)
+
+    # Should not reach here, but satisfy type checker
+    if last_exception:
+        raise last_exception
+    raise RuntimeError("Retry loop exited unexpectedly")
+
+
+def _truncate_text(text: Optional[str], max_chars: int = 2000) -> str:
+    """Return text truncated to max_chars (safe for None)."""
+    if not text:
+        return ""
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "..."
+
+
+def _validate_traverse_to(
+    traverse_to: List[str],
+    *,
+    related: List[str],
+    docs: Dict[str, Any],
+) -> List[str]:
+    """Filter traversal targets to permitted document IDs only."""
+    allowed = set(related) | set(docs.keys())
+    seen: set[str] = set()
+    result: List[str] = []
+    for doc_id in traverse_to:
+        if (
+            doc_id
+            and isinstance(doc_id, str)
+            and doc_id in allowed
+            and doc_id not in seen
+        ):
+            result.append(doc_id)
+            seen.add(doc_id)
+    return result
+
+
 # --- Data loading ---
 
 
@@ -83,7 +171,7 @@ class TraversalDecision(BaseModel):
 
     has_answer: bool
     answer: str = ""
-    traverse_to: List[str] = []  # doc IDs to explore next
+    traverse_to: List[str] = Field(default_factory=list)
     reasoning: str = ""
 
 
@@ -195,29 +283,35 @@ def traverse_node(
     for rel_list in rels.values():
         related.extend(rel_list if isinstance(rel_list, list) else [])
 
-    # Pydantic AI agent makes the decision
+    # Truncate content to avoid context length errors
+    content = _truncate_text(doc.get("content"), max_chars=2000)
+
+    # Build prompt for LLM agent
     prompt = f"""
     Query: {query}
 
     Current document: {doc.get("title")}
-    Content: {doc.get("content")}
+    Content: {content}
 
     Related documents available: {related}
     Budget remaining: {budget}
 
     Does this document answer the query? Or should we explore related documents?
+    Only choose traverse_to IDs from the provided related documents list.
     """
 
-    try:
-        agent = _get_traversal_agent()
-        result = agent.run_sync(prompt)
-        decision = result.output
-    except Exception as e:
-        # Fallback to keyword matching if LLM unavailable (e.g., no API key)
-        logger.warning(
-            f"LLM agent failed, using fallback mode: {e}. "
-            "Set OPENAI_API_KEY for full functionality."
-        )
+    global _llm_unavailable_logged
+    decision: TraversalDecision
+
+    # Check LLM availability upfront to avoid unnecessary API calls
+    if not _llm_available():
+        if not _llm_unavailable_logged:
+            logger.warning(
+                "OPENAI_API_KEY not set. Using fallback keyword matching. "
+                "Set OPENAI_API_KEY for full LLM functionality."
+            )
+            _llm_unavailable_logged = True
+        # Fallback to keyword matching
         has_answer = any(
             w in doc.get("content", "").lower() for w in query.lower().split()
         )
@@ -225,8 +319,48 @@ def traverse_node(
             has_answer=has_answer,
             answer=doc.get("content", "")[:200] if has_answer else "",
             traverse_to=related[:2] if not has_answer else [],
-            reasoning="Fallback mode (LLM unavailable)",
+            reasoning="Fallback mode (OPENAI_API_KEY not set)",
         )
+    else:
+        try:
+            agent = _get_traversal_agent()
+            result = _run_agent_with_retry(agent, prompt)
+            decision = result.output
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except (ModelHTTPError, ModelAPIError, AgentRunError) as e:
+            # Known LLM errors - fallback gracefully
+            logger.warning(
+                f"LLM agent error, using fallback: {type(e).__name__}: {e}"
+            )
+            has_answer = any(
+                w in doc.get("content", "").lower()
+                for w in query.lower().split()
+            )
+            decision = TraversalDecision(
+                has_answer=has_answer,
+                answer=doc.get("content", "")[:200] if has_answer else "",
+                traverse_to=related[:2] if not has_answer else [],
+                reasoning=f"Fallback mode ({type(e).__name__})",
+            )
+        except Exception as e:
+            # Unexpected errors - log with full traceback but still fallback
+            logger.exception(f"Unexpected error in LLM agent: {e}")
+            has_answer = any(
+                w in doc.get("content", "").lower()
+                for w in query.lower().split()
+            )
+            decision = TraversalDecision(
+                has_answer=has_answer,
+                answer=doc.get("content", "")[:200] if has_answer else "",
+                traverse_to=related[:2] if not has_answer else [],
+                reasoning="Fallback mode (unexpected error)",
+            )
+
+    # Validate traverse_to IDs to prevent hallucinated document references
+    validated_traverse_to = _validate_traverse_to(
+        decision.traverse_to, related=related, docs=docs
+    )
 
     result_dict = {
         "doc_id": doc_id,
@@ -238,7 +372,7 @@ def traverse_node(
         "budget": budget - 1,
     }
 
-    return result_dict, decision.traverse_to
+    return result_dict, validated_traverse_to
 
 
 @step
