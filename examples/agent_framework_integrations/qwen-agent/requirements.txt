@@ -1,4 +1,7 @@
-qwen-agent>=0.0.10
+# qwen-agent 0.0.32 has a SyntaxError bug in tools/mcp_manager.py
+# See: https://github.com/QwenLM/Qwen-Agent/issues/768
+# Remove this cap once a fixed version is released
+qwen-agent>=0.0.10,<0.0.32
 openai>=1.0.0
 zenml[local]
 json5>=0.9
