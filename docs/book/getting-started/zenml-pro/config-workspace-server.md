@@ -3,6 +3,11 @@ description: Configuration reference for the ZenML Workspace Server.
 icon: database
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Workspace Server Configuration
 
 This page provides the configuration reference for the ZenML Workspace Server, including the workload manager that enables running pipelines from the UI. For an overview of what the Workspace Server does, see [System Architecture](system-architecture.md#workspace-server).

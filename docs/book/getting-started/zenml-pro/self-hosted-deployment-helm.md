@@ -13,6 +13,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Self-hosted Deployment on Kubernetes with Helm
 
 This guide provides step-by-step instructions for deploying ZenML Pro in a fully air-gapped setup on Kubernetes using Helm charts. In an air-gapped deployment, all components run within your infrastructure with zero external dependencies.

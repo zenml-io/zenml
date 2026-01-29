@@ -3,6 +3,11 @@ description: Trigger pipelines from the dashboard, SDK, CLI, or REST API.
 icon: camera
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Snapshots
 
 A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots enable you to trigger pipeline runs without direct access to the codebase—from the ZenML Pro dashboard, Python SDK, CLI, or REST API.
