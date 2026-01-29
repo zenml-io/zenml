@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field, field_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -435,6 +436,33 @@ class ComponentFilter(UserScopedFilter):
         """
         self.scope_type = component_type
 
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from sqlmodel import col
+
+        from zenml.zen_stores.schemas import StackComponentSchema
+
+        query = super().apply_filter(query=query, table=table)
+
+        if self.scope_type:
+            query = query.where(
+                col(StackComponentSchema.type) == self.scope_type
+            )
+
+        return query
+
     def get_custom_filters(
         self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
@@ -451,16 +479,12 @@ class ComponentFilter(UserScopedFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_, col
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
             StackCompositionSchema,
         )
-
-        if self.scope_type:
-            type_filter = col(StackComponentSchema.type) == self.scope_type
-            custom_filters.append(type_filter)
 
         if self.stack_id:
             stack_filter = and_(
