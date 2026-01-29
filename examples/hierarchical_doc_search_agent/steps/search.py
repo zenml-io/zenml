@@ -15,6 +15,7 @@
 # limitations under the License.
 """Search steps for hierarchical document traversal."""
 
+import html
 import json
 import logging
 import os
@@ -53,7 +54,11 @@ def _get_traversal_agent() -> Any:
             decide whether this document answers the query or if you should explore related documents.
 
             If the document answers the query: set has_answer=True and provide the answer.
-            If not: set has_answer=False and list document IDs to explore in traverse_to.""",
+            If not: set has_answer=False and list document IDs to explore in traverse_to.
+
+            IMPORTANT: You MUST only output document IDs that appear in the provided 'Related documents'
+            list. Do not invent or hallucinate document IDs. If no related documents are relevant,
+            return an empty traverse_to list.""",
         )
     return _traversal_agent
 
@@ -127,8 +132,9 @@ def _validate_traverse_to(
     related: List[str],
     docs: Dict[str, Any],
 ) -> List[str]:
-    """Filter traversal targets to permitted document IDs only."""
-    allowed = set(related) | set(docs.keys())
+    """Filter traversal targets to IDs that are both related AND exist in the graph."""
+    # Only allow IDs that are BOTH in the related list AND exist in the document graph
+    allowed = set(related) & set(docs.keys())
     seen: set[str] = set()
     result: List[str] = []
     for doc_id in traverse_to:
@@ -277,11 +283,15 @@ def traverse_node(
     doc = docs[doc_id]
     visited = visited + [doc_id]
 
-    # Get related documents
+    # Get related documents (pre-filter to only those that exist in the graph)
     rels = doc.get("relationships", {})
-    related = []
+    related_raw: List[str] = []
     for rel_list in rels.values():
-        related.extend(rel_list if isinstance(rel_list, list) else [])
+        related_raw.extend(rel_list if isinstance(rel_list, list) else [])
+    # Filter to only IDs that actually exist in the document graph
+    related = [
+        rid for rid in related_raw if isinstance(rid, str) and rid in docs
+    ]
 
     # Truncate content to avoid context length errors
     content = _truncate_text(doc.get("content"), max_chars=2000)
@@ -402,19 +412,40 @@ def aggregate_results(
     }
 
 
+def _escape_html(value: Any) -> str:
+    """HTML-escape a value for safe embedding into HTML text nodes."""
+    if value is None:
+        return ""
+    return html.escape(str(value))
+
+
 @step
 def create_report(results: Dict[str, Any]) -> Annotated[HTMLString, "report"]:
-    """Generate HTML visualization."""
-    html = f"""
-    <h2>Search: {results["query"]}</h2>
-    <p><b>Type:</b> {results["type"]} | <b>Agents:</b> {results.get("agents_used", 0)} |
-       <b>Docs explored:</b> {results.get("documents_explored", len(results.get("results", [])))}</p>
+    """Generate HTML visualization.
+
+    Note: All user/LLM-derived content is escaped to prevent XSS attacks.
+    """
+    query_safe = _escape_html(results.get("query", ""))
+    search_type_safe = _escape_html(results.get("type", ""))
+    agents_used = results.get("agents_used", 0)
+    docs_explored = results.get(
+        "documents_explored", len(results.get("results", []))
+    )
+
+    report_html = f"""
+    <h2>Search: {query_safe}</h2>
+    <p><b>Type:</b> {search_type_safe} | <b>Agents:</b> {agents_used} |
+       <b>Docs explored:</b> {docs_explored}</p>
     <hr>
     """
     for r in results.get("results", []):
-        html += "<div style='margin:10px;padding:10px;border:1px solid #ccc'>"
-        html += f"<b>{r.get('title', r.get('doc_id'))}</b><br>"
+        title_safe = _escape_html(r.get("title") or r.get("doc_id", ""))
+        report_html += (
+            "<div style='margin:10px;padding:10px;border:1px solid #ccc'>"
+        )
+        report_html += f"<b>{title_safe}</b><br>"
         if r.get("answer"):
-            html += f"<p>{r['answer']}</p>"
-        html += "</div>"
-    return HTMLString(html)
+            answer_safe = _escape_html(r["answer"])
+            report_html += f"<p>{answer_safe}</p>"
+        report_html += "</div>"
+    return HTMLString(report_html)
