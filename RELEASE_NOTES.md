@@ -1,5 +1,34 @@
 <!-- markdown-link-check-disable -->
 
+# 0.93.2
+
+## What's Changed
+* Add version 0.93.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4391
+* Add 0.93.1 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4393
+* Add documentation for schedule activate/deactivate and archiving by @strickvl in https://github.com/zenml-io/zenml/pull/4396
+* Fix release flow by @schustmi in https://github.com/zenml-io/zenml/pull/4394
+* Disable the use of secure cookies with HTTP by @stefannica in https://github.com/zenml-io/zenml/pull/4399
+* Fix incorrect claims about ZenML not supporting schedule updates by @strickvl in https://github.com/zenml-io/zenml/pull/4400
+* Fix broken Neptune documentation links and add deprecation notice by @strickvl in https://github.com/zenml-io/zenml/pull/4403
+* Optimize Claude Code workflow to skip early without `@claude` mention by @strickvl in https://github.com/zenml-io/zenml/pull/4404
+* Much better Pro docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4263
+* Store ZenML version in environment dict by @schustmi in https://github.com/zenml-io/zenml/pull/4415
+* Implement endpoint to download snapshot code by @schustmi in https://github.com/zenml-io/zenml/pull/4401
+* DAG step groups by @schustmi in https://github.com/zenml-io/zenml/pull/4375
+* Document private secrets behavior in secrets documentation by @strickvl in https://github.com/zenml-io/zenml/pull/4417
+* Track exception info for dynamic pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4395
+* Set pipeline environment for dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4420
+* Fix snack-it workflow permission to comment on PRs by @strickvl in https://github.com/zenml-io/zenml/pull/4425
+* Fix unknown column warning in schedule list CLI by @strickvl in https://github.com/zenml-io/zenml/pull/4429
+* Add ZenML Quick Wins skill for Claude Code by @strickvl in https://github.com/zenml-io/zenml/pull/4426
+* Add missing index to the snapshot table by @stefannica in https://github.com/zenml-io/zenml/pull/4431
+* Add comprehensive GitHub Actions security hardening with zizmor by @strickvl in https://github.com/zenml-io/zenml/pull/4421
+* Faster merging of step and pipeline config by @schustmi in https://github.com/zenml-io/zenml/pull/4434
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.1...0.93.2
+
+
 > **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
 
 ---
