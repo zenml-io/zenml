@@ -19,7 +19,8 @@ ZenML controls: fan-out, budget limits, step orchestration
 Pydantic AI controls: agent decisions (traverse deeper or return answer?)
 """
 
-from typing import Annotated, Any, Dict, List, Tuple
+from collections import deque
+from typing import Annotated, Any, Deque, Dict, List, Tuple
 
 from steps import (
     aggregate_results,
@@ -92,10 +93,11 @@ def hierarchical_search_pipeline(
 
         # Tuple: (doc_id_chunk, budget, visited)
         # .chunk(idx) creates DAG edge AND provides the doc_id value
-        pending: List[Tuple[Any, int, List[str]]] = [
+        # Using deque for O(1) popleft() instead of list.pop(0) which is O(n)
+        pending: Deque[Tuple[Any, int, List[str]]] = deque(
             (seed_nodes.chunk(idx), max_depth, [])
             for idx in range(len(seed_nodes.load()))
-        ]
+        )
 
         # Configure traverse_node step to use query as a parameter
         traverse_node_step = traverse_node.with_options(
@@ -103,7 +105,7 @@ def hierarchical_search_pipeline(
         )
 
         while pending:
-            doc_id_chunk, budget, visited = pending.pop(0)
+            doc_id_chunk, budget, visited = pending.popleft()
 
             result, traverse_to = traverse_node_step(
                 doc_id=doc_id_chunk,  # Artifact chunk - DAG edge + value

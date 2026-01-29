@@ -164,34 +164,56 @@ def _validate_traverse_to(
 
 
 def _load_documents() -> Dict[str, Any]:
-    """Load document graph from JSON file."""
+    """Load document graph from JSON file.
+
+    Tries multiple paths and handles various error conditions gracefully,
+    continuing to fallback paths on failure.
+    """
     search_paths = [
         Path(__file__).parent.parent / "data" / "doc_graph.json",
         Path("/app/data/doc_graph.json"),  # Docker container path
         Path("data/doc_graph.json"),  # Relative fallback
     ]
     for doc_path in search_paths:
-        if doc_path.exists():
-            try:
-                raw = doc_path.read_text(encoding="utf-8")
-                data: Dict[str, Any] = json.loads(raw)
-                docs: Dict[str, Any] = data["documents"]
-                return docs
-            except json.JSONDecodeError as e:
-                # Provide helpful context for debugging malformed JSON
-                lines = raw.splitlines()
-                error_line = lines[e.lineno - 1] if e.lineno <= len(lines) else ""
-                # Truncate long lines for readability
-                if len(error_line) > 120:
-                    error_line = error_line[:120] + "..."
-                logger.error(
-                    f"Invalid JSON in {doc_path} at line {e.lineno}, "
-                    f"column {e.colno}: {e.msg}\n"
-                    f"  Line content: {error_line}"
-                )
-                # Continue to try other paths
-                continue
-    logger.warning(f"Document graph not found or invalid in any of: {search_paths}")
+        if not doc_path.exists():
+            continue
+        raw: str = ""
+        try:
+            raw = doc_path.read_text(encoding="utf-8")
+        except OSError as e:
+            # Handle permission errors, transient FS issues, etc.
+            logger.warning(f"Could not read {doc_path}: {e}")
+            continue
+
+        try:
+            data: Dict[str, Any] = json.loads(raw)
+        except json.JSONDecodeError as e:
+            # Provide helpful context for debugging malformed JSON
+            lines = raw.splitlines()
+            error_line = lines[e.lineno - 1] if e.lineno <= len(lines) else ""
+            # Truncate long lines for readability
+            if len(error_line) > 120:
+                error_line = error_line[:120] + "..."
+            logger.error(
+                f"Invalid JSON in {doc_path} at line {e.lineno}, "
+                f"column {e.colno}: {e.msg}\n"
+                f"  Line content: {error_line}"
+            )
+            continue
+
+        # Validate schema: "documents" key must exist and be a dict
+        try:
+            docs = data["documents"]
+            if not isinstance(docs, dict):
+                raise TypeError("'documents' must be a JSON object (dict)")
+            return docs
+        except (KeyError, TypeError) as e:
+            logger.warning(f"Invalid schema in {doc_path}: {e}")
+            continue
+
+    logger.warning(
+        f"Document graph not found or invalid in any of: {search_paths}"
+    )
     return {}
 
 

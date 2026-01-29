@@ -8,7 +8,7 @@ This example splits responsibilities between two systems:
 
 | ZenML Controls | Pydantic AI Controls |
 |----------------|---------------------|
-| Fan-out (spawn N agents) | "Does this document answer the query?" |
+| Breadth (how many starting docs) | "Does this document answer the query?" |
 | Budget/depth limits | "Should I traverse deeper?" |
 | Step orchestration & DAG | "Which documents to explore next?" |
 | Artifact tracking | Natural language reasoning |
@@ -39,7 +39,10 @@ detect_intent
 
 ## Quick Start
 
+**Important:** Run commands from within this example directory:
+
 ```bash
+cd examples/hierarchical_doc_search_agent
 pip install -r requirements.txt
 export OPENAI_API_KEY="your-api-key"
 zenml init && zenml login
@@ -50,7 +53,7 @@ python run.py --query "What is Python?"
 # Deep query (agents traverse the document graph)
 python run.py --query "How does quantum computing relate to machine learning?"
 
-# Control fan-out and depth
+# Control breadth and depth
 python run.py --query "Compare ML approaches" --max-agents 5 --max-depth 3
 ```
 
@@ -60,20 +63,30 @@ python run.py --query "Compare ML approaches" --max-agents 5 --max-depth 3
 
 This is the most important section. Dynamic pipelines change how you handle **Artifacts vs. Parameters**.
 
-### 1. Parameters vs. Artifacts: Use `.with_options()`
+### 1. Parameters vs. Artifacts: When to Use `.with_options()`
 
-In dynamic pipelines, ZenML assumes step inputs are **Artifacts** (creating DAG edges). To pass a raw value as a **Parameter**, use `.with_options()`:
+In dynamic pipelines, you often mix **artifact-derived values** (outputs from upstream steps that create DAG edges) with **plain Python values** (pipeline inputs, computed values).
+
+Use `.with_options(parameters={...})` when you want to **explicitly mark** a value as a pipeline parameter. This is especially useful when:
+- The value comes from a `.load()` call (dynamically retrieved artifact data)
+- You want to force parameter semantics inside loops or dynamic control flow
+- You want clearer separation between DAG edges and configuration values
 
 ```python
-# ❌ WRONG: ZenML expects 'query' to be an artifact from upstream
-traverse_node(doc_id=..., query=query)
-
-# ✅ CORRECT: Explicitly define 'query' as a parameter
+# Explicitly mark 'query' as a parameter (not an artifact dependency)
 traverse_node_step = traverse_node.with_options(
     parameters={"query": query}
 )
-traverse_node_step(doc_id=..., budget=..., visited=...)
+
+# Now call the step - doc_id creates a DAG edge, query is a parameter
+traverse_node_step(
+    doc_id=seed_nodes.chunk(idx),  # Artifact chunk → DAG edge
+    budget=budget,                  # Plain value
+    visited=visited,                # Plain value
+)
 ```
+
+**Note:** Simple values like `budget` and `visited` work fine without `.with_options()` — ZenML handles them as parameters automatically. The explicit form is most useful for clarity and when values originate from dynamic contexts.
 
 ### 2. The `.chunk()` vs `.load()` Pattern
 
@@ -85,17 +98,20 @@ When looping through artifact lists, you need two different operations:
 | `.load()` | Gets the **actual value** | Make control-flow decisions |
 
 ```python
+from collections import deque
+
 # Get seed documents from plan_search step
 seed_nodes = plan_search(query=query, ...)
 
 # Build initial queue using BOTH patterns:
-pending = [
+# Using deque for efficient O(1) popleft() instead of list.pop(0)
+pending = deque(
     (seed_nodes.chunk(idx), max_depth, [])  # .chunk() for DAG edge
     for idx in range(len(seed_nodes.load()))  # .load() to get count
-]
+)
 
 while pending:
-    doc_id_chunk, budget, visited = pending.pop(0)
+    doc_id_chunk, budget, visited = pending.popleft()
 
     # Pass the chunk as input (creates DAG edge)
     result, traverse_to = traverse_node_step(
@@ -126,7 +142,7 @@ while pending:
 
 1. **Intent Detection** — Classifies query as "simple" or "deep"
 2. **Plan Search** — Finds starting documents (seed nodes)
-3. **Fan-out** — Spawns traversal agents for each seed
+3. **Breadth Expansion** — Creates traversal steps for each seed document
 4. **Agent Decision** — Pydantic AI decides: answer found or traverse deeper?
 5. **Dynamic Expansion** — If "traverse", new steps are added to the DAG
 6. **Aggregate** — Combines all findings into final results

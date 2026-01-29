@@ -563,7 +563,7 @@
             <button id="search-btn" class="btn">Search</button>
           </div>
           <div class="form-row">
-            <span class="input-label">Max Agents:</span>
+            <span class="input-label">Max Breadth:</span>
             <input
               id="max-agents"
               class="input input-small"
@@ -631,6 +631,12 @@
         marked.setOptions({ gfm: true, breaks: true });
       }
 
+      // Debug mode: append ?debug to URL to enable verbose console logging
+      const DEBUG = new URLSearchParams(window.location.search).has("debug");
+      function debugLog(...args) {
+        if (DEBUG) console.log(...args);
+      }
+
       const INVOKE_URL = {{ service_info.app.invoke_url_path | tojson }};
       const AUTH_ENABLED = {{ 'true' if service_info.deployment.auth_enabled else 'false' }};
 
@@ -693,8 +699,8 @@
         const maxDepth = parseInt(maxDepthInput.value) || 2;
 
         setLoading(true);
-        metricsEl.innerHTML = "";
-        resultsEl.innerHTML = "";
+        metricsEl.replaceChildren();
+        resultsEl.replaceChildren();
 
         try {
           const headers = { "Content-Type": "application/json" };
@@ -719,7 +725,7 @@
           }
 
           const data = await res.json();
-          console.log("Response data:", JSON.stringify(data, null, 2));
+          debugLog("Response data:", JSON.stringify(data, null, 2));
 
           if (!data.success) {
             const err = data.error || "Unknown error from service.";
@@ -727,8 +733,8 @@
           }
 
           const outputs = data.outputs || {};
-          console.log("Outputs:", JSON.stringify(outputs, null, 2));
-          console.log("Output keys:", Object.keys(outputs));
+          debugLog("Outputs:", JSON.stringify(outputs, null, 2));
+          debugLog("Output keys:", Object.keys(outputs));
 
           const searchKey = Object.keys(outputs).find((k) =>
             k.includes("search_results")
@@ -742,7 +748,7 @@
           }
 
           const searchResults = outputs[searchKey];
-          console.log("Search results:", JSON.stringify(searchResults, null, 2));
+          debugLog("Search results:", JSON.stringify(searchResults, null, 2));
 
           renderMetrics(searchResults);
           renderResults(searchResults);
@@ -802,8 +808,12 @@
         const searchType = data.type || "unknown";
         const isSimple = searchType === "simple";
 
-        const tiles = [];
-        tiles.push(
+        // Create grid container
+        const grid = document.createElement("div");
+        grid.className = "metrics-grid";
+
+        // Build tiles using DOM APIs (avoids innerHTML for dynamic values)
+        grid.appendChild(
           renderMetricTile(
             "Search Type",
             isSimple ? "Simple" : "Deep",
@@ -811,7 +821,7 @@
             isSimple ? "sev-simple" : "sev-deep"
           )
         );
-        tiles.push(
+        grid.appendChild(
           renderMetricTile(
             "Agents Used",
             String(data.agents_used || 0),
@@ -819,7 +829,7 @@
             ""
           )
         );
-        tiles.push(
+        grid.appendChild(
           renderMetricTile(
             "Docs Explored",
             String(data.documents_explored || data.results?.length || 0),
@@ -827,7 +837,7 @@
             ""
           )
         );
-        tiles.push(
+        grid.appendChild(
           renderMetricTile(
             "Results Found",
             String(data.results?.length || 0),
@@ -836,24 +846,36 @@
           )
         );
 
-        metricsEl.innerHTML = `
-          <div class="metrics-grid">
-            ${tiles.join("")}
-          </div>
-        `;
+        // Replace contents without innerHTML parsing
+        metricsEl.replaceChildren(grid);
       }
 
       function renderMetricTile(label, value, iconSvg, sevClass) {
-        const classes = `metric-card ${sevClass}`;
-        return `
-          <div class="${classes}">
-            <div class="metric-icon">${iconSvg}</div>
-            <div class="metric-content">
-              <div class="metric-label">${label}</div>
-              <div class="metric-value">${value}</div>
-            </div>
-          </div>
-        `;
+        // Build tile using DOM APIs - textContent for dynamic values (XSS-safe)
+        const card = document.createElement("div");
+        card.className = "metric-card" + (sevClass ? " " + sevClass : "");
+
+        const iconEl = document.createElement("div");
+        iconEl.className = "metric-icon";
+        iconEl.innerHTML = iconSvg; // Trusted constant SVG
+
+        const content = document.createElement("div");
+        content.className = "metric-content";
+
+        const labelEl = document.createElement("div");
+        labelEl.className = "metric-label";
+        labelEl.textContent = label; // Safe: textContent
+
+        const valueEl = document.createElement("div");
+        valueEl.className = "metric-value";
+        valueEl.textContent = value; // Safe: textContent
+
+        content.appendChild(labelEl);
+        content.appendChild(valueEl);
+        card.appendChild(iconEl);
+        card.appendChild(content);
+
+        return card;
       }
 
       function renderResults(data) {

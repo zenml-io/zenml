@@ -31,7 +31,11 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--query", "-q", required=True, help="Search query")
     parser.add_argument(
-        "--max-agents", "-a", type=int, default=3, help="Max parallel agents"
+        "--max-agents",
+        "-a",
+        type=int,
+        default=3,
+        help="Max breadth (number of starting documents to explore)",
     )
     parser.add_argument(
         "--max-depth", "-d", type=int, default=2, help="Max traversal depth"
