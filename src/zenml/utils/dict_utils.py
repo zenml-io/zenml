@@ -21,22 +21,27 @@ from zenml.utils.json_utils import pydantic_encoder
 
 
 def recursive_update(
-    original: Dict[str, Any], update: Dict[str, Any]
+    original: Dict[str, Any], update: Dict[str, Any], ignore_none: bool = False
 ) -> Dict[str, Any]:
     """Recursively updates a dictionary.
 
     Args:
         original: The dictionary to update.
         update: The dictionary containing the updated values.
+        ignore_none: Ignore `None` values in the update.
 
     Returns:
         The updated dictionary.
     """
     for key, value in update.items():
+        if ignore_none and value is None:
+            continue
         if isinstance(value, Dict):
             original_value = original.get(key, None) or {}
             if isinstance(original_value, Dict):
-                original[key] = recursive_update(original_value, value)
+                original[key] = recursive_update(
+                    original_value, value, ignore_none
+                )
             else:
                 original[key] = value
         else:
