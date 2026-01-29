@@ -19,7 +19,6 @@ ZenML controls: fan-out, budget limits, step orchestration
 Pydantic AI controls: agent decisions (traverse deeper or return answer?)
 """
 
-import os
 from typing import Annotated, Any, Dict, List, Tuple
 
 from steps import (
@@ -44,7 +43,7 @@ docker_settings = DockerSettings(
     requirements="requirements.txt",
     environment={
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
-        "LLM_MODEL": os.getenv("LLM_MODEL", "openai:gpt-4o-mini"),
+        "LLM_MODEL": "${LLM_MODEL}",
     },
 )
 
@@ -74,6 +73,10 @@ def hierarchical_search_pipeline(
     - Pydantic AI controls: agent decisions at each node
     - Each traverse_node call appears as a separate step in the DAG
     """
+    # Validate and clamp inputs to prevent abuse (negative slices, resource exhaustion)
+    max_agents = min(max(max_agents, 1), 10)
+    max_depth = min(max(max_depth, 1), 5)
+
     search_type = detect_intent(query=query)
 
     if search_type.load() == "simple":

@@ -631,7 +631,7 @@
         marked.setOptions({ gfm: true, breaks: true });
       }
 
-      const INVOKE_URL = "{{ service_info.app.invoke_url_path }}";
+      const INVOKE_URL = {{ service_info.app.invoke_url_path | tojson }};
       const AUTH_ENABLED = {{ 'true' if service_info.deployment.auth_enabled else 'false' }};
 
       const queryInput = document.getElementById("query-input");
@@ -779,15 +779,15 @@
         if (entered === "********") return;
         const trimmed = (entered || "").trim();
         if (!trimmed) {
-          localStorage.removeItem(API_KEY_STORAGE);
+          sessionStorage.removeItem(API_KEY_STORAGE);
         } else {
-          localStorage.setItem(API_KEY_STORAGE, trimmed);
+          sessionStorage.setItem(API_KEY_STORAGE, trimmed);
         }
         updateAuthStatus();
       }
 
       function getApiKey() {
-        return localStorage.getItem(API_KEY_STORAGE);
+        return sessionStorage.getItem(API_KEY_STORAGE);
       }
 
       function updateAuthStatus() {
@@ -875,7 +875,7 @@
             return `
             <div class="result-card">
               <div class="result-title">${escapeHtml(title)}</div>
-              ${answer ? `<div class="result-answer">${escapeHtml(answer)}</div>` : ""}
+              ${answer ? `<div class="result-answer">${renderMarkdownSafe(answer)}</div>` : ""}
               ${score ? `<div class="result-meta">${score}</div>` : ""}
             </div>
           `;
@@ -892,6 +892,15 @@
         const div = document.createElement("div");
         div.textContent = text;
         return div.innerHTML;
+      }
+
+      function renderMarkdownSafe(md) {
+        // Render markdown with sanitization for XSS protection
+        if (typeof marked === "undefined" || typeof DOMPurify === "undefined") {
+          return escapeHtml(md || "");
+        }
+        const html = marked.parse(md || "");
+        return DOMPurify.sanitize(html);
       }
 
       // Icons

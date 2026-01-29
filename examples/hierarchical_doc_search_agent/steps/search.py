@@ -99,9 +99,20 @@ def _run_agent_with_retry(
             return agent.run_sync(prompt)
         except (KeyboardInterrupt, SystemExit):
             raise
-        except (ModelHTTPError, ModelAPIError, AgentRunError) as e:
+        except (
+            ModelHTTPError,
+            ModelAPIError,
+            AgentRunError,
+            TimeoutError,
+            ConnectionError,
+            OSError,
+        ) as e:
             last_exception = e
-            if not _is_transient_error(e) or attempt == max_retries:
+            # Check if this is a transient error (or wrapped transient error)
+            is_transient = _is_transient_error(e)
+            if hasattr(e, "__cause__") and e.__cause__:
+                is_transient = is_transient or _is_transient_error(e.__cause__)
+            if not is_transient or attempt == max_retries:
                 raise
             # Exponential backoff with jitter
             delay = min(max_backoff_s, initial_backoff_s * (2**attempt))
@@ -323,7 +334,8 @@ def traverse_node(
             _llm_unavailable_logged = True
         # Fallback to keyword matching
         has_answer = any(
-            w in doc.get("content", "").lower() for w in query.lower().split()
+            w in (doc.get("content") or "").lower()
+            for w in query.lower().split()
         )
         decision = TraversalDecision(
             has_answer=has_answer,

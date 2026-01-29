@@ -153,7 +153,7 @@ def cartesian_example():
     a = int_values()
     b = str_values()
     # Produces 2 * 3 = 6 mapped steps
-    combine.product(a, b)
+    do_something.product(a=a, b=b)
 ```
 
 #### Broadcasting inputs with unmapped(...)
