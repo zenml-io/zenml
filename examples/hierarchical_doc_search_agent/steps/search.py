@@ -64,7 +64,13 @@ def _get_traversal_agent() -> Any:
 
 
 def _llm_available() -> bool:
-    """Check if LLM calls should be attempted (API key present)."""
+    """Check if LLM calls should be attempted (API key present).
+
+    Note: This checks for OPENAI_API_KEY regardless of LLM_MODEL setting.
+    The example assumes OpenAI-compatible models. For other providers,
+    modify this check or set OPENAI_API_KEY to a valid API key for your
+    provider if it uses the OpenAI-compatible API format.
+    """
     return bool(os.getenv("OPENAI_API_KEY", "").strip())
 
 

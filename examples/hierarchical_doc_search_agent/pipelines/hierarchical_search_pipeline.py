@@ -95,7 +95,7 @@ def hierarchical_search_pipeline(
         # .chunk(idx) creates DAG edge AND provides the doc_id value
         # Using deque for O(1) popleft() instead of list.pop(0) which is O(n)
         pending: Deque[Tuple[Any, int, List[str]]] = deque(
-            (seed_nodes.chunk(idx), max_depth, [])
+            (seed_nodes.chunk(index=idx), max_depth, [])
             for idx in range(len(seed_nodes.load()))
         )
 
@@ -125,10 +125,10 @@ def hierarchical_search_pipeline(
                 for idx in range(min(2, len(traverse_to_data))):
                     next_doc = traverse_to_data[idx]
                     if next_doc not in result_data["visited"]:
-                        # traverse_to.chunk(idx) becomes doc_id for follow-up
+                        # traverse_to.chunk(index=idx) becomes doc_id for follow-up
                         pending.append(
                             (
-                                traverse_to.chunk(idx),
+                                traverse_to.chunk(index=idx),
                                 result_data["budget"],
                                 result_data["visited"],
                             )

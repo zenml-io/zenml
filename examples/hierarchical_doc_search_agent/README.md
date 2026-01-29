@@ -94,7 +94,7 @@ When looping through artifact lists, you need two different operations:
 
 | Method | Purpose | When to Use |
 |--------|---------|-------------|
-| `.chunk(idx)` | Creates a **DAG edge** | Pass to downstream steps |
+| `.chunk(index=idx)` | Creates a **DAG edge** | Pass to downstream steps |
 | `.load()` | Gets the **actual value** | Make control-flow decisions |
 
 ```python
@@ -106,7 +106,7 @@ seed_nodes = plan_search(query=query, ...)
 # Build initial queue using BOTH patterns:
 # Using deque for efficient O(1) popleft() instead of list.pop(0)
 pending = deque(
-    (seed_nodes.chunk(idx), max_depth, [])  # .chunk() for DAG edge
+    (seed_nodes.chunk(index=idx), max_depth, [])  # .chunk() for DAG edge
     for idx in range(len(seed_nodes.load()))  # .load() to get count
 )
 
@@ -128,7 +128,7 @@ while pending:
         for idx in range(len(traverse_to_data)):
             # Use .chunk() again for the next iteration
             pending.append((
-                traverse_to.chunk(idx),
+                traverse_to.chunk(index=idx),
                 result_data["budget"],
                 result_data["visited"],
             ))

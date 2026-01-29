@@ -624,7 +624,7 @@
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.6/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
     <script>
       if (typeof marked !== "undefined" && typeof marked.setOptions === "function") {
@@ -892,13 +892,15 @@
           .map((r) => {
             const title = r.title || r.doc_id || "Unknown Document";
             const answer = r.answer || "";
-            const score = r.score ? `Score: ${(r.score * 100).toFixed(0)}%` : "";
+            // Validate score is numeric before formatting to prevent XSS
+            const scoreNum = typeof r.score === "number" ? r.score : parseFloat(r.score);
+            const score = !isNaN(scoreNum) ? `Score: ${(scoreNum * 100).toFixed(0)}%` : "";
 
             return `
             <div class="result-card">
               <div class="result-title">${escapeHtml(title)}</div>
               ${answer ? `<div class="result-answer">${renderMarkdownSafe(answer)}</div>` : ""}
-              ${score ? `<div class="result-meta">${score}</div>` : ""}
+              ${score ? `<div class="result-meta">${escapeHtml(score)}</div>` : ""}
             </div>
           `;
           })
