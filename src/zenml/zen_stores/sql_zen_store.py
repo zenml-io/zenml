@@ -2481,7 +2481,7 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    def cleanup_expired_api_transactions(self) -> int:
+    def cleanup_expired_api_transactions(self) -> None:
         """Delete completed API transactions that have expired."""
         with Session(self.engine) as session:
             session.execute(
@@ -2620,12 +2620,6 @@ class SqlZenStore(BaseZenStore):
                 )
             )
             session.commit()
-
-            # NOTE: we intentionally do not care about the result record here
-            # because this function is never called on API transactions that
-            # have a result stored in the database. Result records are always
-            # deleted separately, en masse, to avoid blocking the API request
-            # treads.
 
     # -------------------- Services --------------------
 

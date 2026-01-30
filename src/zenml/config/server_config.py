@@ -251,17 +251,8 @@ class ServerConfiguration(BaseModel):
         server_request_timeout: The timeout for server requests in seconds. If
             not specified, the default value of 20 seconds will be used. This
             value should be lower than the client's request timeout.
-        api_transaction_cleanup_batch_size: The initial batch size for cleaning
-            up expired API transactions.
         api_transaction_cleanup_interval: The interval in seconds between
             cleanup batches.
-        api_transaction_cleanup_min_batch_size: The minimum batch size for the
-            adaptive cleanup algorithm.
-        api_transaction_cleanup_max_batch_size: The maximum batch size for the
-            adaptive cleanup algorithm.
-        api_transaction_cleanup_target_duration: The target duration in seconds
-            for each cleanup batch. The batch size is adjusted to try to meet
-            this target.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER

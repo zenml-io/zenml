@@ -1,7 +1,7 @@
 """add api transaction result table [73c397e3c3ba].
 
 Revision ID: 73c397e3c3ba
-Revises: d1e8c2c4a9ef
+Revises: 0.93.2
 Create Date: 2026-01-23 18:51:29.944099
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
 # revision identifiers, used by Alembic.
 revision = "73c397e3c3ba"
-down_revision = "d1e8c2c4a9ef"
+down_revision = "0.93.2"
 branch_labels = None
 depends_on = None
 
