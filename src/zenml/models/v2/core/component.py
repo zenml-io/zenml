@@ -29,9 +29,8 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import StackComponentType
+from zenml.enums import LogicalOperators, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -436,61 +435,40 @@ class ComponentFilter(UserScopedFilter):
         """
         self.scope_type = component_type
 
-    def apply_filter(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        from sqlmodel import col
-
-        from zenml.zen_stores.schemas import StackComponentSchema
-
-        query = super().apply_filter(query=query, table=table)
-
-        if self.scope_type:
-            query = query.where(
-                col(StackComponentSchema.type) == self.scope_type
-            )
-
-        return query
-
-    def get_custom_filters(
+    def generate_filter(
         self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
+    ) -> Union["ColumnElement[bool]"]:
+        """Generate the filter for the query.
 
-        This can be overridden by subclasses to define custom filters that are
-        not based on the columns of the underlying table.
+        Stack components can be scoped by type to narrow the search.
 
         Args:
-            table: The query table.
+            table: The Table that is being queried from.
 
         Returns:
-            A list of custom filters.
+            The filter expression for the query.
         """
-        custom_filters = super().get_custom_filters(table)
-
-        from sqlmodel import and_
+        from sqlmodel import and_, or_
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
             StackCompositionSchema,
         )
 
+        base_filter = super().generate_filter(table)
+        if self.scope_type:
+            type_filter = getattr(table, "type") == self.scope_type
+            return and_(base_filter, type_filter)
+
         if self.stack_id:
+            operator = (
+                or_ if self.logical_operator == LogicalOperators.OR else and_
+            )
+
             stack_filter = and_(
                 StackCompositionSchema.stack_id == self.stack_id,
                 StackCompositionSchema.component_id == StackComponentSchema.id,
             )
-            custom_filters.append(stack_filter)
+            base_filter = operator(base_filter, stack_filter)
 
-        return custom_filters
+        return base_filter
