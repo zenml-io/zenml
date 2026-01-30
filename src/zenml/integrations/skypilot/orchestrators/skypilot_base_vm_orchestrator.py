@@ -411,7 +411,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 )
                 assert settings.cluster_name is not None
                 return sky_job_get(
-                    exec_request_id, settings.stream_logs, settings.cluster_name
+                    exec_request_id,
+                    settings.stream_logs,
+                    settings.cluster_name,
                 )
 
         except Exception as e:
