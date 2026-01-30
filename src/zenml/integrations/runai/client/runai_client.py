@@ -101,9 +101,6 @@ class RunAIClient:
             client_id: Run:AI client ID for authentication.
             client_secret: Run:AI client secret for authentication.
             runai_base_url: Run:AI control plane base URL.
-
-        Raises:
-            RuntimeError: If the runapy package is not installed.
         """
         self._raw_client = self._create_client(
             client_id, client_secret, runai_base_url

@@ -313,7 +313,7 @@ class RunAIStepOperator(BaseStepOperator):
             info: Step run information.
 
         Returns:
-            A valid Run:AI workload name.
+            A unique workload name string conforming to Run:AI naming requirements.
         """
         step_name = info.pipeline_step_name.lower().replace("_", "-")
         pipeline_name = info.pipeline.name.lower().replace("_", "-")
