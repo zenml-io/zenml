@@ -246,10 +246,6 @@ class RunAIStepOperator(BaseStepOperator):
                 "Verify credentials, project name, cluster access, and quota."
             ) from exc
 
-        logger.info(
-            "Waiting for Run:AI workload '%s' to complete...",
-            workload_name,
-        )
         self._wait_for_completion(client, result.workload_id)
         logger.info("Run:AI step operator job completed.")
 
