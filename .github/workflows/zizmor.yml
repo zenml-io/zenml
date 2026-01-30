@@ -32,6 +32,24 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
       - name: Run zizmor
-        run: uvx zizmor --format=github --config=.github/zizmor.yml .github/workflows/
+        run: |
+          echo "============================================================"
+          echo "🔒 Zizmor: GitHub Actions Security Scanner"
+          echo "============================================================"
+          echo ""
+          echo "This check scans workflow files for security issues like:"
+          echo "  • Unpinned actions (supply chain risk)"
+          echo "  • SHA/version comment mismatches"
+          echo "  • Template injection vulnerabilities"
+          echo ""
+          echo "📖 To run locally and see detailed output:"
+          echo ""
+          echo "    GH_TOKEN=\$(gh auth token) uvx zizmor --config=.github/zizmor.yml .github/workflows/"
+          echo ""
+          echo "📖 Documentation: https://docs.zizmor.sh/"
+          echo "📖 Config: .github/zizmor.yml"
+          echo "============================================================"
+          echo ""
+          uvx zizmor --format=github --config=.github/zizmor.yml .github/workflows/
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
