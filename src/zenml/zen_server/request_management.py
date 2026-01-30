@@ -432,6 +432,13 @@ class RequestManager:
                             "caching."
                         )
                         deduplicate_request = False
+                    except Exception as e:
+                        logger.exception(
+                            f"[{request_context.log_request_id}] "
+                            f"Unexpected error getting or creating API "
+                            "transaction. Skipping deduplication."
+                        )
+                        deduplicate_request = False
 
                     if deduplicate_request:
                         if api_transaction.completed:
@@ -443,18 +450,27 @@ class RequestManager:
                                 f"{get_system_metrics_log_str(request_context.request)}"
                             )
 
-                            # The transaction already completed, we can return the
-                            # result right away.
-                            result = zen_store().get_api_transaction_result(
-                                api_transaction_id=transaction_id,
-                            )
-                            if result is not None:
-                                return Response(
-                                    base64.b64decode(result),
-                                    media_type="application/json",
+                            try:
+                                # The transaction already completed, we can return the
+                                # result right away.
+                                result = zen_store().get_api_transaction_result(
+                                    api_transaction_id=transaction_id,
                                 )
+                            except Exception:
+                                logger.exception(
+                                    f"[{request_context.log_request_id}] "
+                                    f"Unexpected error getting API transaction "
+                                    "result. Skipping deduplication."
+                                )
+                                deduplicate_request = False
                             else:
-                                return
+                                if result is not None:
+                                    return Response(
+                                        base64.b64decode(result),
+                                        media_type="application/json",
+                                    )
+                                else:
+                                    return
 
                         elif not transaction_created:
                             logger.debug(
@@ -481,12 +497,18 @@ class RequestManager:
                 except Exception:
                     if deduplicate_request:
                         assert transaction_id is not None
-                        # We don't cache exceptions. If the client retries, the
-                        # request will be executed again and the exception, if
-                        # persistent, will be raised again.
-                        zen_store().delete_api_transaction(
-                            api_transaction_id=transaction_id,
-                        )
+                        try:
+                            # We don't cache exceptions. If the client retries, the
+                            # request will be executed again and the exception, if
+                            # persistent, will be raised again.
+                            zen_store().delete_api_transaction(
+                                api_transaction_id=transaction_id,
+                            )
+                        except Exception:
+                            logger.exception(
+                                f"[{request_context.log_request_id}] "
+                                f"Unexpected error deleting API transaction."
+                            )
                     raise
 
                 if deduplicate_request:
@@ -527,16 +549,30 @@ class RequestManager:
                             api_transaction_update.set_result(
                                 result_to_cache.decode("utf-8")
                             )
-                        zen_store().finalize_api_transaction(
-                            api_transaction_id=transaction_id,
-                            api_transaction_update=api_transaction_update,
-                        )
+                        try:
+                            zen_store().finalize_api_transaction(
+                                api_transaction_id=transaction_id,
+                                api_transaction_update=api_transaction_update,
+                            )
+                        except Exception:
+                            logger.exception(
+                                f"[{request_context.log_request_id}] "
+                                f"Unexpected error finalizing API transaction. "
+                                "Ignoring."
+                            )
                     else:
-                        # If the result is not cacheable, there is no point in
-                        # keeping the transaction around.
-                        zen_store().delete_api_transaction(
-                            api_transaction_id=transaction_id,
-                        )
+                        try:
+                            # If the result is not cacheable, there is no point in
+                            # keeping the transaction around.
+                            zen_store().delete_api_transaction(
+                                api_transaction_id=transaction_id,
+                            )
+                        except Exception:
+                            logger.exception(
+                                f"[{request_context.log_request_id}] "
+                                f"Unexpected error deleting API transaction. "
+                                "Ignoring."
+                            )
 
                 return result
             finally:
