@@ -209,7 +209,9 @@ The `ui/` directory contains a ready-to-use web interface for deployed pipelines
 ├── steps/
 │   └── search.py                    # Step implementations + Pydantic AI agent
 ├── data/
-│   └── doc_graph.json               # Sample document graph
+│   ├── doc_graph.json               # Sample document graph
+│   ├── report.css                   # CSS styles for HTML report
+│   └── report_template.html         # HTML template for report artifact
 └── ui/
     └── index.html                   # Web UI for deployed pipeline
 ```
