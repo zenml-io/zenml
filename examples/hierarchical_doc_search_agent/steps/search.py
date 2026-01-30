@@ -41,9 +41,15 @@ LLM_MODEL = os.getenv("LLM_MODEL", DEFAULT_MODEL)
 # Maximum characters for answer text (0 = unlimited)
 # Set via MAX_ANSWER_CHARS env var to override
 DEFAULT_MAX_ANSWER_CHARS = 10000
-MAX_ANSWER_CHARS = int(
-    os.getenv("MAX_ANSWER_CHARS", str(DEFAULT_MAX_ANSWER_CHARS))
-)
+try:
+    MAX_ANSWER_CHARS = int(
+        os.getenv("MAX_ANSWER_CHARS", str(DEFAULT_MAX_ANSWER_CHARS))
+    )
+except ValueError:
+    logger.warning(
+        f"Invalid MAX_ANSWER_CHARS value; using default {DEFAULT_MAX_ANSWER_CHARS}"
+    )
+    MAX_ANSWER_CHARS = DEFAULT_MAX_ANSWER_CHARS
 
 # Lazy-initialized agent (avoid import-time failure when API key is missing)
 _traversal_agent: Optional[Any] = None
@@ -307,7 +313,7 @@ def simple_search(
     query: str, search_type: str
 ) -> Annotated[Dict[str, Any], "search_results"]:
     """Fast keyword search for simple queries."""
-    _ = search_type  # Creates DAG edge from detect_intent
+    _ = search_type  # Unused; passed to enforce upstream dependency on detect_intent
     docs = _load_documents()
     words = set(query.lower().split())
     if not words:
@@ -339,7 +345,7 @@ def plan_search(
     query: str, max_agents: int, search_type: str
 ) -> Annotated[List[str], "seed_nodes"]:
     """Find starting documents for deep search agents."""
-    _ = search_type  # Creates DAG edge from detect_intent
+    _ = search_type  # Unused; passed to enforce upstream dependency on detect_intent
     docs = _load_documents()
     words = set(query.lower().split())
     if not words:
@@ -389,7 +395,8 @@ def traverse_node(
     visited = visited + [doc_id]
 
     # Get related documents (pre-filter to only those that exist in the graph)
-    rels = doc.get("relationships", {})
+    rels = doc.get("relationships")
+    rels = rels if isinstance(rels, dict) else {}
     related_raw: List[str] = []
     for rel_list in rels.values():
         related_raw.extend(rel_list if isinstance(rel_list, list) else [])
@@ -651,15 +658,21 @@ def create_report(results: Dict[str, Any]) -> Annotated[HTMLString, "report"]:
         )
         report_html = f"<html><body><h1>Search Results</h1><p>Query: {query_safe}</p><p>Results: {result_count}</p></body></html>"
     else:
-        report_html = template.format(
-            css=css,
-            badge_class=badge_class,
-            search_type_safe=search_type_safe,
-            query_safe=query_safe,
-            result_count=result_count,
-            docs_explored=docs_explored,
-            agents_used=agents_used,
-            results_html=results_html,
-        )
+        try:
+            report_html = template.format(
+                css=css,
+                badge_class=badge_class,
+                search_type_safe=search_type_safe,
+                query_safe=query_safe,
+                result_count=result_count,
+                docs_explored=docs_explored,
+                agents_used=agents_used,
+                results_html=results_html,
+            )
+        except (KeyError, ValueError) as e:
+            logger.warning(
+                f"Template formatting failed ({e}); rendering minimal fallback."
+            )
+            report_html = f"<html><body><h1>Search Results</h1><p>Query: {query_safe}</p><p>Results: {result_count}</p></body></html>"
 
     return HTMLString(report_html)
