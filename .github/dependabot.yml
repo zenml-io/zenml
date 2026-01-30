@@ -2,12 +2,16 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: /.github
+    directory: /
     schedule:
       interval: weekly
       day: tuesday
       time: "07:00"
       timezone: Europe/Amsterdam
     reviewers: [strickvl]
-    labels: [dependencies, internal]
+    labels: [dependencies, internal, no-release-notes]
+    groups:
+      all-actions:
+        patterns:
+          - '*'
     target-branch: develop
