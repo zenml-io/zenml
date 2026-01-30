@@ -187,6 +187,37 @@ def _validate_traverse_to(
 # --- Data loading ---
 
 
+@lru_cache(maxsize=8)
+def _load_text_asset(rel_path: str) -> str:
+    """Load a UTF-8 text asset with local + Docker + relative fallbacks.
+
+    Uses the same path resolution strategy as _load_documents().
+    Results are cached to avoid repeated file reads.
+
+    Args:
+        rel_path: Relative path from example root (e.g., "data/report.css").
+
+    Returns:
+        File contents as string, or empty string if not found.
+    """
+    search_paths = [
+        Path(__file__).parent.parent / rel_path,
+        Path("/app") / rel_path,
+        Path(rel_path),
+    ]
+    for p in search_paths:
+        if not p.exists():
+            continue
+        try:
+            return p.read_text(encoding="utf-8")
+        except OSError as e:
+            logger.warning(f"Could not read {p}: {e}")
+            continue
+
+    logger.warning(f"Asset not found in any of: {search_paths}")
+    return ""
+
+
 @lru_cache(maxsize=1)
 def _load_documents() -> Dict[str, Any]:
     """Load document graph from JSON file (cached after first call).
@@ -560,294 +591,21 @@ def _render_result_card(result: Dict[str, Any], index: int) -> str:
 
 
 def _get_report_css() -> str:
-    """Return the CSS styles for the HTML report."""
-    return """
-        /* ZenML Design System - Hierarchical Search Report */
-        :root {
-            --zenml-purple: #7a3ef4;
-            --zenml-purple-dark: #431d93;
-            --zenml-purple-light: #e4d8fd;
-            --zenml-purple-lighter: #f1ebfe;
-            --text-primary: #0d061d;
-            --text-secondary: #6b7280;
-            --surface-primary: #ffffff;
-            --surface-secondary: #f9fafb;
-            --border-moderate: #e5e7eb;
-            --success: #1cbf4a;
-            --success-light: #d2f2db;
-        }
+    """Return the CSS styles for the HTML report (loaded from external file)."""
+    return _load_text_asset("data/report.css")
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f8faff 0%, #f1f5f9 100%);
-            color: var(--text-primary);
-            padding: 24px;
-            font-size: 14px;
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .report-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* Header Section */
-        .report-header {
-            background: var(--surface-primary);
-            border: 1px solid var(--border-moderate);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .report-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin: 0 0 8px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .report-title::before {
-            content: "🔍";
-        }
-
-        .query-display {
-            background: var(--zenml-purple-lighter);
-            border: 1px solid var(--zenml-purple-light);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-top: 12px;
-            font-size: 15px;
-            color: var(--zenml-purple-dark);
-            font-style: italic;
-        }
-
-        .search-type-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .search-type-badge.deep {
-            background: linear-gradient(135deg, var(--zenml-purple), var(--zenml-purple-dark));
-            color: white;
-        }
-
-        .search-type-badge.simple {
-            background: var(--success-light);
-            color: #065f46;
-        }
-
-        /* Metrics Row */
-        .metrics-row {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .metric-card {
-            flex: 1;
-            min-width: 120px;
-            background: var(--surface-primary);
-            border: 1px solid var(--border-moderate);
-            border-radius: 10px;
-            padding: 16px;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-        }
-
-        .metric-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--zenml-purple);
-            line-height: 1;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Results Section */
-        .results-section {
-            background: var(--surface-primary);
-            border: 1px solid var(--border-moderate);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .results-header {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-moderate);
-        }
-
-        .result-card {
-            background: var(--surface-secondary);
-            border: 1px solid var(--border-moderate);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 12px;
-            transition: border-color 0.2s ease;
-        }
-
-        .result-card:last-child {
-            margin-bottom: 0;
-        }
-
-        .result-card:hover {
-            border-color: var(--zenml-purple-light);
-        }
-
-        .result-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .result-number {
-            background: var(--zenml-purple);
-            color: white;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 4px;
-            flex-shrink: 0;
-        }
-
-        .result-title-block {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .result-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0 0 2px 0;
-            word-wrap: break-word;
-        }
-
-        .result-doc-id {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-family: 'SF Mono', Monaco, monospace;
-        }
-
-        .score-badge {
-            background: var(--success-light);
-            color: #065f46;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 12px;
-            flex-shrink: 0;
-        }
-
-        .answer-section {
-            margin-top: 12px;
-            border-top: 1px solid var(--border-moderate);
-            padding-top: 12px;
-        }
-
-        .answer-toggle {
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--zenml-purple);
-            padding: 4px 0;
-        }
-
-        .answer-toggle:hover {
-            color: var(--zenml-purple-dark);
-        }
-
-        .answer-content {
-            background: var(--surface-primary);
-            border: 1px solid var(--border-moderate);
-            border-radius: 6px;
-            padding: 12px;
-            margin-top: 8px;
-            font-size: 13px;
-            line-height: 1.6;
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-        }
-
-        .empty-state-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .empty-state-description {
-            font-size: 14px;
-            max-width: 300px;
-            margin: 0 auto;
-        }
-
-        /* Footer */
-        .report-footer {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-moderate);
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .report-footer a {
-            color: var(--zenml-purple);
-            text-decoration: none;
-        }
-    """
+def _get_report_template() -> str:
+    """Return the HTML template for the report (loaded from external file)."""
+    return _load_text_asset("data/report_template.html")
 
 
 @step
 def create_report(results: Dict[str, Any]) -> Annotated[HTMLString, "report"]:
     """Generate a polished HTML visualization of search results.
 
-    Creates a self-contained HTML document with embedded CSS following the
-    ZenML design system. All user/LLM-derived content is escaped to prevent
-    XSS attacks.
+    Loads external CSS and HTML template files, then renders the report.
+    All user/LLM-derived content is escaped to prevent XSS attacks.
 
     Args:
         results: Search results dictionary containing query, type, results list,
@@ -883,56 +641,25 @@ def create_report(results: Dict[str, Any]) -> Annotated[HTMLString, "report"]:
     # Determine badge class based on search type
     badge_class = "deep" if search_type == "deep" else "simple"
 
-    # Build the full HTML document
-    report_html = f'''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Report | ZenML</title>
-    <style>
-{_get_report_css()}
-    </style>
-</head>
-<body>
-    <div class="report-container">
-        <!-- Header -->
-        <div class="report-header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h1 class="report-title">Hierarchical Document Search</h1>
-                <span class="search-type-badge {badge_class}">{search_type_safe} Search</span>
-            </div>
-            <div class="query-display">"{query_safe}"</div>
-        </div>
+    # Load external CSS and template
+    css = _get_report_css()
+    template = _get_report_template()
 
-        <!-- Metrics -->
-        <div class="metrics-row">
-            <div class="metric-card">
-                <div class="metric-value">{result_count}</div>
-                <div class="metric-label">Results</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{docs_explored}</div>
-                <div class="metric-label">Docs Explored</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{agents_used}</div>
-                <div class="metric-label">Agents Used</div>
-            </div>
-        </div>
-
-        <!-- Results -->
-        <div class="results-section">
-            <h2 class="results-header">Search Results</h2>
-            {results_html}
-        </div>
-
-        <!-- Footer -->
-        <div class="report-footer">
-            Generated by <a href="https://zenml.io" target="_blank" rel="noopener noreferrer">ZenML</a> Hierarchical Search Pipeline
-        </div>
-    </div>
-</body>
-</html>'''
+    if not template:
+        logger.warning(
+            "Report template not found; rendering minimal fallback."
+        )
+        report_html = f"<html><body><h1>Search Results</h1><p>Query: {query_safe}</p><p>Results: {result_count}</p></body></html>"
+    else:
+        report_html = template.format(
+            css=css,
+            badge_class=badge_class,
+            search_type_safe=search_type_safe,
+            query_safe=query_safe,
+            result_count=result_count,
+            docs_explored=docs_explored,
+            agents_used=agents_used,
+            results_html=results_html,
+        )
 
     return HTMLString(report_html)
