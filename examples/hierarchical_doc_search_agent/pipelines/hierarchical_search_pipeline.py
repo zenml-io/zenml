@@ -19,6 +19,7 @@ ZenML controls: fan-out, budget limits, step orchestration
 Pydantic AI controls: agent decisions (traverse deeper or return answer?)
 """
 
+import os
 from collections import deque
 from typing import Annotated, Any, Deque, Dict, List, Tuple
 
@@ -42,19 +43,22 @@ from zenml.config import (
 # NOTE: Relative paths (requirements.txt, ui) require running from this example's
 # directory. Run: cd examples/hierarchical_doc_search_agent before zenml commands.
 #
-# Environment variables are always included in the mapping. The step code handles
-# missing values gracefully (e.g., fallback mode when OPENAI_API_KEY is not set).
-# This allows setting env vars at runtime, not just at deploy time.
-_docker_env: Dict[str, str] = {
-    "OPENAI_API_KEY": "${OPENAI_API_KEY}",
-    "LLM_MODEL": "${LLM_MODEL}",
-    "MAX_ANSWER_CHARS": "${MAX_ANSWER_CHARS}",
-}
+# ZenML's ${VAR} syntax requires variables to exist at compile time (not runtime).
+# We only include env vars that are actually set. The step code handles missing
+# OPENAI_API_KEY gracefully via fallback mode, but if you want LLM functionality
+# in deployed pipelines, set OPENAI_API_KEY before running `zenml deploy`.
+_docker_env: Dict[str, str] = {}
+if os.getenv("OPENAI_API_KEY"):
+    _docker_env["OPENAI_API_KEY"] = "${OPENAI_API_KEY}"
+if os.getenv("LLM_MODEL"):
+    _docker_env["LLM_MODEL"] = "${LLM_MODEL}"
+if os.getenv("MAX_ANSWER_CHARS"):
+    _docker_env["MAX_ANSWER_CHARS"] = "${MAX_ANSWER_CHARS}"
 
 docker_settings = DockerSettings(
     python_package_installer=PythonPackageInstaller.UV,
     requirements="requirements.txt",
-    environment=_docker_env,
+    environment=_docker_env if _docker_env else None,
 )
 
 deployment_settings = DeploymentSettings(
