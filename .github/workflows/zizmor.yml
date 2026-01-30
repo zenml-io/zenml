@@ -1,0 +1,37 @@
+---
+name: GitHub Actions Security Analysis
+on:
+  push:
+    branches: [main, develop]
+    paths: [.github/workflows/**, .github/zizmor.yml]
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - .github/workflows/**
+      - .github/zizmor.yml
+  # Weekly safety net to catch drift (runs Monday 3am UTC)
+  schedule:
+    - cron: 0 3 * * 1
+  # Allow manual triggering
+  workflow_dispatch:
+permissions: {}
+jobs:
+  zizmor:
+    name: Scan workflows with zizmor
+    runs-on: ubuntu-latest
+    # Only run on the main repo, not forks (scheduled runs would fail on forks)
+    if: github.repository == 'zenml-io/zenml'
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
+      - name: Run zizmor
+        run: uvx zizmor --format=github --config=.github/zizmor.yml .github/workflows/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
