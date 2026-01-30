@@ -45,6 +45,7 @@ docker_settings = DockerSettings(
     environment={
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "LLM_MODEL": "${LLM_MODEL}",
+        "MAX_ANSWER_CHARS": "${MAX_ANSWER_CHARS}",
     },
 )
 

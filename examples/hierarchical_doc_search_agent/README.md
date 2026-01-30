@@ -36,6 +36,23 @@ detect_intent
 
 - **OPENAI_API_KEY**: Required for LLM-powered search. Without it, falls back to keyword matching.
 - **LLM_MODEL** (optional): The model to use for agent reasoning. Defaults to `openai:gpt-5-nano`. Example: `LLM_MODEL=openai:gpt-4o`
+- **MAX_ANSWER_CHARS** (optional): Maximum characters for answer text. Defaults to `10000`. Set to `0` for unlimited.
+
+## Sample Document Topics
+
+The example uses a sample document graph (`data/doc_graph.json`) with content about:
+
+- **Python** — introduction and advanced concepts
+- **Quantum computing** — basics, algorithms, applications, quantum ML
+- **Machine learning** — fundamentals, deep learning
+- **Web development**, **data science**, **distributed systems**, **software engineering**
+
+**Try queries that relate to these topics**, e.g.:
+- "How does quantum computing relate to machine learning?"
+- "What are advanced Python concepts?"
+- "Compare distributed systems and software engineering"
+
+For custom use cases, replace `doc_graph.json` with your own document hierarchy.
 
 ## Quick Start
 
@@ -55,7 +72,7 @@ python run.py --query "What is Python?"
 # Deep query (agents traverse the document graph)
 python run.py --query "How does quantum computing relate to machine learning?"
 
-# Control breadth and depth
+# Control breadth and depth (clamped: max_agents 1-10, max_depth 1-5)
 python run.py --query "Compare ML approaches" --max-agents 5 --max-depth 3
 ```
 
@@ -82,9 +99,9 @@ traverse_node_step = traverse_node.with_options(
 
 # Now call the step - doc_id creates a DAG edge, query is a parameter
 traverse_node_step(
-    doc_id=seed_nodes.chunk(idx),  # Artifact chunk → DAG edge
-    budget=budget,                  # Plain value
-    visited=visited,                # Plain value
+    doc_id=seed_nodes.chunk(index=idx),  # Artifact chunk → DAG edge
+    budget=budget,                        # Plain value
+    visited=visited,                      # Plain value
 )
 ```
 
@@ -127,7 +144,8 @@ while pending:
     traverse_to_data = traverse_to.load()
 
     if not result_data["found_answer"] and result_data["budget"] > 0:
-        for idx in range(len(traverse_to_data)):
+        # Cap follow-up traversals to 2 per node to limit DAG growth
+        for idx in range(min(2, len(traverse_to_data))):
             # Use .chunk() again for the next iteration
             pending.append((
                 traverse_to.chunk(index=idx),
