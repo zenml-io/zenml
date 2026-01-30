@@ -39,6 +39,8 @@ from zenml.config import (
 )
 
 # Pass environment variables to deployed container
+# NOTE: Relative paths (requirements.txt, ui) require running from this example's
+# directory. Run: cd examples/hierarchical_doc_search_agent before zenml commands.
 docker_settings = DockerSettings(
     python_package_installer=PythonPackageInstaller.UV,
     requirements="requirements.txt",

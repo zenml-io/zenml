@@ -638,7 +638,7 @@
       }
 
       const INVOKE_URL = {{ service_info.app.invoke_url_path | tojson }};
-      const AUTH_ENABLED = {{ 'true' if service_info.deployment.auth_enabled else 'false' }};
+      const AUTH_ENABLED = {{ service_info.deployment.auth_enabled | tojson }};
 
       const queryInput = document.getElementById("query-input");
       const searchBtn = document.getElementById("search-btn");

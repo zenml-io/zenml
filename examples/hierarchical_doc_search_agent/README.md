@@ -169,10 +169,23 @@ while pending:
 
 ## Deploy as HTTP Service
 
-```bash
-zenml pipeline deploy hierarchical_search_pipeline --name search
+**Important:** Run the deploy command from within this example directory (same as Quick Start).
 
-curl -X POST http://localhost:8000/invoke \
+```bash
+cd examples/hierarchical_doc_search_agent
+zenml pipeline deploy hierarchical_search_pipeline --name search
+```
+
+After deployment, get your invoke URL from the deployment details:
+
+```bash
+zenml pipeline deployment describe search
+```
+
+Then call the endpoint using the URL shown in the output:
+
+```bash
+curl -X POST <YOUR_INVOKE_URL> \
   -H "Content-Type: application/json" \
   -d '{"parameters": {"query": "How does X relate to Y?", "max_agents": 3}}'
 ```
