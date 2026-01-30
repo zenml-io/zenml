@@ -35,7 +35,7 @@ detect_intent
 ## Prerequisites
 
 - **OPENAI_API_KEY**: Required for LLM-powered search. Without it, falls back to keyword matching.
-- **LLM_MODEL**: The model to use for agent reasoning. Example: `LLM_MODEL=openai:gpt-4o`
+- **LLM_MODEL** (optional): The model to use for agent reasoning. Defaults to `openai:gpt-5-nano`. Example: `LLM_MODEL=openai:gpt-4o`
 
 ## Quick Start
 
@@ -45,7 +45,8 @@ detect_intent
 cd examples/hierarchical_doc_search_agent
 pip install -r requirements.txt
 export OPENAI_API_KEY="your-api-key"
-export LLM_MODEL="openai:gpt-4o"
+# Optionally override the default model (gpt-5-nano):
+# export LLM_MODEL="openai:gpt-4o"
 zenml init && zenml login
 
 # Simple query (fast keyword search)
