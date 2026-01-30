@@ -33,11 +33,7 @@ from zenml.constants import (
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
-    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL,
-    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_MAX_BATCH_SIZE,
-    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_MIN_BATCH_SIZE,
-    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TARGET_DURATION,
     DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
@@ -363,20 +359,8 @@ class ServerConfiguration(BaseModel):
     request_deduplication: bool = True
     request_cache_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
 
-    api_transaction_cleanup_batch_size: int = (
-        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE
-    )
     api_transaction_cleanup_interval: int = (
         DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL
-    )
-    api_transaction_cleanup_min_batch_size: int = (
-        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_MIN_BATCH_SIZE
-    )
-    api_transaction_cleanup_max_batch_size: int = (
-        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_MAX_BATCH_SIZE
-    )
-    api_transaction_cleanup_target_duration: float = (
-        DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TARGET_DURATION
     )
 
     max_request_body_size_in_bytes: int = (

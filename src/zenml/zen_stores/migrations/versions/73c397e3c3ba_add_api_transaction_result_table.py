@@ -9,7 +9,7 @@ Create Date: 2026-01-23 18:51:29.944099
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
-from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
 # revision identifiers, used by Alembic.
 revision = "73c397e3c3ba"
@@ -25,10 +25,16 @@ def upgrade() -> None:
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column(
             "result",
-            MEDIUMTEXT
+            MEDIUMBLOB
             if op.get_bind().dialect.name == "mysql"
-            else sa.String(length=16777215),
+            else sa.LargeBinary(),
             nullable=False,
+        ),
+        sa.ForeignKeyConstraint(
+            ["id"],
+            ["api_transaction.id"],
+            name="fk_api_transaction_result_id_api_transaction",
+            ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id"),
     )

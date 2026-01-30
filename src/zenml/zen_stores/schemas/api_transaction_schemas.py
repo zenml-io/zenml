@@ -15,13 +15,12 @@
 
 from datetime import datetime, timedelta
 from typing import Any, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String
-from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy import TEXT, Column, LargeBinary
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
 from sqlmodel import Field, SQLModel
 
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
     ApiTransactionRequest,
     ApiTransactionResponse,
@@ -137,12 +136,20 @@ class ApiTransactionResultSchema(SQLModel, table=True):
     """SQL Model for API transaction results."""
 
     __tablename__ = "api_transaction_result"
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    result: str = Field(
+
+    id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ApiTransactionSchema.__tablename__,
+        source_column="id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+
+    result: bytes = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            LargeBinary().with_variant(MEDIUMBLOB, "mysql"),
             nullable=False,
         ),
     )

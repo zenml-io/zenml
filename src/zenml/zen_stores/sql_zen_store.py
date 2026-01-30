@@ -31,6 +31,7 @@ except ImportError:
     ) from None
 
 import base64
+import gzip
 import inspect
 import json
 import logging
@@ -2480,49 +2481,17 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    def cleanup_expired_api_transactions(self, batch_size: int) -> int:
-        """Delete completed API transactions that have expired.
-
-        Args:
-            batch_size: The maximum number of transactions to delete.
-
-        Returns:
-            The number of transactions that were deleted.
-        """
+    def cleanup_expired_api_transactions(self) -> int:
+        """Delete completed API transactions that have expired."""
         with Session(self.engine) as session:
-            expired_ids = (
-                session.execute(
-                    select(ApiTransactionSchema.id)
-                    .where(
-                        col(ApiTransactionSchema.completed),
-                        col(ApiTransactionSchema.expired) < utc_now(),
-                    )
-                    .limit(batch_size)
-                )
-                .scalars()
-                .all()
-            )
-
-            if not expired_ids:
-                return 0
-
-            deleted_count = len(expired_ids)
-
             session.execute(
                 delete(ApiTransactionResultSchema).where(
-                    col(ApiTransactionResultSchema.id).in_(expired_ids)
-                )
-            )
-
-            session.execute(
-                delete(ApiTransactionSchema).where(
-                    col(ApiTransactionSchema.id).in_(expired_ids)
+                    col(ApiTransactionSchema.completed),
+                    col(ApiTransactionSchema.expired) < utc_now(),
                 )
             )
 
             session.commit()
-
-            return deleted_count
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2585,7 +2554,8 @@ class SqlZenStore(BaseZenStore):
                 )
             ).first()
             if result_schema is not None:
-                return result_schema.result
+                data = result_schema.result
+                return gzip.decompress(data).decode("utf-8")
             return None
 
     def finalize_api_transaction(
@@ -2610,9 +2580,11 @@ class SqlZenStore(BaseZenStore):
 
             result_value = api_transaction_update.get_result()
             if result_value is not None:
+                payload = result_value.encode("utf-8")
+                payload = gzip.compress(payload)
                 result_schema = ApiTransactionResultSchema(
                     id=api_transaction_id,
-                    result=result_value,
+                    result=payload,
                 )
                 session.add(result_schema)
                 session.flush()

@@ -192,17 +192,7 @@ class RequestManager:
             ContextVar("request_contexts", default=None)
         )
 
-        self._cleanup_batch_size = cfg.api_transaction_cleanup_batch_size
         self._cleanup_interval = cfg.api_transaction_cleanup_interval
-        self._cleanup_min_batch_size = (
-            cfg.api_transaction_cleanup_min_batch_size
-        )
-        self._cleanup_max_batch_size = (
-            cfg.api_transaction_cleanup_max_batch_size
-        )
-        self._cleanup_target_duration = (
-            cfg.api_transaction_cleanup_target_duration
-        )
 
         self._cleanup_task: Optional[asyncio.Task[None]] = None
         self._shutdown_event = asyncio.Event()
@@ -253,11 +243,9 @@ class RequestManager:
         This loop runs continuously in the background, cleaning up expired
         API transactions. It includes:
         - Random jitter on startup and between iterations to reduce overlap
-          between pods
-        - Adaptive batch sizing based on execution time
+        between pods
         - Graceful shutdown via the shutdown event
         """
-
         # Random initial delay (0-interval seconds) to stagger pod startup
         initial_jitter = random.uniform(0, self._cleanup_interval)
         logger.debug(
@@ -273,20 +261,9 @@ class RequestManager:
 
         while not self._shutdown_event.is_set():
             try:
-                (
-                    deleted_count,
-                    duration,
-                ) = await asyncio.get_event_loop().run_in_executor(
+                await asyncio.get_event_loop().run_in_executor(
                     None, self._cleanup_expired_transactions
                 )
-
-                # self._adapt_batch_size(deleted_count, duration)
-
-                logger.debug(
-                    f"Cleaned up {deleted_count} expired transactions "
-                    f"in {duration:.2f}s (batch_size={self._cleanup_batch_size})"
-                )
-
             except Exception:
                 logger.exception("Error during transaction cleanup")
 
@@ -302,63 +279,15 @@ class RequestManager:
             except asyncio.TimeoutError:
                 pass
 
-    def _cleanup_expired_transactions(self) -> tuple[int, float]:
-        """Execute the cleanup operation in a thread pool.
-
-        Returns:
-            A tuple of (deleted_count, duration_seconds).
-        """
+    def _cleanup_expired_transactions(self) -> None:
+        """Execute the cleanup operation in a thread pool."""
         from zenml.zen_server.utils import zen_store
 
         start_time = time.perf_counter()
-        deleted_count = zen_store().cleanup_expired_api_transactions(
-            batch_size=self._cleanup_batch_size
-        )
+        zen_store().cleanup_expired_api_transactions()
         duration = time.perf_counter() - start_time
-        return deleted_count, duration
 
-    def _adapt_batch_size(self, deleted_count: int, duration: float) -> None:
-        """Adapt the batch size based on execution duration.
-
-        The algorithm adjusts batch size to try to keep execution time close
-        to the target duration. If execution is faster than target, increase
-        batch size; if slower, decrease it.
-
-        Args:
-            deleted_count: Number of records deleted in the last batch.
-            duration: Time taken for the last cleanup operation in seconds.
-        """
-        if deleted_count == 0 or duration <= 0:
-            return
-
-        # Only adapt if we actually processed a full batch or close to it.
-        # If we deleted less than half the batch, there weren't enough
-        # expired transactions, so timing isn't representative.
-        if deleted_count < self._cleanup_batch_size // 2:
-            return
-
-        # Calculate ideal batch size to hit target duration
-        # Using simple linear extrapolation: new_batch = old_batch * (target / actual)
-        ratio = self._cleanup_target_duration / duration
-        new_batch_size = int(self._cleanup_batch_size * ratio)
-
-        # Clamp to configured bounds
-        new_batch_size = max(
-            self._cleanup_min_batch_size,
-            min(self._cleanup_max_batch_size, new_batch_size),
-        )
-
-        # Apply gradual changes to avoid oscillation
-        # Move 50% toward the ideal batch size
-        self._cleanup_batch_size = (
-            self._cleanup_batch_size + new_batch_size
-        ) // 2
-
-        # Ensure we stay within bounds after averaging
-        self._cleanup_batch_size = max(
-            self._cleanup_min_batch_size,
-            min(self._cleanup_max_batch_size, self._cleanup_batch_size),
-        )
+        logger.debug(f"Cleaning up expired transactions took {duration:.2f}s")
 
     async def async_run_and_cache_result(
         self,
@@ -432,7 +361,7 @@ class RequestManager:
                             "caching."
                         )
                         deduplicate_request = False
-                    except Exception as e:
+                    except Exception:
                         logger.exception(
                             f"[{request_context.log_request_id}] "
                             f"Unexpected error getting or creating API "
@@ -453,8 +382,10 @@ class RequestManager:
                             try:
                                 # The transaction already completed, we can return the
                                 # result right away.
-                                result = zen_store().get_api_transaction_result(
-                                    api_transaction_id=transaction_id,
+                                result = (
+                                    zen_store().get_api_transaction_result(
+                                        api_transaction_id=transaction_id,
+                                    )
                                 )
                             except Exception:
                                 logger.exception(
