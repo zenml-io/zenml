@@ -176,10 +176,13 @@ def prepare_resources_kwargs(
         else settings.image_id,
         "disk_size": settings.disk_size,
         "disk_tier": settings.disk_tier,
+        "network_tier": settings.network_tier,
         "ports": settings.ports,
         "labels": settings.labels,
         "any_of": settings.any_of,
         "ordered": settings.ordered,
+        "infra": settings.infra,
+        "num_nodes": settings.num_nodes,
         **settings.resources_settings,  # Add any arbitrary resource settings
     }
 
@@ -210,11 +213,8 @@ def prepare_launch_kwargs(
         else settings.idle_minutes_to_autostop
     )
 
-    # The following parameters were removed from sky.launch in versions > 0.8.
-    # We therefore no longer include them in the kwargs passed to the call.
-    # • stream_logs – handled by explicitly calling sky.stream_and_get
-    # • detach_setup / detach_run – setup/run are now detached by default
-
+    # SkyPilot ≥0.9 made launch/exec async and removed stream/log flags.
+    # Keep only supported keys here; exec should use its own kwargs.
     launch_kwargs = {
         "retry_until_up": settings.retry_until_up,
         "idle_minutes_to_autostop": idle_value,
@@ -223,12 +223,11 @@ def prepare_launch_kwargs(
         **settings.launch_settings,  # Keep user-provided extras
     }
 
-    # Remove keys that are no longer supported by sky.launch.
+    # Remove keys no longer supported by sky.launch.
     for _deprecated in (
         "stream_logs",
         "detach_setup",
         "detach_run",
-        "num_nodes",
     ):
         launch_kwargs.pop(_deprecated, None)
 
@@ -255,23 +254,21 @@ def sky_job_get(
         Optional submission result.
     """
     if stream_logs:
-        # Stream logs and wait for completion
+        # Stream logs and wait for completion; returns (job_id, handle)
         job_id, _ = sky.stream_and_get(request_id)
     else:
         # Just wait for completion without streaming logs
         job_id, _ = sky.get(request_id)
 
-    _wait_for_completion = None
-    if stream_logs:
-
-        def _wait_for_completion() -> None:
-            status = 0  # 0=Successful, 100=Failed
-            status = sky.tail_logs(
-                cluster_name=cluster_name, job_id=job_id, follow=True
+    def _wait_for_completion() -> None:
+        status = sky.tail_logs(
+            cluster_name=cluster_name, job_id=job_id, follow=True
+        )
+        if status != 0:
+            raise Exception(
+                f"SkyPilot job {job_id} failed with status {status}"
             )
-            if status != 0:
-                raise Exception(
-                    f"SkyPilot job {job_id} failed with status {status}"
-                )
 
-    return SubmissionResult(wait_for_completion=_wait_for_completion)
+    return SubmissionResult(
+        wait_for_completion=_wait_for_completion if stream_logs else None
+    )

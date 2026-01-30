@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
 from uuid import uuid4
 
 import sky
-from sky import StatusRefreshMode
 
 from zenml.entrypoints import PipelineEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -339,18 +338,15 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
             launch_new_cluster = True
             if settings.cluster_name:
-                status_request_id = sky.status(
-                    refresh=StatusRefreshMode.AUTO,
+                cluster_status = sky.status(
+                    refresh=True,
                     cluster_names=[settings.cluster_name],
                 )
-                cluster_info = sky.stream_and_get(status_request_id)
-
-                if cluster_info:
+                if cluster_status:
                     logger.info(
                         f"Found existing cluster {settings.cluster_name}. Reusing..."
                     )
                     launch_new_cluster = False
-
                 else:
                     logger.info(
                         f"Cluster {settings.cluster_name} not found. Launching a new one..."
@@ -374,13 +370,13 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 logger.info(
                     f"Launching the task on a new cluster: {cluster_name}"
                 )
-                launch_job_id = sky.launch(
+                launch_request_id = sky.launch(
                     task,
                     cluster_name,
                     **launch_kwargs,
                 )
                 return sky_job_get(
-                    launch_job_id, settings.stream_logs, cluster_name
+                    launch_request_id, settings.stream_logs, cluster_name
                 )
 
             else:
@@ -388,13 +384,13 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 exec_kwargs = {
                     "down": down,
                     "backend": None,
-                    **settings.launch_settings,  # Can reuse same settings for exec
                 }
 
-                # Remove None values to avoid overriding SkyPilot defaults
-                exec_kwargs = {
-                    k: v for k, v in exec_kwargs.items() if v is not None
-                }
+                for key, value in settings.launch_settings.items():
+                    if key in {"stream_logs", "detach_setup", "detach_run"}:
+                        continue
+                    if value is not None:
+                        exec_kwargs[key] = value
 
                 # Make sure the cluster is up
                 start_request_id = sky.start(
@@ -408,14 +404,14 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 logger.info(
                     f"Executing the task on the cluster: {settings.cluster_name}"
                 )
-                exec_job_id = sky.exec(
+                exec_request_id = sky.exec(
                     task,
                     cluster_name=settings.cluster_name,
                     **exec_kwargs,
                 )
                 assert settings.cluster_name is not None
                 return sky_job_get(
-                    exec_job_id, settings.stream_logs, settings.cluster_name
+                    exec_request_id, settings.stream_logs, settings.cluster_name
                 )
 
         except Exception as e:

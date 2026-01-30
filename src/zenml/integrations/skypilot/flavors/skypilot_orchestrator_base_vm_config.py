@@ -136,6 +136,9 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     disk_tier: Optional[Literal["high", "medium", "low", "ultra", "best"]] = (
         None
     )
+    network_tier: Optional[str] = None
+    infra: Optional[str] = None
+    num_nodes: Optional[int] = None
 
     # Run settings
     cluster_name: Optional[str] = None

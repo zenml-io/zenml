@@ -246,10 +246,7 @@ def main() -> None:
 
                 task = task.set_resources(sky.Resources(**resources_kwargs))
 
-                # Prepare launch parameters
-                launch_kwargs = prepare_launch_kwargs(
-                    settings=settings,
-                )
+                launch_kwargs = prepare_launch_kwargs(settings=settings)
 
                 # sky.launch now returns a request ID (async). Capture it so we can
                 # optionally stream logs and block until completion when desired.
