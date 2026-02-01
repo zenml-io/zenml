@@ -489,13 +489,42 @@ def format_integration_list(
     return list_of_dicts
 
 
-def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
+def print_stack_configuration(
+    stack: "StackResponse",
+    active: bool,
+    output_format: OutputFormat = "table",
+    dashboard_url: Optional[str] = None,
+) -> None:
     """Prints the configuration options of a stack.
 
     Args:
         stack: Instance of a stack model.
         active: Whether the stack is active.
+        output_format: Output format (table, json, yaml, csv, tsv).
+        dashboard_url: Optional dashboard URL to include in non-table outputs.
     """
+    if output_format != "table":
+        data: Dict[str, Any] = {
+            "id": str(stack.id),
+            "name": stack.name,
+            "active": active,
+            "owner": stack.user.name if stack.user else None,
+            "labels": stack.labels or {},
+            "components": {
+                (ct.value if hasattr(ct, "value") else str(ct)): {
+                    "id": str(components[0].id),
+                    "name": components[0].name,
+                    "flavor": components[0].flavor_name,
+                }
+                for ct, components in stack.components.items()
+                if components
+            },
+        }
+        if dashboard_url:
+            data["dashboard_url"] = dashboard_url
+        handle_output_single(data, output_format)
+        return
+
     stack_caption = f"'{stack.name}' stack"
     if active:
         stack_caption += " (ACTIVE)"
@@ -563,6 +592,8 @@ def print_stack_component_configuration(
     component: "ComponentResponse",
     active_status: bool,
     connector_requirements: Optional[ServiceConnectorRequirements] = None,
+    output_format: OutputFormat = "table",
+    dashboard_url: Optional[str] = None,
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -572,7 +603,45 @@ def print_stack_component_configuration(
         connector_requirements: Connector requirements for the component, taken
             from the component flavor. Only needed if the component has a
             connector.
+        output_format: Output format (table, json, yaml, csv, tsv).
+        dashboard_url: Optional dashboard URL to include in non-table outputs.
     """
+    if output_format != "table":
+        connector_data: Optional[Dict[str, Any]] = None
+        if component.connector:
+            resource_type = (
+                connector_requirements.resource_type
+                if connector_requirements
+                else component.connector.resource_types[0]
+            )
+            connector_data = {
+                "id": str(component.connector.id),
+                "name": component.connector.name,
+                "type": component.connector.type,
+                "resource_type": resource_type,
+                "resource_name": (
+                    component.connector_resource_id
+                    or component.connector.resource_id
+                    or None
+                ),
+            }
+
+        data: Dict[str, Any] = {
+            "id": str(component.id),
+            "name": component.name,
+            "type": component.type.value,
+            "flavor": component.flavor_name,
+            "active": active_status,
+            "owner": _get_user_name(component.user),
+            "configuration": component.configuration or {},
+            "labels": component.labels or {},
+            "service_connector": connector_data,
+        }
+        if dashboard_url:
+            data["dashboard_url"] = dashboard_url
+        handle_output_single(data, output_format)
+        return
+
     user_name = _get_user_name(component.user)
 
     declare(
@@ -3496,6 +3565,73 @@ def _render_csv(data: List[Dict[str, Any]]) -> str:
         CSV string representation of the data
     """
     return _render_delimited(data, delimiter=",")
+
+
+def prepare_output_single(
+    data: Dict[str, Any],
+    output_format: OutputFormat = "table",
+) -> str:
+    """Render a single object in the specified format.
+
+    Unlike prepare_output which wraps data in {"items": [...]}, this function
+    outputs the object directly at the root level for cleaner single-item output.
+
+    Args:
+        data: Dictionary to render.
+        output_format: Output format (`table`, `json`, `yaml`, `csv`, `tsv`).
+
+    Returns:
+        The rendered output in the specified format, or empty string if
+        no data is provided.
+
+    Raises:
+        ValueError: If an unsupported output format is provided.
+    """
+    if not data:
+        return ""
+
+    if output_format == "json":
+        json_str = json.dumps(data, indent=2, default=str)
+        return _syntax_highlight(json_str, "json")
+    elif output_format == "yaml":
+        # Use JSON roundtrip to ensure all values are YAML-safe primitives
+        # (avoids !!python/object tags for UUIDs, enums, etc.)
+        safe_data = json.loads(json.dumps(data, default=str))
+        yaml_str = yaml.dump(
+            safe_data, default_flow_style=False, sort_keys=False
+        )
+        return _syntax_highlight(yaml_str, "yaml")
+    elif output_format in {"csv", "tsv"}:
+        delimiter = "\t" if output_format == "tsv" else ","
+        return _render_delimited([data], delimiter=delimiter)
+    elif output_format == "table":
+        return _render_table([data])
+    else:
+        raise ValueError(f"Unsupported output format: {output_format}")
+
+
+def handle_output_single(
+    data: Dict[str, Any],
+    output_format: OutputFormat,
+) -> None:
+    """Handle output formatting for single-object CLI commands (like describe).
+
+    This function renders a single object and outputs it through the CLI's
+    clean output mechanism.
+
+    Args:
+        data: Dictionary to render.
+        output_format: Output format (table, json, yaml, tsv, csv).
+    """
+    cli_output = prepare_output_single(data=data, output_format=output_format)
+    if cli_output:
+        from zenml_cli import clean_output
+
+        try:
+            clean_output(cli_output)
+        except (IOError, OSError) as err:
+            logger.warning("Failed to write clean output: %s", err)
+            print(cli_output)
 
 
 def _get_terminal_width() -> Optional[int]:
