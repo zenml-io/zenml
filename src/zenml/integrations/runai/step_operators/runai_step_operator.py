@@ -504,7 +504,7 @@ class RunAIStepOperator(BaseStepOperator):
 
     def _build_annotations(
         self, client: RunAIClient, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Any]]:
+    ) -> Optional[List[Annotation]]:
         """Build annotations for the workload pod.
 
         Args:
