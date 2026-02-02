@@ -28,12 +28,12 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
-    verify_permissions_and_get_entity,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
+    dehydrate_response_model,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -130,7 +130,7 @@ def get_logs(
         IllegalOperationError: If the logs are not associated
             with a pipeline run or step run before fetching.
     """
-    logs = zen_store().get_logs(logs_id)
+    logs = zen_store().get_logs(logs_id, hydrate=True)
 
     if logs.pipeline_run_id:
         verify_permission_for_model(
@@ -155,9 +155,10 @@ def get_logs(
             "before fetching."
         )
 
-    return verify_permissions_and_get_entity(
-        id=logs_id, get_method=zen_store().get_logs, hydrate=hydrate
-    )
+    if hydrate is False:
+        logs.metadata = None
+
+    return dehydrate_response_model(logs)
 
 
 @router.put(
@@ -191,7 +192,9 @@ def update_logs(
             step_run_id=logs_update.step_run_id, hydrate=False
         )
         verify_permission_for_model(
-            model=zen_store().get_run(step.pipeline_run_id, hydrate=False),
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
 

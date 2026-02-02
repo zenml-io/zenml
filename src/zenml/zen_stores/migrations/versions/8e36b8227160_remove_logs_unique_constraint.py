@@ -46,13 +46,8 @@ def upgrade() -> None:
         sa.text("""
             UPDATE logs
             SET
-                project_id = (
-                    SELECT project_id
-                    FROM step_run
-                    WHERE step_run.id = logs.step_run_id
-                ),
-                user_id = (
-                    SELECT user_id
+                (project_id, user_id) = (
+                    SELECT step_run.project_id, step_run.user_id
                     FROM step_run
                     WHERE step_run.id = logs.step_run_id
                 )
@@ -65,20 +60,12 @@ def upgrade() -> None:
         sa.text("""
             UPDATE logs
             SET
-                project_id = (
-                    SELECT project_id
+                (project_id, user_id) = (
+                    SELECT pipeline_run.project_id, pipeline_run.user_id
                     FROM pipeline_run
                     WHERE pipeline_run.id = logs.pipeline_run_id
-                ),
-                user_id = COALESCE(
-                    logs.user_id,
-                    (
-                        SELECT user_id
-                        FROM pipeline_run
-                        WHERE pipeline_run.id = logs.pipeline_run_id
-                    )
                 )
-            WHERE project_id IS NULL AND pipeline_run_id IS NOT NULL
+            WHERE step_run_id IS NULL AND pipeline_run_id IS NOT NULL
         """)
     )
 
