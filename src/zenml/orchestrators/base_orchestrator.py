@@ -289,6 +289,20 @@ class BaseOrchestrator(StackComponent, ABC):
         # in the orchestrator environment
         base_environment.update(secrets)
 
+        if placeholder_run and placeholder_run.original_run:
+            from zenml.execution.pipeline.utils import (
+                skip_steps_and_prune_snapshot,
+            )
+
+            run_required = skip_steps_and_prune_snapshot(
+                snapshot=snapshot,
+                pipeline_run=placeholder_run,
+            )
+
+            if not run_required:
+                self._cleanup_run()
+                return
+
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
         )

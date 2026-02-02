@@ -6434,6 +6434,15 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
+        if pipeline_run.original_run_id:
+            self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=PipelineRunSchema,
+                reference_id=pipeline_run.original_run_id,
+                session=session,
+                reference_type="original run",
+            )
+
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )

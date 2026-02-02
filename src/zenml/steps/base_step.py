@@ -1579,6 +1579,7 @@ To avoid this consider setting step parameters only in one place (config or code
         pipeline_run: Union[UUID, str, None] = None,
         step_run_id: Optional[UUID] = None,
         invocation_id: Optional[str] = None,
+        input_overrides: Optional[Mapping[str, Any]] = None,
         debug: bool = False,
     ) -> Any:
         """Replay the step.
@@ -1596,6 +1597,7 @@ To avoid this consider setting step parameters only in one place (config or code
             pipeline_run: The pipeline run to replay.
             step_run_id: The step run ID to replay.
             invocation_id: The invocation ID of the step to replay.
+            input_overrides: Input overrides for the step.
             debug: Whether to run the step in debug mode. In debug mode, the
                 step is executed using a local orchestrator, while keeping the
                 remaining components of your active stack.
@@ -1620,8 +1622,8 @@ To avoid this consider setting step parameters only in one place (config or code
             )
             if len(step_runs) == 0:
                 raise ValueError(
-                    f"No step run found for step `{invocation_id}` in pipeline "
-                    f"run `{pipeline_run}`."
+                    f"No existing step run found for step `{invocation_id}` in "
+                    f"pipeline run `{pipeline_run}`."
                 )
             step_run = step_runs[0]
         elif pipeline:
@@ -1631,8 +1633,8 @@ To avoid this consider setting step parameters only in one place (config or code
             )
             if len(step_runs) == 0:
                 raise ValueError(
-                    f"No step run found for step `{invocation_id}` in latest "
-                    f"run of pipeline `{pipeline_model.name}`."
+                    f"No existing step run found for step `{invocation_id}` "
+                    f"in latest run of pipeline `{pipeline_model.name}`."
                 )
             step_run = step_runs[0]
         else:
@@ -1655,10 +1657,10 @@ To avoid this consider setting step parameters only in one place (config or code
             else:
                 inputs[input_name] = input_artifacts[0].load()
 
+        if input_overrides:
+            inputs.update(input_overrides)
+
         step_instance = self.copy()
-        step_instance.configure(
-            parameters=step_run.config.parameters, merge=False
-        )
 
         if debug:
             with DebugModeContext():
