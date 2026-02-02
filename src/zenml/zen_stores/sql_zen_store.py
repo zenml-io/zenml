@@ -31,6 +31,7 @@ except ImportError:
     ) from None
 
 import base64
+import gzip
 import inspect
 import json
 import logging
@@ -369,6 +370,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     ActionSchema,
     APIKeySchema,
+    ApiTransactionResultSchema,
     ApiTransactionSchema,
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -2479,18 +2481,17 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    def _cleanup_expired_api_transactions(self, session: Session) -> None:
-        """Delete completed API transactions that have expired.
-
-        Args:
-            session: The session to use for the query.
-        """
-        session.execute(
-            delete(ApiTransactionSchema).where(
-                col(ApiTransactionSchema.completed),
-                col(ApiTransactionSchema.expired) < utc_now(),
+    def cleanup_expired_api_transactions(self) -> None:
+        """Delete completed API transactions that have expired."""
+        with Session(self.engine) as session:
+            session.execute(
+                delete(ApiTransactionResultSchema).where(
+                    col(ApiTransactionSchema.completed),
+                    col(ApiTransactionSchema.expired) < utc_now(),
+                )
             )
-        )
+
+            session.commit()
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2516,7 +2517,6 @@ class SqlZenStore(BaseZenStore):
             created = False
             try:
                 session.commit()
-                session.refresh(api_transaction_schema)
                 created = True
             except IntegrityError:
                 # We have to rollback the failed session first in order to
@@ -2535,6 +2535,28 @@ class SqlZenStore(BaseZenStore):
                 ),
                 created,
             )
+
+    def get_api_transaction_result(
+        self, api_transaction_id: UUID
+    ) -> Optional[str]:
+        """Get the result of an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to get the result for.
+
+        Returns:
+            The result of the API transaction.
+        """
+        with Session(self.engine) as session:
+            result_schema = session.exec(
+                select(ApiTransactionResultSchema).where(
+                    ApiTransactionResultSchema.id == api_transaction_id
+                )
+            ).first()
+            if result_schema is not None:
+                data = result_schema.result
+                return gzip.decompress(data).decode("utf-8")
+            return None
 
     def finalize_api_transaction(
         self,
@@ -2555,6 +2577,18 @@ class SqlZenStore(BaseZenStore):
             expired = updated + timedelta(
                 seconds=api_transaction_update.cache_time
             )
+
+            result_value = api_transaction_update.get_result()
+            if result_value is not None:
+                payload = result_value.encode("utf-8")
+                payload = gzip.compress(payload)
+                result_schema = ApiTransactionResultSchema(
+                    id=api_transaction_id,
+                    result=payload,
+                )
+                session.add(result_schema)
+                session.flush()
+
             result = session.execute(
                 update(ApiTransactionSchema)
                 .where(col(ApiTransactionSchema.id) == api_transaction_id)
@@ -2562,16 +2596,16 @@ class SqlZenStore(BaseZenStore):
                     completed=True,
                     updated=updated,
                     expired=expired,
-                    result=api_transaction_update.get_result(),
                 )
             )
-            self._cleanup_expired_api_transactions(session=session)
-            session.commit()
 
             if result.rowcount == 0:  # type: ignore[attr-defined]
+                # The result is also rolled back
                 raise KeyError(
                     f"API transaction with ID {api_transaction_id} not found."
                 )
+
+            session.commit()
 
     def delete_api_transaction(self, api_transaction_id: UUID) -> None:
         """Delete an API transaction.
