@@ -67,24 +67,32 @@ def create_logs(
     """
     if logs.pipeline_run_id:
         verify_permission_for_model(
-            model=zen_store().get_run(logs.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=logs.pipeline_run_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
     elif logs.step_run_id:
         step = zen_store().get_run_step(logs.step_run_id)
         verify_permission_for_model(
-            model=zen_store().get_run(step.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
 
     read_verify_models = []
     if logs.artifact_store_id:
         read_verify_models.append(
-            zen_store().get_stack_component(logs.artifact_store_id)
+            zen_store().get_stack_component(
+                component_id=logs.artifact_store_id, hydrate=False
+            )
         )
     if logs.log_store_id:
         read_verify_models.append(
-            zen_store().get_stack_component(logs.log_store_id)
+            zen_store().get_stack_component(
+                component_id=logs.log_store_id, hydrate=False
+            )
         )
 
     batch_verify_permissions_for_models(
@@ -119,20 +127,24 @@ def get_logs(
         The requested log model.
 
     Raises:
-        IllegalOperationError: If the logs are not associated 
+        IllegalOperationError: If the logs are not associated
             with a pipeline run or step run before fetching.
     """
     logs = zen_store().get_logs(logs_id)
 
     if logs.pipeline_run_id:
         verify_permission_for_model(
-            model=zen_store().get_run(logs.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=logs.pipeline_run_id, hydrate=False
+            ),
             action=Action.READ,
         )
     elif logs.step_run_id:
-        step = zen_store().get_run_step(logs.step_run_id)
+        step = zen_store().get_run_step(step_run_id=logs.step_run_id, hydrate=False)
         verify_permission_for_model(
-            model=zen_store().get_run(step.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
             action=Action.READ,
         )
     else:
@@ -167,13 +179,17 @@ def update_logs(
     """
     if logs_update.pipeline_run_id:
         verify_permission_for_model(
-            model=zen_store().get_run(logs_update.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=logs_update.pipeline_run_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
     elif logs_update.step_run_id:
-        step = zen_store().get_run_step(logs_update.step_run_id)
+        step = zen_store().get_run_step(
+            step_run_id=logs_update.step_run_id, hydrate=False
+        )
         verify_permission_for_model(
-            model=zen_store().get_run(step.pipeline_run_id),
+            model=zen_store().get_run(step.pipeline_run_id, hydrate=False),
             action=Action.UPDATE,
         )
 
