@@ -3,15 +3,9 @@ description: Explore the features and capabilities of the ZenML dashboard
 icon: gauge-high
 ---
 
-# Dashboard Features
+The ZenML dashboard serves as a visual control center for your ML operations, offering intuitive interfaces to navigate pipelines, artifacts, models, and metadata. This guide offers a comprehensive overview of the dashboard's features, helping you leverage its full potential for monitoring, managing, and optimizing your machine learning workflows.
 
-The ZenML dashboard is a powerful web-based interface that provides visualization, management, and analysis capabilities for your ML workflows. This guide offers a comprehensive overview of the dashboard's features, helping you leverage its full potential for monitoring, managing, and optimizing your machine learning pipelines.
-
-## Introduction
-
-The ZenML dashboard serves as a visual control center for your ML operations, offering intuitive interfaces to navigate pipelines, artifacts, models, and metadata. Whether you're using the open-source version or ZenML Pro, the dashboard provides essential capabilities to enhance your ML workflow management.
-
-## Open Source Dashboard Features
+## Open Source Dashboard
 
 The open-source version of ZenML includes a robust set of dashboard features that provide significant value for individual practitioners and teams.
 
@@ -21,8 +15,6 @@ ZenML offers two complementary ways to visualize pipeline executions: the **DAG 
 
 #### DAG View
 
-**Purpose**: Visualizes the logical structure and dependencies of your pipeline.
-
 The DAG (Directed Acyclic Graph) view displays your pipeline as a network graph, showing how data flows between steps. It explicitly visualizes parallel branches, artifact connections, and the overall architecture of your workflow.
 
 ![Pipeline DAG visualization](../../.gitbook/assets/dashboard-v2-pipeline-dag.png)
@@ -30,8 +22,6 @@ The DAG (Directed Acyclic Graph) view displays your pipeline as a network graph,
 This view is best for understanding pipeline architecture, tracing data lineage, and debugging dependency issues. While comprehensive, it can become visually dense in pipelines with a very large number of steps.
 
 #### Timeline View
-
-**Purpose**: Visualizes the temporal execution and performance of your pipeline.
 
 The Timeline View offers a Gantt chart-style visualization where each step is represented by a horizontal bar whose length corresponds to its execution duration. This view excels at performance analysis, making it easy to spot bottlenecks and understand the runtime characteristics of your pipeline.
 
@@ -53,33 +43,10 @@ These views are complementary and work best when used together. The DAG view hel
 - Compare execution duration across steps.
 - Get a quick overview of which steps dominate runtime.
 
-```python
-from zenml import pipeline
-
-# Pipelines automatically generate visualizations in the dashboard
-@pipeline
-def my_training_pipeline():
-    # Note: load_data, preprocess, train_model, evaluate_model would be custom step functions
-    data = load_data()
-    processed_data = preprocess(data)
-    model = train_model(processed_data)
-    evaluate_model(model, processed_data)
-```
-
 ### Pipeline Run Management
 
 The dashboard maintains a comprehensive history of pipeline runs, allowing you to:
 
-```python
-from zenml.client import Client
-
-# Programmatically access pipeline runs that are visible in the dashboard
-pipeline_runs = Client().list_pipeline_runs(
-    pipeline_name="my_training_pipeline"
-)
-```
-
-In the dashboard interface, you can:
 - Browse through previous executions
 - Compare configurations across runs
 - Track changes in pipeline structure over time
@@ -156,8 +123,6 @@ members who may not be familiar with the underlying infrastructure details.
 
 The dashboard supports specialized visualizations for outputs from popular integrations:
 
-#### Analytics Reports and Visualizations
-
 - Evidently reports as interactive HTML
 - Great Expectations validation results with detailed insights
 - WhyLogs profile visualizations
@@ -166,80 +131,15 @@ The dashboard supports specialized visualizations for outputs from popular integ
 
 ![Integration visualizations](../../.gitbook/assets/dashboard-v2-integration-viz.png)
 
-## ZenML Pro Dashboard Features
+## ZenML Pro Dashboard
 
-{% hint style="info" %}
-The following features are available in [ZenML Pro](https://zenml.io/pro). While the basic dashboard is available in the open-source version, these enhanced capabilities provide more advanced visualization, management, and analysis tools.
-{% endhint %}
+ZenML Pro extends the open-source dashboard with additional capabilities for collaboration, governance, and workflow management. For a broader overview of ZenML Pro features, see [ZenML Pro](https://www.zenml.io/pro). For a side-by-side comparison of ZenML OSS vs ZenML Pro, see [ZenML Open Source vs Pro](https://www.zenml.io/open-source-vs-pro).
 
-### Advanced Artifact Control Plane
+This page focuses on Pro features that surface in the dashboard UI. ZenML Pro also includes platform capabilities that are not specific to the dashboard.
 
-ZenML Pro provides a sophisticated artifact control plane that enhances your ability to manage and understand data flowing through your pipelines.
+### Projects and Access Management
 
-#### Comprehensive Metadata Management
-
-The Pro dashboard transforms how you interact with pipeline and model metadata through its powerful exploration tools. When examining ML workflows, metadata provides crucial context about performance metrics, parameters, and execution details.
-
-With the dashboard, you can browse the full set of metadata attributes and apply filters to focus on specific metrics. The interface tracks historical changes to these values, making it easy to understand how your models evolve over time.
-
-Customizable metadata views adapt to different analysis needs, whether you're comparing accuracy across runs or examining resource utilization patterns. This metadata visualization integrates seamlessly with artifact lineage tracking, creating a complete picture of your ML workflow from inputs to outputs.
-
-```python
-from zenml import step, log_metadata, get_step_context
-
-@step
-def evaluate():
-    # Log metrics that will be visualized in the dashboard
-    log_metadata(
-        metadata={
-            "accuracy": 0.95,
-            "precision": 0.92,
-            "recall": 0.91,
-            "f1_score": 0.93
-        }
-    )
-```
-
-### Model Control Plane (MCP)
-
-The Model Control Plane provides centralized model management capabilities designed for production ML workflows.
-
-#### Model Version Management
-
-Track and manage model versions with features like:
-- Clear visualization of model version history
-- Detailed comparisons between versions
-- Performance metrics for each version
-- Linkage to generating pipelines and input artifacts
-
-![Model version management](../../.gitbook/assets/dashboard-v2-model-versions.png)
-
-```python
-from zenml import Model, pipeline
-from zenml.enums import ModelStages
-
-# Models created in code are visible in the dashboard
-@pipeline(
-    model=Model(
-        name="iris_classifier",
-        version="1.0.5"
-    )
-)
-def training_pipeline():
-    # Pipeline implementation...
-```
-
-#### Model Stage Transitions
-
-The Pro dashboard allows you to manage model lifecycle stages:
-- Move models between stages (latest, staging, production, archived)
-- Track transition history and approvals
-- Configure automated promotion rules
-- Monitor model status across environments
-
-### Role-Based Access Control and Team Management
-
-ZenML Pro provides comprehensive role-based access control (RBAC) features through the dashboard, enabling enterprise-level user and resource management:
+ZenML Pro introduces organizations, workspaces, teams, and projects. **Projects** are the main way to organize related pipelines, runs, artifacts, and models and to separate concerns across teams or environments. In the Pro dashboard, you can create and manage projects, switch project context, and view assets scoped to the active project.
 
 #### Organization and Team Structure
 
@@ -268,6 +168,58 @@ The dashboard makes it easy to:
 - Review and audit access rights
 - Visualize permission hierarchies
 
+### Pipeline Snapshots
+
+A **pipeline snapshot** is an immutable, runnable representation of a pipeline that captures its structure and configuration. Snapshots enable teams to run pipelines from the dashboard without direct access to the codebase and help standardize execution across different users and environments.
+
+To learn how to create and run snapshots from the dashboard, see [Pipeline Snapshots](../snapshots/snapshots.md).
+
+### Artifact Control Plane
+
+ZenML Pro provides a sophisticated artifact control plane that enhances your ability to manage and understand data flowing through your pipelines.
+
+#### Comprehensive Metadata Management
+
+The Pro dashboard transforms how you interact with pipeline and model metadata through its powerful exploration tools. When examining ML workflows, metadata provides crucial context about performance metrics, parameters, and execution details.
+
+With the dashboard, you can browse the full set of metadata attributes and apply filters to focus on specific metrics. The interface tracks historical changes to these values, making it easy to understand how your models evolve over time.
+
+Customizable metadata views adapt to different analysis needs, whether you're comparing accuracy across runs or examining resource utilization patterns. This metadata visualization integrates seamlessly with artifact lineage tracking, creating a complete picture of your ML workflow from inputs to outputs.
+
+```python
+from zenml import step, log_metadata, get_step_context
+
+@step
+def evaluate():
+    # Log metrics that will be visualized in the dashboard
+    log_metadata(
+        metadata={
+            "accuracy": 0.95,
+            "precision": 0.92,
+            "recall": 0.91,
+            "f1_score": 0.93
+        }
+    )
+```
+
+### Model Control Plane
+
+The Model Control Plane provides centralized model management capabilities designed for production ML workflows that allows you to have:
+
+- Clear visualization of model version history
+- Detailed comparisons between versions
+- Performance metrics for each version
+- Linkage to generating pipelines and input artifacts
+
+![Model version management](../../.gitbook/assets/dashboard-v2-model-versions.png)
+
+Additionally, the Pro dashboard allows you to manage model lifecycle stages:
+
+- Move models between stages (latest, staging, production, archived)
+- Track transition history and approvals
+- Configure automated promotion rules
+- Monitor model status across environments
+
 ### Experiment Comparison Tools
 
 ZenML Pro offers powerful tools for comparing experiments and understanding the relationships between different runs.
@@ -292,6 +244,9 @@ Understand complex relationships between parameters and outcomes:
 
 ![Parallel coordinates visualization](../../.gitbook/assets/dashboard-v2-parallel-coords.png)
 
+### Beyond the Dashboard
+
+For a comprehensive overview of ZenML Pro capabilities (including features that are not specific to the dashboard), see [ZenML Pro](https://www.zenml.io/pro) and [ZenML Open Source vs Pro](https://www.zenml.io/open-source-vs-pro).
 
 ## Dashboard Best Practices
 
@@ -313,8 +268,7 @@ Understand complex relationships between parameters and outcomes:
 
 Whether you're using the open-source version or ZenML Pro, the dashboard provides powerful capabilities to enhance your ML workflow visibility, management, and optimization. As you build more complex pipelines and models, these visualization and management features become increasingly valuable for maintaining efficiency and quality in your ML operations.
 
-{% hint style="info" %}
-**OSS vs Pro Feature Summary:**
-* **ZenML OSS:** Includes pipeline DAG and timeline visualizations, artifact visualization, integration-specific visualizations, run history, and step execution details
-* **ZenML Pro:** Adds model control plane, experiment comparison tools, and comprehensive role-based access control (RBAC) with team management capabilities
-{% endhint %}
+### OSS vs Pro at a Glance
+
+- **ZenML OSS**: Pipeline DAG and timeline visualizations, artifact viewing and lineage, run history, step execution details, and integration-specific visualizations.
+- **ZenML Pro**: Adds projects and access management, pipeline snapshots (run pipelines from the dashboard), experiment comparison tools, advanced artifact/metadata exploration, and additional model management views.
