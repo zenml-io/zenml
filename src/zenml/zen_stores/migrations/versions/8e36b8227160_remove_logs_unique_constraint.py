@@ -39,54 +39,54 @@ def upgrade() -> None:
         )
 
     connection = op.get_bind()
-
-    # Prefer inferring scope from step runs when available, since a step run
-    # always belongs to a single pipeline run.
-    connection.execute(
-        sa.text("""
-            UPDATE logs
-            SET
-                project_id = (
-                    SELECT project_id
-                    FROM step_run
-                    WHERE step_run.id = logs.step_run_id
-                ),
-                user_id = (
-                    SELECT user_id
-                    FROM step_run
-                    WHERE step_run.id = logs.step_run_id
-                )
-            WHERE step_run_id IS NOT NULL
-        """)
+    logs = sa.table(
+        "logs",
+        sa.column("project_id"),
+        sa.column("user_id"),
+        sa.column("step_run_id"),
+        sa.column("pipeline_run_id"),
+    )
+    step_run = sa.table(
+        "step_run",
+        sa.column("id"),
+        sa.column("project_id"),
+        sa.column("user_id"),
+    )
+    pipeline_run = sa.table(
+        "pipeline_run",
+        sa.column("id"),
+        sa.column("project_id"),
+        sa.column("user_id"),
     )
 
-    # Fall back to pipeline run scoping for rows not linked to a step run.
     connection.execute(
-        sa.text("""
-            UPDATE logs
-            SET
-                project_id = (
-                    SELECT project_id
-                    FROM pipeline_run
-                    WHERE pipeline_run.id = logs.pipeline_run_id
-                ),
-                user_id = (
-                    SELECT user_id
-                    FROM pipeline_run
-                    WHERE pipeline_run.id = logs.pipeline_run_id
-                )
-            WHERE step_run_id IS NULL AND pipeline_run_id IS NOT NULL
-        """)
+        sa.update(logs)
+        .where(logs.c.step_run_id.is_not(None))
+        .values(
+            project_id=sa.select(step_run.c.project_id)
+            .where(step_run.c.id == logs.c.step_run_id)
+            .scalar_subquery(),
+            user_id=sa.select(step_run.c.user_id)
+            .where(step_run.c.id == logs.c.step_run_id)
+            .scalar_subquery(),
+        )
     )
 
-    # If we cannot infer a project for a log entry, it cannot be kept because
-    # the logs table is project-scoped.
     connection.execute(
-        sa.text("""
-            DELETE FROM logs
-            WHERE project_id IS NULL
-        """)
+        sa.update(logs)
+        .where(logs.c.step_run_id.is_(None))
+        .where(logs.c.pipeline_run_id.is_not(None))
+        .values(
+            project_id=sa.select(pipeline_run.c.project_id)
+            .where(pipeline_run.c.id == logs.c.pipeline_run_id)
+            .scalar_subquery(),
+            user_id=sa.select(pipeline_run.c.user_id)
+            .where(pipeline_run.c.id == logs.c.pipeline_run_id)
+            .scalar_subquery(),
+        )
     )
+
+    connection.execute(sa.delete(logs).where(logs.c.project_id.is_(None)))
 
     with op.batch_alter_table("logs", schema=None) as batch_op:
         batch_op.alter_column(
