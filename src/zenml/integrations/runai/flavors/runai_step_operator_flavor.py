@@ -288,8 +288,8 @@ class RunAIStepOperatorConfig(
     )
     runai_base_url: str = Field(
         ...,
-        description="Run:AI control plane base URL. For SaaS deployments, use format "
-        "'https://<organization>.run.ai'. For self-hosted, use your control plane URL. "
+        description="Run:AI control plane base URL. For Run:AI SaaS, use format "
+        "'https://<organization>.run.ai'. For self-hosted Run:AI deployments, use your control plane URL. "
         "Example: 'https://my-org.run.ai'",
     )
 
