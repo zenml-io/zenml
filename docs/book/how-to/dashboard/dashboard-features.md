@@ -244,31 +244,6 @@ Understand complex relationships between parameters and outcomes:
 
 ![Parallel coordinates visualization](../../.gitbook/assets/dashboard-v2-parallel-coords.png)
 
-### Beyond the Dashboard
-
-For a comprehensive overview of ZenML Pro capabilities (including features that are not specific to the dashboard), see [ZenML Pro](https://www.zenml.io/pro) and [ZenML Open Source vs Pro](https://www.zenml.io/open-source-vs-pro).
-
-## Dashboard Best Practices
-
-### Organizing Your Dashboard
-
-- **Use Tags**: Apply consistent tags to pipelines, runs, and artifacts to make filtering more effective
-- **Naming Conventions**: Create clear naming conventions for pipelines and artifacts
-- **Regular Cleanup**: Archive or delete unnecessary runs to maintain dashboard performance
-- **Capture Rich Metadata**: The more metadata you track, the more valuable your dashboard visualizations become
-
-### Dashboard for Teams
-
-- Establish consistent patterns for pipeline organization
-- Define team conventions for artifact naming and tagging
-- Leverage shared stacks and components
-- Use the dashboard as a communication tool during team reviews
-
-## Conclusion
-
-Whether you're using the open-source version or ZenML Pro, the dashboard provides powerful capabilities to enhance your ML workflow visibility, management, and optimization. As you build more complex pipelines and models, these visualization and management features become increasingly valuable for maintaining efficiency and quality in your ML operations.
-
-### OSS vs Pro at a Glance
-
-- **ZenML OSS**: Pipeline DAG and timeline visualizations, artifact viewing and lineage, run history, step execution details, and integration-specific visualizations.
-- **ZenML Pro**: Adds projects and access management, pipeline snapshots (run pipelines from the dashboard), experiment comparison tools, advanced artifact/metadata exploration, and additional model management views.
+{% hint style="info" %}
+For the complete ZenML Pro feature set (including capabilities that are not dashboard-specific), see [ZenML Pro](https://www.zenml.io/pro) and [ZenML Open Source vs Pro](https://www.zenml.io/open-source-vs-pro).
+{% endhint %}
