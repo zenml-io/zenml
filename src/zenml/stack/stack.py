@@ -417,7 +417,31 @@ class Stack:
         Returns:
             The orchestrator of the stack.
         """
-        return self._orchestrator
+        from zenml.execution.utils import DebugModeContext
+        from zenml.orchestrators import (
+            LocalOrchestrator,
+            LocalOrchestratorConfig,
+        )
+
+        if not DebugModeContext.is_active():
+            return self._orchestrator
+
+        now = utc_now()
+
+        return LocalOrchestrator(
+            id=UUID("00000000-0000-0000-0000-000000000000"),
+            name="local-debug",
+            config=LocalOrchestratorConfig(),
+            flavor="local",
+            type=StackComponentType.ORCHESTRATOR,
+            user=None,
+            created=now,
+            updated=now,
+            # Use the environment and secrets of the actual orchestrator in
+            # the debug case
+            environment=self._orchestrator.environment,
+            secrets=self._orchestrator.secrets,
+        )
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":

@@ -1572,3 +1572,96 @@ To avoid this consider setting step parameters only in one place (config or code
                 params[key] = value
 
         return params
+
+    def replay(
+        self,
+        pipeline: Union[UUID, str, None] = None,
+        pipeline_run: Union[UUID, str, None] = None,
+        step_run_id: Optional[UUID] = None,
+        invocation_id: Optional[str] = None,
+        debug: bool = False,
+    ) -> Any:
+        """Replay the step.
+
+        The step to replay gets determined as follows:
+        - If you specify a step run ID, that specific step run is replayed.
+        - If you specify a pipeline run, the step run with the given invocation
+          ID (or the step name if no invocation ID is specified) is replayed.
+        - If you specify a pipeline, the last run of that pipeline is used. The
+          step run with the given invocation ID (or the step name if no
+          invocation ID is specified) is replayed.
+
+        Args:
+            pipeline: The pipeline to replay.
+            pipeline_run: The pipeline run to replay.
+            step_run_id: The step run ID to replay.
+            invocation_id: The invocation ID of the step to replay.
+            debug: Whether to run the step in debug mode. In debug mode, the
+                step is executed using a local orchestrator, while keeping the
+                remaining components of your active stack.
+
+        Raises:
+            ValueError: If no step run can be found.
+
+        Returns:
+            The outputs of the replayed step run.
+        """
+        from zenml.client import Client
+        from zenml.execution.utils import DebugModeContext
+
+        invocation_id = invocation_id or self.name
+
+        if step_run_id:
+            step_run = Client().get_run_step(step_run_id)
+        elif pipeline_run:
+            pipeline_run_model = Client().get_pipeline_run(pipeline_run)
+            step_runs = Client().list_run_steps(
+                pipeline_run_id=pipeline_run_model.id, name=invocation_id
+            )
+            if len(step_runs) == 0:
+                raise ValueError(
+                    f"No step run found for step `{invocation_id}` in pipeline "
+                    f"run `{pipeline_run}`."
+                )
+            step_run = step_runs[0]
+        elif pipeline:
+            pipeline_model = Client().get_pipeline(pipeline)
+            step_runs = Client().list_run_steps(
+                pipeline_run_id=pipeline_model.last_run.id, name=invocation_id
+            )
+            if len(step_runs) == 0:
+                raise ValueError(
+                    f"No step run found for step `{invocation_id}` in latest "
+                    f"run of pipeline `{pipeline_model.name}`."
+                )
+            step_run = step_runs[0]
+        else:
+            raise ValueError(
+                "No pipeline, pipeline run, or step run provided."
+            )
+
+        if step_run.code_hash != self.source_code_cache_value:
+            logger.warning(
+                "The code of the step run that you're trying to replay does "
+                "not match your local step code."
+            )
+
+        inputs = {}
+        for input_name, input_artifacts in step_run.regular_inputs.items():
+            if len(input_artifacts) > 1:
+                inputs[input_name] = [
+                    artifact.load() for artifact in input_artifacts
+                ]
+            else:
+                inputs[input_name] = input_artifacts[0].load()
+
+        step_instance = self.copy()
+        step_instance.configure(
+            parameters=step_run.config.parameters, merge=False
+        )
+
+        if debug:
+            with DebugModeContext():
+                return run_as_single_step_pipeline(step_instance, **inputs)
+        else:
+            return run_as_single_step_pipeline(step_instance, **inputs)
