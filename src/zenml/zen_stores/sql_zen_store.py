@@ -4417,12 +4417,15 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate, include_resources=True
             )
 
-    def _create_logs(self, logs: LogsRequest, session: Session) -> LogsSchema:
+    def _create_logs(
+        self, logs: LogsRequest, session: Session, verify: bool = True
+    ) -> LogsSchema:
         """Create a logs entry.
 
         Args:
             logs: The logs entry to create.
             session: The session to use.
+            verify: Whether to verify the existence of the referenced schemas.
 
         Returns:
             The created logs entry.
@@ -4441,14 +4444,14 @@ class SqlZenStore(BaseZenStore):
                 reference_id=logs.log_store_id,
                 session=session,
             )
-        if logs.pipeline_run_id:
+        if verify and logs.pipeline_run_id:
             self._get_reference_schema_by_id(
                 resource=logs,
                 reference_schema=PipelineRunSchema,
                 reference_id=logs.pipeline_run_id,
                 session=session,
             )
-        if logs.step_run_id:
+        if verify and logs.step_run_id:
             self._get_reference_schema_by_id(
                 resource=logs,
                 reference_schema=StepRunSchema,
@@ -6648,6 +6651,7 @@ class SqlZenStore(BaseZenStore):
                         pipeline_run_id=new_run.id,
                     ),
                     session=session,
+                    verify=False,
                 )
 
         try:
@@ -7117,6 +7121,7 @@ class SqlZenStore(BaseZenStore):
                             log_store_id=log_request.log_store_id,
                         ),
                         session=session,
+                        verify=False,
                     )
 
             self._attach_tags_to_resources(
@@ -10230,6 +10235,7 @@ class SqlZenStore(BaseZenStore):
                             step_run_id=step_schema.id,
                         ),
                         session=session,
+                        verify=False,
                     )
 
             # If cached, attach metadata of the original step
@@ -10694,6 +10700,7 @@ class SqlZenStore(BaseZenStore):
                             log_store_id=log_request.log_store_id,
                         ),
                         session=session,
+                        verify=False,
                     )
 
             return existing_step_run.to_model(

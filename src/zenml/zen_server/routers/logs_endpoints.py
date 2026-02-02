@@ -140,7 +140,9 @@ def get_logs(
             action=Action.READ,
         )
     elif logs.step_run_id:
-        step = zen_store().get_run_step(step_run_id=logs.step_run_id, hydrate=False)
+        step = zen_store().get_run_step(
+            step_run_id=logs.step_run_id, hydrate=False
+        )
         verify_permission_for_model(
             model=zen_store().get_run(
                 run_id=step.pipeline_run_id, hydrate=False
