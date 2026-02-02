@@ -7,7 +7,7 @@ This document provides guidance for Codex agents working with the ZenML codebase
 - `/src/zenml/` - Core source code
 - `/tests/` - Test suite (unit, integration)
 - `/docs/` - Documentation
-- `/examples/` - Example projects (IMPORTANT: Do not modify directly - this folder is updated by CI from other repositories)
+- `/examples/` - Example projects
 - `/scripts/` - Development utilities
 
 Use filesystem navigation tools to explore the codebase structure as needed.

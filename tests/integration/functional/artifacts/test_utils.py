@@ -330,6 +330,59 @@ def test_download_artifact_files_from_response_fails_if_exists(
     shutil.rmtree(tmp_path)
 
 
+def test_download_artifact_files_with_large_file(clean_client):
+    """Test downloading artifact files larger than chunk size (8192 bytes).
+
+    This test ensures that files larger than the internal CHUNK_SIZE are
+    downloaded correctly without data loss. Regression test for issue #4349.
+    """
+    # Create a large artifact (> 8192 bytes to trigger chunking)
+    large_data = b"X" * 10000 + b"Y" * 10000 + b"Z" * 5000  # 25,000 bytes
+
+    # Save the artifact
+    artifact_name = "large_test_artifact"
+    save_artifact(large_data, name=artifact_name)
+
+    # Load the artifact version
+    av = clean_client.get_artifact_version(artifact_name)
+
+    # Download to a temporary zip file
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        zipfile_path = os.path.join(tmp_dir, "large_artifact.zip")
+        av.download_files(path=zipfile_path)
+
+        assert os.path.exists(zipfile_path)
+
+        # Extract and verify the content
+        with zipfile.ZipFile(zipfile_path, "r") as zip_ref:
+            zip_ref.extractall(tmp_dir)
+
+        # The artifact should be saved as a pickle file
+        extracted_files = [
+            f for f in os.listdir(tmp_dir) if f != "large_artifact.zip"
+        ]
+        assert len(extracted_files) > 0, "No files extracted from ZIP"
+
+        # Read the extracted file and verify size
+        extracted_file_path = os.path.join(tmp_dir, extracted_files[0])
+        with open(extracted_file_path, "rb") as f:
+            extracted_data = f.read()
+
+        # Verify the complete data was preserved (not just the last chunk)
+        assert len(extracted_data) > 8192, (
+            f"Extracted file is only {len(extracted_data)} bytes, "
+            "suggesting only one chunk was preserved"
+        )
+
+        # The extracted file should be a pickle, so we can't directly compare
+        # bytes, but we can verify it's loadable and matches the original
+        loaded_data = load_artifact(artifact_name)
+        assert loaded_data == large_data, (
+            "Loaded artifact data doesn't match original. "
+            f"Expected {len(large_data)} bytes, got {len(loaded_data)} bytes"
+        )
+
+
 def parallel_artifact_version_creation(mocked_client) -> int:
     with patch("zenml.artifacts.utils.Client", return_value=mocked_client):
         with patch("zenml.artifacts.utils.logger.debug") as logger_mock:
