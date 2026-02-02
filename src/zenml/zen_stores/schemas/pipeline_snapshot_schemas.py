@@ -52,12 +52,10 @@ from zenml.zen_stores.schemas.schema_utils import (
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
-from zenml.zen_stores.schemas.trigger_assoc import TriggerSnapshotSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import TriggerSchema
     from zenml.zen_stores.schemas.curated_visualization_schemas import (
         CuratedVisualizationSchema,
     )
@@ -243,20 +241,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             cascade="delete",
             order_by="CuratedVisualizationSchema.display_order",
         ),
-    )
-
-    trigger_links: list["TriggerSnapshotSchema"] = Relationship(
-        back_populates="snapshot",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan",
-            "passive_deletes": True,
-        },
-    )
-
-    triggers: list["TriggerSchema"] = Relationship(
-        back_populates="snapshots",
-        link_model=TriggerSnapshotSchema,
-        sa_relationship_kwargs={"viewonly": True},
     )
 
     @property
@@ -623,10 +607,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         include_resources=False,
                     )
                     for visualization in self.visualizations
-                ],
-                triggers=[
-                    trigger.to_model(include_resources=False)
-                    for trigger in self.triggers
                 ],
             )
 

@@ -9,7 +9,6 @@ Create Date: 2026-01-28 13:07:51.002374
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
-from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "3855b5d051cd"
@@ -29,13 +28,11 @@ def upgrade() -> None:
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("active", sa.Boolean(), nullable=False),
         sa.Column("is_archived", sa.Boolean(), nullable=False),
-        sa.Column("trigger_type", sa.VARCHAR(length=20), nullable=False),
-        sa.Column("category", sa.VARCHAR(length=50), nullable=False),
+        sa.Column("type", sa.VARCHAR(length=20), nullable=False),
+        sa.Column("flavor", sa.VARCHAR(length=50), nullable=False),
         sa.Column(
-            "data",
-            sa.String(length=16777215).with_variant(
-                mysql.MEDIUMTEXT(), "mysql"
-            ),
+            "configuration",
+            sa.TEXT(),
             nullable=False,
         ),
         sa.Column("project_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
@@ -60,16 +57,11 @@ def upgrade() -> None:
     )
     with op.batch_alter_table("trigger", schema=None) as batch_op:
         batch_op.create_index(
-            "ix_trigger_category", ["category"], unique=False
-        )
-        batch_op.create_index(
-            "ix_trigger_category_next_occurrence",
-            ["category", "next_occurrence"],
+            "ix_trigger_flavor_next_occurrence",
+            ["flavor", "next_occurrence"],
             unique=False,
         )
-        batch_op.create_index(
-            "ix_trigger_trigger_type", ["trigger_type"], unique=False
-        )
+        batch_op.create_index("ix_trigger_type", ["type"], unique=False)
 
     op.create_table(
         "trigger_snapshot",
@@ -114,9 +106,8 @@ def downgrade() -> None:
     op.drop_table("trigger_execution")
     op.drop_table("trigger_snapshot")
     with op.batch_alter_table("trigger", schema=None) as batch_op:
-        batch_op.drop_index("ix_trigger_trigger_type")
-        batch_op.drop_index("ix_trigger_category_next_occurrence")
-        batch_op.drop_index("ix_trigger_category")
+        batch_op.drop_index("ix_trigger_type")
+        batch_op.drop_index("ix_trigger_flavor_next_occurrence")
 
     op.drop_table("trigger")
     # ### end Alembic commands ###

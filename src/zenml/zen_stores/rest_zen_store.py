@@ -48,7 +48,6 @@ from pydantic import (
 from requests.adapters import HTTPAdapter, Retry
 
 import zenml
-from zenml import TriggerFilter, TriggerRequest, TriggerResponse, TriggerUpdate
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -262,6 +261,9 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -269,6 +271,10 @@ from zenml.models import (
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
+)
+from zenml.triggers.registry import (
+    TRIGGER_RETURN_TYPE_UNION,
+    TYPE_TO_RESPONSE_MAPPING,
 )
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -2090,7 +2096,9 @@ class RestZenStore(BaseZenStore):
 
     # ----------------------------- Triggers ------------------------------
 
-    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Creates a new trigger.
 
         Args:
@@ -2102,12 +2110,12 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=trigger,
             route=TRIGGERS,
-            response_model=TriggerResponse,
+            response_model=TRIGGER_RETURN_TYPE_UNION,
         )
 
     def get_trigger(
         self, trigger_id: UUID, hydrate: bool = True
-    ) -> TriggerResponse:
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Retrieves a trigger.
 
         Args:
@@ -2118,18 +2126,23 @@ class RestZenStore(BaseZenStore):
             The trigger.
 
         Raises:
-            KeyError: if the trigger does not exist.
+            ValueError: In case of bad response.
         """
-        return self._get_resource(
-            resource_id=trigger_id,
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-            params={"hydrate": hydrate},
+        from zenml.triggers.registry import TYPE_TO_RESPONSE_MAPPING
+
+        body: dict[str, Any] = self.get(  # type: ignore[assignment]
+            f"{TRIGGERS}/{str(trigger_id)}", params={"hydrate": hydrate}
         )
+
+        try:
+            response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
+            return response_model.model_validate(body)
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
 
     def list_triggers(
         self, triggers_filter_model: TriggerFilter, hydrate: bool = False
-    ) -> Page[TriggerResponse]:
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
         """List all triggers.
 
         Args:
@@ -2140,17 +2153,40 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of triggers matching the filter criteria.
+
+        Raises:
+            ValueError: In case of bad response.
         """
-        return self._list_paginated_resources(
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-            filter_model=triggers_filter_model,
-            params={"hydrate": hydrate},
+        from zenml.triggers.registry import TYPE_TO_RESPONSE_MAPPING
+
+        body: dict[str, Any] = self.get(  # type: ignore[assignment]
+            TRIGGERS,
+            params={
+                "hydrate": hydrate,
+                **triggers_filter_model.model_dump(exclude_none=True),
+            },
         )
+
+        page_of_items: Page[AnyResponse] = Page.model_validate(body)  # type: ignore[valid-type]
+
+        if not page_of_items.items:
+            return page_of_items
+
+        try:
+            page_of_items.items = [
+                TYPE_TO_RESPONSE_MAPPING[
+                    generic_item["body"]["type"]
+                ].model_validate(generic_item)
+                for generic_item in body["items"]
+            ]
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
+
+        return page_of_items
 
     def update_trigger(
         self, trigger_id: UUID, trigger_update: TriggerUpdate
-    ) -> TriggerResponse:
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Updates a trigger.
 
         Args:
@@ -2161,14 +2197,17 @@ class RestZenStore(BaseZenStore):
             The updated trigger.
 
         Raises:
-            KeyError: if the schedule doesn't exist.
+            ValueError: In case of bad response.
         """
-        return self._update_resource(
-            resource_id=trigger_id,
-            resource_update=trigger_update,
-            route=TRIGGERS,
-            response_model=TriggerResponse,
+        body: dict[str, Any] = self.put(  # type: ignore[assignment]
+            f"TRIGGERS/{trigger_id}", body=trigger_update, params=None
         )
+
+        try:
+            response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
+            return response_model.model_validate(body)
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
 
     def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
         """Deletes a trigger.
@@ -2176,9 +2215,6 @@ class RestZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             soft: Flag deciding whether to soft-delete the trigger.
-
-        Raises:
-            KeyError: if the schedule doesn't exist.
         """
         self._delete_resource(
             resource_id=trigger_id,
@@ -2194,9 +2230,6 @@ class RestZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             snapshot_id: The ID of the snapshot.
-
-        Raises:
-            KeyError: if the entities don't exist.
         """
         self.put(
             path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
@@ -2211,33 +2244,9 @@ class RestZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             snapshot_id: The ID of the snapshot.
-
-        Raises:
-            KeyError: if the entities don't exist.
         """
         self.delete(
             path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
-            timeout=5,
-        )
-
-    def create_trigger_execution(
-        self,
-        trigger_id: UUID,
-        pipeline_run_id: UUID,
-    ) -> None:
-        """Creates a trigger execution object.
-
-        Comment: Useful to associate triggers & runs.
-
-        Args:
-            trigger_id: The ID of the trigger.
-            pipeline_run_id: The ID of the pipeline run.
-
-        Raises:
-            KeyError: if the entities don't exist.
-        """
-        self.put(
-            path=f"{TRIGGERS}/{trigger_id}/{RUNS}/{pipeline_run_id}",
             timeout=5,
         )
 

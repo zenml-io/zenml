@@ -323,7 +323,6 @@ from zenml.models import (
     TagUpdate,
     TriggerFilter,
     TriggerRequest,
-    TriggerResponse,
     TriggerUpdate,
     UserAuthModel,
     UserFilter,
@@ -337,6 +336,7 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
+from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
 from zenml.utils import source_utils, tag_utils, uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -6871,7 +6871,9 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Triggers ---------------------
 
-    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Creates a new trigger.
 
         Args:
@@ -6898,7 +6900,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_trigger(
         self, trigger_id: UUID, hydrate: bool = True
-    ) -> TriggerResponse:
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Retrieves a trigger.
 
         Args:
@@ -6907,9 +6909,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The trigger.
-
-        Raises:
-            KeyError: if the trigger does not exist.
         """
         with Session(self.engine) as session:
             # Check if trigger with the given ID exists
@@ -6929,7 +6928,7 @@ class SqlZenStore(BaseZenStore):
         self,
         triggers_filter_model: TriggerFilter,
         hydrate: bool = False,
-    ) -> Page[TriggerResponse]:
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
         """List all triggers.
 
         Args:
@@ -6957,7 +6956,7 @@ class SqlZenStore(BaseZenStore):
 
     def update_trigger(
         self, trigger_id: UUID, trigger_update: TriggerUpdate
-    ) -> TriggerResponse:
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Updates a trigger.
 
         Args:
@@ -6968,7 +6967,7 @@ class SqlZenStore(BaseZenStore):
             The updated trigger.
 
         Raises:
-            KeyError: if the schedule doesn't exist.
+            IllegalOperationError: If archived scheduled is updated.
         """
         with Session(self.engine) as session:
             # Check if trigger with the given ID exists
@@ -7003,9 +7002,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             soft: Flag deciding whether to soft delete the trigger.
-
-        Raises:
-            KeyError: if the schedule doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if trigger with the given ID exists
@@ -7043,7 +7039,8 @@ class SqlZenStore(BaseZenStore):
             snapshot_id: The ID of the snapshot.
 
         Raises:
-            KeyError: if the entities don't exist.
+            IllegalOperationError: if the trigger is archived.
+            KeyError: If associated entities do not exist.
         """
         with Session(self.engine) as session:
             snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
@@ -7109,6 +7106,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the entities don't exist.
+            IllegalOperationError: if the trigger is archived.
         """
         with Session(self.engine) as session:
             run = session.get(PipelineRunSchema, pipeline_run_id)

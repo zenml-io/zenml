@@ -13,18 +13,19 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for triggers."""
 
-from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, PIPELINE_SNAPSHOTS, RUNS, TRIGGERS, VERSION_1
+from zenml.constants import API, PIPELINE_SNAPSHOTS, TRIGGERS, VERSION_1
 from zenml.models import (
     Page,
     TriggerFilter,
-    TriggerRequest,
-    TriggerResponse,
-    TriggerUpdate,
+)
+from zenml.triggers.registry import (
+    TRIGGER_CREATE_TYPE_UNION,
+    TRIGGER_RETURN_TYPE_UNION,
+    TRIGGER_UPDATE_TYPE_UNION,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -37,7 +38,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission_for_model
-from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
@@ -55,33 +55,19 @@ router = APIRouter(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
-# and can be removed after the migration
-@workspace_router.post(
-    "/{project_name_or_id}" + TRIGGERS,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
-    tags=["triggers"],
-)
 @async_fastapi_endpoint_wrapper
 def create_trigger(
-    trigger: TriggerRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    trigger: TRIGGER_CREATE_TYPE_UNION,
     _: AuthContext = Security(authorize),
-) -> TriggerResponse:
+) -> TRIGGER_RETURN_TYPE_UNION:
     """Creates a trigger.
 
     Args:
         trigger: The trigger to create.
-        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created trigger.
     """
-    if project_name_or_id:
-        project = zen_store().get_project(project_name_or_id)
-        trigger.project = project.id
-
     return verify_permissions_and_create_entity(
         request_model=trigger,
         create_method=zen_store().create_trigger,
@@ -92,38 +78,25 @@ def create_trigger(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
-# and can be removed after the migration
-@workspace_router.get(
-    "/{project_name_or_id}" + TRIGGERS,
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-    tags=["triggers"],
-)
 @async_fastapi_endpoint_wrapper
 def list_triggers(
     trigger_filter_model: TriggerFilter = Depends(
         make_dependable(TriggerFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[TriggerResponse]:
+) -> Page[TRIGGER_RETURN_TYPE_UNION]:
     """Gets a list of triggers.
 
     Args:
         trigger_filter_model: Filter model used for pagination, sorting,
             filtering
-        project_name_or_id: Optional name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         List of trigger objects.
     """
-    if project_name_or_id:
-        trigger_filter_model.project = project_name_or_id
-
     return verify_permissions_and_list_entities(
         filter_model=trigger_filter_model,
         resource_type=ResourceType.TRIGGER,
@@ -141,7 +114,7 @@ def get_trigger(
     trigger_id: UUID,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> TriggerResponse:
+) -> TRIGGER_RETURN_TYPE_UNION:
     """Gets a specific trigger using its unique id.
 
     Args:
@@ -166,9 +139,9 @@ def get_trigger(
 @async_fastapi_endpoint_wrapper
 def update_trigger(
     trigger_id: UUID,
-    trigger_update: TriggerUpdate,
+    trigger_update: TRIGGER_UPDATE_TYPE_UNION,
     _: AuthContext = Security(authorize),
-) -> TriggerResponse:
+) -> TRIGGER_RETURN_TYPE_UNION:
     """Updates the attributes on a specific trigger using its unique id.
 
     Args:
@@ -231,6 +204,11 @@ def attach_trigger_to_snapshot(
         action=Action.UPDATE,
     )
 
+    verify_permission_for_model(
+        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
+        action=Action.READ,
+    )
+
     zen_store().attach_trigger_to_snapshot(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
@@ -258,34 +236,12 @@ def detach_trigger_from_snapshot(
         action=Action.UPDATE,
     )
 
+    verify_permission_for_model(
+        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
+        action=Action.READ,
+    )
+
     zen_store().detach_trigger_from_snapshot(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
-    )
-
-
-@router.put(
-    "/{trigger_id}}" + RUNS + "/{pipeline_run_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def create_trigger_execution(
-    trigger_id: UUID,
-    pipeline_run_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> None:
-    """Creates a trigger execution object.
-
-    Args:
-        trigger_id: The ID of the trigger.
-        pipeline_run_id: The ID of the pipeline run.
-    """
-    verify_permission_for_model(
-        model=zen_store().get_trigger(trigger_id=trigger_id, hydrate=True),
-        action=Action.UPDATE,
-    )
-
-    zen_store().create_trigger_execution(
-        trigger_id=trigger_id,
-        pipeline_run_id=pipeline_run_id,
     )

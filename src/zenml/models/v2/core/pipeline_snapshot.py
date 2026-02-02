@@ -56,7 +56,6 @@ from zenml.models.v2.core.pipeline_build import (
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
 from zenml.models.v2.core.tag import TagResponse
-from zenml.models.v2.core.triggers import TriggerResponse
 from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
@@ -348,10 +347,6 @@ class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
         default=[],
         title="Curated visualizations associated with the pipeline snapshot.",
     )
-    triggers: list[TriggerResponse] = Field(
-        default=[],
-        title="Triggers attached to the pipeline snapshot.",
-    )
 
 
 class PipelineSnapshotResponse(
@@ -633,15 +628,6 @@ class PipelineSnapshotResponse(
         """
         return self.get_resources().latest_run_user
 
-    @property
-    def triggers(self) -> list[TriggerResponse]:
-        """Implements the 'triggers' property.
-
-        Returns:
-            A list of triggers attached to this snapshot.
-        """
-        return self.get_resources().triggers
-
 
 # ------------------ Filter Model ------------------
 
@@ -874,9 +860,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             query = query.order_by(desc(column))
 
         return query
-
-
-# ------------------ Trigger Model ------------------
 
 
 class PipelineSnapshotRunRequest(BaseZenModel):

@@ -19,24 +19,24 @@ from typing import Any, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.dialects.mysql.types import MEDIUMTEXT
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.schema import Column
-from sqlalchemy.sql.sqltypes import VARCHAR, String
+from sqlalchemy.sql.sqltypes import TEXT, VARCHAR, String
 from sqlmodel import Field, Relationship
 
-from zenml import ScheduleResponsePayload
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.enums import TriggerCategory, TriggerType
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models import (
-    ScheduleUpdatePayload,
     TriggerRequest,
-    TriggerResponse,
-    TriggerResponseBody,
     TriggerResponseMetadata,
     TriggerResponseResources,
     TriggerUpdate,
+)
+from zenml.triggers.registry import (
+    TRIGGER_RETURN_TYPE_UNION,
+    TYPE_TO_RESPONSE_BODY_MAPPING,
+    TYPE_TO_RESPONSE_MAPPING,
 )
 from zenml.zen_stores.schemas import PipelineSnapshotSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -46,17 +46,15 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.trigger_assoc import (
-    TriggerExecutionSchema,
     TriggerSnapshotSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
-    RunMetadataInterface,
     jl_arg,
 )
 
 
-class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
+class TriggerSchema(NamedSchema, table=True):
     """SQL Model for schedules."""
 
     __tablename__ = "trigger"
@@ -69,18 +67,12 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         build_index(
             table_name=__tablename__,
             column_names=[
-                "trigger_type",
+                "type",
             ],
         ),
         build_index(
             table_name=__tablename__,
-            column_names=[
-                "category",
-            ],
-        ),
-        build_index(
-            table_name=__tablename__,
-            column_names=["category", "next_occurrence"],
+            column_names=["flavor", "next_occurrence"],
         ),
     )
 
@@ -95,19 +87,17 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         description="Soft-deletion flag. If Trigger is set to archived"
         " it is preserved in the DB but otherwise unusable.",
     )
-    trigger_type: str = Field(
+    type: str = Field(
         sa_column=Column(VARCHAR(20), nullable=False),
         description="The Trigger type e.g. webhook, schedule, etc.",
     )
-    category: str = Field(
+    flavor: str = Field(
         sa_column=Column(VARCHAR(50), nullable=False),
         description="The Trigger category e.g. native schedule, github webhook, etc.",
     )
-    data: str = Field(
+    configuration: str = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            String(length=TEXT_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
             nullable=False,
         ),
         description="JSON object - the extra trigger object parameters",
@@ -137,26 +127,9 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
 
     # ------------------ RELATIONSHIPS --------------------------------------------
 
-    snapshot_links: list["TriggerSnapshotSchema"] = Relationship(
-        back_populates="trigger",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan",
-            "passive_deletes": True,
-        },
-    )
-
     snapshots: list[PipelineSnapshotSchema] = Relationship(
-        back_populates="triggers",
         link_model=TriggerSnapshotSchema,
         sa_relationship_kwargs={"viewonly": True},
-    )
-
-    trigger_executions: list[TriggerExecutionSchema] = Relationship(
-        back_populates="trigger",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan",
-            "passive_deletes": True,
-        },
     )
 
     user: UserSchema | None = Relationship(back_populates="triggers")
@@ -193,14 +166,7 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_resources:
             options.extend(
                 [
-                    selectinload(jl_arg(TriggerSchema.snapshots)).joinedload(
-                        jl_arg(PipelineSnapshotSchema.triggers), innerjoin=True
-                    ),
-                    selectinload(
-                        jl_arg(TriggerSchema.trigger_executions)
-                    ).joinedload(
-                        jl_arg(TriggerExecutionSchema.trigger), innerjoin=True
-                    ),
+                    selectinload(jl_arg(TriggerSchema.snapshots)),
                 ]
             )
 
@@ -216,23 +182,22 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             A TriggerSchema object.
         """
-        from zenml.utils.native_schedules import calculate_first_occurrence
+        extra_fields = trigger_request.get_extra_fields()
 
-        if trigger_request.trigger_type == TriggerType.schedule:
-            next_occurrence = calculate_first_occurrence(trigger_request.data)
-        else:
-            next_occurrence = None
-
-        return cls(
+        schema = cls(
             name=trigger_request.name,
             project_id=trigger_request.project,
             user_id=trigger_request.user,
             active=trigger_request.active,
-            data=trigger_request.data.model_dump_json(),
-            trigger_type=trigger_request.trigger_type,
-            category=trigger_request.category,
-            next_occurrence=next_occurrence,
+            configuration=trigger_request.get_config(),
+            flavor=trigger_request.flavor,
+            type=trigger_request.type,
         )
+
+        for field_name, value in extra_fields.items():
+            setattr(schema, field_name, value)
+
+        return schema
 
     def update(self, trigger_update: TriggerUpdate) -> "TriggerSchema":
         """Applies update operation (and validations).
@@ -242,39 +207,17 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Returns:
             The updated TriggerSchema.
-
-        Raises:
-            ValueError: If trigger_update is invalid.
         """
-        from zenml.models.v2.core.triggers import apply_schedule_update
-
         if trigger_update.active is not None:
             self.active = trigger_update.active
 
         if trigger_update.name is not None:
             self.name = trigger_update.name
 
-        if trigger_update.data is not None:
-            if self.trigger_type == TriggerType.schedule.value:
-                if not isinstance(trigger_update.data, ScheduleUpdatePayload):
-                    raise ValueError(
-                        "Expected ScheduleUpdatePayload update object for schedule trigger"
-                    )
+        self.configuration = trigger_update.get_config()
 
-                current = ScheduleResponsePayload(**json.loads(self.data))
-                current.next_occurrence = self.next_occurrence
-
-                data = apply_schedule_update(
-                    update=trigger_update.data,
-                    current=current,
-                    re_activated=bool(
-                        trigger_update.active
-                    ),  # if None or False re_activated=False
-                )
-
-                self.next_occurrence = data.next_occurrence
-
-                self.data = data.model_dump_json()
+        for field_name, value in trigger_update.get_extra_fields().items():
+            setattr(self, field_name, value)
 
         return self
 
@@ -283,7 +226,7 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> TriggerResponse:
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Converts to Pydantic response model.
 
         Args:
@@ -294,23 +237,24 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             A TriggerResponse object.
         """
-        if self.trigger_type == TriggerType.schedule.value:
-            data = ScheduleResponsePayload(**json.loads(self.data))
-            data.next_occurrence = self.next_occurrence
-        else:
-            data = None
+        body_cls = TYPE_TO_RESPONSE_BODY_MAPPING[self.type]
+        response_cls = TYPE_TO_RESPONSE_MAPPING[self.type]
 
-        body = TriggerResponseBody(
+        body = body_cls(
             user_id=self.user_id,
             project_id=self.project_id,
             active=self.active,
             updated=self.updated,
             created=self.created,
             is_archived=self.is_archived,
-            trigger_type=TriggerType(self.trigger_type),
-            category=TriggerCategory(self.category),
-            data=data,
+            type=TriggerType(self.type),
+            flavor=TriggerFlavor(self.flavor),
+            name=self.name,
+            **json.loads(self.configuration),
         )
+
+        for field in body.get_extra_fields():
+            setattr(body, field, getattr(self, field))
 
         metadata = None
         if include_metadata:
@@ -331,7 +275,7 @@ class TriggerSchema(NamedSchema, RunMetadataInterface, table=True):
                 ],
             )
 
-        return TriggerResponse(
+        return response_cls(
             id=self.id,
             name=self.name,
             body=body,

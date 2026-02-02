@@ -18,9 +18,6 @@ from datetime import datetime, timedelta, timezone
 
 from croniter import croniter
 
-from zenml.enums import ScheduleEngine
-from zenml.models import SchedulePayload
-
 
 def next_occurrence_for_interval(
     interval: int | float, start: datetime, base: datetime | None = None
@@ -33,7 +30,7 @@ def next_occurrence_for_interval(
         base: The base used to calculate the next occurrence.
 
     Returns:
-        The next occurrence datatime.
+        The next occurrence datetime.
     """
     start = start.replace(tzinfo=timezone.utc)
 
@@ -61,7 +58,7 @@ def next_occurrence_for_cron(
         base: The base used to calculate the next occurrence.
 
     Returns:
-        The next occurrence datatime.
+        The next occurrence datetime.
     """
     if not base:
         base = datetime.now(tz=timezone.utc)
@@ -71,43 +68,48 @@ def next_occurrence_for_cron(
     return croniter(expression, base).get_next(datetime)
 
 
-def calculate_first_occurrence(schedule: SchedulePayload) -> datetime | None:
+def calculate_first_occurrence(
+    cron_expression: str | None = None,
+    interval: int | None = None,
+    start_time: datetime | None = None,
+    run_once_start_time: datetime | None = None,
+) -> datetime | None:
     """Calculate the first occurrence of a schedule.
 
     Args:
-        schedule: A schedule payload object.
+        cron_expression: The cron expression.
+        interval: The interval in seconds.
+        start_time: The start time.
+        run_once_start_time: The run once start time.
 
     Returns:
         The first occurrence of a schedule.
     """
-    if not schedule.engine == ScheduleEngine.native:
-        return None
-
     now_plus_1_sec = datetime.now(timezone.utc).replace(
         tzinfo=None
     ) + timedelta(seconds=1)
 
-    if schedule.cron_expression:
-        if schedule.start_time and schedule.start_time > now_plus_1_sec:
-            base = schedule.start_time
+    if cron_expression:
+        if start_time and start_time > now_plus_1_sec:
+            base = start_time
         else:
             base = now_plus_1_sec
 
         next_occurrence = next_occurrence_for_cron(
-            expression=schedule.cron_expression,
+            expression=cron_expression,
             base=base,
         )
-    elif schedule.start_time and schedule.interval:
-        if schedule.start_time > now_plus_1_sec:
-            next_occurrence = schedule.start_time
+    elif start_time and interval:
+        if start_time > now_plus_1_sec:
+            next_occurrence = start_time
         else:
             next_occurrence = next_occurrence_for_interval(
-                interval=schedule.interval,
-                start=schedule.start_time,
+                interval=interval,
+                start=start_time,
                 base=now_plus_1_sec,
             )
-    elif schedule.run_once_start_time:
-        next_occurrence = schedule.run_once_start_time
+    elif run_once_start_time:
+        next_occurrence = run_once_start_time
     else:
         return None
 

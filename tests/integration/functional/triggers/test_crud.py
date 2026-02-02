@@ -7,16 +7,13 @@ from tests.integration.functional.utils import sample_name
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.enums import TriggerCategory, TriggerType
+from zenml.enums import TriggerFlavor, TriggerType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     PipelineRequest,
     PipelineSnapshotRequest,
-    SchedulePayload,
-    ScheduleResponsePayload,
-    ScheduleUpdatePayload,
-    TriggerRequest,
-    TriggerUpdate,
+    ScheduleTriggerRequest,
+    ScheduleTriggerUpdate,
 )
 
 
@@ -29,33 +26,33 @@ def test_crud_happy_path(clean_client):
 
     # create trigger
 
-    trigger = TriggerRequest(
+    trigger = ScheduleTriggerRequest(
         project=project.id,
         name=sample_name("trigger-test", random_factor=6),
-        trigger_type=TriggerType.schedule,
-        category=TriggerCategory.native_schedule,
-        data=SchedulePayload(
-            start_time=time_of_launch,
-            interval=60,
-            end_time=time_of_launch + timedelta(minutes=10),
-        ),
+        type=TriggerType.SCHEDULE,
+        flavor=TriggerFlavor.NATIVE_SCHEDULE,
+        start_time=time_of_launch,
+        interval=60,
+        end_time=time_of_launch + timedelta(minutes=10),
+        active=True,
     )
+
+    assert trigger.get_extra_fields()["next_occurrence"] == time_of_launch
+
+    assert isinstance(trigger.get_config(), str)
 
     trigger_response = store.create_trigger(trigger)
 
     # check populated fields
 
     assert not trigger_response.is_archived
-    assert isinstance(trigger_response.data, ScheduleResponsePayload)
-    assert trigger_response.schedule is not None
-    assert trigger_response.schedule.next_occurrence == time_of_launch
+    assert trigger_response.next_occurrence == time_of_launch
 
     # retrieve trigger
 
     t = store.get_trigger(trigger_response.id)
 
     assert t.project_id == project.id
-    assert t.schedule is not None
 
     # update trigger
 
@@ -63,9 +60,12 @@ def test_crud_happy_path(clean_client):
 
     update_response = store.update_trigger(
         trigger_id=trigger_response.id,
-        trigger_update=TriggerUpdate(
+        trigger_update=ScheduleTriggerUpdate(
+            cron_expression="* 1 * * *",
+            interval=None,
             name=new_name,
-            data=ScheduleUpdatePayload(cron_expression="* 1 * * *"),
+            active=True,
+            start_time=time_of_launch,
         ),
     )
 
@@ -73,11 +73,11 @@ def test_crud_happy_path(clean_client):
 
     for updated_trigger in [new_response, update_response]:
         assert updated_trigger.name == new_name
-        assert updated_trigger.data.start_time == time_of_launch
-        assert updated_trigger.data.cron_expression == "* 1 * * *"
-        assert updated_trigger.data.interval is None
+        assert updated_trigger.start_time == time_of_launch
+        assert updated_trigger.cron_expression == "* 1 * * *"
+        assert updated_trigger.interval is None
         assert (
-            updated_trigger.data.next_occurrence != t.data.next_occurrence
+            updated_trigger.next_occurrence != t.next_occurrence
         )  # next occurrence has been updated
 
 
@@ -125,15 +125,14 @@ def test_associations(clean_client):
         )
     )
 
-    assert snapshot.triggers == []
-
     trigger_response = store.create_trigger(
-        TriggerRequest(
+        ScheduleTriggerRequest(
             project=project.id,
             name=sample_name("trigger-test", random_factor=6),
-            trigger_type=TriggerType.schedule,
-            category=TriggerCategory.native_schedule,
-            data=SchedulePayload(cron_expression="* * * * *"),
+            type=TriggerType.SCHEDULE,
+            flavor=TriggerFlavor.NATIVE_SCHEDULE,
+            active=True,
+            cron_expression="* 1 * * *",
         )
     )
 
@@ -150,7 +149,6 @@ def test_associations(clean_client):
     snapshot = store.get_snapshot(snapshot.id)
 
     assert trigger_response.snapshots[0].id == snapshot.id
-    assert snapshot.triggers[0].id == trigger_response.id
 
     # test trigger-snapshot detachment
 
@@ -163,11 +161,14 @@ def test_associations(clean_client):
     snapshot = store.get_snapshot(snapshot.id)
 
     assert trigger_response.snapshots == []
-    assert snapshot.triggers == []
 
     store.update_trigger(
         trigger_id=trigger_response.id,
-        trigger_update=TriggerUpdate(active=False),
+        trigger_update=ScheduleTriggerUpdate(
+            active=False,
+            name=trigger_response.name,
+            cron_expression=trigger_response.cron_expression,
+        ),
     )
 
     # re-attach and test archival flow
@@ -182,9 +183,9 @@ def test_associations(clean_client):
     trigger_response = store.get_trigger(trigger_response.id)
     assert trigger_response.is_archived
 
-    snapshot = store.get_snapshot(snapshot.id)
-
-    assert snapshot.triggers == []  # test archival detaches associations
+    snapshot = store.get_snapshot(
+        snapshot.id
+    )  # test archival detaches associations
 
     with pytest.raises(IllegalOperationError):
         store.attach_trigger_to_snapshot(
@@ -193,5 +194,31 @@ def test_associations(clean_client):
         )
 
 
-def test_sdk_utilities():
-    pass
+def test_sdk_utilities(clean_client):
+    created = clean_client.create_schedule_trigger(
+        name=sample_name("trigger-test"),
+        active=True,
+        cron_expression="* 1 * * *",
+    )
+
+    assert created.type == TriggerType.SCHEDULE
+    assert created.next_occurrence is not None
+    assert not created.is_archived
+
+    updated = clean_client.update_schedule_trigger(
+        trigger_id=created.id, cron_expression="* 2 * * *"
+    )
+
+    assert updated.type == TriggerType.SCHEDULE
+    assert updated.name == created.name
+    assert updated.cron_expression == "* 2 * * *"
+    assert not updated.is_archived
+
+    got = clean_client.get_schedule_trigger(created.id)
+
+    assert got.cron_expression == "* 2 * * *"
+
+    clean_client.delete_trigger(created.id)
+
+    got = clean_client.get_schedule_trigger(created.id)
+    assert got.is_archived

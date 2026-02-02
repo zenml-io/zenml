@@ -18,7 +18,6 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml import TriggerFilter, TriggerRequest, TriggerResponse, TriggerUpdate
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import StackDeploymentProvider
 from zenml.models import (
@@ -143,11 +142,15 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
     UserUpdate,
 )
+from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
 
 
 class ZenStoreInterface(ABC):
@@ -1654,7 +1657,9 @@ class ZenStoreInterface(ABC):
     # -------------------- Triggers ---------------------
 
     @abstractmethod
-    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Creates a new trigger.
 
         Args:
@@ -1667,7 +1672,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_trigger(
         self, trigger_id: UUID, hydrate: bool = True
-    ) -> TriggerResponse:
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Retrieves a trigger.
 
         Args:
@@ -1686,7 +1691,7 @@ class ZenStoreInterface(ABC):
         self,
         triggers_filter_model: TriggerFilter,
         hydrate: bool = False,
-    ) -> Page[TriggerResponse]:
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
         """List all triggers.
 
         Args:
@@ -1702,7 +1707,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_trigger(
         self, trigger_id: UUID, trigger_update: TriggerUpdate
-    ) -> TriggerResponse:
+    ) -> TRIGGER_RETURN_TYPE_UNION:
         """Updates a trigger.
 
         Args:
@@ -1752,24 +1757,6 @@ class ZenStoreInterface(ABC):
         Args:
             trigger_id: The ID of the trigger.
             snapshot_id: The ID of the snapshot.
-
-        Raises:
-            KeyError: if the entities don't exist.
-        """
-
-    @abstractmethod
-    def create_trigger_execution(
-        self,
-        trigger_id: UUID,
-        pipeline_run_id: UUID,
-    ) -> None:
-        """Creates a trigger execution object.
-
-        Comment: Useful to associate triggers & runs.
-
-        Args:
-            trigger_id: The ID of the trigger.
-            pipeline_run_id: The ID of the pipeline run.
 
         Raises:
             KeyError: if the entities don't exist.

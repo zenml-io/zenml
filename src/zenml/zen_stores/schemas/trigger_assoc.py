@@ -1,20 +1,25 @@
-"""SQL Model Implementations for Triggers."""
+# Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""SQL Model Implementations for Triggers Associations."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.sql.schema import Column, ForeignKey
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, SQLModel
 
 from zenml.utils.time_utils import utc_now
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import (
-        PipelineRunSchema,
-        PipelineSnapshotSchema,
-        TriggerSchema,
-    )
 
 
 class TriggerSnapshotSchema(SQLModel, table=True):
@@ -50,11 +55,6 @@ class TriggerSnapshotSchema(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=utc_now)
 
-    trigger: "TriggerSchema" = Relationship(back_populates="snapshot_links")
-    snapshot: "PipelineSnapshotSchema" = Relationship(
-        back_populates="trigger_links"
-    )
-
 
 class TriggerExecutionSchema(SQLModel, table=True):
     """Association table linking triggers to pipeline snapshots.
@@ -88,10 +88,3 @@ class TriggerExecutionSchema(SQLModel, table=True):
     )
 
     created_at: datetime = Field(default_factory=utc_now)
-
-    trigger: "TriggerSchema" = Relationship(
-        back_populates="trigger_executions"
-    )
-    pipeline_run: "PipelineRunSchema" = Relationship(
-        back_populates="trigger_execution"
-    )

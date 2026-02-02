@@ -565,16 +565,10 @@ class GroupType(StrEnum):
 class TriggerType(StrEnum):
     """Enum representing fundamental trigger types."""
 
-    schedule = "schedule"
+    SCHEDULE = "schedule"  # TODO: Extend with Webhook
 
 
-class ScheduleEngine(StrEnum):
-    """Enum representing schedule engines."""
+class TriggerFlavor(StrEnum):
+    """Enum representing trigger flavors."""
 
-    native = "native"
-
-
-class TriggerCategory(StrEnum):
-    """Enum representing trigger categories."""
-
-    native_schedule = "native schedule"
+    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors

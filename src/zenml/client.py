@@ -66,13 +66,12 @@ from zenml.enums import (
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
-    ScheduleEngine,
     ServiceState,
     SorterOps,
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
-    TriggerCategory,
+    TriggerFlavor,
     TriggerType,
     VisualizationResourceTypes,
 )
@@ -151,8 +150,10 @@ from zenml.models import (
     RunTemplateResponse,
     RunTemplateUpdate,
     ScheduleFilter,
-    SchedulePayload,
     ScheduleResponse,
+    ScheduleTriggerRequest,
+    ScheduleTriggerResponse,
+    ScheduleTriggerUpdate,
     ScheduleUpdate,
     SecretFilter,
     SecretRequest,
@@ -188,9 +189,6 @@ from zenml.models import (
     TagResourceRequest,
     TagResponse,
     TagUpdate,
-    TriggerRequest,
-    TriggerResponse,
-    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -3865,7 +3863,7 @@ class Client(metaclass=ClientMetaClass):
 
     # ------------------------------- Triggers ---------------------------------
 
-    def create_native_schedule_trigger(
+    def create_schedule_trigger(
         self,
         name: str,
         project_id: str | UUID | None = None,
@@ -3875,7 +3873,7 @@ class Client(metaclass=ClientMetaClass):
         run_once_start_time: datetime | None = None,
         end_time: datetime | None = None,
         start_time: datetime | None = None,
-    ) -> TriggerResponse:
+    ) -> ScheduleTriggerResponse:
         """Create a native schedule trigger.
 
         Args:
@@ -3892,32 +3890,31 @@ class Client(metaclass=ClientMetaClass):
             The created trigger.
         """
         return self.zen_store.create_trigger(
-            trigger=TriggerRequest(
+            trigger=ScheduleTriggerRequest(
                 project=project_id or self.active_project.id,
                 name=name,
-                trigger_type=TriggerType.schedule,
-                category=TriggerCategory.native_schedule,
+                type=TriggerType.SCHEDULE,
+                flavor=TriggerFlavor.NATIVE_SCHEDULE,
                 active=active,
-                data=SchedulePayload(
-                    cron_expression=cron_expression,
-                    interval=interval,
-                    run_once_start_time=run_once_start_time,
-                    end_time=end_time,
-                    start_time=start_time,
-                    engine=ScheduleEngine.native,
-                ),
+                cron_expression=cron_expression,
+                interval=interval,
+                run_once_start_time=run_once_start_time,
+                end_time=end_time,
+                start_time=start_time,
             )
         )
 
-    def update_native_schedule_trigger(
+    def update_schedule_trigger(
         self,
         trigger_id: UUID,
         name: str | None = None,
         active: bool | None = None,
         cron_expression: str | None = None,
         interval: int | None = None,
+        run_once_start_time: datetime | None = None,
         start_time: datetime | None = None,
-    ) -> TriggerResponse:
+        end_time: datetime | None = None,
+    ) -> ScheduleTriggerResponse:
         """Update a native schedule trigger.
 
         Args:
@@ -3927,26 +3924,30 @@ class Client(metaclass=ClientMetaClass):
             cron_expression: The new cron_expression of the trigger.
             interval: The new interval of the trigger.
             start_time: The new start time of the trigger.
+            end_time: The new end time of the trigger.
+            run_once_start_time: The new run_once_start_time of the trigger.
 
         Returns:
             The updated trigger.
         """
-        from zenml.models import ScheduleUpdatePayload
+        trigger = self.zen_store.get_trigger(trigger_id)
 
         return self.zen_store.update_trigger(
             trigger_id=trigger_id,
-            trigger_update=TriggerUpdate(
-                name=name,
-                active=active,
-                data=ScheduleUpdatePayload(
-                    cron_expression=cron_expression,
-                    interval=interval,
-                    start_time=start_time,
-                ),
+            trigger_update=ScheduleTriggerUpdate(
+                name=name or trigger.name,
+                active=active is not None or trigger.active,
+                cron_expression=cron_expression,
+                interval=interval,
+                run_once_start_time=run_once_start_time,
+                start_time=start_time is not None or trigger.start_time,
+                end_time=end_time is not None or trigger.end_time,
             ),
         )
 
-    def get_trigger(self, trigger_id: UUID) -> TriggerResponse:
+    def get_schedule_trigger(
+        self, trigger_id: UUID
+    ) -> ScheduleTriggerResponse:
         """Retrieve a trigger by trigger ID.
 
         Args:
