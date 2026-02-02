@@ -19,10 +19,17 @@ import threading
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID, uuid4
-
-from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -33,7 +40,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     handle_bool_env_var,
 )
-from zenml.enums import LoggingLevels, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.models import (
@@ -43,6 +50,11 @@ from zenml.models import (
     PipelineRunResponse,
     StepRunResponse,
 )
+from zenml.models.v2.misc.log_models import (
+    LogEntry,
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+)
 from zenml.utils import context_utils
 
 if TYPE_CHECKING:
@@ -51,56 +63,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-
-class LogEntry(BaseModel):
-    """A structured log entry with parsed information.
-
-    This is used in two distinct ways:
-        1. If we are using the artifact log store, we save the
-        entries as JSON-serialized LogEntry's in the artifact store.
-        2. When queried, the server returns logs as a list of LogEntry's.
-    """
-
-    message: str = Field(description="The log message content")
-    name: Optional[str] = Field(
-        default=None,
-        description="The name of the logger",
-    )
-    level: Optional[LoggingLevels] = Field(
-        default=None,
-        description="The log level",
-    )
-    timestamp: Optional[datetime] = Field(
-        default=None,
-        description="When the log was created",
-    )
-    module: Optional[str] = Field(
-        default=None, description="The module that generated this log entry"
-    )
-    filename: Optional[str] = Field(
-        default=None,
-        description="The name of the file that generated this log entry",
-    )
-    lineno: Optional[int] = Field(
-        default=None, description="The fileno that generated this log entry"
-    )
-    chunk_index: int = Field(
-        default=0,
-        description="The index of the chunk in the log entry",
-    )
-    total_chunks: int = Field(
-        default=1,
-        description="The total number of chunks in the log entry",
-    )
-    id: UUID = Field(
-        default_factory=uuid4,
-        description="The unique identifier of the log entry",
-    )
-
-    model_config = ConfigDict(
-        # ignore extra attributes during model initialization
-        extra="ignore",
-    )
+LOGS_ENTRIES_API_MAX_LIMIT = 1000
 
 
 class LoggingContext(context_utils.BaseContext):
@@ -520,6 +483,81 @@ def fetch_logs(
 
     try:
         return log_store.fetch(logs_model=logs, limit=limit)
+    finally:
+        log_store.cleanup()
+
+
+def fetch_logs_entries(
+    *,
+    logs: "LogsResponse",
+    zen_store: "BaseZenStore",
+    limit: int,
+    before: Optional[str],
+    after: Optional[str],
+    filter_: LogsEntriesFilter,
+) -> LogsEntriesResponse:
+    """Fetch logs from the log store using cursor-based pagination."""
+    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
+    from zenml.log_stores.base_log_store import BaseLogStore
+    from zenml.stack import StackComponent
+    from zenml.zen_server.rbac.endpoint_utils import (
+        verify_permissions_and_get_entity,
+    )
+
+    if ENV_ZENML_SERVER not in os.environ:
+        raise RuntimeError(
+            "This utility function is only supported in the server environment."
+        )
+
+    request_limit = min(max(limit, 1), LOGS_ENTRIES_API_MAX_LIMIT)
+
+    log_store: Optional[BaseLogStore] = None
+
+    if logs.log_store_id:
+        log_store_model = verify_permissions_and_get_entity(
+            id=logs.log_store_id,
+            get_method=zen_store.get_stack_component,
+        )
+        if log_store_model.type != StackComponentType.LOG_STORE:
+            raise DoesNotExistException(
+                f"Stack component '{logs.log_store_id}' is not a log store."
+            )
+        try:
+            log_store = cast(
+                BaseLogStore, StackComponent.from_model(log_store_model)
+            )
+        except ImportError as e:
+            raise NotImplementedError(
+                f"Log store '{log_store_model.name}' could not be instantiated."
+            ) from e
+    elif logs.artifact_store_id:
+        artifact_store_model = verify_permissions_and_get_entity(
+            id=logs.artifact_store_id,
+            get_method=zen_store.get_stack_component,
+        )
+        if artifact_store_model.type != StackComponentType.ARTIFACT_STORE:
+            raise DoesNotExistException(
+                f"Stack component '{logs.artifact_store_id}' is not an artifact store."
+            )
+        artifact_store = cast(
+            BaseArtifactStore,
+            StackComponent.from_model(artifact_store_model),
+        )
+        log_store = ArtifactLogStore.from_artifact_store(
+            artifact_store=artifact_store
+        )
+    else:
+        raise ValueError("Logs response does not have a log store or artifact store.")
+
+    try:
+        return log_store.fetch_entries(
+            logs_model=logs,
+            limit=request_limit,
+            before=before,
+            after=after,
+            filter_=filter_,
+        )
     finally:
         log_store.cleanup()
 

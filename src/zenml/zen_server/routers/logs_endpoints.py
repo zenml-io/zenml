@@ -13,17 +13,22 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for logs."""
 
+from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, HTTPException, Query, Security
 
-from zenml.constants import (
-    API,
-    LOGS,
-    VERSION_1,
-)
+from zenml.constants import API, LOGS, VERSION_1
 from zenml.exceptions import IllegalOperationError
 from zenml.models import LogsRequest, LogsResponse, LogsUpdate
+from zenml.models.v2.misc.log_models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+)
+from zenml.utils.logging_utils import (
+    LOGS_ENTRIES_API_MAX_LIMIT,
+    fetch_logs_entries,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -36,10 +41,7 @@ from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
     verify_permission_for_model,
 )
-from zenml.zen_server.utils import (
-    async_fastapi_endpoint_wrapper,
-    zen_store,
-)
+from zenml.zen_server.utils import async_fastapi_endpoint_wrapper, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + LOGS,
@@ -119,7 +121,7 @@ def get_logs(
         The requested log model.
 
     Raises:
-        IllegalOperationError: If the logs are not associated 
+        IllegalOperationError: If the logs are not associated
             with a pipeline run or step run before fetching.
     """
     logs = zen_store().get_logs(logs_id)
@@ -182,4 +184,87 @@ def update_logs(
         update_model=logs_update,
         get_method=zen_store().get_logs,
         update_method=zen_store().update_logs,
+    )
+
+
+@router.get(
+    "/{logs_id}/entries",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def get_logs_entries(
+    logs_id: UUID,
+    filter_: LogsEntriesFilter = Depends(),
+    limit: int = Query(
+        default=LOGS_ENTRIES_API_MAX_LIMIT,
+        description="Maximum number of entries to return (capped at 1000).",
+    ),
+    before: Optional[str] = Query(
+        default=None,
+        description="Opaque cursor token to fetch older entries.",
+    ),
+    after: Optional[str] = Query(
+        default=None,
+        description="Opaque cursor token to fetch newer entries.",
+    ),
+    _: AuthContext = Security(authorize),
+) -> LogsEntriesResponse:
+    """Get log entries for a logs response.
+
+    Args:
+        logs_id: ID of the logs response to get the log entries for.
+        filter_: Filters for the log entries retrieval.
+        limit: Maximum number of entries to return.
+        before: Cursor token to fetch older entries.
+        after: Cursor token to fetch newer entries.
+
+    Returns:
+        The log entries for the logs entity.
+
+    Raises:
+        IllegalOperationError: If the logs are not associated with a pipeline run or step run before fetching.
+    """
+    store = zen_store()
+
+    logs = store.get_logs(logs_id)
+
+    if logs.pipeline_run_id:
+        verify_permission_for_model(
+            model=store.get_run(logs.pipeline_run_id),
+            action=Action.READ,
+        )
+    elif logs.step_run_id:
+        step = store.get_run_step(logs.step_run_id)
+        verify_permission_for_model(
+            model=store.get_run(step.pipeline_run_id),
+            action=Action.READ,
+        )
+    else:
+        raise IllegalOperationError(
+            "Logs must be associated with a pipeline run or step run "
+            "before fetching."
+        )
+
+    logs = verify_permissions_and_get_entity(
+        id=logs_id, get_method=store.get_logs, hydrate=True
+    )
+
+    if limit <= 0:
+        raise HTTPException(
+            status_code=422, detail="`limit` must be positive."
+        )
+
+    if before is not None and after is not None:
+        raise HTTPException(
+            status_code=422,
+            detail="Only one of `before` or `after` can be set.",
+        )
+
+    return fetch_logs_entries(
+        logs=logs,
+        zen_store=store,
+        limit=min(limit, LOGS_ENTRIES_API_MAX_LIMIT),
+        before=before,
+        after=after,
+        filter_=filter_,
     )
