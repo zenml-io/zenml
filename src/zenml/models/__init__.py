@@ -309,6 +309,18 @@ from zenml.models.v2.core.stack import (
     StackResponseMetadata,
     StackResponseResources
 )
+from zenml.models.v2.core.triggers import (
+    TriggerRequest,
+    TriggerUpdate,
+    TriggerResponseBody,
+    TriggerResponseMetadata,
+    TriggerResponseResources,
+    TriggerFilter,
+    ScheduleTriggerRequest,
+    ScheduleTriggerResponseBody,
+    ScheduleTriggerResponse,
+    ScheduleTriggerUpdate,
+)
 from zenml.models.v2.misc.param_groups import (
     PipelineRunIdentifier,
     StepRunIdentifier,
@@ -518,6 +530,14 @@ ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
 ResourcesInfo.model_rebuild()
+TriggerRequest.model_rebuild()
+TriggerResponseBody.model_rebuild()
+TriggerResponseMetadata.model_rebuild()
+TriggerResponseResources.model_rebuild()
+ScheduleTriggerRequest.model_rebuild()
+ScheduleTriggerResponse.model_rebuild()
+ScheduleTriggerResponseBody.model_rebuild()
+ScheduleTriggerUpdate.model_rebuild()
 
 
 __all__ = [
@@ -784,6 +804,12 @@ __all__ = [
     "ProjectResponse",
     "ProjectResponseBody",
     "ProjectResponseMetadata",
+    "TriggerRequest",
+    "TriggerUpdate",
+    "TriggerResponseBody",
+    "TriggerResponseMetadata",
+    "TriggerResponseResources",
+    "TriggerFilter",
     # V2 Misc
     "AuthenticationMethodModel",
     "DeployedStack",
@@ -826,4 +852,8 @@ __all__ = [
     "ArtifactVersionIdentifier",
     "ModelVersionIdentifier",
     "StepHeartbeatResponse",
+    "ScheduleTriggerRequest",
+    "ScheduleTriggerResponse",
+    "ScheduleTriggerResponseBody",
+    "ScheduleTriggerUpdate",
 ]
