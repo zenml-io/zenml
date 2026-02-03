@@ -15,7 +15,7 @@
 
 import os
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from uuid import uuid4
 
 import sky
@@ -339,7 +339,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             launch_new_cluster = True
             if settings.cluster_name:
                 cluster_status = sky.status(
-                    refresh=True,
+                    refresh=sky.StatusRefreshMode.AUTO,
                     cluster_names=[settings.cluster_name],
                 )
                 if cluster_status:
@@ -381,7 +381,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
             else:
                 # Prepare exec parameters with additional launch settings
-                exec_kwargs = {
+                exec_kwargs: Dict[str, Any] = {
                     "down": down,
                     "backend": None,
                 }
@@ -393,6 +393,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                         exec_kwargs[key] = value
 
                 # Make sure the cluster is up
+                if settings.cluster_name is None:
+                    raise ValueError(
+                        "Cluster name is required when reusing an existing cluster."
+                    )
                 start_request_id = sky.start(
                     settings.cluster_name,
                     down=down,
@@ -409,7 +413,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     cluster_name=settings.cluster_name,
                     **exec_kwargs,
                 )
-                assert settings.cluster_name is not None
                 return sky_job_get(
                     exec_request_id,
                     settings.stream_logs,

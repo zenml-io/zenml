@@ -1,7 +1,7 @@
 """Utility functions for Skypilot orchestrators."""
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 import sky
 
@@ -253,12 +253,14 @@ def sky_job_get(
     Returns:
         Optional submission result.
     """
+    request_id_any = cast(Any, request_id)
     if stream_logs:
         # Stream logs and wait for completion; returns (job_id, handle)
-        job_id, _ = sky.stream_and_get(request_id)
+        result = cast(Tuple[int, Any], sky.stream_and_get(request_id_any))
     else:
         # Just wait for completion without streaming logs
-        job_id, _ = sky.get(request_id)
+        result = cast(Tuple[int, Any], sky.get(request_id_any))
+    job_id = result[0]
 
     def _wait_for_completion() -> None:
         status = sky.tail_logs(
