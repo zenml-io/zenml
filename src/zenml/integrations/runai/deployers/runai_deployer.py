@@ -14,7 +14,16 @@
 """Implementation of the Run:AI deployer."""
 
 import re
-from typing import TYPE_CHECKING, Dict, Generator, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -152,7 +161,9 @@ class RunAIDeployer(ContainerizedDeployer):
             )
         return self._client
 
-    def _resolve_project_and_cluster(self) -> Tuple[RunAIProject, RunAICluster]:
+    def _resolve_project_and_cluster(
+        self,
+    ) -> Tuple[RunAIProject, RunAICluster]:
         """Resolve the Run:AI project and cluster for workload submission.
 
         Returns:
@@ -368,9 +379,7 @@ class RunAIDeployer(ContainerizedDeployer):
                 DEPLOYMENT_ID_OPTION: deployment.id,
             }
         )
-        command, args = self._build_command_and_args(
-            entrypoint + arguments
-        )
+        command, args = self._build_command_and_args(entrypoint + arguments)
 
         merged_env = {
             **settings.environment_variables,
@@ -383,9 +392,7 @@ class RunAIDeployer(ContainerizedDeployer):
         ]
 
         assert deployment.snapshot, "Pipeline snapshot not found"
-        container_port = (
-            deployment.snapshot.pipeline_configuration.deployment_settings.uvicorn_port
-        )
+        container_port = deployment.snapshot.pipeline_configuration.deployment_settings.uvicorn_port
 
         compute_spec = SupersetSpecAllOfCompute(
             cpu_core_request=settings.cpu_core_request,
@@ -747,7 +754,9 @@ class RunAIDeployer(ContainerizedDeployer):
             )
 
         try:
-            self.client.delete_inference_workload(existing_metadata.workload_id)
+            self.client.delete_inference_workload(
+                existing_metadata.workload_id
+            )
             logger.info(
                 "Deleted Run:AI inference workload '%s' (ID: %s)",
                 existing_metadata.workload_name,

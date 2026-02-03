@@ -476,10 +476,8 @@ class RunAIClient:
             RunAIClientError: If submission fails.
         """
         try:
-            response = (
-                self._raw_client.workloads.inferences.create_inference1(
-                    inference_creation_request=request
-                )
+            response = self._raw_client.workloads.inferences.create_inference1(
+                inference_creation_request=request
             )
             workload_id = self._extract_workload_id(response)
             endpoint_url = self._extract_endpoint_url(response)
@@ -519,7 +517,9 @@ class RunAIClient:
             or getattr(response.data, "url", None)
         )
 
-    def get_inference_workload(self, workload_id: str) -> RunAIInferenceWorkload:
+    def get_inference_workload(
+        self, workload_id: str
+    ) -> RunAIInferenceWorkload:
         """Get full inference workload details.
 
         Args:
@@ -532,10 +532,8 @@ class RunAIClient:
             RunAIClientError: If the query fails or response is invalid.
         """
         try:
-            response = (
-                self._raw_client.workloads.inferences.get_inference(
-                    workload_id
-                )
+            response = self._raw_client.workloads.inferences.get_inference(
+                workload_id
             )
             if not response.data:
                 raise RunAIClientError(
@@ -575,10 +573,8 @@ class RunAIClient:
                 response is malformed.
         """
         try:
-            response = (
-                self._raw_client.workloads.inferences.get_inference(
-                    workload_id
-                )
+            response = self._raw_client.workloads.inferences.get_inference(
+                workload_id
             )
             if not response.data:
                 raise RunAIClientError(
