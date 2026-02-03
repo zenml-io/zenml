@@ -461,6 +461,8 @@ def get_resource_type_for_model(
         RunTemplateResponse,
         ScheduleRequest,
         ScheduleResponse,
+        ScheduleTriggerRequest,
+        ScheduleTriggerResponse,
         SecretRequest,
         SecretResponse,
         ServiceAccountRequest,
@@ -473,6 +475,7 @@ def get_resource_type_for_model(
         StackResponse,
         TagRequest,
         TagResponse,
+        TriggerRequest,
     )
 
     mapping: Dict[
@@ -523,6 +526,9 @@ def get_resource_type_for_model(
         ProjectResponse: ResourceType.PROJECT,
         ProjectRequest: ResourceType.PROJECT,
         # UserResponse: ResourceType.USER,
+        ScheduleTriggerRequest: ResourceType.TRIGGER,
+        ScheduleTriggerResponse: ResourceType.TRIGGER,
+        TriggerRequest: ResourceType.TRIGGER,
     }
 
     return mapping.get(type(model))
@@ -647,6 +653,7 @@ def get_schema_for_resource_type(
         StackComponentSchema,
         StackSchema,
         TagSchema,
+        TriggerSchema,
         UserSchema,
     )
 
@@ -674,6 +681,7 @@ def get_schema_for_resource_type(
         ResourceType.RUN_METADATA: RunMetadataSchema,
         ResourceType.SCHEDULE: ScheduleSchema,
         # ResourceType.USER: UserSchema,
+        ResourceType.TRIGGER: TriggerSchema,
     }
 
     return mapping[resource_type]
