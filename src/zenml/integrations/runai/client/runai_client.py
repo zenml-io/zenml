@@ -16,9 +16,9 @@
 from typing import Any, List, Optional, cast
 
 from pydantic import BaseModel, ConfigDict, Field
-from runai import models as runai_models
 from runai.api_client import ApiClient
 from runai.configuration import Configuration
+from runai.models.training_creation_request import TrainingCreationRequest
 from runai.runai_client import RunaiClient as RunapyClient
 
 from zenml.logger import get_logger
@@ -147,12 +147,20 @@ class RunAIClient:
                 client_secret=client_secret,
                 runai_base_url=runai_base_url,
             )
-            self._raw_client = RunapyClient(ApiClient(config))
+            self._raw_client = self._create_raw_client(config)
         except Exception as exc:
             raise RunAIAuthenticationError(
                 f"Failed to initialize Run:AI client ({type(exc).__name__}): {exc}. "
                 "Verify your client_id, client_secret, and runai_base_url are correct."
             ) from exc
+
+    def _create_raw_client(self, config: Configuration) -> RunapyClient:
+        """Create the underlying runapy client.
+
+        The runai SDK does not ship type hints, so keep the untyped call
+        isolated to this helper.
+        """
+        return RunapyClient(ApiClient(config))  # type: ignore[no-untyped-call]
 
     @property
     def raw_client(self) -> RunapyClient:
@@ -297,7 +305,7 @@ class RunAIClient:
         return clusters[0]
 
     def create_training_workload(
-        self, request: runai_models.TrainingCreationRequest
+        self, request: TrainingCreationRequest
     ) -> WorkloadSubmissionResult:
         """Submit a training workload to Run:AI.
 

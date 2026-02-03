@@ -18,7 +18,15 @@ import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
-from runai import models as runai_models
+from runai.models.annotation import Annotation
+from runai.models.environment_variable import EnvironmentVariable
+from runai.models.extended_resource import ExtendedResource
+from runai.models.image_pull_secret import ImagePullSecret
+from runai.models.label import Label
+from runai.models.superset_spec_all_of_compute import SupersetSpecAllOfCompute
+from runai.models.toleration import Toleration
+from runai.models.training_creation_request import TrainingCreationRequest
+from runai.models.training_spec_spec import TrainingSpecSpec
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
@@ -197,7 +205,7 @@ class RunAIStepOperator(BaseStepOperator):
 
         compute = self._build_compute_spec(settings)
 
-        env_vars = environment
+        env_vars = self._build_environment_variables(environment)
 
         image_pull_secrets = self._build_image_pull_secrets()
 
@@ -208,30 +216,30 @@ class RunAIStepOperator(BaseStepOperator):
         annotations_list = self._build_annotations(settings)
 
         try:
-            training_request = runai_models.TrainingCreationRequest(
+            training_request = TrainingCreationRequest(
                 name=workload_name,
-                projectId=project_id,
-                clusterId=cluster_id,
-                spec=runai_models.TrainingSpecSpec(
+                project_id=project_id,
+                cluster_id=cluster_id,
+                spec=TrainingSpecSpec(
                     image=image,
                     command=command,
                     compute=compute,
-                    environmentVariables=env_vars,
-                    args=args or None,
-                    imagePullSecrets=image_pull_secrets or None,
-                    nodePools=settings.node_pools or None,
-                    nodeType=settings.node_type or None,
-                    preemptibility=settings.preemptibility or None,
-                    priorityClass=settings.priority_class or None,
-                    tolerations=tolerations_list or None,
-                    backoffLimit=settings.backoff_limit,
-                    terminationGracePeriodSeconds=(
+                    environment_variables=env_vars,
+                    args=args,
+                    image_pull_secrets=image_pull_secrets,
+                    node_pools=settings.node_pools,
+                    node_type=settings.node_type,
+                    preemptibility=settings.preemptibility,
+                    priority_class=settings.priority_class,
+                    tolerations=tolerations_list,
+                    backoff_limit=settings.backoff_limit,
+                    termination_grace_period_seconds=(
                         settings.termination_grace_period_seconds
                     ),
-                    terminateAfterPreemption=settings.terminate_after_preemption,
-                    workingDir=settings.working_dir,
-                    labels=labels_list or None,
-                    annotations=annotations_list or None,
+                    terminate_after_preemption=settings.terminate_after_preemption,
+                    working_dir=settings.working_dir,
+                    labels=labels_list,
+                    annotations=annotations_list,
                 ),
             )
         except Exception as exc:
@@ -346,21 +354,19 @@ class RunAIStepOperator(BaseStepOperator):
 
     def _build_command_and_args(
         self, entrypoint_command: List[str]
-    ) -> Tuple[List[str], List[str]]:
+    ) -> Tuple[str, Optional[str]]:
         """Build the command and arguments for Run:AI.
 
-        ZenML step entrypoints are typically generated as
-        `["python", "-m", "zenml.entrypoints.step_entrypoint", ...args...]`.
-        We split after the first three tokens to keep the interpreter/module
-        invocation intact while passing the remaining tokens as arguments.
-
-        This follows the same pattern as the Kubernetes step operator.
+        Run:AI expects the command and args as strings (not lists). We keep
+        the interpreter/module invocation intact for the command and join
+        remaining tokens as the args string.
 
         Args:
             entrypoint_command: The full entrypoint command list.
 
         Returns:
-            Tuple of (command, args) as lists.
+            Tuple of (command, args) as strings. The args value is None when
+            there are no extra tokens.
 
         Raises:
             ValueError: If entrypoint_command format is invalid.
@@ -372,13 +378,35 @@ class RunAIStepOperator(BaseStepOperator):
                 f"{len(entrypoint_command)} elements: {entrypoint_command}"
             )
 
-        command = entrypoint_command[:3]
-        args = entrypoint_command[3:]
+        command_tokens = entrypoint_command[:3]
+        args_tokens = entrypoint_command[3:]
+
+        command = " ".join(command_tokens)
+        args = " ".join(args_tokens) if args_tokens else None
         return command, args
+
+    def _build_environment_variables(
+        self, environment: Dict[str, str]
+    ) -> Optional[List[EnvironmentVariable]]:
+        """Build environment variables for the Run:AI workload.
+
+        Args:
+            environment: Mapping of environment variable names to values.
+
+        Returns:
+            List of EnvironmentVariable objects or None.
+        """
+        if not environment:
+            return None
+
+        return [
+            EnvironmentVariable(name=name, value=str(value))
+            for name, value in environment.items()
+        ]
 
     def _build_compute_spec(
         self, settings: RunAIStepOperatorSettings
-    ) -> runai_models.SupersetSpecAllOfCompute:
+    ) -> SupersetSpecAllOfCompute:
         """Build the compute specification for the workload.
 
         Args:
@@ -390,11 +418,11 @@ class RunAIStepOperator(BaseStepOperator):
         extended_resources_list = None
         if settings.extended_resources:
             extended_resources_list = [
-                runai_models.ExtendedResource(resource=k, quantity=v)
+                ExtendedResource(resource=k, quantity=v)
                 for k, v in settings.extended_resources.items()
             ]
 
-        return runai_models.SupersetSpecAllOfCompute(
+        return SupersetSpecAllOfCompute(
             gpu_devices_request=settings.gpu_devices_request,
             gpu_portion_request=settings.gpu_portion_request,
             gpu_request_type=settings.gpu_request_type,
@@ -411,7 +439,7 @@ class RunAIStepOperator(BaseStepOperator):
 
     def _build_image_pull_secrets(
         self,
-    ) -> Optional[List[runai_models.ImagePullSecret]]:
+    ) -> Optional[List[ImagePullSecret]]:
         """Build image pull secrets for the workload.
 
         Returns:
@@ -426,14 +454,14 @@ class RunAIStepOperator(BaseStepOperator):
         )
 
         return [
-            runai_models.ImagePullSecret(
+            ImagePullSecret(
                 name=self.config.image_pull_secret_name, user_credential=False
             )
         ]
 
     def _build_tolerations(
         self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[runai_models.Toleration]]:
+    ) -> Optional[List[Toleration]]:
         """Build tolerations for scheduling on tainted nodes.
 
         Args:
@@ -456,13 +484,13 @@ class RunAIStepOperator(BaseStepOperator):
                 toleration_dict["value"] = t["value"]
             if "effect" in t:
                 toleration_dict["effect"] = t["effect"]
-            tolerations_list.append(runai_models.Toleration(**toleration_dict))
+            tolerations_list.append(Toleration(**toleration_dict))
 
         return tolerations_list
 
     def _build_labels(
         self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[runai_models.Label]]:
+    ) -> Optional[List[Label]]:
         """Build labels for the workload pod.
 
         Args:
@@ -474,14 +502,11 @@ class RunAIStepOperator(BaseStepOperator):
         if not settings.labels:
             return None
 
-        return [
-            runai_models.Label(key=k, value=v)
-            for k, v in settings.labels.items()
-        ]
+        return [Label(name=k, value=v) for k, v in settings.labels.items()]
 
     def _build_annotations(
         self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[runai_models.Annotation]]:
+    ) -> Optional[List[Annotation]]:
         """Build annotations for the workload pod.
 
         Args:
@@ -494,7 +519,7 @@ class RunAIStepOperator(BaseStepOperator):
             return None
 
         return [
-            runai_models.Annotation(key=k, value=v)
+            Annotation(name=k, value=v)
             for k, v in settings.annotations.items()
         ]
 
