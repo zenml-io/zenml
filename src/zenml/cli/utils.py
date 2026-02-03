@@ -102,6 +102,7 @@ from zenml.services import BaseService
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
@@ -3470,6 +3471,13 @@ def _syntax_highlight(content: str, lexer: str) -> str:
     return output_buffer.getvalue().rstrip()
 
 
+def _json_encoder(obj: Any) -> Any:
+    try:
+        return pydantic_encoder(obj)
+    except TypeError:
+        return str(obj)
+
+
 def _render_json(
     data: List[Dict[str, Any]],
     pagination: Optional[Dict[str, Any]] = None,
@@ -3488,7 +3496,7 @@ def _render_json(
     if pagination:
         output["pagination"] = pagination
 
-    json_str = json.dumps(output, indent=2, default=str)
+    json_str = json.dumps(output, indent=2, default=_json_encoder)
     return _syntax_highlight(json_str, "json")
 
 
@@ -3510,7 +3518,10 @@ def _render_yaml(
     if pagination:
         output["pagination"] = pagination
 
-    yaml_str = yaml.dump(output, default_flow_style=False)
+    safe_output = json.loads(json.dumps(output, default=_json_encoder))
+    yaml_str = yaml.dump(
+        safe_output, default_flow_style=False, sort_keys=False
+    )
     return _syntax_highlight(yaml_str, "yaml")
 
 
@@ -3591,12 +3602,12 @@ def prepare_output_single(
         return ""
 
     if output_format == "json":
-        json_str = json.dumps(data, indent=2, default=str)
+        json_str = json.dumps(data, indent=2, default=_json_encoder)
         return _syntax_highlight(json_str, "json")
     elif output_format == "yaml":
         # Use JSON roundtrip to ensure all values are YAML-safe primitives
         # (avoids !!python/object tags for UUIDs, enums, etc.)
-        safe_data = json.loads(json.dumps(data, default=str))
+        safe_data = json.loads(json.dumps(data, default=_json_encoder))
         yaml_str = yaml.dump(
             safe_data, default_flow_style=False, sort_keys=False
         )
