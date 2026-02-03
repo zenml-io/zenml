@@ -117,6 +117,15 @@ def get_or_create_pipeline_run(
         project = zen_store().get_project(project_name_or_id)
         pipeline_run.project = project.id
 
+    if pipeline_run.original_run_id:
+        # Verify that the user has permissions to read the original run.
+        # so they cannot gain unauthorized access to some step configurations
+        # of the original run.
+        original_run = zen_store().get_run(
+            pipeline_run.original_run_id, hydrate=False
+        )
+        verify_permission_for_model(model=original_run, action=Action.READ)
+
     return verify_permissions_and_get_or_create_entity(
         request_model=pipeline_run,
         get_or_create_method=zen_store().get_or_create_run,

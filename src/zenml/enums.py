@@ -88,6 +88,7 @@ class ExecutionStatus(StrEnum):
     FAILED = "failed"
     COMPLETED = "completed"
     CACHED = "cached"
+    SKIPPED = "skipped"
     # When a step that can be retried failed, its status is set to retrying.
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
@@ -106,6 +107,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
+            ExecutionStatus.SKIPPED,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
         }

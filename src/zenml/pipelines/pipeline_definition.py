@@ -232,6 +232,8 @@ class Pipeline:
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
         self._output_artifacts: List[StepArtifact] = []
+        # The original run in case this pipeline gets replayed.
+        self._original_run: Optional["PipelineRunResponse"] = None
 
         self.__suppress_warnings_flag__ = False
 
@@ -1044,11 +1046,39 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
 
-            snapshot = self._create_snapshot(**self._run_args)
+            # If this is a replayed run, we skip schedule registration even if
+            # it is configured.
+            skip_schedule_registration = self._original_run is not None
+
+            snapshot = self._create_snapshot(
+                **self._run_args,
+                skip_schedule_registration=skip_schedule_registration,
+            )
+
+            if (
+                self._original_run
+                and self._original_run.snapshot
+                and not self._original_run.snapshot.is_dynamic
+            ):
+                original_spec = self._original_run.snapshot.pipeline_spec
+
+                if original_spec != snapshot.pipeline_spec:
+                    logger.warning(
+                        "The pipeline spec of the original dynamic pipeline "
+                        "run differs from the pipeline spec of the replayed "
+                        "pipeline run. This means that the replayed run will "
+                        "not run the same steps as the original run."
+                    )
+
             self.log_pipeline_snapshot_metadata(snapshot)
 
             run = (
-                create_placeholder_run(snapshot=snapshot)
+                create_placeholder_run(
+                    snapshot=snapshot,
+                    original_run_id=self._original_run.id
+                    if self._original_run
+                    else None,
+                )
                 if not snapshot.schedule
                 else None
             )
@@ -1810,3 +1840,84 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._invocations = {}
         self._parameters = {}
         self._output_artifacts = []
+
+    def replay(
+        self,
+        pipeline: Union[UUID, str, None] = None,
+        pipeline_run: Union[UUID, str, None] = None,
+        skip: Union[Set[str], Sequence[str], None] = None,
+        input_overrides: Optional[Mapping[str, Any]] = None,
+        debug: bool = False,
+    ) -> PipelineRunResponse:
+        """Replay the pipeline.
+
+        The run to replay gets determined as follows:
+        - If you specify a pipeline run, that specific pipeline run is replayed.
+        - If you specify a pipeline, the last run of that pipeline is replayed.
+        - If you don't specify anything, the last run of the pipeline with the
+          name of this pipeline instance is replayed.
+
+        Args:
+            pipeline: The pipeline to replay.
+            pipeline_run: The pipeline run to replay.
+            skip: The steps to skip when replaying the pipeline. Steps that have
+                any unskipped upstream steps can not be skipped.
+            input_overrides: Input overrides for the pipeline.
+            debug: Whether to run the pipeline in debug mode. In debug mode, the
+                pipeline is executed using a local orchestrator, while
+                keeping the remaining components of your active stack.
+
+        Raises:
+            ValueError: If no pipeline run can be found for the pipeline.
+
+        Returns:
+            The replayed pipeline run.
+        """
+        from zenml.client import Client
+        from zenml.execution.utils import DebugModeContext
+
+        if not pipeline_run:
+            pipeline_model = Client().get_pipeline(
+                pipeline or self.name, hydrate=False
+            )
+            pipeline_run = pipeline_model.latest_run_id
+            if not pipeline_run:
+                raise ValueError(
+                    "No existing pipeline run found for pipeline "
+                    f"`{pipeline or self.name}`."
+                )
+
+        original_run = Client().get_pipeline_run(pipeline_run, hydrate=True)
+
+        pipeline_instance = self.copy()
+        pipeline_instance._original_run = original_run
+
+        if skip:
+            pipeline_instance._configuration = (
+                pipeline_instance._configuration.model_copy(
+                    update={"steps_to_skip": set(skip)}
+                )
+            )
+
+        original_parameters = original_run.config.parameters or {}
+        # Only include pipeline parameters of the original run for inputs that
+        # the user didn't provide a value for.
+        inputs = {
+            k: v
+            for k, v in original_parameters.items()
+            if k in self.missing_parameters
+        }
+
+        if input_overrides:
+            inputs.update(input_overrides)
+
+        if debug:
+            with DebugModeContext():
+                run = pipeline_instance(**inputs)
+        else:
+            run = pipeline_instance(**inputs)
+
+        # The run will always exist because we specifically prevent schedules
+        # when replaying pipelines.
+        assert run
+        return run

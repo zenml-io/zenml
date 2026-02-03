@@ -150,6 +150,10 @@ class PipelineRunRequest(ProjectScopedRequest):
         default=None,
         title="The exception information of the pipeline run.",
     )
+    original_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The original run ID for a replayed run.",
+    )
 
     @property
     def is_placeholder_request(self) -> bool:
@@ -330,6 +334,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     visualizations: List["CuratedVisualizationResponse"] = Field(
         default=[],
         title="Curated visualizations associated with the pipeline run.",
+    )
+    original_run: Optional["PipelineRunResponse"] = Field(
+        default=None,
+        title="The original run that was replayed to create this run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -666,6 +674,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().log_collection
+
+    @property
+    def original_run(self) -> Optional["PipelineRunResponse"]:
+        """The `original_run` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().original_run
 
 
 # ------------------ Filter Model ------------------
