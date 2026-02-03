@@ -22,6 +22,8 @@ You should use the Run:AI step operator if:
 * **Project-based Resource Management**: Workloads are organized by Run:AI projects with quota policies
 * **SaaS and Self-hosted**: Works with both Run:AI SaaS and self-hosted deployments
 
+![Run:AI interface](../../assets/runai-interface.png)
+
 ### How to deploy it
 
 The Run:AI step operator requires access to a Run:AI cluster. You will need:
@@ -30,7 +32,7 @@ The Run:AI step operator requires access to a Run:AI cluster. You will need:
 * A Run:AI project with sufficient resource quota
 * Run:AI API credentials (client ID and secret):
   * Navigate to Run:AI control plane → Settings → Applications
-  * Create a new application to obtain client credentials
+  * Create a new [application to obtain client credentials](https://run-ai-docs.nvidia.com/saas/infrastructure-setup/authentication/service-accounts)
 
 ### How to use it
 
@@ -48,26 +50,15 @@ To use the Run:AI step operator, we need:
 
 * An [image builder](https://docs.zenml.io/stacks/image-builders/) to build the Docker images.
 
-We can then register the step operator:
+We can then register the step operator, using [ZenML secrets](https://docs.zenml.io/concepts/secrets#python-sdk-3) to store the Run:AI client ID and secret:
 
 ```shell
 zenml step-operator register <NAME> \
     --flavor=runai \
-    --client_id=<YOUR_CLIENT_ID> \
-    --client_secret=<YOUR_CLIENT_SECRET> \
+    --client_id={{runai_secret.client_id}} \
+    --client_secret={{runai_secret.client_secret}} \
     --runai_base_url=<YOUR_RUNAI_URL> \
     --project_name=<YOUR_PROJECT_NAME>
-```
-
-For example, with a SaaS deployment:
-
-```shell
-zenml step-operator register my_runai_step_operator \
-    --flavor=runai \
-    --client_id=abc123 \
-    --client_secret=secret456 \
-    --runai_base_url=https://my-org.run.ai \
-    --project_name=ml-team
 ```
 
 We can then add the step operator to our active stack:
@@ -118,30 +109,6 @@ def train_model():
     ...
 ```
 
-#### Fractional GPU Allocation
-
-One of the key benefits of Run:AI is fractional GPU support. Configure this with `gpu_portion_request`:
-
-```python
-# Quarter GPU
-settings = RunAIStepOperatorSettings(
-    gpu_portion_request=0.25,
-    gpu_request_type="portion",
-)
-
-# Half GPU
-settings = RunAIStepOperatorSettings(
-    gpu_portion_request=0.5,
-    gpu_request_type="portion",
-)
-
-# Full GPU
-settings = RunAIStepOperatorSettings(
-    gpu_portion_request=1.0,
-    gpu_request_type="portion",
-)
-```
-
 #### CPU-only workload
 
 ```python
@@ -166,6 +133,7 @@ settings = RunAIStepOperatorSettings(
 | `image_pull_secret_name` | str | No | Name of Run:AI image pull secret for private registries |
 | `monitoring_interval` | float | No | Interval in seconds to poll workload status (default: 30) |
 | `workload_timeout` | int | No | Maximum time in seconds for workload completion |
+| `cleanup_on_failure` | bool | No | Delete failed workloads (default: True). Set to False for debugging |
 
 #### Step Settings (per-step configuration)
 
@@ -206,4 +174,3 @@ Run:AI workload logs can be viewed in the Run:AI control plane UI:
 1. Navigate to your Run:AI control plane
 2. Go to Workloads → Training
 3. Find your step workload and click to view logs
-

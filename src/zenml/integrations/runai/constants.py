@@ -17,7 +17,6 @@ from enum import Enum
 
 from zenml.enums import ExecutionStatus
 
-# Workload name constraints
 MAX_WORKLOAD_NAME_LENGTH = 50
 
 
@@ -35,7 +34,6 @@ class RunAIWorkloadStatus(str, Enum):
     STOPPING = "stopping"
 
 
-# Mapping from Run:AI status to ZenML ExecutionStatus
 RUNAI_STATUS_TO_EXECUTION_STATUS = {
     RunAIWorkloadStatus.PENDING: ExecutionStatus.INITIALIZING,
     RunAIWorkloadStatus.RUNNING: ExecutionStatus.RUNNING,
@@ -48,7 +46,7 @@ RUNAI_STATUS_TO_EXECUTION_STATUS = {
     RunAIWorkloadStatus.STOPPING: ExecutionStatus.STOPPING,
 }
 
-# Sets for quick status classification
+# Frozen sets are used for quick status classification to avoid creating new sets on each call.
 _TERMINAL_STATUSES = frozenset(
     {
         RunAIWorkloadStatus.SUCCEEDED,
@@ -75,6 +73,8 @@ _FAILURE_STATUSES = frozenset(
         RunAIWorkloadStatus.STOPPED,
     }
 )
+
+_PENDING_STATUSES = frozenset({RunAIWorkloadStatus.PENDING})
 
 
 def is_terminal_status(status: str) -> bool:
@@ -118,6 +118,21 @@ def is_failure_status(status: str) -> bool:
     """
     try:
         return RunAIWorkloadStatus(status.lower()) in _FAILURE_STATUSES
+    except ValueError:
+        return False
+
+
+def is_pending_status(status: str) -> bool:
+    """Check if a Run:AI status indicates pending scheduling.
+
+    Args:
+        status: The Run:AI workload status string.
+
+    Returns:
+        True if the status indicates the workload is pending.
+    """
+    try:
+        return RunAIWorkloadStatus(status.lower()) in _PENDING_STATUSES
     except ValueError:
         return False
 

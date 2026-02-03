@@ -18,16 +18,20 @@ import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
+from runai import models as runai_models
+
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.runai.client.runai_client import (
     RunAIClient,
     RunAIClientError,
+    RunAIWorkloadNotFoundError,
 )
 from zenml.integrations.runai.constants import (
     MAX_WORKLOAD_NAME_LENGTH,
     is_failure_status,
+    is_pending_status,
     is_success_status,
 )
 from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
@@ -62,6 +66,25 @@ class RunAIStepOperator(BaseStepOperator):
 
     ```
     """
+
+    _client: Optional[RunAIClient] = None
+
+    @property
+    def client(self) -> RunAIClient:
+        """Get or create the Run:AI client.
+
+        The client is cached for reuse across multiple calls.
+
+        Returns:
+            The RunAIClient instance.
+        """
+        if self._client is None:
+            self._client = RunAIClient(
+                client_id=self.config.client_id.get_secret_value(),
+                client_secret=self.config.client_secret.get_secret_value(),
+                runai_base_url=self.config.runai_base_url,
+            )
+        return self._client
 
     @property
     def config(self) -> RunAIStepOperatorConfig:
@@ -165,109 +188,79 @@ class RunAIStepOperator(BaseStepOperator):
             RuntimeError: If workload submission or execution fails.
         """
         settings = cast(RunAIStepOperatorSettings, self.get_settings(info))
-        client = self._get_client()
 
         image = info.get_image(key=RUNAI_STEP_OPERATOR_DOCKER_IMAGE_KEY)
 
-        project_id, cluster_id = self._resolve_project_and_cluster(client)
+        project_id, cluster_id = self._resolve_project_and_cluster()
 
         workload_name = self._build_workload_name(info)
 
-        compute = self._build_compute_spec(client, settings)
+        compute = self._build_compute_spec(settings)
 
-        env_vars = self._build_environment_variables(
-            client, environment, settings.environment_variables
-        )
+        env_vars = environment
 
-        image_pull_secrets = self._build_image_pull_secrets(client)
+        image_pull_secrets = self._build_image_pull_secrets()
 
         command, args = self._build_command_and_args(entrypoint_command)
 
-        models = client.models
-        TrainingCreationRequest = models.TrainingCreationRequest
-        TrainingSpecSpec = models.TrainingSpecSpec
-
-        tolerations_list = self._build_tolerations(client, settings)
-        labels_list = self._build_labels(client, settings)
-        annotations_list = self._build_annotations(client, settings)
-
-        spec_dict: Dict[str, Any] = {
-            "image": image,
-            "command": command,
-            "compute": compute,
-            "environmentVariables": env_vars,
-        }
-        if args:
-            spec_dict["args"] = args
-        if image_pull_secrets:
-            spec_dict["imagePullSecrets"] = image_pull_secrets
-
-        if settings.node_pools:
-            spec_dict["nodePools"] = settings.node_pools
-        if settings.node_type:
-            spec_dict["nodeType"] = settings.node_type
-        if settings.preemptibility:
-            spec_dict["preemptibility"] = settings.preemptibility
-        if settings.priority_class:
-            spec_dict["priorityClass"] = settings.priority_class
-        if tolerations_list:
-            spec_dict["tolerations"] = tolerations_list
-
-        if settings.backoff_limit is not None:
-            spec_dict["backoffLimit"] = settings.backoff_limit
-        if settings.termination_grace_period_seconds is not None:
-            spec_dict["terminationGracePeriodSeconds"] = (
-                settings.termination_grace_period_seconds
-            )
-        if settings.terminate_after_preemption is not None:
-            spec_dict["terminateAfterPreemption"] = (
-                settings.terminate_after_preemption
-            )
-        if settings.working_dir:
-            spec_dict["workingDir"] = settings.working_dir
-
-        if labels_list:
-            spec_dict["labels"] = labels_list
-        if annotations_list:
-            spec_dict["annotations"] = annotations_list
-
-        training_request = TrainingCreationRequest(
-            name=workload_name,
-            projectId=project_id,
-            clusterId=cluster_id,
-            spec=TrainingSpecSpec(**spec_dict),
-        )
+        tolerations_list = self._build_tolerations(settings)
+        labels_list = self._build_labels(settings)
+        annotations_list = self._build_annotations(settings)
 
         try:
-            result = client.create_training_workload(training_request)
+            training_request = runai_models.TrainingCreationRequest(
+                name=workload_name,
+                projectId=project_id,
+                clusterId=cluster_id,
+                spec=runai_models.TrainingSpecSpec(
+                    image=image,
+                    command=command,
+                    compute=compute,
+                    environmentVariables=env_vars,
+                    args=args or None,
+                    imagePullSecrets=image_pull_secrets or None,
+                    nodePools=settings.node_pools or None,
+                    nodeType=settings.node_type or None,
+                    preemptibility=settings.preemptibility or None,
+                    priorityClass=settings.priority_class or None,
+                    tolerations=tolerations_list or None,
+                    backoffLimit=settings.backoff_limit,
+                    terminationGracePeriodSeconds=(
+                        settings.termination_grace_period_seconds
+                    ),
+                    terminateAfterPreemption=settings.terminate_after_preemption,
+                    workingDir=settings.working_dir,
+                    labels=labels_list or None,
+                    annotations=annotations_list or None,
+                ),
+            )
+        except Exception as exc:
+            raise RunAIClientError(
+                "Failed to build Run:AI training request "
+                f"({type(exc).__name__}): {exc}"
+            ) from exc
+
+        info.force_write_logs()
+
+        try:
+            result = self.client.create_training_workload(training_request)
+            logger.info(
+                "Submitted step '%s' to Run:AI as workload '%s' (ID: %s)",
+                info.pipeline_step_name,
+                result.workload_name,
+                result.workload_id,
+            )
         except RunAIClientError as exc:
             raise RuntimeError(
                 f"Failed to submit step '{info.pipeline_step_name}' to Run:AI: {exc}. "
                 "Verify credentials, project name, cluster access, and quota."
             ) from exc
 
-        self._wait_for_completion(client, result.workload_id)
+        self._wait_for_completion(self.client, result.workload_id, settings)
         logger.info("Run:AI step operator job completed.")
 
-    def _get_client(self) -> RunAIClient:
-        """Initialize and return a Run:AI client.
-
-        Returns:
-            Initialized RunAIClient.
-        """
-        return RunAIClient(
-            client_id=self.config.client_id,
-            client_secret=self.config.client_secret.get_secret_value(),
-            runai_base_url=self.config.runai_base_url,
-        )
-
-    def _resolve_project_and_cluster(
-        self, client: RunAIClient
-    ) -> Tuple[str, str]:
+    def _resolve_project_and_cluster(self) -> Tuple[str, str]:
         """Resolve Run:AI project and cluster IDs.
-
-        Args:
-            client: The RunAIClient instance.
 
         Returns:
             Tuple of (project_id, cluster_id).
@@ -276,14 +269,14 @@ class RunAIStepOperator(BaseStepOperator):
             RuntimeError: If project or cluster cannot be resolved.
         """
         try:
-            project = client.get_project_by_name(self.config.project_name)
+            project = self.client.get_project_by_name(self.config.project_name)
         except RunAIClientError as exc:
             raise RuntimeError(str(exc)) from exc
 
         cluster_id = project.cluster_id
 
         if self.config.cluster_name and cluster_id:
-            cluster = client.get_cluster_by_id(cluster_id)
+            cluster = self.client.get_cluster_by_id(cluster_id)
             if cluster and cluster.name != self.config.cluster_name:
                 logger.warning(
                     f"Configured cluster '{self.config.cluster_name}' "
@@ -294,20 +287,39 @@ class RunAIStepOperator(BaseStepOperator):
         if not cluster_id:
             try:
                 if self.config.cluster_name:
-                    cluster = client.get_cluster_by_name(
+                    cluster = self.client.get_cluster_by_name(
                         self.config.cluster_name
                     )
                     cluster_id = cluster.id
                 else:
-                    cluster = client.get_first_cluster()
+                    cluster = self.client.get_first_cluster()
                     cluster_id = cluster.id
             except RunAIClientError as exc:
                 raise RuntimeError(str(exc)) from exc
 
         return project.id, cluster_id
 
+    def _sanitize_name_component(self, name: str) -> str:
+        """Sanitize a name component for Kubernetes DNS label compliance.
+
+        Args:
+            name: The name component to sanitize.
+
+        Returns:
+            A sanitized string with only lowercase alphanumeric chars and hyphens.
+        """
+        import re
+
+        sanitized = name.lower()
+        sanitized = re.sub(r"[^a-z0-9-]", "-", sanitized)
+        sanitized = re.sub(r"-+", "-", sanitized)
+        return sanitized.strip("-")
+
     def _build_workload_name(self, info: "StepRunInfo") -> str:
         """Build a unique workload name for the step.
+
+        Run:AI workload names must be valid Kubernetes DNS labels:
+        lowercase, start with letter, alphanumeric and hyphens only.
 
         Args:
             info: Step run information.
@@ -315,8 +327,8 @@ class RunAIStepOperator(BaseStepOperator):
         Returns:
             A unique workload name string conforming to Run:AI naming requirements.
         """
-        step_name = info.pipeline_step_name.lower().replace("_", "-")
-        pipeline_name = info.pipeline.name.lower().replace("_", "-")
+        step_name = self._sanitize_name_component(info.pipeline_step_name)
+        pipeline_name = self._sanitize_name_component(info.pipeline.name)
 
         base_name = f"zenml-{pipeline_name}-{step_name}"
 
@@ -364,54 +376,25 @@ class RunAIStepOperator(BaseStepOperator):
         args = entrypoint_command[3:]
         return command, args
 
-    def _build_environment_variables(
-        self,
-        client: RunAIClient,
-        base_environment: Dict[str, str],
-        additional_vars: Dict[str, str],
-    ) -> List[Any]:
-        """Build Run:AI environment variables.
-
-        Args:
-            client: The RunAIClient instance.
-            base_environment: Base environment variables from ZenML.
-            additional_vars: Additional environment variables from settings.
-
-        Returns:
-            List of Run:AI EnvironmentVariable objects.
-        """
-        EnvironmentVariable = client.models.EnvironmentVariable
-
-        merged_env = {**base_environment, **additional_vars}
-
-        return [
-            EnvironmentVariable(name=key, value=value)
-            for key, value in merged_env.items()
-        ]
-
     def _build_compute_spec(
-        self, client: RunAIClient, settings: RunAIStepOperatorSettings
-    ) -> Any:
+        self, settings: RunAIStepOperatorSettings
+    ) -> runai_models.SupersetSpecAllOfCompute:
         """Build the compute specification for the workload.
 
         Args:
-            client: The RunAIClient instance.
             settings: The step operator settings.
 
         Returns:
-            A SupersetSpecAllOfCompute object.
+            The Run:AI compute specification object.
         """
-        SupersetSpecAllOfCompute = client.models.SupersetSpecAllOfCompute
-        ExtendedResource = client.models.ExtendedResource
-
         extended_resources_list = None
         if settings.extended_resources:
             extended_resources_list = [
-                ExtendedResource(resource=k, quantity=v)
+                runai_models.ExtendedResource(resource=k, quantity=v)
                 for k, v in settings.extended_resources.items()
             ]
 
-        return SupersetSpecAllOfCompute(
+        return runai_models.SupersetSpecAllOfCompute(
             gpu_devices_request=settings.gpu_devices_request,
             gpu_portion_request=settings.gpu_portion_request,
             gpu_request_type=settings.gpu_request_type,
@@ -427,12 +410,9 @@ class RunAIStepOperator(BaseStepOperator):
         )
 
     def _build_image_pull_secrets(
-        self, client: RunAIClient
-    ) -> Optional[List[Any]]:
+        self,
+    ) -> Optional[List[runai_models.ImagePullSecret]]:
         """Build image pull secrets for the workload.
-
-        Args:
-            client: The RunAIClient instance.
 
         Returns:
             List of ImagePullSecret objects or None.
@@ -445,20 +425,18 @@ class RunAIStepOperator(BaseStepOperator):
             f"Ensure this secret exists in your Run:AI project."
         )
 
-        ImagePullSecret = client.models.ImagePullSecret
         return [
-            ImagePullSecret(
+            runai_models.ImagePullSecret(
                 name=self.config.image_pull_secret_name, user_credential=False
             )
         ]
 
     def _build_tolerations(
-        self, client: RunAIClient, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Any]]:
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[runai_models.Toleration]]:
         """Build tolerations for scheduling on tainted nodes.
 
         Args:
-            client: The RunAIClient instance.
             settings: The step operator settings.
 
         Returns:
@@ -466,8 +444,6 @@ class RunAIStepOperator(BaseStepOperator):
         """
         if not settings.tolerations:
             return None
-
-        Toleration = client.models.Toleration
 
         tolerations_list = []
         for t in settings.tolerations:
@@ -480,17 +456,16 @@ class RunAIStepOperator(BaseStepOperator):
                 toleration_dict["value"] = t["value"]
             if "effect" in t:
                 toleration_dict["effect"] = t["effect"]
-            tolerations_list.append(Toleration(**toleration_dict))
+            tolerations_list.append(runai_models.Toleration(**toleration_dict))
 
         return tolerations_list
 
     def _build_labels(
-        self, client: RunAIClient, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Any]]:
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[runai_models.Label]]:
         """Build labels for the workload pod.
 
         Args:
-            client: The RunAIClient instance.
             settings: The step operator settings.
 
         Returns:
@@ -499,16 +474,17 @@ class RunAIStepOperator(BaseStepOperator):
         if not settings.labels:
             return None
 
-        Label = client.models.Label
-        return [Label(key=k, value=v) for k, v in settings.labels.items()]
+        return [
+            runai_models.Label(key=k, value=v)
+            for k, v in settings.labels.items()
+        ]
 
     def _build_annotations(
-        self, client: RunAIClient, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Annotation]]:
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[runai_models.Annotation]]:
         """Build annotations for the workload pod.
 
         Args:
-            client: The RunAIClient instance.
             settings: The step operator settings.
 
         Returns:
@@ -517,45 +493,78 @@ class RunAIStepOperator(BaseStepOperator):
         if not settings.annotations:
             return None
 
-        Annotation = client.models.Annotation
         return [
-            Annotation(key=k, value=v) for k, v in settings.annotations.items()
+            runai_models.Annotation(key=k, value=v)
+            for k, v in settings.annotations.items()
         ]
+
+    def _cleanup_workload(
+        self, client: RunAIClient, workload_id: str, reason: str
+    ) -> None:
+        """Stop a Run:AI workload and optionally delete it.
+
+        Args:
+            client: The RunAIClient instance.
+            workload_id: The workload ID to stop.
+            reason: Reason for cleanup (for logging).
+        """
+        logger.info(f"Stopping workload {workload_id}: {reason}")
+        try:
+            client.suspend_training_workload(workload_id)
+        except Exception as suspend_exc:
+            logger.error(
+                f"Failed to stop workload {workload_id}: {suspend_exc}. "
+                "You may need to stop it manually in Run:AI UI."
+            )
+            return
+
+        if not self.config.delete_on_failure:
+            logger.info(
+                f"Preserving workload {workload_id} after failure "
+                f"(delete_on_failure=False). Reason: {reason}. "
+                "Delete it manually in the Run:AI UI if needed."
+            )
+            return
+
+        logger.info(f"Deleting workload {workload_id}: {reason}")
+        try:
+            client.delete_training_workload(workload_id)
+        except Exception as delete_exc:
+            logger.error(
+                f"Failed to delete workload {workload_id}: {delete_exc}. "
+                "You may need to delete it manually in Run:AI UI."
+            )
 
     def _wait_for_completion(
         self,
         client: RunAIClient,
         workload_id: str,
+        settings: RunAIStepOperatorSettings,
     ) -> None:
         """Wait for a Run:AI workload to complete.
 
         Args:
             client: The RunAIClient instance.
             workload_id: The workload ID to wait for.
+            settings: The step operator settings.
 
         Raises:
             RuntimeError: If the workload fails or times out.
         """
         start_time = time.time()
-        timeout = self.config.workload_timeout
+        timeout = settings.workload_timeout
+        pending_timeout = settings.pending_timeout
         retry_count = 0
         max_retries = 3
         base_interval = self.config.monitoring_interval
         missing_status_retries = 0
         max_missing_status_checks = 3
+        pending_start_time: Optional[float] = None
 
         while True:
             sleep_time = base_interval
             if timeout and (time.time() - start_time) > timeout:
-                logger.warning(
-                    f"Attempting to stop timed-out workload {workload_id}"
-                )
-                try:
-                    client.delete_training_workload(workload_id)
-                except Exception as cleanup_exc:
-                    logger.error(
-                        f"Failed to cleanup workload {workload_id}: {cleanup_exc}"
-                    )
+                self._cleanup_workload(client, workload_id, "timeout")
                 raise RuntimeError(
                     f"Run:AI workload {workload_id} timed out after {timeout} seconds"
                 )
@@ -589,28 +598,60 @@ class RunAIStepOperator(BaseStepOperator):
 
                 elif status and is_failure_status(status):
                     missing_status_retries = 0
-                    try:
-                        client.delete_training_workload(workload_id)
-                    except Exception as cleanup_exc:
-                        logger.error(
-                            f"Failed to cleanup workload {workload_id}: {cleanup_exc}"
-                        )
+                    self._cleanup_workload(
+                        client, workload_id, f"failed with status: {status}"
+                    )
                     raise RuntimeError(
                         f"Run:AI workload {workload_id} failed with status: {status}"
                     )
 
                 else:
                     missing_status_retries = 0
+                    if status and is_pending_status(status):
+                        if pending_start_time is None:
+                            pending_start_time = time.time()
+                        if (
+                            pending_timeout
+                            and (time.time() - pending_start_time)
+                            > pending_timeout
+                        ):
+                            self._cleanup_workload(
+                                client,
+                                workload_id,
+                                f"pending timeout after {pending_timeout} seconds",
+                            )
+                            raise RuntimeError(
+                                "Run:AI workload "
+                                f"{workload_id} exceeded pending timeout of "
+                                f"{pending_timeout} seconds"
+                            )
+                    else:
+                        pending_start_time = None
                     sleep_time = base_interval
+            except RunAIWorkloadNotFoundError as exc:
+                retry_count = 0
+                missing_status_retries += 1
+                if missing_status_retries > max_missing_status_checks:
+                    raise RuntimeError(
+                        "Run:AI workload "
+                        f"{workload_id} was not found after "
+                        f"{max_missing_status_checks} checks. The workload "
+                        "might have been deleted or failed to start."
+                    ) from exc
+
+                logger.warning(
+                    "Run:AI workload %s not found (attempt %d/%d); retrying.",
+                    workload_id,
+                    missing_status_retries,
+                    max_missing_status_checks,
+                )
+                sleep_time = base_interval
             except RunAIClientError as exc:
                 retry_count += 1
                 if retry_count > max_retries:
-                    try:
-                        client.delete_training_workload(workload_id)
-                    except Exception as cleanup_exc:
-                        logger.error(
-                            f"Failed to cleanup workload {workload_id}: {cleanup_exc}"
-                        )
+                    self._cleanup_workload(
+                        client, workload_id, "max retries exceeded"
+                    )
                     raise RuntimeError(
                         f"Failed to check status after {max_retries} retries: {exc}"
                     )

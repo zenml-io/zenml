@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 """Run:AI API client wrapper with typed responses."""
 
-import importlib
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, List, Optional, cast
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
+from runai import models as runai_models
+from runai.api_client import ApiClient
+from runai.configuration import Configuration
+from runai.runai_client import RunaiClient as RunapyClient
 
 from zenml.logger import get_logger
 
@@ -25,6 +28,14 @@ logger = get_logger(__name__)
 
 class RunAIClientError(Exception):
     """Base exception for Run:AI client errors."""
+
+
+class RunAIAuthenticationError(RunAIClientError):
+    """Raised when authentication with Run:AI fails."""
+
+
+class RunAIConnectionError(RunAIClientError):
+    """Raised when connection to Run:AI API fails."""
 
 
 class RunAIProjectNotFoundError(RunAIClientError):
@@ -63,6 +74,19 @@ class RunAIClusterNotFoundError(RunAIClientError):
         )
 
 
+class RunAIWorkloadNotFoundError(RunAIClientError):
+    """Raised when a Run:AI workload cannot be found."""
+
+    def __init__(self, workload_id: str) -> None:
+        """Initialize the exception.
+
+        Args:
+            workload_id: The workload ID that was not found.
+        """
+        self.workload_id = workload_id
+        super().__init__(f"Workload '{workload_id}' not found in Run:AI.")
+
+
 class RunAIProject(BaseModel):
     """Typed representation of a Run:AI project."""
 
@@ -85,6 +109,18 @@ class WorkloadSubmissionResult(BaseModel):
     workload_name: str
 
 
+class RunAITrainingWorkload(BaseModel):
+    """Typed representation of a Run:AI training workload."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    id: Optional[str] = None
+    workload_id: Optional[str] = Field(default=None, alias="workloadId")
+    name: Optional[str] = None
+    actual_phase: Optional[str] = Field(default=None, alias="actualPhase")
+    status: Optional[str] = None
+
+
 class RunAIClient:
     """Wrapper around the runapy SDK providing typed responses.
 
@@ -101,90 +137,31 @@ class RunAIClient:
             client_id: Run:AI client ID for authentication.
             client_secret: Run:AI client secret for authentication.
             runai_base_url: Run:AI control plane base URL.
-        """
-        self._raw_client = self._create_client(
-            client_id, client_secret, runai_base_url
-        )
-
-    def _load_module(self, module_path: str) -> Any:
-        """Load a Run:AI SDK module.
-
-        Args:
-            module_path: The module path to import.
-
-        Returns:
-            The imported module.
 
         Raises:
-            RuntimeError: If the runapy package is not installed.
-            ValueError: If module_path is not from the runai package.
+            RunAIAuthenticationError: If client configuration fails.
         """
-        ALLOWED_MODULES = frozenset(
-            [
-                "runai.api_client",
-                "runai.configuration",
-                "runai.runai_client",
-                "runai.models",
-            ]
-        )
-
-        if module_path not in ALLOWED_MODULES:
-            raise ValueError(
-                f"Module '{module_path}' is not in the allowed list. "
-                f"Allowed modules: {ALLOWED_MODULES}"
-            )
-
         try:
-            return importlib.import_module(module_path)
-        except ImportError as exc:
-            raise RuntimeError(
-                "The runapy package is required to use the Run:AI client. "
-                "Please install it with: pip install runapy"
+            config = Configuration(
+                client_id=client_id,
+                client_secret=client_secret,
+                runai_base_url=runai_base_url,
+            )
+            self._raw_client = RunapyClient(ApiClient(config))
+        except Exception as exc:
+            raise RunAIAuthenticationError(
+                f"Failed to initialize Run:AI client ({type(exc).__name__}): {exc}. "
+                "Verify your client_id, client_secret, and runai_base_url are correct."
             ) from exc
 
-    def _create_client(
-        self, client_id: str, client_secret: str, runai_base_url: str
-    ) -> Any:
-        """Create the underlying runapy client.
-
-        Args:
-            client_id: Run:AI client ID.
-            client_secret: Run:AI client secret.
-            runai_base_url: Run:AI base URL.
-
-        Returns:
-            Initialized runapy client.
-        """
-        api_client_module = self._load_module("runai.api_client")
-        configuration_module = self._load_module("runai.configuration")
-        runai_client_module = self._load_module("runai.runai_client")
-
-        config = configuration_module.Configuration(
-            client_id=client_id,
-            client_secret=client_secret,
-            runai_base_url=runai_base_url,
-        )
-        return runai_client_module.RunaiClient(
-            api_client_module.ApiClient(config)
-        )
-
     @property
-    def raw_client(self) -> Any:
+    def raw_client(self) -> RunapyClient:
         """Access the underlying runapy client for advanced operations.
 
         Returns:
             The raw runapy client.
         """
         return self._raw_client
-
-    @property
-    def models(self) -> Any:
-        """Load the runai.models module.
-
-        Returns:
-            The runai.models module.
-        """
-        return self._load_module("runai.models")
 
     def get_projects(self, search: Optional[str] = None) -> List[RunAIProject]:
         """Get Run:AI projects, optionally filtered by name.
@@ -194,22 +171,32 @@ class RunAIClient:
 
         Returns:
             List of RunAIProject objects.
-        """
-        response = self._raw_client.organizations.projects.get_projects(
-            search=search
-        )
-        projects_data = (
-            response.data.get("projects", []) if response.data else []
-        )
 
-        return [
-            RunAIProject(
-                id=str(p.get("id")),
-                name=p.get("name", ""),
-                cluster_id=p.get("clusterId"),
+        Raises:
+            RunAIClientError: If the API call fails.
+        """
+        try:
+            response = self._raw_client.organizations.projects.get_projects(
+                search=search
             )
-            for p in projects_data
-        ]
+            projects_data = (
+                response.data.get("projects", []) if response.data else []
+            )
+
+            return [
+                RunAIProject(
+                    id=str(p.get("id")),
+                    name=p.get("name", ""),
+                    cluster_id=p.get("clusterId"),
+                )
+                for p in projects_data
+            ]
+        except RunAIClientError:
+            raise
+        except Exception as exc:
+            raise RunAIClientError(
+                f"Failed to fetch Run:AI projects ({type(exc).__name__}): {exc}"
+            ) from exc
 
     def get_project_by_name(self, name: str) -> RunAIProject:
         """Get a Run:AI project by exact name match.
@@ -237,17 +224,27 @@ class RunAIClient:
 
         Returns:
             List of RunAICluster objects.
-        """
-        response = self._raw_client.organizations.clusters.get_clusters()
-        clusters_data = response.data if response.data else []
 
-        return [
-            RunAICluster(
-                id=c.get("uuid", c.get("id", "")),
-                name=c.get("name", ""),
-            )
-            for c in clusters_data
-        ]
+        Raises:
+            RunAIClientError: If the API call fails.
+        """
+        try:
+            response = self._raw_client.organizations.clusters.get_clusters()
+            clusters_data = response.data if response.data else []
+
+            return [
+                RunAICluster(
+                    id=c.get("uuid", c.get("id", "")),
+                    name=c.get("name", ""),
+                )
+                for c in clusters_data
+            ]
+        except RunAIClientError:
+            raise
+        except Exception as exc:
+            raise RunAIClientError(
+                f"Failed to fetch Run:AI clusters ({type(exc).__name__}): {exc}"
+            ) from exc
 
     def get_cluster_by_id(self, cluster_id: str) -> Optional[RunAICluster]:
         """Get a Run:AI cluster by ID.
@@ -300,7 +297,7 @@ class RunAIClient:
         return clusters[0]
 
     def create_training_workload(
-        self, request: Any
+        self, request: runai_models.TrainingCreationRequest
     ) -> WorkloadSubmissionResult:
         """Submit a training workload to Run:AI.
 
@@ -326,7 +323,7 @@ class RunAIClient:
             raise
         except Exception as exc:
             raise RunAIClientError(
-                f"Failed to submit Run:AI workload: {exc}"
+                f"Failed to submit Run:AI workload ({type(exc).__name__}): {exc}"
             ) from exc
 
     def _extract_workload_id(self, response: Any) -> Optional[str]:
@@ -358,57 +355,80 @@ class RunAIClient:
             workload_id: The workload ID to query.
 
         Returns:
-            The workload status string or None if not available.
+            The workload status string, or None if the response is missing a
+            status field.
 
         Raises:
-            RunAIClientError: If the API call fails (not for missing workload).
+            RunAIWorkloadNotFoundError: If the workload was not found (404).
+            RunAIClientError: If the API call fails for other reasons or the
+                response is malformed.
         """
         try:
             response = self._raw_client.workloads.trainings.get_training(
                 workload_id
             )
-            if response.data and isinstance(response.data, dict):
-                status = response.data.get("actualPhase") or response.data.get(
-                    "status"
+            if not response.data:
+                raise RunAIClientError(
+                    f"Empty response when querying workload {workload_id}. "
+                    "The API returned no data."
                 )
-                return cast(Optional[str], status)
-            return None
+            if not isinstance(response.data, dict):
+                raise RunAIClientError(
+                    f"Unexpected response format for workload {workload_id}. "
+                    f"Expected dict, got {type(response.data).__name__}."
+                )
+            status = response.data.get("actualPhase") or response.data.get(
+                "status"
+            )
+            if status is None:
+                logger.warning(
+                    f"Workload {workload_id} response has no status field. "
+                    "Available keys: %s",
+                    list(response.data.keys()),
+                )
+            return cast(Optional[str], status)
         except RunAIClientError:
             raise
         except Exception as exc:
             error_msg = str(exc).lower()
             if "not found" in error_msg or "404" in error_msg:
-                logger.warning(f"Workload {workload_id} not found")
-                return None
-            else:
-                raise RunAIClientError(
-                    f"Failed to query workload status: {exc}"
-                ) from exc
+                raise RunAIWorkloadNotFoundError(workload_id) from exc
+            raise RunAIClientError(
+                f"Failed to query workload status ({type(exc).__name__}): {exc}"
+            ) from exc
 
-    def get_training_workload(self, workload_id: str) -> Dict[str, Any]:
+    def get_training_workload(self, workload_id: str) -> RunAITrainingWorkload:
         """Get full training workload details.
 
         Args:
             workload_id: The workload ID to query.
 
         Returns:
-            The workload data dictionary.
+            The workload details as a typed model.
 
         Raises:
-            RunAIClientError: If the query fails.
+            RunAIClientError: If the query fails or response is invalid.
         """
         try:
             response = self._raw_client.workloads.trainings.get_training(
                 workload_id
             )
-            if response.data and isinstance(response.data, dict):
-                return cast(Dict[str, Any], response.data)
-            return {}
+            if not response.data:
+                raise RunAIClientError(
+                    f"Empty response when querying workload {workload_id}. "
+                    "The workload may not exist or the API returned no data."
+                )
+            if not isinstance(response.data, dict):
+                raise RunAIClientError(
+                    f"Unexpected response format for workload {workload_id}. "
+                    f"Expected dict, got {type(response.data).__name__}."
+                )
+            return RunAITrainingWorkload.model_validate(response.data)
         except RunAIClientError:
             raise
         except Exception as exc:
             raise RunAIClientError(
-                f"Failed to query Run:AI workload {workload_id}: {exc}"
+                f"Failed to query Run:AI workload {workload_id} ({type(exc).__name__}): {exc}"
             ) from exc
 
     def delete_training_workload(self, workload_id: str) -> None:
@@ -426,5 +446,23 @@ class RunAIClient:
             raise
         except Exception as exc:
             raise RunAIClientError(
-                f"Failed to delete Run:AI workload {workload_id}: {exc}"
+                f"Failed to delete Run:AI workload {workload_id} ({type(exc).__name__}): {exc}"
+            ) from exc
+
+    def suspend_training_workload(self, workload_id: str) -> None:
+        """Suspend a training workload.
+
+        Args:
+            workload_id: The workload ID to suspend.
+
+        Raises:
+            RunAIClientError: If suspending fails.
+        """
+        try:
+            self._raw_client.workloads.trainings.suspend_training(workload_id)
+        except RunAIClientError:
+            raise
+        except Exception as exc:
+            raise RunAIClientError(
+                f"Failed to suspend Run:AI workload {workload_id} ({type(exc).__name__}): {exc}"
             ) from exc

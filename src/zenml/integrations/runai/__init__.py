@@ -27,7 +27,7 @@ class RunAIIntegration(Integration):
 
     NAME = RUNAI
     REQUIREMENTS = [
-        "runapy>=0.1.0",
+        "runapy>=0.1.0,<1",
     ]
 
     @classmethod

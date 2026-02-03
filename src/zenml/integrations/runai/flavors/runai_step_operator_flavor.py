@@ -19,7 +19,6 @@ from pydantic import (
     Field,
     PositiveFloat,
     PositiveInt,
-    SecretStr,
     field_validator,
     model_validator,
 )
@@ -27,6 +26,7 @@ from pydantic import (
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.runai import RUNAI_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 if TYPE_CHECKING:
     from zenml.integrations.runai.step_operators import RunAIStepOperator
@@ -193,11 +193,17 @@ class RunAIStepOperatorSettings(BaseSettings):
         "Example: {'prometheus.io/scrape': 'true'}",
     )
 
-    environment_variables: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Additional environment variables to set in the Run:AI workload container. "
-        "These are merged with ZenML's environment variables. "
-        "Example: {'LOG_LEVEL': 'DEBUG', 'BATCH_SIZE': '32'}",
+    workload_timeout: Optional[PositiveInt] = Field(
+        default=None,
+        description="Maximum time in seconds to wait for workload completion. "
+        "If the workload doesn't finish within this time, it will be marked as failed. "
+        "If not set, workloads can run indefinitely. Example: 3600 for 1 hour",
+    )
+    pending_timeout: Optional[PositiveInt] = Field(
+        default=None,
+        description="Maximum time in seconds a workload may remain in the pending state "
+        "before it is stopped. If not set, workloads can remain pending indefinitely. "
+        "Example: 600 for 10 minutes",
     )
 
     @field_validator(
@@ -276,15 +282,15 @@ class RunAIStepOperatorConfig(
     ```
     """
 
-    client_id: str = Field(
+    client_id: PlainSerializedSecretStr = Field(
         ...,
         description="Run:AI client ID for API authentication. Obtain from Run:AI "
         "control plane under Settings > Application > Applications. Required for API access",
     )
-    client_secret: SecretStr = Field(
+    client_secret: PlainSerializedSecretStr = Field(
         ...,
         description="Run:AI client secret for API authentication. Obtain from Run:AI "
-        "control plane under Settings > Application > Applications. Stored securely",
+        "control plane under Settings > Application > Applications.",
     )
     runai_base_url: str = Field(
         ...,
@@ -292,6 +298,26 @@ class RunAIStepOperatorConfig(
         "'https://<organization>.run.ai'. For self-hosted Run:AI deployments, use your control plane URL. "
         "Example: 'https://my-org.run.ai'",
     )
+
+    @field_validator("runai_base_url")
+    @classmethod
+    def _validate_runai_base_url(cls, value: str) -> str:
+        """Validate and normalize Run:AI base URL.
+
+        Args:
+            value: The URL to validate.
+
+        Returns:
+            The validated and normalized URL.
+
+        Raises:
+            ValueError: If the URL is invalid.
+        """
+        if not value.startswith(("http://", "https://")):
+            raise ValueError(
+                f"Invalid URL '{value}'. Must start with http:// or https://"
+            )
+        return value.rstrip("/")
 
     project_name: str = Field(
         ...,
@@ -319,11 +345,12 @@ class RunAIStepOperatorConfig(
         "Lower values provide faster status updates but increase API load. "
         "Recommended: 30-60 seconds for production",
     )
-    workload_timeout: Optional[PositiveInt] = Field(
-        default=None,
-        description="Maximum time in seconds to wait for workload completion. "
-        "If the workload doesn't finish within this time, it will be marked as failed. "
-        "If not set, workloads can run indefinitely. Example: 3600 for 1 hour",
+    delete_on_failure: bool = Field(
+        default=False,
+        description="Whether to delete Run:AI workloads after they fail or timeout. "
+        "Workloads are always stopped on failure to halt resource usage; "
+        "set this to True to delete them afterward. Defaults to False to preserve "
+        "failed workloads for traceability in the Run:AI UI.",
     )
 
     @property
@@ -360,6 +387,15 @@ class RunAIStepOperatorFlavor(BaseStepOperatorFlavor):
             The name of the flavor.
         """
         return RUNAI_STEP_OPERATOR_FLAVOR
+
+    @property
+    def display_name(self) -> str:
+        """Display name of the flavor.
+
+        Returns:
+            The display name of the flavor.
+        """
+        return "Run:AI"
 
     @property
     def docs_url(self) -> Optional[str]:

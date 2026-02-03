@@ -14,21 +14,29 @@
 """Run:AI client utilities."""
 
 from zenml.integrations.runai.client.runai_client import (
+    RunAIAuthenticationError,
     RunAIClient,
     RunAIClientError,
     RunAICluster,
     RunAIClusterNotFoundError,
+    RunAIConnectionError,
     RunAIProject,
     RunAIProjectNotFoundError,
+    RunAITrainingWorkload,
+    RunAIWorkloadNotFoundError,
     WorkloadSubmissionResult,
 )
 
 __all__ = [
+    "RunAIAuthenticationError",
     "RunAIClient",
     "RunAIClientError",
     "RunAICluster",
     "RunAIClusterNotFoundError",
+    "RunAIConnectionError",
     "RunAIProject",
     "RunAIProjectNotFoundError",
+    "RunAITrainingWorkload",
+    "RunAIWorkloadNotFoundError",
     "WorkloadSubmissionResult",
 ]
