@@ -110,6 +110,7 @@ from zenml.constants import (
     STEPS,
     TAG_RESOURCES,
     TAGS,
+    TRIGGERS,
     USERS,
     VERSION_1,
     ZENML_PRO_API_KEY_PREFIX,
@@ -260,6 +261,9 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -267,6 +271,10 @@ from zenml.models import (
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
+)
+from zenml.triggers.registry import (
+    TRIGGER_RETURN_TYPE_UNION,
+    TYPE_TO_RESPONSE_MAPPING,
 )
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -2085,6 +2093,162 @@ class RestZenStore(BaseZenStore):
             run_metadata: The run metadata to create.
         """
         self.post(RUN_METADATA, body=run_metadata)
+
+    # ----------------------------- Triggers ------------------------------
+
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Creates a new trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+        """
+        return self._create_resource(
+            resource=trigger,
+            route=TRIGGERS,
+            response_model=TRIGGER_RETURN_TYPE_UNION,
+        )
+
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Retrieves a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            The trigger.
+
+        Raises:
+            ValueError: In case of bad response.
+        """
+        from zenml.triggers.registry import TYPE_TO_RESPONSE_MAPPING
+
+        body: dict[str, Any] = self.get(  # type: ignore[assignment]
+            f"{TRIGGERS}/{str(trigger_id)}", params={"hydrate": hydrate}
+        )
+
+        try:
+            response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
+            return response_model.model_validate(body)
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
+
+    def list_triggers(
+        self, triggers_filter_model: TriggerFilter, hydrate: bool = False
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List all triggers.
+
+        Args:
+            triggers_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of triggers matching the filter criteria.
+
+        Raises:
+            ValueError: In case of bad response.
+        """
+        from zenml.triggers.registry import TYPE_TO_RESPONSE_MAPPING
+
+        body: dict[str, Any] = self.get(  # type: ignore[assignment]
+            TRIGGERS,
+            params={
+                "hydrate": hydrate,
+                **triggers_filter_model.model_dump(exclude_none=True),
+            },
+        )
+
+        page_of_items: Page[AnyResponse] = Page.model_validate(body)  # type: ignore[valid-type]
+
+        if not page_of_items.items:
+            return page_of_items
+
+        try:
+            page_of_items.items = [
+                TYPE_TO_RESPONSE_MAPPING[
+                    generic_item["body"]["type"]
+                ].model_validate(generic_item)
+                for generic_item in body["items"]
+            ]
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
+
+        return page_of_items
+
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Updates a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            ValueError: In case of bad response.
+        """
+        body: dict[str, Any] = self.put(  # type: ignore[assignment]
+            f"TRIGGERS/{trigger_id}", body=trigger_update, params=None
+        )
+
+        try:
+            response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
+            return response_model.model_validate(body)
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
+
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Deletes a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag deciding whether to soft-delete the trigger.
+        """
+        self._delete_resource(
+            resource_id=trigger_id,
+            route=TRIGGERS,
+            params={"soft": soft},
+        )
+
+    def attach_trigger_to_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Attaches (links) a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+        """
+        self.put(
+            path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            timeout=5,
+        )
+
+    def detach_trigger_from_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Detaches (unlinks) a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+        """
+        self.delete(
+            path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            timeout=5,
+        )
 
     # ----------------------------- Schedules -----------------------------
 
