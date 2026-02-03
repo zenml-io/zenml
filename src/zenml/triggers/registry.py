@@ -14,7 +14,7 @@
 """Registry module for type/class trigger resolution."""
 
 from zenml.enums import TriggerType
-from zenml.triggers.schedules import (
+from zenml.models.v2.core.triggers import (
     ScheduleTriggerRequest,
     ScheduleTriggerResponse,
     ScheduleTriggerResponseBody,

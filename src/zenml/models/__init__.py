@@ -307,15 +307,13 @@ from zenml.models.v2.core.stack import (
     StackResponseMetadata,
     StackResponseResources
 )
-from zenml.triggers.models import (
+from zenml.models.v2.core.triggers import (
     TriggerRequest,
     TriggerUpdate,
     TriggerResponseBody,
     TriggerResponseMetadata,
     TriggerResponseResources,
     TriggerFilter,
-)
-from zenml.triggers.schedules import (
     ScheduleTriggerRequest,
     ScheduleTriggerResponseBody,
     ScheduleTriggerResponse,
