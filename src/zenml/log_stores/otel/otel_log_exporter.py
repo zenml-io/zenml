@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """OpenTelemetry exporter that writes logs to any OpenTelemetry backend."""
 
+import gzip
 import json
 import threading
 from collections import defaultdict
@@ -155,20 +156,13 @@ class OTLPLogExporter(LogExporter):
         """
         data = serialized_data
         if self._compression == Compression.Gzip:
-            try:
-                import gzip
-            except ImportError:
-                logger.warning(
-                    "gzip module not found, compression not supported"
-                )
-            else:
-                gzip_data = BytesIO()
-                with gzip.GzipFile(fileobj=gzip_data, mode="w") as gzip_stream:
-                    gzip_stream.write(serialized_data)
-                data = gzip_data.getvalue()
-                self._session.headers.update(
-                    {"Content-Encoding": self._compression.value}
-                )
+            gzip_data = BytesIO()
+            with gzip.GzipFile(fileobj=gzip_data, mode="w") as gzip_stream:
+                gzip_stream.write(serialized_data)
+            data = gzip_data.getvalue()
+            self._session.headers.update(
+                {"Content-Encoding": self._compression.value}
+            )
         elif self._compression == Compression.Deflate:
             try:
                 import zlib
