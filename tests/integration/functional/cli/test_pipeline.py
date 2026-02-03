@@ -76,6 +76,34 @@ def test_pipeline_run_list(clean_client_with_run):
     assert result.exit_code == 0
 
 
+def test_pipeline_run_list_returns_newest_first(clean_client_with_run: Client):
+    """Test that pipeline runs are listed newest-first by default"""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+    list_command = cli.commands["pipeline"].commands["runs"].commands["list"]
+
+    pipeline_id = pipeline_instance.register().id
+
+    # Create two runs
+    assert (
+        runner.invoke(run_command, [pipeline_instance_source]).exit_code == 0
+    )
+    assert (
+        runner.invoke(run_command, [pipeline_instance_source]).exit_code == 0
+    )
+
+    # List only the most recent run
+    result = runner.invoke(
+        list_command,
+        ["--size", "1", "--columns", "name"],
+        env={"ZENML_DISABLE_PAGER": "1"},
+    )
+    assert result.exit_code == 0
+
+    newest_run = Client().list_pipeline_runs(pipeline_id=pipeline_id)[0]
+    assert newest_run.name in result.output
+
+
 def test_pipeline_run_delete(clean_client_with_run):
     """Test that zenml pipeline runs delete works as expected."""
     existing_runs = clean_client_with_run.list_pipeline_runs()
