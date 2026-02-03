@@ -79,7 +79,10 @@ from zenml.zen_stores.schemas.model_schemas import (
 )
 from zenml.zen_stores.schemas.run_template_schemas import RunTemplateSchema
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
-from zenml.zen_stores.schemas.api_transaction_schemas import ApiTransactionSchema
+from zenml.zen_stores.schemas.api_transaction_schemas import (
+    ApiTransactionResultSchema,
+    ApiTransactionSchema,
+)
 
 __all__ = [
     "ActionSchema",
@@ -129,5 +132,6 @@ __all__ = [
     "ModelVersionArtifactSchema",
     "ModelVersionPipelineRunSchema",
     "ProjectSchema",
+    "ApiTransactionResultSchema",
     "ApiTransactionSchema",
 ]

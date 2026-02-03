@@ -16,6 +16,8 @@
 import asyncio
 import base64
 import json
+import random
+import time
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from uuid import UUID, uuid4
@@ -175,29 +177,25 @@ class RequestManager:
 
     def __init__(
         self,
-        transaction_ttl: int,
-        request_timeout: float,
-        deduplicate: bool = True,
     ) -> None:
-        """Initialize the request manager.
+        """Initialize the request manager."""
+        from zenml.zen_server.utils import server_config
 
-        Args:
-            transaction_ttl: The time to live for cached transactions. Comes
-                into effect after a request is completed.
-            request_timeout: The timeout for requests. If a request takes longer
-                than this, a 429 error will be returned to the client to slow
-                down the request rate.
-            deduplicate: Whether to deduplicate requests.
-        """
-        self.deduplicate = deduplicate
+        cfg = server_config()
+        self.deduplicate = cfg.request_deduplication
         self.transactions: Dict[UUID, RequestRecord] = dict()
         self.lock = asyncio.Lock()
-        self.transaction_ttl = transaction_ttl
-        self.request_timeout = request_timeout
+        self.transaction_ttl = cfg.request_cache_timeout
+        self.request_timeout = cfg.request_timeout
 
         self.request_contexts: ContextVar[Optional[RequestContext]] = (
             ContextVar("request_contexts", default=None)
         )
+
+        self._cleanup_interval = cfg.api_transaction_cleanup_interval
+
+        self._cleanup_task: Optional[asyncio.Task[None]] = None
+        self._shutdown_event = asyncio.Event()
 
     @property
     def current_request(self) -> RequestContext:
@@ -225,11 +223,71 @@ class RequestManager:
 
     async def startup(self) -> None:
         """Start the request manager."""
-        pass
+        self._shutdown_event.clear()
+        self._cleanup_task = asyncio.create_task(self._run_cleanup_loop())
 
     async def shutdown(self) -> None:
         """Shutdown the request manager."""
-        pass
+        self._shutdown_event.set()
+        if self._cleanup_task is not None:
+            self._cleanup_task.cancel()
+            try:
+                await self._cleanup_task
+            except asyncio.CancelledError:
+                pass
+            self._cleanup_task = None
+
+    async def _run_cleanup_loop(self) -> None:
+        """Run the cleanup loop for expired transactions.
+
+        This loop runs continuously in the background, cleaning up expired
+        API transactions. It includes:
+        - Random jitter on startup and between iterations to reduce overlap
+        between pods
+        - Graceful shutdown via the shutdown event
+        """
+        # Random initial delay (0-interval seconds) to stagger pod startup
+        initial_jitter = random.uniform(0, self._cleanup_interval)
+        logger.debug(
+            f"Transaction cleanup will start in {initial_jitter:.1f}s"
+        )
+        try:
+            await asyncio.wait_for(
+                self._shutdown_event.wait(), timeout=initial_jitter
+            )
+            return
+        except asyncio.TimeoutError:
+            pass
+
+        while not self._shutdown_event.is_set():
+            try:
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self._cleanup_expired_transactions
+                )
+            except Exception:
+                logger.exception("Error during transaction cleanup")
+
+            # Add random jitter (±25%) to interval to reduce pod overlap
+            jitter = random.uniform(0.75, 1.25)
+            sleep_time = self._cleanup_interval * jitter
+
+            try:
+                await asyncio.wait_for(
+                    self._shutdown_event.wait(), timeout=sleep_time
+                )
+                break
+            except asyncio.TimeoutError:
+                pass
+
+    def _cleanup_expired_transactions(self) -> None:
+        """Execute the cleanup operation in a thread pool."""
+        from zenml.zen_server.utils import zen_store
+
+        start_time = time.perf_counter()
+        zen_store().cleanup_expired_api_transactions()
+        duration = time.perf_counter() - start_time
+
+        logger.debug(f"Cleaning up expired transactions took {duration:.2f}s")
 
     async def async_run_and_cache_result(
         self,
@@ -303,6 +361,13 @@ class RequestManager:
                             "caching."
                         )
                         deduplicate_request = False
+                    except Exception:
+                        logger.exception(
+                            f"[{request_context.log_request_id}] "
+                            f"Unexpected error getting or creating API "
+                            "transaction. Skipping deduplication."
+                        )
+                        deduplicate_request = False
 
                     if deduplicate_request:
                         if api_transaction.completed:
@@ -314,16 +379,29 @@ class RequestManager:
                                 f"{get_system_metrics_log_str(request_context.request)}"
                             )
 
-                            # The transaction already completed, we can return the
-                            # result right away.
-                            result = api_transaction.get_result()
-                            if result is not None:
-                                return Response(
-                                    base64.b64decode(result),
-                                    media_type="application/json",
+                            try:
+                                # The transaction already completed, we can return the
+                                # result right away.
+                                result = (
+                                    zen_store().get_api_transaction_result(
+                                        api_transaction_id=transaction_id,
+                                    )
                                 )
+                            except Exception:
+                                logger.exception(
+                                    f"[{request_context.log_request_id}] "
+                                    f"Unexpected error getting API transaction "
+                                    "result. Skipping deduplication."
+                                )
+                                deduplicate_request = False
                             else:
-                                return
+                                if result is not None:
+                                    return Response(
+                                        base64.b64decode(result),
+                                        media_type="application/json",
+                                    )
+                                else:
+                                    return
 
                         elif not transaction_created:
                             logger.debug(
@@ -350,12 +428,18 @@ class RequestManager:
                 except Exception:
                     if deduplicate_request:
                         assert transaction_id is not None
-                        # We don't cache exceptions. If the client retries, the
-                        # request will be executed again and the exception, if
-                        # persistent, will be raised again.
-                        zen_store().delete_api_transaction(
-                            api_transaction_id=transaction_id,
-                        )
+                        try:
+                            # We don't cache exceptions. If the client retries, the
+                            # request will be executed again and the exception, if
+                            # persistent, will be raised again.
+                            zen_store().delete_api_transaction(
+                                api_transaction_id=transaction_id,
+                            )
+                        except Exception:
+                            logger.exception(
+                                f"[{request_context.log_request_id}] "
+                                f"Unexpected error deleting API transaction."
+                            )
                     raise
 
                 if deduplicate_request:
@@ -396,16 +480,30 @@ class RequestManager:
                             api_transaction_update.set_result(
                                 result_to_cache.decode("utf-8")
                             )
-                        zen_store().finalize_api_transaction(
-                            api_transaction_id=transaction_id,
-                            api_transaction_update=api_transaction_update,
-                        )
+                        try:
+                            zen_store().finalize_api_transaction(
+                                api_transaction_id=transaction_id,
+                                api_transaction_update=api_transaction_update,
+                            )
+                        except Exception:
+                            logger.exception(
+                                f"[{request_context.log_request_id}] "
+                                f"Unexpected error finalizing API transaction. "
+                                "Ignoring."
+                            )
                     else:
-                        # If the result is not cacheable, there is no point in
-                        # keeping the transaction around.
-                        zen_store().delete_api_transaction(
-                            api_transaction_id=transaction_id,
-                        )
+                        try:
+                            # If the result is not cacheable, there is no point in
+                            # keeping the transaction around.
+                            zen_store().delete_api_transaction(
+                                api_transaction_id=transaction_id,
+                            )
+                        except Exception:
+                            logger.exception(
+                                f"[{request_context.log_request_id}] "
+                                f"Unexpected error deleting API transaction. "
+                                "Ignoring."
+                            )
 
                 return result
             finally:
