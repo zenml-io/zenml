@@ -85,7 +85,8 @@ class TriggerUpdate(TriggerBase, BaseUpdate, ABC):
         """Calculates extra, type-specific fields needed for the trigger.
 
         Returns:
-            A dictionary of extra fields (e.g. {"next_occurrence': "..."}
+            A dictionary of extra fields (e.g. {"next_occurrence': "..."}) to be stored in the database.
+            IMPORTANT: These fields must match the attributes defined in the `TriggerSchema` ORM class.
         """
         pass
 
