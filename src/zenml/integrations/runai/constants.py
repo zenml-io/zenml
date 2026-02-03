@@ -15,7 +15,7 @@
 
 from enum import Enum
 
-from zenml.enums import ExecutionStatus
+from zenml.enums import DeploymentStatus, ExecutionStatus
 
 MAX_WORKLOAD_NAME_LENGTH = 50
 
@@ -156,3 +156,49 @@ def map_runai_status_to_execution_status(runai_status: str) -> ExecutionStatus:
         )
     except ValueError:
         return ExecutionStatus.RUNNING
+
+
+class RunAIInferenceStatus(str, Enum):
+    """Run:AI inference workload status values."""
+
+    PENDING = "pending"
+    INITIALIZING = "initializing"
+    RUNNING = "running"
+    FAILED = "failed"
+    ERROR = "error"
+    STOPPED = "stopped"
+    DEGRADED = "degraded"
+
+
+RUNAI_INFERENCE_STATUS_TO_DEPLOYMENT_STATUS = {
+    RunAIInferenceStatus.PENDING: DeploymentStatus.PENDING,
+    RunAIInferenceStatus.INITIALIZING: DeploymentStatus.PENDING,
+    RunAIInferenceStatus.RUNNING: DeploymentStatus.RUNNING,
+    RunAIInferenceStatus.FAILED: DeploymentStatus.ERROR,
+    RunAIInferenceStatus.ERROR: DeploymentStatus.ERROR,
+    RunAIInferenceStatus.STOPPED: DeploymentStatus.ABSENT,
+    RunAIInferenceStatus.DEGRADED: DeploymentStatus.ERROR,
+}
+
+
+def map_runai_inference_status_to_deployment_status(
+    runai_status: str,
+) -> DeploymentStatus:
+    """Maps Run:AI inference workload status to ZenML DeploymentStatus.
+
+    Args:
+        runai_status: The Run:AI inference workload status string.
+
+    Returns:
+        The corresponding ZenML DeploymentStatus.
+    """
+    if not runai_status:
+        return DeploymentStatus.UNKNOWN
+
+    try:
+        status_enum = RunAIInferenceStatus(runai_status.lower())
+        return RUNAI_INFERENCE_STATUS_TO_DEPLOYMENT_STATUS.get(
+            status_enum, DeploymentStatus.UNKNOWN
+        )
+    except ValueError:
+        return DeploymentStatus.UNKNOWN
