@@ -1,7 +1,7 @@
 """remove logs unique constraint [8e36b8227160].
 
 Revision ID: 8e36b8227160
-Revises: 0.93.2
+Revises: 73c397e3c3ba
 Create Date: 2026-01-15 17:31:19.491562
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8e36b8227160"
-down_revision = "0.93.2"
+down_revision = "73c397e3c3ba"
 branch_labels = None
 depends_on = None
 
