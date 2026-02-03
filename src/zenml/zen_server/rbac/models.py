@@ -75,6 +75,7 @@ class ResourceType(StrEnum):
     PROJECT = "project"
     # Deactivated for now
     # USER = "user"
+    TRIGGER = "trigger"
 
     def is_project_scoped(self) -> bool:
         """Check if a resource type is project scoped.

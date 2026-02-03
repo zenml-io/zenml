@@ -560,3 +560,15 @@ class GroupType(StrEnum):
 
     MANUAL = "manual"
     MAP = "map"
+
+
+class TriggerType(StrEnum):
+    """Enum representing fundamental trigger types."""
+
+    SCHEDULE = "schedule"  # TODO: Extend with Webhook
+
+
+class TriggerFlavor(StrEnum):
+    """Enum representing trigger flavors."""
+
+    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors

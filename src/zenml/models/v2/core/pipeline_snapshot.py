@@ -862,9 +862,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         return query
 
 
-# ------------------ Trigger Model ------------------
-
-
 class PipelineSnapshotRunRequest(BaseZenModel):
     """Request model for running a pipeline snapshot."""
 

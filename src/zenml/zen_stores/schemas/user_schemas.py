@@ -62,6 +62,7 @@ if TYPE_CHECKING:
         StackSchema,
         StepRunSchema,
         TagSchema,
+        TriggerSchema,
     )
 
 
@@ -150,6 +151,9 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     tags: List["TagSchema"] = Relationship(
+        back_populates="user",
+    )
+    triggers: List["TriggerSchema"] = Relationship(
         back_populates="user",
     )
 

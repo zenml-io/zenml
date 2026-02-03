@@ -18,6 +18,7 @@ from contextlib import nullcontext
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
+from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
 
 try:
     import sqlalchemy  # noqa
@@ -322,6 +323,9 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerUpdate,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -334,6 +338,7 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
+from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
 from zenml.utils import source_utils, tag_utils, uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -394,6 +399,8 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
     TagResourceSchema,
     TagSchema,
+    TriggerSchema,
+    TriggerSnapshotSchema,
     UserSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
@@ -6981,6 +6988,271 @@ class SqlZenStore(BaseZenStore):
                         session.add(rm_resource_link)
                         session.commit()
         return None
+
+    # -------------------- Triggers ---------------------
+
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Creates a new trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(request_model=trigger, session=session)
+
+            self._verify_name_uniqueness(
+                resource=trigger,
+                schema=TriggerSchema,
+                session=session,
+            )
+
+            new_trigger = TriggerSchema.from_request(trigger_request=trigger)
+            session.add(new_trigger)
+            session.commit()
+            return new_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Retrieves a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            The trigger.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+                query_options=TriggerSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
+            )
+            return trigger.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_triggers(
+        self,
+        triggers_filter_model: TriggerFilter,
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List all triggers.
+
+        Args:
+            triggers_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=triggers_filter_model,
+                session=session,
+            )
+            query = select(TriggerSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerSchema,
+                filter_model=triggers_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Updates a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            IllegalOperationError: If archived scheduled is updated.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            existing_trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+
+            if existing_trigger.is_archived:
+                raise IllegalOperationError(
+                    "Archived schedules can not be updated."
+                )
+
+            self._verify_name_uniqueness(
+                resource=trigger_update,
+                schema=existing_trigger,
+                session=session,
+            )
+
+            # Update the schedule
+            existing_trigger = existing_trigger.update(trigger_update)
+            session.add(existing_trigger)
+            session.commit()
+            return existing_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Deletes a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag deciding whether to soft delete the trigger.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+
+            if not soft:
+                # Hard delete the schedule
+                session.delete(trigger)
+            else:
+                # Soft deletion - set is_archived
+                trigger.is_archived = True
+                trigger.active = False
+                session.add(trigger)
+
+                # archival does not cascade - need to delete associations
+                session.exec(
+                    delete(TriggerSnapshotSchema).where(
+                        col(TriggerSnapshotSchema.trigger_id) == trigger_id
+                    )
+                )  # type: ignore[call-overload]
+
+            session.commit()
+
+    def attach_trigger_to_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Attaches (links) a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            IllegalOperationError: if the trigger is archived.
+            KeyError: If associated entities do not exist.
+        """
+        with Session(self.engine) as session:
+            snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
+
+            if not snapshot:
+                raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
+
+            trigger = session.get(TriggerSchema, trigger_id)
+
+            if not trigger:
+                raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.is_archived:
+                raise IllegalOperationError(
+                    f"Can not attach snapshot {snapshot_id} to archived trigger {trigger_id}."
+                )
+
+            new_assoc = TriggerSnapshotSchema(
+                trigger_id=trigger_id,
+                snapshot_id=snapshot_id,
+            )
+
+            session.add(new_assoc)
+            session.commit()
+
+    def detach_trigger_from_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Detaches (unlinks) a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the entities don't exist.
+        """
+        with Session(self.engine) as session:
+            assoc = session.get(
+                TriggerSnapshotSchema, (trigger_id, snapshot_id)
+            )
+
+            if assoc is None:
+                raise KeyError(
+                    f"No snapshot {snapshot_id} association found for trigger {trigger_id}"
+                )
+
+            session.delete(assoc)
+            session.commit()
+
+    def create_trigger_execution(
+        self,
+        trigger_id: UUID,
+        pipeline_run_id: UUID,
+    ) -> None:
+        """Creates a trigger execution object.
+
+        Comment: Useful to associate triggers & runs.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            pipeline_run_id: The ID of the pipeline run.
+
+        Raises:
+            KeyError: if the entities don't exist.
+            IllegalOperationError: if the trigger is archived.
+        """
+        with Session(self.engine) as session:
+            run = session.get(PipelineRunSchema, pipeline_run_id)
+
+            if not run:
+                raise KeyError(
+                    f"Pipeline run {pipeline_run_id} doesn't exist."
+                )
+
+            trigger = session.get(TriggerSchema, trigger_id)
+
+            if not trigger:
+                raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.is_archived:
+                raise IllegalOperationError(
+                    f"Can not create trigger execution for archived trigger {trigger_id}."
+                )
+
+            new_assoc = TriggerExecutionSchema(
+                trigger_id=trigger_id,
+                pipeline_run_id=pipeline_run_id,
+            )
+
+            session.add(new_assoc)
+            session.commit()
 
     # ----------------------------- Schedules -----------------------------
 

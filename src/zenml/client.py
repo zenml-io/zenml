@@ -71,6 +71,8 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
+    TriggerFlavor,
+    TriggerType,
     VisualizationResourceTypes,
 )
 from zenml.exceptions import (
@@ -149,6 +151,9 @@ from zenml.models import (
     RunTemplateUpdate,
     ScheduleFilter,
     ScheduleResponse,
+    ScheduleTriggerRequest,
+    ScheduleTriggerResponse,
+    ScheduleTriggerUpdate,
     ScheduleUpdate,
     SecretFilter,
     SecretRequest,
@@ -3856,6 +3861,159 @@ class Client(metaclass=ClientMetaClass):
             ).id
 
         self.zen_store.delete_run_template(template_id=template_id)
+
+    # ------------------------------- Triggers ---------------------------------
+
+    def create_schedule_trigger(
+        self,
+        name: str,
+        project_id: str | UUID | None = None,
+        active: bool = True,
+        cron_expression: str | None = None,
+        interval: int | None = None,
+        run_once_start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        start_time: datetime | None = None,
+    ) -> ScheduleTriggerResponse:
+        """Create a native schedule trigger.
+
+        Args:
+            name: The name of the trigger.
+            project_id: The project ID.
+            active: Whether the trigger should be activated on creation.
+            cron_expression: Schedule frequency expressed as a cron expression.
+            interval: Schedule frequency in second intervals.
+            run_once_start_time: Schedule one-off execution
+            end_time: The end time of the trigger.
+            start_time: The start time of the trigger.
+
+        Returns:
+            The created trigger.
+        """
+        return self.zen_store.create_trigger(
+            trigger=ScheduleTriggerRequest(
+                project=project_id or self.active_project.id,
+                name=name,
+                type=TriggerType.SCHEDULE,
+                flavor=TriggerFlavor.NATIVE_SCHEDULE,
+                active=active,
+                cron_expression=cron_expression,
+                interval=interval,
+                run_once_start_time=run_once_start_time,
+                end_time=end_time,
+                start_time=start_time,
+            )
+        )
+
+    def update_schedule_trigger(
+        self,
+        trigger_id: UUID,
+        name: str | None = None,
+        active: bool | None = None,
+        cron_expression: str | None = None,
+        interval: int | None = None,
+        run_once_start_time: datetime | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> ScheduleTriggerResponse:
+        """Update a native schedule trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            name: The new name of the trigger.
+            active: The new active status of the trigger.
+            cron_expression: The new cron_expression of the trigger.
+            interval: The new interval of the trigger.
+            start_time: The new start time of the trigger.
+            end_time: The new end time of the trigger.
+            run_once_start_time: The new run_once_start_time of the trigger.
+
+        Returns:
+            The updated trigger.
+        """
+        trigger = self.zen_store.get_trigger(trigger_id)
+
+        return self.zen_store.update_trigger(
+            trigger_id=trigger_id,
+            trigger_update=ScheduleTriggerUpdate(
+                name=name or trigger.name,
+                active=active is not None or trigger.active,
+                cron_expression=cron_expression,
+                interval=interval,
+                run_once_start_time=run_once_start_time,
+                start_time=start_time is not None or trigger.start_time,
+                end_time=end_time is not None or trigger.end_time,
+            ),
+        )
+
+    def get_schedule_trigger(
+        self, trigger_id: UUID
+    ) -> ScheduleTriggerResponse:
+        """Retrieve a trigger by trigger ID.
+
+        Args:
+            trigger_id: The id of the trigger.
+
+        Returns:
+            The trigger response.
+        """
+        return self.zen_store.get_trigger(trigger_id=trigger_id)
+
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Delete a trigger by ID.
+
+        By default, deleting a trigger archives it. The trigger is still searchable and
+        object references are kept for historical purposes but not it is inactive and
+        not updatable.
+
+        Hard deletion permanently removes the trigger and all its associations (not
+        recommended).
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag to indicate if the trigger should be archived or hard deleted.
+        """
+        if not soft:
+            logger.warning(
+                "You are deleting a trigger with option soft set to False. "
+                "All historical data and references to this trigger will be deleted."
+            )
+
+        self.zen_store.delete_trigger(trigger_id=trigger_id, soft=soft)
+
+    def attach_trigger_to_snapshot(
+        self, trigger_id: UUID, pipeline_snapshot_id: UUID
+    ) -> None:
+        """Attaches a trigger to a snapshot.
+
+        'Attaching' a trigger to a snapshot means that on each trigger event ( e.g. each
+        occurrence of a schedule) the snapshot will be executed.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            pipeline_snapshot_id: The ID of the snapshot.
+        """
+        self.zen_store.attach_trigger_to_snapshot(
+            trigger_id=trigger_id, snapshot_id=pipeline_snapshot_id
+        )
+
+    def detach_trigger_from_snapshot(
+        self,
+        trigger_id: UUID,
+        pipeline_snapshot_id: UUID,
+    ) -> None:
+        """Detaches a trigger from a snapshot.
+
+        'Detaching' a trigger from a snapshot means the on trigger events that snapshot
+        will no longer be executed.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            pipeline_snapshot_id: The ID of the snapshot.
+        """
+        self.zen_store.detach_trigger_from_snapshot(
+            trigger_id=trigger_id, snapshot_id=pipeline_snapshot_id
+        )
 
     # ------------------------------- Schedules --------------------------------
 
