@@ -16,7 +16,16 @@
 import signal
 import time
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ContextManager,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -42,8 +51,9 @@ from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
+    LoggingContext,
     is_step_logging_enabled,
-    setup_step_logging,
+    setup_logging_context,
 )
 from zenml.utils.time_utils import utc_now
 
@@ -257,69 +267,75 @@ class StepLauncher:
             The step run response.
         """
         publish_utils.step_exception_info.set(None)
-        pipeline_run, run_was_created = self._create_or_reuse_run()
 
-        if run_was_created:
-            pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
-                run_id=pipeline_run.id
-            )
-            publish_utils.publish_pipeline_run_metadata(
-                pipeline_run_id=pipeline_run.id,
-                pipeline_run_metadata=pipeline_run_metadata,
-            )
-            if model_version := pipeline_run.model_version:
-                step_run_utils.log_model_version_dashboard_url(
-                    model_version=model_version
+        logs_context: ContextManager[Any] = nullcontext()
+
+        if is_step_logging_enabled(
+            step_configuration=self._step.config,
+            pipeline_configuration=self._snapshot.pipeline_configuration,
+        ):
+            logs_context = setup_logging_context(source="prepare_step")
+
+        with logs_context:
+            pipeline_run, run_was_created = self._create_or_reuse_run()
+
+            if isinstance(logs_context, LoggingContext):
+                logs_context.update(pipeline_run=pipeline_run)
+
+            if run_was_created:
+                pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
+                    run_id=pipeline_run.id
                 )
-
-        request_factory = step_run_utils.StepRunRequestFactory(
-            snapshot=self._snapshot,
-            pipeline_run=pipeline_run,
-            stack=self._stack,
-        )
-        dynamic_config = self._step if self._snapshot.is_dynamic else None
-        step_run_request = request_factory.create_request(
-            invocation_id=self._invocation_id,
-            dynamic_config=dynamic_config,
-        )
-
-        try:
-            request_factory.populate_request(request=step_run_request)
-        except BaseException as e:
-            logger.exception(f"Failed preparing step `{self._invocation_id}`.")
-            step_run_request.status = ExecutionStatus.FAILED
-            step_run_request.end_time = utc_now()
-            step_run_request.exception_info = (
-                exception_utils.collect_exception_information(e)
-            )
-            raise
-        finally:
-            step_run = Client().zen_store.create_run_step(step_run_request)
-            self._step_run = step_run
-            if model_version := step_run.model_version:
-                step_run_utils.log_model_version_dashboard_url(
-                    model_version=model_version
+                publish_utils.publish_pipeline_run_metadata(
+                    pipeline_run_id=pipeline_run.id,
+                    pipeline_run_metadata=pipeline_run_metadata,
                 )
-
-            if not step_run.status.is_finished:
-                logger.info(f"Step `{self._invocation_id}` has started.")
-
-                logs_context = nullcontext()
-                if is_step_logging_enabled(
-                    step_configuration=step_run.config,
-                    pipeline_configuration=pipeline_run.config,
-                ):
-                    logs_context = setup_step_logging(
-                        step_run=step_run,
-                        pipeline_run=pipeline_run,
-                        source="prepare_step",
+                if model_version := pipeline_run.model_version:
+                    step_run_utils.log_model_version_dashboard_url(
+                        model_version=model_version
                     )
 
-                start_time = time.time()
-                with logs_context:
-                    logger.info(
-                        "Preparing to run step `%s`.", self._invocation_id
+            request_factory = step_run_utils.StepRunRequestFactory(
+                snapshot=self._snapshot,
+                pipeline_run=pipeline_run,
+                stack=self._stack,
+            )
+            dynamic_config = self._step if self._snapshot.is_dynamic else None
+            step_run_request = request_factory.create_request(
+                invocation_id=self._invocation_id,
+                dynamic_config=dynamic_config,
+            )
+            if isinstance(logs_context, LoggingContext):
+                step_run_request.logs = logs_context.log_model.id
+
+            try:
+                request_factory.populate_request(request=step_run_request)
+            except BaseException as e:
+                logger.exception(
+                    f"Failed preparing step `{self._invocation_id}`."
+                )
+                step_run_request.status = ExecutionStatus.FAILED
+                step_run_request.end_time = utc_now()
+                step_run_request.exception_info = (
+                    exception_utils.collect_exception_information(e)
+                )
+                raise
+            finally:
+                step_run = Client().zen_store.create_run_step(step_run_request)
+
+                if isinstance(logs_context, LoggingContext):
+                    logs_context.update(step_run=step_run)
+
+                self._step_run = step_run
+                if model_version := step_run.model_version:
+                    step_run_utils.log_model_version_dashboard_url(
+                        model_version=model_version
                     )
+
+                if not step_run.status.is_finished:
+                    logger.info(f"Step `{self._invocation_id}` has started.")
+
+                    start_time = time.time()
                     try:
                         self._run_step(
                             pipeline_run=pipeline_run,
@@ -349,24 +365,23 @@ class StepLauncher:
                             publish_utils.publish_failed_step_run(step_run.id)
                         raise
 
-                duration = time.time() - start_time
-                logger.info(
-                    f"Step `{self._invocation_id}` has finished in "
-                    f"`{string_utils.get_human_readable_time(duration)}`."
-                )
-
-            else:
-                logger.info(
-                    f"Using cached version of step `{self._invocation_id}`."
-                )
-                if (
-                    model_version := step_run.model_version
-                    or pipeline_run.model_version
-                ):
-                    step_run_utils.link_output_artifacts_to_model_version(
-                        artifacts=step_run.outputs,
-                        model_version=model_version,
+                    duration = time.time() - start_time
+                    logger.info(
+                        f"Step `{self._invocation_id}` has finished in "
+                        f"`{string_utils.get_human_readable_time(duration)}`."
                     )
+                else:
+                    logger.info(
+                        f"Using cached version of step `{self._invocation_id}`."
+                    )
+                    if (
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
+                    ):
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=step_run.outputs,
+                            model_version=model_version,
+                        )
 
         return step_run
 

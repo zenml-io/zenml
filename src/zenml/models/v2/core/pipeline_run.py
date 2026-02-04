@@ -142,7 +142,7 @@ class PipelineRunRequest(ProjectScopedRequest):
         default=None,
         title="Tags of the pipeline run.",
     )
-    logs: Optional[LogsRequest] = Field(
+    logs: Optional[Union[UUID, LogsRequest]] = Field(
         default=None,
         title="Logs of the pipeline run.",
     )
