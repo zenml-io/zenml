@@ -16,11 +16,10 @@
 import logging
 import os
 import threading
-from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -40,10 +39,9 @@ from zenml.logger import get_logger
 from zenml.models import (
     LogsRequest,
     LogsResponse,
+    LogsUpdate,
     PipelineRunResponse,
-    PipelineRunUpdate,
     StepRunResponse,
-    StepRunUpdate,
 )
 from zenml.utils import context_utils
 
@@ -171,6 +169,48 @@ class LoggingContext(context_utils.BaseContext):
             finally:
                 context._disabled = False
 
+    def update(
+        self,
+        step_run: Optional["StepRunResponse"] = None,
+        pipeline_run: Optional["PipelineRunResponse"] = None,
+    ) -> None:
+        """Update the metadata of the logging context.
+
+        Args:
+            step_run: The step run.
+            pipeline_run: The pipeline run.
+        """
+        if step_run and self._origin:
+            self._origin.metadata.update(
+                get_step_log_metadata(step_run=step_run)
+            )
+        if pipeline_run and self._origin:
+            self._origin.metadata.update(
+                get_run_log_metadata(pipeline_run=pipeline_run)
+            )
+
+    def attach(
+        self, response: Union["StepRunResponse", "PipelineRunResponse"]
+    ) -> None:
+        """Attach the logging context to a step run or pipeline run.
+
+        Args:
+            response: The step run or pipeline run.
+
+        Raises:
+            ValueError: If the response is not a step run or pipeline run.
+        """
+        if isinstance(response, StepRunResponse):
+            log_update = LogsUpdate(step_run_id=response.id)
+        elif isinstance(response, PipelineRunResponse):
+            log_update = LogsUpdate(pipeline_run_id=response.id)
+        else:
+            raise ValueError("Response must be a step run or pipeline run.")
+
+        Client().zen_store.update_logs(
+            logs_id=self.log_model.id, logs_update=log_update
+        )
+
     def __enter__(self) -> "LoggingContext":
         """Enter the context and set as active.
 
@@ -245,6 +285,7 @@ def generate_logs_request(source: str) -> LogsRequest:
         artifact_store = client.active_stack.artifact_store
         return LogsRequest(
             id=log_id,
+            project=client.active_project.id,
             source=source,
             uri=prepare_logs_uri(
                 artifact_store=artifact_store,
@@ -255,6 +296,7 @@ def generate_logs_request(source: str) -> LogsRequest:
     else:
         return LogsRequest(
             id=log_id,
+            project=client.active_project.id,
             source=source,
             log_store_id=log_store.id if log_store else None,
         )
@@ -365,151 +407,19 @@ def get_run_log_metadata(
     return log_metadata
 
 
-def setup_run_logging(
-    pipeline_run: "PipelineRunResponse",
-    source: str,
-    block_on_exit: bool = True,
-) -> Any:
-    """Set up logging for a pipeline run.
-
-    Searches for existing logs by source, updates the run if needed.
-
-    Args:
-        pipeline_run: The pipeline run.
-        source: The source of the logs.
-        block_on_exit: Whether to block until all logs are flushed when the
-            context is exited, if there are no more logging contexts active.
-
-    Returns:
-        The logs context.
-    """
-    log_metadata = get_run_log_metadata(pipeline_run)
-    log_metadata.update(dict(source=source))
-    name = f"zenml.pipeline_run.{pipeline_run.name}.{source}"
-
-    if pipeline_run.log_collection is not None:
-        if run_logs := search_logs_by_source(
-            pipeline_run.log_collection, source
-        ):
-            return LoggingContext(
-                name=name,
-                log_model=run_logs,
-                block_on_exit=block_on_exit,
-                **log_metadata,
-            )
-
-    logs_request = generate_logs_request(source=source)
-    try:
-        client = Client()
-        run_update = PipelineRunUpdate(add_logs=[logs_request])
-        pipeline_run = client.zen_store.update_run(
-            run_id=pipeline_run.id, run_update=run_update
-        )
-    except Exception as e:
-        logger.error(f"Failed to add logs to the run {pipeline_run.id}: {e}")
-
-    if pipeline_run.log_collection is not None:
-        if run_logs := search_logs_by_source(
-            pipeline_run.log_collection, source
-        ):
-            return LoggingContext(
-                name=name,
-                log_model=run_logs,
-                block_on_exit=block_on_exit,
-                **log_metadata,
-            )
-
-    return nullcontext()
-
-
-def get_step_log_metadata(
-    step_run: "StepRunResponse", pipeline_run: "PipelineRunResponse"
-) -> Dict[str, Any]:
+def get_step_log_metadata(step_run: "StepRunResponse") -> Dict[str, Any]:
     """Get the log metadata for a step run.
 
     Args:
         step_run: The step run.
-        pipeline_run: The pipeline run.
 
     Returns:
         The log metadata.
     """
-    log_metadata = get_run_log_metadata(pipeline_run)
-    log_metadata.update(
-        {
-            "step.run.id": str(step_run.id),
-            "step.run.name": step_run.name,
-        }
-    )
-    return log_metadata
-
-
-def setup_step_logging(
-    step_run: "StepRunResponse",
-    pipeline_run: "PipelineRunResponse",
-    source: str,
-    block_on_exit: bool = True,
-) -> Any:
-    """Set up logging for a step run.
-
-    Searches for existing logs by source, updates the step if needed.
-
-    Args:
-        step_run: The step run.
-        pipeline_run: The pipeline run.
-        source: The source of the logs.
-        block_on_exit: Whether to block until all logs are flushed when the
-            context is exited, if there are no more logging contexts active.
-
-    Returns:
-        The logs context.
-    """
-    log_metadata = get_step_log_metadata(step_run, pipeline_run)
-    log_metadata.update(dict(source=source))
-    name = (
-        f"zenml.pipeline_run.{pipeline_run.name}.step.{step_run.name}.{source}"
-    )
-
-    if pipeline_run.log_collection is not None:
-        if run_logs := search_logs_by_source(
-            pipeline_run.log_collection, source
-        ):
-            return LoggingContext(
-                name=name,
-                log_model=run_logs,
-                block_on_exit=block_on_exit,
-                **log_metadata,
-            )
-
-    if step_run.log_collection is not None:
-        if step_logs := search_logs_by_source(step_run.log_collection, source):
-            return LoggingContext(
-                name=name,
-                log_model=step_logs,
-                block_on_exit=block_on_exit,
-                **log_metadata,
-            )
-
-    logs_request = generate_logs_request(source=source)
-    try:
-        client = Client()
-        step_run_update = StepRunUpdate(add_logs=[logs_request])
-        step_run = client.zen_store.update_run_step(
-            step_run_id=step_run.id, step_run_update=step_run_update
-        )
-    except Exception as e:
-        logger.error(f"Failed to add logs to the step run {step_run.id}: {e}")
-
-    if step_run.log_collection is not None:
-        if step_logs := search_logs_by_source(step_run.log_collection, source):
-            return LoggingContext(
-                name=name,
-                log_model=step_logs,
-                block_on_exit=block_on_exit,
-                **log_metadata,
-            )
-
-    return nullcontext()
+    return {
+        "step.run.id": str(step_run.id),
+        "step.run.name": step_run.name,
+    }
 
 
 def fetch_logs(
@@ -612,3 +522,44 @@ def fetch_logs(
         return log_store.fetch(logs_model=logs, limit=limit)
     finally:
         log_store.cleanup()
+
+
+def setup_logging_context(
+    source: str,
+    pipeline_run: Optional["PipelineRunResponse"] = None,
+    step_run: Optional["StepRunResponse"] = None,
+    block_on_exit: bool = True,
+) -> LoggingContext:
+    """Setup a logging context for a given source.
+
+    Args:
+        source: The source of the logs.
+        pipeline_run: The pipeline run.
+        step_run: The step run.
+        block_on_exit: Whether to block until all logs are flushed when the
+            context is exited, if there are no more logging contexts active.
+
+    Returns:
+        A LoggingContext object.
+    """
+    log_metadata = {}
+
+    logs_request = generate_logs_request(source=source)
+
+    if step_run:
+        log_metadata.update(get_step_log_metadata(step_run=step_run))
+        logs_request.step_run_id = step_run.id
+
+    if pipeline_run:
+        log_metadata.update(get_run_log_metadata(pipeline_run=pipeline_run))
+        if step_run is None:
+            logs_request.pipeline_run_id = pipeline_run.id
+
+    logs_response = Client().zen_store.create_logs(logs_request)
+
+    return LoggingContext(
+        name=str(logs_response.id),
+        log_model=logs_response,
+        block_on_exit=block_on_exit,
+        **log_metadata,
+    )

@@ -63,7 +63,7 @@ from zenml.orchestrators.local.local_orchestrator import (
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
-from zenml.utils.logging_utils import setup_run_logging
+from zenml.utils.logging_utils import setup_logging_context
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
@@ -552,41 +552,37 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         Raises:
             RuntimeError: If the orchestrator has not been initialized.
             RuntimeError: If the pipeline cannot be executed.
-
         """
-        active_stack: Stack = self._client.active_stack
-
-        orchestrator = self.orchestrator_class(
-            name="deployment-local",
-            id=uuid4(),
-            config=LocalOrchestratorConfig(),
-            flavor="local",
-            type=StackComponentType.ORCHESTRATOR,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
-
-        # Start deployment runtime context with parameters (still needed for
-        # in-memory materializer)
-        runtime.start(
-            request_id=str(uuid4()),
-            snapshot=deployment_snapshot,
-            parameters=resolved_params,
-            skip_artifact_materialization=skip_artifact_materialization,
-        )
-
-        captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
-        logging_context = setup_run_logging(
-            pipeline_run=placeholder_run,
+        logging_context = setup_logging_context(
             source="deployment",
-            # we explicitly don't block on exit here because we want to allow
-            # the response to be sent to the client without waiting for the logs
-            # to be flushed.
+            pipeline_run=placeholder_run,
             block_on_exit=False,
         )
 
         with logging_context:
+            active_stack: Stack = self._client.active_stack
+
+            orchestrator = self.orchestrator_class(
+                name="deployment-local",
+                id=uuid4(),
+                config=LocalOrchestratorConfig(),
+                flavor="local",
+                type=StackComponentType.ORCHESTRATOR,
+                user=uuid4(),
+                created=datetime.now(),
+                updated=datetime.now(),
+            )
+
+            # Start deployment runtime context with parameters (still needed for
+            # in-memory materializer)
+            runtime.start(
+                request_id=str(uuid4()),
+                snapshot=deployment_snapshot,
+                parameters=resolved_params,
+                skip_artifact_materialization=skip_artifact_materialization,
+            )
+
+            captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
             try:
                 # Use the new deployment snapshot with pre-configured settings
                 orchestrator.run(
