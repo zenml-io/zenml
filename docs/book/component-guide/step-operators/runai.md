@@ -133,7 +133,7 @@ settings = RunAIStepOperatorSettings(
 | `image_pull_secret_name` | str | No | Name of Run:AI image pull secret for private registries |
 | `monitoring_interval` | float | No | Interval in seconds to poll workload status (default: 30) |
 | `workload_timeout` | int | No | Maximum time in seconds for workload completion |
-| `cleanup_on_failure` | bool | No | Delete failed workloads (default: True). Set to False for debugging |
+| `delete_on_failure` | bool | No | Delete failed workloads (default: False). Set to True to clean up failed runs |
 
 #### Step Settings (per-step configuration)
 
@@ -150,7 +150,8 @@ settings = RunAIStepOperatorSettings(
 | `preemptibility` | str | None | "preemptible" or "non-preemptible" |
 | `priority_class` | str | None | Kubernetes PriorityClass name |
 | `large_shm_request` | bool | False | Request large /dev/shm for PyTorch DataLoader |
-| `environment_variables` | dict | {} | Additional environment variables |
+
+Environment variables are configured through the standard ZenML `environment` settings on steps or pipelines; the Run:AI step operator does not introduce an additional environment-specific setting.
 
 ### Troubleshooting
 

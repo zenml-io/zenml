@@ -162,6 +162,15 @@ class RunAIClient:
         """
         return RunapyClient(ApiClient(config))  # type: ignore[no-untyped-call]
 
+    @staticmethod
+    def _get_status_code(exc: Exception) -> Optional[int]:
+        """Extract an HTTP status code from an untyped Run:AI SDK exception."""
+        for attr in ("status", "status_code", "code"):
+            value = getattr(exc, attr, None)
+            if isinstance(value, int):
+                return value
+        return None
+
     @property
     def raw_client(self) -> RunapyClient:
         """Access the underlying runapy client for advanced operations.
@@ -250,20 +259,24 @@ class RunAIClient:
                 f"Failed to fetch Run:AI clusters ({type(exc).__name__}): {exc}"
             ) from exc
 
-    def get_cluster_by_id(self, cluster_id: str) -> Optional[RunAICluster]:
+    def get_cluster_by_id(self, cluster_id: str) -> RunAICluster:
         """Get a Run:AI cluster by ID.
 
         Args:
             cluster_id: The cluster ID to find.
 
         Returns:
-            The matching RunAICluster or None if not found.
+            The matching RunAICluster.
+
+        Raises:
+            RunAIClusterNotFoundError: If no cluster matches the ID.
         """
         clusters = self.get_clusters()
         for cluster in clusters:
             if cluster.id == cluster_id:
                 return cluster
-        return None
+        available = [c.id for c in clusters]
+        raise RunAIClusterNotFoundError(cluster_id, available)
 
     def get_cluster_by_name(self, name: str) -> RunAICluster:
         """Get a Run:AI cluster by exact name match.
@@ -392,6 +405,9 @@ class RunAIClient:
         except RunAIClientError:
             raise
         except Exception as exc:
+            status_code = self._get_status_code(exc)
+            if status_code == 404:
+                raise RunAIWorkloadNotFoundError(workload_id) from exc
             error_msg = str(exc).lower()
             if "not found" in error_msg or "404" in error_msg:
                 raise RunAIWorkloadNotFoundError(workload_id) from exc

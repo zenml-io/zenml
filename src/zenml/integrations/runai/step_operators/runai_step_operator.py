@@ -285,7 +285,7 @@ class RunAIStepOperator(BaseStepOperator):
 
         if self.config.cluster_name and cluster_id:
             cluster = self.client.get_cluster_by_id(cluster_id)
-            if cluster and cluster.name != self.config.cluster_name:
+            if cluster.name != self.config.cluster_name:
                 logger.warning(
                     f"Configured cluster '{self.config.cluster_name}' "
                     f"does not match project's cluster '{cluster.name}'. "

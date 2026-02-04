@@ -422,7 +422,7 @@ class RunAIStepOperatorFlavor(BaseStepOperatorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://www.run.ai/wp-content/uploads/2023/01/runai-logo.svg"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/runai.png"
 
     @property
     def config_class(self) -> Type[RunAIStepOperatorConfig]:
