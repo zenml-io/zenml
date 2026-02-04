@@ -7081,10 +7081,12 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
                 hydrate=hydrate,
-                custom_schema_to_model_conversion=lambda schema: schema.to_model(
-                    include_metadata=hydrate,
-                    include_resources=True,
-                    include_full_metadata=include_full_metadata,
+                custom_schema_to_model_conversion=lambda schema: (
+                    schema.to_model(
+                        include_metadata=hydrate,
+                        include_resources=True,
+                        include_full_metadata=include_full_metadata,
+                    )
                 ),
                 apply_query_options_from_schema=True,
             )
@@ -8543,8 +8545,10 @@ class SqlZenStore(BaseZenStore):
                     query=query,
                     table=UserSchema,
                     filter_model=filter_model,
-                    custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
-                        include_metadata=hydrate, include_resources=True
+                    custom_schema_to_model_conversion=lambda user: (
+                        user.to_service_account_model(
+                            include_metadata=hydrate, include_resources=True
+                        )
                     ),
                     hydrate=hydrate,
                 )
