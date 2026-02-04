@@ -33,11 +33,11 @@ class SnapshotExecutionPayload(BaseModel):
 class CriticalEventType(StrEnum):
     """Critical event types enum."""
 
-    read_failed = "read_operation_failed"
-    ack_failed = "ack_operation_failed"
-    encode_failed = "encode_operation_failed"
-    send_failed = "send_operation_failed"
-    execute_failed = "execute_operation_failed"
+    READ_FAILED = "read_operation_failed"
+    ACK_FAILED = "ack_operation_failed"
+    ENCODE_FAILED = "encode_operation_failed"
+    SEND_FAILED = "send_operation_failed"
+    EXECUTE_FAILED = "execute_operation_failed"
 
 
 class CriticalEvent(BaseModel):
@@ -46,6 +46,7 @@ class CriticalEvent(BaseModel):
     value: CriticalEventType
     description: str
     created_at: datetime
+    exception: Exception | None = None
 
 
 class MessagePayload(BaseModel):
@@ -58,6 +59,14 @@ class MessagePayload(BaseModel):
 class MessageEnvelope(BaseModel):
     """Envelope class for consumer operations (raw payload & de-serialized payload)."""
 
-    id: str
     payload: MessagePayload
     raw_message: Any
+
+    @property
+    def id(self) -> str:
+        """Implements the 'id' property.
+
+        Returns:
+            The ID of the message payload.
+        """
+        return self.payload.id
