@@ -444,8 +444,6 @@ class RunAIClient:
         """
         try:
             self._raw_client.workloads.trainings.delete_training(workload_id)
-        except RunAIClientError:
-            raise
         except Exception as exc:
             raise RunAIClientError(
                 f"Failed to delete Run:AI workload {workload_id} ({type(exc).__name__}): {exc}"
