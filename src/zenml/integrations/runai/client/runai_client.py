@@ -199,8 +199,6 @@ class RunAIClient:
                 )
                 for p in projects_data
             ]
-        except RunAIClientError:
-            raise
         except Exception as exc:
             raise RunAIClientError(
                 f"Failed to fetch Run:AI projects ({type(exc).__name__}): {exc}"
