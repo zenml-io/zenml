@@ -323,8 +323,6 @@ class RunAIClient:
                 workload_id=workload_id or request.name,
                 workload_name=request.name,
             )
-        except RunAIClientError:
-            raise
         except Exception as exc:
             raise RunAIClientError(
                 f"Failed to submit Run:AI workload ({type(exc).__name__}): {exc}"
