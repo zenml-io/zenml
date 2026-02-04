@@ -19,7 +19,7 @@ import socket
 import threading
 import time
 from contextlib import nullcontext
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Any, ContextManager, Dict, List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -76,8 +76,9 @@ from zenml.orchestrators.utils import (
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.utils import env_utils
 from zenml.utils.logging_utils import (
+    LoggingContext,
     is_pipeline_logging_enabled,
-    setup_run_logging,
+    setup_logging_context,
 )
 from zenml.utils.time_utils import utc_now
 
@@ -206,102 +207,106 @@ def main() -> None:
     Raises:
         RuntimeError: If the orchestrator pod is not associated with a job.
     """
-    logger.info("Orchestrator pod started.")
-
     args = parse_args()
 
     orchestrator_pod_name = socket.gethostname()
 
     client = Client()
     snapshot = client.get_snapshot(args.snapshot_id)
-    active_stack = client.active_stack
-    orchestrator = active_stack.orchestrator
-    assert isinstance(orchestrator, KubernetesOrchestrator)
-    namespace = orchestrator.config.kubernetes_namespace
 
-    pipeline_settings = cast(
-        KubernetesOrchestratorSettings,
-        orchestrator.get_settings(snapshot),
-    )
+    logs_context: ContextManager[Any] = nullcontext()
+    if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
+        logs_context = setup_logging_context(source="orchestrator")
 
-    # Get a Kubernetes client from the active Kubernetes orchestrator, but
-    # override the `incluster` setting to `True` since we are running inside
-    # the Kubernetes cluster.
-    api_client_config = orchestrator.get_kube_client(
-        incluster=True
-    ).configuration
-    api_client_config.connection_pool_maxsize = (
-        pipeline_settings.max_parallelism
-    )
-    kube_client = k8s_client.ApiClient(api_client_config)
-    core_api = k8s_client.CoreV1Api(kube_client)
-    batch_api = k8s_client.BatchV1Api(kube_client)
+    with logs_context:
+        logger.info("Orchestrator pod started.")
 
-    job_name = kube_utils.get_parent_job_name(
-        core_api=core_api,
-        pod_name=orchestrator_pod_name,
-        namespace=namespace,
-    )
-    if not job_name:
-        raise RuntimeError("Failed to fetch job name for orchestrator pod.")
+        active_stack = client.active_stack
+        orchestrator = active_stack.orchestrator
+        assert isinstance(orchestrator, KubernetesOrchestrator)
+        namespace = orchestrator.config.kubernetes_namespace
 
-    run_id, orchestrator_run_id = _get_orchestrator_job_state(
-        batch_api=batch_api,
-        namespace=namespace,
-        job_name=job_name,
-    )
-
-    if run_id and orchestrator_run_id:
-        logger.info("Continuing existing run `%s`.", run_id)
-        pipeline_run = client.get_pipeline_run(run_id)
-        nodes = _reconstruct_nodes(
-            snapshot=snapshot,
-            pipeline_run=pipeline_run,
-            namespace=namespace,
-            batch_api=batch_api,
+        pipeline_settings = cast(
+            KubernetesOrchestratorSettings,
+            orchestrator.get_settings(snapshot),
         )
-        logger.debug("Reconstructed nodes: %s", nodes)
 
-    else:
-        orchestrator_run_id = orchestrator_pod_name
+        # Get a Kubernetes client from the active Kubernetes orchestrator, but
+        # override the `incluster` setting to `True` since we are running inside
+        # the Kubernetes cluster.
+        api_client_config = orchestrator.get_kube_client(
+            incluster=True
+        ).configuration
+        api_client_config.connection_pool_maxsize = (
+            pipeline_settings.max_parallelism
+        )
+        kube_client = k8s_client.ApiClient(api_client_config)
+        core_api = k8s_client.CoreV1Api(kube_client)
+        batch_api = k8s_client.BatchV1Api(kube_client)
 
-        if args.run_id:
-            pipeline_run = client.zen_store.update_run(
-                run_id=args.run_id,
-                run_update=PipelineRunUpdate(
-                    orchestrator_run_id=orchestrator_run_id
-                ),
+        job_name = kube_utils.get_parent_job_name(
+            core_api=core_api,
+            pod_name=orchestrator_pod_name,
+            namespace=namespace,
+        )
+        if not job_name:
+            raise RuntimeError(
+                "Failed to fetch job name for orchestrator pod."
             )
-        else:
-            pipeline_run = create_placeholder_run(
-                snapshot=snapshot,
-                orchestrator_run_id=orchestrator_run_id,
-            )
 
-        # Store in the job annotations so we can continue the run if the pod
-        # is restarted
-        kube_utils.update_job(
+        run_id, orchestrator_run_id = _get_orchestrator_job_state(
             batch_api=batch_api,
             namespace=namespace,
             job_name=job_name,
-            annotations={
-                RUN_ID_ANNOTATION_KEY: str(pipeline_run.id),
-                ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
-            },
-        )
-        nodes = [
-            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
-            for step_name, step in snapshot.step_configurations.items()
-        ]
-
-    logs_context = nullcontext()
-    if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
-        logs_context = setup_run_logging(
-            pipeline_run=pipeline_run,
-            source="orchestrator",
         )
 
-    with logs_context:
+        if run_id and orchestrator_run_id:
+            logger.info("Continuing existing run `%s`.", run_id)
+            pipeline_run = client.get_pipeline_run(run_id)
+            nodes = _reconstruct_nodes(
+                snapshot=snapshot,
+                pipeline_run=pipeline_run,
+                namespace=namespace,
+                batch_api=batch_api,
+            )
+            logger.debug("Reconstructed nodes: %s", nodes)
+
+        else:
+            orchestrator_run_id = orchestrator_pod_name
+
+            if args.run_id:
+                pipeline_run = client.zen_store.update_run(
+                    run_id=args.run_id,
+                    run_update=PipelineRunUpdate(
+                        orchestrator_run_id=orchestrator_run_id
+                    ),
+                )
+            else:
+                pipeline_run = create_placeholder_run(
+                    snapshot=snapshot,
+                    orchestrator_run_id=orchestrator_run_id,
+                )
+
+            # Store in the job annotations so we can continue the run if the pod
+            # is restarted
+            kube_utils.update_job(
+                batch_api=batch_api,
+                namespace=namespace,
+                job_name=job_name,
+                annotations={
+                    RUN_ID_ANNOTATION_KEY: str(pipeline_run.id),
+                    ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
+                },
+            )
+            nodes = [
+                Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+                for step_name, step in snapshot.step_configurations.items()
+            ]
+
+        if isinstance(logs_context, LoggingContext):
+            logs_context.update(pipeline_run=pipeline_run)
+            logs_context.attach(pipeline_run)
+
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local
 

@@ -1562,8 +1562,9 @@ class Client(metaclass=ClientMetaClass):
             stack = self.get_stack(name_id_or_prefix=stack_name_id_or_prefix)
         except KeyError as e:
             raise KeyError(
-                f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
-                f"it is not registered yet. Please register it first."
+                f"Stack '{stack_name_id_or_prefix}' cannot be activated. Please "
+                "make sure it is registered and you have the necessary permissions "
+                "to access it."
             ) from e
 
         if self._config:
