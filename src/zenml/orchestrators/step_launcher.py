@@ -33,7 +33,12 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    ResourceRequestStatus,
+    StepRuntime,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
@@ -41,6 +46,7 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineSnapshotResponse,
+    ResourceRequestRequest,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
@@ -566,6 +572,8 @@ class StepLauncher:
         Args:
             step_run_info: Additional information needed to run the step.
         """
+        self._wait_until_resource_request_approved(resource_request)
+
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
@@ -610,3 +618,71 @@ class StepLauncher:
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )
+
+    def _wait_until_resource_request_approved(
+        self, step_run_info: StepRunInfo
+    ) -> None:
+        """Waits until a resource request is approved.
+
+        Args:
+            resource_request_id: The ID of the resource request.
+
+        Raises:
+            RuntimeError: If the resource request was rejected or cancelled.
+        """
+        # resource_settings = self._step.config.settings.get("resources", None)
+        # if resource_settings and (
+        #     required_gpu_count := getattr(resource_settings, "gpu_count", 0)
+        # ):
+        if True:
+            publish_utils.publish_step_run_status_update(
+                step_run_id=step_run_info.step_run_id,
+                status=ExecutionStatus.QUEUED,
+            )
+            required_gpu_count = 1
+            resource_request = Client().zen_store.create_resource_request(
+                ResourceRequestRequest(
+                    component_id=self._stack.orchestrator.id,
+                    step_run_id=step_run_info.step_run_id,
+                    requested_resources={
+                        "gpu": required_gpu_count,
+                    },
+                )
+            )
+            while True:
+                resource_request = Client().zen_store.get_resource_request(
+                    resource_request.id, hydrate=False
+                )
+
+                if resource_request.status == ResourceRequestStatus.APPROVED:
+                    logger.info(
+                        "Resource request `%s` for step `%s` was approved.",
+                        resource_request.id,
+                        step_run_info.pipeline_step_name,
+                    )
+                    publish_utils.publish_step_run_status_update(
+                        step_run_id=step_run_info.step_run_id,
+                        status=ExecutionStatus.RUNNING,
+                    )
+                    return
+                elif resource_request.status == ResourceRequestStatus.REJECTED:
+                    raise RuntimeError(
+                        f"Resource request `{resource_request.id}` for step "
+                        f"`{step_run_info.pipeline_step_name}` was rejected."
+                    )
+                elif (
+                    resource_request.status == ResourceRequestStatus.CANCELLED
+                ):
+                    raise RuntimeError(
+                        f"Resource request `{resource_request.id}` for step "
+                        f"`{step_run_info.pipeline_step_name}` was cancelled."
+                    )
+
+                logger.info(
+                    "Waiting for resource request `%s` of step `%s` to be "
+                    "approved...",
+                    resource_request.id,
+                    step_run_info.pipeline_step_name,
+                )
+                # TODO: exponential backoff
+                time.sleep(10)

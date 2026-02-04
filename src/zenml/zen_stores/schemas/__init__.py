@@ -83,6 +83,7 @@ from zenml.zen_stores.schemas.api_transaction_schemas import (
     ApiTransactionResultSchema,
     ApiTransactionSchema,
 )
+from zenml.zen_stores.schemas.resource_pool_schemas import ResourcePoolSchema, ResourceRequestSchema, ResourcePoolAssignmentSchema
 
 __all__ = [
     "ActionSchema",
@@ -134,4 +135,7 @@ __all__ = [
     "ProjectSchema",
     "ApiTransactionResultSchema",
     "ApiTransactionSchema",
+    "ResourcePoolSchema",
+    "ResourceRequestSchema",
+    "ResourcePoolAssignmentSchema",
 ]
