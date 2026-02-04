@@ -32,7 +32,7 @@ class SkypilotGCPIntegration(Integration):
 
     NAME = SKYPILOT_GCP
     REQUIREMENTS = [
-        "skypilot[gcp]>=0.11.0",
+        "skypilot[gcp]>=0.11.0,<0.12.0",
     ]
     APT_PACKAGES = ["openssh-client", "rsync"]
 

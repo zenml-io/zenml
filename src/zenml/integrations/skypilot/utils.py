@@ -134,6 +134,7 @@ def prepare_task_kwargs(
         "setup": setup,
         "envs": merged_envs,
         "name": settings.task_name or task_name,
+        "num_nodes": settings.num_nodes,
         "workdir": settings.workdir,
         "file_mounts_mapping": settings.file_mounts,
         **settings.task_settings,  # Add any arbitrary task settings
@@ -182,7 +183,6 @@ def prepare_resources_kwargs(
         "any_of": settings.any_of,
         "ordered": settings.ordered,
         "infra": settings.infra,
-        "num_nodes": settings.num_nodes,
         **settings.resources_settings,  # Add any arbitrary resource settings
     }
 
@@ -213,7 +213,7 @@ def prepare_launch_kwargs(
         else settings.idle_minutes_to_autostop
     )
 
-    # SkyPilot ≥0.9 made launch/exec async and removed stream/log flags.
+    # SkyPilot ≥0.11 made launch/exec async and removed stream/log flags.
     # Keep only supported keys here; exec should use its own kwargs.
     launch_kwargs = {
         "retry_until_up": settings.retry_until_up,
@@ -228,6 +228,7 @@ def prepare_launch_kwargs(
         "stream_logs",
         "detach_setup",
         "detach_run",
+        "num_nodes",
     ):
         launch_kwargs.pop(_deprecated, None)
 

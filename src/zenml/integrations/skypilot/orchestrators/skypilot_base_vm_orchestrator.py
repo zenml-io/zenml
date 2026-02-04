@@ -338,10 +338,11 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
             launch_new_cluster = True
             if settings.cluster_name:
-                cluster_status = sky.status(
+                status_request_id = sky.status(
                     refresh=sky.StatusRefreshMode.AUTO,
                     cluster_names=[settings.cluster_name],
                 )
+                cluster_status = sky.stream_and_get(status_request_id)
                 if cluster_status:
                     logger.info(
                         f"Found existing cluster {settings.cluster_name}. Reusing..."
@@ -387,7 +388,12 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 }
 
                 for key, value in settings.launch_settings.items():
-                    if key in {"stream_logs", "detach_setup", "detach_run"}:
+                    if key in {
+                        "stream_logs",
+                        "detach_setup",
+                        "detach_run",
+                        "num_nodes",
+                    }:
                         continue
                     if value is not None:
                         exec_kwargs[key] = value
@@ -403,7 +409,22 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                     retry_until_up=settings.retry_until_up,
                 )
-                sky.stream_and_get(start_request_id)
+                start_result = sky.stream_and_get(start_request_id)
+                if not start_result:
+                    logger.warning(
+                        "SkyPilot start returned an empty response for cluster "
+                        f"{settings.cluster_name}."
+                    )
+
+                status_request_id = sky.status(
+                    refresh=sky.StatusRefreshMode.AUTO,
+                    cluster_names=[settings.cluster_name],
+                )
+                cluster_status = sky.stream_and_get(status_request_id)
+                if not cluster_status:
+                    raise RuntimeError(
+                        f"Cluster {settings.cluster_name} was not found after start."
+                    )
 
                 logger.info(
                     f"Executing the task on the cluster: {settings.cluster_name}"
