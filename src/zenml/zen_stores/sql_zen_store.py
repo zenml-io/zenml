@@ -154,6 +154,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    ResourceRequestStatus,
     SecretResourceTypes,
     SecretsStoreType,
     StackComponentType,
@@ -278,6 +279,14 @@ from zenml.models import (
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
+    ResourcePoolFilter,
+    ResourcePoolRequest,
+    ResourcePoolResponse,
+    ResourcePoolUpdate,
+    ResourceRequestFilter,
+    ResourceRequestRequest,
+    ResourceRequestResponse,
+    ResourceRequestUpdate,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -394,6 +403,9 @@ from zenml.zen_stores.schemas import (
     PipelineSchema,
     PipelineSnapshotSchema,
     ProjectSchema,
+    ResourcePoolAssignmentSchema,
+    ResourcePoolSchema,
+    ResourceRequestSchema,
     RunMetadataResourceSchema,
     RunMetadataSchema,
     RunTemplateSchema,
@@ -3698,8 +3710,31 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.add(new_component)
-            session.commit()
 
+            if component.resource_pools:
+                if component.type != StackComponentType.ORCHESTRATOR:
+                    raise IllegalOperationError(
+                        "Resource pools can only be assigned to orchestrators."
+                    )
+
+                for (
+                    resource_pool_id,
+                    priority,
+                ) in component.resource_pools.items():
+                    # Make sure the pool exists
+                    self._get_schema_by_id(
+                        resource_id=resource_pool_id,
+                        schema_class=ResourcePoolSchema,
+                        session=session,
+                    )
+                    pool_assignment = ResourcePoolAssignmentSchema(
+                        component_id=new_component.id,
+                        resource_pool_id=resource_pool_id,
+                        priority=priority,
+                    )
+                    session.add(pool_assignment)
+
+            session.commit()
             session.refresh(new_component)
 
             return new_component.to_model(
@@ -3847,6 +3882,49 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if component_update.assign_resource_pools:
+                if (
+                    existing_component.type
+                    != StackComponentType.ORCHESTRATOR.value
+                ):
+                    raise IllegalOperationError(
+                        "Resource pools can only be assigned to orchestrators."
+                    )
+
+                for (
+                    resource_pool_id,
+                    priority,
+                ) in component_update.assign_resource_pools.items():
+                    # Make sure the pool exists
+                    self._get_schema_by_id(
+                        resource_id=resource_pool_id,
+                        schema_class=ResourcePoolSchema,
+                        session=session,
+                    )
+                    pool_assignment = ResourcePoolAssignmentSchema(
+                        component_id=existing_component.id,
+                        resource_pool_id=resource_pool_id,
+                        priority=priority,
+                    )
+                    session.add(pool_assignment)
+
+            if component_update.unassign_resource_pools:
+                for (
+                    resource_pool_id
+                ) in component_update.unassign_resource_pools:
+                    existing_pool_assignment = session.exec(
+                        select(ResourcePoolAssignmentSchema)
+                        .where(
+                            ResourcePoolAssignmentSchema.component_id
+                            == existing_component.id
+                        )
+                        .where(
+                            ResourcePoolAssignmentSchema.resource_pool_id
+                            == resource_pool_id
+                        )
+                    ).first()
+                    session.delete(existing_pool_assignment)
+
             session.add(existing_component)
             session.commit()
 
@@ -3959,6 +4037,523 @@ class SqlZenStore(BaseZenStore):
                 f"with name '{name}': Found an existing "
                 f"component with the same name and type."
             )
+
+    # -------------------- Resource Pools -------------
+
+    def create_resource_pool(
+        self, resource_pool: ResourcePoolRequest
+    ) -> ResourcePoolResponse:
+        """Create a resource pool.
+
+        Args:
+            resource_pool: The resource pool to create.
+
+        Returns:
+            The created resource pool.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=resource_pool, session=session
+            )
+
+            new_resource_pool = ResourcePoolSchema.from_request(resource_pool)
+
+            session.add(new_resource_pool)
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                raise EntityExistsError(
+                    "Unable to create resource pool: A resource pool with the "
+                    f"name {resource_pool.name} already exists."
+                )
+            session.refresh(new_resource_pool)
+
+            return new_resource_pool.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_resource_pool(
+        self, resource_pool_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolResponse:
+        """Get a resource pool by ID.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource pool.
+        """
+        with Session(self.engine) as session:
+            resource_pool = self._get_schema_by_id(
+                resource_id=resource_pool_id,
+                schema_class=ResourcePoolSchema,
+                session=session,
+            )
+            return resource_pool.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_resource_pools(
+        self, filter_model: ResourcePoolFilter, hydrate: bool = False
+    ) -> Page[ResourcePoolResponse]:
+        """List all resource pools matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all resource pools matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ResourcePoolSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ResourcePoolSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_resource_pool(
+        self, resource_pool_id: UUID, update: ResourcePoolUpdate
+    ) -> ResourcePoolResponse:
+        """Update an existing resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to update.
+            update: The update to be applied to the resource pool.
+
+        Returns:
+            The updated resource pool.
+        """
+        with Session(self.engine) as session:
+            existing_resource_pool = self._get_schema_by_id(
+                resource_id=resource_pool_id,
+                schema_class=ResourcePoolSchema,
+                session=session,
+            )
+
+            existing_resource_pool.update(update)
+            session.add(existing_resource_pool)
+            session.commit()
+            # session.refresh(existing_resource_pool)
+
+            return existing_resource_pool.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
+        """Delete a resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to delete.
+        """
+        with Session(self.engine) as session:
+            resource_pool = self._get_schema_by_id(
+                resource_id=resource_pool_id,
+                schema_class=ResourcePoolSchema,
+                session=session,
+            )
+
+            session.delete(resource_pool)
+            session.commit()
+
+    # -------------------- Resource Requests -------------
+
+    def create_resource_request(
+        self, resource_request: ResourceRequestRequest
+    ) -> ResourceRequestResponse:
+        """Create a resource request.
+
+        Args:
+            resource_request: The resource request to create.
+
+        Returns:
+            The created resource request.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=resource_request, session=session
+            )
+
+            new_resource_request = ResourceRequestSchema.from_request(
+                resource_request
+            )
+
+            session.add(new_resource_request)
+            session.commit()
+            session.refresh(new_resource_request)
+
+            # TODO: fail if no pool with total resources available.
+            # TODO: add status reason to resource request
+            # TODO: we probably want to keep resource requests in the DB, maybe
+            # with state FREED?
+            self._refresh_resource_request_status(
+                session=session, resource_request=new_resource_request
+            )
+            session.commit()
+            session.refresh(new_resource_request)
+
+            return new_resource_request.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_resource_request(
+        self, resource_request_id: UUID, hydrate: bool = True
+    ) -> ResourceRequestResponse:
+        """Get a resource request by ID.
+
+        Args:
+            resource_request_id: The ID of the resource request to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource request.
+        """
+        with Session(self.engine) as session:
+            resource_request = self._get_schema_by_id(
+                resource_id=resource_request_id,
+                schema_class=ResourceRequestSchema,
+                session=session,
+            )
+            self._refresh_resource_request_status(
+                session=session, resource_request=resource_request
+            )
+            session.commit()
+            session.refresh(resource_request)
+
+            return resource_request.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_resource_requests(
+        self, filter_model: ResourceRequestFilter, hydrate: bool = False
+    ) -> Page[ResourceRequestResponse]:
+        """List all resource requests matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all resource requests matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ResourceRequestSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ResourceRequestSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_resource_request(
+        self, resource_request_id: UUID, update: ResourceRequestUpdate
+    ) -> ResourceRequestResponse:
+        """Update an existing resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to update.
+            update: The update to be applied to the resource request.
+
+        Returns:
+            The updated resource request.
+        """
+        with Session(self.engine) as session:
+            existing_resource_request = self._get_schema_by_id(
+                resource_id=resource_request_id,
+                schema_class=ResourceRequestSchema,
+                session=session,
+            )
+
+            existing_resource_request.update(update)
+            session.add(existing_resource_request)
+            session.commit()
+            # session.refresh(existing_resource_pool)
+
+            return existing_resource_request.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_resource_request(self, resource_request_id: UUID) -> None:
+        """Delete a resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to delete.
+        """
+        with Session(self.engine) as session:
+            resource_request = self._get_schema_by_id(
+                resource_id=resource_request_id,
+                schema_class=ResourceRequestSchema,
+                session=session,
+            )
+            self._free_occupied_resources_for_request(
+                session, resource_request
+            )
+            session.delete(resource_request)
+            session.commit()
+
+    def _refresh_resource_request_status(
+        self, session: Session, resource_request: ResourceRequestSchema
+    ) -> None:
+        """Refresh the status of a resource request.
+
+        Args:
+            resource_request: The resource request to refresh.
+        """
+        if resource_request.status != ResourceRequestStatus.PENDING.value:
+            # If the request is not pending, there is no need to refresh
+            # anything
+            logger.info(
+                "Resource request `%s` is not pending, skipping refresh",
+                resource_request.id,
+            )
+            return
+
+        pool_assignments = session.exec(
+            select(ResourcePoolAssignmentSchema)
+            .where(
+                ResourcePoolAssignmentSchema.component_id
+                == resource_request.component_id
+            )
+            .order_by(
+                desc(ResourcePoolAssignmentSchema.priority),
+                col(ResourcePoolAssignmentSchema.resource_pool_id),
+            )
+        ).all()
+
+        if not pool_assignments:
+            # There are no pools, so we simply approve the request.
+            resource_request.status = ResourceRequestStatus.APPROVED.value
+            resource_request.updated = utc_now()
+            session.add(resource_request)
+            logger.info(
+                "Resource request `%s` approved because there are no pools",
+                resource_request.id,
+            )
+            return
+
+        requested_resources: Dict[str, int] = json.loads(
+            base64.b64decode(resource_request.requested_resources).decode()
+        )
+
+        def _fits_in_total(
+            total: Dict[str, int], requested: Dict[str, int]
+        ) -> bool:
+            for resource_key, amount in requested.items():
+                if amount < 0:
+                    return False
+                if total.get(resource_key, 0) < amount:
+                    return False
+            return True
+
+        def _has_available(
+            total: Dict[str, int],
+            occupied: Dict[str, int],
+            requested: Dict[str, int],
+        ) -> bool:
+            for resource_key, amount in requested.items():
+                if (
+                    total.get(resource_key, 0) - occupied.get(resource_key, 0)
+                    < amount
+                ):
+                    return False
+            return True
+
+        for assignment in pool_assignments:
+            resource_pool = session.exec(
+                select(ResourcePoolSchema)
+                .with_for_update()
+                .where(ResourcePoolSchema.id == assignment.resource_pool_id)
+            ).first()
+            if resource_pool is None:
+                logger.info(
+                    "Resource pool `%s` not found for assignment `%s`",
+                    assignment.resource_pool_id,
+                    assignment.id,
+                )
+                continue
+
+            total_resources: Dict[str, int] = json.loads(
+                base64.b64decode(resource_pool.total_resources).decode()
+            )
+            if not _fits_in_total(total_resources, requested_resources):
+                logger.info(
+                    "Resource pool `%s` does not have enough total resources to fulfill request `%s`",
+                    resource_pool.id,
+                    resource_request.id,
+                )
+                continue
+
+            occupied_resources: Dict[str, int] = json.loads(
+                base64.b64decode(resource_pool.occupied_resources).decode()
+            )
+
+            pending_requests_with_priority = session.exec(
+                select(
+                    ResourceRequestSchema,
+                    ResourcePoolAssignmentSchema.priority,
+                )
+                .join(
+                    ResourcePoolAssignmentSchema,
+                    col(ResourceRequestSchema.component_id)
+                    == col(ResourcePoolAssignmentSchema.component_id),
+                )
+                .where(
+                    col(ResourcePoolAssignmentSchema.resource_pool_id)
+                    == resource_pool.id
+                )
+                .where(
+                    col(ResourceRequestSchema.status)
+                    == ResourceRequestStatus.PENDING.value
+                )
+                .order_by(
+                    desc(ResourcePoolAssignmentSchema.priority),
+                    col(ResourceRequestSchema.created),
+                    col(ResourceRequestSchema.id),
+                )
+            ).all()
+
+            top_eligible_request: Optional[ResourceRequestSchema] = None
+            for pending_request, _ in pending_requests_with_priority:
+                pending_requested_resources: Dict[str, int] = json.loads(
+                    base64.b64decode(
+                        pending_request.requested_resources
+                    ).decode()
+                )
+                if _fits_in_total(
+                    total_resources, pending_requested_resources
+                ):
+                    top_eligible_request = pending_request
+                    break
+
+            if top_eligible_request is None:
+                logger.info(
+                    "No top eligible request found for resource pool `%s`",
+                    resource_pool.id,
+                )
+                continue
+
+            if top_eligible_request.id != resource_request.id:
+                logger.info(
+                    "Top eligible request `%s` is not the same as the resource request `%s`",
+                    top_eligible_request.id,
+                    resource_request.id,
+                )
+                continue
+
+            if not _has_available(
+                total=total_resources,
+                occupied=occupied_resources,
+                requested=requested_resources,
+            ):
+                logger.info(
+                    "Resource pool `%s` does not have enough available resources to fulfill request `%s`",
+                    resource_pool.id,
+                    resource_request.id,
+                )
+                continue
+
+            updated_occupied_resources = dict(occupied_resources)
+            for resource_key, amount in requested_resources.items():
+                updated_occupied_resources[resource_key] = (
+                    updated_occupied_resources.get(resource_key, 0) + amount
+                )
+
+            resource_pool.occupied_resources = base64.b64encode(
+                json.dumps(updated_occupied_resources).encode("utf-8")
+            )
+            resource_pool.updated = utc_now()
+            resource_request.occupied_pool_id = resource_pool.id
+            resource_request.status = ResourceRequestStatus.APPROVED.value
+            resource_request.updated = utc_now()
+
+            logger.info(
+                "Approving resource request `%s` for resource pool `%s`",
+                resource_request.id,
+                resource_pool.id,
+            )
+            session.add(resource_pool)
+            session.add(resource_request)
+            return
+
+    def _delete_resource_requests_for_step_run(
+        self, session: Session, step_run_id: UUID
+    ) -> None:
+        logger.info(
+            "Deleting resource requests for step run `%s`", step_run_id
+        )
+        resource_requests = session.exec(
+            select(ResourceRequestSchema).where(
+                ResourceRequestSchema.step_run_id == step_run_id
+            )
+        ).all()
+        for resource_request in resource_requests:
+            self._free_occupied_resources_for_request(
+                session, resource_request
+            )
+            session.delete(resource_request)
+            session.commit()
+
+    def _free_occupied_resources_for_request(
+        self, session: Session, resource_request: ResourceRequestSchema
+    ) -> None:
+        logger.info(
+            "Freeing occupied resources for request `%s`", resource_request.id
+        )
+        if not resource_request.occupied_pool_id:
+            logger.info(
+                "Resource request `%s` hasn't been assigned to a pool, so it's not occupying any resources",
+                resource_request.id,
+            )
+            # The resource request hasn't been assigned to a pool, so it's not
+            # occupying any resources
+            return
+
+        resource_pool = session.exec(
+            select(ResourcePoolSchema)
+            .with_for_update()
+            .where(ResourcePoolSchema.id == resource_request.occupied_pool_id)
+        ).first()
+        if resource_pool is None:
+            logger.info(
+                "Resource pool `%s` not found for request `%s`",
+                resource_request.occupied_pool_id,
+                resource_request.id,
+            )
+            return
+
+        requested_resources: Dict[str, int] = json.loads(
+            base64.b64decode(resource_request.requested_resources).decode()
+        )
+
+        occupied_resources = json.loads(
+            base64.b64decode(resource_pool.occupied_resources).decode()
+        )
+        logger.info("Occupied resources: %s", occupied_resources)
+
+        for resource_key, amount in requested_resources.items():
+            occupied_resources[resource_key] = (
+                occupied_resources.get(resource_key, 0) - amount
+            )
+
+        resource_pool.occupied_resources = base64.b64encode(
+            json.dumps(occupied_resources).encode("utf-8")
+        )
+        logger.info("Updated occupied resources: %s", occupied_resources)
+        resource_request.occupied_pool_id = None
+        session.add(resource_pool)
+        session.add(resource_request)
 
     # -------------------------- Devices -------------------------
 
@@ -10713,6 +11308,13 @@ class SqlZenStore(BaseZenStore):
                 )
             session.commit()
             session.refresh(existing_step_run)
+
+            updated_status = ExecutionStatus(existing_step_run.status)
+
+            if updated_status.is_finished:
+                self._delete_resource_requests_for_step_run(
+                    session, existing_step_run.id
+                )
 
             self._update_pipeline_run_status(
                 pipeline_run_id=existing_step_run.pipeline_run_id,

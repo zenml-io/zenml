@@ -331,6 +331,24 @@ from zenml.models.v2.core.stack import (
     StackResponseMetadata,
     StackResponseResources
 )
+from zenml.models.v2.core.resource_pool import (
+    ResourcePoolRequest,
+    ResourcePoolUpdate,
+    ResourcePoolFilter,
+    ResourcePoolResponse,
+    ResourcePoolResponseBody,
+    ResourcePoolResponseMetadata,
+    ResourcePoolResponseResources,
+)
+from zenml.models.v2.core.resource_request import (
+    ResourceRequestRequest,
+    ResourceRequestUpdate,
+    ResourceRequestFilter,
+    ResourceRequestResponse,
+    ResourceRequestResponseBody,
+    ResourceRequestResponseMetadata,
+    ResourceRequestResponseResources,
+)
 from zenml.models.v2.misc.param_groups import (
     PipelineRunIdentifier,
     StepRunIdentifier,
@@ -576,7 +594,14 @@ ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
 ResourcesInfo.model_rebuild()
-
+ResourcePoolResponseBody.model_rebuild()
+ResourcePoolResponseMetadata.model_rebuild()
+ResourcePoolResponseResources.model_rebuild()
+ResourcePoolResponse.model_rebuild()
+ResourceRequestResponseBody.model_rebuild()
+ResourceRequestResponseMetadata.model_rebuild()
+ResourceRequestResponseResources.model_rebuild()
+ResourceRequestResponse.model_rebuild()
 
 __all__ = [
     # V2 Base
@@ -771,6 +796,20 @@ __all__ = [
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
     "PipelineRunTriggerInfo",
+    "ResourcePoolRequest",
+    "ResourcePoolUpdate",
+    "ResourcePoolFilter",
+    "ResourcePoolResponse",
+    "ResourcePoolResponseBody",
+    "ResourcePoolResponseMetadata",
+    "ResourcePoolResponseResources",
+    "ResourceRequestRequest",
+    "ResourceRequestUpdate",
+    "ResourceRequestFilter",
+    "ResourceRequestResponse",
+    "ResourceRequestResponseBody",
+    "ResourceRequestResponseMetadata",
+    "ResourceRequestResponseResources",
     "RunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",

@@ -203,7 +203,14 @@ class StackComponentSchema(NamedSchema, table=True):
         """
         for field, value in component_update.model_dump(
             exclude_unset=True,
-            exclude={"user", "connector", "add_secrets", "remove_secrets"},
+            exclude={
+                "user",
+                "connector",
+                "add_secrets",
+                "remove_secrets",
+                "assign_resource_pools",
+                "unassign_resource_pools",
+            },
         ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(

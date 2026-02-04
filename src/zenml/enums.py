@@ -84,6 +84,7 @@ class ExecutionStatus(StrEnum):
 
     INITIALIZING = "initializing"
     PROVISIONING = "provisioning"
+    QUEUED = "queued"
     RUNNING = "running"
     FAILED = "failed"
     COMPLETED = "completed"
@@ -576,3 +577,12 @@ class GroupType(StrEnum):
 
     MANUAL = "manual"
     MAP = "map"
+
+
+class ResourceRequestStatus(StrEnum):
+    """Resource request statuses."""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    CANCELLED = "cancelled"

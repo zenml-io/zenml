@@ -88,6 +88,8 @@ from zenml.constants import (
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
+    RESOURCE_POOLS,
+    RESOURCE_REQUESTS,
     RUN_METADATA,
     RUN_TEMPLATES,
     RUNS,
@@ -227,6 +229,14 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
+    ResourcePoolFilter,
+    ResourcePoolRequest,
+    ResourcePoolResponse,
+    ResourcePoolUpdate,
+    ResourceRequestFilter,
+    ResourceRequestRequest,
+    ResourceRequestResponse,
+    ResourceRequestUpdate,
     RunMetadataRequest,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -1367,6 +1377,186 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=component_id,
             route=STACK_COMPONENTS,
+        )
+
+    # -------------------- Resource Pools -------------
+
+    def create_resource_pool(
+        self, resource_pool: ResourcePoolRequest
+    ) -> ResourcePoolResponse:
+        """Create a resource pool.
+
+        Args:
+            resource_pool: The resource pool to create.
+
+        Returns:
+            The created resource pool.
+        """
+        return self._create_resource(
+            resource=resource_pool,
+            route=RESOURCE_POOLS,
+            response_model=ResourcePoolResponse,
+        )
+
+    def get_resource_pool(
+        self, resource_pool_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolResponse:
+        """Get a resource pool by ID.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource pool.
+        """
+        return self._get_resource(
+            resource_id=resource_pool_id,
+            route=RESOURCE_POOLS,
+            response_model=ResourcePoolResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_resource_pools(
+        self, filter_model: ResourcePoolFilter, hydrate: bool = False
+    ) -> Page[ResourcePoolResponse]:
+        """List all resource pools matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all resource pools matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=RESOURCE_POOLS,
+            response_model=ResourcePoolResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_resource_pool(
+        self, resource_pool_id: UUID, update: ResourcePoolUpdate
+    ) -> ResourcePoolResponse:
+        """Update an existing resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to update.
+            update: The update to be applied to the resource pool.
+
+        Returns:
+            The updated resource pool.
+        """
+        return self._update_resource(
+            resource_id=resource_pool_id,
+            resource_update=update,
+            route=RESOURCE_POOLS,
+            response_model=ResourcePoolResponse,
+        )
+
+    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
+        """Delete a resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to delete.
+        """
+        self._delete_resource(
+            resource_id=resource_pool_id,
+            route=RESOURCE_POOLS,
+        )
+
+    # -------------------- Resource Requests -------------
+
+    def create_resource_request(
+        self, resource_request: ResourceRequestRequest
+    ) -> ResourceRequestResponse:
+        """Create a resource request.
+
+        Args:
+            resource_request: The resource request to create.
+
+        Returns:
+            The created resource request.
+        """
+        return self._create_resource(
+            resource=resource_request,
+            route=RESOURCE_REQUESTS,
+            response_model=ResourceRequestResponse,
+        )
+
+    def get_resource_request(
+        self, resource_request_id: UUID, hydrate: bool = True
+    ) -> ResourceRequestResponse:
+        """Get a resource request by ID.
+
+        Args:
+            resource_request_id: The ID of the resource request to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource request.
+        """
+        return self._get_resource(
+            resource_id=resource_request_id,
+            route=RESOURCE_REQUESTS,
+            response_model=ResourceRequestResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_resource_requests(
+        self, filter_model: ResourceRequestFilter, hydrate: bool = False
+    ) -> Page[ResourceRequestResponse]:
+        """List all resource requests matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all resource requests matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=RESOURCE_REQUESTS,
+            response_model=ResourceRequestResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_resource_request(
+        self, resource_request_id: UUID, update: ResourceRequestUpdate
+    ) -> ResourceRequestResponse:
+        """Update an existing resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to update.
+            update: The update to be applied to the resource request.
+
+        Returns:
+            The updated resource request.
+        """
+        return self._update_resource(
+            resource_id=resource_request_id,
+            resource_update=update,
+            route=RESOURCE_REQUESTS,
+            response_model=ResourceRequestResponse,
+        )
+
+    def delete_resource_request(self, resource_request_id: UUID) -> None:
+        """Delete a resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to delete.
+        """
+        self._delete_resource(
+            resource_id=resource_request_id,
+            route=RESOURCE_REQUESTS,
         )
 
     #  ----------------------------- Flavors -----------------------------
