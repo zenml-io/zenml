@@ -2268,7 +2268,7 @@ class RestZenStore(BaseZenStore):
             snapshot_id: The ID of the snapshot.
         """
         self.put(
-            path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
             timeout=5,
         )
 
