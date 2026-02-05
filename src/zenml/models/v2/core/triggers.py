@@ -293,6 +293,7 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
     flavor: Literal[TriggerFlavor.NATIVE_SCHEDULE] = (
         TriggerFlavor.NATIVE_SCHEDULE
     )
+    next_occurrence: datetime | None = None
 
     def get_config(self) -> str:
         """Returns the serialized blob of custom trigger fields.
@@ -314,10 +315,15 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
             self.interval,
         ]
 
-        if (
-            any(field is not None for field in occurrence_altering_values)
-            and self.flavor == TriggerFlavor.NATIVE_SCHEDULE
-        ):
+        if not self.flavor == TriggerFlavor.NATIVE_SCHEDULE:
+            return {}
+
+        if self.next_occurrence is not None:
+            return {
+                "next_occurrence": self.next_occurrence,
+            }
+
+        if any(field is not None for field in occurrence_altering_values):
             from zenml.utils.native_schedules import calculate_first_occurrence
 
             return {
@@ -328,6 +334,7 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
                     run_once_start_time=self.run_once_start_time,
                 )
             }
+
         return {}
 
 
