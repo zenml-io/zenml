@@ -86,8 +86,6 @@ class OtelLogStoreOrigin(BaseLogStoreOrigin):
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this origin.
         """
-        metadata = {f"zenml.{key}": value for key, value in metadata.items()}
-
         metadata.update(
             {
                 "zenml.log.id": str(log_model.id),
