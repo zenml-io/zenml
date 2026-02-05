@@ -184,7 +184,7 @@ def delete_trigger(
 
 
 @router.put(
-    "/{trigger_id}}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
+    "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -216,7 +216,7 @@ def attach_trigger_to_snapshot(
 
 
 @router.delete(
-    "/{trigger_id}}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
+    "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
