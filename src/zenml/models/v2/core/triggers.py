@@ -125,11 +125,31 @@ class TriggerResponseResources(ProjectScopedResponseResources):
 class TriggerFilter(ProjectScopedFilter):
     """Base class for filtering triggers."""
 
-    name: str
-    active: bool
-    is_archived: bool
-    flavor: TriggerFlavor
-    type: TriggerType
+    name: str | None = Field(
+        default=None,
+        description="The name of the trigger.",
+    )
+    active: bool | None = Field(
+        default=None,
+        description="Whether the trigger should be active.",
+    )
+    is_archived: bool = Field(
+        default=False,
+        description="Whether the trigger should be archived.",
+    )
+    flavor: TriggerFlavor | None = Field(
+        default=None,
+        description="The trigger flavor.",
+    )
+    type: TriggerType | None = Field(
+        default=None,
+        description="The trigger type.",
+    )
+    next_occurrence: datetime | str | None = Field(
+        default=None,
+        description="The next occurrence of the trigger (applicable only for schedules).",
+        union_mode="left_to_right",
+    )
 
 
 class ScheduleTrigger(BaseModel):
