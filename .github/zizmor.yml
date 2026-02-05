@@ -49,7 +49,7 @@ rules:
   unsound-condition: {}
 
   # PyPI publishing suggestions (informational)
-  # Ignored: ZenML uses token-based publishing, trusted publishing is a future consideration
+  # Ignored: release.yml uses OIDC trusted publishing; nightly/reusable workflows are pre-configured
   use-trusted-publishing:
     ignore:
       - publish_to_pypi_nightly.yml

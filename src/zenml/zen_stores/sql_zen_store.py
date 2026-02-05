@@ -31,6 +31,7 @@ except ImportError:
     ) from None
 
 import base64
+import gzip
 import inspect
 import json
 import logging
@@ -371,6 +372,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     ActionSchema,
     APIKeySchema,
+    ApiTransactionResultSchema,
     ApiTransactionSchema,
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -1214,19 +1216,26 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
-        query = filter_model.apply_sorting(query=query, table=table)
-        query = query.distinct()
 
-        # Get the total amount of items in the database for a given query
+        # Get the total amount of items in the database for a given query.
+        # Sorting is not applied here since it's irrelevant for counting.
         custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
-            custom_fetch_result = custom_fetch(session, query, filter_model)
+            custom_fetch_result = custom_fetch(
+                session, query.distinct(), filter_model
+            )
             total = len(custom_fetch_result)
         else:
+            # For counting, we only need distinct IDs. Selecting only the ID
+            # column dramatically improves performance when the query involves
+            # JOINs and many columns.
+            count_query = (
+                query.with_only_columns(col(table.id))
+                .distinct()
+                .options(noload("*"))
+            )
             result = session.scalar(
-                select(func.count()).select_from(
-                    query.options(noload("*")).subquery()
-                )
+                select(func.count()).select_from(count_query.subquery())
             )
 
             if result:
@@ -1248,12 +1257,6 @@ class SqlZenStore(BaseZenStore):
                 f"{total_pages}."
             )
 
-        query_options = table.get_query_options(
-            include_metadata=hydrate, include_resources=True
-        )
-        if apply_query_options_from_schema and query_options:
-            query = query.options(*query_options)
-
         # Get a page of the actual data
         item_schemas: Sequence[AnySchema]
         if custom_fetch:
@@ -1264,6 +1267,17 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
+            # Apply sorting and distinct for the data fetch
+            query = filter_model.apply_sorting(
+                query=query, table=table
+            ).distinct()
+
+            query_options = table.get_query_options(
+                include_metadata=hydrate, include_resources=True
+            )
+            if apply_query_options_from_schema and query_options:
+                query = query.options(*query_options)
+
             query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
             )
@@ -2469,18 +2483,17 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    def _cleanup_expired_api_transactions(self, session: Session) -> None:
-        """Delete completed API transactions that have expired.
-
-        Args:
-            session: The session to use for the query.
-        """
-        session.execute(
-            delete(ApiTransactionSchema).where(
-                col(ApiTransactionSchema.completed),
-                col(ApiTransactionSchema.expired) < utc_now(),
+    def cleanup_expired_api_transactions(self) -> None:
+        """Delete completed API transactions that have expired."""
+        with Session(self.engine) as session:
+            session.execute(
+                delete(ApiTransactionResultSchema).where(
+                    col(ApiTransactionSchema.completed),
+                    col(ApiTransactionSchema.expired) < utc_now(),
+                )
             )
-        )
+
+            session.commit()
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2506,7 +2519,6 @@ class SqlZenStore(BaseZenStore):
             created = False
             try:
                 session.commit()
-                session.refresh(api_transaction_schema)
                 created = True
             except IntegrityError:
                 # We have to rollback the failed session first in order to
@@ -2525,6 +2537,28 @@ class SqlZenStore(BaseZenStore):
                 ),
                 created,
             )
+
+    def get_api_transaction_result(
+        self, api_transaction_id: UUID
+    ) -> Optional[str]:
+        """Get the result of an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to get the result for.
+
+        Returns:
+            The result of the API transaction.
+        """
+        with Session(self.engine) as session:
+            result_schema = session.exec(
+                select(ApiTransactionResultSchema).where(
+                    ApiTransactionResultSchema.id == api_transaction_id
+                )
+            ).first()
+            if result_schema is not None:
+                data = result_schema.result
+                return gzip.decompress(data).decode("utf-8")
+            return None
 
     def finalize_api_transaction(
         self,
@@ -2545,6 +2579,18 @@ class SqlZenStore(BaseZenStore):
             expired = updated + timedelta(
                 seconds=api_transaction_update.cache_time
             )
+
+            result_value = api_transaction_update.get_result()
+            if result_value is not None:
+                payload = result_value.encode("utf-8")
+                payload = gzip.compress(payload)
+                result_schema = ApiTransactionResultSchema(
+                    id=api_transaction_id,
+                    result=payload,
+                )
+                session.add(result_schema)
+                session.flush()
+
             result = session.execute(
                 update(ApiTransactionSchema)
                 .where(col(ApiTransactionSchema.id) == api_transaction_id)
@@ -2552,16 +2598,16 @@ class SqlZenStore(BaseZenStore):
                     completed=True,
                     updated=updated,
                     expired=expired,
-                    result=api_transaction_update.get_result(),
                 )
             )
-            self._cleanup_expired_api_transactions(session=session)
-            session.commit()
 
             if result.rowcount == 0:  # type: ignore[attr-defined]
+                # The result is also rolled back
                 raise KeyError(
                     f"API transaction with ID {api_transaction_id} not found."
                 )
+
+            session.commit()
 
     def delete_api_transaction(self, api_transaction_id: UUID) -> None:
         """Delete an API transaction.
@@ -4405,12 +4451,15 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate, include_resources=True
             )
 
-    def _create_logs(self, logs: LogsRequest, session: Session) -> LogsSchema:
+    def _create_logs(
+        self, logs: LogsRequest, session: Session, verify: bool = True
+    ) -> LogsSchema:
         """Create a logs entry.
 
         Args:
             logs: The logs entry to create.
             session: The session to use.
+            verify: Whether to verify the existence of the referenced schemas.
 
         Returns:
             The created logs entry.
@@ -4429,14 +4478,14 @@ class SqlZenStore(BaseZenStore):
                 reference_id=logs.log_store_id,
                 session=session,
             )
-        if logs.pipeline_run_id:
+        if verify and logs.pipeline_run_id:
             self._get_reference_schema_by_id(
                 resource=logs,
                 reference_schema=PipelineRunSchema,
                 reference_id=logs.pipeline_run_id,
                 session=session,
             )
-        if logs.step_run_id:
+        if verify and logs.step_run_id:
             self._get_reference_schema_by_id(
                 resource=logs,
                 reference_schema=StepRunSchema,
@@ -6636,6 +6685,7 @@ class SqlZenStore(BaseZenStore):
                         pipeline_run_id=new_run.id,
                     ),
                     session=session,
+                    verify=False,
                 )
 
         try:
@@ -7105,6 +7155,7 @@ class SqlZenStore(BaseZenStore):
                             log_store_id=log_request.log_store_id,
                         ),
                         session=session,
+                        verify=False,
                     )
 
             self._attach_tags_to_resources(
@@ -10218,6 +10269,7 @@ class SqlZenStore(BaseZenStore):
                             step_run_id=step_schema.id,
                         ),
                         session=session,
+                        verify=False,
                     )
 
             # If cached, attach metadata of the original step
@@ -10682,6 +10734,7 @@ class SqlZenStore(BaseZenStore):
                             log_store_id=log_request.log_store_id,
                         ),
                         session=session,
+                        verify=False,
                     )
 
             return existing_step_run.to_model(

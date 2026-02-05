@@ -194,7 +194,10 @@ Creates tracking issues from PRs when `snack-it` label is applied. Adds to GitHu
 
 2. **Template repos stay unpinned**: The 4 template repositories in `update-templates-to-examples.yml` intentionally use `@main` - don't SHA-pin them
 
-3. **Template actions use subdirectory paths**: These actions reference nested paths like `zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main` - zizmor's auto-fix incorrectly strips subdirectory paths, so never run `zizmor --fix` on these lines
+3. **zizmor strips subdirectory paths**: Actions with subdirectory paths like `github/codeql-action/init@SHA` or `zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main` get incorrectly "fixed" by zizmor to just `github/codeql-action@SHA` (stripping `/init`). This breaks workflows. After running `zizmor --fix`, manually verify and restore any stripped subdirectory paths. Common affected actions:
+   - `github/codeql-action/init` (Initialize CodeQL)
+   - `github/codeql-action/analyze` (Perform CodeQL Analysis)
+   - `github/codeql-action/upload-sarif` (Upload SARIF results)
 
 4. **secrets: inherit is intentional**: Zizmor warns about this but it's the correct pattern for first-party reusable workflows
 

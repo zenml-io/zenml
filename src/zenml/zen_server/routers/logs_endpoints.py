@@ -29,12 +29,21 @@ from zenml.utils.logging_utils import (
     LOGS_ENTRIES_API_MAX_LIMIT,
     fetch_logs_entries,
 )
+from zenml.exceptions import IllegalOperationError
+from zenml.models import LogsRequest, LogsResponse, LogsUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_update_entity,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    dehydrate_response_model,
+    verify_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.rbac.utils import (
@@ -69,24 +78,32 @@ def create_logs(
     """
     if logs.pipeline_run_id:
         verify_permission_for_model(
-            model=zen_store().get_run(logs.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=logs.pipeline_run_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
     elif logs.step_run_id:
         step = zen_store().get_run_step(logs.step_run_id)
         verify_permission_for_model(
-            model=zen_store().get_run(step.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
 
     read_verify_models = []
     if logs.artifact_store_id:
         read_verify_models.append(
-            zen_store().get_stack_component(logs.artifact_store_id)
+            zen_store().get_stack_component(
+                component_id=logs.artifact_store_id, hydrate=False
+            )
         )
     if logs.log_store_id:
         read_verify_models.append(
-            zen_store().get_stack_component(logs.log_store_id)
+            zen_store().get_stack_component(
+                component_id=logs.log_store_id, hydrate=False
+            )
         )
 
     batch_verify_permissions_for_models(
@@ -124,17 +141,23 @@ def get_logs(
         IllegalOperationError: If the logs are not associated
             with a pipeline run or step run before fetching.
     """
-    logs = zen_store().get_logs(logs_id)
+    logs = zen_store().get_logs(logs_id, hydrate=True)
 
     if logs.pipeline_run_id:
         verify_permission_for_model(
-            model=zen_store().get_run(logs.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=logs.pipeline_run_id, hydrate=False
+            ),
             action=Action.READ,
         )
     elif logs.step_run_id:
-        step = zen_store().get_run_step(logs.step_run_id)
+        step = zen_store().get_run_step(
+            step_run_id=logs.step_run_id, hydrate=False
+        )
         verify_permission_for_model(
-            model=zen_store().get_run(step.pipeline_run_id),
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
             action=Action.READ,
         )
     else:
@@ -143,8 +166,54 @@ def get_logs(
             "before fetching."
         )
 
-    return verify_permissions_and_get_entity(
-        id=logs_id, get_method=zen_store().get_logs, hydrate=hydrate
+    if hydrate is False:
+        logs.metadata = None
+
+    return dehydrate_response_model(logs)
+
+
+@router.put(
+    "/{logs_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def update_logs(
+    logs_id: UUID,
+    logs_update: LogsUpdate,
+    _: AuthContext = Security(authorize),
+) -> LogsResponse:
+    """Update an existing log model.
+
+    Args:
+        logs_id: ID of the log model to update.
+        logs_update: Update to apply to the log model.
+
+    Returns:
+        The updated log model.
+    """
+    if logs_update.pipeline_run_id:
+        verify_permission_for_model(
+            model=zen_store().get_run(
+                run_id=logs_update.pipeline_run_id, hydrate=False
+            ),
+            action=Action.UPDATE,
+        )
+    elif logs_update.step_run_id:
+        step = zen_store().get_run_step(
+            step_run_id=logs_update.step_run_id, hydrate=False
+        )
+        verify_permission_for_model(
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
+            action=Action.UPDATE,
+        )
+
+    return verify_permissions_and_update_entity(
+        id=logs_id,
+        update_model=logs_update,
+        get_method=zen_store().get_logs,
+        update_method=zen_store().update_logs,
     )
 
 
