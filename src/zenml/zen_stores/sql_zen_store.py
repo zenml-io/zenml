@@ -77,7 +77,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, event, func, update
+from sqlalchemy import QueuePool, event, exists, func, update
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -403,8 +403,12 @@ from zenml.zen_stores.schemas import (
     PipelineSchema,
     PipelineSnapshotSchema,
     ProjectSchema,
+    ResourcePoolAllocationSchema,
     ResourcePoolAssignmentSchema,
+    ResourcePoolRequestQueueSchema,
+    ResourcePoolResourceSchema,
     ResourcePoolSchema,
+    ResourceRequestResourceSchema,
     ResourceRequestSchema,
     RunMetadataResourceSchema,
     RunMetadataSchema,
@@ -3721,18 +3725,12 @@ class SqlZenStore(BaseZenStore):
                     resource_pool_id,
                     priority,
                 ) in component.resource_pools.items():
-                    # Make sure the pool exists
-                    self._get_schema_by_id(
-                        resource_id=resource_pool_id,
-                        schema_class=ResourcePoolSchema,
+                    self._attach_resource_pool(
                         session=session,
-                    )
-                    pool_assignment = ResourcePoolAssignmentSchema(
                         component_id=new_component.id,
                         resource_pool_id=resource_pool_id,
                         priority=priority,
                     )
-                    session.add(pool_assignment)
 
             session.commit()
             session.refresh(new_component)
@@ -3882,7 +3880,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if component_update.assign_resource_pools:
+            if component_update.attach_resource_pools:
                 if (
                     existing_component.type
                     != StackComponentType.ORCHESTRATOR.value
@@ -3894,36 +3892,21 @@ class SqlZenStore(BaseZenStore):
                 for (
                     resource_pool_id,
                     priority,
-                ) in component_update.assign_resource_pools.items():
-                    # Make sure the pool exists
-                    self._get_schema_by_id(
-                        resource_id=resource_pool_id,
-                        schema_class=ResourcePoolSchema,
+                ) in component_update.attach_resource_pools.items():
+                    self._attach_resource_pool(
                         session=session,
-                    )
-                    pool_assignment = ResourcePoolAssignmentSchema(
                         component_id=existing_component.id,
                         resource_pool_id=resource_pool_id,
                         priority=priority,
                     )
-                    session.add(pool_assignment)
 
-            if component_update.unassign_resource_pools:
-                for (
-                    resource_pool_id
-                ) in component_update.unassign_resource_pools:
-                    existing_pool_assignment = session.exec(
-                        select(ResourcePoolAssignmentSchema)
-                        .where(
-                            ResourcePoolAssignmentSchema.component_id
-                            == existing_component.id
-                        )
-                        .where(
-                            ResourcePoolAssignmentSchema.resource_pool_id
-                            == resource_pool_id
-                        )
-                    ).first()
-                    session.delete(existing_pool_assignment)
+            if component_update.detach_resource_pools:
+                for resource_pool_id in component_update.detach_resource_pools:
+                    self._detach_resource_pool(
+                        session=session,
+                        component_id=existing_component.id,
+                        resource_pool_id=resource_pool_id,
+                    )
 
             session.add(existing_component)
             session.commit()
@@ -4038,6 +4021,54 @@ class SqlZenStore(BaseZenStore):
                 f"component with the same name and type."
             )
 
+    def _attach_resource_pool(
+        self,
+        session: Session,
+        component_id: UUID,
+        resource_pool_id: UUID,
+        priority: int,
+    ) -> None:
+        """Attach a resource pool to a component.
+
+        Args:
+            session: DB session.
+            component_id: The ID of the component to attach the resource pool
+                to.
+            resource_pool_id: The ID of the resource pool to attach.
+            priority: The priority of the resource pool assignment.
+        """
+        # Make sure the pool exists
+        self._get_schema_by_id(
+            resource_id=resource_pool_id,
+            schema_class=ResourcePoolSchema,
+            session=session,
+        )
+        pool_assignment = ResourcePoolAssignmentSchema(
+            component_id=component_id,
+            resource_pool_id=resource_pool_id,
+            priority=priority,
+        )
+        session.add(pool_assignment)
+
+    def _detach_resource_pool(
+        self, session: Session, component_id: UUID, resource_pool_id: UUID
+    ) -> None:
+        """Detach a resource pool from a component.
+
+        Args:
+            session: DB session.
+            component_id: The ID of the component to detach the resource pool
+                from.
+            resource_pool_id: The ID of the resource pool to detach.
+        """
+        session.execute(
+            delete(ResourcePoolAssignmentSchema).where(
+                col(ResourcePoolAssignmentSchema.component_id) == component_id,
+                col(ResourcePoolAssignmentSchema.resource_pool_id)
+                == resource_pool_id,
+            )
+        )
+
     # -------------------- Resource Pools -------------
 
     def create_resource_pool(
@@ -4067,6 +4098,16 @@ class SqlZenStore(BaseZenStore):
                     "Unable to create resource pool: A resource pool with the "
                     f"name {resource_pool.name} already exists."
                 )
+
+            for key, amount in resource_pool.capacity.items():
+                resource_pool_resource = ResourcePoolResourceSchema(
+                    pool_id=new_resource_pool.id,
+                    key=key,
+                    total=amount,
+                    occupied=0,
+                )
+                session.add(resource_pool_resource)
+            session.commit()
             session.refresh(new_resource_pool)
 
             return new_resource_pool.to_model(
@@ -4144,6 +4185,54 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             # session.refresh(existing_resource_pool)
 
+            if update.capacity:
+                resources_decreased = False
+                resources_increased = False
+
+                for key, amount in update.capacity.items():
+                    resource_pool_resource = session.exec(
+                        select(ResourcePoolResourceSchema)
+                        .where(
+                            ResourcePoolResourceSchema.pool_id
+                            == existing_resource_pool.id
+                        )
+                        .where(ResourcePoolResourceSchema.key == key)
+                    ).first()
+                    if resource_pool_resource:
+                        if amount < resource_pool_resource.total:
+                            resources_decreased = True
+                        if amount > resource_pool_resource.total:
+                            resources_increased = True
+
+                        if amount == 0:
+                            session.delete(resource_pool_resource)
+                        else:
+                            resource_pool_resource.total = amount
+                            session.add(resource_pool_resource)
+                    elif amount > 0:
+                        resources_increased = True
+                        resource_pool_resource = ResourcePoolResourceSchema(
+                            pool_id=existing_resource_pool.id,
+                            key=key,
+                            total=amount,
+                            occupied=0,
+                        )
+                        session.add(resource_pool_resource)
+                session.commit()
+
+                if resources_decreased:
+                    self._rebuild_resource_pool_request_queue(
+                        session=session, pool_id=existing_resource_pool.id
+                    )
+                    session.commit()
+
+                if resources_increased:
+                    self._allocate_queued_requests_for_pool(
+                        session=session, pool_id=existing_resource_pool.id
+                    )
+                    session.commit()
+                session.refresh(existing_resource_pool)
+
             return existing_resource_pool.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -4154,14 +4243,19 @@ class SqlZenStore(BaseZenStore):
         Args:
             resource_pool_id: The ID of the resource pool to delete.
         """
+        # TODO: Make sure we're not left with forever pending resource requests
+        # when a pool gets deleted while it's waiting in queue.
         with Session(self.engine) as session:
-            resource_pool = self._get_schema_by_id(
+            self._get_schema_by_id(
                 resource_id=resource_pool_id,
                 schema_class=ResourcePoolSchema,
                 session=session,
             )
-
-            session.delete(resource_pool)
+            session.execute(
+                delete(ResourcePoolSchema).where(
+                    col(ResourcePoolSchema.id) == resource_pool_id
+                )
+            )
             session.commit()
 
     # -------------------- Resource Requests -------------
@@ -4188,13 +4282,18 @@ class SqlZenStore(BaseZenStore):
 
             session.add(new_resource_request)
             session.commit()
+
+            for key, amount in resource_request.requested_resources.items():
+                resource_request_resource = ResourceRequestResourceSchema(
+                    request_id=new_resource_request.id,
+                    key=key,
+                    amount=amount,
+                )
+                session.add(resource_request_resource)
+            session.commit()
             session.refresh(new_resource_request)
 
-            # TODO: fail if no pool with total resources available.
-            # TODO: add status reason to resource request
-            # TODO: we probably want to keep resource requests in the DB, maybe
-            # with state FREED?
-            self._refresh_resource_request_status(
+            self._enqueue_resource_request(
                 session=session, resource_request=new_resource_request
             )
             session.commit()
@@ -4223,12 +4322,6 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ResourceRequestSchema,
                 session=session,
             )
-            self._refresh_resource_request_status(
-                session=session, resource_request=resource_request
-            )
-            session.commit()
-            session.refresh(resource_request)
-
             return resource_request.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -4297,27 +4390,23 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ResourceRequestSchema,
                 session=session,
             )
-            self._free_occupied_resources_for_request(
-                session, resource_request
-            )
+            self._release_request_resources(session, resource_request)
             session.delete(resource_request)
             session.commit()
 
-    def _refresh_resource_request_status(
+    def _enqueue_resource_request(
         self, session: Session, resource_request: ResourceRequestSchema
     ) -> None:
-        """Refresh the status of a resource request.
+        """Enqueue a request into all pools it can fit in.
+
+        Requests are only enqueued in a pool if they fit into the pool's
+        total capacity (ignoring current occupancy).
 
         Args:
-            resource_request: The resource request to refresh.
+            session: DB session.
+            resource_request: The resource request to enqueue.
         """
         if resource_request.status != ResourceRequestStatus.PENDING.value:
-            # If the request is not pending, there is no need to refresh
-            # anything
-            logger.info(
-                "Resource request `%s` is not pending, skipping refresh",
-                resource_request.id,
-            )
             return
 
         pool_assignments = session.exec(
@@ -4333,227 +4422,470 @@ class SqlZenStore(BaseZenStore):
         ).all()
 
         if not pool_assignments:
-            # There are no pools, so we simply approve the request.
-            resource_request.status = ResourceRequestStatus.APPROVED.value
+            # There are no pools linked to the component. This means ZenML
+            # isn't responsible for managing resources for this component, so
+            # we approve the request immediately.
+            resource_request.status = ResourceRequestStatus.ACQUIRED.value
             resource_request.updated = utc_now()
             session.add(resource_request)
-            logger.info(
-                "Resource request `%s` approved because there are no pools",
-                resource_request.id,
-            )
             return
 
-        requested_resources: Dict[str, int] = json.loads(
-            base64.b64decode(resource_request.requested_resources).decode()
-        )
-
-        def _fits_in_total(
-            total: Dict[str, int], requested: Dict[str, int]
-        ) -> bool:
-            for resource_key, amount in requested.items():
-                if amount < 0:
-                    return False
-                if total.get(resource_key, 0) < amount:
-                    return False
-            return True
-
-        def _has_available(
-            total: Dict[str, int],
-            occupied: Dict[str, int],
-            requested: Dict[str, int],
-        ) -> bool:
-            for resource_key, amount in requested.items():
-                if (
-                    total.get(resource_key, 0) - occupied.get(resource_key, 0)
-                    < amount
-                ):
-                    return False
-            return True
-
-        for assignment in pool_assignments:
-            resource_pool = session.exec(
-                select(ResourcePoolSchema)
-                .with_for_update()
-                .where(ResourcePoolSchema.id == assignment.resource_pool_id)
-            ).first()
-            if resource_pool is None:
-                logger.info(
-                    "Resource pool `%s` not found for assignment `%s`",
-                    assignment.resource_pool_id,
-                    assignment.id,
-                )
-                continue
-
-            total_resources: Dict[str, int] = json.loads(
-                base64.b64decode(resource_pool.total_resources).decode()
-            )
-            if not _fits_in_total(total_resources, requested_resources):
-                logger.info(
-                    "Resource pool `%s` does not have enough total resources to fulfill request `%s`",
-                    resource_pool.id,
-                    resource_request.id,
-                )
-                continue
-
-            occupied_resources: Dict[str, int] = json.loads(
-                base64.b64decode(resource_pool.occupied_resources).decode()
-            )
-
-            pending_requests_with_priority = session.exec(
-                select(
-                    ResourceRequestSchema,
-                    ResourcePoolAssignmentSchema.priority,
-                )
-                .join(
-                    ResourcePoolAssignmentSchema,
-                    col(ResourceRequestSchema.component_id)
-                    == col(ResourcePoolAssignmentSchema.component_id),
+        def _fits_in_total(pool_id: UUID) -> bool:
+            violation = session.exec(
+                select(ResourceRequestResourceSchema.id)
+                .select_from(ResourceRequestResourceSchema)
+                .outerjoin(
+                    ResourcePoolResourceSchema,
+                    and_(
+                        ResourcePoolResourceSchema.pool_id == pool_id,
+                        ResourcePoolResourceSchema.key
+                        == ResourceRequestResourceSchema.key,
+                    ),
                 )
                 .where(
-                    col(ResourcePoolAssignmentSchema.resource_pool_id)
-                    == resource_pool.id
+                    ResourceRequestResourceSchema.request_id
+                    == resource_request.id
+                )
+                .where(
+                    or_(
+                        col(ResourcePoolResourceSchema.id).is_(None),
+                        ResourcePoolResourceSchema.total
+                        < ResourceRequestResourceSchema.amount,
+                    )
+                )
+                .limit(1)
+            ).first()
+            return violation is None
+
+        for assignment in pool_assignments:
+            if not _fits_in_total(pool_id=assignment.resource_pool_id):
+                continue
+
+            try:
+                with session.begin_nested():
+                    session.add(
+                        ResourcePoolRequestQueueSchema(
+                            pool_id=assignment.resource_pool_id,
+                            request_id=resource_request.id,
+                            priority=assignment.priority,
+                            request_created=resource_request.created,
+                        )
+                    )
+                    session.flush()
+            except IntegrityError:
+                # The request might have been enqueued concurrently. This is
+                # safe to ignore as the queue is a performance optimization.
+                pass
+
+        queued_anywhere = session.exec(
+            select(ResourcePoolRequestQueueSchema.id)
+            .where(
+                col(ResourcePoolRequestQueueSchema.request_id)
+                == resource_request.id
+            )
+            .limit(1)
+        ).first()
+        if queued_anywhere is None:
+            resource_request.status = ResourceRequestStatus.REJECTED.value
+            resource_request.status_reason = (
+                "No resource pool has a total capacity "
+                "that could fit the requested resources."
+            )
+            resource_request.updated = utc_now()
+            session.add(resource_request)
+            return
+
+        if resource_request.status == ResourceRequestStatus.PENDING.value:
+            # After enqueuing the request, check if the request can be allocated
+            # in any of the pools immediately
+            queued_pool_ids = session.exec(
+                select(ResourcePoolRequestQueueSchema.pool_id)
+                .where(
+                    col(ResourcePoolRequestQueueSchema.request_id)
+                    == resource_request.id
+                )
+                .order_by(
+                    desc(ResourcePoolRequestQueueSchema.priority),
+                    col(ResourcePoolRequestQueueSchema.request_created),
+                    col(ResourcePoolRequestQueueSchema.pool_id),
+                )
+            ).all()
+
+            for pool_id in queued_pool_ids:
+                self._allocate_queued_requests_for_pool(
+                    session=session, pool_id=pool_id, max_allocations=10
+                )
+                session.commit()
+                session.refresh(resource_request)
+                if (
+                    resource_request.status
+                    != ResourceRequestStatus.PENDING.value
+                ):
+                    break
+        session.refresh(resource_request)
+
+    def _rebuild_resource_pool_request_queue(
+        self, session: Session, pool_id: UUID
+    ) -> None:
+        """Rebuild the request queue after the pools resources changed.
+
+        We maintain the queue such that all queued requests are eligible
+        with respect to the pool's total capacity.
+
+        Args:
+            session: DB session.
+            pool_id: The ID of the pool to rebuild the request queue for.
+        """
+        # First delete the entire queue for this pool
+        session.execute(
+            delete(ResourcePoolRequestQueueSchema).where(
+                col(ResourcePoolRequestQueueSchema.pool_id) == pool_id
+            )
+        )
+        assignments = session.exec(
+            select(ResourcePoolAssignmentSchema).where(
+                ResourcePoolAssignmentSchema.resource_pool_id == pool_id
+            )
+        ).all()
+        session.flush()
+
+        for assignment in assignments:
+            fits_total_violation = (
+                select(ResourceRequestResourceSchema.id)
+                .select_from(ResourceRequestResourceSchema)
+                .outerjoin(
+                    ResourcePoolResourceSchema,
+                    and_(
+                        ResourcePoolResourceSchema.pool_id == pool_id,
+                        ResourcePoolResourceSchema.key
+                        == ResourceRequestResourceSchema.key,
+                    ),
+                )
+                .where(
+                    ResourceRequestResourceSchema.request_id
+                    == ResourceRequestSchema.id
+                )
+                .where(
+                    or_(
+                        col(ResourcePoolResourceSchema.id).is_(None),
+                        ResourcePoolResourceSchema.total
+                        < ResourceRequestResourceSchema.amount,
+                    )
+                )
+            )
+
+            eligible_request_rows = session.exec(
+                select(ResourceRequestSchema.id, ResourceRequestSchema.created)
+                .where(
+                    ResourceRequestSchema.component_id
+                    == assignment.component_id
                 )
                 .where(
                     col(ResourceRequestSchema.status)
                     == ResourceRequestStatus.PENDING.value
                 )
+                .where(~exists(fits_total_violation))
                 .order_by(
-                    desc(ResourcePoolAssignmentSchema.priority),
                     col(ResourceRequestSchema.created),
                     col(ResourceRequestSchema.id),
                 )
             ).all()
 
-            top_eligible_request: Optional[ResourceRequestSchema] = None
-            for pending_request, _ in pending_requests_with_priority:
-                pending_requested_resources: Dict[str, int] = json.loads(
-                    base64.b64decode(
-                        pending_request.requested_resources
-                    ).decode()
-                )
-                if _fits_in_total(
-                    total_resources, pending_requested_resources
-                ):
-                    top_eligible_request = pending_request
-                    break
-
-            if top_eligible_request is None:
-                logger.info(
-                    "No top eligible request found for resource pool `%s`",
-                    resource_pool.id,
-                )
-                continue
-
-            if top_eligible_request.id != resource_request.id:
-                logger.info(
-                    "Top eligible request `%s` is not the same as the resource request `%s`",
-                    top_eligible_request.id,
-                    resource_request.id,
-                )
-                continue
-
-            if not _has_available(
-                total=total_resources,
-                occupied=occupied_resources,
-                requested=requested_resources,
-            ):
-                logger.info(
-                    "Resource pool `%s` does not have enough available resources to fulfill request `%s`",
-                    resource_pool.id,
-                    resource_request.id,
-                )
-                continue
-
-            updated_occupied_resources = dict(occupied_resources)
-            for resource_key, amount in requested_resources.items():
-                updated_occupied_resources[resource_key] = (
-                    updated_occupied_resources.get(resource_key, 0) + amount
+            for request_id, request_created in eligible_request_rows:
+                session.add(
+                    ResourcePoolRequestQueueSchema(
+                        pool_id=pool_id,
+                        request_id=request_id,
+                        priority=assignment.priority,
+                        request_created=request_created,
+                    )
                 )
 
-            resource_pool.occupied_resources = base64.b64encode(
-                json.dumps(updated_occupied_resources).encode("utf-8")
+        session.flush()
+
+        # Reject pending requests that no longer fit in any pool after this
+        # rebuild.
+        component_ids = [a.component_id for a in assignments]
+        if component_ids:
+            now = utc_now()
+            session.execute(
+                update(ResourceRequestSchema)
+                .where(
+                    col(ResourceRequestSchema.component_id).in_(component_ids)
+                )
+                .where(
+                    col(ResourceRequestSchema.status)
+                    == ResourceRequestStatus.PENDING.value
+                )
+                .where(
+                    ~exists(
+                        select(ResourcePoolRequestQueueSchema.id).where(
+                            col(ResourcePoolRequestQueueSchema.request_id)
+                            == col(ResourceRequestSchema.id)
+                        )
+                    )
+                )
+                .values(
+                    status=ResourceRequestStatus.REJECTED.value,
+                    status_reason=(
+                        "No pool had a total capacity "
+                        "that could fit the requested resources."
+                    ),
+                    updated=now,
+                )
             )
-            resource_pool.updated = utc_now()
-            resource_request.occupied_pool_id = resource_pool.id
-            resource_request.status = ResourceRequestStatus.APPROVED.value
-            resource_request.updated = utc_now()
 
-            logger.info(
-                "Approving resource request `%s` for resource pool `%s`",
-                resource_request.id,
-                resource_pool.id,
-            )
-            session.add(resource_pool)
-            session.add(resource_request)
-            return
+    def _allocate_queued_requests_for_pool(
+        self, session: Session, pool_id: UUID, max_allocations: int = 100
+    ) -> None:
+        """Allocate as many queued requests for a pool as possible.
 
-    def _delete_resource_requests_for_step_run(
+        Args:
+            session: DB session.
+            pool_id: ID of the pool whose queue should be processed.
+            max_allocations: Maximum number of allocations to perform.
+        """
+
+        def _peek_head_request_id() -> Optional[UUID]:
+            return session.exec(
+                select(ResourcePoolRequestQueueSchema.request_id)
+                .where(col(ResourcePoolRequestQueueSchema.pool_id) == pool_id)
+                .order_by(
+                    desc(ResourcePoolRequestQueueSchema.priority),
+                    col(ResourcePoolRequestQueueSchema.request_created),
+                    col(ResourcePoolRequestQueueSchema.request_id),
+                )
+                .limit(1)
+            ).first()
+
+        class _AllocationFailed(Exception):
+            pass
+
+        allocations_done = 0
+        while allocations_done < max_allocations:
+            head_request_id = _peek_head_request_id()
+            if head_request_id is None:
+                return
+            now = utc_now()
+
+            try:
+                with session.begin_nested():
+                    # Claim the head request so we only pay the "pending" check
+                    # once per attempt, and so concurrent allocators won't do
+                    # redundant pool updates.
+                    result = session.execute(
+                        update(ResourceRequestSchema)
+                        .where(
+                            col(ResourceRequestSchema.id) == head_request_id,
+                            col(ResourceRequestSchema.status)
+                            == ResourceRequestStatus.PENDING.value,
+                        )
+                        .values(
+                            status=ResourceRequestStatus.ACQUIRING.value,
+                            updated=now,
+                        )
+                    )
+                    if result.rowcount != 1:  # type: ignore[attr-defined]
+                        raise _AllocationFailed()
+
+                    requested_resource_rows = session.exec(
+                        select(
+                            ResourceRequestResourceSchema.key,
+                            ResourceRequestResourceSchema.amount,
+                        ).where(
+                            ResourceRequestResourceSchema.request_id
+                            == head_request_id
+                        )
+                    ).all()
+
+                    requested_resources = [
+                        (key, amount)
+                        for key, amount in requested_resource_rows
+                        if amount
+                    ]
+
+                    for resource_key, amount in requested_resources:
+                        result = session.execute(
+                            update(ResourcePoolResourceSchema)
+                            .where(
+                                col(ResourcePoolResourceSchema.pool_id)
+                                == pool_id,
+                                col(ResourcePoolResourceSchema.key)
+                                == resource_key,
+                                (
+                                    col(ResourcePoolResourceSchema.total)
+                                    - col(ResourcePoolResourceSchema.occupied)
+                                )
+                                >= amount,
+                            )
+                            .values(
+                                occupied=ResourcePoolResourceSchema.occupied
+                                + amount,
+                                updated=now,
+                            )
+                        )
+                        if result.rowcount != 1:  # type: ignore[attr-defined]
+                            raise _AllocationFailed()
+
+                    session.add(
+                        ResourcePoolAllocationSchema(
+                            pool_id=pool_id,
+                            request_id=head_request_id,
+                            allocated_at=now,
+                            released_at=None,
+                        )
+                    )
+
+                    result = session.execute(
+                        update(ResourceRequestSchema)
+                        .where(
+                            col(ResourceRequestSchema.id) == head_request_id,
+                            col(ResourceRequestSchema.status)
+                            == ResourceRequestStatus.ACQUIRING.value,
+                        )
+                        .values(
+                            status=ResourceRequestStatus.ACQUIRED.value,
+                            updated=now,
+                        )
+                    )
+                    if result.rowcount != 1:  # type: ignore[attr-defined]
+                        raise _AllocationFailed()
+
+                    # Remove from all pool queues (request may be enqueued in
+                    # multiple pools).
+                    session.execute(
+                        delete(ResourcePoolRequestQueueSchema).where(
+                            col(ResourcePoolRequestQueueSchema.request_id)
+                            == head_request_id
+                        )
+                    )
+                allocations_done += 1
+            except (IntegrityError, _AllocationFailed):
+                head_status = session.exec(
+                    select(ResourceRequestSchema.status).where(
+                        col(ResourceRequestSchema.id) == head_request_id
+                    )
+                ).first()
+
+                if head_status == ResourceRequestStatus.ACQUIRING.value:
+                    # Another allocator is currently working on this request.
+                    # We stop to avoid interfering with queue ordering. The
+                    # allocation should complete quickly and remove the request
+                    # from the queue.
+                    return
+
+                if head_status != ResourceRequestStatus.PENDING.value:
+                    # Delete stale non-pending requests from the queue to avoid
+                    # blocking. Ths shouldn't happen as we only enqueue pending
+                    # requests.
+                    session.execute(
+                        delete(ResourcePoolRequestQueueSchema).where(
+                            col(ResourcePoolRequestQueueSchema.pool_id)
+                            == pool_id,
+                            col(ResourcePoolRequestQueueSchema.request_id)
+                            == head_request_id,
+                        )
+                    )
+                    session.flush()
+                    continue
+
+                # The first request in line is pending but couldn't be allocated
+                # -> We stop and don't continue with the next requests in the
+                #    queue.
+                return
+
+    def _release_step_run_resources(
         self, session: Session, step_run_id: UUID
     ) -> None:
-        logger.info(
-            "Deleting resource requests for step run `%s`", step_run_id
-        )
+        """Release potentially acquired resources for a step run.
+
+        Args:
+            session: DB session.
+            step_run_id: The ID of the step run to release resources for.
+        """
+        logger.info("Releasing resources for step run `%s`", step_run_id)
         resource_requests = session.exec(
             select(ResourceRequestSchema).where(
                 ResourceRequestSchema.step_run_id == step_run_id
             )
         ).all()
         for resource_request in resource_requests:
-            self._free_occupied_resources_for_request(
-                session, resource_request
-            )
-            session.delete(resource_request)
-            session.commit()
+            self._release_request_resources(session, resource_request)
+        session.commit()
 
-    def _free_occupied_resources_for_request(
+    def _release_request_resources(
         self, session: Session, resource_request: ResourceRequestSchema
     ) -> None:
+        """Release occupied resources for a request.
+
+        Args:
+            session: DB session.
+            resource_request: The resource request to release resources for.
+        """
         logger.info(
             "Freeing occupied resources for request `%s`", resource_request.id
         )
-        if not resource_request.occupied_pool_id:
-            logger.info(
-                "Resource request `%s` hasn't been assigned to a pool, so it's not occupying any resources",
-                resource_request.id,
+        allocation = session.exec(
+            select(ResourcePoolAllocationSchema).where(
+                ResourcePoolAllocationSchema.request_id == resource_request.id,
+                col(ResourcePoolAllocationSchema.released_at).is_(None),
             )
-            # The resource request hasn't been assigned to a pool, so it's not
-            # occupying any resources
-            return
-
-        resource_pool = session.exec(
-            select(ResourcePoolSchema)
-            .with_for_update()
-            .where(ResourcePoolSchema.id == resource_request.occupied_pool_id)
         ).first()
-        if resource_pool is None:
+        if allocation is None:
             logger.info(
-                "Resource pool `%s` not found for request `%s`",
-                resource_request.occupied_pool_id,
+                "Resource request `%s` has no active allocation, skipping.",
                 resource_request.id,
             )
             return
 
-        requested_resources: Dict[str, int] = json.loads(
-            base64.b64decode(resource_request.requested_resources).decode()
-        )
-
-        occupied_resources = json.loads(
-            base64.b64decode(resource_pool.occupied_resources).decode()
-        )
-        logger.info("Occupied resources: %s", occupied_resources)
-
-        for resource_key, amount in requested_resources.items():
-            occupied_resources[resource_key] = (
-                occupied_resources.get(resource_key, 0) - amount
+        requested_resource_rows = session.exec(
+            select(
+                ResourceRequestResourceSchema.key,
+                ResourceRequestResourceSchema.amount,
+            ).where(
+                ResourceRequestResourceSchema.request_id == resource_request.id
             )
+        ).all()
 
-        resource_pool.occupied_resources = base64.b64encode(
-            json.dumps(occupied_resources).encode("utf-8")
+        now = utc_now()
+        with session.begin_nested():
+            for resource_key, amount in requested_resource_rows:
+                if not amount:
+                    continue
+                result = session.execute(
+                    update(ResourcePoolResourceSchema)
+                    .where(
+                        col(ResourcePoolResourceSchema.pool_id)
+                        == allocation.pool_id,
+                        col(ResourcePoolResourceSchema.key) == resource_key,
+                        col(ResourcePoolResourceSchema.occupied) >= amount,
+                    )
+                    .values(
+                        occupied=ResourcePoolResourceSchema.occupied - amount,
+                        updated=now,
+                    )
+                )
+                if result.rowcount != 1:  # type: ignore[attr-defined]
+                    logger.warning(
+                        "Failed to decrement occupied resource `%s` of request "
+                        "`%s` for pool `%s`.",
+                        resource_key,
+                        resource_request.id,
+                        allocation.pool_id,
+                    )
+
+            allocation.released_at = now
+            allocation.updated = now
+            resource_request.status = ResourceRequestStatus.RELEASED.value
+            resource_request.updated = now
+            session.add(allocation)
+            session.add(resource_request)
+
+        # Now that we've freed resources from the pool, we check if we can
+        # allocate new requests to the pool
+        self._allocate_queued_requests_for_pool(
+            session=session, pool_id=allocation.pool_id
         )
-        logger.info("Updated occupied resources: %s", occupied_resources)
-        resource_request.occupied_pool_id = None
-        session.add(resource_pool)
-        session.add(resource_request)
 
     # -------------------------- Devices -------------------------
 
@@ -11309,12 +11641,8 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            updated_status = ExecutionStatus(existing_step_run.status)
-
-            if updated_status.is_finished:
-                self._delete_resource_requests_for_step_run(
-                    session, existing_step_run.id
-                )
+            if ExecutionStatus(existing_step_run.status).is_finished:
+                self._release_step_run_resources(session, existing_step_run.id)
 
             self._update_pipeline_run_status(
                 pipeline_run_id=existing_step_run.pipeline_run_id,

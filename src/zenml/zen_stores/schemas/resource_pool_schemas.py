@@ -13,15 +13,14 @@
 #  permissions and limitations under the License.
 """Resource Pool schemas."""
 
-import base64
-import json
+from datetime import datetime
 from typing import Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, desc
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, col
 
 from zenml.enums import ResourceRequestStatus
 from zenml.models import (
@@ -38,13 +37,59 @@ from zenml.models import (
     ResourceRequestResponseResources,
     ResourceRequestUpdate,
 )
+from zenml.models.v2.core.resource_pool import ResourcePoolComponentResponse
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
+
+
+class ResourcePoolRequestQueueSchema(BaseSchema, table=True):
+    """Resource pool request queue schema."""
+
+    __tablename__ = "resource_pool_request_queue"
+    __table_args__ = (
+        UniqueConstraint(
+            "pool_id",
+            "request_id",
+            name="unique_resource_pool_request_queue_pool_id_request_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "pool_id",
+                "priority",
+                "request_created",
+                "request_id",
+            ],
+        ),
+        build_index(table_name=__tablename__, column_names=["request_id"]),
+    )
+
+    pool_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="resource_pool",
+        source_column="pool_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    request_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="resource_request",
+        source_column="request_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    priority: int
+    request_created: datetime = Field(default_factory=utc_now)
 
 
 class ResourcePoolAssignmentSchema(BaseSchema, table=True):
@@ -57,6 +102,14 @@ class ResourcePoolAssignmentSchema(BaseSchema, table=True):
             "resource_pool_id",
             name="unique_component_id_resource_pool_id",
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["component_id", "priority", "resource_pool_id"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["resource_pool_id", "component_id"],
+        ),
     )
 
     component_id: UUID = build_foreign_key_field(
@@ -67,6 +120,7 @@ class ResourcePoolAssignmentSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+    component: "StackComponentSchema" = Relationship()
     resource_pool_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target="resource_pool",
@@ -91,9 +145,12 @@ class ResourcePoolSchema(NamedSchema, table=True):
     )
 
     description: Optional[str] = Field(default=None)
-    total_resources: bytes = Field(title="The resources of the resource pool.")
-    occupied_resources: bytes = Field(
-        title="The occupied resources of the resource pool."
+    resources: List["ResourcePoolResourceSchema"] = Relationship(
+        back_populates="pool",
+        sa_relationship_kwargs={
+            "passive_deletes": True,
+            "cascade": "all, delete-orphan",
+        },
     )
 
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -105,9 +162,24 @@ class ResourcePoolSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship()
-    components: List["StackComponentSchema"] = Relationship(
-        # back_populates="resource_pools",
-        link_model=ResourcePoolAssignmentSchema,
+    assigned_components: List["ResourcePoolAssignmentSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "order_by": desc(col(ResourcePoolAssignmentSchema.priority)),
+            "passive_deletes": True,
+            "cascade": "all, delete-orphan",
+        }
+    )
+
+    queued_requests: List["ResourceRequestSchema"] = Relationship(
+        link_model=ResourcePoolRequestQueueSchema,
+        sa_relationship_kwargs={
+            "order_by": (
+                desc(col(ResourcePoolRequestQueueSchema.priority)),
+                ResourcePoolRequestQueueSchema.request_created,
+                ResourcePoolRequestQueueSchema.request_id,
+            ),
+            "passive_deletes": True,
+        },
     )
 
     @classmethod
@@ -157,12 +229,6 @@ class ResourcePoolSchema(NamedSchema, table=True):
             name=request.name,
             user_id=request.user,
             description=request.description,
-            total_resources=base64.b64encode(
-                json.dumps(request.total_resources).encode("utf-8")
-            ),
-            occupied_resources=base64.b64encode(
-                json.dumps({}).encode("utf-8")
-            ),
         )
 
     def update(
@@ -178,13 +244,6 @@ class ResourcePoolSchema(NamedSchema, table=True):
         """
         if resource_pool_update.description:
             self.description = resource_pool_update.description
-
-        if resource_pool_update.total_resources:
-            self.total_resources = base64.b64encode(
-                json.dumps(resource_pool_update.total_resources).encode(
-                    "utf-8"
-                )
-            )
 
         self.updated = utc_now()
         return self
@@ -215,19 +274,25 @@ class ResourcePoolSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ResourcePoolResponseMetadata(
                 description=self.description,
-                total_resources=json.loads(
-                    base64.b64decode(self.total_resources).decode()
-                ),
-                occupied_resources=json.loads(
-                    base64.b64decode(self.occupied_resources).decode()
-                ),
+                capacity={r.key: r.total for r in self.resources},
+                occupied_resources={r.key: r.occupied for r in self.resources},
             )
 
         resources = None
         if include_resources:
+            components = [
+                ResourcePoolComponentResponse(
+                    priority=a.priority,
+                    **a.component.to_model().model_dump(),
+                )
+                for a in self.assigned_components
+            ]
             resources = ResourcePoolResponseResources(
                 user=self.user.to_model() if self.user else None,
-                components=[c.to_model() for c in self.components],
+                components=components,
+                # TODO: include more info here
+                queued_requests=[r.to_model() for r in self.queued_requests],
+                # TODO: maybe include current active requests as well?
             )
 
         return ResourcePoolResponse(
@@ -243,6 +308,12 @@ class ResourceRequestSchema(BaseSchema, table=True):
     """Resource request schema."""
 
     __tablename__ = "resource_request"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=["component_id", "status", "created", "id"],
+        ),
+    )
 
     component_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -268,21 +339,15 @@ class ResourceRequestSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    occupied_pool_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=ResourcePoolSchema.__tablename__,
-        source_column="occupied_pool_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    occupied_pool: Optional["ResourcePoolSchema"] = Relationship()
     user: Optional["UserSchema"] = Relationship()
     component: "StackComponentSchema" = Relationship()
     step_run: Optional["StepRunSchema"] = Relationship()
 
-    requested_resources: bytes
+    requested_resources: List["ResourceRequestResourceSchema"] = Relationship(
+        back_populates="request",
+    )
     status: str
+    status_reason: Optional[str] = Field(default=None, nullable=True)
 
     @classmethod
     def from_request(
@@ -301,9 +366,6 @@ class ResourceRequestSchema(BaseSchema, table=True):
             user_id=request.user,
             component_id=request.component_id,
             step_run_id=request.step_run_id,
-            requested_resources=base64.b64encode(
-                json.dumps(request.requested_resources).encode("utf-8")
-            ),
             status=ResourceRequestStatus.PENDING.value,
         )
 
@@ -350,9 +412,10 @@ class ResourceRequestSchema(BaseSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ResourceRequestResponseMetadata(
-                requested_resources=json.loads(
-                    base64.b64decode(self.requested_resources).decode()
-                ),
+                status_reason=self.status_reason,
+                requested_resources={
+                    r.key: r.amount for r in self.requested_resources
+                },
             )
 
         resources = None
@@ -369,3 +432,90 @@ class ResourceRequestSchema(BaseSchema, table=True):
             metadata=metadata,
             resources=resources,
         )
+
+
+class ResourceRequestResourceSchema(BaseSchema, table=True):
+    """Resource request resource schema."""
+
+    __tablename__ = "resource_request_resource"
+    __table_args__ = (
+        UniqueConstraint(
+            "request_id",
+            "key",
+            name="unique_resource_request_resource_request_id_key",
+        ),
+    )
+
+    request_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ResourceRequestSchema.__tablename__,
+        source_column="request_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    request: "ResourceRequestSchema" = Relationship(
+        back_populates="requested_resources"
+    )
+    key: str
+    amount: int
+
+
+class ResourcePoolResourceSchema(BaseSchema, table=True):
+    """Resource pool resource schema."""
+
+    __tablename__ = "resource_pool_resource"
+    __table_args__ = (
+        UniqueConstraint(
+            "pool_id",
+            "key",
+            name="unique_resource_pool_resource_pool_id_key",
+        ),
+    )
+
+    pool_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ResourcePoolSchema.__tablename__,
+        source_column="pool_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    pool: "ResourcePoolSchema" = Relationship(back_populates="resources")
+    key: str
+    total: int
+    occupied: int = 0
+
+
+class ResourcePoolAllocationSchema(BaseSchema, table=True):
+    """Resource pool allocation schema."""
+
+    __tablename__ = "resource_pool_allocation"
+    __table_args__ = (
+        UniqueConstraint(
+            "request_id",
+            name="unique_resource_pool_allocation_request_id",
+        ),
+        build_index(
+            table_name=__tablename__, column_names=["pool_id", "released_at"]
+        ),
+    )
+
+    pool_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ResourcePoolSchema.__tablename__,
+        source_column="pool_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    request_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ResourceRequestSchema.__tablename__,
+        source_column="request_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    allocated_at: datetime = Field(default_factory=utc_now)
+    released_at: Optional[datetime] = Field(default=None, nullable=True)

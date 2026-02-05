@@ -23,7 +23,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, NonNegativeInt
 
 from zenml.enums import ResourceRequestStatus
 from zenml.models.v2.base.base import BaseUpdate
@@ -56,7 +56,7 @@ class ResourceRequestRequest(UserScopedRequest):
         title="The id of the step run that is requesting the resources.",
         default=None,
     )
-    requested_resources: Dict[str, int] = Field(
+    requested_resources: Dict[str, NonNegativeInt] = Field(
         title="The resources requested."
     )
 
@@ -87,6 +87,10 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
 class ResourceRequestResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for resource requests."""
 
+    status_reason: Optional[str] = Field(
+        title="The reason for the status of the resource request.",
+        default=None,
+    )
     requested_resources: Dict[str, int] = Field(
         title="The resources requested."
     )
@@ -139,6 +143,15 @@ class ResourceRequestResponse(
             the value of the property.
         """
         return self.get_body().status
+
+    @property
+    def status_reason(self) -> Optional[str]:
+        """The `status_reason` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().status_reason
 
     @property
     def component(self) -> "ComponentResponse":

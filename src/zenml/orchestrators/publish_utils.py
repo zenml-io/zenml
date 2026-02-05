@@ -261,6 +261,11 @@ def get_pipeline_run_status(
         or ExecutionStatus.RETRYING in step_statuses
     ):
         return ExecutionStatus.RUNNING
+    elif ExecutionStatus.QUEUED in step_statuses:
+        # If there is no running step but a queued one, we mark the run as
+        # queued so the user can immediately see that the run is waiting for
+        # resources.
+        return ExecutionStatus.QUEUED
     elif is_dynamic_pipeline:
         return run_status
     elif len(step_statuses) < num_steps:

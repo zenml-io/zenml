@@ -208,8 +208,8 @@ class StackComponentSchema(NamedSchema, table=True):
                 "connector",
                 "add_secrets",
                 "remove_secrets",
-                "assign_resource_pools",
-                "unassign_resource_pools",
+                "attach_resource_pools",
+                "detach_resource_pools",
             },
         ).items():
             if field == "configuration":
