@@ -22,7 +22,7 @@ from typing import (
     TypeVar,
 )
 
-from pydantic import Field, model_validator
+from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
@@ -34,15 +34,37 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
+from zenml.models.v2.core.component import ComponentResponse
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.component import ComponentResponse
+    from zenml.models.v2.core.resource_request import ResourceRequestResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 # ------------------ Request Model ------------------
+
+
+class ResourcePoolComponentResponse(ComponentResponse):
+    """Response model for resource pool components."""
+
+    priority: int = Field(
+        title="The priority of the component in the resource pool.",
+    )
+
+    def get_hydrated_version(self) -> "ResourcePoolComponentResponse":
+        """Get the hydrated version of this resource pool component.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
+        from zenml.client import Client
+
+        return ResourcePoolComponentResponse(
+            priority=self.priority,
+            **Client().zen_store.get_stack_component(self.id).model_dump(),
+        )
 
 
 class ResourcePoolRequest(UserScopedRequest):
@@ -56,14 +78,16 @@ class ResourcePoolRequest(UserScopedRequest):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    total_resources: Dict[str, int] = Field(
-        title="The resources of the resource pool.",
+    capacity: Dict[str, PositiveInt] = Field(
+        title="The capacity of the resource pool.",
     )
 
     @model_validator(mode="after")
-    def _validate_resources(self) -> "ResourcePoolRequest":
-        if not self.total_resources:
-            raise ValueError("Resource pool must have at least one resource.")
+    def _validate_capacity(self) -> "ResourcePoolRequest":
+        if not self.capacity:
+            raise ValueError(
+                "Resource pools with no capacity are not allowed."
+            )
 
         return self
 
@@ -79,22 +103,12 @@ class ResourcePoolUpdate(BaseUpdate):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    total_resources: Optional[Dict[str, int]] = Field(
-        title="The resources of the resource pool.",
+    capacity: Optional[Dict[str, NonNegativeInt]] = Field(
+        title="The capacity of the resource pool.",
+        description="The capacity of the resource pool. Setting a value to 0 "
+        "will remove the resource from the pool.",
         default=None,
     )
-
-    @model_validator(mode="after")
-    def _validate_resources(self) -> "ResourcePoolUpdate":
-        """Validate the resources of the resource pool.
-
-        Returns:
-            The validated resource pool update.
-        """
-        if not self.total_resources:
-            raise ValueError("Resource pool must have at least one resource.")
-
-        return self
 
 
 # ------------------ Response Model ------------------
@@ -112,8 +126,8 @@ class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
         title="The description of the resource pool",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    total_resources: Dict[str, int] = Field(
-        title="The resources of the resource pool.",
+    capacity: Dict[str, int] = Field(
+        title="The capacity of the resource pool.",
     )
     occupied_resources: Dict[str, int] = Field(
         title="The occupied resources of the resource pool.",
@@ -123,8 +137,11 @@ class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
 class ResourcePoolResponseResources(UserScopedResponseResources):
     """Response resources for resource pools."""
 
-    components: List["ComponentResponse"] = Field(
+    components: List["ResourcePoolComponentResponse"] = Field(
         title="The components assigned to the resource pool.",
+    )
+    queued_requests: List["ResourceRequestResponse"] = Field(
+        title="The queued requests for the resource pool.",
     )
 
 
@@ -161,13 +178,13 @@ class ResourcePoolResponse(
         return self.get_metadata().description
 
     @property
-    def total_resources(self) -> Dict[str, int]:
-        """The `total_resources` property.
+    def capacity(self) -> Dict[str, int]:
+        """The `capacity` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().total_resources
+        return self.get_metadata().capacity
 
     @property
     def occupied_resources(self) -> Dict[str, int]:
@@ -179,13 +196,22 @@ class ResourcePoolResponse(
         return self.get_metadata().occupied_resources
 
     @property
-    def components(self) -> List["ComponentResponse"]:
+    def components(self) -> List["ResourcePoolComponentResponse"]:
         """The `components` property.
 
         Returns:
             the value of the property.
         """
         return self.get_resources().components
+
+    @property
+    def queued_requests(self) -> List["ResourceRequestResponse"]:
+        """The `queued_requests` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().queued_requests
 
 
 # ------------------ Filter Model ------------------

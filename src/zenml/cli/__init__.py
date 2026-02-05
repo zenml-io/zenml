@@ -2574,3 +2574,4 @@ from zenml.cli.stack_components import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.project import *  # noqa
 from zenml.cli.tag import *  # noqa
+from zenml.cli.resource_pool import *  # noqa

@@ -26,7 +26,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, NonNegativeInt, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
@@ -92,9 +92,9 @@ class ComponentBase(BaseModel):
         default=None,
         title="The stack component labels.",
     )
-    resource_pools: Optional[Dict[UUID, int]] = Field(
+    resource_pools: Optional[Dict[UUID, NonNegativeInt]] = Field(
         default=None,
-        title="Resource pools and their priorities to assign to the stack "
+        title="Resource pools and their priorities to attach to the stack "
         "component.",
     )
 
@@ -178,14 +178,14 @@ class ComponentUpdate(BaseUpdate):
         default=None,
         title="Secrets to remove from the stack component.",
     )
-    assign_resource_pools: Optional[Dict[UUID, int]] = Field(
+    attach_resource_pools: Optional[Dict[UUID, NonNegativeInt]] = Field(
         default=None,
-        title="Resource pools and their priorities to assign to the stack "
+        title="Resource pools and their priorities to attach to the stack "
         "component.",
     )
-    unassign_resource_pools: Optional[List[UUID]] = Field(
+    detach_resource_pools: Optional[List[UUID]] = Field(
         default=None,
-        title="Resource pools to unassign from the stack component.",
+        title="Resource pools to detach from the stack component.",
     )
 
 

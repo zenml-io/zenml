@@ -583,6 +583,8 @@ class ResourceRequestStatus(StrEnum):
     """Resource request statuses."""
 
     PENDING = "pending"
-    APPROVED = "approved"
+    ACQUIRING = "acquiring"
+    ACQUIRED = "acquired"
     REJECTED = "rejected"
     CANCELLED = "cancelled"
+    RELEASED = "released"
