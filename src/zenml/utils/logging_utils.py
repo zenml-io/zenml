@@ -391,12 +391,18 @@ def get_run_log_metadata(
     server_info = client.zen_store.get_store_info()
 
     if server_info.is_pro_server():
-        log_metadata.update(
-            {
-                "zenml.workspace.id": str(server_info.pro_workspace_id),
-                "zenml.workspace.name": server_info.pro_workspace_name,
-            }
-        )
+        if server_info.pro_workspace_id:
+            log_metadata.update(
+                {
+                    "zenml.workspace.id": str(server_info.pro_workspace_id),
+                }
+            )
+        if server_info.pro_workspace_name:
+            log_metadata.update(
+                {
+                    "zenml.workspace.name": server_info.pro_workspace_name,
+                }
+            )
 
     if pipeline_run.pipeline is not None:
         log_metadata.update(
