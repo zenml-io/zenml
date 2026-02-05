@@ -56,6 +56,8 @@ Each log record includes ZenML metadata that can be used for filtering in Datado
 | `@zenml.pipeline.run.name`        | Pipeline run name                                |
 | `@zenml.step.run.id`     | Step ID (for step-level logs)                |
 | `@zenml.step.run.name`     | Step name (for step-level logs)                |
+| `@zenml.workspace.id`     | Workspace ID (when connected to a ZenML Pro workspace)              |
+| `@zenml.workspace.name`     | Workspace name (when connected to a ZenML Pro workspace)               |
 
 ### How to deploy it
 
