@@ -104,7 +104,7 @@ class IntegrationRegistry(object):
                 logger.debug(f"Activating integration `{name}`...")
                 try:
                     integration.activate()
-                except Exception as e:
+                except (ImportError, OSError) as e:
                     logger.warning(
                         f"Failed to activate integration `{name}`: "
                         f"{type(e).__name__}: {e}"
