@@ -113,7 +113,7 @@ install_integrations() {
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
 
-    # TODO: Revisit once pytorch Windows support stabilises.
+    # TODO: Revisit once pytorch Windows support stabilizes.
     # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
     # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471
     os_name=$(python -c "import platform; print(platform.system())")
