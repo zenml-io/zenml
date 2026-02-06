@@ -34,6 +34,40 @@ Before starting, make sure you go through the [general prerequisites for hybrid 
 **Tools (on a machine with internet access for initial setup):**
 - Helm (3.0+)
 
+
+### Enroll the Workspace in the ZenML Pro Control Plane
+
+Before you can deploy a workspace, you need a ZenML Pro organization to enroll the workspace in. The enrollment procedure will create a workspace placeholder in the organization and generate the necessary enrollment credentials. You will use these credentials (e.g. workspace ID, enrollment key) to configure the workspace server during deployment.
+
+Enrolling workspaces is currently only supported through the ZenML Pro OpenAPI interface or programmatically accessing the ZenML Pro API. There is no support for this in the ZenML Pro UI yet.
+
+{% tabs %}
+{% tab title="OpenAPI Interface" %}
+First, log in to the ZenML Pro UI as usual. Then, to access the ZenML Pro OpenAPI interface, append the `/api/v1` path to the ZenML Pro server URL in your browser. For example: https://zenml-pro.my.domain/api/v1s
+
+Using the OpenAPI interface, you can manage local user accounts by making requests to the `/api/v1/workspaces` endpoint. For example, to create a new super-user account:
+
+![ZenML Pro OpenAPI Interface - Enroll Workspace](.gitbook/assets/pro-openapi-interface-03.png)
+{% endtab %}
+
+{% tab title="curl" %}
+First, [create a personal access token (PAT)](personal-access-tokens.md) using the ZenML Pro UI. Then, use this PAT to enroll the workspace via curl:
+
+```bash
+# Create a new super-user account
+curl -X POST "https://zenml-pro.my.domain/api/v1/workspaces?name=my-workspace&enroll=true" \
+  -H "Authorization: Bearer <access-token>"
+```
+
+The response will contain all the necessary enrollment credentials for the workspace that you will need to configure the workspace server during deployment.
+
+* the workspace ID
+* the enrollment key
+* the organization ID
+* the organization name
+* the workspace name
+
+
 ## Install the ZenML Pro Workspace Servers
 
 ### Step 1: Create Kubernetes Secrets

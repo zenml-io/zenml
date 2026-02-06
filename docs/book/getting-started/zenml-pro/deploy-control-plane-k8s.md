@@ -275,13 +275,13 @@ curl -X POST "https://zenml-pro.my.domain/api/v1/users?username=superuser&passwo
 
 Now that the ZenML Pro control plane is onboarded, you can deploy and enroll one or more workspaces.
 
-To deploy and enroll a workspace, you can use the same process covered in the [Hybrid SaaS Deployment](hybrid-deployment.md) section. Make sure to use the same ZenML Pro control plane URLs as the ones you used to onboard the control plane:
+To deploy and enroll a workspace, you can use the process covered in the [Deploying Workspaces](deploy-workspaces.md) section. Make sure to use the ZenML Pro control plane URLs you used for the self-hosted deployment:
 
 * ZenML Pro control plane UI: https://zenml-pro.internal.mycompany.com
 * ZenML Pro control plane API: https://zenml-pro.internal.mycompany.com/api/v1
 
 
-### Step 6: Install Internal CA Certificate
+### Step 6: Install Internal CA Certificates
 
 If the TLS certificates used by the ZenML Pro workspace server are signed by a custom Certificate Authority, you need to install the CA certificates on every machine that needs to access the ZenML workspace server.
 
