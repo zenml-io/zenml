@@ -2487,7 +2487,7 @@ class SqlZenStore(BaseZenStore):
         """Delete completed API transactions that have expired."""
         with Session(self.engine) as session:
             session.execute(
-                delete(ApiTransactionResultSchema).where(
+                delete(ApiTransactionSchema).where(
                     col(ApiTransactionSchema.completed),
                     col(ApiTransactionSchema.expired) < utc_now(),
                 )
