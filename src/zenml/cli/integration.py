@@ -202,9 +202,9 @@ def export_requirements(
             integrations_to_export.remove(i)
         except KeyError:
             if i not in all_integrations:
-                error(
-                    f"Integration {i} does not exist. Available integrations: "
-                    f"{all_integrations}"
+                warning(
+                    f"Integration '{i}' not found in registry (may not be "
+                    f"available on this platform). Skipping."
                 )
 
     if "whylogs" in integrations_to_export:
@@ -323,9 +323,9 @@ def install(
             try:
                 integration_set.remove(i)
             except KeyError:
-                error(
-                    f"Integration {i} does not exist. Available integrations: "
-                    f"{list(integration_registry.integrations.keys())}"
+                warning(
+                    f"Integration '{i}' not found in registry (may not be "
+                    f"available on this platform). Skipping."
                 )
     else:
         integration_set = set(integrations)
