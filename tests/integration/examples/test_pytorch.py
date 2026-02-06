@@ -17,8 +17,18 @@ import pytest
 from tests.integration.examples.utils import run_example
 
 
-def test_example(request: pytest.FixtureRequest) -> None:
+def test_example(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Runs the pytorch example."""
+    # PyTorch 2.6+ calls getpass.getuser() to derive the TorchInductor cache
+    # dir. This fails inside Docker containers running as a numeric UID with
+    # no /etc/passwd entry (e.g. GitHub Actions uid 1001). Setting the cache
+    # dir explicitly bypasses that lookup entirely. See PyTorch Issue #140765.
+    monkeypatch.setenv(
+        "__ZENML__TORCHINDUCTOR_CACHE_DIR", "/tmp/torchinductor"
+    )
+
     with run_example(
         request=request,
         name="pytorch",
