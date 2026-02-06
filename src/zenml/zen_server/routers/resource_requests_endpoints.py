@@ -53,6 +53,9 @@ def create_resource_request(
 
     Args:
         resource_request: Resource request to register.
+
+    Returns:
+        The created resource request.
     """
     return zen_store().create_resource_request(resource_request)
 

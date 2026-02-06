@@ -206,7 +206,7 @@ def evaluate_all_lazy_load_args_in_client_methods(
                     args_[i] = args_[i].evaluate()
 
             for k, v in kwargs.items():
-                if isinstance(v, dict):
+                if isinstance(v, dict) and all(isinstance(k, str) for k in v):
                     with contextlib.suppress(ValueError):
                         kwargs[k] = ClientLazyLoader(**v).evaluate()
 

@@ -2016,7 +2016,6 @@ class Client(metaclass=ClientMetaClass):
         labels: Optional[Dict[str, Any]] = None,
         secrets: Optional[Sequence[Union[UUID, str]]] = None,
         environment: Optional[Dict[str, Any]] = None,
-        resource_pools: Optional[Dict[UUID, int]] = None,
     ) -> "ComponentResponse":
         """Registers a stack component.
 
@@ -2028,8 +2027,6 @@ class Client(metaclass=ClientMetaClass):
             labels: The labels of the stack component.
             secrets: The secrets of the stack component.
             environment: The environment of the stack component.
-            resource_pools: The resource pools and their priorities to attach
-                to the stack component.
 
         Returns:
             The model of the registered component.
@@ -2061,7 +2058,6 @@ class Client(metaclass=ClientMetaClass):
             labels=labels,
             secrets=secrets,
             environment=environment,
-            resource_pools=resource_pools,
         )
 
         # Register the new model
@@ -2082,8 +2078,6 @@ class Client(metaclass=ClientMetaClass):
         add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         environment: Optional[Dict[str, Any]] = None,
-        attach_resource_pools: Optional[Dict[UUID, int]] = None,
-        detach_resource_pools: Optional[List[UUID]] = None,
     ) -> ComponentResponse:
         """Updates a stack component.
 
@@ -2104,10 +2098,6 @@ class Client(metaclass=ClientMetaClass):
             environment: The environment to set on the stack component. If the
                 value for any item is None, the key will be removed from the
                 existing environment.
-            attach_resource_pools: The resource pools and their priorities to
-                attach to the stack component.
-            detach_resource_pools: The resource pools to detach from the stack
-                component.
 
         Returns:
             The updated stack component.
@@ -2208,9 +2198,6 @@ class Client(metaclass=ClientMetaClass):
             environment = dict_utils.remove_none_values(environment)
             update_model.environment = environment
 
-        update_model.attach_resource_pools = attach_resource_pools
-        update_model.detach_resource_pools = detach_resource_pools
-
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
             component_id=component.id,
@@ -2248,6 +2235,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         capacity: Dict[str, int],
         description: Optional[str] = None,
+        components: Optional[Dict[UUID, int]] = None,
     ) -> ResourcePoolResponse:
         """Create a resource pool.
 
@@ -2255,6 +2243,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the resource pool.
             capacity: The capacity of the resource pool.
             description: The description of the resource pool.
+            components: The components to attach to the resource pool.
 
         Returns:
             The created resource pool.
@@ -2263,6 +2252,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             description=description,
             capacity=capacity,
+            components=components,
         )
         return self.zen_store.create_resource_pool(resource_pool=request)
 
@@ -2344,6 +2334,8 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[UUID, str],
         description: Optional[str] = None,
         capacity: Optional[Dict[str, int]] = None,
+        attach_components: Optional[Dict[UUID, int]] = None,
+        detach_components: Optional[List[UUID]] = None,
     ) -> ResourcePoolResponse:
         """Update a resource pool.
 
@@ -2353,6 +2345,8 @@ class Client(metaclass=ClientMetaClass):
             description: The new description of the resource pool.
             capacity: The new capacity of the resource pool. Setting a value to
                 0 will remove the resource from the pool.
+            attach_components: The components to attach to the resource pool.
+            detach_components: The components to detach from the resource pool.
 
         Returns:
             The updated resource pool.
@@ -2365,6 +2359,8 @@ class Client(metaclass=ClientMetaClass):
         update_model = ResourcePoolUpdate(
             description=description,
             capacity=capacity,
+            attach_components=attach_components,
+            detach_components=detach_components,
         )
 
         return self.zen_store.update_resource_pool(

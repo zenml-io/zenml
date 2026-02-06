@@ -135,6 +135,23 @@ def publish_stopped_step_run(step_run_id: "UUID") -> "StepRunResponse":
     )
 
 
+def publish_cancelled_step_run(step_run_id: "UUID") -> "StepRunResponse":
+    """Publishes a cancelled step run.
+
+    Args:
+        step_run_id: The ID of the step run to update.
+
+    Returns:
+        The updated step run.
+    """
+    return publish_step_run_status_update(
+        step_run_id=step_run_id,
+        status=ExecutionStatus.CANCELLED,
+        end_time=utc_now(),
+        exception_info=step_exception_info.get(),
+    )
+
+
 def publish_successful_pipeline_run(
     pipeline_run_id: "UUID",
 ) -> "PipelineRunResponse":

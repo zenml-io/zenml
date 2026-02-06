@@ -53,6 +53,9 @@ def create_resource_pool(
 
     Args:
         resource_pool: Resource pool to register.
+
+    Returns:
+        The created resource pool.
     """
     return zen_store().create_resource_pool(resource_pool=resource_pool)
     # return verify_permissions_and_create_entity(
@@ -170,7 +173,7 @@ def delete_resource_pool(
     Args:
         resource_pool_id: ID of the resource pool.
     """
-    return zen_store().delete_resource_pool(resource_pool_id=resource_pool_id)
+    zen_store().delete_resource_pool(resource_pool_id=resource_pool_id)
     # verify_permissions_and_delete_entity(
     #     id=resource_pool_id,
     #     get_method=zen_store().get_resource_pool,

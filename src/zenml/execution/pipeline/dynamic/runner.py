@@ -871,9 +871,26 @@ class DynamicPipelineRunner:
 
     def await_all_step_futures(self) -> None:
         """Await all step futures."""
+        failed_steps = []
         for future in self._futures.values():
-            future.wait()
+            try:
+                future.wait()
+            except Exception as e:
+                logger.warning(
+                    "Failed to run step `%s`: %s", future.invocation_id, str(e)
+                )
+                failed_steps.append(future.invocation_id)
+
         self._futures = {}
+
+        if failed_steps:
+            # TODO: This should depend on the execution mode.
+            # We only fail after all futures have been awaited. Otherwise, we
+            # will mark the pipeline run as failed which invalidates the token
+            # and other steps won't be able to report their status back.
+            raise RuntimeError(
+                f"Failed to run step(s): {', '.join(failed_steps)}"
+            )
 
 
 def compile_dynamic_step_invocation(
