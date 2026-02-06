@@ -26,7 +26,8 @@ def test_example(
     # no /etc/passwd entry (e.g. GitHub Actions uid 1001). Setting the cache
     # dir explicitly bypasses that lookup entirely. See PyTorch Issue #140765.
     monkeypatch.setenv(
-        "__ZENML__TORCHINDUCTOR_CACHE_DIR", "/tmp/torchinductor"  # nosec B108
+        "__ZENML__TORCHINDUCTOR_CACHE_DIR",
+        "/tmp/torchinductor",  # nosec B108
     )
 
     with run_example(
