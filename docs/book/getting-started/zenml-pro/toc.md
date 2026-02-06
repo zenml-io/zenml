@@ -7,9 +7,11 @@
 * [Scenarios](scenarios.md)
   * [SaaS](saas-deployment.md)
   * [Hybrid](hybrid-deployment.md)
+    * [Prerequisites](hybrid-deployment-prerequisites.md)
     * [Kubernetes with Helm](hybrid-deployment-helm.md)
     * [AWS ECS](hybrid-deployment-ecs.md)
   * [Self-hosted](self-hosted-deployment.md)
+    * [Prerequisites](self-hosted-deployment-prerequisites.md)
     * [Kubernetes with Helm](self-hosted-deployment-helm.md)
 
 ## Manage

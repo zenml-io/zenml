@@ -28,12 +28,9 @@ In this setup:
 
 ## Prerequisites
 
-Before starting, complete the setup described in [Hybrid Deployment Overview](hybrid-deployment.md):
-- Step 1: Set up ZenML Pro organization
-- Step 2: Configure your infrastructure (database, networking, TLS)
-- Step 3: Obtain Pro credentials from ZenML Support
 
-You'll also need:
+Before starting, make sure you go through the [general prerequisites for hybrid deployments](hybrid-deployment-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for AWS ECS deployments are listed below.
+
 - AWS Account with appropriate IAM permissions
 - Basic familiarity with AWS ECS, VPC, and RDS
 
@@ -103,7 +100,7 @@ Store your Pro credentials securely:
 
 1. **OAuth2 Client Secret**
    - Secret name: `zenml/pro/oauth2-client-secret`
-   - Value: Your `ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET` from ZenML
+   - Value: Your workspace enrollment key
 
 2. (Optional) **Database Password**
    - Secret name: `zenml/rds/password`
@@ -156,10 +153,10 @@ Set these in the task definition:
 | `ZENML_SERVER_DEPLOYMENT_TYPE` | `cloud` |
 | `ZENML_SERVER_PRO_API_URL` | `https://cloudapi.zenml.io` |
 | `ZENML_SERVER_PRO_DASHBOARD_URL` | `https://cloud.zenml.io` |
-| `ZENML_SERVER_PRO_ORGANIZATION_ID` | Your organization ID from Step 1 |
-| `ZENML_SERVER_PRO_ORGANIZATION_NAME` | Your organization name from Step 1 |
-| `ZENML_SERVER_PRO_WORKSPACE_ID` | From ZenML Support |
-| `ZENML_SERVER_PRO_WORKSPACE_NAME` | Your workspace name |
+| `ZENML_SERVER_PRO_ORGANIZATION_ID` | Your organization ID from enrollment |
+| `ZENML_SERVER_PRO_ORGANIZATION_NAME` | Your organization name from enrollment |
+| `ZENML_SERVER_PRO_WORKSPACE_ID` | Your workspace ID from enrollment |
+| `ZENML_SERVER_PRO_WORKSPACE_NAME` | Your workspace name from enrollment |
 | `ZENML_SERVER_PRO_OAUTH2_AUDIENCE` | `https://cloudapi.zenml.io` |
 | `ZENML_SERVER_SERVER_URL` | `https://zenml.mycompany.com` |
 | `ZENML_DATABASE_URL` | `mysql://user:password@hostname:3306/zenml_hybrid` (MySQL only - PostgreSQL not supported) |
@@ -509,6 +506,6 @@ To remove the deployment:
 ## Related Documentation
 
 - [Hybrid Deployment Overview](hybrid-deployment.md)
-- [Self-hosted Deployment Guide](self-hosted.md)
+- [Self-hosted Deployment Overview](self-hosted-deployment.md)
 - [AWS ECS Documentation](https://docs.aws.amazon.com/ecs/)
 - [AWS RDS Documentation](https://docs.aws.amazon.com/rds/)

@@ -41,7 +41,7 @@ Zero data leaves your environment. All components, metadata, and ML artifacts re
 
 ### Complete Isolation
 
-Users authenticate via your internal identity provider (LDAP/AD/OIDC), and the control plane running in your infrastructure handles both authentication and RBAC. All communication happens entirely within your infrastructure boundary with zero external dependencies or internet connectivity required.
+Users authenticate via local password protected accounts or through your internal identity provider (LDAP/AD/OIDC), and the control plane running in your infrastructure handles both authentication and RBAC. All communication happens entirely within your infrastructure boundary with zero external dependencies or internet connectivity required.
 
 ## Key Benefits
 
@@ -75,30 +75,6 @@ Deploy in an isolated cloud VPC with no internet gateway and private networking 
 
 Deploy across multiple environments combining on-premises infrastructure with private cloud, multi-region setups for disaster recovery, or edge plus datacenter hybrid configurations. This option maintains complete isolation across all environments.
 
-## Deployment Architecture
-
-![Complete ZenML Services diagram on top of Kubernetes](.gitbook/assets/full_zenml_infra.png)
-
-The diagram above illustrates a complete Self-hosted ZenML Pro deployment with all components running within your organization's VPC. This architecture ensures zero external communication while providing full enterprise MLOps capabilities.
-
-### Architecture Components
-
-Client access includes browser-based access to the ZenML UI dashboard and connections from developer laptops or CI systems to workspaces.
-
-The Kubernetes cluster provides the compute and services layer across several namespaces. The `zenml-controlplane-namespace` contains the UI Pod (hosting the ZenML Pro dashboard, connecting to the control plane and all workspaces) and the Control Plane Pod (API Server and User Management/RBAC). The `zenml-workspace-namespace` contains the Workspace Server Pod with the ZenML Server, API Server, and Workload Manager that manages pipelines, stacks, and snapshots. The `zenml-runners-namespace` contains Runner Pods created on-demand for snapshots, and the `orchestrator-namespace` contains Orchestrator Pods for pipeline execution when using the Kubernetes orchestrator.
-
-The data and storage layer includes a MySQL database for workspace and control plane metadata (TCP 3306), an optional secrets backend such as AWS Secrets Manager or Vault, an artifact store (S3, GCS, or Azure Blob) for models, datasets, and artifacts, and a container registry (AWS ECR, Google Artifact Registry, or Azure) for pipeline images.
-
-## Pre-requisites
-
-Before deployment, ensure you have the necessary infrastructure, network, and resource requirements in place.
-
-For infrastructure, you need a Kubernetes cluster (recommended) or VM infrastructure, PostgreSQL database(s) for metadata storage, object storage or NFS for artifacts, a load balancer for HA configurations, and an identity provider (LDAP/AD/OIDC).
-
-Network requirements include internal DNS resolution, SSL/TLS certificates (internal CA), network connectivity between components, and firewall rules for inter-component communication.
-
-Resource requirements vary by deployment size. Contact [cloud@zenml.io](mailto:cloud@zenml.io) for sizing guidance based on your expected workload.
-
 ## Operations & Maintenance
 
 ### Updates & Upgrades
@@ -107,7 +83,7 @@ ZenML provides new versions as offline bundles. The update process involves rece
 
 ### Disaster Recovery
 
-Your disaster recovery plan should include PostgreSQL streaming replication to a backup site, artifact store synchronization to a DR location, version-controlled infrastructure as code for configuration backup, documented DR runbooks, and regular quarterly testing of DR procedures.
+Your disaster recovery plan should include MySQL streaming replication to a backup site, artifact store synchronization to a DR location, version-controlled infrastructure as code for configuration backup, documented DR runbooks, and regular quarterly testing of DR procedures.
 
 ## Security Hardening
 

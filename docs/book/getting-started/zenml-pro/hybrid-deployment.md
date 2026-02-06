@@ -88,7 +88,7 @@ Each workspace can be deployed in separate VPCs or networks, isolated per team, 
 
 Deploy ZenML workspaces in your infrastructure using one of the supported deployment backends: Kubernetes (recommended, including EKS, GKE, AKS, or self-managed clusters), AWS ECS, or other container orchestration platforms.
 
-Your infrastructure needs to provide a MySQL or PostgreSQL database, egress access to `cloud.zenml.io` for control plane communication, and compute resources for the ZenML server container.
+Your infrastructure needs to provide a MySQL database, egress access to `cloud.zenml.io` for control plane communication, and compute resources for the ZenML server container.
 
 For Kubernetes environments, we provide officially [supported Helm charts](https://artifacthub.io/packages/helm/zenml/zenml) to simplify deployment. For non-Kubernetes environments, we recommend managing the ZenML server lifecycle using infrastructure-as-code tools such as Terraform, Pulumi, or AWS CloudFormation.
 
@@ -128,7 +128,7 @@ Your subscription includes professional support with SLA, architecture consultat
 
 ### From ZenML OSS
 
-You can migrate from ZenML OSS by deploying a ZenML Pro-compatible workspace in your own infrastructure, starting from your existing ZenML OSS workspace deployment if you have one. The process involves updating your Docker image to the latest Pro Hybrid image provided by ZenML, setting required environment variables according to the ZenML Pro documentation (such as `ZENML_PRO_CONTROL_PLANE_URL`, `ZENML_PRO_CONTROL_PLANE_CLIENT_ID`, secrets, and SSO configuration), and restarting your deployment to apply these changes. After that, migrate your users and teams, then run `zenml login` to authenticate via [cloud.zenml.io](https://cloud.zenml.io) and connect your SDK clients to the new workspace.
+You can migrate from ZenML OSS by deploying a ZenML Pro-compatible workspace in your own infrastructure, starting from your existing ZenML OSS workspace deployment if you have one. The process involves updating your Docker image to the latest Pro Hybrid image provided by ZenML, setting required environment variables according to the ZenML Pro documentation and restarting your deployment to apply these changes. After that, migrate your users and teams, then run `zenml login` to authenticate via [cloud.zenml.io](https://cloud.zenml.io) and connect your SDK clients to the new workspace.
 
 ### From SaaS to Hybrid
 

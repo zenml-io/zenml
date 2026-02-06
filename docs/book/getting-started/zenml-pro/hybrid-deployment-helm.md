@@ -1,5 +1,5 @@
 ---
-description: Deploy ZenML Pro Hybrid using Kubernetes and Helm charts.
+description: Deploy ZenML Pro workspaces on Kubernetes with Helm and enroll them in the ZenML Pro control plane
 layout:
   title:
     visible: true
@@ -13,557 +13,231 @@ layout:
     visible: true
 ---
 
-# Hybrid Deployment on Kubernetes with Helm
+# Self-hosted Deployment on Kubernetes with Helm
 
-This guide provides step-by-step instructions for deploying ZenML Pro in a Hybrid setup using Kubernetes and Helm charts. In this deployment model, the Workspace Server runs in your infrastructure while the Control Plane is managed by ZenML.
+This guide provides step-by-step instructions for deploying ZenML Pro workspaces on Kubernetes using Helm and enrolling them in the ZenML Pro control plane.
 
-<!-- DIAGRAM: Hybrid deployment architecture showing Control Plane (ZenML) connected to Workspace Server (your K8s cluster), database, and workload manager pods -->
-
-**What you'll configure:**
-- Workspace Server with database connection
-- Network connectivity to ZenML Control Plane
-- Workload manager for running pipelines from the UI
-- TLS/SSL certificates and domain name
 
 ## Prerequisites
 
-- Kubernetes cluster (1.24+) - EKS, GKE, AKS, or self-managed
-- `kubectl` configured to access your cluster
-- `helm` CLI (3.0+) installed
-- A domain name and TLS certificate for your ZenML server
-- MySQL database (managed or self-hosted)
-- Outbound HTTPS access to `cloudapi.zenml.io`
+Before starting, make sure you go through the [general prerequisites for hybrid deployments](hybrid-deployment-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for Kubernetes with Helm deployments are listed below.
+
+**Infrastructure:**
+- Kubernetes cluster (1.24+)
+
+**Network:**
+- Load balancer, network gateway or Ingress controllers etc. 
+- Internal DNS resolution
+- TLS certificates signed by your internal CA (or self-signed)
+- Network connectivity between cluster components
 
 **Tools (on a machine with internet access for initial setup):**
-- Docker
 - Helm (3.0+)
-- Access to pull ZenML Pro images from private registries (contact [cloud@zenml.io](mailto:cloud@zenml.io))
 
-Before starting, complete the setup described in [Hybrid Deployment Overview](hybrid-deployment.md):
-- Step 1: Set up ZenML Pro organization
-- Step 2: Configure your infrastructure (database, networking, TLS)
-- Step 3: Obtain Pro credentials from ZenML Support
+## Install the ZenML Pro Workspace Servers
 
-## Step 1: Prepare Helm Chart and docker images
+### Step 1: Create Kubernetes Secrets
 
-### Pull Container Images
-
-Access and pull from the ZenML Pro container registries:
-
-1. Authenticate to the ZenML Pro container registries (AWS ECR or GCP Artifact Registry)
-   - Use the credentials that you provided to the ZenML Support to access the private zenml container registry
-
-2. Pull all required images:
-   - **Workspace Server image (AWS ECR):**
-     - `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>`
-   - **Workspace Server image (GCP Artifact Registry):**
-     - `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server:<version>`
-   - **Client image (for pipelines):**
-     - `zenmldocker/zenml:<version>`
-
-   Example pull commands (AWS ECR):
-   ```bash
-   docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<version>
-   docker pull zenmldocker/zenml:<version>
-   ```
-
-   Example pull commands (GCP Artifact Registry):
-   ```bash
-   docker pull europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server:<version>
-   docker pull zenmldocker/zenml:<version>
-   ```
-
-### Pull Helm chart
-
-For OCI-based Helm charts, you can either pull the chart or install directly. To pull the chart first:
+If you are using an internal container registry, you may need to create a secret to allow the ZenML Pro workspace servers to pull the images. The following is an example of how to do this:
 
 ```bash
-helm pull oci://public.ecr.aws/zenml/zenml --version <ZENML_OSS_VERSION>
+# Create namespace for ZenML Pro
+kubectl create namespace zenml-pro-workspace
+
+# Create secret for internal registry credentials (if needed)
+kubectl -n zenml-pro-workspace create secret docker-registry image-pull-secret \
+  --docker-server=internal-registry.mycompany.com \
+  --docker-username=<your-username> \
+  --docker-password=<your-password>
 ```
 
-Alternatively, you can install directly from OCI (see Step 3 below).
+You'll use this secret in the next step when configuring the Helm values for the ZenML Pro workspace server.
 
-## Step 2: Create Helm Values File
+### Step 2: Configure Helm Values for Workspace Server
 
-Create a file `zenml-hybrid-values.yaml` with your configuration:
+{% hint style="info" %}
+The ZenML Pro workspace server is developed on top of the open-source ZenML server and inherits all its features and deployment options. This deployment also uses the open-source ZenML Helm chart, with the only notable differences being that the ZenML Pro workspace server is configured to connect to the ZenML Pro control plane and uses a different container image that is released separately from the open-source ZenML server.
+{% endhint %}
+
+The example below is a basic configuration for the ZenML Pro control plane Helm chart. For a full list of configurable values and documentation, also see the [OSS ZenML Helm chart on ArtifactHub](https://artifacthub.io/packages/helm/zenml/zenml).
+
+For advanced deployment configurations, you can also consult the [Deploy with Helm](https://docs.zenml.io/deploying-zenml/deploying-zenml/deploy-with-helm) documentation, which covers topics such as:
+* database configuration options
+* external secrets store backends (AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, HashiCorp Vault)
+* database backup strategies
 
 ```yaml
-# ZenML Server Configuration
+# Set up imagePullSecrets to authenticate to the container registry where the
+# ZenML Pro container images are hosted, if necessary (see the previous step)
+imagePullSecrets:
+  - name: image-pull-secret
+
 zenml:
-  # Analytics (optional)
-  analyticsOptIn: false
+    analyticsOptIn: false
+    threadPoolSize: 10
+    database:
+        maxOverflow: "-1"
+        poolSize: "10"
+        # Note: Workspace servers only support MySQL, not PostgreSQL
+        url: mysql://zenml_workspace_user:password@mysql.internal.mycompany.com:3306/zenml_workspace
+    image:
+      # Change this to point to your own container repository
+      repository: internal-registry.mycompany.com/zenml/zenml-pro-server
+      # Or use this for direct GAR access:
+      # repository: europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server
+      # Or use this for direct AWS ECR access:
+      # repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
 
-  # Thread pool size for concurrent operations
-  threadPoolSize: 20
+      # Use this only to override the default image tag whose default value is
+      # the same as the Helm chart appVersion.
+      # tag: <ZENML_PRO_VERSION>
 
-  # Database Configuration
-  # Note: Workspace servers only support MySQL, not PostgreSQL
-  database:
-    maxOverflow: "-1"
-    poolSize: "10"
 
-    url: mysql://<user>:<password>@<host>:<port>/<database>
+    # The external URL where the ZenML Pro control plane API and UI are reachable.
+    #
+    # This should be set to the hostname that is associated with the Ingress
+    # controller, load balancer or any other network gateway.
+    serverURL: https://zenml-workspace.internal.mycompany.com
 
-  # Image Configuration
-  image:
-    repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
+    # Ingress configuration, if you are using an Ingress controller.
+    ingress:
+        enabled: true
+        # Use the same hostname configured in `serverURL`
+        host: zenml-workspace.internal.mycompany.com
 
-  # Server URL (your actual domain)
-  serverURL: https://zenml.mycompany.com
+    # ZenML Pro configuration - this is the only configuration that is specific
+    # to ZenML Pro.
+    pro:
+        enabled: true
 
-  # Ingress Configuration
-  ingress:
-    enabled: true
-    host: zenml.mycompany.com
+        # The URL where the ZenML Pro control plane API is reachable.
+        # Only set this if you are using a self-hosted ZenML Pro control plane.
+        # Leave unset to use the default value of https://cloudapi.zenml.io
+        # if you are using a hybrid SaaS/self-hosted deployment.
+        apiURL: https://zenml-pro.internal.mycompany.com/api/v1
 
-  # Pro Hybrid Configuration
-  pro:
-    # ZenML Control Plane endpoints
-    apiURL: https://cloudapi.zenml.io
-    dashboardURL: https://cloud.zenml.io
-    enabled: true
-    enrollmentKey: <your-enrollment-key>
-    # Your organization details
-    organizationID: <your-org-id>
-    organizationName: <your-org-name>
-    # Workspace details (provided by ZenML)
-    workspaceID: <your-workspace-id>
-    workspaceName: <your-workspace-name>
+        # The URL where the ZenML Pro control plane UI is reachable.
+        # Only set this if you are using a self-hosted ZenML Pro control plane.
+        # Leave unset to use the default value of https://cloud.zenml.io
+        # if you are using a hybrid SaaS/self-hosted deployment.
+        dashboardURL: https://zenml-pro.internal.mycompany.com
 
-  # Replica count
-  replicaCount: 1
+        # These are the details obtained from the control plane when enrolling
+        # the workspace.
+        enrollmentKey: <enrollment-key-from-control-plane>
+        organizationID: <your-organization-id>
+        organizationName: <your-organization-name>
+        workspaceID: <your-workspace-id>
+        workspaceName: <your-workspace-name>
 
-  # Secrets Store Configuration
-  secretsStore:
-    sql:
-      encryptionKey: <your-encryption-key>  # 32-byte hex string
-    type: sql
+    # Replica count - use at least 2 for high availability
+    replicaCount: 1
 
-# Resource Limits (adjust to your needs)
+    # Secrets store configuration
+    secretsStore:
+        sql:
+            encryptionKey: <generate-a-64-character-hex-key>
+        type: sql
+
+# These are the minimum resources required for the ZenML server. You can
+# adjust them to your needs.
 resources:
-  limits:
-    memory: 800Mi
-  requests:
-    cpu: 100m
-    memory: 450Mi
+    limits:
+        memory: 800Mi
+    requests:
+        cpu: 100m
+        memory: 450Mi
 ```
 
 **Minimum required settings:**
 
 * the database credentials (`zenml.database.url`)
-* the URL (`zenml.serverURL`) and Ingress hostname (`zenml.ingress.host`) where the ZenML Hybrid workspace server will be reachable
+* the URL (`zenml.serverURL`) and Ingress hostname (`zenml.ingress.host`) where the ZenML Pro workspace server will be reachable
 * the Pro configuration (`zenml.pro.*`) with your organization and workspace details
 
 **Additional relevant settings:**
 
-* configure container registry credentials (`imagePullSecrets`) if your cluster cannot authenticate directly to the ZenML Pro container registry
+* configure container registry credentials (`imagePullSecrets`) if your cluster needs to authenticate to the container registry
 * injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificates used by the ZenML Pro services are signed by a custom Certificate Authority
 * configure HTTP proxy settings (`zenml.proxy`)
 * custom container image repository location (`zenml.image.repository`)
 * additional Ingress settings (`zenml.ingress`)
 * Kubernetes resources allocated to the pods (`resources`)
 
-## Step 3: Deploy with Helm
+### Step 3: Deploy the ZenML Pro Workspace Server with Helm
 
-Install the ZenML chart directly from OCI:
+Using the remote Helm chart, if you have access to the internet:
 
 ```bash
 helm install zenml oci://public.ecr.aws/zenml/zenml \
-  --namespace zenml-hybrid \
+  --version <ZENML_OSS_VERSION> \
+  --namespace zenml-workspace \
   --create-namespace \
-  --values zenml-hybrid-values.yaml \
-  --version <ZENML_OSS_VERSION>
+  --values zenml-workspace-values.yaml
 ```
 
-Or if you pulled the chart in Step 1, install from the local file:
+Using the local Helm chart, if you have downloaded the chart previously:
 
 ```bash
+# Deploy workspace
 helm install zenml ./zenml-<ZENML_OSS_VERSION>.tgz \
-  --namespace zenml-hybrid \
+  --namespace zenml-workspace \
   --create-namespace \
-  --values zenml-hybrid-values.yaml
+  --values zenml-workspace-values.yaml
 ```
 
-Monitor the deployment:
+Verify deployment:
 
 ```bash
-kubectl -n zenml-hybrid get pods -w
+kubectl -n zenml-workspace get pods
+kubectl -n zenml-workspace get svc
+kubectl -n zenml-workspace get ingress
 ```
 
-Wait for the pod to be running:
+### Access the Workspace UI
+
+1. Open the ZenML Pro control plane UI in your browser
+2. Sign in with your organization credentials
+3. You should see your workspace running and ready to use in the organization it was enrolled in
+
+### Access the Workspaces from ZenML CLI
+
+To login to a workspace with the ZenML CLI:
 
 ```bash
-kubectl -n zenml-hybrid get pods
-# Output should show:
-# NAME                    READY   STATUS    RESTARTS   AGE
-# zenml-5c4b6d9dcd-7bhfp  1/1     Running   0          2m
+zenml login <WORKSPACE_NAME>
 ```
 
-## Step 4: Verify the Deployment
+### (Optional) Enable Snapshot Support / Workload Manager
 
-### Check Service is Running
-
-```bash
-kubectl -n zenml-hybrid get svc
-kubectl -n zenml-hybrid get ingress
-```
-
-### Verify Control Plane Connection
-
-```bash
-kubectl -n zenml-hybrid logs deployment/zenml | tail -20
-```
-
-Look for messages indicating successful connection to the control plane.
-
-### Test HTTPS Connectivity
-
-```bash
-curl -k https://zenml.mycompany.com/health
-# Should return 200 OK with a JSON response
-```
-
-### Access the Dashboard
-
-1. Navigate to `https://zenml.mycompany.com` in your browser
-2. You should be redirected to ZenML Cloud login
-3. Sign in with your organization credentials
-4. You should see your workspace listed
-
-## Step 5: Configure Workload Manager
-
-The Workspace Server includes a workload manager that enables running pipelines directly from the ZenML Pro UI. This requires the workspace server to have access to a Kubernetes cluster where ad-hoc runner pods can be created.
+The Workspace Server includes a workload manager feature that enables running pipelines directly from the ZenML Pro UI. This requires the workspace server to have access to a Kubernetes cluster where ad-hoc runner pods can be created.
 
 {% hint style="warning" %}
-Snapshots are only available from ZenML workspace server version 0.90.0 onwards.
+The workload manager feature and snapshots are only available from ZenML workspace server version 0.90.0 onwards.
 {% endhint %}
 
-### 1. Create Kubernetes Resources for Workload Manager
+If you want to enable snapshot support for the ZenML Pro workspace server, you need to follow the instructions in the [Enable Snapshot Support](self-hosted-deployment-helm-snapshots.md) guide.
 
-Create a dedicated namespace and service account:
+## Day 2 Operations
 
-```bash
-kubectl create namespace zenml-workspace-namespace
-kubectl -n zenml-workspace-namespace create serviceaccount zenml-workspace-service-account
-```
+For information on upgrading ZenML Pro components, see the [Upgrades & Updates](upgrades-updates.md) guide.
 
-### 2. Configure Workload Manager in Helm Values
+## Related Resources
 
-Add environment variables to your `zenml-hybrid-values.yaml`:
+- [Self-hosted Deployment Overview](self-hosted-deployment.md)
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [MySQL Documentation](https://dev.mysql.com/doc/)
+- [Helm Documentation](https://helm.sh/docs/)
 
-**Option A: Kubernetes-based (Simplest)**
+## Support
 
-```yaml
-zenml:
-    environment:
-        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
-```
+For self-hosted and hybrid SaaS/self-hosted deployments, contact ZenML Support:
+- Email: [cloud@zenml.io](mailto:cloud@zenml.io)
+- Provide: Deployment status, configuration details and any error logs
 
-**Option B: AWS-based (if running on EKS)**
+Request from ZenML Support:
+- Pre-deployment architecture consultation
+- Offline support packages
+- Update bundles and release notes
+- Security documentation (SBOM, vulnerability reports)
 
-```yaml
-zenml:
-    environment:
-        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: <your-ecr-registry>
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS: "true"
-        ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET: s3://your-bucket/zenml-logs
-        ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION: us-east-1
-```
-
-**Option C: GCP-based (if running on GKE)**
-
-```yaml
-zenml:
-    environment:
-        ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: <your-gcr-registry>
-```
-
-### 3. Configure Pod Resources (Optional but Recommended)
-
-```yaml
-zenml:
-    environment:
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
-        ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED: 86400
-        ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS: 5
-```
-
-### 4. Redeploy with Updated Values
-
-```bash
-helm upgrade zenml oci://public.ecr.aws/zenml/zenml \
-  --namespace zenml-hybrid \
-  --values zenml-hybrid-values.yaml \
-  --version <ZENML_OSS_VERSION>
-```
-
-## Domain Name
-
-You'll need an FQDN for the ZenML Hybrid workspace server.
-
-* **FQDN Setup**\
-  Obtain a Fully Qualified Domain Name (FQDN) (e.g., `zenml.mycompany.com`) from your DNS provider.
-  * Identify the external Load Balancer IP address of the Ingress controller using the command `kubectl get svc -n <ingress-namespace>`. Look for the `EXTERNAL-IP` field of the Load Balancer service.
-  * Create a DNS `A` record (or `CNAME` for subdomains) pointing the FQDN to the Load Balancer IP. Example:
-    * Host: `zenml.mycompany.com`
-    * Type: `A`
-    * Value: `<Load Balancer IP>`
-  * Use a DNS propagation checker to confirm that the DNS record is resolving correctly.
-
-{% hint style="warning" %}
-Make sure you don't use a simple DNS prefix for the server (e.g. `https://zenml.cluster` is not recommended). Always use a fully qualified domain name (FQDN) (e.g. `https://zenml.ml.cluster`). The TLS certificates will not be accepted by some browsers otherwise (e.g. Chrome).
-{% endhint %}
-
-## SSL Certificate
-
-The ZenML Hybrid workspace server does not terminate SSL traffic. It is your responsibility to generate and configure the necessary SSL certificates for the workspace server.
-
-### Obtaining SSL Certificates
-
-Acquire an SSL certificate for the domain. You can use:
-
-* A commercial SSL certificate provider (e.g., DigiCert, Sectigo).
-* Free services like [Let's Encrypt](https://letsencrypt.org/) for domain validation and issuance.
-* Self-signed certificates (not recommended for production environments). **IMPORTANT**: If you are using self-signed certificates, you will need to install the CA certificate on every client machine that connects to the workspace server.
-
-### Configuring SSL Termination
-
-Once the SSL certificate is obtained, configure your load balancer or Ingress controller to terminate HTTPS traffic:
-
-**For NGINX Ingress Controller**:
-
-You can configure SSL termination globally for the NGINX Ingress Controller by setting up a default SSL certificate or configuring it at the ingress controller level, or you can specify SSL certificates when configuring the ingress in the ZenML server Helm values.
-
-Here's how you can do it globally:
-
-1.  **Create a TLS Secret**
-
-    Store your SSL certificate and private key as a Kubernetes TLS secret in the namespace where the NGINX Ingress Controller is deployed.
-
-    ```bash
-    kubectl create secret tls default-ssl-secret \
-      --cert=/path/to/tls.crt \
-      --key=/path/to/tls.key \
-      -n <nginx-ingress-namespace>
-    ```
-
-2.  **Update NGINX Ingress Controller Configurations**
-
-    Configure the NGINX Ingress Controller to use the default SSL certificate.
-
-    *   If using the NGINX Ingress Controller Helm chart, modify the `values.yaml` file or use `--set` during installation:
-
-        ```yaml
-        controller:
-          extraArgs:
-            default-ssl-certificate: <nginx-ingress-namespace>/default-ssl-secret
-        ```
-
-        Or directly pass the argument during Helm installation or upgrade:
-
-        ```bash
-        helm upgrade --install ingress-nginx ingress-nginx \
-          --repo https://kubernetes.github.io/ingress-nginx \
-          --namespace <nginx-ingress-namespace> \
-          --set controller.extraArgs.default-ssl-certificate=<nginx-ingress-namespace>/default-ssl-secret
-        ```
-
-    *   If the NGINX Ingress Controller was installed manually, edit its deployment to include the argument in the `args` section of the container:
-
-        ```yaml
-        spec:
-          containers:
-          - name: controller
-            args:
-              - --default-ssl-certificate=<nginx-ingress-namespace>/default-ssl-secret
-        ```
-
-**For Traefik**:
-
-*   Configure Traefik to use TLS by creating a certificate resolver for Let's Encrypt or specifying the certificates manually in the `traefik.yml` or `values.yaml` file. Example for Let's Encrypt:
-
-    ```yaml
-    tls:
-      certificatesResolvers:
-        letsencrypt:
-          acme:
-            email: your-email@example.com
-            storage: acme.json
-            httpChallenge:
-              entryPoint: web
-    entryPoints:
-      web:
-        address: ":80"
-      websecure:
-        address: ":443"
-    ```
-
-* Reference the domain in your IngressRoute or Middleware configuration.
-
-{% hint style="warning" %}
-If you used a custom CA certificate to sign the TLS certificates for the ZenML Hybrid workspace server, you will need to install the CA certificates on every client machine.
-{% endhint %}
-
-### Configure Ingress in Helm Values
-
-After setting up SSL termination at the ingress controller level, configure the ZenML Helm values to use ingress:
-
-**For NGINX:**
-
-```yaml
-zenml:
-  ingress:
-    enabled: true
-    className: nginx
-    host: zenml.mycompany.com
-    annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    tls:
-      enabled: true
-      secretName: zenml-tls
-```
-
-**For Traefik:**
-
-```yaml
-zenml:
-  ingress:
-    enabled: true
-    className: traefik
-    host: zenml.mycompany.com
-    annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      traefik.ingress.kubernetes.io/router.tls: "true"
-    tls:
-      enabled: true
-      secretName: zenml-tls
-```
-
-## Database Backup Strategy (Optional)
-
-ZenML supports backing up the database before migrations are performed. Configure the backup strategy in your values file:
-
-```yaml
-zenml:
-  database:
-    # Backup strategy: in-memory (default), dump-file, database, or disabled
-    backupStrategy: in-memory
-    # For dump-file strategy with persistent storage:
-    # backupPVStorageClass: standard
-    # backupPVStorageSize: 1Gi
-    # For database strategy (MySQL only):
-    # backupDatabase: "zenml_backup"
-```
-
-{% hint style="info" %}
-Local SQLite persistence (`zenml.database.persistence`) is only relevant when not using an external MySQL database. For hybrid deployments with external MySQL, configure backups at the database level.
-{% endhint %}
-
-## Scaling & High Availability
-
-### Multiple Replicas
-
-```yaml
-zenml:
-  replicaCount: 3
-```
-
-### Horizontal Pod Autoscaler
-
-```yaml
-autoscaling:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 80
-```
-
-## Monitoring & Logging
-
-### Debug Logging
-
-Enable verbose debug logging in the ZenML server:
-
-```yaml
-zenml:
-  debug: true  # Sets ZENML_LOGGING_VERBOSITY to DEBUG
-```
-
-### Collecting Logs
-
-View server logs with:
-
-```bash
-kubectl -n zenml-hybrid logs deployment/zenml -f
-```
-
-## Updating the Deployment
-
-### Update Configuration
-
-1. Modify `zenml-hybrid-values.yaml`
-2. Upgrade with Helm:
-
-```bash
-helm upgrade zenml oci://public.ecr.aws/zenml/zenml \
-  --namespace zenml-hybrid \
-  --values zenml-hybrid-values.yaml \
-  --version <ZENML_OSS_VERSION>
-```
-
-### Upgrade ZenML Version
-
-1. Check available versions:
-
-For the latest available ZenML Helm chart versions, visit: https://artifacthub.io/packages/helm/zenml/zenml
-
-
-2. Update values file with new version
-3. Upgrade:
-
-```bash
-helm upgrade zenml oci://public.ecr.aws/zenml/zenml \
-  --namespace zenml-hybrid \
-  --values zenml-hybrid-values.yaml \
-  --version <new-version>
-```
-
-## Troubleshooting
-
-### Pod won't start
-
-```bash
-kubectl -n zenml-hybrid describe pod zenml-xxxxx
-kubectl -n zenml-hybrid logs zenml-xxxxx
-```
-
-## Uninstalling
-
-```bash
-helm uninstall zenml --namespace zenml-hybrid
-kubectl delete namespace zenml-hybrid
-```
-
-## Next Steps
-
-- [Configure your organization in ZenML Cloud](https://cloud.zenml.io)
-- [Set up users and teams](organization.md)
-- [Configure stacks and service connectors](https://docs.zenml.io/stacks)
-- [Run your first pipeline](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
-
-## Related Documentation
-
-- [Hybrid Deployment Overview](hybrid-deployment.md)
-- [Self-hosted Deployment Guide](self-hosted.md)
-- [ZenML Helm Chart Documentation](https://artifacthub.io/packages/helm/zenml/zenml)
