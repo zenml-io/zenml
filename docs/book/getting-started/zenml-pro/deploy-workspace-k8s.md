@@ -228,6 +228,67 @@ kubectl -n zenml-workspace get svc
 kubectl -n zenml-workspace get ingress
 ```
 
+### Step 4: Install Internal CA Certificates
+
+If the TLS certificates used by the ZenML Pro workspace server are signed by a custom Certificate Authority, you need to install the CA certificates on every machine that needs to access the ZenML workspace server.
+
+#### System-wide Installation
+
+On all client machines that will access the ZenML workspace server:
+
+1. Obtain your internal CA certificate
+2. Install it in the system certificate store:
+   - **Linux**: Copy to `/usr/local/share/ca-certificates/` and run `update-ca-certificates`
+   - **macOS**: Use `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain <cert.pem>`
+   - **Windows**: Use `certutil -addstore "Root" cert.pem`
+
+3. For some browsers (e.g., Chrome), updating the system's CA certificates is not enough. You will also need to import the CA certificates into the browser.
+
+4. For Python/ZenML client:
+   ```bash
+   export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+   ```
+
+#### For Containerized Pipelines
+
+When running containerized pipelines with ZenML, you'll need to install the CA certificates into the container images built by ZenML. Customize the build process via [DockerSettings](https://docs.zenml.io/how-to/customize-docker-builds):
+
+1. Create a custom Dockerfile:
+   ```dockerfile
+   # Use the original ZenML client image as a base image
+   FROM zenmldocker/zenml:<zenml-version>
+
+   # Install certificates
+   COPY my-custom-ca.crt /usr/local/share/ca-certificates/
+   RUN update-ca-certificates
+
+   ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+   ```
+
+2. Build and push the image to your internal registry:
+   ```bash
+   docker build -t internal-registry.mycompany.com/zenml/zenml:<zenml-version> .
+   docker push internal-registry.mycompany.com/zenml/zenml:<zenml-version>
+   ```
+
+3. Update your ZenML pipeline code to use the custom image:
+   ```python
+   from zenml.config import DockerSettings
+   from zenml import __version__
+
+   # Define the custom base image
+   CUSTOM_BASE_IMAGE = f"internal-registry.mycompany.com/zenml/zenml:{__version__}"
+
+   docker_settings = DockerSettings(
+       parent_image=CUSTOM_BASE_IMAGE,
+   )
+
+   @pipeline(settings={"docker": docker_settings})
+   def my_pipeline() -> None:
+       ...
+   ```
+
+
 ### Access the Workspace UI
 
 1. Open the ZenML Pro control plane UI in your browser

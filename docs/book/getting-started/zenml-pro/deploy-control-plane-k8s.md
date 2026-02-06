@@ -275,71 +275,10 @@ curl -X POST "https://zenml-pro.my.domain/api/v1/users?username=superuser&passwo
 
 Now that the ZenML Pro control plane is onboarded, you can deploy and enroll one or more workspaces.
 
-To deploy and enroll a workspace, you can use the process covered in the [Deploying Workspaces](deploy-workspaces.md) section. Make sure to use the ZenML Pro control plane URLs you used for the self-hosted deployment:
+To deploy and enroll a workspace, you can use the process covered in the [Deploying Workspaces](deploy-workspace-k8s.md) section. Make sure to use the ZenML Pro control plane URLs you used for the self-hosted deployment:
 
 * ZenML Pro control plane UI: https://zenml-pro.internal.mycompany.com
-* ZenML Pro control plane API: https://zenml-pro.internal.mycompany.com/api/v1
-
-
-### Step 6: Install Internal CA Certificates
-
-If the TLS certificates used by the ZenML Pro workspace server are signed by a custom Certificate Authority, you need to install the CA certificates on every machine that needs to access the ZenML workspace server.
-
-#### System-wide Installation
-
-On all client machines that will access the ZenML workspace server:
-
-1. Obtain your internal CA certificate
-2. Install it in the system certificate store:
-   - **Linux**: Copy to `/usr/local/share/ca-certificates/` and run `update-ca-certificates`
-   - **macOS**: Use `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain <cert.pem>`
-   - **Windows**: Use `certutil -addstore "Root" cert.pem`
-
-3. For some browsers (e.g., Chrome), updating the system's CA certificates is not enough. You will also need to import the CA certificates into the browser.
-
-4. For Python/ZenML client:
-   ```bash
-   export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
-   ```
-
-#### For Containerized Pipelines
-
-When running containerized pipelines with ZenML, you'll need to install the CA certificates into the container images built by ZenML. Customize the build process via [DockerSettings](https://docs.zenml.io/how-to/customize-docker-builds):
-
-1. Create a custom Dockerfile:
-   ```dockerfile
-   # Use the original ZenML client image as a base image
-   FROM zenmldocker/zenml:<zenml-version>
-
-   # Install certificates
-   COPY my-custom-ca.crt /usr/local/share/ca-certificates/
-   RUN update-ca-certificates
-
-   ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
-   ```
-
-2. Build and push the image to your internal registry:
-   ```bash
-   docker build -t internal-registry.mycompany.com/zenml/zenml:<zenml-version> .
-   docker push internal-registry.mycompany.com/zenml/zenml:<zenml-version>
-   ```
-
-3. Update your ZenML pipeline code to use the custom image:
-   ```python
-   from zenml.config import DockerSettings
-   from zenml import __version__
-
-   # Define the custom base image
-   CUSTOM_BASE_IMAGE = f"internal-registry.mycompany.com/zenml/zenml:{__version__}"
-
-   docker_settings = DockerSettings(
-       parent_image=CUSTOM_BASE_IMAGE,
-   )
-
-   @pipeline(settings={"docker": docker_settings})
-   def my_pipeline() -> None:
-       ...
-   ```
+* ZenML Pro control plane API: https://zenml-pro.internal.mycompany.com/api/v1s
 
 ## Access the Workspaces from ZenML CLI
 
