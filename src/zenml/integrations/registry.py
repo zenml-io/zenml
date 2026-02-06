@@ -102,7 +102,14 @@ class IntegrationRegistry(object):
         for name, integration in self._integrations.items():
             if integration.check_installation():
                 logger.debug(f"Activating integration `{name}`...")
-                integration.activate()
+                try:
+                    integration.activate()
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to activate integration `{name}`: "
+                        f"{type(e).__name__}: {e}"
+                    )
+                    continue
                 logger.debug(f"Integration `{name}` is activated.")
             else:
                 logger.debug(f"Integration `{name}` could not be activated.")

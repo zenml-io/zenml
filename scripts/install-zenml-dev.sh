@@ -112,6 +112,12 @@ install_integrations() {
     if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ]; then
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
+
+    # Ignore pytorch-family integrations on Windows (torch DLL loading is unreliable)
+    os_name=$(python -c "import platform; print(platform.system())")
+    if [ "$os_name" = "Windows" ]; then
+        ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning deepchecks"
+    fi
     
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""

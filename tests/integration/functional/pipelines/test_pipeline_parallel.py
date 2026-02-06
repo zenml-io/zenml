@@ -14,6 +14,7 @@
 import pathlib
 import platform
 import subprocess
+import sys
 from typing import List
 from uuid import uuid1
 
@@ -38,17 +39,23 @@ class TestArtifactsManagement:
             threads.append(
                 subprocess.Popen(
                     [
-                        "python3",
+                        sys.executable,
                         pathlib.Path(__file__).parent.resolve()
                         / "util_parallel_pipeline_script.py",
                         run_prefix,
                         str(i),
                         str(steps_count),
-                    ]
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                 )
             )
-        for thread in threads:
+        for idx, thread in enumerate(threads):
             thread.wait()
+            assert thread.returncode == 0, (
+                f"Subprocess {idx} failed (exit {thread.returncode})\n"
+                f"stderr: {thread.stderr.read().decode() if thread.stderr else ''}"
+            )
 
         for i in range(runs_count):
             res = clean_client.get_pipeline_run(f"{run_prefix}_{i}")
@@ -78,16 +85,22 @@ def test_parallel_runs_get_different_run_indexes(clean_client: Client):
         processes.append(
             subprocess.Popen(
                 [
-                    "python3",
+                    sys.executable,
                     pathlib.Path(__file__).parent.resolve()
                     / "run_basic_pipeline.py",
-                ]
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
         )
-    for process in processes:
+    for idx, process in enumerate(processes):
         process.wait()
+        assert process.returncode == 0, (
+            f"Subprocess {idx} failed (exit {process.returncode})\n"
+            f"stderr: {process.stderr.read().decode() if process.stderr else ''}"
+        )
 
-    runs = clean_client.list_pipeline_runs()
+    runs = clean_client.list_pipeline_runs(size=50)
     assert len(runs) == 10
 
     run_indexes = {r.index for r in runs}
