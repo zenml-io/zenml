@@ -217,45 +217,6 @@ def update_logs(
     )
 
 
-@router.put(
-    "/{logs_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def update_logs(
-    logs_id: UUID,
-    logs_update: LogsUpdate,
-    _: AuthContext = Security(authorize),
-) -> LogsResponse:
-    """Update an existing log model.
-
-    Args:
-        logs_id: ID of the log model to update.
-        logs_update: Update to apply to the log model.
-
-    Returns:
-        The updated log model.
-    """
-    if logs_update.pipeline_run_id:
-        verify_permission_for_model(
-            model=zen_store().get_run(logs_update.pipeline_run_id),
-            action=Action.UPDATE,
-        )
-    elif logs_update.step_run_id:
-        step = zen_store().get_run_step(logs_update.step_run_id)
-        verify_permission_for_model(
-            model=zen_store().get_run(step.pipeline_run_id),
-            action=Action.UPDATE,
-        )
-
-    return verify_permissions_and_update_entity(
-        id=logs_id,
-        update_model=logs_update,
-        get_method=zen_store().get_logs,
-        update_method=zen_store().update_logs,
-    )
-
-
 @router.get(
     "/{logs_id}/entries",
     responses={401: error_response, 404: error_response, 422: error_response},
