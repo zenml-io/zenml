@@ -12,12 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import torch
-from torch.utils.data.dataloader import DataLoader
-from torch.utils.data.dataset import TensorDataset
+import pytest
 
-from tests.unit.test_general import _test_materializer
-from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (
+torch = pytest.importorskip("torch")
+from torch.utils.data.dataloader import DataLoader  # noqa: E402
+from torch.utils.data.dataset import TensorDataset  # noqa: E402
+
+from tests.unit.test_general import _test_materializer  # noqa: E402
+from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (  # noqa: E402
     PyTorchDataLoaderMaterializer,
 )
 

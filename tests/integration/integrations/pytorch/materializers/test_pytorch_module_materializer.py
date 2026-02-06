@@ -12,10 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from torch.nn import Linear
+import pytest
 
-from tests.unit.test_general import _test_materializer
-from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (
+pytest.importorskip("torch")
+from torch.nn import Linear  # noqa: E402
+
+from tests.unit.test_general import _test_materializer  # noqa: E402
+from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (  # noqa: E402
     PyTorchModuleMaterializer,
 )
 

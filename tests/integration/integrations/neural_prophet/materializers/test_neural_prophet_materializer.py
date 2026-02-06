@@ -14,10 +14,12 @@
 
 import numpy as np
 import pandas as pd
-from neuralprophet import NeuralProphet
+import pytest
 
-from tests.unit.test_general import _test_materializer
-from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (
+NeuralProphet = pytest.importorskip("neuralprophet").NeuralProphet
+
+from tests.unit.test_general import _test_materializer  # noqa: E402
+from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (  # noqa: E402
     NeuralProphetMaterializer,
 )
 
