@@ -19,7 +19,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 import requests
-
 from pydantic import BaseModel, ConfigDict
 
 from zenml.enums import LoggingLevels
@@ -248,7 +247,9 @@ class DatadogLogStore(OtelLogStore):
                 logs_id=str(logs_model.id),
                 pos=after_pos,
             )
-            return LogsEntriesResponse(items=items, before=None, after=after_token)
+            return LogsEntriesResponse(
+                items=items, before=None, after=after_token
+            )
 
         cursor_pos = None
         if before is not None:
@@ -279,11 +280,11 @@ class DatadogLogStore(OtelLogStore):
             if after_pos is not None
             else None
         )
-        return LogsEntriesResponse(items=items, before=before_token, after=after_token)
+        return LogsEntriesResponse(
+            items=items, before=before_token, after=after_token
+        )
 
-    def _encode_cursor(
-        self, *, logs_id: str, pos: Dict[str, Any]
-    ) -> str:
+    def _encode_cursor(self, *, logs_id: str, pos: Dict[str, Any]) -> str:
         cursor = DatadogLogStoreCursor(logs_id=logs_id, pos=pos)
         data = json.dumps(
             cursor.model_dump(mode="json"),
@@ -292,9 +293,7 @@ class DatadogLogStore(OtelLogStore):
         ).encode("utf-8")
         return base64.urlsafe_b64encode(data).decode("ascii").rstrip("=")
 
-    def _decode_cursor(
-        self, *, token: str, logs_id: str
-    ) -> Dict[str, Any]:
+    def _decode_cursor(self, *, token: str, logs_id: str) -> Dict[str, Any]:
         padded = token + "=" * (-len(token) % 4)
         raw = base64.urlsafe_b64decode(padded.encode("ascii"))
         decoded = json.loads(raw.decode("utf-8"))

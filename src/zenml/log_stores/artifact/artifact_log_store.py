@@ -479,7 +479,7 @@ class ArtifactLogStore(OtelLogStore):
         filter_: LogsEntriesFilter,
     ) -> LogsEntriesResponse:
         """Fetch log entries.
-        
+
         Args:
             logs_model: The logs model containing metadata about the logs.
             limit: Maximum number of log entries to return.
@@ -494,7 +494,7 @@ class ArtifactLogStore(OtelLogStore):
             raise ValueError(
                 "logs_model.uri is required for ArtifactLogStore.fetch_entries()."
             )
-    
+
         if not logs_model.artifact_store_id:
             raise ValueError(
                 "logs_model.artifact_store_id is required for "
@@ -568,11 +568,11 @@ class ArtifactLogStore(OtelLogStore):
             if after_pos is not None
             else None
         )
-        return LogsEntriesResponse(items=items, before=before_token, after=after_token)
+        return LogsEntriesResponse(
+            items=items, before=before_token, after=after_token
+        )
 
-    def _encode_cursor(
-        self, *, logs_id: str, pos: Dict[str, Any]
-    ) -> str:
+    def _encode_cursor(self, *, logs_id: str, pos: Dict[str, Any]) -> str:
         cursor = ArtifactLogStoreCursor(
             logs_id=logs_id,
             pos=ArtifactLogStoreCursorPos.model_validate(pos),

@@ -107,9 +107,7 @@ class LogsEntriesFilter(BaseModel):
     @model_validator(mode="after")
     def validate_filter(self) -> "LogsEntriesFilter":
         """Validate and normalize filter fields."""
-        if (
-            self.search is not None and self.search.strip() == ""
-        ):
+        if self.search is not None and self.search.strip() == "":
             self.search = None
         if self.since is not None and self.until is not None:
             if self.since > self.until:

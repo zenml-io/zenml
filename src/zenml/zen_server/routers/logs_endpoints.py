@@ -29,25 +29,17 @@ from zenml.utils.logging_utils import (
     LOGS_ENTRIES_API_MAX_LIMIT,
     fetch_logs_entries,
 )
-from zenml.exceptions import IllegalOperationError
-from zenml.models import LogsRequest, LogsResponse, LogsUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_update_entity,
-    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
     dehydrate_response_model,
-    verify_permission_for_model,
-)
-from zenml.zen_server.rbac.models import Action
-from zenml.zen_server.rbac.utils import (
-    batch_verify_permissions_for_models,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import async_fastapi_endpoint_wrapper, zen_store

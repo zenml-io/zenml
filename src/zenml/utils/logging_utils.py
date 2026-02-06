@@ -17,7 +17,6 @@ import logging
 import os
 import threading
 from contextvars import ContextVar
-from datetime import datetime
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -29,8 +28,7 @@ from typing import (
     Union,
     cast,
 )
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -549,7 +547,9 @@ def fetch_logs_entries(
             artifact_store=artifact_store
         )
     else:
-        raise ValueError("Logs response does not have a log store or artifact store.")
+        raise ValueError(
+            "Logs response does not have a log store or artifact store."
+        )
 
     try:
         return log_store.fetch_entries(
