@@ -93,6 +93,8 @@ class ExecutionStatus(StrEnum):
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    CANCELLING = "cancelling"
+    CANCELLED = "cancelled"
     STOPPED = "stopped"
     STOPPING = "stopping"
 
@@ -109,6 +111,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.CACHED,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
+            ExecutionStatus.CANCELLED,
         }
 
     @property
@@ -127,7 +130,7 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a failed execution.
         """
-        return self in {ExecutionStatus.FAILED}
+        return self in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
 
 
 class LoggingLevels(Enum):
@@ -583,8 +586,9 @@ class ResourceRequestStatus(StrEnum):
     """Resource request statuses."""
 
     PENDING = "pending"
-    ACQUIRING = "acquiring"
     ACQUIRED = "acquired"
+    PREEMPTING = "preempting"
+    PREEMPTED = "preempted"
     REJECTED = "rejected"
     CANCELLED = "cancelled"
     RELEASED = "released"

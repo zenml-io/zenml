@@ -355,7 +355,11 @@ class StepLauncher:
                             step_run_id=step_run.id
                         )
 
-                        if (
+                        if step_run.status == ExecutionStatus.CANCELLING:
+                            publish_utils.publish_cancelled_step_run(
+                                step_run_id=step_run.id
+                            )
+                        elif (
                             isinstance(e, StepHeartBeatTerminationException)
                             or step_run.status == ExecutionStatus.STOPPING
                         ):
@@ -572,7 +576,7 @@ class StepLauncher:
         Args:
             step_run_info: Additional information needed to run the step.
         """
-        self._wait_until_resource_request_approved(step_run_info)
+        self._acquire_resources_if_necessary(step_run_info)
 
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
@@ -619,27 +623,25 @@ class StepLauncher:
             step_run_info=step_run_info,
         )
 
-    def _wait_until_resource_request_approved(
+    def _acquire_resources_if_necessary(
         self, step_run_info: StepRunInfo
     ) -> None:
-        """Waits until a resource request is approved.
+        """Acquires resources if necessary.
 
         Args:
-            resource_request_id: The ID of the resource request.
+            step_run_info: Step run information.
 
         Raises:
-            RuntimeError: If the resource request was rejected or cancelled.
+            RuntimeError: If the resources could not be acquired.
         """
-        # resource_settings = self._step.config.settings.get("resources", None)
-        # if resource_settings and (
-        #     required_gpu_count := getattr(resource_settings, "gpu_count", 0)
-        # ):
-        if True:
+        # resource_settings = self._step.config.resource_settings
+        # required_gpu_count = resource_settings.gpu_count or 0
+        required_gpu_count = 1
+        if required_gpu_count > 0:
             publish_utils.publish_step_run_status_update(
                 step_run_id=step_run_info.step_run_id,
                 status=ExecutionStatus.QUEUED,
             )
-            required_gpu_count = 1
             resource_request = Client().zen_store.create_resource_request(
                 ResourceRequestRequest(
                     component_id=self._stack.orchestrator.id,
@@ -660,6 +662,8 @@ class StepLauncher:
                         resource_request.id,
                         step_run_info.pipeline_step_name,
                     )
+                    # TODO: start date should be set here, not on initial
+                    # creation.
                     publish_utils.publish_step_run_status_update(
                         step_run_id=step_run_info.step_run_id,
                         status=ExecutionStatus.RUNNING,
@@ -670,6 +674,15 @@ class StepLauncher:
                     raise RuntimeError(
                         f"Resource request `{resource_request.id}` for step "
                         f"`{step_run_info.pipeline_step_name}` was rejected: "
+                        f"{reason}"
+                    )
+                elif (
+                    resource_request.status == ResourceRequestStatus.PREEMPTED
+                ):
+                    reason = resource_request.status_reason or "Unknown reason"
+                    raise RuntimeError(
+                        f"Resource request `{resource_request.id}` for step "
+                        f"`{step_run_info.pipeline_step_name}` was preempted: "
                         f"{reason}"
                     )
                 elif (

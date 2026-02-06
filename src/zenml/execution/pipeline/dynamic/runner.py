@@ -559,10 +559,30 @@ class DynamicPipelineRunner:
         return MapResultsFuture(futures=step_run_futures)
 
     def await_all_step_run_futures(self) -> None:
-        """Await all step run output futures."""
+        """Await all step run output futures.
+
+        Raises:
+            RuntimeError: If any step failed to run.
+        """
+        failed_steps = []
         for future in self._futures:
-            future.result()
+            try:
+                future.result()
+            except Exception as e:
+                logger.warning(
+                    "Failed to run step `%s`: %s", future.invocation_id, str(e)
+                )
+                failed_steps.append(future.invocation_id)
+
         self._futures = []
+
+        if failed_steps:
+            # We only fail after all futures have been awaited. Otherwise, we
+            # will mark the pipeline run as failed which invalidates the token
+            # and other steps won't be able to report their status back.
+            raise RuntimeError(
+                f"Failed to run step(s): {', '.join(failed_steps)}"
+            )
 
 
 def compile_dynamic_step_invocation(

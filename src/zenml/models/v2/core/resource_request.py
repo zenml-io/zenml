@@ -19,11 +19,13 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
     TypeVar,
+    Union,
 )
 from uuid import UUID
 
-from pydantic import Field, NonNegativeInt
+from pydantic import Field, PositiveInt, model_validator
 
 from zenml.enums import ResourceRequestStatus
 from zenml.models.v2.base.base import BaseUpdate
@@ -37,7 +39,14 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import ComponentResponse, StepRunResponse
+    from sqlalchemy.sql.elements import ColumnElement
+
+    from zenml.models import (
+        ComponentResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
+    from zenml.models.v2.core.resource_pool import ResourcePoolResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -56,9 +65,18 @@ class ResourceRequestRequest(UserScopedRequest):
         title="The id of the step run that is requesting the resources.",
         default=None,
     )
-    requested_resources: Dict[str, NonNegativeInt] = Field(
+    requested_resources: Dict[str, PositiveInt] = Field(
         title="The resources requested."
     )
+
+    @model_validator(mode="after")
+    def _validate_requested_resources(self) -> "ResourceRequestRequest":
+        if not self.requested_resources:
+            raise ValueError(
+                "Resource requests with no requested resources are not allowed."
+            )
+
+        return self
 
 
 # ------------------ Update Model ------------------
@@ -82,15 +100,15 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
     status: ResourceRequestStatus = Field(
         title="The status of the resource request."
     )
+    status_reason: Optional[str] = Field(
+        title="The reason for the status of the resource request.",
+        default=None,
+    )
 
 
 class ResourceRequestResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for resource requests."""
 
-    status_reason: Optional[str] = Field(
-        title="The reason for the status of the resource request.",
-        default=None,
-    )
     requested_resources: Dict[str, int] = Field(
         title="The resources requested."
     )
@@ -104,6 +122,16 @@ class ResourceRequestResponseResources(UserScopedResponseResources):
     )
     step_run: Optional["StepRunResponse"] = Field(
         title="The step run that is requesting the resources.", default=None
+    )
+    pipeline_run: Optional["PipelineRunResponse"] = Field(
+        title="The pipeline run that is requesting the resources.",
+        default=None,
+    )
+    preempted_by: Optional["ResourceRequestResponse"] = Field(
+        title="The request that preempted this request.", default=None
+    )
+    running_in_pool: Optional["ResourcePoolResponse"] = Field(
+        title="The pool that the resource request is running in.", default=None
     )
 
 
@@ -151,7 +179,7 @@ class ResourceRequestResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().status_reason
+        return self.get_body().status_reason
 
     @property
     def component(self) -> "ComponentResponse":
@@ -171,6 +199,33 @@ class ResourceRequestResponse(
         """
         return self.get_resources().step_run
 
+    @property
+    def pipeline_run(self) -> Optional["PipelineRunResponse"]:
+        """The `pipeline_run` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().pipeline_run
+
+    @property
+    def preempted_by(self) -> Optional["ResourceRequestResponse"]:
+        """The `preempted_by` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().preempted_by
+
+    @property
+    def running_in_pool(self) -> Optional["ResourcePoolResponse"]:
+        """The `running_in_pool` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().running_in_pool
+
 
 # ------------------ Filter Model ------------------
 
@@ -180,17 +235,56 @@ class ResourceRequestFilter(UserScopedFilter):
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "pipeline_run_id",
     ]
 
-    component_id: Optional[UUID] = Field(
+    component_id: Union[UUID, str, None] = Field(
         default=None,
         description="The id of the component that is requesting the resources.",
     )
-    step_run_id: Optional[UUID] = Field(
+    step_run_id: Union[UUID, str, None] = Field(
         default=None,
         description="The id of the step run that is requesting the resources.",
     )
-    status: Optional[ResourceRequestStatus] = Field(
+    preempted_by_id: Union[UUID, str, None] = Field(
+        default=None,
+        description="The id of the request that preempted this request.",
+    )
+    status: Union[ResourceRequestStatus, str, None] = Field(
         default=None,
         description="The status of the resource request.",
     )
+    pipeline_run_id: Union[UUID, str, None] = Field(
+        default=None,
+        description="The id of the pipeline run that is requesting the resources.",
+    )
+
+    def get_custom_filters(
+        self,
+        table: Type["AnySchema"],
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters(table)
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            ResourceRequestSchema,
+            StepRunSchema,
+        )
+
+        if self.pipeline_run_id:
+            pipeline_run_filter = and_(
+                ResourceRequestSchema.step_run_id == StepRunSchema.id,
+                StepRunSchema.pipeline_run_id == self.pipeline_run_id,
+            )
+            custom_filters.append(pipeline_run_filter)
+
+        return custom_filters

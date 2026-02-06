@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing resource pools."""
 
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -21,8 +22,15 @@ from typing import (
     Optional,
     TypeVar,
 )
+from uuid import UUID
 
-from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    NonNegativeInt,
+    PositiveInt,
+    model_validator,
+)
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
@@ -41,9 +49,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-
-
-# ------------------ Request Model ------------------
 
 
 class ResourcePoolComponentResponse(ComponentResponse):
@@ -67,6 +72,34 @@ class ResourcePoolComponentResponse(ComponentResponse):
         )
 
 
+class ResourcePoolAllocation(BaseModel):
+    """Resource pool allocation."""
+
+    request: "ResourceRequestResponse" = Field(
+        title="The request that is allocated to the resource pool.",
+    )
+    priority: int = Field(
+        title="The priority of the component in the resource pool.",
+    )
+    allocated_at: datetime = Field(
+        title="The time the resource pool was allocated.",
+    )
+
+
+class ResourcePoolQueueItem(BaseModel):
+    """Resource pool queue item."""
+
+    request: "ResourceRequestResponse" = Field(
+        title="The request that is queued for the resource pool.",
+    )
+    priority: int = Field(
+        title="The priority of the request in the resource pool.",
+    )
+
+
+# ------------------ Request Model ------------------
+
+
 class ResourcePoolRequest(UserScopedRequest):
     """Request model for resource pool creation."""
 
@@ -80,6 +113,10 @@ class ResourcePoolRequest(UserScopedRequest):
     )
     capacity: Dict[str, PositiveInt] = Field(
         title="The capacity of the resource pool.",
+    )
+    components: Optional[Dict[UUID, int]] = Field(
+        title="The components to attach to the resource pool.",
+        default=None,
     )
 
     @model_validator(mode="after")
@@ -107,6 +144,14 @@ class ResourcePoolUpdate(BaseUpdate):
         title="The capacity of the resource pool.",
         description="The capacity of the resource pool. Setting a value to 0 "
         "will remove the resource from the pool.",
+        default=None,
+    )
+    attach_components: Optional[Dict[UUID, int]] = Field(
+        title="The components to attach to the resource pool.",
+        default=None,
+    )
+    detach_components: Optional[List[UUID]] = Field(
+        title="The components to detach from the resource pool.",
         default=None,
     )
 
@@ -140,7 +185,10 @@ class ResourcePoolResponseResources(UserScopedResponseResources):
     components: List["ResourcePoolComponentResponse"] = Field(
         title="The components assigned to the resource pool.",
     )
-    queued_requests: List["ResourceRequestResponse"] = Field(
+    active_requests: List["ResourcePoolAllocation"] = Field(
+        title="The active requests for the resource pool.",
+    )
+    queued_requests: List["ResourcePoolQueueItem"] = Field(
         title="The queued requests for the resource pool.",
     )
 
@@ -205,13 +253,22 @@ class ResourcePoolResponse(
         return self.get_resources().components
 
     @property
-    def queued_requests(self) -> List["ResourceRequestResponse"]:
+    def queued_requests(self) -> List["ResourcePoolQueueItem"]:
         """The `queued_requests` property.
 
         Returns:
             the value of the property.
         """
         return self.get_resources().queued_requests
+
+    @property
+    def active_requests(self) -> List["ResourcePoolAllocation"]:
+        """The `active_requests` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().active_requests
 
 
 # ------------------ Filter Model ------------------

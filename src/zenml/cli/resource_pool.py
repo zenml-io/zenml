@@ -22,12 +22,13 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     OutputFormat,
     convert_structured_str_to_dict,
+    get_default_output_format,
     list_options,
 )
 from zenml.client import Client
 from zenml.console import console
-from zenml.enums import CliCategories
-from zenml.models import ResourcePoolFilter
+from zenml.enums import CliCategories, StackComponentType
+from zenml.models import Page, ResourcePoolFilter, ResourceRequestResponse
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -36,8 +37,17 @@ def resource_pool() -> None:
 
 
 def _parse_capacity(capacity: str) -> Dict[str, int]:
-    """Parse a JSON/YAML capacity string into int values."""
+    """Parse a JSON/YAML capacity string into int values.
 
+    Args:
+        capacity: The capacity string to parse.
+
+    Raises:
+        ValueError: If the capacity string is invalid.
+
+    Returns:
+        A dictionary of resource types and their capacities.
+    """
     raw = convert_structured_str_to_dict(capacity)
     parsed: Dict[str, int] = {}
     for key, value in raw.items():
@@ -55,6 +65,7 @@ def _parse_capacity(capacity: str) -> Dict[str, int]:
 @click.argument("name", type=str, required=True)
 @click.option(
     "--capacity",
+    "-c",
     type=str,
     required=True,
     help="Resource pool capacity in JSON or YAML. "
@@ -62,6 +73,7 @@ def _parse_capacity(capacity: str) -> Dict[str, int]:
 )
 @click.option(
     "--description",
+    "-d",
     type=str,
     required=False,
     help="Optional description for the resource pool.",
@@ -99,6 +111,7 @@ def create_resource_pool(
 @click.argument("name_id_or_prefix", type=str, required=True)
 @click.option(
     "--capacity",
+    "-c",
     type=str,
     required=False,
     help=(
@@ -108,6 +121,7 @@ def create_resource_pool(
 )
 @click.option(
     "--description",
+    "-d",
     type=str,
     required=False,
     help="Updated description for the resource pool.",
@@ -229,3 +243,177 @@ def delete_resource_pool(name_id_or_prefix: str, yes: bool = False) -> None:
             cli_utils.exception(err)
         else:
             cli_utils.declare(f"Deleted resource pool `{name_id_or_prefix}`.")
+
+
+@resource_pool.command(
+    "attach",
+    help="Attach a component to a resource pool.",
+)
+@click.argument("resource_pool", type=str, required=True)
+@click.argument("component", type=str, required=True)
+@click.option(
+    "--priority",
+    "-p",
+    type=int,
+    required=True,
+    help="Priority of this pool for the component. Higher means preferred.",
+)
+def attach_component_to_resource_pool(
+    resource_pool: str,
+    component: str,
+    priority: int,
+) -> None:
+    """Attach a component to a resource pool.
+
+    Args:
+        resource_pool: Name, ID or prefix of the resource pool.
+        component: Name, ID or prefix of the component.
+        priority: Priority of the assignment.
+    """
+    with console.status("Attaching component to resource pool...\n"):
+        try:
+            pool = Client().get_resource_pool(
+                name_id_or_prefix=resource_pool, hydrate=False
+            )
+            component_model = Client().get_stack_component(
+                name_id_or_prefix=component,
+                component_type=StackComponentType.ORCHESTRATOR,
+                allow_name_prefix_match=False,
+                hydrate=False,
+            )
+            Client().update_resource_pool(
+                name_id_or_prefix=pool.id,
+                attach_components={component_model.id: priority},
+            )
+        except Exception as err:
+            cli_utils.exception(err)
+        else:
+            cli_utils.declare(
+                f"Attached component `{component_model.name}` to resource pool "
+                f"`{pool.name}` with priority {priority}."
+            )
+
+
+@resource_pool.command(
+    "detach",
+    help="Detach a component from a resource pool.",
+)
+@click.argument("resource_pool", type=str, required=True)
+@click.argument("component", type=str, required=True)
+def detach_component_from_resource_pool(
+    resource_pool: str,
+    component: str,
+) -> None:
+    """Detach a component from a resource pool.
+
+    Args:
+        resource_pool: Name, ID or prefix of the resource pool.
+        component: Name, ID or prefix of the component.
+    """
+    with console.status("Detaching component from resource pool...\n"):
+        try:
+            pool = Client().get_resource_pool(
+                name_id_or_prefix=resource_pool, hydrate=False
+            )
+            component_model = Client().get_stack_component(
+                name_id_or_prefix=component,
+                component_type=StackComponentType.ORCHESTRATOR,
+                allow_name_prefix_match=False,
+                hydrate=False,
+            )
+            Client().update_resource_pool(
+                name_id_or_prefix=pool.id,
+                detach_components=[component_model.id],
+            )
+        except Exception as err:
+            cli_utils.exception(err)
+        else:
+            cli_utils.declare(
+                f"Detached component `{component_model.name}` from resource "
+                f"pool `{pool.name}`."
+            )
+
+
+@resource_pool.command(
+    "requests",
+    help="List queued and/or active resource requests for a resource pool.",
+)
+@click.argument("pool", type=str, required=True)
+@click.option(
+    "--view",
+    type=click.Choice(["queued", "active", "all"]),
+    default="all",
+    show_default=True,
+    help="Which requests to show for this pool.",
+)
+@click.option(
+    "--columns",
+    "-c",
+    type=str,
+    default="id,state,status,component,step_run,created",
+    help="Comma-separated list of columns to display, or 'all' for all columns.",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
+    default=get_default_output_format(),
+    help="Output format for the list.",
+)
+def list_resource_pool_requests(
+    pool: str,
+    view: str,
+    columns: str,
+    output_format: OutputFormat,
+) -> None:
+    """List queued and/or active resource requests for a resource pool.
+
+    Args:
+        pool: Name, ID or prefix of the resource pool.
+        view: Which requests to show ("queued", "active", or "all").
+        columns: Output columns.
+        output_format: Output format.
+    """
+    with console.status("Loading resource pool requests...\n"):
+        pool_model = Client().get_resource_pool(
+            name_id_or_prefix=pool, hydrate=True
+        )
+
+    if view == "queued":
+        items = list(item.request for item in pool_model.queued_requests)
+        state_by_id = {r.id: "queued" for r in items}
+    elif view == "active":
+        items = list(item.request for item in pool_model.active_requests)
+        state_by_id = {r.id: "active" for r in items}
+    else:
+        active = list(item.request for item in pool_model.active_requests)
+        queued = list(item.request for item in pool_model.queued_requests)
+        items = [*active, *queued]
+        state_by_id = {r.id: "active" for r in active}
+        state_by_id.update({r.id: "queued" for r in queued})
+
+    page: Page["ResourceRequestResponse"] = Page(
+        index=1,
+        max_size=max(1, len(items)),
+        total_pages=1,
+        total=len(items),
+        items=items,
+    )
+
+    def _row_with_state(item: Any, _: OutputFormat) -> dict[str, Any]:
+        return {"state": state_by_id.get(item.id, "unknown")}
+
+    cli_utils.print_page(
+        page=page,
+        columns=columns,
+        output_format=output_format,
+        row_formatter=_row_with_state,
+        empty_message=(
+            f"No {view} resource requests found for resource pool "
+            f"`{pool_model.name}`."
+            if view != "all"
+            else "No resource requests found for resource pool "
+            f"`{pool_model.name}`."
+        ),
+    )

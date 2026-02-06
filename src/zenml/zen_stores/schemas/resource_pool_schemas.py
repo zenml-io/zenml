@@ -18,9 +18,9 @@ from typing import Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint, desc
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, col
+from sqlmodel import Field, Relationship, and_, col, select
 
 from zenml.enums import ResourceRequestStatus
 from zenml.models import (
@@ -37,7 +37,11 @@ from zenml.models import (
     ResourceRequestResponseResources,
     ResourceRequestUpdate,
 )
-from zenml.models.v2.core.resource_pool import ResourcePoolComponentResponse
+from zenml.models.v2.core.resource_pool import (
+    ResourcePoolAllocation,
+    ResourcePoolComponentResponse,
+    ResourcePoolQueueItem,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -69,6 +73,16 @@ class ResourcePoolRequestQueueSchema(BaseSchema, table=True):
                 "request_id",
             ],
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "pool_id",
+                "claim_expires_at",
+                "priority",
+                "request_created",
+                "request_id",
+            ],
+        ),
         build_index(table_name=__tablename__, column_names=["request_id"]),
     )
 
@@ -88,8 +102,81 @@ class ResourcePoolRequestQueueSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+    request: "ResourceRequestSchema" = Relationship()
     priority: int
     request_created: datetime = Field(default_factory=utc_now)
+    claim_token: Optional[UUID] = Field(default=None, nullable=True)
+    claim_expires_at: Optional[datetime] = Field(default=None, nullable=True)
+
+
+class ResourcePoolAllocationSchema(BaseSchema, table=True):
+    """Resource pool allocation schema."""
+
+    __tablename__ = "resource_pool_allocation"
+    __table_args__ = (
+        UniqueConstraint(
+            "request_id",
+            name="unique_resource_pool_allocation_request_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "pool_id",
+                "released_at",
+                "allocated_at",
+                "request_id",
+            ],
+        ),
+    )
+
+    pool_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="resource_pool",
+        source_column="pool_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    request_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="resource_request",
+        source_column="request_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    request: "ResourceRequestSchema" = Relationship()
+    allocated_at: datetime = Field(default_factory=utc_now)
+    released_at: Optional[datetime] = Field(default=None, nullable=True)
+
+    @property
+    def priority(self) -> int:
+        """Fetch the priority for this allocation.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The priority for this allocation.
+        """
+        if session := object_session(self):
+            return session.execute(
+                select(ResourcePoolAssignmentSchema.priority)
+                .where(
+                    ResourcePoolAssignmentSchema.resource_pool_id
+                    == self.pool_id
+                )
+                .where(ResourceRequestSchema.id == self.request_id)
+                .where(
+                    ResourcePoolAssignmentSchema.component_id
+                    == ResourceRequestSchema.component_id
+                )
+                .limit(1)
+            ).scalar_one()
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch priority for allocation."
+            )
 
 
 class ResourcePoolAssignmentSchema(BaseSchema, table=True):
@@ -101,6 +188,10 @@ class ResourcePoolAssignmentSchema(BaseSchema, table=True):
             "component_id",
             "resource_pool_id",
             name="unique_component_id_resource_pool_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["resource_pool_id", "priority", "component_id"],
         ),
         build_index(
             table_name=__tablename__,
@@ -170,13 +261,26 @@ class ResourcePoolSchema(NamedSchema, table=True):
         }
     )
 
-    queued_requests: List["ResourceRequestSchema"] = Relationship(
-        link_model=ResourcePoolRequestQueueSchema,
+    queue_items: List["ResourcePoolRequestQueueSchema"] = Relationship(
         sa_relationship_kwargs={
             "order_by": (
                 desc(col(ResourcePoolRequestQueueSchema.priority)),
                 ResourcePoolRequestQueueSchema.request_created,
                 ResourcePoolRequestQueueSchema.request_id,
+            ),
+            "passive_deletes": True,
+        },
+    )
+    allocations: List["ResourcePoolAllocationSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": lambda: and_(
+                col(ResourcePoolSchema.id)
+                == col(ResourcePoolAllocationSchema.pool_id),
+                col(ResourcePoolAllocationSchema.released_at).is_(None),
+            ),
+            "order_by": (
+                desc(col(ResourcePoolAllocationSchema.allocated_at)),
+                ResourcePoolAllocationSchema.request_id,
             ),
             "passive_deletes": True,
         },
@@ -203,10 +307,30 @@ class ResourcePoolSchema(NamedSchema, table=True):
         """
         options = []
 
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(jl_arg(ResourcePoolSchema.resources)),
+                ]
+            )
+
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(ResourcePoolSchema.user)),
+                    selectinload(
+                        jl_arg(ResourcePoolSchema.assigned_components)
+                    ).joinedload(
+                        jl_arg(ResourcePoolAssignmentSchema.component)
+                    ),
+                    selectinload(
+                        jl_arg(ResourcePoolSchema.queue_items)
+                    ).joinedload(
+                        jl_arg(ResourcePoolRequestQueueSchema.request)
+                    ),
+                    selectinload(
+                        jl_arg(ResourcePoolSchema.allocations)
+                    ).joinedload(jl_arg(ResourcePoolAllocationSchema.request)),
+                    selectinload(jl_arg(ResourcePoolSchema.user)),
                 ]
             )
 
@@ -287,12 +411,31 @@ class ResourcePoolSchema(NamedSchema, table=True):
                 )
                 for a in self.assigned_components
             ]
+            # TODO: We shouldn't include metadata/resources here.
+            queued_requests = [
+                ResourcePoolQueueItem(
+                    request=i.request.to_model(
+                        include_metadata=True, include_resources=True
+                    ),
+                    priority=i.priority,
+                )
+                for i in self.queue_items
+            ]
+            active_requests = [
+                ResourcePoolAllocation(
+                    request=a.request.to_model(
+                        include_metadata=True, include_resources=True
+                    ),
+                    priority=a.priority,
+                    allocated_at=a.allocated_at,
+                )
+                for a in self.allocations
+            ]
             resources = ResourcePoolResponseResources(
                 user=self.user.to_model() if self.user else None,
                 components=components,
-                # TODO: include more info here
-                queued_requests=[r.to_model() for r in self.queued_requests],
-                # TODO: maybe include current active requests as well?
+                queued_requests=queued_requests,
+                active_requests=active_requests,
             )
 
         return ResourcePoolResponse(
@@ -331,6 +474,15 @@ class ResourceRequestSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    # TODO: Rename to `preemption_initiated_by_id`
+    preempted_by_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=__tablename__,
+        source_column="preempted_by_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -341,13 +493,92 @@ class ResourceRequestSchema(BaseSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship()
     component: "StackComponentSchema" = Relationship()
-    step_run: Optional["StepRunSchema"] = Relationship()
+    step_run: Optional["StepRunSchema"] = Relationship(
+        back_populates="resource_request"
+    )
+    preempted_by: Optional["ResourceRequestSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "foreign_keys": "[ResourceRequestSchema.preempted_by_id]",
+            "remote_side": "ResourceRequestSchema.id",
+        }
+    )
 
     requested_resources: List["ResourceRequestResourceSchema"] = Relationship(
         back_populates="request",
     )
     status: str
     status_reason: Optional[str] = Field(default=None, nullable=True)
+
+    @property
+    def running_in_pool(self) -> Optional["ResourcePoolSchema"]:
+        """Get the pool that the resource request is running in.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The pool that the resource request is running in.
+        """
+        if session := object_session(self):
+            return session.execute(
+                select(ResourcePoolSchema)
+                .join(
+                    ResourcePoolAllocationSchema,
+                    col(ResourcePoolAllocationSchema.pool_id)
+                    == ResourcePoolSchema.id,
+                )
+                .where(col(ResourcePoolAllocationSchema.request_id) == self.id)
+                .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
+                .limit(1)
+            ).scalar_one_or_none()
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch pool for resource request."
+            )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get the query options for the schema.
+
+        Args:
+            include_metadata: Whether metadata will be included when converting
+                the schema to a model.
+            include_resources: Whether resources will be included when
+                converting the schema to a model.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+        Returns:
+            A list of query options.
+        """
+        options = []
+
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(
+                        jl_arg(ResourceRequestSchema.requested_resources)
+                    ),
+                ]
+            )
+
+        if include_resources:
+            options.extend(
+                [
+                    selectinload(jl_arg(ResourceRequestSchema.component)),
+                    selectinload(
+                        jl_arg(ResourceRequestSchema.step_run)
+                    ).joinedload(jl_arg(StepRunSchema.pipeline_run)),
+                    selectinload(jl_arg(ResourceRequestSchema.preempted_by)),
+                    selectinload(jl_arg(ResourceRequestSchema.user)),
+                ]
+            )
+
+        return options
 
     @classmethod
     def from_request(
@@ -367,6 +598,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
             component_id=request.component_id,
             step_run_id=request.step_run_id,
             status=ResourceRequestStatus.PENDING.value,
+            preempted_by_id=None,
         )
 
     def update(
@@ -407,12 +639,12 @@ class ResourceRequestSchema(BaseSchema, table=True):
             updated=self.updated,
             user_id=self.user_id,
             status=ResourceRequestStatus(self.status),
+            status_reason=self.status_reason,
         )
 
         metadata = None
         if include_metadata:
             metadata = ResourceRequestResponseMetadata(
-                status_reason=self.status_reason,
                 requested_resources={
                     r.key: r.amount for r in self.requested_resources
                 },
@@ -420,10 +652,24 @@ class ResourceRequestSchema(BaseSchema, table=True):
 
         resources = None
         if include_resources:
+            # TODO: Combined with the `include_resources=True` for all requests
+            # of a pool response, this creates quite a bit of overhead.
+            running_in_pool = (
+                self.running_in_pool.to_model()
+                if self.running_in_pool
+                else None
+            )
             resources = ResourceRequestResponseResources(
                 user=self.user.to_model() if self.user else None,
                 component=self.component.to_model(),
                 step_run=self.step_run.to_model() if self.step_run else None,
+                pipeline_run=self.step_run.pipeline_run.to_model()
+                if self.step_run
+                else None,
+                preempted_by=self.preempted_by.to_model()
+                if self.preempted_by
+                else None,
+                running_in_pool=running_in_pool,
             )
 
         return ResourceRequestResponse(
@@ -485,37 +731,3 @@ class ResourcePoolResourceSchema(BaseSchema, table=True):
     key: str
     total: int
     occupied: int = 0
-
-
-class ResourcePoolAllocationSchema(BaseSchema, table=True):
-    """Resource pool allocation schema."""
-
-    __tablename__ = "resource_pool_allocation"
-    __table_args__ = (
-        UniqueConstraint(
-            "request_id",
-            name="unique_resource_pool_allocation_request_id",
-        ),
-        build_index(
-            table_name=__tablename__, column_names=["pool_id", "released_at"]
-        ),
-    )
-
-    pool_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ResourcePoolSchema.__tablename__,
-        source_column="pool_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    request_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ResourceRequestSchema.__tablename__,
-        source_column="request_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    allocated_at: datetime = Field(default_factory=utc_now)
-    released_at: Optional[datetime] = Field(default=None, nullable=True)
