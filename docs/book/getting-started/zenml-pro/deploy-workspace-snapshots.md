@@ -15,7 +15,7 @@ layout:
 
 # Enable Snapshot (Workload Manager) Support for the Workspace Server
 
-The Workspace Server includes a Workload Manager feature that allows running pipelines directly from the ZenML Pro UI. This feature requires access to a Kubernetes cluster where ad-hoc runner pods can be created.
+The Workspace Server includes a Workload Manager feature that allows running pipelines directly from the ZenML Pro UI. This feature requires access to a Kubernetes cluster where ad-hoc pipeline runner pods can be created.
 
 {% hint style="warning" %}
 Snapshots are only available from ZenML Pro Workspace Server version 0.90.0 onwards
@@ -29,30 +29,21 @@ Basic requirements:
 - Service accounts with RBAC permissions to create/manage pods
 - Image pull secrets for the service accounts
 
-### Supported Implementations
+### Understanding Snapshot Sub-features
+
+Running pipelines from the UI relies on running Kubernetes jobs (aka "runner" jobs) that are responsible for launching the pipelines in the same manner as when running them from the CLI or SDK. These jobs need to use container images with the correct Python package dependencies to be able to launch the pipelines. There are several ways to achieve this and you'll need to choose the one that best fits your needs:
+
+1. **Reuse snapshot container images**: the same pipeline container images that are built for the snapshot being run can also be used for the "runner" jobs. For this to work, you have to grant the "runner" jobs pull access to all container registries where these images are stored (i.e. the Container Registries used in your ZenML Stacks).
+2. **Build "runner" container images on-demand**: in this variant, the Workspace Server will launch additional Kubernetes jobs to build the "runner" images when needed and push them to a configured container registry. It requires these "builder" Kubernetes jobs to have push permissions to a private container registry and the "runner" jobs to have pull access to the same container registry.
+3. **Use pre-built "runner" image**: you can provide a single pre-built "runner" image (stored by you in a container registry) for all runs. This is the simplest and fastest option, but you have to ensure that the image has all the correct Python package dependencies to be able to launch the pipelines.
+
+**Store logs externally**: By default, logs shown in the ZenML Pro UI are extracted from the "runner" job pods. Since pods may disappear, you can configure external log storage where these logs will be stored. Currently, this is only supported with the AWS implementation. If you enable this, you need to configure the S3 bucket and region where the logs will be stored and grant the ZenML Pro Workspace Server pods write access to this bucket.
 
 | Implementation | Platform | Use Case |
 |---------------|----------|----------|
 | `KubernetesWorkloadManager` | Any Kubernetes (EKS, GKE, AKS, self-managed) | Standard setup, fast minimalistic configuration |
 | `AWSKubernetesWorkloadManager` | EKS | AWS-native with ECR image building and S3 log storage |
 | `GCPKubernetesWorkloadManager` | GKE | GCP-native with GCR support (GCS log storage planned) |
-
-### Understanding Snapshot Sub-features
-
-Running pipelines from the UI relies on running Kubernetes jobs ("runner" jobs) that are responsible for launching the pipelines in the same manner as when running them from the CLI or SDK. These jobs need to use container images with the correct Python package dependencies to be able to launch the pipelines. There are several ways to achieve this and you'll need to choose the one that best fits your needs:
-
-1. **Reuse snapshot container images**: the same pipeline container images that were built for the snapshot being run can also be used for the "runner" jobs. This is the simplest and fastest option, but you have to grant the "runner" jobs pull access to all container registries where these images are stored (i.e. the Container Registries used in your ZenML Stacks).
-2. **Build "runner" container images on-demand**: in this variant, the Workspace Server will launch additional Kubernetes jobs to build the "runner" images when needed and push them to a configured container registry. It requires these "builder" Kubernetes jobs to have push permissions to a private container registry.
-3. **Use pre-built "runner" image**: you can provide a single pre-built "runner" image (provided by you in a container registry) for all runs. This is the simplest and fastest option, but you have to ensure that the image has all the correct Python package dependencies to be able to launch the pipelines.
-
-Snapshots come with optional sub-features that can be turned on or off:
-
-* **Building runner container images**: Running pipelines from the UI relies on Kubernetes jobs ("runner" jobs) that need container images with the correct Python packages. You can:
-  - Reuse existing pipeline container images (requires Kubernetes cluster access to those registries)
-  - Have the Workspace Server build "runner" images and push to a configured registry
-  - Use a single pre-built "runner" image (provided by you in a container registry) for all runs 
-
-* **Store logs externally**: By default, logs are extracted from the "runner" job pods. Since pods may disappear, you can configure external log storage (currently only supported with the AWS implementation).
 
 ### 1. Create Kubernetes Resources for Workload Manager
 

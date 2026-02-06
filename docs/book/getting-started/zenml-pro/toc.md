@@ -15,6 +15,7 @@
   * Workspace Server
     * [Kubernetes with Helm](deploy-workspace-k8s.md)
     * [AWS ECS](deploy-workspace-ecs.md)
+    * [Enable Snapshot Support](deploy-workspace-snapshots.md)
 
 ## Manage
 

@@ -58,8 +58,11 @@ First, [create a personal access token (PAT)](personal-access-tokens.md) using t
 curl -X POST "https://zenml-pro.my.domain/api/v1/workspaces?name=my-workspace&enroll=true" \
   -H "Authorization: Bearer <access-token>"
 ```
+{% endtab %}
+{% endtabs %}
 
-The response will contain all the necessary enrollment credentials for the workspace that you will need to configure the workspace server during deployment.
+
+The workspace enrollment response will contain all the necessary enrollment credentials for the workspace that you will need to configure the workspace server during deployment:
 
 * the workspace ID
 * the enrollment key
