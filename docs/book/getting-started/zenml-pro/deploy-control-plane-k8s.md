@@ -162,6 +162,22 @@ zenml:
     host: zenml-pro.internal.mycompany.com
 ```
 
+Minimum required settings:
+
+* the database credentials (`zenml.database.external`)
+* the URL (`zenml.serverURL`) where the ZenML Pro Control Plane API and UI will be reachable
+
+In addition to the above, the following might also be relevant for you:
+
+* configure container registry credentials (`imagePullSecrets`)
+* injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificates used by the ZenML Pro services are signed by a custom Certificate Authority
+* configure HTTP proxy settings (`zenml.proxy`)
+* custom container image repository locations (`zenml.image.api` and `zenml.image.dashboard`)
+* the username and password used for the default admin account (`zenml.auth.password`)
+* additional Ingress settings (`zenml.ingress`)
+* Kubernetes resources allocated to the pods (`resources`)
+* If you set up a common DNS prefix that you plan on using for all the ZenML Pro services, you may configure the domain of the HTTP cookies used by the ZenML Pro dashboard to match it by setting `zenml.auth.authCookieDomain` to the DNS prefix (e.g. `.my.domain` instead of `zenml-pro.my-domain`)
+
 ### Step 3: Deploy the ZenML Pro Control Plane with Helm
 
 Using the remote Helm chart, if you have access to the internet:
