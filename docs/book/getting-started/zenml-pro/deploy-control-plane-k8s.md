@@ -275,7 +275,7 @@ curl -X POST "https://zenml-pro.my.domain/api/v1/users?username=superuser&passwo
 
 Now that the ZenML Pro control plane is onboarded, you can deploy and enroll one or more workspaces.
 
-To deploy and enroll a workspace, you can use the process covered in the [Deploying Workspaces](deploy-workspace-k8s.md) section. Make sure to use the ZenML Pro control plane URLs you used for the self-hosted deployment:
+To deploy and enroll a workspace, you can use the process covered in the [Deploying Workspaces](./deploy-details/workspace-server) sections. Make sure to use the ZenML Pro control plane URLs you used for the self-hosted deployment:
 
 * ZenML Pro control plane UI: https://zenml-pro.internal.mycompany.com
 * ZenML Pro control plane API: https://zenml-pro.internal.mycompany.com/api/v1s

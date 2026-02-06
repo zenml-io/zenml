@@ -13,6 +13,7 @@
   * Control Plane
     * [Kubernetes with Helm](deploy-control-plane-k8s.md)
   * Workspace Server
+    * [Enroll Workspaces](enroll-workspace.md)
     * [Kubernetes with Helm](deploy-workspace-k8s.md)
     * [AWS ECS](deploy-workspace-ecs.md)
     * [Enable Snapshot Support](deploy-workspace-snapshots.md)

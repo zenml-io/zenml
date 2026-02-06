@@ -28,21 +28,26 @@ In this setup:
 
 ## Prerequisites
 
-
 Before starting, make sure you go through the [general prerequisites for hybrid deployments](hybrid-deployment-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for AWS ECS deployments are listed below.
 
 - AWS Account with appropriate IAM permissions
 - Basic familiarity with AWS ECS, VPC, and RDS
 
-## Step 1: Set Up AWS Infrastructure
+## Install the ZenML Pro Workspace Server
 
-### VPC and Subnets
+### Step 1: Enroll the Workspace in the ZenML Pro Control Plane
+
+Make sure to enroll the workspace in the ZenML Pro control plane by following the [Enroll a Workspace in the ZenML Pro Control Plane](enroll-workspace.md) guide and collect the necessary enrollment credentials.
+
+### Step 2: Set Up AWS Infrastructure
+
+#### VPC and Subnets
 
 Create a VPC with:
 - **Public subnets** (at least 2 across different availability zones) - for the Application Load Balancer
 - **Private subnets** (at least 2 across different availability zones) - for ECS tasks and RDS
 
-### Security Groups
+#### Security Groups
 
 Create three security groups:
 
@@ -59,7 +64,7 @@ Create three security groups:
    - Inbound: TCP (3306 for MySQL) from the ECS security group
    - Outbound: Not restricted
 
-### NAT Gateway
+#### NAT Gateway
 
 To enable ECS tasks to reach ZenML Cloud:
 
@@ -67,14 +72,14 @@ To enable ECS tasks to reach ZenML Cloud:
 2. Create a NAT Gateway in one of your public subnets
 3. Wait for the NAT Gateway to be available
 
-### Route Tables
+#### Route Tables
 
 For your private subnets (where ECS tasks run):
 1. Create a route table
 2. Add a default route (`0.0.0.0/0`) pointing to the NAT Gateway
 3. Associate this route table with your private subnets
 
-## Step 2: Set Up RDS Database
+### Step 3: Set Up RDS Database
 
 Create an RDS database instance. **Important**: Workspace servers only support MySQL, not PostgreSQL.
 
@@ -94,7 +99,7 @@ Create an RDS database instance. **Important**: Workspace servers only support M
 2. Create the initial database: `zenml_hybrid`
 3. Create a database user with full permissions on the database
 
-## Step 3: Store Secrets in AWS Secrets Manager
+### Step 4: Store Secrets in AWS Secrets Manager
 
 Store your Pro credentials securely:
 
@@ -108,11 +113,11 @@ Store your Pro credentials securely:
 
 Note the ARN of your OAuth2 secret - you'll reference it in the task definition.
 
-## Step 4: Create ECS IAM Roles
+### Step 5: Create ECS IAM Roles
 
 Create two IAM roles:
 
-### Task Execution Role
+#### Task Execution Role
 
 This role allows ECS to pull images and manage logs:
 - Attach: `AmazonECSTaskExecutionRolePolicy`
@@ -122,12 +127,12 @@ This role allows ECS to pull images and manage logs:
   - Action: `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`
   - Resource: Your CloudWatch log group
 
-### Task Role
+#### Task Role
 
 This role is for application-level permissions (optional for basic setup):
 - Leave empty for now, or add policies if your tasks need to access other AWS services
 
-## Step 5: Create ECS Task Definition
+### Step 6: Create ECS Task Definition
 
 In the AWS Console or using AWS CLI/Terraform, create a task definition with:
 
@@ -179,7 +184,7 @@ Configure CloudWatch logs:
 - **Log Stream Prefix**: `ecs`
 - **Region**: Your AWS region
 
-## Step 6: Create ECS Cluster and Service
+### Step 7: Create ECS Cluster and Service
 
 Create an ECS cluster named `zenml-hybrid`.
 
@@ -204,7 +209,7 @@ Then create an ECS service within this cluster:
 - **Container Port**: 8000
 - (Leave the target group selection for the next step)
 
-## Step 7: Set Up Application Load Balancer
+### Step 8: Set Up Application Load Balancer
 
 Create an Application Load Balancer (ALB):
 
@@ -212,7 +217,7 @@ Create an Application Load Balancer (ALB):
 - **Subnets**: Your public subnets
 - **Security Group**: ALB security group
 
-### Target Group
+#### Target Group
 
 Create a target group for your ECS service:
 
@@ -225,7 +230,7 @@ Create a target group for your ECS service:
 - **Healthy Threshold**: 2
 - **Unhealthy Threshold**: 3
 
-### Listeners
+#### Listeners
 
 Create two listeners on your ALB:
 
@@ -236,7 +241,7 @@ Create two listeners on your ALB:
 2. **HTTP Listener (Port 80)**
    - **Default Action**: Redirect to HTTPS (port 443)
 
-## Step 8: Configure DNS
+### Step 9: Configure DNS
 
 In your DNS provider (Route 53 or external):
 
@@ -247,7 +252,7 @@ In your DNS provider (Route 53 or external):
 
 2. Allow time for DNS propagation (typically 5-15 minutes)
 
-## Step 9: Verify the Deployment
+### Step 10: Verify the Deployment
 
 1. **Check ECS Service Status**
    - Go to ECS console → Clusters → zenml-hybrid → Services

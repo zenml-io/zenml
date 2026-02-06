@@ -35,45 +35,13 @@ Before starting, make sure you go through the [general prerequisites for hybrid 
 - Helm (3.0+)
 
 
-### Enroll the Workspace in the ZenML Pro Control Plane
+## Install the ZenML Pro Workspace Server
 
-Before you can deploy a workspace, you need a ZenML Pro organization to enroll the workspace in. The enrollment procedure will create a workspace placeholder in the organization and generate the necessary enrollment credentials. You will use these credentials (e.g. workspace ID, enrollment key) to configure the workspace server during deployment.
+### Step 1: Enroll the Workspace in the ZenML Pro Control Plane
 
-Enrolling workspaces is currently only supported through the ZenML Pro OpenAPI interface or programmatically accessing the ZenML Pro API. There is no support for this in the ZenML Pro UI yet.
+Make sure to enroll the workspace in the ZenML Pro control plane by following the [Enroll a Workspace in the ZenML Pro Control Plane](enroll-workspace.md) guide and collect the necessary enrollment credentials.
 
-{% tabs %}
-{% tab title="OpenAPI Interface" %}
-First, log in to the ZenML Pro UI as usual. Then, to access the ZenML Pro OpenAPI interface, append the `/api/v1` path to the ZenML Pro server URL in your browser. For example: https://zenml-pro.my.domain/api/v1s
-
-Using the OpenAPI interface, you can manage local user accounts by making requests to the `/api/v1/workspaces` endpoint. For example, to create a new super-user account:
-
-![ZenML Pro OpenAPI Interface - Enroll Workspace](.gitbook/assets/pro-openapi-interface-03.png)
-{% endtab %}
-
-{% tab title="curl" %}
-First, [create a personal access token (PAT)](personal-access-tokens.md) using the ZenML Pro UI. Then, use this PAT to enroll the workspace via curl:
-
-```bash
-# Create a new super-user account
-curl -X POST "https://zenml-pro.my.domain/api/v1/workspaces?name=my-workspace&enroll=true" \
-  -H "Authorization: Bearer <access-token>"
-```
-{% endtab %}
-{% endtabs %}
-
-
-The workspace enrollment response will contain all the necessary enrollment credentials for the workspace that you will need to configure the workspace server during deployment:
-
-* the workspace ID
-* the enrollment key
-* the organization ID
-* the organization name
-* the workspace name
-
-
-## Install the ZenML Pro Workspace Servers
-
-### Step 1: Create Kubernetes Secrets
+### Step 2: Create Kubernetes Secrets
 
 If you are using an internal container registry, you may need to create a secret to allow the ZenML Pro workspace servers to pull the images. The following is an example of how to do this:
 
@@ -90,7 +58,7 @@ kubectl -n zenml-pro-workspace create secret docker-registry image-pull-secret \
 
 You'll use this secret in the next step when configuring the Helm values for the ZenML Pro workspace server.
 
-### Step 2: Configure Helm Values for Workspace Server
+### Step 3: Configure Helm Values for Workspace Server
 
 {% hint style="info" %}
 The ZenML Pro workspace server is developed on top of the open-source ZenML server and inherits all its features and deployment options. This deployment also uses the open-source ZenML Helm chart, with the only notable differences being that the ZenML Pro workspace server is configured to connect to the ZenML Pro control plane and uses a different container image that is released separately from the open-source ZenML server.
@@ -201,7 +169,7 @@ resources:
 * additional Ingress settings (`zenml.ingress`)
 * Kubernetes resources allocated to the pods (`resources`)
 
-### Step 3: Deploy the ZenML Pro Workspace Server with Helm
+### Step 4: Deploy the ZenML Pro Workspace Server with Helm
 
 Using the remote Helm chart, if you have access to the internet:
 
@@ -231,7 +199,7 @@ kubectl -n zenml-workspace get svc
 kubectl -n zenml-workspace get ingress
 ```
 
-### Step 4: Install Internal CA Certificates
+### Step 5: Install Internal CA Certificates
 
 If the TLS certificates used by the ZenML Pro workspace server are signed by a custom Certificate Authority, you need to install the CA certificates on every machine that needs to access the ZenML workspace server.
 
