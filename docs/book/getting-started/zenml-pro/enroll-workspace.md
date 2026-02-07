@@ -15,9 +15,15 @@ layout:
 
 # Enroll a Workspace in the ZenML Pro Control Plane
 
-Before you can deploy a self-hosted workspace, you need a ZenML Pro organization in which to enroll the workspace. The enrollment procedure will create a workspace placeholder in the organization and generate the necessary enrollment credentials. You will use these credentials (e.g. workspace ID, enrollment key) to configure the workspace server during deployment.
+Before deploying a self-hosted workspace, or when migrating an existing ZenML OSS server to ZenML Pro, you need to enroll the workspace in a ZenML Pro organization. The enrollment procedure creates a workspace placeholder in the organization and generate the necessary enrollment credentials. You will use these credentials (e.g. workspace ID, enrollment key) to configure the workspace server deployment.
 
-Enrolling workspaces is currently only supported through the ZenML Pro OpenAPI interface or programmatically accessing the ZenML Pro API. There is no support for this in the ZenML Pro UI yet.
+To enroll a workspace, you simply use the "New Workspace" button in the ZenML Pro UI under your organization and toggle the "Enroll Workspace" switch.
+
+![ZenML Pro UI - Enroll Workspace](.gitbook/assets/pro-ui-enroll-workspace.png)
+
+{% hint style="info" %}
+Enrolling workspaces through the UI was not supported in ZenML Pro control plane versions 0.13.1 and earlier. If you're running an older version, you can still use the ZenML Pro OpenAPI interface or programmatically access the ZenML Pro API, as described below.
+{% endhint %}
 
 {% tabs %}
 {% tab title="OpenAPI Interface" %}
@@ -59,7 +65,7 @@ These details will need to be passed to the workspace server container in the fo
 | `ZENML_SERVER_PRO_ORGANIZATION_NAME` | The name of the organization the workspace belongs to. |
 | `ZENML_SERVER_PRO_WORKSPACE_ID` | The ID of the workspace. |
 | `ZENML_SERVER_PRO_WORKSPACE_NAME` | The name of the workspace. |
-| `ZENML_SERVER_PRO_OAUTH2_AUDIENCE` | The enrollment key for the workspace. |
+| `ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET` | The enrollment key for the workspace. |
 
 NOTE: in the case of Helm, these values are configurable as Helm values when deploying the workspace server:
 
