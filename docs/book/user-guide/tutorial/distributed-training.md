@@ -76,7 +76,54 @@ Call `cleanup_memory()` at the start of your GPU steps.
 
 ---
 
-## 3 Multi‑GPU / multi‑node training with 🤗 Accelerate
+## 3 Multi-node training with Kubeflow Trainer step operator
+
+For Kubernetes clusters with Kubeflow Trainer v2, use the Kubeflow Trainer
+step operator as the primary interface for distributed training.
+
+```python
+from zenml import step
+from zenml.config import ResourceSettings
+from zenml.integrations.kubeflow.flavors import KubeflowTrainerStepOperatorSettings
+
+trainer_settings = KubeflowTrainerStepOperatorSettings(
+    runtime_ref_name="pytorch-ddp",
+    num_nodes=2,
+)
+
+@step(
+    step_operator=True,
+    settings={
+        "resources": ResourceSettings(gpu_count=2, cpu_count=8, memory="32GiB"),
+        "step_operator": trainer_settings,
+    },
+)
+def training_step(...):
+    ...
+```
+
+You can also use the convenience decorator:
+
+```python
+from zenml import step
+from zenml.integrations.kubeflow.steps import run_with_trainer
+
+@run_with_trainer(
+    runtime_ref_name="pytorch-ddp",
+    num_nodes=2,
+    num_proc_per_node=2,
+)
+@step
+def training_step(...):
+    ...
+```
+
+When running with Kubeflow Trainer v2, ZenML normalizes Trainer `PET_*`
+variables to standard PyTorch distributed env vars before your step executes.
+This keeps step code compatible with `torch.distributed.init_process_group(...)`
+without requiring custom env plumbing in your step logic.
+
+## 4 Multi‑GPU / multi‑node training with 🤗 Accelerate
 
 ZenML integrates with the Hugging Face Accelerate launcher.  Wrap your *training* step with `run_with_accelerate` to fan it out over multiple GPUs or machines:
 
@@ -119,7 +166,7 @@ DockerSettings(
 
 ---
 
-## 4 Troubleshooting & Tips
+## 5 Troubleshooting & Tips
 
 | Problem | Quick fix |
 |---------|-----------|

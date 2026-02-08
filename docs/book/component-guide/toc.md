@@ -52,6 +52,7 @@
   * [Amazon SageMaker](step-operators/sagemaker.md)
   * [AzureML](step-operators/azureml.md)
   * [Google Cloud VertexAI](step-operators/vertex.md)
+  * [Kubeflow Trainer](step-operators/kubeflow-trainer.md)
   * [Kubernetes](step-operators/kubernetes.md)
   * [Modal](step-operators/modal.md)
   * [Spark](step-operators/spark-kubernetes.md)
