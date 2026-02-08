@@ -231,11 +231,12 @@ function test_upgrade_to_version() {
     source ".venv-upgrade/bin/activate"
 
     # Install the specific version
-    uv pip install -U setuptools wheel pip
-
     if [ "$VERSION" == "current" ]; then
+        uv pip install -U setuptools wheel pip
         uv pip install -e ".[templates,server]"
     else
+        # Old ZenML versions use pkg_resources, removed in setuptools 82+
+        uv pip install -U "setuptools<82" wheel pip
         uv pip install "zenml[templates,server]==$VERSION"
         if [ "$(version_compare "$VERSION" "0.60.0")" == "<" ]; then
             # handles unpinned sqlmodel dependency in older versions
