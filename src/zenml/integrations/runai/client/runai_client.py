@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Run:AI API client wrapper with typed responses."""
 
-from typing import Any, List, Optional, cast
+from typing import Any, List, NoReturn, Optional, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 from runai.api_client import ApiClient
@@ -139,6 +139,7 @@ class RunAIClient:
             runai_base_url: Run:AI control plane base URL.
 
         Raises:
+            RunAIConnectionError: If connecting to Run:AI fails.
             RunAIAuthenticationError: If client configuration fails.
         """
         try:
@@ -149,6 +150,12 @@ class RunAIClient:
             )
             self._raw_client = self._create_raw_client(config)
         except Exception as exc:
+            if self._is_connection_error(exc):
+                raise RunAIConnectionError(
+                    f"Failed to connect to Run:AI API ({type(exc).__name__}): "
+                    f"{exc}. Verify your runai_base_url and network "
+                    "connectivity."
+                ) from exc
             raise RunAIAuthenticationError(
                 f"Failed to initialize Run:AI client ({type(exc).__name__}): {exc}. "
                 "Verify your client_id, client_secret, and runai_base_url are correct."
@@ -159,17 +166,104 @@ class RunAIClient:
 
         The runai SDK does not ship type hints, so keep the untyped call
         isolated to this helper.
+
+        Args:
+            config: The Configuration object to create the client from.
+
+        Returns:
+            The raw runapy client.
         """
         return RunapyClient(ApiClient(config))  # type: ignore[no-untyped-call]
 
     @staticmethod
     def _get_status_code(exc: Exception) -> Optional[int]:
-        """Extract an HTTP status code from an untyped Run:AI SDK exception."""
+        """Extract an HTTP status code from an untyped Run:AI SDK exception.
+
+        Args:
+            exc: The exception to extract the status code from.
+
+        Returns:
+            The HTTP status code, or None if not found.
+        """
         for attr in ("status", "status_code", "code"):
             value = getattr(exc, attr, None)
             if isinstance(value, int):
                 return value
         return None
+
+    @staticmethod
+    def _iter_exception_chain(exc: Exception) -> List[Exception]:
+        """Iterate over an exception and its nested causes/contexts.
+
+        Args:
+            exc: The exception to inspect.
+
+        Returns:
+            A list containing the exception chain from outermost to innermost.
+        """
+        chain: List[Exception] = []
+        visited: set[int] = set()
+        current: Optional[Exception] = exc
+
+        while current is not None and id(current) not in visited:
+            chain.append(current)
+            visited.add(id(current))
+            next_exc = current.__cause__ or current.__context__
+            current = next_exc if isinstance(next_exc, Exception) else None
+
+        return chain
+
+    @classmethod
+    def _is_connection_error(cls, exc: Exception) -> bool:
+        """Check whether an SDK exception represents a connectivity failure.
+
+        Args:
+            exc: The exception to classify.
+
+        Returns:
+            True if the exception indicates a connection/network issue.
+        """
+        connection_tokens = (
+            "connection refused",
+            "failed to establish a new connection",
+            "max retries exceeded",
+            "timed out",
+            "temporary failure in name resolution",
+            "name or service not known",
+            "nodename nor servname provided",
+            "no route to host",
+            "connection reset by peer",
+        )
+
+        for current_exc in cls._iter_exception_chain(exc):
+            if isinstance(current_exc, (ConnectionError, TimeoutError)):
+                return True
+
+            exception_name = type(current_exc).__name__.lower()
+            if "connection" in exception_name or "timeout" in exception_name:
+                return True
+
+            message = str(current_exc).lower()
+            if any(token in message for token in connection_tokens):
+                return True
+
+        return False
+
+    @classmethod
+    def _raise_api_error(cls, exc: Exception, message: str) -> NoReturn:
+        """Raise a typed API error based on the underlying failure.
+
+        Args:
+            exc: The original exception.
+            message: The error message to surface.
+
+        Raises:
+            RunAIConnectionError: If the root cause is connectivity related.
+            RunAIClientError: For all other failures.
+        """
+        if cls._is_connection_error(exc):
+            raise RunAIConnectionError(message) from exc
+        raise RunAIClientError(message) from exc
 
     @property
     def raw_client(self) -> RunapyClient:
@@ -209,9 +303,11 @@ class RunAIClient:
                 for p in projects_data
             ]
         except Exception as exc:
-            raise RunAIClientError(
-                f"Failed to fetch Run:AI projects ({type(exc).__name__}): {exc}"
-            ) from exc
+            self._raise_api_error(
+                exc,
+                f"Failed to fetch Run:AI projects "
+                f"({type(exc).__name__}): {exc}",
+            )
 
     def get_project_by_name(self, name: str) -> RunAIProject:
         """Get a Run:AI project by exact name match.
@@ -255,9 +351,11 @@ class RunAIClient:
                 for c in clusters_data
             ]
         except Exception as exc:
-            raise RunAIClientError(
-                f"Failed to fetch Run:AI clusters ({type(exc).__name__}): {exc}"
-            ) from exc
+            self._raise_api_error(
+                exc,
+                f"Failed to fetch Run:AI clusters "
+                f"({type(exc).__name__}): {exc}",
+            )
 
     def get_cluster_by_id(self, cluster_id: str) -> RunAICluster:
         """Get a Run:AI cluster by ID.
@@ -337,9 +435,11 @@ class RunAIClient:
                 workload_name=request.name,
             )
         except Exception as exc:
-            raise RunAIClientError(
-                f"Failed to submit Run:AI workload ({type(exc).__name__}): {exc}"
-            ) from exc
+            self._raise_api_error(
+                exc,
+                f"Failed to submit Run:AI workload "
+                f"({type(exc).__name__}): {exc}",
+            )
 
     def _extract_workload_id(self, response: Any) -> Optional[str]:
         """Extract workload ID from API response.
@@ -411,9 +511,11 @@ class RunAIClient:
             error_msg = str(exc).lower()
             if "not found" in error_msg or "404" in error_msg:
                 raise RunAIWorkloadNotFoundError(workload_id) from exc
-            raise RunAIClientError(
-                f"Failed to query workload status ({type(exc).__name__}): {exc}"
-            ) from exc
+            self._raise_api_error(
+                exc,
+                f"Failed to query workload status "
+                f"({type(exc).__name__}): {exc}",
+            )
 
     def get_training_workload(self, workload_id: str) -> RunAITrainingWorkload:
         """Get full training workload details.
@@ -445,9 +547,11 @@ class RunAIClient:
         except RunAIClientError:
             raise
         except Exception as exc:
-            raise RunAIClientError(
-                f"Failed to query Run:AI workload {workload_id} ({type(exc).__name__}): {exc}"
-            ) from exc
+            self._raise_api_error(
+                exc,
+                "Failed to query Run:AI workload "
+                f"{workload_id} ({type(exc).__name__}): {exc}",
+            )
 
     def delete_training_workload(self, workload_id: str) -> None:
         """Delete a training workload.
@@ -461,9 +565,11 @@ class RunAIClient:
         try:
             self._raw_client.workloads.trainings.delete_training(workload_id)
         except Exception as exc:
-            raise RunAIClientError(
-                f"Failed to delete Run:AI workload {workload_id} ({type(exc).__name__}): {exc}"
-            ) from exc
+            self._raise_api_error(
+                exc,
+                "Failed to delete Run:AI workload "
+                f"{workload_id} ({type(exc).__name__}): {exc}",
+            )
 
     def suspend_training_workload(self, workload_id: str) -> None:
         """Suspend a training workload.
@@ -477,6 +583,8 @@ class RunAIClient:
         try:
             self._raw_client.workloads.trainings.suspend_training(workload_id)
         except Exception as exc:
-            raise RunAIClientError(
-                f"Failed to suspend Run:AI workload {workload_id} ({type(exc).__name__}): {exc}"
-            ) from exc
+            self._raise_api_error(
+                exc,
+                "Failed to suspend Run:AI workload "
+                f"{workload_id} ({type(exc).__name__}): {exc}",
+            )

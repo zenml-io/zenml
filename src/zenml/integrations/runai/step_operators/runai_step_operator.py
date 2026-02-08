@@ -533,21 +533,25 @@ class RunAIStepOperator(BaseStepOperator):
             workload_id: The workload ID to stop.
             reason: Reason for cleanup (for logging).
         """
+        manual_cleanup_hint = (
+            "Open "
+            f"{self.config.runai_base_url} and navigate to Workloads > "
+            f"Training to clean up workload '{workload_id}'."
+        )
         logger.info(f"Stopping workload {workload_id}: {reason}")
         try:
             client.suspend_training_workload(workload_id)
         except Exception as suspend_exc:
             logger.error(
                 f"Failed to stop workload {workload_id}: {suspend_exc}. "
-                "You may need to stop it manually in Run:AI UI."
+                f"{manual_cleanup_hint}"
             )
-            return
 
         if not self.config.delete_on_failure:
             logger.info(
                 f"Preserving workload {workload_id} after failure "
                 f"(delete_on_failure=False). Reason: {reason}. "
-                "Delete it manually in the Run:AI UI if needed."
+                f"{manual_cleanup_hint}"
             )
             return
 
@@ -557,7 +561,7 @@ class RunAIStepOperator(BaseStepOperator):
         except Exception as delete_exc:
             logger.error(
                 f"Failed to delete workload {workload_id}: {delete_exc}. "
-                "You may need to delete it manually in Run:AI UI."
+                f"{manual_cleanup_hint}"
             )
 
     def _wait_for_completion(

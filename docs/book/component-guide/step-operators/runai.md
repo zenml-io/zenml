@@ -22,7 +22,7 @@ You should use the Run:AI step operator if:
 * **Project-based Resource Management**: Workloads are organized by Run:AI projects with quota policies
 * **SaaS and Self-hosted**: Works with both Run:AI SaaS and self-hosted deployments
 
-![Run:AI interface](../../assets/runai-interface.png)
+![Run:AI interface](../../.gitbook/assets/runai-interface.png)
 
 ### How to deploy it
 

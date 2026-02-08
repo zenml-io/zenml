@@ -14,6 +14,7 @@
 """Run:AI step operator flavor."""
 
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Type
+from urllib.parse import urlparse
 
 from pydantic import (
     Field,
@@ -317,6 +318,19 @@ class RunAIStepOperatorConfig(
             raise ValueError(
                 f"Invalid URL '{value}'. Must start with http:// or https://"
             )
+
+        parsed = urlparse(value)
+        if not parsed.hostname:
+            raise ValueError(
+                f"Invalid URL '{value}'. URL must include a hostname."
+            )
+
+        if parsed.query or parsed.fragment:
+            raise ValueError(
+                f"Invalid URL '{value}'. Query parameters and fragments are "
+                "not supported in runai_base_url."
+            )
+
         return value.rstrip("/")
 
     project_name: str = Field(
