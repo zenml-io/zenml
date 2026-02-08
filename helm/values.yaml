@@ -1234,3 +1234,56 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Worker deployments configuration.
+# This allows deploying additional custom microservices that share the ZenML
+# server's environment variables, CA certificates, and database access
+# configuration. Workers are typically used for background tasks like scheduler
+# loops and job polling.
+#
+# Workers do not expose any endpoints (no services or ingresses are created).
+# Each worker is deployed as a separate Kubernetes Deployment.
+#
+# The workerDeployments map uses the worker name as key and the configuration
+# as value. Example:
+#
+#
+# workerDeployments:
+#     background-task:
+#         enabled: true
+#         image:
+#             repository: image-repository
+#             tag: image-tag
+#         replicaCount: 1
+#         command: ["python"]
+#         args: ["-m", "task"]
+#         resources:
+#             requests:
+#                 cpu: 100m
+#                 memory: 256Mi
+#             limits:
+#                 cpu: 500m
+#                 memory: 512Mi
+#         environment: {}
+#         secretEnvironment: {}
+#         livenessProbe:
+#             exec:
+#                 command: ["python", "-c", "import sys; sys.exit(0)"]
+#             initialDelaySeconds: 30
+#             periodSeconds: 60
+#         readinessProbe:
+#             exec:
+#                 command: ["python", "-c", "import sys; sys.exit(0)"]
+#             initialDelaySeconds: 10
+#             periodSeconds: 30
+#         autoscaling:
+#             enabled: false
+#             minReplicas: 1
+#             maxReplicas: 5
+#             targetCPUUtilizationPercentage: 80
+#             targetMemoryUtilizationPercentage: 80
+#         nodeSelector: {}
+#         tolerations: []
+#         affinity: {}
+#
+workerDeployments: {}
