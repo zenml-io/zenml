@@ -49,11 +49,7 @@ from zenml.models import (
     PipelineRunResponse,
     StepRunResponse,
 )
-from zenml.models.v2.misc.log_models import (
-    LogEntry,
-    LogsEntriesFilter,
-    LogsEntriesResponse,
-)
+from zenml.models.v2.misc.log_models import LogEntry
 from zenml.utils import context_utils
 
 if TYPE_CHECKING:
@@ -481,83 +477,6 @@ def fetch_logs(
 
     try:
         return log_store.fetch(logs_model=logs, limit=limit)
-    finally:
-        log_store.cleanup()
-
-
-def fetch_logs_entries(
-    *,
-    logs: "LogsResponse",
-    zen_store: "BaseZenStore",
-    limit: int,
-    before: Optional[str],
-    after: Optional[str],
-    filter_: LogsEntriesFilter,
-) -> LogsEntriesResponse:
-    """Fetch logs from the log store using cursor-based pagination."""
-    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-    from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
-    from zenml.log_stores.base_log_store import BaseLogStore
-    from zenml.stack import StackComponent
-    from zenml.zen_server.rbac.endpoint_utils import (
-        verify_permissions_and_get_entity,
-    )
-
-    if ENV_ZENML_SERVER not in os.environ:
-        raise RuntimeError(
-            "This utility function is only supported in the server environment."
-        )
-
-    request_limit = min(max(limit, 1), LOGS_ENTRIES_API_MAX_LIMIT)
-
-    log_store: Optional[BaseLogStore] = None
-
-    if logs.log_store_id:
-        log_store_model = verify_permissions_and_get_entity(
-            id=logs.log_store_id,
-            get_method=zen_store.get_stack_component,
-        )
-        if log_store_model.type != StackComponentType.LOG_STORE:
-            raise DoesNotExistException(
-                f"Stack component '{logs.log_store_id}' is not a log store."
-            )
-        try:
-            log_store = cast(
-                BaseLogStore, StackComponent.from_model(log_store_model)
-            )
-        except ImportError as e:
-            raise NotImplementedError(
-                f"Log store '{log_store_model.name}' could not be instantiated."
-            ) from e
-    elif logs.artifact_store_id:
-        artifact_store_model = verify_permissions_and_get_entity(
-            id=logs.artifact_store_id,
-            get_method=zen_store.get_stack_component,
-        )
-        if artifact_store_model.type != StackComponentType.ARTIFACT_STORE:
-            raise DoesNotExistException(
-                f"Stack component '{logs.artifact_store_id}' is not an artifact store."
-            )
-        artifact_store = cast(
-            BaseArtifactStore,
-            StackComponent.from_model(artifact_store_model),
-        )
-        log_store = ArtifactLogStore.from_artifact_store(
-            artifact_store=artifact_store
-        )
-    else:
-        raise ValueError(
-            "Logs response does not have a log store or artifact store."
-        )
-
-    try:
-        return log_store.fetch_entries(
-            logs_model=logs,
-            limit=request_limit,
-            before=before,
-            after=after,
-            filter_=filter_,
-        )
     finally:
         log_store.cleanup()
 

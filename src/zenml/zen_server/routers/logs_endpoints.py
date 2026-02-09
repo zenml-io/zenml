@@ -32,7 +32,6 @@ from zenml.models.v2.misc.log_models import (
 from zenml.stack import StackComponent
 from zenml.utils.logging_utils import (
     LOGS_ENTRIES_API_MAX_LIMIT,
-    fetch_logs_entries,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
