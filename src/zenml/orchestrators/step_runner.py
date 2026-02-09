@@ -20,6 +20,7 @@ from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
     Any,
+    ContextManager,
     Dict,
     List,
     Tuple,
@@ -72,7 +73,7 @@ from zenml.utils import (
 )
 from zenml.utils.logging_utils import (
     is_step_logging_enabled,
-    setup_step_logging,
+    setup_logging_context,
 )
 from zenml.utils.typing_utils import get_args, get_origin, is_union
 
@@ -147,12 +148,13 @@ class StepRunner:
         """
         from zenml.deployers.server import runtime
 
-        logs_context = nullcontext()
-        if is_step_logging_enabled(step_run.config, pipeline_run.config):
-            logs_context = setup_step_logging(
-                step_run=step_run,
-                pipeline_run=pipeline_run,
-                source="step",
+        logs_context: ContextManager[Any] = nullcontext()
+        if is_step_logging_enabled(
+            step_configuration=step_run.config,
+            pipeline_configuration=pipeline_run.config,
+        ):
+            logs_context = setup_logging_context(
+                source="step", step_run=step_run, pipeline_run=pipeline_run
             )
 
         with logs_context:

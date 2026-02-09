@@ -113,22 +113,19 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Maximize space (/opt)
-        uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c  # v10
-        with:
-          # Python from actions/setup-python lives under /opt/hostedtoolcache on Linux runners,
-          # and this workflow installs ZenML via `--system` into that interpreter.
-          # Mounting the expanded build volume at /opt prevents toolcache + site-packages
-          # installs from exhausting the root filesystem.
-          root-reserve-mb: 30000
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-          build-mount-path: /opt
+      - name: Free disk space (Ubuntu)
         if: inputs.os == 'ubuntu-latest'
+        run: |
+          set -euxo pipefail
+          echo "Before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force || true
+          echo "After cleanup:"
+          df -h
       - name: Set uv cache + temp dirs (/opt)
         if: inputs.os == 'ubuntu-latest'
         run: |

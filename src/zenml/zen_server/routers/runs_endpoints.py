@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     DISABLE_HEARTBEAT,
     LOGS,
+    LOGS_MAX_ENTRIES_PER_REQUEST,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -31,7 +32,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -481,7 +481,7 @@ def run_logs(
                 if log_record := parse_log_entry(line):
                     log_entries.append(log_record)
 
-                if len(log_entries) >= MAX_ENTRIES_PER_REQUEST:
+                if len(log_entries) >= LOGS_MAX_ENTRIES_PER_REQUEST:
                     break
 
             return log_entries
@@ -491,7 +491,7 @@ def run_logs(
             return fetch_logs(
                 logs=logs_response,
                 zen_store=store,
-                limit=MAX_ENTRIES_PER_REQUEST,
+                limit=LOGS_MAX_ENTRIES_PER_REQUEST,
             )
 
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")
