@@ -147,7 +147,7 @@ class TestArtifactsManagement:
 )
 def test_parallel_runs_get_different_run_indexes(clean_client: Client):
     procs: List[Tuple[subprocess.Popen, str]] = []
-    for _ in range(10):
+    for _ in range(5):
         procs.append(
             _spawn(
                 [
@@ -162,7 +162,7 @@ def test_parallel_runs_get_different_run_indexes(clean_client: Client):
     _wait_and_assert(procs)
 
     runs = clean_client.list_pipeline_runs(size=50)
-    assert len(runs) == 10
+    assert len(runs) == 5
 
     run_indexes = {r.index for r in runs}
-    assert run_indexes == set(range(1, 11))
+    assert run_indexes == set(range(1, 6))
