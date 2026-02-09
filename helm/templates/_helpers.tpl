@@ -93,3 +93,15 @@ Build the complete NO_PROXY list
 {{- end -}}
 {{- $noProxy -}}
 {{- end -}}
+
+{{/*
+Validate that zenml.serverURL is set when ZenML Pro is enabled. Call from a
+template that is always rendered so the check runs on install and upgrade.
+*/}}
+{{- define "zenml.validateProServerURL" -}}
+{{- if .Values.zenml.pro.enabled }}
+{{- if not .Values.zenml.serverURL }}
+{{- fail "\nzenml.serverURL must be set when zenml.pro.enabled is true (required for ZenML Pro). See values.yaml.\n" }}
+{{- end }}
+{{- end }}
+{{- end }}
