@@ -58,8 +58,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-LOGS_ENTRIES_API_MAX_LIMIT = 1000
-
 
 class LoggingContext(context_utils.BaseContext):
     """Context manager which collects logs using a LogStore."""
@@ -472,6 +470,7 @@ def fetch_logs(
         log_store = ArtifactLogStore.from_artifact_store(
             artifact_store=artifact_store
         )
+
     else:
         return []
 
