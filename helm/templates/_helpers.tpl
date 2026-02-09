@@ -95,13 +95,24 @@ Build the complete NO_PROXY list
 {{- end -}}
 
 {{/*
-Validate that zenml.serverURL is set when ZenML Pro is enabled. Call from a
-template that is always rendered so the check runs on install and upgrade.
+Validate that zenml.serverURL is set when ZenML Pro is enabled, and if provided it is a valid http(s) URL.
 */}}
 {{- define "zenml.validateProServerURL" -}}
-{{- if .Values.zenml.pro.enabled }}
-{{- if not .Values.zenml.serverURL }}
-{{- fail "\nzenml.serverURL must be set when zenml.pro.enabled is true (required for ZenML Pro). See values.yaml.\n" }}
+{{- $serverURLStr := trim (toString (default "" .Values.zenml.serverURL)) }}    # Unset serverURL is treated as ""
+{{- $serverURLProvided := ne $serverURLStr "" }}                                # True when $serverURLStr is not empty
+
+# Fail if ZenML Pro is enabled but serverURL is not set
+{{- if and .Values.zenml.pro.enabled (not $serverURLProvided) }}
+{{- fail "\nzenml.serverURL must be set when zenml.pro.enabled is true (required for ZenML Pro). e.g. zenml.serverURL: https://<your-server-url>\n" }}
+{{- end }}
+
+# If serverURL is provided, validate that it is a valid http(s) URL
+{{- if $serverURLProvided }}
+{{- $u := urlParse $serverURLStr }}
+{{- $validScheme := or (eq $u.scheme "http") (eq $u.scheme "https") }}
+{{- $hasHost := and $u.host (ne (trim (toString $u.host)) "") }}
+{{- if not (and $validScheme $hasHost) }}
+{{- fail "\nzenml.serverURL must be a valid http or https URL. e.g. zenml.serverURL: https://<your-server-url>\n" }}
 {{- end }}
 {{- end }}
 {{- end }}
