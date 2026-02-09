@@ -311,6 +311,18 @@ def authenticate_credentials(
             logger.error(error)
             raise CredentialsNotValid(error)
 
+        if (
+            server_config().auth_scheme == AuthScheme.EXTERNAL
+            and not user_model.external_user_id
+            and not user_model.is_service_account
+        ):
+            error = (
+                f"Authentication error: local account {user_model.name} is not "
+                f"allowed to authenticate with external authentication"
+            )
+            logger.error(error)
+            raise CredentialsNotValid(error)
+
         api_key_model: Optional[APIKeyInternalResponse] = None
         if decoded_token.api_key_id:
             # The API token was generated from an API key. We still have to
