@@ -230,6 +230,10 @@ spec:
           - secretRef:
               name: {{ include "zenml.fullname" $ }}-worker-{{ $name }}
           {{- end }}
+          {{- if $worker.ports }}
+          ports:
+            {{- toYaml $worker.ports | nindent 12 }}
+          {{- end }}
           {{- if $worker.livenessProbe }}
           livenessProbe:
             {{- toYaml $worker.livenessProbe | nindent 12 }}
