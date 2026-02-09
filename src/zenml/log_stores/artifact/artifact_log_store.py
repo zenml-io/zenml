@@ -22,7 +22,6 @@ from typing import (
     Generator,
     List,
     Optional,
-    Tuple,
     Type,
     cast,
 )
@@ -377,46 +376,6 @@ class ArtifactLogStore(OtelLogStore):
         )
 
         return log_entries
-        boundary_file_index = boundary.file_index
-        boundary_line_index = boundary.line_index
-
-        items_forward: List[Tuple[int, int, LogEntry]] = []
-
-        for file_index, uri in enumerate(file_uris):
-            if file_index < boundary_file_index:
-                continue
-
-            with self._artifact_store.open(uri, "r") as f:
-                for line_index, line in enumerate(f):
-                    if (
-                        file_index == boundary_file_index
-                        and line_index <= boundary_line_index
-                    ):
-                        continue
-                    entry = parse_log_entry(line)
-                    if entry is None or not _matches_filter(entry, filter_):
-                        continue
-                    items_forward.append((file_index, line_index, entry))
-                    if len(items_forward) >= limit:
-                        break
-            if len(items_forward) >= limit:
-                break
-
-        if not items_forward:
-            # Keep the caller polling from the existing position.
-            return ([], None, boundary)
-
-        # items_forward is oldest->newest; return newest->oldest
-        items_forward.reverse()
-        before_pos = {
-            "file_index": items_forward[-1][0],
-            "line_index": items_forward[-1][1],
-        }
-        after_pos = {
-            "file_index": items_forward[0][0],
-            "line_index": items_forward[0][1],
-        }
-        return ([e for _, _, e in items_forward], before_pos, after_pos)
 
     def cleanup(self) -> None:
         """Cleanup the artifact log store.
