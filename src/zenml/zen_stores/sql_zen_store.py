@@ -419,6 +419,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+    from zenml.models.v2.core.triggers import NonScopedTriggerFilter
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -7042,6 +7043,21 @@ class SqlZenStore(BaseZenStore):
             )
             return trigger.to_model(
                 include_metadata=hydrate, include_resources=True
+            )
+
+    def list_triggers_unscoped(
+        self,
+        triggers_filter_model: "NonScopedTriggerFilter",
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        with Session(self.engine) as session:
+            query = select(TriggerSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerSchema,
+                filter_model=triggers_filter_model,
+                hydrate=hydrate,
             )
 
     def list_triggers(
