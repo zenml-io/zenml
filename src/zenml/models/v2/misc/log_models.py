@@ -106,27 +106,52 @@ class LogsEntriesFilter(BaseModel):
 
     @model_validator(mode="after")
     def validate_filter(self) -> "LogsEntriesFilter":
-        """Validate and normalize filter fields."""
-        if self.search is not None and self.search.strip() == "":
+        """Validate and normalize filter fields.
+
+        Returns:
+            The validated and normalized filter.
+
+        Raises:
+            ValueError: If `since` is greater than `until`.
+        """
+        if self.search and not self.search.strip():
             self.search = None
-        if self.since is not None and self.until is not None:
+
+        if self.since and self.until:
             if self.since > self.until:
                 raise ValueError("`since` must be <= `until`.")
+
         return self
 
     @field_validator("level", mode="before")
     @classmethod
     def parse_level(cls, value: Optional[object]) -> Optional[LoggingLevels]:
-        """Accept both numeric and string log level."""
+        """Accept both numeric and string log level.
+
+        Args:
+            value: The value to parse.
+
+        Returns:
+            The parsed log level.
+
+        Raises:
+            ValueError: If the log level is invalid.
+        """
         if value is None:
             return None
+
         if isinstance(value, LoggingLevels):
             return value
+
         if isinstance(value, int):
             return LoggingLevels(value)
+
         if isinstance(value, str):
             name = value.strip().upper()
+
             if name in LoggingLevels.__members__:
                 return LoggingLevels[name]
+
             return LoggingLevels(int(value))
+
         raise ValueError("Invalid log level.")
