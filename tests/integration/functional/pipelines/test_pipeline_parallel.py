@@ -50,11 +50,13 @@ def _spawn(cmd: List[str]) -> Tuple[subprocess.Popen, str]:
 def _read_tail(log_path: str, max_bytes: int = 20_000) -> str:
     """Read the tail of a log file for failure diagnostics."""
     try:
-        size = os.path.getsize(log_path)
-        with open(log_path, "r", errors="replace") as f:
+        with open(log_path, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            size = f.tell()
             if size > max_bytes:
                 f.seek(size - max_bytes)
-            return f.read()
+            data = f.read()
+        return data.decode("utf-8", errors="replace")
     except OSError:
         return "<log file not readable>"
 

@@ -148,7 +148,7 @@ class StepLauncher:
         self._setup_signal_handlers()
 
     def _setup_signal_handlers(self) -> None:
-        """Set up signal handlers for graceful shutdown, chaining previous handlers."""
+        """Set up signal handlers for graceful shutdown, saving previous handlers."""
         try:
             # Save previous handlers so we can restore them after the step
             self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
@@ -269,8 +269,8 @@ class StepLauncher:
                 and self._prev_sigint_handler is not None
             ):
                 signal.signal(signal.SIGINT, self._prev_sigint_handler)
-        except (ValueError, OSError):
-            pass
+        except (ValueError, OSError) as e:
+            logger.debug("Failed to restore signal handlers: %s", e)
 
     def launch(self) -> StepRunResponse:
         """Launches the step.
