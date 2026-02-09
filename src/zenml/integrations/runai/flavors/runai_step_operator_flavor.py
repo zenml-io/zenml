@@ -374,7 +374,7 @@ class RunAIStepOperatorConfig(
         Run:AI step operator always runs remotely on Run:AI clusters.
 
         Returns:
-            True, as Run:AI step operator always runs remotely.
+            bool: Always ``True`` because the Run:AI step operator runs remotely.
         """
         return True
 
@@ -385,7 +385,7 @@ class RunAIStepOperatorConfig(
         Run:AI step operator never runs locally.
 
         Returns:
-            False, as Run:AI step operator never runs locally.
+            bool: Always ``False`` because the Run:AI step operator is remote.
         """
         return False
 

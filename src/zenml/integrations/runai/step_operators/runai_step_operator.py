@@ -193,6 +193,7 @@ class RunAIStepOperator(BaseStepOperator):
                 environment.
 
         Raises:
+            RunAIClientError: If building the Run:AI training request fails.
             RuntimeError: If workload submission or execution fails.
         """
         settings = cast(RunAIStepOperatorSettings, self.get_settings(info))
@@ -333,7 +334,8 @@ class RunAIStepOperator(BaseStepOperator):
             info: Step run information.
 
         Returns:
-            A unique workload name string conforming to Run:AI naming requirements.
+            str: A unique workload name that conforms to RunAI naming
+                requirements.
         """
         step_name = self._sanitize_name_component(info.pipeline_step_name)
         pipeline_name = self._sanitize_name_component(info.pipeline.name)
@@ -413,7 +415,8 @@ class RunAIStepOperator(BaseStepOperator):
             settings: The step operator settings.
 
         Returns:
-            The Run:AI compute specification object.
+            SupersetSpecAllOfCompute: The compute specification object used for
+                RunAI workload submission.
         """
         extended_resources_list = None
         if settings.extended_resources:

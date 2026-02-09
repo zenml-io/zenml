@@ -282,9 +282,6 @@ class RunAIClient:
 
         Returns:
             List of RunAIProject objects.
-
-        Raises:
-            RunAIClientError: If the API call fails.
         """
         try:
             response = self._raw_client.organizations.projects.get_projects(
@@ -335,9 +332,6 @@ class RunAIClient:
 
         Returns:
             List of RunAICluster objects.
-
-        Raises:
-            RunAIClientError: If the API call fails.
         """
         try:
             response = self._raw_client.organizations.clusters.get_clusters()
@@ -421,9 +415,6 @@ class RunAIClient:
 
         Returns:
             WorkloadSubmissionResult with the workload ID.
-
-        Raises:
-            RunAIClientError: If submission fails.
         """
         try:
             response = self._raw_client.workloads.trainings.create_training1(
@@ -558,9 +549,6 @@ class RunAIClient:
 
         Args:
             workload_id: The workload ID to delete.
-
-        Raises:
-            RunAIClientError: If deletion fails.
         """
         try:
             self._raw_client.workloads.trainings.delete_training(workload_id)
@@ -576,9 +564,6 @@ class RunAIClient:
 
         Args:
             workload_id: The workload ID to suspend.
-
-        Raises:
-            RunAIClientError: If suspending fails.
         """
         try:
             self._raw_client.workloads.trainings.suspend_training(workload_id)
