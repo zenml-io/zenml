@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -122,7 +123,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
     user: Optional["UserResponse"] = None
 
 
-class TriggerFilter(ProjectScopedFilter):
+class NonScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
 
     name: str | None = Field(
@@ -150,6 +151,12 @@ class TriggerFilter(ProjectScopedFilter):
         description="The next occurrence of the trigger (applicable only for schedules).",
         union_mode="left_to_right",
     )
+
+
+class TriggerFilter(NonScopedTriggerFilter, ProjectScopedFilter):
+    """Public class for filtering triggers."""
+
+    pass
 
 
 class ScheduleTrigger(BaseModel):
