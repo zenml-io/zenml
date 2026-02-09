@@ -1257,6 +1257,10 @@ affinity: {}
 #         replicaCount: 1
 #         command: ["python"]
 #         args: ["-m", "task"]
+#         ports:
+#             - name: http
+#               containerPort: 8080
+#               protocol: TCP
 #         resources:
 #             requests:
 #                 cpu: 100m
