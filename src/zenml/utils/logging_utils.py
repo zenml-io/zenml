@@ -18,16 +18,7 @@ import os
 import threading
 from contextvars import ContextVar
 from types import TracebackType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Optional,
-    Type,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import uuid4
 
 from zenml.client import Client
