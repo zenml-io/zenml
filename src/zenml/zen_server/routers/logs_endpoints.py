@@ -13,18 +13,23 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for logs."""
 
-from typing import Optional
+from typing import Optional, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Security
+from fastapi import APIRouter, Depends, Query, Security
 
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.constants import API, LOGS, VERSION_1
+from zenml.enums import StackComponentType
 from zenml.exceptions import IllegalOperationError
+from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
+from zenml.log_stores.base_log_store import BaseLogStore
 from zenml.models import LogsRequest, LogsResponse, LogsUpdate
 from zenml.models.v2.misc.log_models import (
     LogsEntriesFilter,
     LogsEntriesResponse,
 )
+from zenml.stack import StackComponent
 from zenml.utils.logging_utils import (
     LOGS_ENTRIES_API_MAX_LIMIT,
     fetch_logs_entries,
@@ -271,22 +276,61 @@ def get_logs_entries(
         id=logs_id, get_method=store.get_logs, hydrate=True
     )
 
-    if limit <= 0:
-        raise HTTPException(
-            status_code=422, detail="`limit` must be positive."
+    log_store: Optional[BaseLogStore] = None
+
+    if logs.log_store_id:
+        log_store_model = verify_permissions_and_get_entity(
+            id=logs.log_store_id,
+            get_method=zen_store.get_stack_component,
         )
+
+        if log_store_model.type != StackComponentType.LOG_STORE:
+            raise IllegalOperationError(
+                f"Stack component '{logs.log_store_id}' is not a log store."
+            )
+
+        try:
+            log_store = cast(
+                BaseLogStore, StackComponent.from_model(log_store_model)
+            )
+        except ImportError as e:
+            raise NotImplementedError(
+                f"Log store '{log_store_model.name}' could not be instantiated."
+            ) from e
+    elif logs.artifact_store_id:
+        artifact_store_model = verify_permissions_and_get_entity(
+            id=logs.artifact_store_id,
+            get_method=zen_store.get_stack_component,
+        )
+        if artifact_store_model.type != StackComponentType.ARTIFACT_STORE:
+            raise IllegalOperationError(
+                f"Stack component '{logs.artifact_store_id}' is not an artifact store."
+            )
+        artifact_store = cast(
+            BaseArtifactStore,
+            StackComponent.from_model(artifact_store_model),
+        )
+        log_store = ArtifactLogStore.from_artifact_store(
+            artifact_store=artifact_store
+        )
+    else:
+        raise IllegalOperationError(
+            "Logs response does not have a log store or artifact store."
+        )
+
+    if limit <= 0:
+        raise ValueError("`limit` must be positive.")
 
     if before is not None and after is not None:
-        raise HTTPException(
-            status_code=422,
-            detail="Only one of `before` or `after` can be set.",
-        )
+        raise ValueError("Only one of `before` or `after` can be set.")
 
-    return fetch_logs_entries(
-        logs=logs,
-        zen_store=store,
-        limit=min(limit, LOGS_ENTRIES_API_MAX_LIMIT),
-        before=before,
-        after=after,
-        filter_=filter_,
-    )
+    try:
+        return log_store.fetch_entries(
+            logs_model=logs,
+            limit=limit,
+            before=before,
+            after=after,
+            filter_=filter_,
+        )
+    finally:
+        log_store.cleanup()

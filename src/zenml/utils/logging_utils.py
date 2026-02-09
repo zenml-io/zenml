@@ -476,7 +476,6 @@ def fetch_logs(
         log_store = ArtifactLogStore.from_artifact_store(
             artifact_store=artifact_store
         )
-
     else:
         return []
 
