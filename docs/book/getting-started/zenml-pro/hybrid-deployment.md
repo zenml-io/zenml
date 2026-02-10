@@ -144,7 +144,7 @@ A workspace deep copy feature for migrating pipelines and artifacts between work
 - [Scenarios](scenarios.md)
 - [SaaS Deployment](saas-deployment.md)
 - [Self-hosted Deployment](self-hosted-deployment.md)
-- [Configuration Details](configuration-details.md)
+- [Deployment Details](deploy-details.md)
 - [Upgrades and Updates](upgrades-updates.md)
 - [Workspaces](workspaces.md)
 - [Organizations](organization.md)

@@ -108,7 +108,7 @@ Already running ZenML OSS? Migrating to SaaS is possible with the assistance of 
 - [Scenarios](scenarios.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
 - [Self-hosted Deployment](self-hosted-deployment.md)
-- [Configuration Details](configuration-details.md)
+- [Deployment Details](deploy-details.md)
 - [Upgrades and Updates](upgrades-updates.md)
 
 ## Get Started

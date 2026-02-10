@@ -66,7 +66,7 @@ This documentation is organized to help you understand, deploy, and manage ZenML
 |---------|-------------|
 | [**System Architecture**](system-architecture.md) | How ZenML Pro services (Control Plane, Workspace Server, Workload Manager) communicate and interact |
 | [**Scenarios**](scenarios.md) | Decision guide to help you choose between SaaS, Hybrid, and Self-hosted deployments |
-| [**Configuration Details**](configuration-details.md) | Reference for configurable options, environment variables, and permissions for each component |
+| [**Deployment Details**](deploy-details.md) | Reference for configurable options, environment variables, and permissions for each component |
 | [**Upgrades and Updates**](upgrades-updates.md) | How to upgrade each ZenML Pro component |
 | [**Core Concepts**](hierarchy.md) | Organizations, Workspaces, Projects, Teams, and Hierarchy |
 | [**Access Management**](roles.md) | Roles, Permissions, Service Accounts, and Secrets |

@@ -62,7 +62,7 @@ To upgrade workspace servers in a hybrid deployment:
    Workspace upgrades are orchestrated to be highly available—users should not experience downtime during the upgrade process.
 
 {% hint style="info" %}
-**Workload Manager Updates:** When upgrading, check the [release notes](https://docs.zenml.io/changelog/server-sdk) for any changes to workload manager configuration. If you have configured a workload manager, you may need to update environment variables in your Helm values. See [Workspace Server Configuration](config-workspace-server.md#workload-manager) for the full configuration reference.
+**Workload Manager Updates:** When upgrading, check the [release notes](https://docs.zenml.io/changelog/server-sdk) for any changes to workload manager configuration. If you have configured a workload manager, you may need to update environment variables in your Helm values. See [Workspace Server Configuration](deploy-workspace-snapshots.md) for the full configuration reference.
 {% endhint %}
 
 ## Rollback Procedures

@@ -153,7 +153,7 @@ If you're moving from SaaS or Hybrid to Self-hosted, migration paths can vary si
 - [Scenarios](scenarios.md)
 - [SaaS Deployment](saas-deployment.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
-- [Configuration Details](configuration-details.md)
+- [Deployment Details](deploy-details.md)
 - [Upgrades and Updates](upgrades-updates.md)
 
 ## Get Started
