@@ -103,6 +103,8 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     "developer.hashicorp.com": {429},
     "terraform.io": {429},
     "www.terraform.io": {429},
+    # Modal docs return 406 Not Acceptable to automated requests.
+    "modal.com": {406},
 }
 
 # Default policies for troublesome domains that frequently rate-limit automated traffic.

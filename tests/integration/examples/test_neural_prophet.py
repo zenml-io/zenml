@@ -17,8 +17,19 @@ import pytest
 from tests.integration.examples.utils import run_example
 
 
-def test_example(request: pytest.FixtureRequest) -> None:
+def test_example(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Runs the neural_prophet example."""
+    # NeuralProphet imports PyTorch, which in 2.6+ calls getpass.getuser()
+    # to derive the TorchInductor cache dir. This fails inside Docker
+    # containers running as a numeric UID with no /etc/passwd entry.
+    # Setting the cache dir explicitly bypasses that lookup entirely.
+    monkeypatch.setenv(
+        "__ZENML__TORCHINDUCTOR_CACHE_DIR",
+        "/tmp/torchinductor",  # nosec B108
+    )
+
     with run_example(
         request=request,
         name="neural_prophet",

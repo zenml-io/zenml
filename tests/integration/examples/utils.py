@@ -69,10 +69,19 @@ class IntegrationTestExample:
         Raises:
             RuntimeError: If running the example fails.
         """
+        env = os.environ.copy()
+        # Disable Rich traceback in subprocesses so that if an exception
+        # occurs during interpreter shutdown, the default excepthook
+        # writes the traceback before the pipe closes (Rich's handler
+        # can fail with "Error in sys.excepthook:" on Python 3.10).
+        env.setdefault("ZENML_ENABLE_RICH_TRACEBACK", "false")
+        # Disable whylogs anonymous usage stats to avoid background HTTP
+        # threads that can raise exceptions during interpreter shutdown.
+        env.setdefault("WHYLOGS_NO_ANALYTICS", "True")
         result = subprocess.run(
             [sys.executable, self.run_dot_py_file, *args],
             cwd=str(self.path),
-            env=os.environ.copy(),
+            env=env,
             capture_output=True,
             text=True,
             encoding="utf-8",
