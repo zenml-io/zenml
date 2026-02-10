@@ -198,6 +198,209 @@ Before disabling password authentication, verify that SSO is working correctly:
 3. Attempt to log in using SSO
 4. Verify you can access the expected organizations and resources
 
+## Synchronizing SSO Users with External Directories
+
+When using SSO authentication, ZenML Pro creates user accounts automatically on first login. However, ZenML Pro does not automatically synchronize user roles, group memberships, or other attributes from your identity provider.
+
+{% hint style="info" %}
+ZenML Pro does not consume roles, groups, or other claims from OIDC ID tokens. All ZenML Pro roles, team memberships, and organization assignments must be configured within ZenML Pro.
+{% endhint %}
+
+To maintain consistency between your identity provider and ZenML Pro, you can implement automated synchronization using the ZenML Pro API.
+
+### Invitations as User Placeholders
+
+A key concept for synchronization is that **invitations act as placeholders** for user accounts before users log in via SSO:
+
+- You can create an invitation for an email address before the user has ever logged in
+- Invitations can be assigned organization roles, workspace roles, project roles, and team memberships—just like user accounts
+- When the user logs in via SSO and accepts the invitation, all permissions linked to the invitation are **automatically transferred** to their newly created user account
+
+This allows you to pre-provision access for users based on their IdP group memberships, even before they've logged into ZenML Pro for the first time.
+
+### Synchronization Architecture
+
+A typical synchronization workflow involves:
+
+1. **Fetch users from IdP**: Query your identity provider for users, their groups, and roles
+2. **Map to ZenML Pro concepts**: Define how IdP groups/roles map to ZenML Pro organizations, teams, and roles
+3. **Synchronize via API**: 
+   - For users who have logged in: update their user accounts directly
+   - For users who haven't logged in yet: create invitations and assign permissions to them
+4. **Run periodically**: Execute the synchronization on a schedule (e.g., via cron, Kubernetes CronJob, or CI/CD pipeline)
+
+### Mapping Conventions
+
+Define a mapping strategy that works for your organization. Understanding ZenML Pro's hierarchy is essential for effective mapping:
+
+**ZenML Pro Resource Hierarchy**:
+- **Organizations** contain workspaces and teams
+- **Teams** are organization-local (each team belongs to exactly one organization)
+- **Roles** are scoped to specific levels:
+  - Organization-level roles (e.g., Organization Admin, Organization Member)
+  - Workspace-level roles (e.g., Workspace Admin, Workspace Developer)
+  - Project-level roles (e.g., Project Admin, Project Viewer)
+
+See [Roles & Permissions](roles.md) for the full list of predefined roles at each level.
+
+**Common Mapping Approaches**:
+
+| Approach | IdP Concept | ZenML Pro Concept | Example |
+|----------|-------------|-------------------|---------|
+| **By Organization** | Group membership | Organization membership + role | `zenml-org-<org-id>-admin` → Org Admin in specific org |
+| **By Team** | Group membership | Team membership (within an org) | `zenml-team-<org-id>-<team-id>` → Team in specific org |
+| **By Workspace** | Group membership | Workspace role assignment | `zenml-ws-<workspace-id>-developer` → Workspace Developer |
+| **By Project** | Group membership | Project role assignment | `zenml-proj-<project-id>-viewer` → Project Viewer |
+| **Global Admin** | Role/attribute | Organization Admin in all orgs | `zenml-global-admin` → Admin across organizations |
+
+**Example Mapping with UUIDs**:
+
+```
+# IdP Group Name → ZenML Pro Assignment
+
+# Organization membership with role
+zenml-org-a1b2c3d4-admin     → Organization Admin in org a1b2c3d4-...
+zenml-org-a1b2c3d4-member    → Organization Member in org a1b2c3d4-...
+
+# Team membership (teams are org-scoped)
+zenml-team-a1b2c3d4-e5f6g7h8 → Member of team e5f6g7h8-... in org a1b2c3d4-...
+
+# Workspace role assignment
+zenml-ws-i9j0k1l2-admin      → Workspace Admin in workspace i9j0k1l2-...
+zenml-ws-i9j0k1l2-developer  → Workspace Developer in workspace i9j0k1l2-...
+zenml-ws-i9j0k1l2-viewer     → Workspace Viewer in workspace i9j0k1l2-...
+
+# Project role assignment
+zenml-proj-m3n4o5p6-admin    → Project Admin in project m3n4o5p6-...
+zenml-proj-m3n4o5p6-viewer   → Project Viewer in project m3n4o5p6-...
+```
+
+**Alternative: Human-Readable Mapping with Configuration File**:
+
+Instead of embedding UUIDs in group names, maintain a separate mapping configuration:
+
+```yaml
+# mapping_config.yaml
+organizations:
+  production:
+    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    idp_groups:
+      admin: "zenml-production-admins"
+      member: "zenml-production-users"
+    teams:
+      data-science:
+        id: "e5f6g7h8-i9j0-1234-klmn-opqrstuvwxyz"
+        idp_group: "zenml-ds-team"
+      mlops:
+        id: "f6g7h8i9-j0k1-2345-lmno-pqrstuvwxyza"
+        idp_group: "zenml-mlops-team"
+    workspaces:
+      ml-platform:
+        id: "i9j0k1l2-m3n4-5678-opqr-stuvwxyzabcd"
+        idp_groups:
+          admin: "zenml-ml-platform-admins"
+          developer: "zenml-ml-platform-devs"
+          viewer: "zenml-ml-platform-readonly"
+```
+
+This approach keeps IdP group names human-readable while the synchronization script resolves them to ZenML Pro UUIDs.
+
+### Programmatic API Access
+
+To synchronize users programmatically, authenticate using either a [Personal Access Token](personal-access-tokens.md) or a [Service Account API key](service-accounts.md). Service accounts are recommended for automated synchronization jobs.
+
+For detailed API documentation, see:
+- [ZenML Pro API Reference](https://docs.zenml.io/api-reference/pro-api/getting-started)
+- Interactive OpenAPI documentation at `https://<zenml-pro-url>/api/v1`
+
+### Key API Patterns
+
+Before reviewing the script, note these important ZenML Pro API patterns:
+
+| Operation | API Pattern |
+|-----------|-------------|
+| **Add user to organization** | Assign an organization-level role via `POST /roles/{role_id}/assignments?user_id={id}` |
+| **Add invitation to organization** | Create invitation via `POST /organizations/{org_id}/invitations` with a role |
+| **Assign additional roles** | `POST /roles/{role_id}/assignments` with `user_id`, `invitation_id`, or `team_id` |
+| **Add user/invitation to team** | `POST /teams/{team_id}/members?user_id={id}` or `?invitation_id={id}` |
+| **Remove user from organization** | `DELETE /organizations/{org_id}/members?user_id={id}` |
+| **Revoke role** | `DELETE /roles/{role_id}/assignments` with appropriate query params |
+
+### Example Synchronization Script
+
+We provide a complete example synchronization script that demonstrates how to:
+- Fetch users from an IdP (with a placeholder for your IdP implementation)
+- Map IdP groups to ZenML Pro organizations, teams, and roles
+- Handle both existing users and users who haven't logged in yet (via invitations)
+- Use the ZenML Pro API correctly for all operations
+
+{% file src="scripts/sync_sso_users.py" %}
+Download the example SSO user synchronization script
+{% endfile %}
+
+**Script highlights:**
+
+| Component | Description |
+|-----------|-------------|
+| `IdPClient` | Placeholder class for your IdP integration (Okta, Azure AD, Keycloak, etc.) |
+| `ZenMLProClient` | Complete API client for ZenML Pro with methods for users, organizations, invitations, roles, and teams |
+| `UserSynchronizer` | Orchestrates the sync, handling both existing users and pre-provisioning via invitations |
+
+**Key features:**
+- **Dual-mode synchronization**: Syncs directly to user accounts for users who have logged in, creates invitations for users who haven't
+- **Caching**: Reduces API calls by caching organizations, roles, and teams
+- **Error handling**: Gracefully handles conflicts (e.g., role already assigned) and logs errors
+- **Configurable mapping**: Easy-to-modify mapping dictionaries for your organization's group naming conventions
+
+### Running the Synchronization
+
+**Manual execution**:
+
+```bash
+export ZENML_PRO_API_URL="https://zenml-pro.example.com/api/v1"
+export ZENML_PRO_API_KEY="<service-account-api-key>"
+export IDP_URL="https://your-idp.example.com"
+export IDP_TOKEN="<idp-admin-token>"
+
+python sync_sso_users.py
+```
+
+**Kubernetes CronJob**:
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: zenml-user-sync
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: sync
+            image: python:3.11-slim
+            command: ["python", "/scripts/sync_sso_users.py"]
+            env:
+            - name: ZENML_PRO_API_URL
+              value: "https://zenml-pro.example.com/api/v1"
+            - name: ZENML_PRO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: zenml-sync-credentials
+                  key: api-key
+            # Add IdP credentials as appropriate
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+          volumes:
+          - name: scripts
+            configMap:
+              name: zenml-sync-scripts
+          restartPolicy: OnFailure
+```
+
 ## Related Resources
 
 - [Self-hosted Deployment Overview](self-hosted-deployment.md)
