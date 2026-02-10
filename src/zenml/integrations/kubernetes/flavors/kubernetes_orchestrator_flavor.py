@@ -87,6 +87,20 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=None,
         description="Number of failed scheduled jobs to retain in history.",
     )
+    concurrency_policy: Optional[str] = Field(
+        default=None,
+        description="CronJob concurrency policy for scheduled pipelines. "
+        "Controls whether concurrent job executions are allowed. "
+        "Valid values: 'Allow', 'Forbid', 'Replace'. "
+        "Only applies when a pipeline has a cron schedule",
+    )
+    starting_deadline_seconds: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="CronJob starting deadline in seconds for scheduled "
+        "pipelines. If a scheduled run misses its trigger time, it can "
+        "still start within this window. Only applies when a pipeline "
+        "has a cron schedule",
+    )
     ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
         default=None,
         description="Seconds to keep finished jobs before automatic cleanup.",
@@ -211,6 +225,33 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "pod_failure_backoff",
         ("pod_name_prefix", "job_name_prefix"),
     )
+
+    @field_validator("concurrency_policy", mode="before")
+    @classmethod
+    def _validate_concurrency_policy(cls, value: Any) -> Any:
+        """Validates and normalizes the CronJob concurrency policy.
+
+        Args:
+            value: The concurrency policy value.
+
+        Returns:
+            The normalized value.
+
+        Raises:
+            ValueError: If the value is not a valid concurrency policy.
+        """
+        if value is None:
+            return value
+
+        allowed = {"Allow", "Forbid", "Replace"}
+        # Normalize: capitalize first letter, lowercase rest
+        normalized = str(value).strip().capitalize()
+        if normalized not in allowed:
+            raise ValueError(
+                f"Invalid concurrency policy '{value}'. "
+                f"Must be one of: {', '.join(sorted(allowed))}"
+            )
+        return normalized
 
     @field_validator("pod_failure_policy", mode="before")
     @classmethod
