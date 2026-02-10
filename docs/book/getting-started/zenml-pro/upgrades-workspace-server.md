@@ -85,7 +85,7 @@ If the upgrade fails or causes issues:
 
 - [Upgrades and Updates](upgrades-updates.md) - Overview of upgrade procedures
 - [Upgrading Control Plane](upgrades-control-plane.md) - Control Plane upgrade procedures
-- [Workspace Server Configuration](config-workspace-server.md) - Configuration reference
+- [Workspace Server Deployment](deploy-workspace-k8s.md) - Configuration reference
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 
