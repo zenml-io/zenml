@@ -120,8 +120,13 @@ spec:
         - name: {{ $name }}
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
-          image: "{{ $worker.image.repository }}:{{ $worker.image.tag }}"
-          imagePullPolicy: {{ $worker.image.pullPolicy | default "Always" }}
+          {{- if $worker.image }}
+          image: "{{ $worker.image.repository | default $.Values.zenml.image.repository }}:{{ $worker.image.tag | default $.Values.zenml.image.tag | default $.Chart.Version }}"
+          imagePullPolicy: {{ $worker.image.pullPolicy | default $.Values.zenml.image.pullPolicy }}
+          {{- else }}
+          image: "{{ $.Values.zenml.image.repository }}:{{ $.Values.zenml.image.tag | default $.Chart.Version }}"
+          imagePullPolicy: {{ $.Values.zenml.image.pullPolicy }}
+          {{- end }}
           {{- if $worker.command }}
           command:
             {{- toYaml $worker.command | nindent 12 }}
