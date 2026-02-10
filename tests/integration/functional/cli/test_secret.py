@@ -15,9 +15,7 @@
 
 import os
 
-from click.testing import CliRunner
-
-from tests.integration.functional.cli.utils import cleanup_secrets
+from tests.integration.functional.cli.utils import cleanup_secrets, cli_runner
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -33,7 +31,7 @@ secret_export_command = cli.commands["secret"].commands["export"]
 
 def test_create_secret():
     """Test that creating a new secret succeeds."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
@@ -49,7 +47,7 @@ def test_create_secret():
 
 def test_create_private_secret():
     """Test creating private secrets."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
@@ -65,7 +63,7 @@ def test_create_private_secret():
 
 def test_create_secret_with_values():
     """Tests creating a secret with values."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
@@ -90,7 +88,7 @@ def test_list_secret_works():
     # Save original _original_stdout for cleanup
     original_stdout = zenml_cli._original_stdout
 
-    runner = CliRunner(mix_stderr=False)
+    runner = cli_runner(mix_stderr=False)
     try:
         with cleanup_secrets() as secret_name:
             # Capture clean_output writes by replacing _original_stdout
@@ -124,7 +122,7 @@ def test_list_secret_works():
 
 def test_get_secret_works():
     """Test that the secret get command works."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result1 = runner.invoke(
             secret_get_command,
@@ -149,7 +147,7 @@ def test_get_secret_works():
 
 def test_get_secret_with_prefix_works():
     """Test that the secret get command works with a prefix."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     with cleanup_secrets() as secret_name_prefix:
         result1 = runner.invoke(
@@ -179,7 +177,7 @@ def test_get_secret_with_prefix_works():
 
 def test_get_private_secret():
     """Test that the secret get command works with a private secret."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result1 = runner.invoke(
             secret_get_command,
@@ -248,7 +246,7 @@ def _check_deleting_nonexistent_secret_fails(runner, secret_name):
 
 def test_delete_secret_works():
     """Test that the secret delete command works."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         _check_deleting_nonexistent_secret_fails(runner, secret_name)
 
@@ -269,7 +267,7 @@ def test_delete_secret_works():
 
 def test_rename_secret_works():
     """Test that the secret rename command works."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     with cleanup_secrets() as secret_name:
         with cleanup_secrets() as new_secret_name:
@@ -310,7 +308,7 @@ def test_rename_secret_works():
 
 def test_update_secret_works():
     """Test that the secret update command works."""
-    runner = CliRunner()
+    runner = cli_runner()
     client = Client()
 
     with cleanup_secrets() as secret_name:
@@ -376,7 +374,7 @@ def test_update_secret_works():
 
 def test_export_import_secret():
     """Test that exporting and importing a secret works."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         # Create a secret
         result = runner.invoke(

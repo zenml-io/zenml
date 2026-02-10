@@ -36,6 +36,13 @@ To use the Modal step operator, we need:
   cloud artifact store supported by ZenML will work with Modal.
 * A cloud container registry as part of your stack. Any cloud container
   registry supported by ZenML will work with Modal.
+* An Image Builder in your stack. ZenML uses it to build the Docker image that
+  runs on Modal.
+
+The Modal step operator also respects the following environment variables if set:
+- MODAL_TOKEN_ID, MODAL_TOKEN_SECRET: authentication tokens
+- MODAL_WORKSPACE: workspace name
+- MODAL_ENVIRONMENT: Modal environment name (e.g., "main")
 
 We can then register the step operator:
 
@@ -66,30 +73,42 @@ You can specify the hardware requirements for each step using the
 `ResourceSettings` class as described in our documentation on [resource settings](https://docs.zenml.io/user-guides/tutorial/distributed-training):
 
 ```python
+from zenml import step
 from zenml.config import ResourceSettings
 from zenml.integrations.modal.flavors import ModalStepOperatorSettings
 
-modal_settings = ModalStepOperatorSettings(gpu="A100")
+modal_settings = ModalStepOperatorSettings(
+    gpu="A100",           # GPU type (e.g., "T4", "A100")
+    # region="us-east-1", # optional, enterprise/team only
+    # cloud="aws",        # optional, enterprise/team only
+    # modal_environment="main",  # optional
+    # timeout=86400,      # optional, seconds
+)
+
 resource_settings = ResourceSettings(
-    cpu=2,
-    memory="32GB"
+    cpu_count=2,
+    memory="32GB",
+    # gpu_count=1,        # optional; if omitted and a GPU type is set, defaults to 1 GPU
 )
 
 @step(
-    step_operator=True,
+    step_operator=True,   # or the specific name, e.g., step_operator="<NAME>"
     settings={
         "step_operator": modal_settings,
-        "resources": resource_settings
-    }
+        "resources": resource_settings,
+    },
 )
 def my_modal_step():
     ...
 ```
 
+Important:
+- If you request GPUs with `ResourceSettings.gpu_count > 0`, you must also specify a GPU type via `ModalStepOperatorSettings.gpu`; otherwise the run will fail with a validation error.
+- If a GPU type is set but `gpu_count == 0`, ZenML defaults to 1 GPU and logs a warning.
+- `cpu_count` must be an integer. `memory` can be a string like "32GB" or an integer amount of bytes.
+
 {% hint style="info" %}
 Note that the `cpu` parameter in `ResourceSettings` currently only accepts a single integer value. This specifies a soft minimum limit - Modal will guarantee at least this many physical cores, but the actual usage could be higher. The CPU cores/hour will also determine the minimum price paid for the compute resources.
-
-For example, with the configuration above (2 CPUs and 32GB memory), the minimum cost would be approximately $1.03 per hour ((0.135 * 2) + (0.024 * 32) = $1.03).
 {% endhint %}
 
 This will run `my_modal_step` on a Modal instance with 1 A100 GPU, 2 CPUs, and
@@ -108,8 +127,3 @@ pipeline execution failures. In the case of failures, however, Modal provides
 detailed error messages that can help identify what is incompatible. See more in
 the [Modal docs on region selection](https://modal.com/docs/guide/region-selection) for more
 details.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-

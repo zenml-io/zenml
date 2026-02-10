@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import inspect
 from contextlib import contextmanager
 from typing import Generator, Optional, Tuple
+
+from click.testing import CliRunner
 
 from tests.harness.harness import TestHarness
 from zenml.cli import cli
@@ -33,6 +36,26 @@ SAMPLE_CUSTOM_ARGUMENTS = [
     "axl",
     '--best_cat="aria"',
 ]
+
+
+def cli_runner(**kwargs) -> CliRunner:
+    """Return a Click runner that stays compatible across Click releases.
+
+    Click 8.2+ removed the mix_stderr parameter from CliRunner. This helper
+    ensures compatibility by:
+    - Adding mix_stderr=False on older Click versions (< 8.2)
+    - Removing mix_stderr from kwargs on Click 8.2+ to avoid TypeError
+    """
+    params = inspect.signature(CliRunner.__init__).parameters
+    has_mix_stderr = "mix_stderr" in params
+
+    if has_mix_stderr:
+        if "mix_stderr" not in kwargs:
+            kwargs["mix_stderr"] = False
+    else:
+        kwargs.pop("mix_stderr", None)
+
+    return CliRunner(**kwargs)
 
 
 # ----- #
