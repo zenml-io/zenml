@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import UniqueConstraint, desc
+from sqlalchemy import UniqueConstraint, desc, exists
 from sqlalchemy.orm import object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, and_, col, select
@@ -39,8 +39,8 @@ from zenml.models import (
 )
 from zenml.models.v2.core.resource_pool import (
     ResourcePoolAllocation,
-    ResourcePoolComponentResponse,
     ResourcePoolQueueItem,
+    ResourcePoolSubjectPolicyResponse,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -161,14 +161,14 @@ class ResourcePoolAllocationSchema(BaseSchema, table=True):
         """
         if session := object_session(self):
             return session.execute(
-                select(ResourcePoolAssignmentSchema.priority)
+                select(ResourcePoolSubjectPolicySchema.priority)
                 .where(
-                    ResourcePoolAssignmentSchema.resource_pool_id
+                    ResourcePoolSubjectPolicySchema.resource_pool_id
                     == self.pool_id
                 )
                 .where(ResourceRequestSchema.id == self.request_id)
                 .where(
-                    ResourcePoolAssignmentSchema.component_id
+                    ResourcePoolSubjectPolicySchema.component_id
                     == ResourceRequestSchema.component_id
                 )
                 .limit(1)
@@ -179,10 +179,10 @@ class ResourcePoolAllocationSchema(BaseSchema, table=True):
             )
 
 
-class ResourcePoolAssignmentSchema(BaseSchema, table=True):
-    """Resource pool assignment schema."""
+class ResourcePoolSubjectPolicySchema(BaseSchema, table=True):
+    """Resource pool subject policy schema."""
 
-    __tablename__ = "resource_pool_assignment"
+    __tablename__ = "resource_pool_subject_policy"
     __table_args__ = (
         UniqueConstraint(
             "component_id",
@@ -222,6 +222,42 @@ class ResourcePoolAssignmentSchema(BaseSchema, table=True):
     )
 
     priority: int
+    resources: List["ResourcePoolSubjectPolicyResourceSchema"] = Relationship(
+        back_populates="policy",
+        sa_relationship_kwargs={
+            "passive_deletes": True,
+            "cascade": "all, delete-orphan",
+        },
+    )
+
+
+class ResourcePoolSubjectPolicyResourceSchema(BaseSchema, table=True):
+    """Per-resource min/max share configuration for a pool subject policy."""
+
+    __tablename__ = "resource_pool_subject_policy_resource"
+    __table_args__ = (
+        UniqueConstraint(
+            "policy_id",
+            "key",
+            name="unique_resource_pool_subject_policy_resource",
+        ),
+    )
+    policy_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ResourcePoolSubjectPolicySchema.__tablename__,
+        source_column="policy_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        custom_constraint_name="fk_pool_subject_policy_resource_policy_id",
+    )
+    key: str
+    reserved: int = Field(default=0, nullable=False)
+    limit: Optional[int] = Field(default=None, nullable=True)
+
+    policy: Optional["ResourcePoolSubjectPolicySchema"] = Relationship(
+        back_populates="resources"
+    )
 
 
 class ResourcePoolSchema(NamedSchema, table=True):
@@ -253,9 +289,9 @@ class ResourcePoolSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship()
-    assigned_components: List["ResourcePoolAssignmentSchema"] = Relationship(
+    policies: List["ResourcePoolSubjectPolicySchema"] = Relationship(
         sa_relationship_kwargs={
-            "order_by": desc(col(ResourcePoolAssignmentSchema.priority)),
+            "order_by": desc(col(ResourcePoolSubjectPolicySchema.priority)),
             "passive_deletes": True,
             "cascade": "all, delete-orphan",
         }
@@ -263,6 +299,18 @@ class ResourcePoolSchema(NamedSchema, table=True):
 
     queue_items: List["ResourcePoolRequestQueueSchema"] = Relationship(
         sa_relationship_kwargs={
+            "primaryjoin": lambda: and_(
+                col(ResourcePoolSchema.id)
+                == col(ResourcePoolRequestQueueSchema.pool_id),
+                exists(
+                    select(1).where(
+                        col(ResourceRequestSchema.id)
+                        == col(ResourcePoolRequestQueueSchema.request_id),
+                        col(ResourceRequestSchema.status)
+                        == ResourceRequestStatus.PENDING.value,
+                    )
+                ),
+            ),
             "order_by": (
                 desc(col(ResourcePoolRequestQueueSchema.priority)),
                 ResourcePoolRequestQueueSchema.request_created,
@@ -318,9 +366,9 @@ class ResourcePoolSchema(NamedSchema, table=True):
             options.extend(
                 [
                     selectinload(
-                        jl_arg(ResourcePoolSchema.assigned_components)
+                        jl_arg(ResourcePoolSchema.policies)
                     ).joinedload(
-                        jl_arg(ResourcePoolAssignmentSchema.component)
+                        jl_arg(ResourcePoolSubjectPolicySchema.component)
                     ),
                     selectinload(
                         jl_arg(ResourcePoolSchema.queue_items)
@@ -405,11 +453,17 @@ class ResourcePoolSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             components = [
-                ResourcePoolComponentResponse(
-                    priority=a.priority,
-                    **a.component.to_model().model_dump(),
+                ResourcePoolSubjectPolicyResponse(
+                    **policy.component.to_model().model_dump(),
+                    priority=policy.priority,
+                    reserved={r.key: r.reserved for r in policy.resources},
+                    limit={
+                        r.key: r.limit
+                        for r in policy.resources
+                        if r.limit is not None
+                    },
                 )
-                for a in self.assigned_components
+                for policy in self.policies
             ]
             # TODO: We shouldn't include metadata/resources here.
             queued_requests = [
@@ -433,7 +487,7 @@ class ResourcePoolSchema(NamedSchema, table=True):
             ]
             resources = ResourcePoolResponseResources(
                 user=self.user.to_model() if self.user else None,
-                components=components,
+                policies=components,
                 queued_requests=queued_requests,
                 active_requests=active_requests,
             )

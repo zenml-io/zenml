@@ -154,6 +154,7 @@ from zenml.models import (
     ResourcePoolFilter,
     ResourcePoolRequest,
     ResourcePoolResponse,
+    ResourcePoolSubjectPolicyRequest,
     ResourcePoolUpdate,
     RunMetadataRequest,
     RunMetadataResource,
@@ -2235,7 +2236,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         capacity: Dict[str, int],
         description: Optional[str] = None,
-        components: Optional[Dict[UUID, int]] = None,
+        policies: Optional[List[ResourcePoolSubjectPolicyRequest]] = None,
     ) -> ResourcePoolResponse:
         """Create a resource pool.
 
@@ -2243,7 +2244,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the resource pool.
             capacity: The capacity of the resource pool.
             description: The description of the resource pool.
-            components: The components to attach to the resource pool.
+            policies: The policies to attach to the resource pool.
 
         Returns:
             The created resource pool.
@@ -2252,7 +2253,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             description=description,
             capacity=capacity,
-            components=components,
+            policies=policies,
         )
         return self.zen_store.create_resource_pool(resource_pool=request)
 
@@ -2334,8 +2335,10 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[UUID, str],
         description: Optional[str] = None,
         capacity: Optional[Dict[str, int]] = None,
-        attach_components: Optional[Dict[UUID, int]] = None,
-        detach_components: Optional[List[UUID]] = None,
+        attach_policies: Optional[
+            List[ResourcePoolSubjectPolicyRequest]
+        ] = None,
+        detach_policies: Optional[List[UUID]] = None,
     ) -> ResourcePoolResponse:
         """Update a resource pool.
 
@@ -2345,8 +2348,8 @@ class Client(metaclass=ClientMetaClass):
             description: The new description of the resource pool.
             capacity: The new capacity of the resource pool. Setting a value to
                 0 will remove the resource from the pool.
-            attach_components: The components to attach to the resource pool.
-            detach_components: The components to detach from the resource pool.
+            attach_policies: The policies to attach to the resource pool.
+            detach_policies: The policies to detach from the resource pool.
 
         Returns:
             The updated resource pool.
@@ -2359,8 +2362,8 @@ class Client(metaclass=ClientMetaClass):
         update_model = ResourcePoolUpdate(
             description=description,
             capacity=capacity,
-            attach_components=attach_components,
-            detach_components=detach_components,
+            attach_policies=attach_policies,
+            detach_policies=detach_policies,
         )
 
         return self.zen_store.update_resource_pool(
