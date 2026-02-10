@@ -165,25 +165,6 @@ curl -X POST "https://<zenml-pro-url>/api/v1/users?username=newsuperuser&passwor
 New local users are required to reset their password on first login.
 {% endhint %}
 
-### Adding Users to Organizations
-
-Unlike SSO users who must accept invitations, local users can be directly added to organizations without an invitation workflow (when SSO is disabled):
-
-{% tabs %}
-{% tab title="curl" %}
-```bash
-# Add a user to an organization with a specific role
-curl -X POST "https://<zenml-pro-url>/api/v1/organizations/<org-id>/members" \
-  -H "Authorization: Bearer <access-token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "<user-id>",
-    "role": "admin"
-  }'
-```
-{% endtab %}
-{% endtabs %}
-
 ### Updating Local Users
 
 {% tabs %}
