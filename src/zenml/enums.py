@@ -481,22 +481,6 @@ class DatabaseBackupStrategy(StrEnum):
     CUSTOM = "custom"
 
 
-class PluginType(StrEnum):
-    """All possible types of Plugins."""
-
-    EVENT_SOURCE = "event_source"
-    ACTION = "action"
-
-
-class PluginSubType(StrEnum):
-    """All possible types of Plugins."""
-
-    # Event Source Subtypes
-    WEBHOOK = "webhook"
-    # Action Subtypes
-    PIPELINE_RUN = "pipeline_run"
-
-
 class OnboardingStep(StrEnum):
     """All onboarding steps."""
 
@@ -576,3 +560,15 @@ class GroupType(StrEnum):
 
     MANUAL = "manual"
     MAP = "map"
+
+
+class TriggerType(StrEnum):
+    """Enum representing fundamental trigger types."""
+
+    SCHEDULE = "schedule"  # TODO: Extend with Webhook
+
+
+class TriggerFlavor(StrEnum):
+    """Enum representing trigger flavors."""
+
+    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors

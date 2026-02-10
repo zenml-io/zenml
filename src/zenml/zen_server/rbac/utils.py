@@ -430,8 +430,6 @@ def get_resource_type_for_model(
         is not associated with any resource type.
     """
     from zenml.models import (
-        ActionRequest,
-        ActionResponse,
         ArtifactRequest,
         ArtifactResponse,
         ArtifactVersionRequest,
@@ -442,8 +440,6 @@ def get_resource_type_for_model(
         ComponentResponse,
         DeploymentRequest,
         DeploymentResponse,
-        EventSourceRequest,
-        EventSourceResponse,
         FlavorRequest,
         FlavorResponse,
         ModelRequest,
@@ -465,6 +461,8 @@ def get_resource_type_for_model(
         RunTemplateResponse,
         ScheduleRequest,
         ScheduleResponse,
+        ScheduleTriggerRequest,
+        ScheduleTriggerResponse,
         SecretRequest,
         SecretResponse,
         ServiceAccountRequest,
@@ -477,18 +475,13 @@ def get_resource_type_for_model(
         StackResponse,
         TagRequest,
         TagResponse,
-        TriggerExecutionRequest,
-        TriggerExecutionResponse,
         TriggerRequest,
-        TriggerResponse,
     )
 
     mapping: Dict[
         Any,
         ResourceType,
     ] = {
-        ActionRequest: ResourceType.ACTION,
-        ActionResponse: ResourceType.ACTION,
         ArtifactRequest: ResourceType.ARTIFACT,
         ArtifactResponse: ResourceType.ARTIFACT,
         ArtifactVersionRequest: ResourceType.ARTIFACT_VERSION,
@@ -497,8 +490,6 @@ def get_resource_type_for_model(
         CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
         ComponentRequest: ResourceType.STACK_COMPONENT,
         ComponentResponse: ResourceType.STACK_COMPONENT,
-        EventSourceRequest: ResourceType.EVENT_SOURCE,
-        EventSourceResponse: ResourceType.EVENT_SOURCE,
         FlavorRequest: ResourceType.FLAVOR,
         FlavorResponse: ResourceType.FLAVOR,
         ModelRequest: ResourceType.MODEL,
@@ -532,13 +523,12 @@ def get_resource_type_for_model(
         StackResponse: ResourceType.STACK,
         TagRequest: ResourceType.TAG,
         TagResponse: ResourceType.TAG,
-        TriggerRequest: ResourceType.TRIGGER,
-        TriggerResponse: ResourceType.TRIGGER,
-        TriggerExecutionRequest: ResourceType.TRIGGER_EXECUTION,
-        TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
         ProjectResponse: ResourceType.PROJECT,
         ProjectRequest: ResourceType.PROJECT,
         # UserResponse: ResourceType.USER,
+        ScheduleTriggerRequest: ResourceType.TRIGGER,
+        ScheduleTriggerResponse: ResourceType.TRIGGER,
+        TriggerRequest: ResourceType.TRIGGER,
     }
 
     return mapping.get(type(model))
@@ -643,12 +633,10 @@ def get_schema_for_resource_type(
         The database schema.
     """
     from zenml.zen_stores.schemas import (
-        ActionSchema,
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
         DeploymentSchema,
-        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
@@ -665,7 +653,6 @@ def get_schema_for_resource_type(
         StackComponentSchema,
         StackSchema,
         TagSchema,
-        TriggerExecutionSchema,
         TriggerSchema,
         UserSchema,
     )
@@ -694,10 +681,7 @@ def get_schema_for_resource_type(
         ResourceType.RUN_METADATA: RunMetadataSchema,
         ResourceType.SCHEDULE: ScheduleSchema,
         # ResourceType.USER: UserSchema,
-        ResourceType.ACTION: ActionSchema,
-        ResourceType.EVENT_SOURCE: EventSourceSchema,
         ResourceType.TRIGGER: TriggerSchema,
-        ResourceType.TRIGGER_EXECUTION: TriggerExecutionSchema,
     }
 
     return mapping[resource_type]

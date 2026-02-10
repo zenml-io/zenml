@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+# Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,47 +13,49 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Triggers."""
 
-import base64
 import json
-from typing import Any, List, Optional, Sequence, cast
+from datetime import datetime
+from typing import Any, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlalchemy.orm import joinedload
+from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.schema import Column
+from sqlalchemy.sql.sqltypes import TEXT, VARCHAR, String
 from sqlmodel import Field, Relationship
 
-from zenml.config.schedule import Schedule
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models import (
-    Page,
-    TriggerExecutionRequest,
-    TriggerExecutionResponse,
-    TriggerExecutionResponseBody,
-    TriggerExecutionResponseMetadata,
-    TriggerExecutionResponseResources,
     TriggerRequest,
-    TriggerResponse,
-    TriggerResponseBody,
     TriggerResponseMetadata,
     TriggerResponseResources,
     TriggerUpdate,
 )
-from zenml.utils.json_utils import pydantic_encoder
-from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas.action_schemas import ActionSchema
-from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
-from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
+from zenml.triggers.registry import (
+    TRIGGER_RETURN_TYPE_UNION,
+    TYPE_TO_RESPONSE_BODY_MAPPING,
+    TYPE_TO_RESPONSE_MAPPING,
+)
+from zenml.zen_stores.schemas import PipelineSnapshotSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
+from zenml.zen_stores.schemas.trigger_assoc import (
+    TriggerSnapshotSchema,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
-    get_page_from_list,
     jl_arg,
 )
 
 
 class TriggerSchema(NamedSchema, table=True):
-    """SQL Model for triggers."""
+    """SQL Model for schedules."""
 
     __tablename__ = "trigger"
     __table_args__ = (
@@ -62,7 +64,46 @@ class TriggerSchema(NamedSchema, table=True):
             "project_id",
             name="unique_trigger_name_in_project",
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "type",
+            ],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["flavor", "next_occurrence"],
+        ),
     )
+
+    # -------------------- BASE FIELDS
+
+    active: bool = Field(
+        nullable=False, description="Whether the trigger is active."
+    )
+    is_archived: bool = Field(
+        nullable=False,
+        default=False,
+        description="Soft-deletion flag. If Trigger is set to archived"
+        " it is preserved in the DB but otherwise unusable.",
+    )
+    type: str = Field(
+        sa_column=Column(VARCHAR(20), nullable=False),
+        description="The Trigger type e.g. webhook, schedule, etc.",
+    )
+    flavor: str = Field(
+        sa_column=Column(VARCHAR(50), nullable=False),
+        description="The Trigger category e.g. native schedule, github webhook, etc.",
+    )
+    configuration: str = Field(
+        sa_column=Column(
+            String(length=TEXT_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
+            nullable=False,
+        ),
+        description="JSON object - the extra trigger object parameters",
+    )
+
+    # -------------------- FOREIGN KEYS ------------------------------------
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -72,9 +113,10 @@ class TriggerSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="triggers")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    project: ProjectSchema = Relationship(back_populates="triggers")
+
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -82,46 +124,23 @@ class TriggerSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: Optional["UserSchema"] = Relationship(
-        back_populates="triggers",
-        sa_relationship_kwargs={"foreign_keys": "[TriggerSchema.user_id]"},
+
+    # ------------------ RELATIONSHIPS --------------------------------------------
+
+    snapshots: list[PipelineSnapshotSchema] = Relationship(
+        link_model=TriggerSnapshotSchema,
+        sa_relationship_kwargs={"viewonly": True},
     )
 
-    event_source_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=EventSourceSchema.__tablename__,
-        source_column="event_source_id",
-        target_column="id",
-        # This won't happen because the SQL zen store prevents an event source
-        # from being deleted if it has associated triggers
-        ondelete="SET NULL",
+    user: UserSchema | None = Relationship(back_populates="triggers")
+
+    # ------------------ FLAT DATA FIELDS FOR FAST FILTERING ----------------------
+
+    next_occurrence: datetime | None = Field(
         nullable=True,
+        default=None,
+        description="The next occurrence. Applicable for schedules.",
     )
-    event_source: Optional["EventSourceSchema"] = Relationship(
-        back_populates="triggers"
-    )
-
-    action_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ActionSchema.__tablename__,
-        source_column="action_id",
-        target_column="id",
-        # This won't happen because the SQL zen store prevents an action
-        # from being deleted if it has associated triggers
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    action: "ActionSchema" = Relationship(back_populates="triggers")
-
-    executions: List["TriggerExecutionSchema"] = Relationship(
-        back_populates="trigger"
-    )
-
-    event_filter: bytes
-    schedule: Optional[bytes] = Field(nullable=True)
-
-    description: str = Field(sa_column=Column(TEXT, nullable=True))
-    is_active: bool = Field(nullable=False)
 
     @classmethod
     def get_query_options(
@@ -142,222 +161,124 @@ class TriggerSchema(NamedSchema, table=True):
         Returns:
             A list of query options.
         """
-        options = [
-            joinedload(jl_arg(TriggerSchema.action), innerjoin=True),
-            joinedload(jl_arg(TriggerSchema.event_source), innerjoin=True),
-        ]
+        options = []
 
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(TriggerSchema.user)),
-                    # joinedload(jl_arg(TriggerSchema.executions)),
+                    selectinload(jl_arg(TriggerSchema.snapshots)),
                 ]
             )
 
         return options
 
-    def update(self, trigger_update: "TriggerUpdate") -> "TriggerSchema":
-        """Updates a trigger schema with a trigger update model.
+    @classmethod
+    def from_request(cls, trigger_request: TriggerRequest) -> "TriggerSchema":
+        """Creates a TriggerSchema object from a TriggerRequest.
 
         Args:
-            trigger_update: `TriggerUpdate` to update the trigger with.
+            trigger_request: A TriggerRequest object.
+
+        Returns:
+            A TriggerSchema object.
+        """
+        extra_fields = trigger_request.get_extra_fields()
+
+        schema = cls(
+            name=trigger_request.name,
+            project_id=trigger_request.project,
+            user_id=trigger_request.user,
+            active=trigger_request.active,
+            configuration=trigger_request.get_config(),
+            flavor=trigger_request.flavor,
+            type=trigger_request.type,
+        )
+
+        for field_name, value in extra_fields.items():
+            setattr(schema, field_name, value)
+
+        return schema
+
+    def update(self, trigger_update: TriggerUpdate) -> "TriggerSchema":
+        """Applies update operation (and validations).
+
+        Args:
+            trigger_update: A TriggerUpdate object.
 
         Returns:
             The updated TriggerSchema.
         """
-        for field, value in trigger_update.model_dump(
-            exclude_unset=True,
-            exclude_none=True,
-        ).items():
-            if field == "event_filter":
-                self.event_filter = base64.b64encode(
-                    json.dumps(
-                        trigger_update.event_filter, default=pydantic_encoder
-                    ).encode("utf-8")
-                )
-            else:
-                setattr(self, field, value)
+        if trigger_update.active is not None:
+            self.active = trigger_update.active
 
-        self.updated = utc_now()
+        if trigger_update.name is not None:
+            self.name = trigger_update.name
+
+        self.configuration = trigger_update.get_config()
+
+        for field_name, value in trigger_update.get_extra_fields().items():
+            setattr(self, field_name, value)
+
         return self
-
-    @classmethod
-    def from_request(cls, request: "TriggerRequest") -> "TriggerSchema":
-        """Convert a `TriggerRequest` to a `TriggerSchema`.
-
-        Args:
-            request: The request model to convert.
-
-        Returns:
-            The converted schema.
-        """
-        return cls(
-            name=request.name,
-            project_id=request.project,
-            user_id=request.user,
-            action_id=request.action_id,
-            event_source_id=request.event_source_id,
-            event_filter=base64.b64encode(
-                json.dumps(
-                    request.event_filter, default=pydantic_encoder
-                ).encode("utf-8")
-            ),
-            schedule=base64.b64encode(request.schedule.json().encode("utf-8"))
-            if request.schedule
-            else None,
-            description=request.description,
-            is_active=True,  # Makes no sense for it to be created inactive
-        )
 
     def to_model(
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> "TriggerResponse":
-        """Converts the schema to a model.
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Converts to Pydantic response model.
 
         Args:
-            include_metadata: Flag deciding whether to include the output model(s)
-                metadata fields in the response.
-            include_resources: Flag deciding whether to include the output model(s)
-                metadata fields in the response.
-            **kwargs: Keyword arguments to allow schema specific logic
+            include_metadata: Flag - to include metadata.
+            include_resources: Flag - include resources.
+            **kwargs: Keyword arguments
 
         Returns:
-            The converted model.
+            A TriggerResponse object.
         """
-        from zenml.models import TriggerExecutionResponse
+        body_cls = TYPE_TO_RESPONSE_BODY_MAPPING[self.type]
+        response_cls = TYPE_TO_RESPONSE_MAPPING[self.type]
 
-        body = TriggerResponseBody(
+        body = body_cls(
             user_id=self.user_id,
             project_id=self.project_id,
-            created=self.created,
+            active=self.active,
             updated=self.updated,
-            action_flavor=self.action.flavor,
-            action_subtype=self.action.plugin_subtype,
-            event_source_flavor=self.event_source.flavor
-            if self.event_source
-            else None,
-            event_source_subtype=self.event_source.plugin_subtype
-            if self.event_source
-            else None,
-            is_active=self.is_active,
+            created=self.created,
+            is_archived=self.is_archived,
+            type=TriggerType(self.type),
+            flavor=TriggerFlavor(self.flavor),
+            name=self.name,
+            **json.loads(self.configuration),
         )
+
+        for field in body.get_extra_fields():
+            setattr(body, field, getattr(self, field))
+
         metadata = None
         if include_metadata:
-            metadata = TriggerResponseMetadata(
-                event_filter=json.loads(
-                    base64.b64decode(self.event_filter).decode()
-                ),
-                schedule=Schedule.parse_raw(
-                    base64.b64decode(self.schedule).decode()
-                )
-                if self.schedule
-                else None,
-                description=self.description,
-            )
+            metadata = TriggerResponseMetadata()
+
         resources = None
         if include_resources:
-            executions = cast(
-                Page[TriggerExecutionResponse],
-                get_page_from_list(
-                    items_list=self.executions,
-                    response_model=TriggerExecutionResponse,
-                    include_resources=False,
-                    include_metadata=False,
-                ),
-            )
             resources = TriggerResponseResources(
                 user=self.user.to_model() if self.user else None,
-                action=self.action.to_model(),
-                event_source=self.event_source.to_model()
-                if self.event_source
-                else None,
-                executions=executions,
+                snapshots=[
+                    s.to_model(
+                        include_resources=False,
+                        include_metadata=False,
+                        include_config_schema=False,
+                        include_python_packages=False,
+                    )
+                    for s in self.snapshots
+                ],
             )
-        return TriggerResponse(
+
+        return response_cls(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
             resources=resources,
-        )
-
-
-class TriggerExecutionSchema(BaseSchema, table=True):
-    """SQL Model for trigger executions."""
-
-    __tablename__ = "trigger_execution"
-
-    trigger_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=TriggerSchema.__tablename__,
-        source_column="trigger_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    trigger: TriggerSchema = Relationship(back_populates="executions")
-
-    event_metadata: Optional[bytes] = None
-
-    @classmethod
-    def from_request(
-        cls, request: "TriggerExecutionRequest"
-    ) -> "TriggerExecutionSchema":
-        """Convert a `TriggerExecutionRequest` to a `TriggerExecutionSchema`.
-
-        Args:
-            request: The request model to convert.
-
-        Returns:
-            The converted schema.
-        """
-        return cls(
-            trigger_id=request.trigger,
-            event_metadata=base64.b64encode(
-                json.dumps(request.event_metadata).encode("utf-8")
-            ),
-        )
-
-    def to_model(
-        self,
-        include_metadata: bool = False,
-        include_resources: bool = False,
-        **kwargs: Any,
-    ) -> "TriggerExecutionResponse":
-        """Converts the schema to a model.
-
-        Args:
-            include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the resources will be filled.
-            **kwargs: Keyword arguments to allow schema specific logic
-
-
-        Returns:
-            The converted model.
-        """
-        body = TriggerExecutionResponseBody(
-            created=self.created,
-            updated=self.updated,
-        )
-        metadata = None
-        if include_metadata:
-            metadata = TriggerExecutionResponseMetadata(
-                event_metadata=json.loads(
-                    base64.b64decode(self.event_metadata).decode()
-                )
-                if self.event_metadata
-                else {},
-            )
-        resources = None
-        if include_resources:
-            resources = TriggerExecutionResponseResources(
-                trigger=self.trigger.to_model(),
-            )
-
-        return TriggerExecutionResponse(
-            id=self.id, body=body, metadata=metadata, resources=resources
         )
