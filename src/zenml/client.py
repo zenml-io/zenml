@@ -3938,9 +3938,10 @@ class Client(metaclass=ClientMetaClass):
             trigger_update=ScheduleTriggerUpdate(
                 name=name or trigger.name,
                 active=active is not None or trigger.active,
-                cron_expression=cron_expression,
-                interval=interval,
-                run_once_start_time=run_once_start_time,
+                cron_expression=cron_expression or trigger.cron_expression,
+                interval=interval or trigger.interval,
+                run_once_start_time=run_once_start_time
+                or trigger.run_once_start_time,
                 start_time=start_time is not None or trigger.start_time,
                 end_time=end_time is not None or trigger.end_time,
             ),
