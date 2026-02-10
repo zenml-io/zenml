@@ -18,7 +18,12 @@ layout:
 The Workspace Server includes a Workload Manager feature that allows running pipelines directly from the ZenML Pro UI. This feature requires access to a Kubernetes cluster where ad-hoc pipeline runner pods can be created.
 
 {% hint style="warning" %}
-Snapshots are only available from ZenML Pro Workspace Server version 0.90.0 onwards
+Snapshots are only available from ZenML Pro Workspace Server version 0.90.0 onwards.
+{% endhint %}
+
+{% hint style="warning" %}
+Snapshot support is only available for workspace servers that are deployed on Kubernetes.
+Workspace servers that are deployed on AWS ECS or other platforms are currently not supported.
 {% endhint %}
 
 ## Prerequisites
@@ -132,8 +137,7 @@ zenml:
 
 The Kubernetes service account running the ZenML Workspace Server needs additional permissions:
 
-* permissions to create jobs in the workload manager Kubernetes namespace set up in step 1.
- to build images and run jobs, including access to container images and any configured bucket for logs.
+* permissions to create and manage jobs in the workload manager Kubernetes namespace set up in step 1.
 * if the AWS implementation is used and external S3 logs are enabled, permissions to write to the configured S3 bucket.
 
 The workload manager Kubernetes service account set up in step 1 also needs the following container registry permissions:
@@ -141,11 +145,10 @@ The workload manager Kubernetes service account set up in step 1 also needs the 
 * if the option to build runner images on-demand is chosen, permissions to push images to the container registry where the runner images will be pushed.
 
 Granting these permissions can be achieved in several ways:
-
-    * grant the entire cluster access to the container registry
-    * use implicit workload identity access to the container registry - available in most cloud providers by granting the Kubernetes service account access to the container registry
-    * configure a service account with implicit access to the container registry - associating some cloud service identity (e.g. a GCP service account, an AWS IAM role, etc.) with the Kubernetes service account
-    * configure an image pull secret for the service account - similar to the previous option, but using a Kubernetes secret instead of a cloud service identity
+  * grant the entire cluster access to the container registry
+  * use implicit workload identity access to the container registry - available in most cloud providers by granting the Kubernetes service account access to the container registry
+  * configure a service account with implicit access to the container registry - associating some cloud service identity (e.g. a GCP service account, an AWS IAM role, etc.) with the Kubernetes service account
+  * configure an image pull secret for the service account - similar to the previous option, but using a Kubernetes secret instead of a cloud service identity
 
 ### 4. Environment Variable Reference
 

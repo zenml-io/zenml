@@ -33,7 +33,7 @@ The data and storage layer includes a MySQL database for workspace and control p
 
 ## Prerequisites
 
-Before starting, make sure you go through the [general prerequisites for self-hosted deployments](self-hosted-deployment-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for Kubernetes with Helm deployments are listed below.
+Before starting, make sure you go through the [general prerequisites for self-hosted deployments](deploy-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for Kubernetes with Helm deployments are listed below.
 
 **Infrastructure:**
 - Kubernetes cluster (1.24+)
@@ -222,7 +222,7 @@ You will use this account to log in to the ZenML Pro UI to perform the following
 1. Create one or more [organizations](organization.md)
 2. Create user accounts and/or invite other users to join the organization(s)
 3. Assign [roles and permissions](roles.md) to users or group them into [teams](teams.md)
-4. Enroll deployed workspaces in the organization(s)
+4. [Enroll workspaces](enroll-workspace.md) in the organization(s)
 
 Creating the initial super-user account is different depending on whether you are using SSO authentication or password authentication.
 

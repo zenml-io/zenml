@@ -24,10 +24,10 @@ ZenML Pro consists of two distinct software component groups, each with its own 
 ### Control Plane Components
 
 {% hint style="info" %}
-You only need to deploy and manage the Control Plane components if you are setting up [the fully self-hosted scenario](self-hosted.md). If you are using the [hybrid scenario](hybrid.md) or the [SaaS scenario](saas-deployment.md), the Control Plane is fully managed by ZenML.
+You only need to deploy and manage the Control Plane components if you are setting up [the fully self-hosted scenario](self-hosted-deployment.md). If you are using the [hybrid scenario](hybrid-deployment.md) or the [SaaS scenario](saas-deployment.md), the Control Plane is fully managed by ZenML.
 {% endhint %}
 
-The **Control Plane API** and **Control Plan Web UI** are developed and released together as part of the ZenML Pro product. These components:
+The **Control Plane API** and **Control Plane Web UI** are developed and released together as part of the ZenML Pro product. These components:
 
 - Share a unified version number (e.g., `0.13.0`)
 - Have container images and Helm chart releases aligned to the same version
@@ -48,7 +48,7 @@ The **Control Plane API** and **Control Plan Web UI** are developed and released
 ### ZenML Pro Workspace Server Component
 
 {% hint style="info" %}
-You need to deploy and manage the Workspace Server components if you are setting up either the [hybrid scenario](hybrid.md) or [the self-hosted scenario](self-hosted.md). If you are using the [SaaS scenario](saas-deployment.md), the Workspace Servers are fully managed by ZenML.
+You need to deploy and manage the Workspace Server components if you are setting up either the [hybrid scenario](hybrid-deployment.md) or [the self-hosted scenario](self-hosted-deployment.md). If you are using the [SaaS scenario](saas-deployment.md), the Workspace Servers are fully managed by ZenML.
 {% endhint %}
 
 The **Workspace Server** is built on top of the open-source ZenML server. This component:
@@ -74,6 +74,10 @@ The Control Plane and Workspace Server versions are independent. For example, yo
 {% endhint %}
 
 ### Authenticating to ZenML Pro Container Registries
+
+{% hint style="info" %}
+To request access to the ZenML Pro container registries, contact [cloud@zenml.io](mailto:cloud@zenml.io) with details about your infrastructure and preferred authentication method.
+{% endhint %}
 
 Access to the ZenML Pro container registries is granted upon request. The authentication method depends on your infrastructure:
 
@@ -110,10 +114,6 @@ Use these credentials to authenticate with Docker before pulling the images host
 ```bash
 cat your-zenml-issued-key.json | docker login -u _json_key --password-stdin https://europe-west3-docker.pkg.dev
 ```
-
-{% hint style="info" %}
-To request access to the ZenML Pro container registries, contact [cloud@zenml.io](mailto:cloud@zenml.io) with details about your infrastructure and preferred authentication method.
-{% endhint %}
 
 ### Air-gapped Deployment Process
 
@@ -266,8 +266,8 @@ ZenML Pro requires relational database(s) for storing metadata:
 
 Each ZenML Pro component requires its own dedicated database (not a separate database instance — just a unique database name within the instance):
 
-- One database for the **control plane** (e.g., `zenml_pro`) - only applicable if you are setting up [the fully self-hosted scenario](self-hosted.md)
-- One database for **each workspace server** (e.g., `zenml_workspace_1`, `zenml_workspace_2`, etc.) - applicable for both the [hybrid scenario](hybrid.md) and [the fully self-hosted scenario](self-hosted.md)
+- One database for the **control plane** (e.g., `zenml_pro`) - only applicable if you are setting up [the fully self-hosted scenario](self-hosted-deployment.md)
+- One database for **each workspace server** (e.g., `zenml_workspace_1`, `zenml_workspace_2`, etc.) - applicable for both the [hybrid scenario](hybrid-deployment.md) and [the fully self-hosted scenario](self-hosted-deployment.md)
 
 {% hint style="info" %}
 The databases do not need to be created in advance. ZenML Pro will automatically create them on first startup, provided the database user has the necessary permissions (`CREATE DATABASE`). If your database user lacks these permissions, create the databases manually before deployment.
@@ -305,7 +305,7 @@ Even if you use ZenML's hosted registries for the ZenML Pro control plane and wo
 ### SSO Identity Provider (Optional)
 
 {% hint style="info" %}
-SSO configuration is optional and only applicable if you are setting up [the fully self-hosted scenario](self-hosted.md). You can start with local accounts and enable SSO later without losing existing data. [The hybrid scenario](hybrid.md) already uses the ZenML Pro SaaS SSO for authentication.
+SSO configuration is optional and only applicable if you are setting up [the fully self-hosted scenario](self-hosted-deployment.md). You can start with local accounts and enable SSO later without losing existing data. [The hybrid scenario](hybrid-deployment.md) already uses the ZenML Pro SaaS SSO for authentication.
 {% endhint %}
 
 By default, the ZenML Pro control plane uses local accounts with password authentication. Single Sign-On (SSO) can be enabled to authenticate users through an external identity provider instead.
@@ -327,6 +327,7 @@ Your identity provider must meet the following specifications:
 | Requirement | Description |
 |-------------|-------------|
 | OAuth 2.0 authorization code flow | Must support the standard authorization code grant |
+| JWT ID token | Must issue JWT ID tokens during the authorization code flow |
 | Required scopes | `openid`, `email`, `profile` |
 | OpenID configuration endpoint | Must expose `/.well-known/openid-configuration` at a URL reachable by the ZenML Pro control plane |
 | JWKS | Must implement JSON Web Key Set for signing ID tokens |
@@ -433,8 +434,8 @@ The following internal network connectivity is required:
 |--------|-------------|------|---------|
 | ZenML containers | Database server | 3306 (MySQL) or 5432 (PostgreSQL) | Metadata storage |
 | Container runtime (e.g. Kubernetes nodes, Docker hosts, etc.) | Container registry | 443 | Image pulls (if using private registry) |
-| Workspace servers | Control plane | 443 | Enrollment, status updates, RBAC permissions (if using [the fully self-hosted scenario](self-hosted.md)) |
-| Web UI | Control plane | 443 | Authentication, API requests, UI data requests (if using [the fully self-hosted scenario](self-hosted.md)) |
+| Workspace servers | Control plane | 443 | Enrollment, status updates, RBAC permissions (if using [the fully self-hosted scenario](self-hosted-deployment.md)) |
+| Web UI | Control plane | 443 | Authentication, API requests, UI data requests (if using [the fully self-hosted scenario](self-hosted-deployment.md)) |
 
 #### External Connectivity
 
@@ -443,9 +444,9 @@ Depending on your deployment model:
 | Connectivity | Required For |
 |--------------|--------------|
 | Inbound HTTPS (443) | Client access to dashboard and APIs |
-| Outbound HTTPS (443) | Control plane server connecting to the identity provider for SSO authentication (if enabled and using [the fully self-hosted scenario](self-hosted.md)) |
+| Outbound HTTPS (443) | Control plane server connecting to the identity provider for SSO authentication (if enabled and using [the fully self-hosted scenario](self-hosted-deployment.md)) |
 | Outbound HTTPS (443) | Pulling images from ZenML registries (if not air-gapped) |
-| Outbound HTTPS (443) | Workspace servers connecting to the control plane for enrollment, status updates, RBAC permissions (if using [the hybrid scenario](hybrid.md)) |
+| Outbound HTTPS (443) | Workspace servers connecting to the control plane for enrollment, status updates, RBAC permissions (if using [the hybrid scenario](hybrid-deployment.md)) |
 
 ## Information to Collect Before Deployment
 

@@ -20,7 +20,7 @@ This guide provides step-by-step instructions for deploying ZenML Pro workspaces
 
 ## Prerequisites
 
-Before starting, make sure you go through the [general prerequisites for hybrid deployments](hybrid-deployment-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for Kubernetes with Helm deployments are listed below.
+Before starting, make sure you go through the [general prerequisites for hybrid deployments](deploy-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for Kubernetes with Helm deployments are listed below.
 
 **Infrastructure:**
 - Kubernetes cluster (1.24+)
@@ -282,7 +282,7 @@ The Workspace Server includes a workload manager feature that enables running pi
 The workload manager feature and snapshots are only available from ZenML workspace server version 0.90.0 onwards.
 {% endhint %}
 
-If you want to enable snapshot support for the ZenML Pro workspace server, you need to follow the instructions in the [Enable Snapshot Support](self-hosted-deployment-helm-snapshots.md) guide.
+If you want to enable snapshot support for the ZenML Pro workspace server, you need to follow the instructions in the [Enable Snapshot Support](deploy-workspace-snapshots.md) guide.
 
 ## Day 2 Operations
 

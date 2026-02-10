@@ -28,7 +28,7 @@ In this setup:
 
 ## Prerequisites
 
-Before starting, make sure you go through the [general prerequisites for hybrid deployments](hybrid-deployment-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for AWS ECS deployments are listed below.
+Before starting, make sure you go through the [general prerequisites for hybrid deployments](deploy-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for AWS ECS deployments are listed below.
 
 - AWS Account with appropriate IAM permissions
 - Basic familiarity with AWS ECS, VPC, and RDS
@@ -349,81 +349,6 @@ Monitor database health:
 1. Check RDS Performance Insights for slow queries
 2. Review CloudWatch metrics for connection count and CPU
 3. Monitor free storage space and create alerts
-
-## (Optional) Enable Snapshot Support / Workload Manager
-
-Pipeline snapshots (running pipelines from the UI) require a workload manager. For ECS deployments, you'll typically use the AWS Kubernetes implementation if you also have a Kubernetes cluster available, or configure settings as appropriate for your infrastructure.
-
-### Prerequisites for Workload Manager
-
-To enable snapshots on ECS-deployed ZenML workspaces:
-
-1. **Kubernetes Cluster Access** - You'll need a Kubernetes cluster where the workload manager can run jobs. This could be:
-   - The same EKS cluster as your other infrastructure
-   - A separate EKS cluster dedicated to workloads
-   - Another Kubernetes distribution in your environment
-
-2. **Container Registry Access** - The workload manager needs access to your container registry to:
-   - Pull base ZenML images
-   - Push/pull runner images (if building them)
-
-3. **Storage Access** - For AWS implementation:
-   - S3 bucket for logs storage
-   - IAM permissions to read/write to the bucket
-
-### Configuration Options
-
-**Option A: AWS Kubernetes Workload Manager (Recommended for ECS)**
-
-If you have an EKS cluster or other Kubernetes cluster available:
-
-1. Create a dedicated namespace:
-   ```
-   kubectl create namespace zenml-workload-manager
-   kubectl -n zenml-workload-manager create serviceaccount zenml-runner
-   ```
-
-2. Add these environment variables to your ECS task definition:
-
-   | Variable | Value |
-   |----------|-------|
-   | `ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE` | `zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager` |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` | `zenml-workload-manager` |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` | `zenml-runner` |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` | `true` |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY` | Your ECR registry URI |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` | `true` |
-   | `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` | Your S3 bucket for logs |
-   | `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION` | Your AWS region |
-   | `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` | `2` (or higher) |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES` | `{"requests": {"cpu": "500m", "memory": "512Mi"}, "limits": {"cpu": "2000m", "memory": "2Gi"}}` |
-
-3. Ensure the ECS task has permissions to access:
-   - The Kubernetes cluster (kubeconfig/IAM role)
-   - Your ECR registry
-   - Your S3 bucket for logs
-
-**Option B: Kubernetes-based (Simpler Alternative)**
-
-If you prefer a basic setup without AWS-specific features:
-
-Add these environment variables to your ECS task definition:
-
-| Variable | Value |
-|----------|-------|
-| `ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE` | `zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager` |
-| `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` | `zenml-workload-manager` |
-| `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` | `zenml-runner` |
-| `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` | Your prebuilt ZenML image URI |
-
-### Updating Task Definition
-
-After configuring the workload manager environment variables:
-
-1. Create a new task definition revision with the updated environment variables
-2. Update your ECS service to use the new task definition
-3. ECS will gradually replace running tasks with the new version
-4. Monitor CloudWatch logs to verify the workload manager is operational
 
 ## Troubleshooting
 
