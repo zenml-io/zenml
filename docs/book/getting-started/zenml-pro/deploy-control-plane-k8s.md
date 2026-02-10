@@ -139,7 +139,9 @@ zenml:
 
   auth:
     sso:
-      # Enable SSO authentication if you are using an external OIDC identity provider.
+      # Enable SSO authentication if you are using an external OIDC identity
+      # provider. See the SSO guide for prerequisites and configuration details:
+      # https://docs.zenml.io/pro/manage/sso
       enabled: true
       oidcConfigurationEndpoint: https://idp.example.com/.well-known/openid-configuration
       clientID: <your-oidc-client-id>
@@ -148,6 +150,8 @@ zenml:
     password:
       # Enable password authentication if you are using local accounts.
       # An `admin` account and random password will be created after deployment.
+      # See the SSO guide for migration steps if transitioning from password
+      # authentication to SSO: https://docs.zenml.io/pro/manage/sso
       enabled: true
 
       # Customize the password of the default admin user that is created when
@@ -174,6 +178,7 @@ In addition to the above, the following might also be relevant for you:
 * configure HTTP proxy settings (`zenml.proxy`)
 * custom container image repository locations (`zenml.image.api` and `zenml.image.dashboard`)
 * the username and password used for the default admin account (`zenml.auth.password`)
+* SSO authentication settings (`zenml.auth.sso`) — see the [Single Sign-On (SSO)](sso.md) guide for prerequisites and migration from password authentication
 * additional Ingress settings (`zenml.ingress`)
 * Kubernetes resources allocated to the pods (`resources`)
 * If you set up a common DNS prefix that you plan on using for all the ZenML Pro services, you may configure the domain of the HTTP cookies used by the ZenML Pro dashboard to match it by setting `zenml.auth.authCookieDomain` to the DNS prefix (e.g. `.my.domain` instead of `zenml-pro.my-domain`)

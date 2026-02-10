@@ -20,6 +20,7 @@
 
 ## Manage
 
+* [Single Sign-On (SSO)](sso.md)
 * [Upgrades and Updates](upgrades-updates.md)
   * [Control Plane](upgrades-control-plane.md)
   * [Workspace Server](upgrades-workspace-server.md)

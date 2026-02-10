@@ -310,41 +310,7 @@ SSO configuration is optional and only applicable if you are setting up [the ful
 
 By default, the ZenML Pro control plane uses local accounts with password authentication. Single Sign-On (SSO) can be enabled to authenticate users through an external identity provider instead.
 
-**Supported identity providers:**
-
-Any OIDC-compatible identity provider can be used, including:
-
-| Provider Type | Examples |
-|---------------|----------|
-| Cloud identity services | Google Workspace, Microsoft Entra ID (Azure AD), Okta, Auth0 |
-| Self-hosted solutions | Keycloak, Authentik, Dex, Gluu |
-| Enterprise directories | ADFS, Ping Identity, OneLogin |
-
-**Identity provider requirements:**
-
-Your identity provider must meet the following specifications:
-
-| Requirement | Description |
-|-------------|-------------|
-| OAuth 2.0 authorization code flow | Must support the standard authorization code grant |
-| JWT ID token | Must issue JWT ID tokens during the authorization code flow |
-| Required scopes | `openid`, `email`, `profile` |
-| OpenID configuration endpoint | Must expose `/.well-known/openid-configuration` at a URL reachable by the ZenML Pro control plane |
-| JWKS | Must implement JSON Web Key Set for signing ID tokens |
-| Logout endpoint (optional) | If supported, enables single logout functionality |
-
-**ZenML Pro client configuration in the identity provider:**
-
-When registering ZenML Pro as an OIDC client in your identity provider, configure the following:
-
-| Setting | Value |
-|---------|-------|
-| Redirect URI | `https://<zenml-ui-url>/api/auth/callback` |
-| Post-logout redirect URI | `https://<zenml-ui-url>/api/auth/logout-complete` (if logout is supported) |
-| Allowed scopes | `openid`, `email`, `profile` |
-| Client type | Confidential (requires client secret) |
-
-After registration, your identity provider will issue a **client ID** and **client secret** that you will need when configuring ZenML Pro in addition to the URL to the OpenID configuration endpoint (`/.well-known/openid-configuration`).
+For detailed information about SSO prerequisites, identity provider configuration, and migrating from password authentication to SSO, see the [Single Sign-On (SSO)](sso.md) guide.
 
 ### Network Services
 
@@ -519,17 +485,7 @@ Choose where ZenML Pro container images will be pulled from:
 
 ### SSO Configuration (if enabled)
 
-Skip this section if using local accounts only.
-
-| Parameter | Value |
-|-----------|-------|
-| Identity provider | `_______________` (e.g., Okta, Azure AD, Keycloak) |
-| OIDC discovery URL | `_______________` (e.g., `https://idp.example.com/.well-known/openid-configuration`) |
-| Client ID | `_______________` |
-| Client secret | `_______________` |
-| Redirect URI (configured in IdP) | `https://<web-ui-url>/api/auth/callback` |
-| Post-logout redirect URI (if applicable) | `https://<web-ui-url>/api/auth/logout-complete` |
-| IDP logout URI to call (if applicable) | `https://<idp-url>/v2/logout` |
+Skip this section if using local accounts only. For the full list of SSO-related prerequisites and information to collect, see the [Single Sign-On (SSO)](sso.md) guide.
 
 ## Next Steps
 
