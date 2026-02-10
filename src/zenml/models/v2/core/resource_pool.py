@@ -51,22 +51,28 @@ if TYPE_CHECKING:
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
-class ResourcePoolComponentResponse(ComponentResponse):
-    """Response model for resource pool components."""
+class ResourcePoolSubjectPolicyResponse(ComponentResponse):
+    """Response model for resource pool subject policies."""
 
     priority: int = Field(
         title="The priority of the component in the resource pool.",
     )
+    reserved: Dict[str, NonNegativeInt] = Field(
+        title="The resources that are reserved for the component.",
+    )
+    limit: Dict[str, NonNegativeInt] = Field(
+        title="The maximum resources that the component can use.",
+    )
 
-    def get_hydrated_version(self) -> "ResourcePoolComponentResponse":
-        """Get the hydrated version of this resource pool component.
+    def get_hydrated_version(self) -> "ResourcePoolSubjectPolicyResponse":
+        """Get the hydrated version of this resource pool subject policy.
 
         Returns:
             an instance of the same entity with the metadata field attached.
         """
         from zenml.client import Client
 
-        return ResourcePoolComponentResponse(
+        return ResourcePoolSubjectPolicyResponse(
             priority=self.priority,
             **Client().zen_store.get_stack_component(self.id).model_dump(),
         )
@@ -97,6 +103,42 @@ class ResourcePoolQueueItem(BaseModel):
     )
 
 
+class ResourcePoolSubjectPolicyRequest(BaseModel):
+    """Resource pool subject policy request."""
+
+    component_id: UUID = Field(
+        title="The ID of the component that is the subject of the policy.",
+    )
+    priority: NonNegativeInt = Field(
+        title="The priority of the component in the resource pool. Higher "
+        "means preferred.",
+    )
+    reserved: Optional[Dict[str, NonNegativeInt]] = Field(
+        title="The resources that are reserved for the component.",
+        default=None,
+    )
+    limit: Optional[Dict[str, NonNegativeInt]] = Field(
+        title="The maximum resources that the component can use.",
+        default=None,
+    )
+
+    @model_validator(mode="after")
+    def _validate_resources(self) -> "ResourcePoolSubjectPolicyRequest":
+        if not self.reserved or not self.limit:
+            return self
+
+        for key, reserved_value in self.reserved.items():
+            limit_value = self.limit.get(key)
+
+            if limit_value is not None and reserved_value > limit_value:
+                raise ValueError(
+                    f"Reserved value for resource `{key}` ({reserved_value}) "
+                    f"must be less than limit `{limit_value}`."
+                )
+
+        return self
+
+
 # ------------------ Request Model ------------------
 
 
@@ -114,8 +156,8 @@ class ResourcePoolRequest(UserScopedRequest):
     capacity: Dict[str, PositiveInt] = Field(
         title="The capacity of the resource pool.",
     )
-    components: Optional[Dict[UUID, int]] = Field(
-        title="The components to attach to the resource pool.",
+    policies: Optional[List[ResourcePoolSubjectPolicyRequest]] = Field(
+        title="The policies for the resource pool.",
         default=None,
     )
 
@@ -146,12 +188,13 @@ class ResourcePoolUpdate(BaseUpdate):
         "will remove the resource from the pool.",
         default=None,
     )
-    attach_components: Optional[Dict[UUID, int]] = Field(
-        title="The components to attach to the resource pool.",
+    attach_policies: Optional[List[ResourcePoolSubjectPolicyRequest]] = Field(
+        title="The policies to attach to the resource pool.",
         default=None,
     )
-    detach_components: Optional[List[UUID]] = Field(
-        title="The components to detach from the resource pool.",
+    detach_policies: Optional[List[UUID]] = Field(
+        title="List of component IDs for which to detach policies from the "
+        "resource pool.",
         default=None,
     )
 
@@ -182,8 +225,8 @@ class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
 class ResourcePoolResponseResources(UserScopedResponseResources):
     """Response resources for resource pools."""
 
-    components: List["ResourcePoolComponentResponse"] = Field(
-        title="The components assigned to the resource pool.",
+    policies: List["ResourcePoolSubjectPolicyResponse"] = Field(
+        title="The policies assigned to the resource pool.",
     )
     active_requests: List["ResourcePoolAllocation"] = Field(
         title="The active requests for the resource pool.",
@@ -244,13 +287,13 @@ class ResourcePoolResponse(
         return self.get_metadata().occupied_resources
 
     @property
-    def components(self) -> List["ResourcePoolComponentResponse"]:
-        """The `components` property.
+    def policies(self) -> List["ResourcePoolSubjectPolicyResponse"]:
+        """The `policies` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().components
+        return self.get_resources().policies
 
     @property
     def queued_requests(self) -> List["ResourcePoolQueueItem"]:

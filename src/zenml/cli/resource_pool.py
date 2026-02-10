@@ -28,7 +28,12 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.models import Page, ResourcePoolFilter, ResourceRequestResponse
+from zenml.models import (
+    Page,
+    ResourcePoolFilter,
+    ResourcePoolSubjectPolicyRequest,
+    ResourceRequestResponse,
+)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -36,27 +41,27 @@ def resource_pool() -> None:
     """Commands for interacting with resource pools."""
 
 
-def _parse_capacity(capacity: str) -> Dict[str, int]:
-    """Parse a JSON/YAML capacity string into int values.
+def _parse_resources(resources: str) -> Dict[str, int]:
+    """Parse a JSON/YAML resources string into int values.
 
     Args:
-        capacity: The capacity string to parse.
+        resources: The resources string to parse.
 
     Raises:
-        ValueError: If the capacity string is invalid.
+        ValueError: If the resources string is invalid.
 
     Returns:
-        A dictionary of resource types and their capacities.
+        A dictionary of resource types and their values.
     """
-    raw = convert_structured_str_to_dict(capacity)
+    raw = convert_structured_str_to_dict(resources)
     parsed: Dict[str, int] = {}
     for key, value in raw.items():
         try:
             parsed[key] = int(value)
         except (TypeError, ValueError) as e:
             raise ValueError(
-                f"Invalid capacity value for key '{key}': {value!r}. "
-                "Capacity values must be integers."
+                f"Invalid resource value for key '{key}': {value!r}. "
+                "Resource values must be integers."
             ) from e
     return parsed
 
@@ -89,10 +94,9 @@ def create_resource_pool(
         description: Optional description.
     """
     try:
-        parsed_capacity = _parse_capacity(capacity)
+        parsed_capacity = _parse_resources(capacity)
     except ValueError as err:
         cli_utils.exception(err)
-        return
 
     with console.status(f"Creating resource pool '{name}'...\n"):
         try:
@@ -145,7 +149,7 @@ def update_resource_pool(
     parsed_capacity = None
     if capacity is not None:
         try:
-            parsed_capacity = _parse_capacity(capacity)
+            parsed_capacity = _parse_resources(capacity)
         except ValueError as err:
             cli_utils.exception(err)
             return
@@ -246,8 +250,8 @@ def delete_resource_pool(name_id_or_prefix: str, yes: bool = False) -> None:
 
 
 @resource_pool.command(
-    "attach",
-    help="Attach a component to a resource pool.",
+    "attach-policy",
+    help="Attach a policy to a resource pool.",
 )
 @click.argument("resource_pool", type=str, required=True)
 @click.argument("component", type=str, required=True)
@@ -258,19 +262,49 @@ def delete_resource_pool(name_id_or_prefix: str, yes: bool = False) -> None:
     required=True,
     help="Priority of this pool for the component. Higher means preferred.",
 )
-def attach_component_to_resource_pool(
+@click.option(
+    "--reserved",
+    "-r",
+    type=str,
+    required=True,
+    help="Resources that are reserved for the component.",
+)
+@click.option(
+    "--limit",
+    "-l",
+    type=str,
+    required=True,
+    help="Maximum resources that the component can use.",
+)
+def attach_policy_to_resource_pool(
     resource_pool: str,
     component: str,
     priority: int,
+    reserved: str,
+    limit: Optional[str] = None,
 ) -> None:
-    """Attach a component to a resource pool.
+    """Attach a policy to a resource pool.
 
     Args:
         resource_pool: Name, ID or prefix of the resource pool.
         component: Name, ID or prefix of the component.
         priority: Priority of the assignment.
+        reserved: Resources that are reserved for the component.
+        limit: Maximum resources that the component can use.
     """
-    with console.status("Attaching component to resource pool...\n"):
+    try:
+        parsed_reserved = _parse_resources(reserved)
+    except ValueError as err:
+        cli_utils.exception(err)
+
+    parsed_limit = None
+    if limit is not None:
+        try:
+            parsed_limit = _parse_resources(limit)
+        except ValueError as err:
+            cli_utils.exception(err)
+
+    with console.status("Attaching pool policy to resource pool...\n"):
         try:
             pool = Client().get_resource_pool(
                 name_id_or_prefix=resource_pool, hydrate=False
@@ -283,34 +317,41 @@ def attach_component_to_resource_pool(
             )
             Client().update_resource_pool(
                 name_id_or_prefix=pool.id,
-                attach_components={component_model.id: priority},
+                attach_policies=[
+                    ResourcePoolSubjectPolicyRequest(
+                        component_id=component_model.id,
+                        priority=priority,
+                        reserved=parsed_reserved,
+                        limit=parsed_limit,
+                    )
+                ],
             )
         except Exception as err:
             cli_utils.exception(err)
         else:
             cli_utils.declare(
-                f"Attached component `{component_model.name}` to resource pool "
-                f"`{pool.name}` with priority {priority}."
+                f"Attached pool policy for component `{component_model.name}` "
+                f"to resource pool `{pool.name}` with priority {priority}."
             )
 
 
 @resource_pool.command(
-    "detach",
-    help="Detach a component from a resource pool.",
+    "detach-policy",
+    help="Detach a policy from a resource pool.",
 )
 @click.argument("resource_pool", type=str, required=True)
 @click.argument("component", type=str, required=True)
-def detach_component_from_resource_pool(
+def detach_policy_from_resource_pool(
     resource_pool: str,
     component: str,
 ) -> None:
-    """Detach a component from a resource pool.
+    """Detach a policy from a resource pool.
 
     Args:
         resource_pool: Name, ID or prefix of the resource pool.
         component: Name, ID or prefix of the component.
     """
-    with console.status("Detaching component from resource pool...\n"):
+    with console.status("Detaching pool policy from resource pool...\n"):
         try:
             pool = Client().get_resource_pool(
                 name_id_or_prefix=resource_pool, hydrate=False
@@ -323,14 +364,14 @@ def detach_component_from_resource_pool(
             )
             Client().update_resource_pool(
                 name_id_or_prefix=pool.id,
-                detach_components=[component_model.id],
+                detach_policies=[component_model.id],
             )
         except Exception as err:
             cli_utils.exception(err)
         else:
             cli_utils.declare(
-                f"Detached component `{component_model.name}` from resource "
-                f"pool `{pool.name}`."
+                f"Detached pool policy for component `{component_model.name}` "
+                f"from resource pool `{pool.name}`."
             )
 
 

@@ -652,9 +652,17 @@ class StepLauncher:
                 )
             )
             while True:
-                resource_request = Client().zen_store.get_resource_request(
-                    resource_request.id, hydrate=False
-                )
+                try:
+                    resource_request = Client().zen_store.get_resource_request(
+                        resource_request.id, hydrate=False
+                    )
+                except KeyError as e:
+                    raise RuntimeError(
+                        f"Resource request `{resource_request.id}` for step "
+                        f"`{step_run_info.pipeline_step_name}` not found. This "
+                        "is most likely because someone deleted the resource "
+                        "request."
+                    ) from e
 
                 if resource_request.status == ResourceRequestStatus.ACQUIRED:
                     logger.info(
