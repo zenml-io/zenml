@@ -27,6 +27,7 @@ from zenml.enums import KubernetesServiceType
 from zenml.integrations.kubernetes import (
     KUBERNETES_DEPLOYER_FLAVOR,
 )
+from zenml.integrations.kubernetes.kube_utils import KubernetesUrlPreference
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
@@ -246,6 +247,17 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
     deployment_ready_check_interval: PositiveInt = Field(
         default=2,
         description="Interval in seconds between deployment readiness checks.",
+    )
+
+    url_preference: KubernetesUrlPreference = Field(
+        default=KubernetesUrlPreference.AUTO,
+        description=(
+            "Which URL type to prefer when multiple are available. "
+            "Options: 'auto' (default priority follows service_type: LoadBalancer "
+            "→ NodePort → ClusterIP), 'gateway_api', 'ingress', 'load_balancer', "
+            "'node_port', 'cluster_ip'. Gateway/Ingress URLs are only used when explicitly "
+            "requested via this setting. All discovered URLs are stored in metadata.urls."
+        ),
     )
 
     @field_validator("readiness_probe_path", "liveness_probe_path")
