@@ -30,6 +30,7 @@ class PythonEnvironmentExportMethod(Enum):
     """Different methods to export the local Python environment."""
 
     PIP_FREEZE = "pip_freeze"
+    UV_FREEZE = "uv_freeze"
     POETRY_EXPORT = "poetry_export"
 
     @property
@@ -44,6 +45,7 @@ class PythonEnvironmentExportMethod(Enum):
         """
         return {
             PythonEnvironmentExportMethod.PIP_FREEZE: "pip freeze",
+            PythonEnvironmentExportMethod.UV_FREEZE: "uv pip freeze",
             PythonEnvironmentExportMethod.POETRY_EXPORT: "poetry export --format=requirements.txt",
         }[self]
 
