@@ -38,6 +38,7 @@ python run.py --source data/emails.json --query "your query"
 
 - **`OPENAI_API_KEY`**: Required for LLM-powered analysis. Without it, every step degrades to keyword matching (functional but low-confidence).
 - **`LLM_MODEL`** (optional): Defaults to `gpt-4o-mini`. Override with e.g. `LLM_MODEL=gpt-4o`.
+- **`LLM_TIMEOUT_S`** (optional): Request timeout in seconds for OpenAI API calls. Defaults to `60`.
 
 ## Architecture
 

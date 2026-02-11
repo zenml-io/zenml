@@ -87,18 +87,11 @@ enough evidence to answer the question, or should you search differently?
 Respond with JSON:
 {{
   "sufficient": true or false,
-  "reasoning": "Why the evidence is or isn't enough",
-  "next_searches": [
-    {{
-      "tool": "grep|sender|recipient|date|count",
-      "args": {{"pattern": "..."}} or {{"sender": "..."}} etc.,
-      "reason": "What this new search would reveal"
-    }}
-  ]
+  "reasoning": "Why the evidence is or isn't enough"
 }}
 
-If sufficient=true, next_searches should be empty.
-If sufficient=false, suggest 1-3 NEW searches (different from previous ones).
+If sufficient=false, explain what kind of evidence is still missing so
+the next planning step can refine its search strategy.
 """
 
 SUMMARIZE_SYSTEM = """\
@@ -258,7 +251,6 @@ def process_chunk(
         description,
     )
 
-    # --- Step 1: PREVIEW ---
     preview_text = preview_chunk(chunk_emails, n=5)
     trajectory.append(
         {
@@ -293,7 +285,6 @@ def process_chunk(
         )
         return result, trajectory
 
-    # --- Iterative RLM loop: PLAN → SEARCH → REFLECT → (repeat or stop) ---
     tool_desc = "\n".join(f"  - {v}" for v in TOOL_DESCRIPTIONS.values())
     all_matches: List[Dict[str, Any]] = []
     search_results_text: List[str] = []
@@ -306,7 +297,6 @@ def process_chunk(
         # Reserve 1 LLM call for final SUMMARIZE
         iteration += 1
 
-        # --- PLAN ---
         if iteration == 1:
             plan_prompt = (
                 f"## Sub-query\n{sub_query}\n\n"
@@ -357,7 +347,6 @@ def process_chunk(
             )
             break
 
-        # --- SEARCH ---
         iteration_matches = 0
         for search in searches:
             result = _execute_search(chunk_emails, search)
@@ -398,7 +387,6 @@ def process_chunk(
             logger.info("LLM budget reached after search, skipping reflect")
             break
 
-        # --- REFLECT ---
         reflect_prompt = (
             f"## Sub-query\n{sub_query}\n\n"
             f"## Searches So Far\n{prior_search_summary}\n\n"
@@ -445,7 +433,6 @@ def process_chunk(
             reflect_feedback[:100],
         )
 
-    # --- SUMMARIZE (final LLM call) ---
     evidence_texts: List[str] = []
     char_budget = 8000
     for m in all_matches:

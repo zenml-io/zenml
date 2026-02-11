@@ -115,7 +115,10 @@ def filter_by_date(
         start_dt = datetime.fromisoformat(start)
         end_dt = datetime.fromisoformat(end)
     except ValueError:
-        return emails
+        return []
+
+    if start_dt > end_dt:
+        return []
 
     results = []
     for e in emails:

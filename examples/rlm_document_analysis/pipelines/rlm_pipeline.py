@@ -52,7 +52,6 @@ from zenml.config import (
 )
 from zenml.types import HTMLString
 
-# --- Docker settings (pass API keys to container at compile time) ---
 _docker_env: Dict[str, str] = {}
 if os.getenv("OPENAI_API_KEY"):
     _docker_env["OPENAI_API_KEY"] = "${OPENAI_API_KEY}"

@@ -115,7 +115,7 @@ def load_documents(
     data_path = _find_data_file(source_path)
     logger.info("Loading documents from %s", data_path)
 
-    with open(data_path) as f:
+    with open(data_path, encoding="utf-8") as f:
         emails = json.load(f)
 
     if not isinstance(emails, list):

@@ -48,7 +48,7 @@ Respond with a JSON object:
 }}
 
 Rules:
-- Produce between 2 and {max_chunks} chunks
+- Produce between 1 and {max_chunks} chunks
 - Chunks should cover the entire corpus (no gaps)
 - start_idx and end_idx are 0-based indices into the email list
 - Each sub_query should be a specific, answerable question

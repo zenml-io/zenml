@@ -40,7 +40,8 @@ def _get_client() -> Any:
     """Lazy-import and instantiate the OpenAI client."""
     from openai import OpenAI
 
-    return OpenAI()
+    timeout = float(os.getenv("LLM_TIMEOUT_S", "60"))
+    return OpenAI(timeout=timeout)
 
 
 def llm_call(

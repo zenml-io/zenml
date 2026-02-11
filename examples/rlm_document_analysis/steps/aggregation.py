@@ -51,9 +51,6 @@ or gaps between chunk findings.
 """
 
 
-# --- Asset loading (mirrors hierarchical example pattern) ---
-
-
 @lru_cache(maxsize=8)
 def _load_text_asset(rel_path: str) -> str:
     """Load a UTF-8 text asset with local + Docker + relative fallbacks.
@@ -74,7 +71,11 @@ def _load_text_asset(rel_path: str) -> str:
             return p.read_text(encoding="utf-8")
         except (FileNotFoundError, OSError):
             continue
-    logger.warning("Asset not found: %s", rel_path)
+    logger.warning(
+        "Asset not found: %s (tried: %s)",
+        rel_path,
+        [str(p) for p in search_paths],
+    )
     return ""
 
 
@@ -86,9 +87,6 @@ def _get_report_css() -> str:
 def _get_report_template() -> str:
     """Return the HTML template for the report (loaded from external file)."""
     return _load_text_asset("data/report_template.html")
-
-
-# --- Report building ---
 
 
 def _escape(value: Any) -> str:
@@ -243,9 +241,6 @@ def _build_report(
             f"<p>{summary_safe}</p>"
             f"{chunk_cards_html}</body></html>"
         )
-
-
-# --- Step ---
 
 
 @step
