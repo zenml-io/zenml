@@ -83,7 +83,6 @@ class ResourcePoolRequestQueueSchema(BaseSchema, table=True):
                 "request_id",
             ],
         ),
-        build_index(table_name=__tablename__, column_names=["request_id"]),
     )
 
     pool_id: UUID = build_foreign_key_field(
@@ -297,6 +296,10 @@ class ResourcePoolSchema(NamedSchema, table=True):
         }
     )
 
+    # TODO: The order of this might not actually be the same as the order in
+    # which requests will be allocated. To get that, we would have to consider
+    # the free dedicated resources of each policy, which is a query that we only
+    # run as part of the actual allocation process.
     queue_items: List["ResourcePoolRequestQueueSchema"] = Relationship(
         sa_relationship_kwargs={
             "primaryjoin": lambda: and_(
@@ -327,7 +330,7 @@ class ResourcePoolSchema(NamedSchema, table=True):
                 col(ResourcePoolAllocationSchema.released_at).is_(None),
             ),
             "order_by": (
-                desc(col(ResourcePoolAllocationSchema.allocated_at)),
+                col(ResourcePoolAllocationSchema.allocated_at),
                 ResourcePoolAllocationSchema.request_id,
             ),
             "passive_deletes": True,
