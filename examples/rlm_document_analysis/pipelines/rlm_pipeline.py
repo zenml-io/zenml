@@ -111,12 +111,14 @@ def rlm_analysis_pipeline(
     )
 
     # Step 3: Dynamic fan-out — create one process_chunk step per chunk
+    # Each invocation gets a unique step name automatically in the DAG.
     process_step = process_chunk.with_options(
         parameters={"query": query, "max_iterations": max_iterations}
     )
 
+    chunk_specs_data = chunk_specs.load()
     chunk_results: List[Any] = []
-    for idx in range(len(chunk_specs.load())):
+    for idx in range(len(chunk_specs_data)):
         result, _trajectory = process_step(
             documents=documents,
             chunk_spec=chunk_specs.chunk(index=idx),

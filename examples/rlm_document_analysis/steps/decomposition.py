@@ -36,16 +36,16 @@ senders relevant to the query. The goal is to divide the work so that
 each chunk can be analyzed independently and the results combined.
 
 Respond with a JSON object:
-{
+{{
   "chunks": [
-    {
+    {{
       "start_idx": 0,
       "end_idx": 15,
       "sub_query": "Focused question for this chunk",
       "description": "Why this chunk matters for the overall query"
-    }
+    }}
   ]
-}
+}}
 
 Rules:
 - Produce between 2 and {max_chunks} chunks

@@ -67,6 +67,15 @@ def filter_by_sender(
     return [e for e in emails if sender_lower in e.get("from", "").lower()]
 
 
+def _field_as_str(value: Any) -> str:
+    """Safely convert an email field (str, list, or None) to a string."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return ",".join(str(x) for x in value if x is not None)
+    return ""
+
+
 def filter_by_recipient(
     emails: List[Dict[str, Any]], recipient: str
 ) -> List[Dict[str, Any]]:
@@ -82,10 +91,8 @@ def filter_by_recipient(
     r_lower = recipient.lower()
     results = []
     for e in emails:
-        to_field = e.get("to", "")
-        cc_field = e.get("cc", "")
-        to_str = to_field if isinstance(to_field, str) else ",".join(to_field)
-        cc_str = cc_field if isinstance(cc_field, str) else ",".join(cc_field)
+        to_str = _field_as_str(e.get("to", ""))
+        cc_str = _field_as_str(e.get("cc", ""))
         if r_lower in to_str.lower() or r_lower in cc_str.lower():
             results.append(e)
     return results

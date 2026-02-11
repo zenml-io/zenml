@@ -25,9 +25,29 @@ Usage:
 
 import argparse
 import email
+import email.utils
 import json
 import sys
 from pathlib import Path
+
+
+def _normalize_date(raw_date: str) -> str:
+    """Convert an RFC 2822 date header to ISO 8601 format.
+
+    Args:
+        raw_date: Raw date string from email header
+            (e.g. "Mon, 14 Jun 1999 09:22:00 -0700").
+
+    Returns:
+        ISO 8601 date string, or the original string if parsing fails.
+    """
+    if not raw_date:
+        return ""
+    try:
+        dt = email.utils.parsedate_to_datetime(raw_date)
+        return dt.isoformat()
+    except (ValueError, TypeError):
+        return raw_date
 
 
 def parse_raw_email(raw: str) -> dict:
@@ -41,7 +61,7 @@ def parse_raw_email(raw: str) -> dict:
     """
     msg = email.message_from_string(raw)
     return {
-        "date": msg.get("Date", ""),
+        "date": _normalize_date(msg.get("Date", "")),
         "from": msg.get("From", ""),
         "to": msg.get("To", ""),
         "cc": msg.get("Cc", ""),
@@ -96,8 +116,9 @@ def main() -> None:
         if "message" in example:
             parsed = parse_raw_email(example["message"])
         else:
+            raw_date = example.get("date", example.get("Date", ""))
             parsed = {
-                "date": example.get("date", example.get("Date", "")),
+                "date": _normalize_date(raw_date),
                 "from": example.get("from", example.get("From", "")),
                 "to": example.get("to", example.get("To", "")),
                 "cc": example.get("cc", example.get("Cc", "")),
