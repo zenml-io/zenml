@@ -67,6 +67,12 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
         disk_size: the size of the OS disk in GiB.
         disk_tier: the disk performance tier to use. If None, defaults to
             ``'medium'``.
+        network_tier: the network performance tier to use where supported by
+            the cloud provider.
+        infra: SkyPilot shortcut string describing resources (e.g.,
+            ``"K80:1,CPU-8,Mem-32"``). Mutually exclusive with explicit
+            instance type, CPU, memory, or accelerator settings.
+        num_nodes: number of nodes for multi-node jobs.
         ports: Ports to expose. Could be an integer, a range, or a list of
             integers and ranges. All ports will be exposed to the public internet.
         labels: Labels to apply to instances as key-value pairs. These are
@@ -84,10 +90,8 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
             many minute of idleness, i.e., no running or pending jobs in the
             cluster's job queue. Idleness gets reset whenever setting-up/
             running/pending jobs are found in the job queue. Setting this
-            flag is equivalent to running
-            ``sky.launch(..., detach_run=True, ...)`` and then
-            ``sky.autostop(idle_minutes=<minutes>)``. If not set, the cluster
-            will not be autostopped.
+            flag schedules an autostop after the launch completes. If not set,
+            the cluster will not be autostopped.
         down: Tear down the cluster after all jobs finish (successfully or
             abnormally). If --idle-minutes-to-autostop is also set, the
             cluster will be torn down after the specified idle time.
@@ -136,6 +140,9 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     disk_tier: Optional[Literal["high", "medium", "low", "ultra", "best"]] = (
         None
     )
+    network_tier: Optional[str] = None
+    infra: Optional[str] = None
+    num_nodes: Optional[int] = None
 
     # Run settings
     cluster_name: Optional[str] = None

@@ -246,10 +246,7 @@ def main() -> None:
 
                 task = task.set_resources(sky.Resources(**resources_kwargs))
 
-                # Prepare launch parameters
-                launch_kwargs = prepare_launch_kwargs(
-                    settings=settings,
-                )
+                launch_kwargs = prepare_launch_kwargs(settings=settings)
 
                 # sky.launch now returns a request ID (async). Capture it so we can
                 # optionally stream logs and block until completion when desired.
@@ -258,7 +255,9 @@ def main() -> None:
                     cluster_name,
                     **launch_kwargs,
                 )
-                sky_job_get(launch_request_id, True, cluster_name)
+                result = sky_job_get(launch_request_id, True, cluster_name)
+                if result and result.wait_for_completion:
+                    result.wait_for_completion()
 
                 # Pop the resource configuration for this step
                 unique_resource_configs.pop(step_name)
@@ -276,9 +275,15 @@ def main() -> None:
                         f"Resource configuration for cluster '{cluster_name}' "
                         "is not used by subsequent steps. deprovisioning the cluster."
                     )
-                    down_request_id = sky.down(cluster_name)
-                    # Wait for the cluster to be terminated
-                    sky.stream_and_get(down_request_id)
+                    try:
+                        down_request_id = sky.down(cluster_name)
+                        sky.stream_and_get(down_request_id)
+                    except Exception as cleanup_error:
+                        logger.warning(
+                            "Failed to deprovision cluster "
+                            f"'{cluster_name}': {cleanup_error}. "
+                            "Resources may still be running."
+                        )
 
                 logger.info(
                     f"Running step `{step_name}` on a VM is completed."

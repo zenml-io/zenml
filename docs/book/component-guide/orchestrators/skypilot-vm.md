@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run on VMs using SkyPilot.
 
 # Skypilot VM Orchestrator
 
-The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you to provision and manage virtual machines (VMs) on any cloud provider supported by the [SkyPilot framework](https://skypilot.readthedocs.io/en/latest/index.html). This integration is designed to simplify the process of running machine learning workloads on the cloud, offering cost savings, high GPU availability, and managed execution, We recommend using the SkyPilot VM Orchestrator if you need access to GPUs for your workloads, but don't want to deal with the complexities of managing cloud infrastructure or expensive managed solutions.
+The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you to provision and manage virtual machines (VMs) on any cloud provider supported by the [SkyPilot framework](https://skypilot.readthedocs.io/en/latest/index.html). This integration is designed to simplify the process of running machine learning workloads on the cloud, offering cost savings, high GPU availability, and managed execution. We recommend using the SkyPilot VM Orchestrator if you need access to GPUs for your workloads, but don't want to deal with the complexities of managing cloud infrastructure or expensive managed solutions.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
@@ -33,6 +33,10 @@ The SkyPilot VM Orchestrator does not currently support the ability to [schedule
 
 {% hint style="info" %}
 All ZenML pipeline runs are executed using Docker containers within the VMs provisioned by the orchestrator. For that reason, you may need to configure your pipeline settings with `docker_run_args=["--gpus=all"]` to enable GPU support in the Docker container.
+{% endhint %}
+
+{% hint style="info" %}
+SkyPilot also ships an optional API server with a web dashboard. You can start it with `sky api start`, then run `sky api info` and open the `/dashboard` path of the returned base URL. ZenML does not integrate with this dashboard, but you can use it alongside the ZenML dashboard.
 {% endhint %}
 
 ## How to deploy it
@@ -322,8 +326,11 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `disk_tier`: The disk performance tier to use. If None, defaults to `'medium'`.
 * `cluster_name`: Name of the cluster to create/reuse. If None, auto-generate a name. SkyPilot uses term `cluster` to refer to a group or a single VM that are provisioned to execute the task. The cluster name is used to identify the cluster and to determine whether to reuse an existing cluster or create a new one.
 * `retry_until_up`: Whether to retry launching the cluster until it is up.
-* `idle_minutes_to_autostop`: Automatically stop the cluster after this many minutes of idleness, i.e., no running or pending jobs in the cluster's job queue. Idleness gets reset whenever setting-up/running/pending jobs are found in the job queue. Setting this flag is equivalent to running `sky.launch(..., detach_run=True, ...)` and then `sky.autostop(idle_minutes=<minutes>)`. If not set, the cluster will not be autostopped.
+* `idle_minutes_to_autostop`: Automatically stop the cluster after this many minutes of idleness, i.e., no running or pending jobs in the cluster's job queue. Idleness gets reset whenever setting-up/running/pending jobs are found in the job queue. Setting this flag schedules an autostop after the launch completes. If not set, the cluster will not be autostopped.
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
+* `infra`: SkyPilot shortcut string describing resources (e.g., `"K80:1,CPU-8,Mem-32"`). Mutually exclusive with explicit `instance_type`/`cpus`/`memory`/`accelerators`.
+* `num_nodes`: Number of nodes for multi-node jobs.
+* `network_tier`: Network performance tier where supported by the cloud provider.
 * `stream_logs`: If True, show the logs in the terminal as they are generated while the cluster is running.
 * `docker_run_args`: Additional arguments to pass to the `docker run` command. For example, `['--gpus=all']` to use all GPUs available on the VM.
 * `ports`: Ports to expose. Could be an integer, a range, or a list of integers and ranges. All ports will be exposed to the public internet.
@@ -332,8 +339,8 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `ordered`: List of candidate resources to try in the specified order.
 * `workdir`: Working directory on the local machine to sync to the VM. This is synced to `~/sky_workdir` inside the VM.
 * `task_name`: Human-readable task name shown in SkyPilot for display purposes.
-* `file_mounts`: File and storage mounts configuration to make local or cloud storage paths available inside the remote cluster.
-* `envs`: Environment variables for the task. Accessible in the VMs that Skypilot launches, not in Docker continaers that the steps and pipeline is running on.
+* `file_mounts`: File mounts configuration to make local or cloud storage paths available inside the remote cluster.
+* `envs`: Environment variables for the task. Accessible in the VMs that Skypilot launches, not in Docker containers that the steps and pipeline is running on.
 * `task_settings`: Dictionary of arbitrary settings forwarded to `sky.Task()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
 * `resources_settings`: Dictionary of arbitrary settings forwarded to `sky.Resources()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
 * `launch_settings`: Dictionary of arbitrary settings forwarded to `sky.launch()`. This allows passing future parameters added by SkyPilot without requiring updates to ZenML.
@@ -509,6 +516,7 @@ skypilot_settings = SkypilotKubernetesOrchestratorSettings(
 ```
 {% endtab %}
 {% endtabs %}
+
 
 One of the key features of the SkyPilot VM Orchestrator is the ability to run each step of a pipeline on a separate VM with its own specific settings. This allows for fine-grained control over the resources allocated to each step, ensuring that each part of your pipeline has the necessary compute power while optimizing for cost and efficiency.
 
