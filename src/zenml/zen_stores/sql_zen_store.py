@@ -77,7 +77,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, event, exists, func, literal, update
+from sqlalchemy import QueuePool, event, exists, func, update
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -4586,21 +4586,13 @@ class SqlZenStore(BaseZenStore):
 
         for policy in policies:
             violation = session.exec(
-                self._fits_total_capacity_violation_subquery(
-                    pool_id=policy.resource_pool_id,
-                    request_id_expression=resource_request.id,
-                )
-            ).first()
-            if violation is not None:
-                continue
-            max_violation = session.exec(
-                self._fits_policy_max_capacity_violation_subquery(
+                self._fits_pool_capacity_violation_subquery(
                     pool_id=policy.resource_pool_id,
                     component_id=resource_request.component_id,
                     request_id_expression=resource_request.id,
                 )
             ).first()
-            if max_violation is not None:
+            if violation is not None:
                 continue
 
             self._enqueue_request_into_pool_queue(
@@ -4677,11 +4669,7 @@ class SqlZenStore(BaseZenStore):
             pool_id: The pool into which requests should be enqueued.
             priority: The component's priority for this pool.
         """
-        fits_total_violation = self._fits_total_capacity_violation_subquery(
-            pool_id=pool_id,
-            request_id_expression=col(ResourceRequestSchema.id),
-        )
-        fits_max_violation = self._fits_policy_max_capacity_violation_subquery(
+        fits_violation = self._fits_pool_capacity_violation_subquery(
             pool_id=pool_id,
             component_id=component_id,
             request_id_expression=col(ResourceRequestSchema.id),
@@ -4700,8 +4688,7 @@ class SqlZenStore(BaseZenStore):
                 col(ResourceRequestSchema.status)
                 == ResourceRequestStatus.PENDING.value
             )
-            .where(~exists(fits_total_violation))
-            .where(~exists(fits_max_violation))
+            .where(~exists(fits_violation))
             .where(~exists(already_enqueued))
             .order_by(
                 col(ResourceRequestSchema.created),
@@ -4765,55 +4752,22 @@ class SqlZenStore(BaseZenStore):
         return True
 
     @staticmethod
-    def _fits_total_capacity_violation_subquery(
-        pool_id: UUID, request_id_expression: Any
-    ) -> SelectOfScalar[UUID]:
-        """Subquery that checks if a request fits into a pools total capacity.
-
-        The returned subquery yields a row if the pool total capacity is
-        insufficient for at least one requested resource key/amount.
-
-        Args:
-            pool_id: The ID of the pool to check.
-            request_id_expression: The expression for the request ID.
-
-        Returns:
-            The subquery.
-        """
-        return (
-            select(ResourceRequestResourceSchema.id)
-            .select_from(ResourceRequestResourceSchema)
-            .outerjoin(
-                ResourcePoolResourceSchema,
-                and_(
-                    ResourcePoolResourceSchema.pool_id == pool_id,
-                    ResourcePoolResourceSchema.key
-                    == ResourceRequestResourceSchema.key,
-                ),
-            )
-            .where(
-                ResourceRequestResourceSchema.request_id
-                == request_id_expression
-            )
-            .where(
-                or_(
-                    col(ResourcePoolResourceSchema.id).is_(None),
-                    ResourcePoolResourceSchema.total
-                    < ResourceRequestResourceSchema.amount,
-                )
-            )
-            .limit(1)
-        )
-
-    @staticmethod
-    def _fits_policy_max_capacity_violation_subquery(
+    def _fits_pool_capacity_violation_subquery(
         pool_id: UUID, component_id: UUID, request_id_expression: Any
     ) -> SelectOfScalar[UUID]:
-        """Subquery that checks if a request fits within an policy's limit.
+        """Subquery that checks if a request fits into a pool given its policy.
 
-        The returned subquery yields a row if the request requires more than the
-        configured limit for at least one resource key. Missing limit
-        configuration defaults to the pool total capacity for that resource key.
+        The returned subquery yields a row if at least one requested resource
+        key/amount violates any of the following constraints:
+
+        - The pool doesn't have a resource of that key
+        - The pool total capacity for the key is smaller than the requested
+          amount
+        - The component policy limit for the key is smaller than the requested
+          amount
+
+        Missing limit configuration defaults to the pool total capacity for that
+        resource key.
 
         Args:
             pool_id: The ID of the pool to check.
@@ -4831,19 +4785,21 @@ class SqlZenStore(BaseZenStore):
             select(ResourceRequestResourceSchema.id)
             .select_from(ResourceRequestResourceSchema)
             .outerjoin(
-                ResourcePoolSubjectPolicyResourceSchema,
-                col(ResourcePoolSubjectPolicyResourceSchema.key)
-                == col(ResourceRequestResourceSchema.key),
-            )
-            .outerjoin(
                 ResourcePoolSubjectPolicySchema,
                 and_(
-                    col(ResourcePoolSubjectPolicySchema.id)
-                    == col(ResourcePoolSubjectPolicyResourceSchema.policy_id),
                     col(ResourcePoolSubjectPolicySchema.resource_pool_id)
                     == pool_id,
                     col(ResourcePoolSubjectPolicySchema.component_id)
                     == component_id,
+                ),
+            )
+            .outerjoin(
+                ResourcePoolSubjectPolicyResourceSchema,
+                and_(
+                    col(ResourcePoolSubjectPolicyResourceSchema.policy_id)
+                    == col(ResourcePoolSubjectPolicySchema.id),
+                    col(ResourcePoolSubjectPolicyResourceSchema.key)
+                    == col(ResourceRequestResourceSchema.key),
                 ),
             )
             .outerjoin(
@@ -4861,6 +4817,9 @@ class SqlZenStore(BaseZenStore):
             .where(col(ResourceRequestResourceSchema.amount) > 0)
             .where(
                 or_(
+                    col(ResourcePoolResourceSchema.id).is_(None),
+                    ResourcePoolResourceSchema.total
+                    < col(ResourceRequestResourceSchema.amount),
                     effective_max_expr.is_(None),
                     effective_max_expr
                     < col(ResourceRequestResourceSchema.amount),
@@ -4895,18 +4854,10 @@ class SqlZenStore(BaseZenStore):
         session.flush()
 
         for policy in policies:
-            fits_total_violation = (
-                self._fits_total_capacity_violation_subquery(
-                    pool_id=pool_id,
-                    request_id_expression=ResourceRequestSchema.id,
-                )
-            )
-            fits_max_violation = (
-                self._fits_policy_max_capacity_violation_subquery(
-                    pool_id=pool_id,
-                    component_id=policy.component_id,
-                    request_id_expression=ResourceRequestSchema.id,
-                )
+            fits_total_violation = self._fits_pool_capacity_violation_subquery(
+                pool_id=pool_id,
+                component_id=policy.component_id,
+                request_id_expression=ResourceRequestSchema.id,
             )
 
             eligible_request_rows = session.exec(
@@ -4919,7 +4870,6 @@ class SqlZenStore(BaseZenStore):
                     == ResourceRequestStatus.PENDING.value
                 )
                 .where(~exists(fits_total_violation))
-                .where(~exists(fits_max_violation))
                 .order_by(
                     col(ResourceRequestSchema.created),
                     col(ResourceRequestSchema.id),
@@ -5035,13 +4985,14 @@ class SqlZenStore(BaseZenStore):
             # while another allocator is draining, we can miss newly enqueued
             # items until the next external trigger.
             locked_pool_id: Optional[UUID] = None
-            for _ in range(20):  # ~2s best-effort total
+            for _ in range(20):
                 try:
-                    locked_pool_id = session.exec(
-                        select(ResourcePoolSchema.id)
-                        .where(col(ResourcePoolSchema.id) == pool_id)
-                        .with_for_update(nowait=True)
-                    ).first()
+                    with session.begin_nested():
+                        locked_pool_id = session.exec(
+                            select(ResourcePoolSchema.id)
+                            .where(col(ResourcePoolSchema.id) == pool_id)
+                            .with_for_update(nowait=True)
+                        ).first()
                 except OperationalError:
                     time.sleep(0.1)
                     continue
@@ -5072,15 +5023,10 @@ class SqlZenStore(BaseZenStore):
                 and_(
                     col(ResourceRequestResourceSchema.request_id)
                     == col(ResourceRequestSchema.id),
-                    # col(ResourceRequestResourceSchema.amount) > 0,
                 ),
             )
             .where(col(ResourcePoolAllocationSchema.pool_id) == pool_id)
             .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
-            # .where(
-            #     col(ResourceRequestSchema.status)
-            #     == ResourceRequestStatus.ACQUIRED.value
-            # )
             .group_by(
                 col(ResourceRequestSchema.component_id),
                 col(ResourceRequestResourceSchema.key),
@@ -5100,13 +5046,19 @@ class SqlZenStore(BaseZenStore):
             reserved_free_expr = case(
                 (
                     func.coalesce(
-                        col(ResourcePoolSubjectPolicyResourceSchema.reserved), 0
+                        col(ResourcePoolSubjectPolicyResourceSchema.reserved),
+                        0,
                     )
-                    > func.coalesce(col(used_by_component_key_subquery.c.used), 0),
+                    > func.coalesce(
+                        col(used_by_component_key_subquery.c.used), 0
+                    ),
                     func.coalesce(
-                        col(ResourcePoolSubjectPolicyResourceSchema.reserved), 0
+                        col(ResourcePoolSubjectPolicyResourceSchema.reserved),
+                        0,
                     )
-                    - func.coalesce(col(used_by_component_key_subquery.c.used), 0),
+                    - func.coalesce(
+                        col(used_by_component_key_subquery.c.used), 0
+                    ),
                 ),
                 else_=0,
             )
@@ -5148,7 +5100,8 @@ class SqlZenStore(BaseZenStore):
                 .where(
                     col(ResourceRequestResourceSchema.request_id)
                     == col(ResourcePoolRequestQueueSchema.request_id),
-                    col(ResourceRequestResourceSchema.amount) > reserved_free_expr,
+                    col(ResourceRequestResourceSchema.amount)
+                    > reserved_free_expr,
                 )
             )
             fits_fully_in_free_reserved_expr = case(
@@ -5260,7 +5213,7 @@ class SqlZenStore(BaseZenStore):
             pass
 
         class _PolicyLimitReached(Exception):
-            """Raised when a request would exceed its component policy limit."""
+            pass
 
         allocations_done = 0
         skipped_due_to_policy_limit: Set[UUID] = set()
@@ -5760,7 +5713,7 @@ class SqlZenStore(BaseZenStore):
             session: DB session.
             step_run_id: The ID of the step run to release resources for.
         """
-        logger.info("Releasing resources for step run `%s`", step_run_id)
+        logger.debug("Releasing resources for step run `%s`", step_run_id)
         resource_requests = session.exec(
             select(ResourceRequestSchema).where(
                 ResourceRequestSchema.step_run_id == step_run_id
@@ -5792,8 +5745,11 @@ class SqlZenStore(BaseZenStore):
         Args:
             session: DB session.
             resource_request: The resource request to release resources for.
+
+        Returns:
+            The ID of the pool for which resources were freed.
         """
-        logger.info(
+        logger.debug(
             "Freeing occupied resources for request `%s`", resource_request.id
         )
         allocation = session.exec(
@@ -5803,7 +5759,7 @@ class SqlZenStore(BaseZenStore):
             )
         ).first()
         if allocation is None:
-            logger.info(
+            logger.debug(
                 "Resource request `%s` has no active allocation, skipping.",
                 resource_request.id,
             )
@@ -5844,7 +5800,7 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
                 if result.rowcount != 1:  # type: ignore[attr-defined]
-                    logger.warning(
+                    logger.debug(
                         "Failed to decrement occupied resource `%s` of request "
                         "`%s` for pool `%s`.",
                         resource_key,
@@ -5898,6 +5854,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             True if eviction was triggered for at least one victim.
         """
+        # TODO: Introduce an "efficiency score" for picking victims to evict
+        # that helps us satisfy the head request most efficiently.
         if requested_resources is None:
             requested_resource_rows = session.exec(
                 select(
@@ -5938,8 +5896,8 @@ class SqlZenStore(BaseZenStore):
         for key, amount in requested_resources.items():
             total_occupied = pool_resources.get(key)
             if total_occupied is None:
-                # The request should not have been enqueued into this pool if
-                # totals were insufficient, but guard anyway.
+                # This shouldn't happen, as requests only get enqueued if the
+                # pools total capacity is sufficient.
                 return False
             total, occupied = total_occupied
             deficit = occupied + amount - total
@@ -5947,44 +5905,19 @@ class SqlZenStore(BaseZenStore):
                 deficits[key] = deficit
 
         if not deficits:
+            # The requested resources are already available in the pool. We
+            # shouldn't be in this method at all, so we just return.
             return False
 
         deficit_keys = list(deficits.keys())
-        deficit_for_key_expr = case(
-            *(
-                (ResourceRequestResourceSchema.key == key, deficit)
-                for key, deficit in deficits.items()
-            ),
-            else_=0,
-        )
 
+        # Filter the reclaim budget to only contain resources that are not
+        # already available in the pool.
         reclaim_budget = {
-            key: min(budget, deficits.get(key, 0))
+            key: min(budget, deficits[key])
             for key, budget in reclaim_budget.items()
             if budget > 0 and key in deficits
         }
-        # MySQL requires CASE to have at least one WHEN clause. If the reclaim
-        # budget is empty we fall back to a literal 0 instead of emitting an
-        # invalid `CASE ELSE 0 END`.
-        reclaim_budget_for_key_expr = (
-            case(
-                *(
-                    (ResourceRequestResourceSchema.key == key, budget)
-                    for key, budget in reclaim_budget.items()
-                ),
-                else_=0,
-            )
-            if reclaim_budget
-            else literal(0)
-        )
-        # capped_amount_expr = case(
-        #     (
-        #         col(ResourceRequestResourceSchema.amount)
-        #         < deficit_for_key_expr,
-        #         col(ResourceRequestResourceSchema.amount),
-        #     ),
-        #     else_=deficit_for_key_expr,
-        # )
 
         effective_min_expr = func.coalesce(
             ResourcePoolSubjectPolicyResourceSchema.reserved, 0
@@ -6024,20 +5957,6 @@ class SqlZenStore(BaseZenStore):
             (borrowed_amount_expr > 0, 1),
             else_=0,
         ).label("borrowed_any_int")
-        borrowed_capped_to_deficit_expr = case(
-            (
-                borrowed_amount_expr < deficit_for_key_expr,
-                borrowed_amount_expr,
-            ),
-            else_=deficit_for_key_expr,
-        ).label("borrowed_capped_to_deficit")
-        borrowed_capped_to_budget_expr = case(
-            (
-                borrowed_amount_expr < reclaim_budget_for_key_expr,
-                borrowed_amount_expr,
-            ),
-            else_=reclaim_budget_for_key_expr,
-        ).label("borrowed_capped_to_budget")
 
         # MySQL doesn't allow mixing window functions directly inside aggregate
         # contexts (e.g. MAX(SUM(...) OVER ...)). We compute the window function
@@ -6050,8 +5969,6 @@ class SqlZenStore(BaseZenStore):
                 col(ResourceRequestResourceSchema.key).label("key"),
                 amount_expr.label("amount"),
                 borrowed_amount_expr,
-                borrowed_capped_to_deficit_expr,
-                borrowed_capped_to_budget_expr,
                 borrowed_any_int_expr,
             )
             .join(
@@ -6097,20 +6014,12 @@ class SqlZenStore(BaseZenStore):
         borrowed_any_expr = func.max(
             col(candidate_rows_subquery.c.borrowed_any_int)
         ).label("borrowed_any")
-        efficiency_score_expr = func.sum(
-            col(candidate_rows_subquery.c.borrowed_capped_to_deficit)
-        ).label("efficiency_score")
-        reclaim_score_expr = func.sum(
-            col(candidate_rows_subquery.c.borrowed_capped_to_budget)
-        ).label("reclaim_score")
 
         candidate_query = (
-            select(  # type: ignore[call-overload]
+            select(
                 col(candidate_rows_subquery.c.request_id),
                 col(candidate_rows_subquery.c.allocated_at),
                 col(candidate_rows_subquery.c.priority),
-                efficiency_score_expr,
-                reclaim_score_expr,
                 borrowed_any_expr,
             )
             .select_from(candidate_rows_subquery)
@@ -6122,19 +6031,12 @@ class SqlZenStore(BaseZenStore):
             .having(borrowed_any_expr == 1)
             .order_by(
                 col(candidate_rows_subquery.c.priority),  # lowest prio first
-                desc(efficiency_score_expr),  # best efficiency
                 desc(
                     col(candidate_rows_subquery.c.allocated_at)
-                ),  # newest first
+                ),  # shortest running first
                 col(candidate_rows_subquery.c.request_id),
             )
         )
-        if not reclaim_budget:
-            # TODO: check this. If we don't reclaim anything, we preempt
-            # requests with lower prio?
-            candidate_query = candidate_query.where(
-                col(candidate_rows_subquery.c.priority) < head_priority
-            )
 
         candidate_rows = session.exec(candidate_query).all()
         if not candidate_rows:
@@ -6148,55 +6050,71 @@ class SqlZenStore(BaseZenStore):
         borrowed_by_candidate: Dict[UUID, Dict[str, int]] = {}
 
         def _apply_candidate(
-            rid: UUID, *, allow_reclaim_for_min: bool
+            request_id: UUID, candidate_priority: int
         ) -> bool:
-            resources = resources_by_candidate.get(rid, {})
-            borrowed = borrowed_by_candidate.get(rid, {})
-            made_progress = False
+            resources = resources_by_candidate.get(request_id, {})
+            borrowed = borrowed_by_candidate.get(request_id, {})
 
-            if allow_reclaim_for_min:
-                made_budget_progress = False
-                for key, budget in list(remaining_reclaim_budget.items()):
-                    reclaimed = min(borrowed.get(key, 0), budget)
-                    if reclaimed <= 0:
-                        continue
-                    new_budget = budget - reclaimed
-                    if new_budget <= 0:
-                        remaining_reclaim_budget.pop(key, None)
-                    else:
-                        remaining_reclaim_budget[key] = new_budget
-                    made_progress = True
-                    made_budget_progress = True
-                if not made_budget_progress:
-                    return False
-
-            for key, deficit in list(remaining_deficits.items()):
-                freed = resources.get(key, 0)
-                if freed <= 0:
+            is_viable_candidate = False
+            new_remaining_deficits = dict(remaining_deficits)
+            for key, deficit in remaining_deficits.items():
+                occupied_by_candidate = resources.get(key, 0)
+                if occupied_by_candidate <= 0:
                     continue
-                new_deficit = deficit - freed
+                new_deficit = deficit - occupied_by_candidate
                 if new_deficit <= 0:
-                    remaining_deficits.pop(key, None)
+                    new_remaining_deficits.pop(key, None)
                 else:
-                    remaining_deficits[key] = new_deficit
-                made_progress = True
-            return made_progress
+                    new_remaining_deficits[key] = new_deficit
+                is_viable_candidate = True
+
+            if not is_viable_candidate:
+                # The candidate doesn't actually help us reduce the deficits.
+                # This could be the case if the earlier candidates already
+                # reduced the deficits for all relevant resource keys that this
+                # candidate is occupying.
+                return False
+
+            reclaimed_resources = False
+            new_remaining_reclaim_budget = dict(remaining_reclaim_budget)
+            for key, budget in remaining_reclaim_budget.items():
+                reclaimed = min(borrowed.get(key, 0), budget)
+                if reclaimed <= 0:
+                    continue
+                new_budget = budget - reclaimed
+                if new_budget <= 0:
+                    new_remaining_reclaim_budget.pop(key, None)
+                else:
+                    new_remaining_reclaim_budget[key] = new_budget
+                reclaimed_resources = True
+
+            if candidate_priority >= head_priority and not reclaimed_resources:
+                # The request is equal/higher prio than the head request, and
+                # is not borrowing any of our dedicated resources. This means
+                # we cannot evict it.
+                return False
+
+            remaining_deficits.clear()
+            remaining_deficits.update(new_remaining_deficits)
+            remaining_reclaim_budget.clear()
+            remaining_reclaim_budget.update(new_remaining_reclaim_budget)
+            return True
 
         batch_size = 50
         for batch_start in range(0, len(candidate_rows), batch_size):
             batch = candidate_rows[batch_start : batch_start + batch_size]
             batch_ids: List[UUID] = []
             priority_by_id: Dict[UUID, int] = {}
-            for rid, _, prio, _, _, _ in batch:
-                if rid in candidates_seen:
+            for request_id, _, prio, _ in batch:
+                if request_id in candidates_seen:
                     continue
-                candidates_seen.add(rid)
-                priority_by_id[rid] = int(prio)
+                candidates_seen.add(request_id)
+                priority_by_id[request_id] = int(prio)
                 if not self._can_preempt_request(
-                    session=session, request_id=rid
+                    session=session, request_id=request_id
                 ):
                     continue
-                batch_ids.append(rid)
+                batch_ids.append(request_id)
 
             if not batch_ids:
                 continue
@@ -6241,28 +6159,20 @@ class SqlZenStore(BaseZenStore):
                         str(key)
                     ] = int(borrowed_amount)
 
-            for rid in batch_ids:
-                candidate_priority = priority_by_id.get(rid, 0)
-                allow_reclaim_for_min = (
-                    candidate_priority >= head_priority
-                    and bool(remaining_reclaim_budget)
-                )
-                if (
-                    candidate_priority >= head_priority
-                    and not allow_reclaim_for_min
-                ):
-                    continue
-
+            for request_id in batch_ids:
+                candidate_priority = priority_by_id.get(request_id, 0)
                 if _apply_candidate(
-                    rid, allow_reclaim_for_min=allow_reclaim_for_min
+                    request_id, candidate_priority=candidate_priority
                 ):
-                    victims.append(rid)
+                    victims.append(request_id)
                 if not remaining_deficits:
                     break
             if not remaining_deficits:
                 break
 
         if remaining_deficits:
+            # Even if we would evict all candidates, we would not be able
+            # to free enough resources to satisfy the request.
             return False
 
         preempted_any = False
