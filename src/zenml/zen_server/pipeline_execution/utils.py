@@ -170,7 +170,6 @@ def run_snapshot(
     Returns:
         ID of the new pipeline run.
     """
-
     if not implicit_auth_context:
         set_auth_context(auth_context)
     logger.info("Current auth context: %s", get_auth_context())

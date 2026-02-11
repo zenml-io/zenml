@@ -480,3 +480,12 @@ class ScheduleTriggerResponse(
             A list of snapshots the triggers is attached to.
         """
         return self.get_resources().snapshots
+
+    @property
+    def latest_run(self) -> Optional["PipelineRunResponse"]:
+        """Implements the 'latest_run' property.
+
+        Returns:
+            The latest run of the trigger.
+        """
+        return self.get_resources().latest_run

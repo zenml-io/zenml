@@ -7050,6 +7050,15 @@ class SqlZenStore(BaseZenStore):
         triggers_filter_model: "NonScopedTriggerFilter",
         hydrate: bool = False,
     ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List triggers across projects.
+
+        Args:
+            triggers_filter_model: An unscoped trigger filter instance.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
         with Session(self.engine) as session:
             query = select(TriggerSchema)
             return self.filter_and_paginate(

@@ -7,14 +7,17 @@ from tests.integration.functional.utils import sample_name
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.enums import TriggerFlavor, TriggerType
+from zenml.enums import ExecutionStatus, TriggerFlavor, TriggerType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     PipelineRequest,
+    PipelineRunFilter,
+    PipelineRunRequest,
     PipelineSnapshotRequest,
     ScheduleTriggerRequest,
     ScheduleTriggerUpdate,
 )
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 def test_crud_happy_path(clean_client):
@@ -81,7 +84,7 @@ def test_crud_happy_path(clean_client):
         )  # next occurrence has been updated
 
 
-def test_associations(clean_client):
+def test_snapshot_associations(clean_client):
     project = clean_client.active_project
     store = clean_client.zen_store
 
@@ -192,6 +195,164 @@ def test_associations(clean_client):
             trigger_id=trigger_response.id,
             snapshot_id=snapshot.id,
         )
+
+
+def test_run_associations(clean_client):
+    if not isinstance(clean_client.zen_store, SqlZenStore):
+        pytest.skip("Trigger Execution assoc testing requires SqlZenStore")
+
+    # create placeholders
+
+    project = clean_client.active_project
+    store: SqlZenStore = clean_client.zen_store
+
+    pipeline_model = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("trigger-test-pipeline"),
+            project=project.id,
+        )
+    )
+
+    step_name = sample_name("trigger-test-step")
+
+    snapshot = store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=project.id,
+            run_name_template=sample_name("trigger-test-snap"),
+            pipeline_configuration=PipelineConfiguration(
+                name=sample_name("foo")
+            ),
+            stack=clean_client.active_stack.id,
+            pipeline=pipeline_model.id,
+            client_version="0.1.0",
+            server_version="0.1.0",
+            step_configurations={
+                step_name: Step(
+                    spec=StepSpec(
+                        source=Source(
+                            module="acme.foo",
+                            type=SourceType.INTERNAL,
+                        ),
+                        upstream_steps=[],
+                        invocation_id=str(uuid.uuid4()),
+                    ),
+                    config=StepConfiguration(name=step_name),
+                    step_config_overrides=StepConfiguration(name=step_name),
+                )
+            },
+            is_dynamic=False,
+        )
+    )
+
+    cron_trigger = store.create_trigger(
+        ScheduleTriggerRequest(
+            project=project.id,
+            name=sample_name("trigger-test", random_factor=6),
+            type=TriggerType.SCHEDULE,
+            flavor=TriggerFlavor.NATIVE_SCHEDULE,
+            active=True,
+            cron_expression="* 1 * * *",
+        )
+    )
+
+    interval_trigger = store.create_trigger(
+        ScheduleTriggerRequest(
+            project=project.id,
+            name=sample_name("trigger-test", random_factor=6),
+            type=TriggerType.SCHEDULE,
+            flavor=TriggerFlavor.NATIVE_SCHEDULE,
+            active=True,
+            interval=600,
+            start_time=datetime.now(tz=timezone.utc),
+        )
+    )
+
+    clean_client.attach_trigger_to_snapshot(
+        trigger_id=cron_trigger.id, pipeline_snapshot_id=snapshot.id
+    )
+
+    clean_client.attach_trigger_to_snapshot(
+        trigger_id=interval_trigger.id, pipeline_snapshot_id=snapshot.id
+    )
+
+    # test run that has no trigger attached
+
+    run1, _ = store.get_or_create_run(
+        pipeline_run=PipelineRunRequest(
+            project=project.id,
+            snapshot=snapshot.id,
+            name=sample_name("trigger-test-run"),
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+
+    assert run1.trigger is None
+
+    store.create_trigger_execution(
+        trigger_id=cron_trigger.id,
+        pipeline_run_id=run1.id,
+    )
+
+    run1 = store.get_run(run1.id)
+
+    assert run1.trigger.id == cron_trigger.id
+
+    run2, _ = store.get_or_create_run(
+        pipeline_run=PipelineRunRequest(
+            project=project.id,
+            snapshot=snapshot.id,
+            name=sample_name("trigger-test-run"),
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+
+    store.create_trigger_execution(
+        trigger_id=interval_trigger.id,
+        pipeline_run_id=run2.id,
+    )
+
+    run2 = store.get_run(run2.id)
+
+    assert run2.trigger.id == interval_trigger.id
+
+    runs = store.list_runs(
+        runs_filter_model=PipelineRunFilter(trigger_id=uuid.uuid4())
+    )
+
+    assert len(runs.items) == 0
+
+    runs = store.list_runs(
+        runs_filter_model=PipelineRunFilter(
+            trigger_id=cron_trigger.id,
+        )
+    )
+
+    assert len(runs.items) == 1
+    assert runs.items[0].trigger.id == cron_trigger.id
+
+    cron_trigger = store.get_trigger(
+        trigger_id=cron_trigger.id,
+    )
+
+    assert cron_trigger.latest_run.id == run1.id
+
+    run3, _ = store.get_or_create_run(
+        pipeline_run=PipelineRunRequest(
+            project=project.id,
+            snapshot=snapshot.id,
+            name=sample_name("trigger-test-run"),
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+
+    store.create_trigger_execution(
+        trigger_id=cron_trigger.id,
+        pipeline_run_id=run3.id,
+    )
+
+    assert (
+        store.get_trigger(trigger_id=cron_trigger.id).latest_run.id == run3.id
+    )
 
 
 def test_sdk_utilities(clean_client):
