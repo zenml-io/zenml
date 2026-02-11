@@ -157,6 +157,27 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 
 ### 🧐 Linting, formatting, and tests
 
+#### Option A: Use VS Code Dev Containers (Recommended for CI Parity)
+
+If you want an environment that exactly matches our CI, use the VS Code Dev
+Container setup. This gives you an Ubuntu container with the same Python
+version, dependencies, and environment variables as GitHub Actions.
+
+**Prerequisites:** Docker and VS Code with the
+[Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+**To get started:**
+1. Open the repository in VS Code
+2. Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Windows/Linux)
+3. Select "Dev Containers: Reopen in Container"
+4. Choose your Python version (3.10, 3.11, 3.12, or 3.13)
+
+The container automatically installs ZenML with all integrations using the same
+script CI uses. See [tests/README.md](tests/README.md#using-vs-code-dev-containers-for-ci-parity-debugging)
+for detailed documentation.
+
+#### Option B: Manual Installation
+
 To install ZenML from your local checked out files including all core dev-dependencies, run:
 
 ```
