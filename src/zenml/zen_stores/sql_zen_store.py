@@ -5087,75 +5087,72 @@ class SqlZenStore(BaseZenStore):
             )
         ).subquery()
 
-        free_dedicated_resources_by_component_subquery = (
-            select(
-                col(ResourcePoolSubjectPolicySchema.component_id).label(
-                    "component_id"
-                ),
-                func.sum(
-                    case(
-                        (
-                            func.coalesce(
-                                col(
-                                    ResourcePoolSubjectPolicyResourceSchema.reserved
-                                ),
-                                0,
-                            )
-                            > func.coalesce(
-                                col(used_by_component_key_subquery.c.used), 0
-                            ),
-                            func.coalesce(
-                                col(
-                                    ResourcePoolSubjectPolicyResourceSchema.reserved
-                                ),
-                                0,
-                            )
-                            - func.coalesce(
-                                col(used_by_component_key_subquery.c.used), 0
-                            ),
-                        ),
-                        else_=0,
-                    )
-                ).label("free_resources"),
-            )
-            .select_from(ResourcePoolSubjectPolicySchema)
-            .outerjoin(
-                ResourcePoolSubjectPolicyResourceSchema,
-                col(ResourcePoolSubjectPolicyResourceSchema.policy_id)
-                == col(ResourcePoolSubjectPolicySchema.id),
-            )
-            .outerjoin(
-                used_by_component_key_subquery,
-                and_(
-                    col(used_by_component_key_subquery.c.component_id)
-                    == col(ResourcePoolSubjectPolicySchema.component_id),
-                    col(used_by_component_key_subquery.c.key)
-                    == col(ResourcePoolSubjectPolicyResourceSchema.key),
-                ),
-            )
-            .where(
-                col(ResourcePoolSubjectPolicySchema.resource_pool_id)
-                == pool_id
-            )
-            .group_by(col(ResourcePoolSubjectPolicySchema.component_id))
-        ).subquery()
-
         def _peek_head_queue_item(
             now: datetime,
             *,
             exclude_queue_item_ids: Set[UUID],
         ) -> Optional[ResourcePoolRequestQueueSchema]:
-            below_min_expr = case(
+            # "Dedicated-first" ordering: prefer requests that can be satisfied
+            # fully from the component's currently unused reserved share.
+            #
+            # For each requested key, compute free_reserved = max(reserved - used, 0)
+            # and require requested_amount <= free_reserved.
+            reserved_free_expr = case(
                 (
                     func.coalesce(
-                        col(
-                            free_dedicated_resources_by_component_subquery.c.free_resources
-                        ),
-                        0,
+                        col(ResourcePoolSubjectPolicyResourceSchema.reserved), 0
                     )
-                    > 0,
-                    1,
+                    > func.coalesce(col(used_by_component_key_subquery.c.used), 0),
+                    func.coalesce(
+                        col(ResourcePoolSubjectPolicyResourceSchema.reserved), 0
+                    )
+                    - func.coalesce(col(used_by_component_key_subquery.c.used), 0),
                 ),
+                else_=0,
+            )
+            reserved_fit_violation_exists = exists(
+                select(1)
+                .select_from(ResourceRequestResourceSchema)
+                .join(
+                    ResourceRequestSchema,
+                    col(ResourceRequestSchema.id)
+                    == col(ResourceRequestResourceSchema.request_id),
+                )
+                .outerjoin(
+                    ResourcePoolSubjectPolicySchema,
+                    and_(
+                        col(ResourcePoolSubjectPolicySchema.resource_pool_id)
+                        == pool_id,
+                        col(ResourcePoolSubjectPolicySchema.component_id)
+                        == col(ResourceRequestSchema.component_id),
+                    ),
+                )
+                .outerjoin(
+                    ResourcePoolSubjectPolicyResourceSchema,
+                    and_(
+                        col(ResourcePoolSubjectPolicyResourceSchema.policy_id)
+                        == col(ResourcePoolSubjectPolicySchema.id),
+                        col(ResourcePoolSubjectPolicyResourceSchema.key)
+                        == col(ResourceRequestResourceSchema.key),
+                    ),
+                )
+                .outerjoin(
+                    used_by_component_key_subquery,
+                    and_(
+                        col(used_by_component_key_subquery.c.component_id)
+                        == col(ResourceRequestSchema.component_id),
+                        col(used_by_component_key_subquery.c.key)
+                        == col(ResourceRequestResourceSchema.key),
+                    ),
+                )
+                .where(
+                    col(ResourceRequestResourceSchema.request_id)
+                    == col(ResourcePoolRequestQueueSchema.request_id),
+                    col(ResourceRequestResourceSchema.amount) > reserved_free_expr,
+                )
+            )
+            fits_fully_in_free_reserved_expr = case(
+                (~reserved_fit_violation_exists, 1),
                 else_=0,
             )
 
@@ -5250,15 +5247,8 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
                 .where(~limit_violation_exists)
-                .outerjoin(
-                    free_dedicated_resources_by_component_subquery,
-                    col(
-                        free_dedicated_resources_by_component_subquery.c.component_id
-                    )
-                    == col(ResourceRequestSchema.component_id),
-                )
                 .order_by(
-                    desc(below_min_expr),
+                    desc(fits_fully_in_free_reserved_expr),
                     desc(ResourcePoolRequestQueueSchema.priority),
                     col(ResourcePoolRequestQueueSchema.request_created),
                     col(ResourcePoolRequestQueueSchema.request_id),
