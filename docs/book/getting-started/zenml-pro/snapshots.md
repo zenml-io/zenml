@@ -32,7 +32,7 @@ Local stacks cannot run snapshots.
 {% endhint %}
 
 {% hint style="info" %}
-**Platform Engineers:** For snapshots to work in Hybrid or Self-hosted deployments, you must configure the workload manager on your Workspace Server. See [Workspace Server Configuration - Workload Manager](config-workspace-server.md#workload-manager) for the required environment variables and Kubernetes RBAC setup.
+**Platform Engineers:** For snapshots to work in Hybrid or Self-hosted deployments, you must configure the workload manager on your Workspace Server. See [Enable Snapshot (Workload Manager) Support for the Workspace Server](deploy-workspace-snapshots.md) for the required environment variables and Kubernetes RBAC setup.
 {% endhint %}
 
 ## Creating Snapshots
@@ -152,8 +152,6 @@ Client().delete_snapshot(name_id_or_prefix="<SNAPSHOT-NAME-OR-ID>")
 
 - [Snapshots - Full Documentation](../../how-to/snapshots/snapshots.md) - Complete reference with advanced usage
 - [Trigger Pipelines from External Systems](../../user-guide/tutorial/trigger-pipelines-from-external-systems.md) - Tutorial for CI/CD integration
-- [Workspace Server Configuration](config-workspace-server.md#workload-manager) - Configure the workload manager that powers snapshots
+- [Workspace Server Configuration](deploy-workspace-snapshots.md) - Configure the workload manager that powers snapshots
 - [Service Accounts](service-accounts.md) - Set up API authentication for automated triggers
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 
