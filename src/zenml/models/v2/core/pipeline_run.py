@@ -68,6 +68,7 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
+    from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -322,6 +323,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     visualizations: List["CuratedVisualizationResponse"] = Field(
         default=[],
         title="Curated visualizations associated with the pipeline run.",
+    )
+    trigger: Optional["TRIGGER_RETURN_TYPE_UNION"] = Field(
+        default=None,
+        title="The trigger that generated this pipeline run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -649,6 +654,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().log_collection
+
+    @property
+    def trigger(self) -> Optional["TRIGGER_RETURN_TYPE_UNION"]:
+        """The `trigger` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().trigger
 
 
 # ------------------ Filter Model ------------------

@@ -16,9 +16,8 @@
 from datetime import datetime
 
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import relationship
 from sqlalchemy.sql.schema import Column, ForeignKey
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas import PipelineRunSchema
@@ -91,7 +90,9 @@ class TriggerExecutionSchema(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=utc_now)
 
-    pipeline_run: PipelineRunSchema = relationship(
-        "PipelineRunSchema",
-        lazy="select",
+    # TriggerExecution -> 1 PipelineRun
+    pipeline_run: "PipelineRunSchema" = Relationship(
+        sa_relationship_kwargs={
+            "lazy": "select",
+        },
     )
