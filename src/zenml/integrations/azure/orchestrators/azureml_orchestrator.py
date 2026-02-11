@@ -53,7 +53,10 @@ from zenml.constants import (
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.integrations.azure.azureml_utils import create_or_get_compute
+from zenml.integrations.azure.azureml_utils import (
+    convert_job_status,
+    create_or_get_compute,
+)
 from zenml.integrations.azure.flavors.azureml import AzureMLComputeTypes
 from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
     AzureMLOrchestratorConfig,
@@ -65,6 +68,7 @@ from zenml.integrations.azure.orchestrators.azureml_orchestrator_entrypoint_conf
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.pipelines.dynamic.entrypoint_configuration import (
     DynamicPipelineEntrypointConfiguration,
@@ -77,12 +81,17 @@ from zenml.utils.string_utils import b64_encode
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
+    from zenml.models import (
+        PipelineRunResponse,
+        PipelineSnapshotResponse,
+        StepRunResponse,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
 ENV_ZENML_AZUREML_RUN_ID = "AZUREML_ROOT_RUN_ID"
+STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 
 class AzureMLOrchestrator(ContainerizedOrchestrator):
@@ -586,10 +595,10 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             wait_for_completion=_wait_for_completion,
         )
 
-    def run_isolated_step(
+    def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Runs an isolated step on AzureML.
+        """Submits an isolated step to AzureML.
 
         Args:
             step_run_info: The step run information.
@@ -626,9 +635,8 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             ml_client, settings, default_compute_name=f"zenml_{self.id}"
         )
 
-        job_name = (
-            f"{step_run_info.run_name}-{step_run_info.pipeline_step_name}"
-        )
+        job_name_prefix = str(step_run_info.step_run_id)[:8]
+        job_name = f"{job_name_prefix}-{step_run_info.run_name}-{step_run_info.pipeline_step_name}"
 
         command_job = command(
             name=job_name,
@@ -642,9 +650,43 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         )
 
         job = ml_client.jobs.create_or_update(command_job)
-        logger.info("Waiting for AzureML job `%s` to finish...", job.name)
-        ml_client.jobs.stream(job.name)
-        logger.info("AzureML job `%s` completed.", job.name)
+        publish_step_run_metadata(
+            step_run_info.step_run_id,
+            {
+                self.id: {STEP_JOB_NAME_METADATA_KEY: job.name},
+            },
+        )
+        # Include the metadata in the step run response to avoid an extra
+        # API call
+        step_run_info.step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY] = (
+            job.name
+        )
+
+    def get_isolated_step_status(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Gets the status of an isolated step on Vertex.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The status of the step run.
+        """
+        client = self.get_azureml_client()
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        job = client.jobs.get(job_name)
+        return convert_job_status(job.status)
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stops an isolated step on Vertex.
+
+        Args:
+            step_run: The step run.
+        """
+        client = self.get_azureml_client()
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        client.jobs.begin_cancel(job_name)
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -729,28 +771,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             )
         status = ml_client.jobs.get(run_id).status
 
-        # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-        # https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.pipelinejob?view=azure-python#azure-ai-ml-entities-pipelinejob-status
-        if status in [
-            "NotStarted",
-            "Starting",
-            "Provisioning",
-            "Preparing",
-            "Queued",
-        ]:
-            pipeline_status = ExecutionStatus.INITIALIZING
-        elif status in ["Running", "Finalizing"]:
-            pipeline_status = ExecutionStatus.RUNNING
-        elif status == "CancelRequested":
-            pipeline_status = ExecutionStatus.STOPPING
-        elif status == "Canceled":
-            pipeline_status = ExecutionStatus.STOPPED
-        elif status in ["Failed", "NotResponding"]:
-            pipeline_status = ExecutionStatus.FAILED
-        elif status == "Completed":
-            pipeline_status = ExecutionStatus.COMPLETED
-        else:
-            raise ValueError("Unknown status for the pipeline job.")
+        pipeline_status = convert_job_status(status)
 
         # AzureML doesn't support step-level status fetching yet
         return pipeline_status, None

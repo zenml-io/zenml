@@ -21,6 +21,7 @@ from azure.core.exceptions import (
     ResourceNotFoundError,
 )
 
+from zenml.enums import ExecutionStatus
 from zenml.integrations.azure.flavors.azureml import (
     AzureMLComputeSettings,
     AzureMLComputeTypes,
@@ -200,3 +201,39 @@ def create_or_get_compute(
             return compute_name
 
     return None
+
+
+def convert_job_status(status: Optional[str]) -> ExecutionStatus:
+    """Converts a job status to an execution status.
+
+    Args:
+        status: The job status.
+
+    Raises:
+        ValueError: If the job status is unknown.
+
+    Returns:
+        The execution status.
+    """
+    # Map the potential outputs to ZenML ExecutionStatus. Potential values:
+    # https://learn.microsoft.com/en-us/python/api/azure-ai-ml/azure.ai.ml.entities.pipelinejob?view=azure-python#azure-ai-ml-entities-pipelinejob-status
+    if status in [
+        "NotStarted",
+        "Starting",
+        "Provisioning",
+        "Preparing",
+        "Queued",
+    ]:
+        return ExecutionStatus.INITIALIZING
+    elif status in ["Running", "Finalizing"]:
+        return ExecutionStatus.RUNNING
+    elif status == "CancelRequested":
+        return ExecutionStatus.STOPPING
+    elif status == "Canceled":
+        return ExecutionStatus.STOPPED
+    elif status in ["Failed", "NotResponding"]:
+        return ExecutionStatus.FAILED
+    elif status == "Completed":
+        return ExecutionStatus.COMPLETED
+    else:
+        raise ValueError(f"Unknown status for the pipeline job: {status}")

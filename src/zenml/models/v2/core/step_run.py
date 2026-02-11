@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing steps runs."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -607,6 +607,17 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().end_time
+
+    @property
+    def duration(self) -> Optional[timedelta]:
+        """The `duration` property.
+
+        Returns:
+            The duration of the step run.
+        """
+        if self.end_time is None or self.start_time is None:
+            return None
+        return self.end_time - self.start_time
 
     @property
     def latest_heartbeat(self) -> Optional[datetime]:
