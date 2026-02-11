@@ -54,13 +54,16 @@ The number of `process_chunk` steps is decided by the LLM at runtime based on th
 | Module | Role |
 |--------|------|
 | `run.py` | CLI entry point — parses args and calls the pipeline |
-| `pipelines/rlm_pipeline.py` | Pipeline definition with dynamic fan-out loop |
+| `pipelines/rlm_pipeline.py` | Pipeline definition with dynamic fan-out loop + deployment settings |
 | `steps/loading.py` | Loads JSON emails, builds corpus summary |
 | `steps/decomposition.py` | LLM plans chunk boundaries (or even-split fallback) |
 | `steps/processing.py` | **Core RLM loop** per chunk: preview → plan → search → reflect → (repeat or summarize) |
-| `steps/aggregation.py` | Synthesizes chunk findings into final report + HTML |
+| `steps/aggregation.py` | Synthesizes chunk findings + trajectories into HTML report (external template) |
 | `utils/llm.py` | OpenAI wrapper with retry, exponential backoff, and graceful fallback |
 | `utils/tools.py` | Typed search tools (grep, sender, recipient, date, count) |
+| `data/report.css` | External report stylesheet (ZenML design system) |
+| `data/report_template.html` | External HTML report template with `str.format()` placeholders |
+| `ui/index.html` | Deployable static dashboard for ZenML pipeline deployment |
 | `setup_data.py` | Downloads full Enron dataset from HuggingFace |
 
 ### Key dynamic pipeline patterns
@@ -81,7 +84,22 @@ The LLM cannot execute arbitrary code. Instead, `process_chunk` runs a bounded i
 4. If not sufficient, loop back to Plan with refined strategy
 5. **Summarize** — Final synthesis of all gathered evidence
 
-Each plan+reflect iteration costs 2 LLM calls; the final summarize costs 1. The `max_iterations` parameter controls the total LLM call budget per chunk. Every action is logged to a trajectory artifact for observability.
+Each plan+reflect iteration costs 2 LLM calls; the final summarize costs 1. The `max_iterations` parameter controls the total LLM call budget per chunk. Every action is logged to a trajectory artifact for observability. Trajectories are rendered as collapsible JSON blocks in the HTML report.
+
+### Report generation
+
+The HTML report uses external assets loaded at runtime (mirrors the hierarchical_doc_search_agent pattern):
+
+- `data/report.css` — ZenML design system CSS
+- `data/report_template.html` — HTML template with `str.format()` placeholders
+
+Asset loading uses `_load_text_asset()` with three fallback paths: relative to `steps/`, Docker `/app/`, and plain relative. The template uses these placeholders: `{css}`, `{query_safe}`, `{chunk_count}`, `{confidence_safe}`, `{confidence_class}`, `{summary_safe}`, `{key_findings_html}`, `{evidence_gaps_html}`, `{chunk_cards_html}`.
+
+**Important**: The template file must not contain literal `{` or `}` outside placeholders (Python `str.format()` would interpret them). All CSS goes in `report.css` injected via `{css}`.
+
+### Deployment
+
+The pipeline includes `DeploymentSettings` (app_title, app_description, dashboard_files_path="ui") for ZenML deployment. The `ui/index.html` provides a static dashboard with Jinja-injected globals (`INVOKE_URL`, `AUTH_ENABLED`) and controls for query, max_chunks, and max_iterations.
 
 ### Dual-mode operation
 

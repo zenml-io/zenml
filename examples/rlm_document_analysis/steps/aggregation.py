@@ -18,6 +18,8 @@
 import html
 import json
 import logging
+from functools import lru_cache
+from pathlib import Path
 from typing import Annotated, Any, Dict, List, Tuple
 
 from utils.llm import llm_available, llm_call
@@ -48,68 +50,90 @@ Be specific. Reference dates, names, and amounts. Note contradictions
 or gaps between chunk findings.
 """
 
-REPORT_CSS = """\
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', \
-Roboto, sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; \
-color: #1a1a1a; background: #fafafa; }
-h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 0.3em; }
-h2 { color: #1e40af; margin-top: 1.5em; }
-.finding-card { background: white; border: 1px solid #e5e7eb; \
-border-radius: 8px; padding: 1.2em; margin: 1em 0; \
-box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.finding-card h3 { margin-top: 0; color: #374151; }
-.confidence { display: inline-block; padding: 2px 10px; border-radius: 12px; \
-font-size: 0.85em; font-weight: 600; }
-.confidence-high { background: #d1fae5; color: #065f46; }
-.confidence-medium { background: #fef3c7; color: #92400e; }
-.confidence-low { background: #fee2e2; color: #991b1b; }
-.evidence { background: #f9fafb; border-left: 3px solid #2563eb; \
-padding: 0.8em 1em; margin: 0.5em 0; font-size: 0.9em; }
-.meta { color: #6b7280; font-size: 0.85em; }
-.summary-box { background: #eff6ff; border: 1px solid #bfdbfe; \
-border-radius: 8px; padding: 1.2em; margin: 1em 0; }
-"""
+
+# --- Asset loading (mirrors hierarchical example pattern) ---
 
 
-def _build_report(
-    query: str,
-    synthesis: Dict[str, Any],
-    chunk_findings: List[Dict[str, Any]],
-) -> str:
-    """Build an HTML report from synthesis and chunk findings.
+@lru_cache(maxsize=8)
+def _load_text_asset(rel_path: str) -> str:
+    """Load a UTF-8 text asset with local + Docker + relative fallbacks.
 
     Args:
-        query: The original research query.
-        synthesis: Combined synthesis dict from LLM.
-        chunk_findings: List of per-chunk finding dicts.
+        rel_path: Relative path from example root (e.g., "data/report.css").
 
     Returns:
-        HTML string.
+        File contents as string, or empty string if not found.
     """
-    q = html.escape(query)
-    summary = html.escape(
-        str(synthesis.get("summary", "No summary available."))
+    search_paths = [
+        Path(__file__).parent.parent / rel_path,
+        Path("/app") / rel_path,
+        Path(rel_path),
+    ]
+    for p in search_paths:
+        try:
+            return p.read_text(encoding="utf-8")
+        except (FileNotFoundError, OSError):
+            continue
+    logger.warning("Asset not found: %s", rel_path)
+    return ""
+
+
+def _get_report_css() -> str:
+    """Return CSS styles for the HTML report (loaded from external file)."""
+    return _load_text_asset("data/report.css")
+
+
+def _get_report_template() -> str:
+    """Return the HTML template for the report (loaded from external file)."""
+    return _load_text_asset("data/report_template.html")
+
+
+# --- Report building ---
+
+
+def _escape(value: Any) -> str:
+    """HTML-escape any value to a string."""
+    return html.escape(str(value))
+
+
+def _render_trajectory_block(trajectory: List[Dict[str, Any]]) -> str:
+    """Render a collapsible trajectory section for a chunk card.
+
+    Args:
+        trajectory: List of trajectory event dicts.
+
+    Returns:
+        HTML string for a <details> block, or empty string if no events.
+    """
+    if not trajectory:
+        return ""
+    traj_json = html.escape(json.dumps(trajectory, indent=2, default=str))
+    return (
+        f'<details class="trajectory-details">'
+        f"<summary>Trajectory ({len(trajectory)} events)</summary>"
+        f'<pre class="trajectory-pre">{traj_json}</pre>'
+        f"</details>"
     )
-    confidence = synthesis.get("confidence", "unknown")
-    conf_class = (
-        f"confidence-{confidence}"
-        if confidence in ("high", "medium", "low")
-        else ""
-    )
 
-    key_findings_html = ""
-    for kf in synthesis.get("key_findings", []):
-        key_findings_html += (
-            f'<div class="evidence">{html.escape(str(kf))}</div>\n'
-        )
 
-    gaps = html.escape(str(synthesis.get("evidence_gaps", "")))
+def _build_chunk_cards(
+    chunk_findings: List[Dict[str, Any]],
+    chunk_trajectories: List[List[Dict[str, Any]]],
+) -> str:
+    """Build HTML cards for each chunk with findings and trajectories.
 
-    chunk_cards = ""
+    Args:
+        chunk_findings: List of per-chunk finding dicts.
+        chunk_trajectories: List of trajectory lists per chunk.
+
+    Returns:
+        Combined HTML string of all chunk cards.
+    """
+    cards = ""
     for i, cf in enumerate(chunk_findings):
-        finding_text = html.escape(str(cf.get("finding", "No finding.")))
-        chunk_range = html.escape(str(cf.get("chunk_range", "N/A")))
-        desc = html.escape(str(cf.get("chunk_description", "")))
+        finding_text = _escape(cf.get("finding", "No finding."))
+        chunk_range = _escape(cf.get("chunk_range", "N/A"))
+        desc = _escape(cf.get("chunk_description", ""))
         cf_confidence = cf.get("confidence", "unknown")
         cf_class = (
             f"confidence-{cf_confidence}"
@@ -121,49 +145,113 @@ def _build_report(
 
         evidence_items = ""
         for ev in cf.get("key_evidence", []):
-            evidence_items += (
-                f'<div class="evidence">{html.escape(str(ev))}</div>\n'
-            )
+            evidence_items += f'<div class="evidence">{_escape(ev)}</div>\n'
 
-        chunk_cards += f"""
-        <div class="finding-card">
-          <h3>Chunk {i + 1}: Emails [{chunk_range}]</h3>
-          <p class="meta">{desc}</p>
-          <p class="meta">Searched {emails_searched} emails, \
-found {matches_found} matches</p>
-          <span class="confidence {cf_class}">{cf_confidence}</span>
-          <p>{finding_text}</p>
-          {evidence_items}
-        </div>
-        """
+        traj = chunk_trajectories[i] if i < len(chunk_trajectories) else []
+        trajectory_html = _render_trajectory_block(traj)
 
-    return f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>RLM Analysis Report</title>
-<style>{REPORT_CSS}</style></head>
-<body>
-<h1>RLM Document Analysis Report</h1>
-<p class="meta">Query: <strong>{q}</strong></p>
-<p class="meta">Analyzed {len(chunk_findings)} chunks</p>
+        cards += (
+            f'<div class="finding-card">'
+            f"<h3>Chunk {i + 1}: Emails [{chunk_range}]</h3>"
+            f'<p class="meta">{desc}</p>'
+            f'<p class="meta">Searched {emails_searched} emails, '
+            f"found {matches_found} matches</p>"
+            f'<span class="confidence {cf_class}">{cf_confidence}</span>'
+            f"<p>{finding_text}</p>"
+            f"{evidence_items}"
+            f"{trajectory_html}"
+            f"</div>\n"
+        )
+    return cards
 
-<div class="summary-box">
-  <h2>Synthesis</h2>
-  <span class="confidence {conf_class}">{confidence}</span>
-  <p>{summary}</p>
-</div>
 
-<h2>Key Findings</h2>
-{key_findings_html}
+def _build_report(
+    query: str,
+    synthesis: Dict[str, Any],
+    chunk_findings: List[Dict[str, Any]],
+    chunk_trajectories: List[List[Dict[str, Any]]],
+) -> str:
+    """Build an HTML report from synthesis and chunk findings.
 
-{f"<h2>Evidence Gaps</h2><p>{gaps}</p>" if gaps else ""}
+    Loads external CSS and HTML template, then renders the report.
+    Falls back to a minimal inline report if template is missing.
 
-<h2>Per-Chunk Analysis</h2>
-{chunk_cards}
-</body></html>"""
+    Args:
+        query: The original research query.
+        synthesis: Combined synthesis dict from LLM.
+        chunk_findings: List of per-chunk finding dicts.
+        chunk_trajectories: List of trajectory lists per chunk.
+
+    Returns:
+        HTML string.
+    """
+    css = _get_report_css()
+    template = _get_report_template()
+
+    # Pre-render sub-sections
+    query_safe = _escape(query)
+    summary_safe = _escape(synthesis.get("summary", "No summary available."))
+    confidence = synthesis.get("confidence", "unknown")
+    confidence_class = (
+        f"confidence-{confidence}"
+        if confidence in ("high", "medium", "low")
+        else ""
+    )
+
+    key_findings_html = ""
+    for kf in synthesis.get("key_findings", []):
+        key_findings_html += f'<div class="evidence">{_escape(kf)}</div>\n'
+
+    gaps = str(synthesis.get("evidence_gaps", ""))
+    evidence_gaps_html = (
+        f'<div class="gaps-section"><h2>Evidence Gaps</h2>'
+        f"<p>{_escape(gaps)}</p></div>"
+        if gaps
+        else ""
+    )
+
+    chunk_cards_html = _build_chunk_cards(chunk_findings, chunk_trajectories)
+
+    if not template:
+        logger.warning(
+            "Report template not found; rendering minimal fallback."
+        )
+        return (
+            f"<html><body><h1>RLM Analysis Report</h1>"
+            f"<p>Query: {query_safe}</p>"
+            f"<p>{summary_safe}</p>"
+            f"{chunk_cards_html}</body></html>"
+        )
+
+    try:
+        return template.format(
+            css=css,
+            query_safe=query_safe,
+            chunk_count=len(chunk_findings),
+            confidence_safe=_escape(confidence),
+            confidence_class=confidence_class,
+            summary_safe=summary_safe,
+            key_findings_html=key_findings_html,
+            evidence_gaps_html=evidence_gaps_html,
+            chunk_cards_html=chunk_cards_html,
+        )
+    except (KeyError, ValueError) as exc:
+        logger.warning("Template rendering failed: %s", exc)
+        return (
+            f"<html><body><h1>RLM Analysis Report</h1>"
+            f"<p>Query: {query_safe}</p>"
+            f"<p>{summary_safe}</p>"
+            f"{chunk_cards_html}</body></html>"
+        )
+
+
+# --- Step ---
 
 
 @step
 def aggregate_results(
     chunk_results: List[Dict[str, Any]],
+    chunk_trajectories: List[List[Dict[str, Any]]],
     query: str,
 ) -> Tuple[
     Annotated[Dict[str, Any], "analysis_results"],
@@ -177,6 +265,7 @@ def aggregate_results(
 
     Args:
         chunk_results: List of finding dicts from process_chunk steps.
+        chunk_trajectories: List of trajectory lists from process_chunk steps.
         query: The original research query.
 
     Returns:
@@ -233,7 +322,13 @@ def aggregate_results(
     synthesis["chunk_count"] = len(chunk_results)
     synthesis["query"] = query
 
-    report_html = _build_report(query, synthesis, chunk_results)
+    # Pad trajectories if length mismatch (defensive)
+    while len(chunk_trajectories) < len(chunk_results):
+        chunk_trajectories.append([])
+
+    report_html = _build_report(
+        query, synthesis, chunk_results, chunk_trajectories
+    )
 
     logger.info(
         "Analysis complete: %d chunks, confidence=%s",

@@ -40,7 +40,7 @@ Each `process_chunk` step runs an **iterative RLM reasoning loop**, bounded by t
 
 Each plan+reflect iteration costs 2 LLM calls; the final summarize costs 1. So `max_iterations=6` allows up to 2 full search rounds plus the final synthesis.
 
-Every action is logged to a **trajectory artifact** for full observability.
+Every action is logged to a **trajectory artifact** for full observability. Trajectories are surfaced as collapsible JSON sections in the per-chunk cards of the HTML report.
 
 ## Prerequisites
 
@@ -160,6 +160,16 @@ process_step = process_chunk.with_options(
 | Pipeline | `max_chunks` | 4 | DAG width (1-10) |
 | Step | `max_iterations` | 6 | LLM calls per chunk (2-12) |
 
+## Deployment
+
+The pipeline includes `DeploymentSettings` for ZenML deployment with a static UI dashboard:
+
+```bash
+zenml deploy --name rlm-analysis
+```
+
+The deployed service serves `ui/index.html` with controls for query, max chunks, and max iterations, and renders the HTML report artifact in an embedded iframe.
+
 ## Project Structure
 
 ```
@@ -167,17 +177,21 @@ process_step = process_chunk.with_options(
 ├── setup_data.py                   # Download full Enron dataset from HF
 ├── requirements.txt                # Dependencies
 ├── pipelines/
-│   └── rlm_pipeline.py            # Dynamic pipeline with fan-out
+│   └── rlm_pipeline.py            # Dynamic pipeline with fan-out + deployment settings
 ├── steps/
 │   ├── loading.py                  # Load emails + build corpus summary
 │   ├── decomposition.py           # LLM plans chunk boundaries
 │   ├── processing.py              # RLM-style multi-step analysis per chunk
-│   └── aggregation.py             # Synthesize findings + HTML report
+│   └── aggregation.py             # Synthesize findings + HTML report (external template)
 ├── utils/
 │   ├── llm.py                     # OpenAI wrapper with retry + fallback
 │   └── tools.py                   # Typed search tools (grep, filter, etc.)
-└── data/
-    └── sample_emails.json          # Bundled 60-email Enron sample
+├── data/
+│   ├── sample_emails.json          # Bundled 60-email Enron sample
+│   ├── report.css                  # External report stylesheet (ZenML design system)
+│   └── report_template.html        # External HTML report template
+└── ui/
+    └── index.html                  # Deployable static dashboard
 ```
 
 ## Further Reading

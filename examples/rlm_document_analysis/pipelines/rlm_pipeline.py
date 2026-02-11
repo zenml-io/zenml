@@ -45,7 +45,11 @@ from steps import (
 )
 
 from zenml import pipeline
-from zenml.config import DockerSettings, PythonPackageInstaller
+from zenml.config import (
+    DeploymentSettings,
+    DockerSettings,
+    PythonPackageInstaller,
+)
 from zenml.types import HTMLString
 
 # --- Docker settings (pass API keys to container at compile time) ---
@@ -64,11 +68,20 @@ if _docker_env:
 
 docker_settings = DockerSettings(**_docker_kwargs)
 
+deployment_settings = DeploymentSettings(
+    app_title="RLM Document Analysis",
+    app_description="Dynamic pipelines + Reasoning Language Model (RLM) pattern",
+    dashboard_files_path="ui",
+)
+
 
 @pipeline(
     dynamic=True,
     enable_cache=True,
-    settings={"docker": docker_settings},
+    settings={
+        "docker": docker_settings,
+        "deployment": deployment_settings,
+    },
 )
 def rlm_analysis_pipeline(
     source_path: str = "data/sample_emails.json",
@@ -118,15 +131,18 @@ def rlm_analysis_pipeline(
 
     chunk_specs_data = chunk_specs.load()
     chunk_results: List[Any] = []
+    chunk_trajectories: List[Any] = []
     for idx in range(len(chunk_specs_data)):
-        result, _trajectory = process_step(
+        result, trajectory = process_step(
             documents=documents,
             chunk_spec=chunk_specs.chunk(index=idx),
         )
         chunk_results.append(result)
+        chunk_trajectories.append(trajectory)
 
     # Step 4: Synthesize all chunk findings
     return aggregate_results(
         chunk_results=chunk_results,
+        chunk_trajectories=chunk_trajectories,
         query=query,
     )

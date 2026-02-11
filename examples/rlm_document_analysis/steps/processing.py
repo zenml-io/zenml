@@ -270,6 +270,12 @@ def process_chunk(
 
     if not llm_available():
         result = _fallback_process(chunk_emails, sub_query)
+        result["chunk_range"] = f"{start_idx}-{end_idx}"
+        result["chunk_description"] = description
+        result["emails_searched"] = len(chunk_emails)
+        result["matches_found"] = len(result.get("relevant_emails", []))
+        result["iterations"] = 0
+        result["llm_calls"] = 0
         trajectory.append(
             {
                 "step": "fallback",
@@ -329,7 +335,9 @@ def process_chunk(
                 plan_data = json.loads(plan_response)
                 searches = plan_data.get("searches", [])[:4]
             except json.JSONDecodeError:
-                logger.warning("Failed to parse search plan (iteration %d)", iteration)
+                logger.warning(
+                    "Failed to parse search plan (iteration %d)", iteration
+                )
 
         trajectory.append(
             {
@@ -344,7 +352,9 @@ def process_chunk(
         )
 
         if not searches:
-            logger.info("No searches planned in iteration %d, stopping", iteration)
+            logger.info(
+                "No searches planned in iteration %d, stopping", iteration
+            )
             break
 
         # --- SEARCH ---
@@ -409,7 +419,9 @@ def process_chunk(
                 sufficient = reflect_data.get("sufficient", True)
                 reflect_feedback = reflect_data.get("reasoning", "")
             except json.JSONDecodeError:
-                logger.warning("Failed to parse reflect response, stopping loop")
+                logger.warning(
+                    "Failed to parse reflect response, stopping loop"
+                )
 
         trajectory.append(
             {
@@ -447,7 +459,8 @@ def process_chunk(
         f"## Research Query\n{query}\n\n"
         f"## Sub-query for This Chunk\n{sub_query}\n\n"
         f"## Search Results ({iteration} iteration(s))\n"
-        + "\n".join(search_results_text) + "\n\n"
+        + "\n".join(search_results_text)
+        + "\n\n"
         f"## Relevant Emails ({len(evidence_texts)} shown)\n"
         + "\n---\n".join(evidence_texts)
     )

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RLM Document Analysis | ZenML</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/jetbrains-mono@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --zenml-purple: #7a3ef4;
+        --zenml-purple-dark: #431d93;
+        --zenml-purple-light: #e4d8fd;
+        --zenml-purple-lighter: #f1ebfe;
+        --text-primary: #0d061d;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --surface-primary: #ffffff;
+        --surface-secondary: #f9fafb;
+        --surface-tertiary: #f3f4f6;
+        --success: #1cbf4a;
+        --success-light: #d2f2db;
+        --warning: #f98b0a;
+        --warning-light: #fff6ea;
+        --error: #eb483d;
+        --error-light: #fbdad8;
+        --border-moderate: #e5e7eb;
+        --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", Monaco, "Courier New", monospace;
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-standard: 0 2px 8px rgba(0, 0, 0, 0.1);
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-full: 999px;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: var(--font-ui);
+        background: var(--surface-secondary);
+        color: var(--text-primary);
+        padding: var(--spacing-xl);
+        font-size: 16px;
+        line-height: 24px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .container { max-width: 900px; margin: 0 auto; }
+
+      .card {
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-lg);
+        box-shadow: var(--shadow-standard);
+      }
+
+      .hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-moderate);
+      }
+
+      .hero-copy { flex: 1; }
+
+      .title {
+        margin: 0 0 var(--spacing-sm) 0;
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 36px;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-secondary);
+      }
+
+      .section { margin-top: var(--spacing-lg); }
+      .section h2 {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: var(--spacing-md);
+      }
+
+      .form-row {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: var(--spacing-md);
+      }
+
+      .input {
+        flex: 1;
+        min-width: 200px;
+        padding: 12px 16px;
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        color: var(--text-primary);
+        background: var(--surface-primary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .input::placeholder { color: var(--text-tertiary); }
+      .input:focus {
+        outline: none;
+        border-color: var(--zenml-purple);
+        box-shadow: 0 0 0 3px rgba(122, 62, 244, 0.1);
+      }
+
+      .input-small { width: 80px; min-width: 80px; flex: 0; }
+      .input-label { font-size: 14px; color: var(--text-secondary); margin-right: var(--spacing-xs); }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+      }
+
+      .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+      .btn:active:not(:disabled) { transform: translateY(1px); }
+      .btn:not(.secondary) { background: var(--zenml-purple); color: var(--surface-primary); }
+      .btn:not(.secondary):hover:not(:disabled) { background: var(--zenml-purple-dark); box-shadow: var(--shadow-standard); }
+      .btn.secondary { background: var(--surface-primary); color: var(--zenml-purple); border: 1px solid var(--border-moderate); }
+      .btn.secondary:hover:not(:disabled) { background: var(--surface-tertiary); }
+
+      .status-pill {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: var(--spacing-sm);
+      }
+
+      .message {
+        margin-top: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+      }
+      .message:empty { display: none; }
+      .message.info { background: var(--zenml-purple-lighter); color: var(--zenml-purple); border: 1px solid var(--zenml-purple-light); }
+      .message.error { background: var(--error-light); color: var(--error); border: 1px solid var(--error); }
+
+      .metrics { margin-top: var(--spacing-lg); }
+      .metrics:empty { display: none; }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: var(--spacing-md);
+      }
+
+      .metric-card {
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        box-shadow: var(--shadow-subtle);
+        text-align: center;
+      }
+      .metric-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+      .metric-value {
+        font-weight: 600;
+        font-size: 20px;
+        color: var(--text-primary);
+        margin-top: var(--spacing-xs);
+      }
+
+      .report-frame {
+        margin-top: var(--spacing-lg);
+        width: 100%;
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        min-height: 400px;
+      }
+      .report-frame:empty { display: none; }
+
+      .examples { margin-top: var(--spacing-md); }
+      .examples-label { font-size: 12px; color: var(--text-secondary); margin-bottom: var(--spacing-sm); }
+      .example-chips { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+      .example-chip {
+        padding: 6px 12px;
+        background: var(--surface-tertiary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .example-chip:hover {
+        background: var(--zenml-purple-lighter);
+        border-color: var(--zenml-purple-light);
+        color: var(--zenml-purple);
+      }
+
+      .footer {
+        text-align: center;
+        padding: var(--spacing-lg);
+        color: var(--text-secondary);
+        font-size: 14px;
+        border-top: 1px solid var(--border-moderate);
+        margin: var(--spacing-lg) calc(var(--spacing-lg) * -1) calc(var(--spacing-lg) * -1);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+      }
+      .footer strong { color: var(--zenml-purple); font-weight: 600; }
+
+      @media (max-width: 768px) {
+        body { padding: var(--spacing-md); }
+        .hero { flex-direction: column; align-items: flex-start; }
+        .form-row { flex-direction: column; align-items: stretch; }
+        .input { min-width: 100%; }
+        .input-small { width: 100%; }
+        .btn { width: 100%; }
+        .metrics-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <!-- Hero -->
+        <div class="hero">
+          <div class="hero-copy">
+            <h1 class="title">RLM Document Analysis</h1>
+            <p class="subtitle">
+              Reasoning Language Model pattern applied to email corpus analysis.
+              ZenML orchestrates dynamic fan-out, each chunk runs an iterative reasoning loop.
+            </p>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <div class="section">
+          <h2>Analyze Emails</h2>
+          <div class="form-row">
+            <input
+              id="query-input"
+              class="input"
+              type="text"
+              placeholder="Enter your research query..."
+            />
+            <button id="search-btn" class="btn">Analyze</button>
+          </div>
+          <div class="form-row">
+            <span class="input-label">Max Chunks:</span>
+            <input id="max-chunks" class="input input-small" type="number" value="4" min="1" max="10" />
+            <span class="input-label">Max Iterations:</span>
+            <input id="max-iterations" class="input input-small" type="number" value="6" min="2" max="12" />
+            <button id="set-key-btn" class="btn secondary" style="display: none">Set API Key</button>
+          </div>
+          <div id="auth-status" class="status-pill" style="display: none">Auth required</div>
+
+          <!-- Example queries -->
+          <div class="examples">
+            <div class="examples-label">Try an example:</div>
+            <div class="example-chips">
+              <span class="example-chip" data-query="What financial irregularities or concerns are discussed?">Financial irregularities</span>
+              <span class="example-chip" data-query="Trace the California energy trading strategies and their risks">California trading</span>
+              <span class="example-chip" data-query="What warnings were raised about the Raptor and LJM structures?">Raptor & LJM warnings</span>
+              <span class="example-chip" data-query="How did leadership communicate with employees as the crisis unfolded?">Leadership comms</span>
+            </div>
+          </div>
+
+          <div id="message" class="message"></div>
+          <div id="metrics" class="metrics"></div>
+          <iframe id="report-frame" class="report-frame" style="display:none"></iframe>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          Powered by <strong>ZenML</strong> Dynamic Pipelines | Reasoning Language Model pattern
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const INVOKE_URL = {{ service_info.app.invoke_url_path | tojson }};
+      const AUTH_ENABLED = {{ service_info.deployment.auth_enabled | tojson }};
+
+      const queryInput = document.getElementById("query-input");
+      const searchBtn = document.getElementById("search-btn");
+      const maxChunksInput = document.getElementById("max-chunks");
+      const maxIterInput = document.getElementById("max-iterations");
+      const messageEl = document.getElementById("message");
+      const metricsEl = document.getElementById("metrics");
+      const reportFrame = document.getElementById("report-frame");
+      const setKeyBtn = document.getElementById("set-key-btn");
+      const authStatus = document.getElementById("auth-status");
+      const API_KEY_STORAGE = "rlm_analysis_api_key";
+
+      // Example chips
+      document.querySelectorAll(".example-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          queryInput.value = chip.dataset.query;
+          performAnalysis();
+        });
+      });
+
+      function setLoading(isLoading) {
+        searchBtn.disabled = isLoading;
+        searchBtn.textContent = isLoading ? "Analyzing..." : "Analyze";
+        if (isLoading) {
+          messageEl.textContent = "Running RLM analysis pipeline...";
+          messageEl.className = "message info";
+        }
+      }
+
+      function showError(text) {
+        messageEl.textContent = text;
+        messageEl.className = "message error";
+      }
+
+      function clearMessage() {
+        messageEl.textContent = "";
+        messageEl.className = "message";
+      }
+
+      initAuthUI();
+
+      async function performAnalysis() {
+        const query = queryInput.value.trim();
+        if (!query) { showError("Please enter a research query."); return; }
+
+        if (AUTH_ENABLED && !getApiKey()) {
+          await promptForApiKey();
+          if (!getApiKey()) { showError("API key is required."); return; }
+        }
+
+        const maxChunks = parseInt(maxChunksInput.value) || 4;
+        const maxIter = parseInt(maxIterInput.value) || 6;
+
+        setLoading(true);
+        metricsEl.replaceChildren();
+        reportFrame.style.display = "none";
+
+        try {
+          const headers = { "Content-Type": "application/json" };
+          const key = getApiKey();
+          if (AUTH_ENABLED && key) headers["Authorization"] = "Bearer " + key;
+
+          const res = await fetch(INVOKE_URL, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              parameters: {
+                query: query,
+                max_chunks: maxChunks,
+                max_iterations: maxIter,
+                source_path: "data/sample_emails.json",
+              },
+            }),
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error("Request failed: " + res.status + " " + text);
+          }
+
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error || "Unknown error");
+
+          const outputs = data.outputs || {};
+
+          // Find analysis_results output
+          const resultsKey = Object.keys(outputs).find((k) => k.includes("analysis_results"));
+          const reportKey = Object.keys(outputs).find((k) => k.includes("report"));
+
+          if (resultsKey) renderMetrics(outputs[resultsKey]);
+          if (reportKey) renderReport(outputs[reportKey]);
+
+          clearMessage();
+        } catch (e) {
+          showError(e.message || String(e));
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      searchBtn.addEventListener("click", performAnalysis);
+      queryInput.addEventListener("keydown", (e) => { if (e.key === "Enter") performAnalysis(); });
+
+      function renderMetrics(results) {
+        const grid = document.createElement("div");
+        grid.className = "metrics-grid";
+
+        const items = [
+          ["Chunks", String(results.chunk_count || "?")],
+          ["Confidence", String(results.confidence || "?")],
+        ];
+        for (const [label, value] of items) {
+          const card = document.createElement("div");
+          card.className = "metric-card";
+          const labelEl = document.createElement("div");
+          labelEl.className = "metric-label";
+          labelEl.textContent = label;
+          const valueEl = document.createElement("div");
+          valueEl.className = "metric-value";
+          valueEl.textContent = value;
+          card.appendChild(labelEl);
+          card.appendChild(valueEl);
+          grid.appendChild(card);
+        }
+
+        metricsEl.replaceChildren(grid);
+      }
+
+      function renderReport(reportHtml) {
+        if (!reportHtml) return;
+        reportFrame.style.display = "block";
+        reportFrame.srcdoc = reportHtml;
+        // Auto-resize iframe based on content
+        reportFrame.onload = () => {
+          try {
+            const height = reportFrame.contentDocument.documentElement.scrollHeight;
+            reportFrame.style.height = Math.max(400, height + 20) + "px";
+          } catch (e) { /* cross-origin fallback */ }
+        };
+      }
+
+      // Auth
+      function initAuthUI() {
+        if (!AUTH_ENABLED) return;
+        setKeyBtn.style.display = "";
+        authStatus.style.display = "";
+        updateAuthStatus();
+        setKeyBtn.addEventListener("click", promptForApiKey);
+      }
+
+      async function promptForApiKey() {
+        const current = getApiKey() || "";
+        const entered = prompt("Enter API Key (Bearer token):", current ? "********" : "");
+        if (entered === null || entered === "********") return;
+        const trimmed = (entered || "").trim();
+        if (!trimmed) sessionStorage.removeItem(API_KEY_STORAGE);
+        else sessionStorage.setItem(API_KEY_STORAGE, trimmed);
+        updateAuthStatus();
+      }
+
+      function getApiKey() { return sessionStorage.getItem(API_KEY_STORAGE); }
+
+      function updateAuthStatus() {
+        const hasKey = !!getApiKey();
+        authStatus.textContent = hasKey ? "API key set" : "Auth required";
+        authStatus.style.background = hasKey ? "#ecfdf5" : "#eef2ff";
+        authStatus.style.color = hasKey ? "#065f46" : "#3730a3";
+        setKeyBtn.textContent = hasKey ? "Update API Key" : "Set API Key";
+      }
+    </script>
+  </body>
+</html>
