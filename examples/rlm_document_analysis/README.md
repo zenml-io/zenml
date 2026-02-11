@@ -8,7 +8,7 @@ A showcase for ZenML's **Dynamic Pipelines** applied to the **Reasoning Language
 |----------------|--------------------------|
 | How many chunks (DAG width) | "What should I search for in this chunk?" |
 | Budget limits per chunk | "Is this email relevant to the query?" |
-| Step orchestration & DAG | Multi-step reasoning (preview → plan → search → summarize) |
+| Step orchestration & DAG | Iterative reasoning (preview → plan → search → reflect → repeat) |
 | Artifact tracking & trajectory | Tool selection and evidence extraction |
 
 The result: each `process_chunk` call is a **separate step** in the DAG, dynamically created at runtime based on how the LLM decomposes the query.
@@ -20,19 +20,25 @@ load_documents
      │
 plan_decomposition
      │
-     ├── process_chunk_0  ─┐
-     ├── process_chunk_1   │  Dynamic fan-out
-     ├── process_chunk_2   │  (number determined at runtime)
+     ├── process_chunk    ─┐
+     ├── process_chunk_2   │  Dynamic fan-out
+     ├── process_chunk_3   │  (number determined at runtime)
      └── process_chunk_N  ─┘
             │
        aggregate_results → report
 ```
 
-Each `process_chunk` step runs an internal RLM-style loop:
+Each `process_chunk` step runs an **iterative RLM reasoning loop**, bounded by the `max_iterations` LLM-call budget:
+
 1. **Preview** — Examine the chunk (email count, date range, senders)
-2. **Plan** — LLM decides which search tools to use
+2. **Plan** — LLM decides which search tools to use (1 LLM call)
 3. **Search** — Execute programmatic tools (grep, filter by sender/date/recipient)
-4. **Summarize** — LLM produces a structured finding with evidence
+4. **Reflect** — LLM evaluates: "Do I have enough evidence, or should I search differently?" (1 LLM call)
+   - If not sufficient → loop back to Plan with refined strategy
+   - If sufficient → proceed to Summarize
+5. **Summarize** — LLM produces a final structured finding with evidence (1 LLM call)
+
+Each plan+reflect iteration costs 2 LLM calls; the final summarize costs 1. So `max_iterations=6` allows up to 2 full search rounds plus the final synthesis.
 
 Every action is logged to a **trajectory artifact** for full observability.
 
@@ -94,13 +100,15 @@ python run.py --query "California trading strategies"
 
 ### What is an RLM?
 
-A **Reasoning Language Model** uses a multi-step loop where an LLM interacts with tools to analyze data it can't fit in a single context window. Instead of stuffing everything into one prompt, the RLM:
+A **Reasoning Language Model** uses an iterative loop where an LLM interacts with tools to analyze data it can't fit in a single context window. Instead of stuffing everything into one prompt, the RLM:
 
 1. Previews a manageable chunk
 2. Plans what to search for
 3. Executes searches with typed tools
-4. Extracts relevant evidence
-5. Summarizes findings
+4. **Reflects** on whether it has enough evidence
+5. Iterates (back to step 2) or summarizes findings
+
+The key differentiator from simple tool-calling is the **reflect step** — the model explicitly reasons about whether its strategy is working and adapts. This is what makes it "recursive": the model can refine its approach based on what it's found so far.
 
 This example implements a **constrained RLM** — the LLM can't execute arbitrary code. Instead, it selects from a fixed set of typed search tools, which are executed programmatically. This trades generality for production safety and observability.
 
@@ -174,6 +182,6 @@ process_step = process_chunk.with_options(
 
 ## Further Reading
 
-- [ZenML Dynamic Pipelines Documentation](https://docs.zenml.io)
-- [RLM Pattern (Stanford DSPy)](https://github.com/stanfordnlp/dspy)
+- [ZenML Dynamic Pipelines Documentation](https://docs.zenml.io/concepts/steps_and_pipelines/dynamic_pipelines)
+- [Recursive Language Models Paper (Zhang et al., 2025)](https://arxiv.org/abs/2512.24601)
 - [Enron Email Dataset (Hugging Face)](https://huggingface.co/datasets/corbt/enron-emails)

@@ -161,6 +161,26 @@ def plan_decomposition(
         logger.warning("No valid chunks from LLM, using fallback")
         return _fallback_decomposition(total_emails, max_chunks, query)
 
+    # Verify coverage: chunks should span [0, total_emails) without large gaps
+    validated.sort(key=lambda c: c["start_idx"])
+    if validated[0]["start_idx"] > 0:
+        validated[0]["start_idx"] = 0
+    if validated[-1]["end_idx"] < total_emails:
+        validated[-1]["end_idx"] = total_emails
+
+    # Check for gaps between consecutive chunks
+    has_gaps = False
+    for i in range(1, len(validated)):
+        if validated[i]["start_idx"] > validated[i - 1]["end_idx"]:
+            has_gaps = True
+            break
+
+    if has_gaps:
+        logger.warning(
+            "LLM-generated chunks have gaps, falling back to even split"
+        )
+        return _fallback_decomposition(total_emails, max_chunks, query)
+
     logger.info(
         "Decomposed corpus into %d chunks: %s",
         len(validated),
