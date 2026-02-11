@@ -143,7 +143,11 @@ class LoggingContext(context_utils.BaseContext):
         return self._name
 
     @classmethod
-    def emit(cls, record: logging.LogRecord) -> None:
+    def emit(
+        cls,
+        record: logging.LogRecord,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """Emit a log record using the active logging context.
 
         This class method is called by stdout/stderr wrappers and logging
@@ -151,6 +155,7 @@ class LoggingContext(context_utils.BaseContext):
 
         Args:
             record: The log record to emit.
+            metadata: Additional metadata to attach to the log entry.
         """
         if context := LoggingContext.get():
             if context._disabled:
@@ -161,8 +166,9 @@ class LoggingContext(context_utils.BaseContext):
                 if message and message.strip():
                     if context._origin:
                         context._log_store.emit(
-                            context._origin,
-                            record,
+                            origin=context._origin,
+                            record=record,
+                            metadata=metadata,
                         )
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
@@ -251,7 +257,8 @@ class LoggingContext(context_utils.BaseContext):
                     func=None,
                     pathname="",
                     lineno=0,
-                )
+                ),
+                metadata={"zenml.event.type": "exception"},
             )
 
         with self._lock:
@@ -374,33 +381,50 @@ def get_run_log_metadata(
         The log metadata.
     """
     log_metadata = {
-        "pipeline.run.id": str(pipeline_run.id),
-        "pipeline.run.name": pipeline_run.name,
-        "project.id": str(pipeline_run.project.id),
-        "project.name": pipeline_run.project.name,
+        "zenml.pipeline.run.id": str(pipeline_run.id),
+        "zenml.pipeline.run.name": pipeline_run.name,
+        "zenml.project.id": str(pipeline_run.project.id),
+        "zenml.project.name": pipeline_run.project.name,
     }
+
+    client = Client()
+    server_info = client.zen_store.get_store_info()
+
+    if server_info.is_pro_server():
+        if server_info.pro_workspace_id:
+            log_metadata.update(
+                {
+                    "zenml.workspace.id": str(server_info.pro_workspace_id),
+                }
+            )
+        if server_info.pro_workspace_name:
+            log_metadata.update(
+                {
+                    "zenml.workspace.name": server_info.pro_workspace_name,
+                }
+            )
 
     if pipeline_run.pipeline is not None:
         log_metadata.update(
             {
-                "pipeline.id": str(pipeline_run.pipeline.id),
-                "pipeline.name": pipeline_run.pipeline.name,
+                "zenml.pipeline.id": str(pipeline_run.pipeline.id),
+                "zenml.pipeline.name": pipeline_run.pipeline.name,
             }
         )
 
     if pipeline_run.stack is not None:
         log_metadata.update(
             {
-                "stack.id": str(pipeline_run.stack.id),
-                "stack.name": pipeline_run.stack.name,
+                "zenml.stack.id": str(pipeline_run.stack.id),
+                "zenml.stack.name": pipeline_run.stack.name,
             }
         )
 
     if pipeline_run.user is not None:
         log_metadata.update(
             {
-                "user.id": str(pipeline_run.user.id),
-                "user.name": pipeline_run.user.name,
+                "zenml.user.id": str(pipeline_run.user.id),
+                "zenml.user.name": pipeline_run.user.name,
             }
         )
 
@@ -417,8 +441,8 @@ def get_step_log_metadata(step_run: "StepRunResponse") -> Dict[str, Any]:
         The log metadata.
     """
     return {
-        "step.run.id": str(step_run.id),
-        "step.run.name": step_run.name,
+        "zenml.step.run.id": str(step_run.id),
+        "zenml.step.run.name": step_run.name,
     }
 
 
