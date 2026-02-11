@@ -380,6 +380,8 @@ module = [
     "litellm",
     "mlx",
     "mlx.*",
+    "runai",
+    "runai.*",
     "jsonref",
 ]
 ignore_missing_imports = true
