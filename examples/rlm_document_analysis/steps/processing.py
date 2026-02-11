@@ -40,7 +40,7 @@ import logging
 import time
 from typing import Annotated, Any, Dict, List, Tuple
 
-from utils.llm import _llm_available, llm_call
+from utils.llm import llm_available, llm_call
 from utils.tools import (
     TOOL_DESCRIPTIONS,
     count_matches,
@@ -268,7 +268,7 @@ def process_chunk(
         }
     )
 
-    if not _llm_available():
+    if not llm_available():
         result = _fallback_process(chunk_emails, sub_query)
         trajectory.append(
             {

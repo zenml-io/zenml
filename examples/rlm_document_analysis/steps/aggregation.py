@@ -20,7 +20,7 @@ import json
 import logging
 from typing import Annotated, Any, Dict, List, Tuple
 
-from utils.llm import _llm_available, llm_call
+from utils.llm import llm_available, llm_call
 
 from zenml import step
 from zenml.types import HTMLString
@@ -197,7 +197,7 @@ def aggregate_results(
 
     # Build synthesis
     synthesis: Dict[str, Any]
-    if _llm_available() and len(chunk_results) > 0:
+    if llm_available():
         findings_text = json.dumps(
             [
                 {

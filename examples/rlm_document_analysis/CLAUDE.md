@@ -44,10 +44,10 @@ python run.py --source data/emails.json --query "your query"
 ### Pipeline DAG (shape determined at runtime)
 
 ```
-load_documents → plan_decomposition → [process_chunk_0..N] → aggregate_results
+load_documents → plan_decomposition → [process_chunk, process_chunk_2, ..N] → aggregate_results
 ```
 
-The number of `process_chunk` steps is decided by the LLM at runtime based on the query and corpus summary. This is ZenML's **dynamic pipeline** feature (`@pipeline(dynamic=True)`).
+The number of `process_chunk` steps is decided by the LLM at runtime based on the query and corpus summary. ZenML auto-names repeated invocations (`process_chunk`, `process_chunk_2`, etc.). This is ZenML's **dynamic pipeline** feature (`@pipeline(dynamic=True)`).
 
 ### Module layout
 
@@ -57,7 +57,7 @@ The number of `process_chunk` steps is decided by the LLM at runtime based on th
 | `pipelines/rlm_pipeline.py` | Pipeline definition with dynamic fan-out loop |
 | `steps/loading.py` | Loads JSON emails, builds corpus summary |
 | `steps/decomposition.py` | LLM plans chunk boundaries (or even-split fallback) |
-| `steps/processing.py` | **Core RLM loop** per chunk: preview → plan → search → summarize |
+| `steps/processing.py` | **Core RLM loop** per chunk: preview → plan → search → reflect → (repeat or summarize) |
 | `steps/aggregation.py` | Synthesizes chunk findings into final report + HTML |
 | `utils/llm.py` | OpenAI wrapper with retry, exponential backoff, and graceful fallback |
 | `utils/tools.py` | Typed search tools (grep, sender, recipient, date, count) |
@@ -71,9 +71,17 @@ The fan-out in `rlm_pipeline.py` uses two ZenML-specific APIs that are easy to c
 - **`.chunk(index=idx)`** — Creates a DAG edge without materializing (e.g. `chunk_specs.chunk(index=idx)` passed to downstream steps)
 - **`.with_options(parameters=...)`** — Binds values as step parameters (not artifact dependencies)
 
-### Constrained RLM pattern
+### Iterative RLM pattern
 
-The LLM cannot execute arbitrary code. Instead, in `process_chunk`, it selects from 5 typed tools defined in `utils/tools.py` (grep, sender, recipient, date, count), which are executed programmatically. Every action is logged to a trajectory artifact for observability.
+The LLM cannot execute arbitrary code. Instead, `process_chunk` runs a bounded iterative loop:
+
+1. **Plan** — LLM selects from 5 typed tools (grep, sender, recipient, date, count)
+2. **Search** — Tools execute programmatically
+3. **Reflect** — LLM evaluates: "Do I have enough evidence, or should I search differently?"
+4. If not sufficient, loop back to Plan with refined strategy
+5. **Summarize** — Final synthesis of all gathered evidence
+
+Each plan+reflect iteration costs 2 LLM calls; the final summarize costs 1. The `max_iterations` parameter controls the total LLM call budget per chunk. Every action is logged to a trajectory artifact for observability.
 
 ### Dual-mode operation
 

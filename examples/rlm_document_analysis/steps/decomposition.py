@@ -19,7 +19,7 @@ import json
 import logging
 from typing import Annotated, Any, Dict, List
 
-from utils.llm import _llm_available, llm_call
+from utils.llm import llm_available, llm_call
 
 from zenml import step
 
@@ -115,7 +115,7 @@ def plan_decomposition(
         logger.warning("Empty corpus, returning empty chunk list")
         return []
 
-    if not _llm_available():
+    if not llm_available():
         logger.info("LLM unavailable, using even-split decomposition")
         return _fallback_decomposition(total_emails, max_chunks, query)
 

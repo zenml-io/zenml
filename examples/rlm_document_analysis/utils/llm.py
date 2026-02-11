@@ -15,7 +15,6 @@
 # limitations under the License.
 """Thin LLM wrapper with OpenAI-compatible API and fallback mode."""
 
-import json
 import logging
 import os
 import random
@@ -24,10 +23,10 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-_llm_unavailable_logged = False
+_llm_unavailable_warning_shown = False
 
 
-def _llm_available() -> bool:
+def llm_available() -> bool:
     """Check if an OpenAI API key is configured."""
     return bool(os.getenv("OPENAI_API_KEY", "").strip())
 
@@ -64,15 +63,15 @@ def llm_call(
     Returns:
         Response text, or empty string if unavailable/failed.
     """
-    global _llm_unavailable_logged
+    global _llm_unavailable_warning_shown
 
-    if not _llm_available():
-        if not _llm_unavailable_logged:
+    if not llm_available():
+        if not _llm_unavailable_warning_shown:
             logger.warning(
                 "OPENAI_API_KEY not set. Using keyword fallback mode. "
                 "Set OPENAI_API_KEY for full LLM-powered analysis."
             )
-            _llm_unavailable_logged = True
+            _llm_unavailable_warning_shown = True
         return ""
 
     model = model or _get_model()
@@ -112,24 +111,3 @@ def llm_call(
             time.sleep(delay)
 
     return ""
-
-
-def llm_json_call(system: str, user: str, **kwargs: Any) -> Dict[str, Any]:
-    """Make an LLM call expecting a JSON response.
-
-    Args:
-        system: System prompt.
-        user: User prompt.
-        **kwargs: Additional arguments passed to llm_call.
-
-    Returns:
-        Parsed JSON dict, or empty dict on failure.
-    """
-    response = llm_call(system, user, json_mode=True, **kwargs)
-    if not response:
-        return {}
-    try:
-        return json.loads(response)  # type: ignore[no-any-return]
-    except json.JSONDecodeError:
-        logger.warning("Failed to parse LLM JSON response: %s", response[:200])
-        return {}
