@@ -33,7 +33,11 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse, UserResponse
+    from zenml.models import (
+        PipelineRunResponse,
+        PipelineSnapshotResponse,
+        UserResponse,
+    )
 
 
 class TriggerBase(BaseModel, ABC):
@@ -121,6 +125,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
 
     snapshots: Optional[list["PipelineSnapshotResponse"]] = None
     user: Optional["UserResponse"] = None
+    latest_run: Optional["PipelineRunResponse"] = None
 
 
 class NonScopedTriggerFilter(BaseFilter):
