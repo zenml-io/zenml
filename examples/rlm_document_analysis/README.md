@@ -1,6 +1,6 @@
 # RLM Document Analysis
 
-A showcase for ZenML's **Dynamic Pipelines** applied to the **Reasoning Language Model (RLM)** pattern — analyzing a large email corpus by dynamically decomposing it into parallel chunks, each running a constrained multi-step reasoning loop.
+A showcase for ZenML's **Dynamic Pipelines** applied to the **Recursive Language Model (RLM)** pattern — analyzing a large email corpus by dynamically decomposing it into parallel chunks, each running a constrained multi-step reasoning loop.
 
 ## The Core Idea
 
@@ -100,7 +100,7 @@ python run.py --query "California trading strategies"
 
 ### What is an RLM?
 
-A **Reasoning Language Model** uses an iterative loop where an LLM interacts with tools to analyze data it can't fit in a single context window. Instead of stuffing everything into one prompt, the RLM:
+A **Recursive Language Model** uses an iterative loop where an LLM interacts with tools to analyze data it can't fit in a single context window. Instead of stuffing everything into one prompt, the RLM:
 
 1. Previews a manageable chunk
 2. Plans what to search for

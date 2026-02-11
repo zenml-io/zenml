@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A ZenML example demonstrating **Dynamic Pipelines** applied to the **Reasoning Language Model (RLM)** pattern. It analyzes an email corpus (Enron dataset) by dynamically decomposing a research query into parallel chunk analyses, each running a constrained multi-step reasoning loop, then synthesizing findings into an HTML report.
+A ZenML example demonstrating **Dynamic Pipelines** applied to the **Recursive Language Model (RLM)** pattern. It analyzes an email corpus (Enron dataset) by dynamically decomposing a research query into parallel chunk analyses, each running a constrained multi-step reasoning loop, then synthesizing findings into an HTML report.
 
 This lives inside the larger ZenML monorepo at `examples/rlm_document_analysis/`. See the root `CLAUDE.md` for ZenML-wide conventions.
 

@@ -15,7 +15,7 @@
 # limitations under the License.
 """RLM document analysis pipeline using ZenML dynamic pipelines.
 
-Demonstrates the Reasoning Language Model (RLM) pattern applied to
+Demonstrates the Recursive Language Model (RLM) pattern applied to
 email corpus analysis. The pipeline dynamically decomposes a research
 query into parallel chunk analyses, each using a constrained multi-step
 reasoning loop, then synthesizes findings into a final report.
@@ -70,7 +70,7 @@ docker_settings = DockerSettings(**_docker_kwargs)
 
 deployment_settings = DeploymentSettings(
     app_title="RLM Document Analysis",
-    app_description="Dynamic pipelines + Reasoning Language Model (RLM) pattern",
+    app_description="Dynamic pipelines + Recursive Language Model (RLM) pattern",
     dashboard_files_path="ui",
 )
 
