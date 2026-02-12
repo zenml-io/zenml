@@ -383,6 +383,7 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
 
         try:
             wait_for_trainjob_to_finish(
+                step_run_id=info.step_run_id,
                 custom_objects_api=custom_objects_api,
                 namespace=namespace,
                 name=trainjob_name,
