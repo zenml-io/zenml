@@ -151,8 +151,8 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    TRIGGER_RETURN_TYPE_UNION,
 )
-from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
 
 
 class ZenStoreInterface(ABC):

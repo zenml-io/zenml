@@ -13,14 +13,10 @@
 #  permissions and limitations under the License.
 """Registry module for type/class trigger resolution."""
 
-from typing import TypeAlias
-
 from zenml.enums import TriggerType
 from zenml.models.v2.core.triggers import (
-    ScheduleTriggerRequest,
     ScheduleTriggerResponse,
     ScheduleTriggerResponseBody,
-    ScheduleTriggerUpdate,
 )
 
 # Type to return class mappings - should be extended with new type classes
@@ -34,7 +30,3 @@ TYPE_TO_RESPONSE_MAPPING = {
 }
 
 # Union type objects - should be extended with the future type classes (e.g. Webhook)
-
-TRIGGER_UPDATE_TYPE_UNION: TypeAlias = "ScheduleTriggerUpdate"
-TRIGGER_CREATE_TYPE_UNION: TypeAlias = "ScheduleTriggerRequest"
-TRIGGER_RETURN_TYPE_UNION: TypeAlias = "ScheduleTriggerResponse"

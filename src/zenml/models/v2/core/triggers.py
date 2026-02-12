@@ -489,3 +489,8 @@ class ScheduleTriggerResponse(
             The latest run of the trigger.
         """
         return self.get_resources().latest_run
+
+
+TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate
+TRIGGER_CREATE_TYPE_UNION = ScheduleTriggerRequest
+TRIGGER_RETURN_TYPE_UNION = ScheduleTriggerResponse

@@ -332,13 +332,13 @@ from zenml.models import (
     UserResponse,
     UserScopedRequest,
     UserUpdate,
+    TRIGGER_RETURN_TYPE_UNION,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
-from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
 from zenml.utils import source_utils, tag_utils, uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -7005,13 +7005,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=trigger, session=session)
-
             self._verify_name_uniqueness(
                 resource=trigger,
                 schema=TriggerSchema,
                 session=session,
             )
-
             new_trigger = TriggerSchema.from_request(trigger_request=trigger)
             session.add(new_trigger)
             session.commit()

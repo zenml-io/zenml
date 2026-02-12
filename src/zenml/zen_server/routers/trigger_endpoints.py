@@ -21,8 +21,6 @@ from zenml.constants import API, PIPELINE_SNAPSHOTS, TRIGGERS, VERSION_1
 from zenml.models import (
     Page,
     TriggerFilter,
-)
-from zenml.triggers.registry import (
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
     TRIGGER_UPDATE_TYPE_UNION,

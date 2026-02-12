@@ -48,7 +48,6 @@ from zenml.models.v2.core.logs import LogsRequest
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
 from zenml.models.v2.misc.exception_info import ExceptionInfo
-from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
 from zenml.utils import pagination_utils
 from zenml.utils.tag_utils import Tag
 
@@ -70,6 +69,7 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
+    from zenml.models.v2.core.triggers import TRIGGER_RETURN_TYPE_UNION
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -656,7 +656,7 @@ class PipelineRunResponse(
         return self.get_resources().log_collection
 
     @property
-    def trigger(self) -> Optional[TRIGGER_RETURN_TYPE_UNION]:
+    def trigger(self) -> Optional["TRIGGER_RETURN_TYPE_UNION"]:
         """The `trigger` property.
 
         Returns:

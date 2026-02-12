@@ -33,9 +33,9 @@ from zenml.models import (
     TriggerResponseMetadata,
     TriggerResponseResources,
     TriggerUpdate,
+    TRIGGER_RETURN_TYPE_UNION,
 )
 from zenml.triggers.registry import (
-    TRIGGER_RETURN_TYPE_UNION,
     TYPE_TO_RESPONSE_BODY_MAPPING,
     TYPE_TO_RESPONSE_MAPPING,
 )
