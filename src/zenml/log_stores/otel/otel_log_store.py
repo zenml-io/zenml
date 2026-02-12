@@ -166,6 +166,14 @@ class OtelLogStore(BaseLogStore):
             raise RuntimeError("OpenTelemetry log store is not initialized")
         return self._provider
 
+    def _get_headers(self) -> Dict[str, str]:
+        """Get the headers for the OpenTelemetry log store.
+
+        Returns:
+            The headers.
+        """
+        return self.config.headers
+
     def get_exporter(self) -> "LogExporter":
         """Get the Datadog log exporter.
 
@@ -175,7 +183,7 @@ class OtelLogStore(BaseLogStore):
         if not self._exporter:
             self._exporter = OTLPLogExporter(
                 endpoint=self.config.endpoint,
-                headers=self.config.headers,
+                headers=self._get_headers(),
                 certificate_file=self.config.certificate_file,
                 client_key_file=self.config.client_key_file,
                 client_certificate_file=self.config.client_certificate_file,

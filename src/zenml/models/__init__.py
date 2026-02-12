@@ -454,6 +454,10 @@ from zenml.models.v2.core.server_settings import (
     ServerSettingsResponseMetadata,
     ServerSettingsUpdate,
 )
+from zenml.models.v2.misc.log_models import (   
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+)
 from zenml.models.v2.misc.stack_deployment import (
     DeployedStack,
     StackDeploymentConfig,
@@ -920,4 +924,6 @@ __all__ = [
     "ArtifactVersionIdentifier",
     "ModelVersionIdentifier",
     "StepHeartbeatResponse",
+    "LogsEntriesFilter",
+    "LogsEntriesResponse",
 ]

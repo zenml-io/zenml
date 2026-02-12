@@ -19,7 +19,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Security
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.constants import API, LOGS, VERSION_1
+from zenml.constants import API, LOGS, LOGS_ENTRIES_API_MAX_LIMIT, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
@@ -30,9 +30,6 @@ from zenml.models.v2.misc.log_models import (
     LogsEntriesResponse,
 )
 from zenml.stack import StackComponent
-from zenml.utils.logging_utils import (
-    LOGS_ENTRIES_API_MAX_LIMIT,
-)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -223,7 +220,7 @@ def get_logs_entries(
     filter_: LogsEntriesFilter = Depends(),
     limit: int = Query(
         default=LOGS_ENTRIES_API_MAX_LIMIT,
-        description="Maximum number of entries to return (capped at 1000).",
+        description="Maximum number of entries to return.",
     ),
     before: Optional[str] = Query(
         default=None,
@@ -280,7 +277,7 @@ def get_logs_entries(
     if logs.log_store_id:
         log_store_model = verify_permissions_and_get_entity(
             id=logs.log_store_id,
-            get_method=zen_store.get_stack_component,
+            get_method=store.get_stack_component,
         )
 
         if log_store_model.type != StackComponentType.LOG_STORE:

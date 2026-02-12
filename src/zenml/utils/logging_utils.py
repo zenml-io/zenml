@@ -30,7 +30,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     handle_bool_env_var,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.models import (
@@ -510,3 +510,26 @@ def setup_logging_context(
         block_on_exit=block_on_exit,
         **log_metadata,
     )
+
+
+def severity_number_threshold(level: "LoggingLevels") -> int:
+    """Map a ZenML log level to an OTEL severity_number threshold.
+
+    Args:
+        level: The log level.
+
+    Returns:
+        The OTEL severity_number threshold.
+    """
+    from zenml.enums import LoggingLevels
+
+    if level in (LoggingLevels.NOTSET, LoggingLevels.DEBUG):
+        return 5
+    if level == LoggingLevels.INFO:
+        return 9
+    if level in (LoggingLevels.WARN, LoggingLevels.WARNING):
+        return 13
+    if level == LoggingLevels.ERROR:
+        return 17
+    if level == LoggingLevels.CRITICAL:
+        return 21

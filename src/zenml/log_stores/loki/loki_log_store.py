@@ -24,6 +24,7 @@ import requests
 
 from zenml.log_stores.artifact.artifact_log_store import parse_log_entry
 from zenml.log_stores.loki.loki_flavor import LokiLogStoreConfig
+from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
@@ -32,6 +33,7 @@ from zenml.models.v2.misc.log_models import (
     LogsEntriesFilter,
     LogsEntriesResponse,
 )
+from zenml.utils.logging_utils import severity_number_threshold
 
 logger = get_logger(__name__)
 
@@ -103,6 +105,45 @@ class LokiLogStore(OtelLogStore):
         """
         return cast(LokiLogStoreConfig, self._config)
 
+    def _get_headers(self) -> Dict[str, str]:
+        """Construct request headers for Loki ingest and query requests.
+
+        Returns:
+            The request headers.
+        """
+        headers: Dict[str, str] = dict(self.config.headers or {})
+
+        if (
+            self.config.username is not None
+            and self.config.password is not None
+        ):
+            credentials = (
+                f"{self.config.username.get_secret_value()}:"
+                f"{self.config.password.get_secret_value()}"
+            ).encode("utf-8")
+            token = base64.b64encode(credentials).decode("ascii")
+            headers["Authorization"] = f"Basic {token}"
+
+        elif self.config.api_key is not None:
+            headers["Authorization"] = (
+                f"Bearer {self.config.api_key.get_secret_value()}"
+            )
+
+        return headers
+
+    def get_exporter(self) -> OTLPLogExporter:
+        """Get the OTLP log exporter configured with auth headers."""
+        if not self._exporter:
+            self._exporter = OTLPLogExporter(
+                endpoint=f"{self.config.base_url}/otlp/v1/logs",
+                headers=self._get_headers(),
+                certificate_file=self.config.certificate_file,
+                client_key_file=self.config.client_key_file,
+                client_certificate_file=self.config.client_certificate_file,
+                compression=self.config.compression,
+            )
+        return self._exporter
+
     def _query_range(
         self,
         *,
@@ -120,13 +161,15 @@ class LokiLogStore(OtelLogStore):
             end_ns: The end timestamp in nanoseconds.
             limit: The maximum number of log entries to return.
             direction: The direction of the query.
+
+        Returns:
+            The log entries.
+
+        Raises:
+            RuntimeError: If the request fails.
         """
-        url = (
-            self.config.query_base_url.rstrip("/") + "/loki/api/v1/query_range"
-        )
-        headers: Dict[str, str] = {}
-        if self.config.headers:
-            headers.update(self.config.headers)
+        url = self.config.base_url.rstrip("/") + "/loki/api/v1/query_range"
+        headers = self._get_headers()
 
         params = {
             "query": query,
@@ -136,6 +179,7 @@ class LokiLogStore(OtelLogStore):
             "direction": direction,
         }
         resp = requests.get(url, headers=headers, params=params, timeout=30)
+
         if resp.status_code != 200:
             raise RuntimeError(
                 f"Failed to fetch logs from Loki: {resp.status_code} - {resp.text[:200]}"
@@ -160,6 +204,9 @@ class LokiLogStore(OtelLogStore):
     ) -> str:
         """Build a LogQL query to fetch log entries from Loki.
 
+        Important note: Loki normalization replaces '.' with '_' for
+        label/field names (e.g., 'zenml.log.id' becomes 'zenml_log_id').
+
         Args:
             logs_model: The logs model containing metadata about the logs.
             filter_: Filters that must be applied during retrieval.
@@ -167,31 +214,19 @@ class LokiLogStore(OtelLogStore):
         Returns:
             A LogQL query string.
         """
-        # OTLP -> Loki label key normalization replaces '.' with '_' for label names
-        # (e.g., 'zenml.log.id' becomes 'zenml_log_id').
-        #
-        # `zenml_log_id` might be stored as structured metadata instead of an index
-        # label depending on Loki OTLP mapping. Filtering it in the pipeline works
-        # for both setups while still using a selective stream selector.
-        selector = '{service_name="zenml"}'
-        log_id = str(logs_model.id).replace('"', '\\"')
-        pipeline_parts: List[str] = [f'| zenml_log_id="{log_id}"']
+        selector = f'{{service_name="{self.config.service_name}"}}'
 
-        if not filter_:
-            return f"{selector} " + " ".join(pipeline_parts)
+        params: List[str] = [f'| zenml_log_id="{logs_model.id}"']
 
-        if filter_.search:
-            needle = filter_.search.replace('"', '\\"')
-            pipeline_parts.append(f'|= "{needle}"')
+        if filter_ and filter_.search:
+            search = filter_.search.replace('"', '\\"')
+            params.append(f'|= "{search}"')
 
-        if filter_.level is not None:
-            # Filter at query-time based on JSON payloads. This is intentionally
-            # strict: if a line isn't JSON (or doesn't contain "level"), Loki will
-            # drop it when the level filter is used.
-            pipeline_parts.append("| json")
-            pipeline_parts.append(f'| level="{filter_.level.name}"')
+        if filter_ and filter_.level is not None:
+            threshold = severity_number_threshold(filter_.level)
+            params.append(f"| severity_number >= {threshold}")
 
-        return f"{selector} " + " ".join(pipeline_parts)
+        return f"{selector} " + " ".join(params)
 
     def fetch(
         self,
@@ -236,7 +271,7 @@ class LokiLogStore(OtelLogStore):
         limit: int,
         before: Optional[str] = None,
         after: Optional[str] = None,
-        filter_: LogsEntriesFilter = None,
+        filter_: Optional[LogsEntriesFilter] = None,
     ) -> LogsEntriesResponse:
         """Fetch log entries from Loki with cursor-based pagination.
 
@@ -260,16 +295,18 @@ class LokiLogStore(OtelLogStore):
         if before is not None and after is not None:
             raise ValueError("Only one of `before` or `after` can be set.")
 
-        query = self._build_logql_query(logs_model=logs_model, filter_=filter_)
+        effective_filter = filter_ or LogsEntriesFilter()
+        query = self._build_logql_query(
+            logs_model=logs_model, filter_=effective_filter
+        )
 
         since_ns = logs_model.created
         until_ns = datetime.now(timezone.utc)
 
-        if filter_:
-            if filter_.since:
-                since_ns = filter_.since
-            if filter_.until:
-                until_ns = filter_.until
+        if effective_filter.since:
+            since_ns = effective_filter.since
+        if effective_filter.until:
+            until_ns = effective_filter.until
 
         since_ns = _to_unix_ns(since_ns)
         until_ns = _to_unix_ns(until_ns)

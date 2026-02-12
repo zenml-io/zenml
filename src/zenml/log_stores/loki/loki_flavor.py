@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Type
+from typing import Any, Dict, Optional, Type
 
 from pydantic import Field, model_validator
 
@@ -23,12 +23,13 @@ from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.stack.flavor import Flavor
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 
 class LokiLogStoreConfig(OtelLogStoreConfig):
     """Configuration for Loki log store."""
 
-    query_base_url: str = Field(
+    base_url: str = Field(
         default="http://localhost:3100",
         description=(
             "Base URL for Loki HTTP query endpoints. Must be a reachable HTTP(S) "
@@ -36,13 +37,55 @@ class LokiLogStoreConfig(OtelLogStoreConfig):
         ),
     )
 
+    api_key: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
+        description=(
+            "API key used to authenticate requests to Loki. If set, ZenML sends "
+            "an Authorization Bearer token unless overridden by headers"
+        ),
+    )
+    username: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
+        description=(
+            "Username for HTTP Basic authentication against Loki. Must be "
+            "configured together with password"
+        ),
+    )
+    password: Optional[PlainSerializedSecretStr] = Field(
+        default=None,
+        description=(
+            "Password for HTTP Basic authentication against Loki. Must be "
+            "configured together with username"
+        ),
+    )
+
     @model_validator(mode="before")
     @classmethod
     def set_default_endpoint(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Set the default OTLP endpoint if not provided."""
+        """Set the OTLP endpoint based on base_url if not provided."""
         if isinstance(data, dict) and not data.get("endpoint"):
-            data["endpoint"] = "http://localhost:3100/otlp/v1/logs"
+            base_url = data.get("base_url", "http://localhost:3100")
+            data["endpoint"] = f"{base_url.rstrip('/')}/otlp/v1/logs"
         return data
+
+    @model_validator(mode="after")
+    def validate_auth_configuration(self) -> "LokiLogStoreConfig":
+        """Validate that only one authentication mode is configured."""
+        has_api_key = self.api_key is not None
+        has_username = self.username is not None
+        has_password = self.password is not None
+
+        if has_username != has_password:
+            raise ValueError(
+                "`username` and `password` must be configured together."
+            )
+
+        if has_api_key and has_username:
+            raise ValueError(
+                "Configure either `api_key` or `username`/`password`, not both."
+            )
+
+        return self
 
 
 class LokiLogStoreFlavor(Flavor):
