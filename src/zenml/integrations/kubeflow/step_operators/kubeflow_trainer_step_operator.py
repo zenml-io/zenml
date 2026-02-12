@@ -29,6 +29,8 @@ from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator_e
     KubeflowTrainerStepOperatorEntrypointConfiguration,
 )
 from zenml.integrations.kubeflow.step_operators.trainer_job_watcher import (
+    RunStoppedException,
+    cancel_trainjob,
     wait_for_trainjob_to_finish,
 )
 from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
@@ -390,6 +392,13 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
                 poll_interval_seconds=settings.poll_interval_seconds,
                 timeout_seconds=settings.timeout_seconds,
             )
+        except RunStoppedException:
+            cancel_trainjob(
+                custom_objects_api=custom_objects_api,
+                namespace=namespace,
+                name=trainjob_name,
+            )
+            raise RunStoppedException("Step run was cancelled, cancelling TrainJob.")
         finally:
             if settings.delete_trainjob_after_completion:
                 self._delete_trainjob(

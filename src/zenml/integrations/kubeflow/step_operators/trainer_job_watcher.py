@@ -34,6 +34,11 @@ _SUCCESS_PHASES = {"succeeded", "complete", "completed"}
 _FAILURE_PHASES = {"failed", "error", "cancelled"}
 
 
+
+class RunStoppedException(Exception):
+    """Raised when a step run is stopped."""
+
+
 def _is_condition_true(value: Union[bool, str]) -> bool:
     """Checks if a condition value means true.
 
@@ -137,7 +142,7 @@ def wait_for_trainjob_to_finish(
     while True:
         step_run_status = Client().get_run_step(step_run_id)
         if step_run_status.status == ExecutionStatus.CANCELLING:
-            raise RuntimeError("Step run was cancelled, cancelling TrainJob.")
+            raise RunStoppedException("Step run was cancelled, cancelling TrainJob.")
         trainjob = custom_objects_api.get_namespaced_custom_object(
             group=TRAINJOB_GROUP,
             version=TRAINJOB_VERSION,
@@ -162,3 +167,25 @@ def wait_for_trainjob_to_finish(
                 )
 
         time.sleep(poll_interval_seconds)
+
+
+def cancel_trainjob(
+    custom_objects_api: Any,
+    namespace: str,
+    name: str,
+) -> None:
+    """Suspends a running TrainJob.
+
+    Args:
+        custom_objects_api: Kubernetes `CustomObjectsApi` instance.
+        namespace: Namespace of the TrainJob.
+        name: Name of the TrainJob.
+    """
+    custom_objects_api.patch_namespaced_custom_object(
+        group=TRAINJOB_GROUP,
+        version=TRAINJOB_VERSION,
+        namespace=namespace,
+        plural=TRAINJOB_PLURAL,
+        name=name,
+        body={"spec": {"suspend": True}},
+    )
