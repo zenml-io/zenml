@@ -21,8 +21,12 @@ from typing import Any, Dict, List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import LogsResponse
+from zenml.models.v2.misc.log_models import (
+    LogEntry,
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+)
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-from zenml.utils.logging_utils import LogEntry
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -210,6 +214,28 @@ class BaseLogStore(StackComponent, ABC):
 
         Returns:
             List of log entries matching the query.
+        """
+
+    @abstractmethod
+    def fetch_entries(
+        self,
+        logs_model: LogsResponse,
+        limit: int,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: LogsEntriesFilter = None,
+    ) -> LogsEntriesResponse:
+        """Fetch log entries.
+
+        Args:
+            logs_model: The logs model containing metadata about the logs.
+            limit: Maximum number of log entries to return.
+            before: Cursor token pointing to older entries.
+            after: Cursor token pointing to newer entries.
+            filter_: Filters that must be applied during retrieval.
+
+        Returns:
+            A response containing log entries and pagination tokens.
         """
 
 

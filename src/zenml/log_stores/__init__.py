@@ -41,6 +41,13 @@ from zenml.log_stores.datadog.datadog_log_store import (
     DatadogLogStore,
 )
 
+# Loki log store
+from zenml.log_stores.loki.loki_flavor import (
+    LokiLogStoreConfig,
+    LokiLogStoreFlavor,
+)
+from zenml.log_stores.loki.loki_log_store import LokiLogStore
+
 __all__ = [
     "ArtifactLogStore",
     "BaseLogStore",
@@ -49,6 +56,9 @@ __all__ = [
     "DatadogLogStore",
     "DatadogLogStoreConfig",
     "DatadogLogStoreFlavor",
+    "LokiLogStore",
+    "LokiLogStoreConfig",
+    "LokiLogStoreFlavor",
     "OtelLogStore",
     "OtelLogStoreConfig",
     "OtelLogStoreFlavor",

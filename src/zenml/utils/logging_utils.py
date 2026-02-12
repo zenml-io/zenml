@@ -17,12 +17,9 @@ import logging
 import os
 import threading
 from contextvars import ContextVar
-from datetime import datetime
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
-from uuid import UUID, uuid4
-
-from pydantic import BaseModel, ConfigDict, Field
+from uuid import uuid4
 
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -43,6 +40,7 @@ from zenml.models import (
     PipelineRunResponse,
     StepRunResponse,
 )
+from zenml.models.v2.misc.log_models import LogEntry
 from zenml.utils import context_utils
 
 if TYPE_CHECKING:
@@ -50,57 +48,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
-
-
-class LogEntry(BaseModel):
-    """A structured log entry with parsed information.
-
-    This is used in two distinct ways:
-        1. If we are using the artifact log store, we save the
-        entries as JSON-serialized LogEntry's in the artifact store.
-        2. When queried, the server returns logs as a list of LogEntry's.
-    """
-
-    message: str = Field(description="The log message content")
-    name: Optional[str] = Field(
-        default=None,
-        description="The name of the logger",
-    )
-    level: Optional[LoggingLevels] = Field(
-        default=None,
-        description="The log level",
-    )
-    timestamp: Optional[datetime] = Field(
-        default=None,
-        description="When the log was created",
-    )
-    module: Optional[str] = Field(
-        default=None, description="The module that generated this log entry"
-    )
-    filename: Optional[str] = Field(
-        default=None,
-        description="The name of the file that generated this log entry",
-    )
-    lineno: Optional[int] = Field(
-        default=None, description="The fileno that generated this log entry"
-    )
-    chunk_index: int = Field(
-        default=0,
-        description="The index of the chunk in the log entry",
-    )
-    total_chunks: int = Field(
-        default=1,
-        description="The total number of chunks in the log entry",
-    )
-    id: UUID = Field(
-        default_factory=uuid4,
-        description="The unique identifier of the log entry",
-    )
-
-    model_config = ConfigDict(
-        # ignore extra attributes during model initialization
-        extra="ignore",
-    )
 
 
 class LoggingContext(context_utils.BaseContext):
@@ -563,3 +510,26 @@ def setup_logging_context(
         block_on_exit=block_on_exit,
         **log_metadata,
     )
+
+
+def severity_number_threshold(level: "LoggingLevels") -> int:
+    """Map a ZenML log level to an OTEL severity_number threshold.
+
+    Args:
+        level: The log level.
+
+    Returns:
+        The OTEL severity_number threshold.
+    """
+    from zenml.enums import LoggingLevels
+
+    if level in (LoggingLevels.NOTSET, LoggingLevels.DEBUG):
+        return 5
+    if level == LoggingLevels.INFO:
+        return 9
+    if level in (LoggingLevels.WARN, LoggingLevels.WARNING):
+        return 13
+    if level == LoggingLevels.ERROR:
+        return 17
+    if level == LoggingLevels.CRITICAL:
+        return 21
