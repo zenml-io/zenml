@@ -14,7 +14,7 @@
 """Resource Pool schemas."""
 
 from datetime import datetime
-from typing import Any, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint, desc, exists
@@ -424,6 +424,77 @@ class ResourcePoolSchema(NamedSchema, table=True):
         self.updated = utc_now()
         return self
 
+    def _get_borrowed_resources_per_allocation(
+        self,
+    ) -> Dict[UUID, Dict[str, int]]:
+        """Compute borrowed resources for each active allocation.
+
+        The computation is done per policy and in allocation order (oldest
+        first): each allocation first consumes dedicated reserved resources of
+        the policy and only the overflow is counted as borrowed.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            Mapping from request ID to borrowed resources for that allocation.
+        """
+        if not (session := object_session(self)):
+            raise RuntimeError(
+                "Missing DB session to compute borrowed resources."
+            )
+
+        policies = session.execute(
+            select(ResourcePoolSubjectPolicySchema)
+            .where(ResourcePoolSubjectPolicySchema.resource_pool_id == self.id)
+            .options(
+                selectinload(jl_arg(ResourcePoolSubjectPolicySchema.resources))
+            )
+        ).scalars()
+
+        policy_id_by_component: Dict[UUID, UUID] = {}
+        reserved_resources_by_policy: Dict[UUID, Dict[str, int]] = {}
+        for policy in policies:
+            policy_id_by_component[policy.component_id] = policy.id
+            reserved_resources_by_policy[policy.id] = {
+                resource.key: resource.reserved
+                for resource in policy.resources
+            }
+
+        current_usage_by_policy: Dict[UUID, Dict[str, int]] = {}
+        borrowed_by_allocation: Dict[UUID, Dict[str, int]] = {}
+
+        for allocation in self.allocations:
+            policy_id = policy_id_by_component.get(
+                allocation.request.component_id
+            )
+
+            if policy_id is None:
+                continue
+
+            reserved_resources = reserved_resources_by_policy[policy_id]
+            policy_usage = current_usage_by_policy.setdefault(policy_id, {})
+
+            borrowed_resources: Dict[str, int] = {}
+            requested_resources = {
+                resource.key: resource.amount
+                for resource in allocation.request.requested_resources
+            }
+            for resource_key, requested_amount in requested_resources.items():
+                used_before = policy_usage.get(resource_key, 0)
+                reserved_amount = reserved_resources.get(resource_key, 0)
+                available_reserved = max(0, reserved_amount - used_before)
+                borrowed_amount = max(0, requested_amount - available_reserved)
+
+                if borrowed_amount:
+                    borrowed_resources[resource_key] = borrowed_amount
+
+                policy_usage[resource_key] = used_before + requested_amount
+
+            borrowed_by_allocation[allocation.id] = borrowed_resources
+
+        return borrowed_by_allocation
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -479,6 +550,7 @@ class ResourcePoolSchema(NamedSchema, table=True):
                 )
                 for i in self.queue_items
             ]
+            borrowed_resources = self._get_borrowed_resources_per_allocation()
             active_requests = [
                 ResourcePoolAllocation(
                     request=a.request.to_model(
@@ -486,6 +558,7 @@ class ResourcePoolSchema(NamedSchema, table=True):
                     ),
                     priority=a.priority,
                     allocated_at=a.allocated_at,
+                    borrowed_resources=borrowed_resources.get(a.id, {}),
                 )
                 for a in self.allocations
             ]
