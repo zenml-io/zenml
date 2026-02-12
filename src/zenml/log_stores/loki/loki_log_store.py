@@ -18,7 +18,7 @@ from __future__ import annotations
 import base64
 import json
 from datetime import datetime, timezone
-from typing import Dict, List, NamedTuple, Optional, Tuple, cast
+from typing import Dict, List, Optional, Tuple, cast
 
 import requests
 
@@ -36,45 +36,6 @@ from zenml.models.v2.misc.log_models import (
 from zenml.utils.logging_utils import severity_number_threshold
 
 logger = get_logger(__name__)
-
-
-class CursorToken(NamedTuple):
-    """Cursor token payload for Loki pagination."""
-
-    ts_ns: int
-
-
-def _encode_cursor(*, pos: CursorToken) -> str:
-    """Encode a cursor token into a base64 URL-safe string.
-
-    Args:
-        pos: The cursor token.
-
-    Returns:
-        The base64 URL-safe string.
-    """
-    payload = {"ts_ns": int(pos.ts_ns)}
-    data = json.dumps(payload, sort_keys=True).encode("utf-8")
-    return base64.urlsafe_b64encode(data).decode("ascii")
-
-
-def _decode_cursor(*, token: str) -> CursorToken:
-    """Decode a base64 URL-safe string into a cursor token.
-
-    Args:
-        token: The base64 URL-safe string.
-
-    Returns:
-        The cursor token.
-    """
-    raw = base64.urlsafe_b64decode(token.encode("ascii"))
-    decoded = json.loads(raw.decode("utf-8"))
-
-    ts_ns = int(decoded["ts_ns"])
-    if ts_ns < 0:
-        raise ValueError("Invalid cursor position.")
-
-    return CursorToken(ts_ns=ts_ns)
 
 
 def _to_unix_ns(dt: datetime) -> int:
@@ -105,6 +66,23 @@ class LokiLogStore(OtelLogStore):
         """
         return cast(LokiLogStoreConfig, self._config)
 
+    def get_exporter(self) -> OTLPLogExporter:
+        """Get the OTLP log exporter configured with auth headers.
+
+        Returns:
+            The OTLP log exporter.
+        """
+        if not self._exporter:
+            self._exporter = OTLPLogExporter(
+                endpoint=f"{self.config.base_url}/otlp/v1/logs",
+                headers=self._get_headers(),
+                certificate_file=self.config.certificate_file,
+                client_key_file=self.config.client_key_file,
+                client_certificate_file=self.config.client_certificate_file,
+                compression=self.config.compression,
+            )
+        return self._exporter
+
     def _get_headers(self) -> Dict[str, str]:
         """Construct request headers for Loki ingest and query requests.
 
@@ -131,18 +109,222 @@ class LokiLogStore(OtelLogStore):
 
         return headers
 
-    def get_exporter(self) -> OTLPLogExporter:
-        """Get the OTLP log exporter configured with auth headers."""
-        if not self._exporter:
-            self._exporter = OTLPLogExporter(
-                endpoint=f"{self.config.base_url}/otlp/v1/logs",
-                headers=self._get_headers(),
-                certificate_file=self.config.certificate_file,
-                client_key_file=self.config.client_key_file,
-                client_certificate_file=self.config.client_certificate_file,
-                compression=self.config.compression,
+    def fetch(
+        self,
+        logs_model: LogsResponse,
+        limit: int,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+    ) -> List[LogEntry]:
+        """Fetch log entries from Loki.
+
+        Args:
+            logs_model: The logs model containing metadata about the logs.
+            limit: Maximum number of log entries to return.
+            start_time: The start time of the log entries.
+            end_time: The end time of the log entries.
+
+        Returns:
+            The log entries.
+
+        Raises:
+            ValueError: If `limit` is not positive.
+        """
+        if limit <= 0:
+            raise ValueError("`limit` must be positive.")
+
+        start = _to_unix_ns(start_time or logs_model.created)
+        end = _to_unix_ns(end_time or datetime.now(timezone.utc))
+        query = self._build_logql_query(logs_model=logs_model, filter_=None)
+
+        raw_lines = self._query_range(
+            query=query,
+            start_ns=start,
+            end_ns=end,
+            limit=min(limit, 5000),
+            direction="forward",
+        )
+
+        items: List[LogEntry] = []
+        raw_lines.sort(key=lambda x: x[0])
+        for ts_ns, line in raw_lines:
+            entry = parse_log_entry(line)
+            if entry is None:
+                continue
+            entry.timestamp = datetime.fromtimestamp(
+                ts_ns / 1_000_000_000, tz=timezone.utc
             )
-        return self._exporter
+            items.append(entry)
+            if len(items) >= limit:
+                break
+        return items
+
+    @classmethod
+    def _encode_cursor(cls, ts_ns: int) -> str:
+        """Encode a cursor timestamp into a base64 URL-safe string.
+
+        Args:
+            ts_ns: The timestamp in nanoseconds.
+
+        Returns:
+            The encoded cursor.
+        """
+        payload = {"ts_ns": int(ts_ns)}
+        data = json.dumps(payload, sort_keys=True).encode("utf-8")
+        return base64.urlsafe_b64encode(data).decode("ascii")
+
+    @classmethod
+    def _decode_cursor(cls, token: str) -> int:
+        """Decode a base64 URL-safe string into a cursor timestamp.
+
+        Args:
+            token: The base64 URL-safe string.
+
+        Returns:
+            The decoded cursor.
+        """
+        raw = base64.urlsafe_b64decode(token.encode("ascii"))
+        decoded = json.loads(raw.decode("utf-8"))
+        return int(decoded.get("ts_ns"))
+
+    def fetch_entries(
+        self,
+        logs_model: LogsResponse,
+        limit: int,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch log entries from Loki with cursor-based pagination.
+
+        Args:
+            logs_model: The logs model containing metadata about the logs.
+            limit: Maximum number of log entries to return.
+            before: Cursor token pointing to older entries.
+            after: Cursor token pointing to newer entries.
+            filter_: Filters that must be applied during retrieval.
+
+        Returns:
+            A response containing log entries and pagination tokens.
+
+        Raises:
+            ValueError: If `limit` is not positive or if both `before`
+                and `after` are set.
+        """
+        if limit <= 0:
+            raise ValueError("`limit` must be positive.")
+
+        if before is not None and after is not None:
+            raise ValueError("Only one of `before` or `after` can be set.")
+
+        query = self._build_logql_query(logs_model=logs_model, filter_=filter_)
+
+        since_ns = logs_model.created
+        until_ns = datetime.now(timezone.utc)
+
+        if filter_ and filter_.since:
+            since_ns = filter_.since
+        if filter_ and filter_.until:
+            until_ns = filter_.until
+
+        since_ns = _to_unix_ns(since_ns)
+        until_ns = _to_unix_ns(until_ns)
+
+        if after is not None:
+            after_cursor = self._decode_cursor(after)
+            start_ns = max(since_ns, after_cursor + 1)
+
+            if start_ns > until_ns:
+                return LogsEntriesResponse(items=[], before=None, after=after)
+
+            raw_lines = self._query_range(
+                query=query,
+                start_ns=start_ns,
+                end_ns=until_ns,
+                limit=min(limit, 5000),
+                direction="forward",
+            )
+            raw_lines.sort(key=lambda x: x[0], reverse=True)
+
+            items: List[LogEntry] = []
+            newest_ts: Optional[int] = None
+            oldest_ts: Optional[int] = None
+            for ts_ns, line in raw_lines:
+                entry = parse_log_entry(line)
+                if entry is None:
+                    continue
+                entry.timestamp = datetime.fromtimestamp(
+                    ts_ns / 1_000_000_000, tz=timezone.utc
+                )
+                items.append(entry)
+                if newest_ts is None:
+                    newest_ts = ts_ns
+                oldest_ts = ts_ns
+                if len(items) >= limit:
+                    break
+
+            if not items or newest_ts is None or oldest_ts is None:
+                return LogsEntriesResponse(items=[], before=None, after=after)
+
+            before_token = (
+                self._encode_cursor(oldest_ts)
+                if oldest_ts > since_ns
+                else None
+            )
+            return LogsEntriesResponse(
+                items=items,
+                before=before_token,
+                after=self._encode_cursor(newest_ts),
+            )
+
+        cursor_pos = (
+            self._decode_cursor(before) if before is not None else None
+        )
+
+        end_ns = (
+            min(until_ns, cursor_pos - 1)
+            if cursor_pos is not None
+            else until_ns
+        )
+        if end_ns < since_ns:
+            return LogsEntriesResponse(items=[], before=None, after=None)
+
+        raw_lines = self._query_range(
+            query=query,
+            start_ns=since_ns,
+            end_ns=end_ns,
+            limit=min(limit, 5000),
+            direction="backward",
+        )
+        raw_lines.sort(key=lambda x: x[0], reverse=True)
+
+        page_items: List[LogEntry] = []
+        newest_ts: Optional[int] = None
+        oldest_ts: Optional[int] = None
+        for ts_ns, line in raw_lines:
+            entry = parse_log_entry(line)
+            if entry is None:
+                continue
+            entry.timestamp = datetime.fromtimestamp(
+                ts_ns / 1_000_000_000, tz=timezone.utc
+            )
+            page_items.append(entry)
+            if newest_ts is None:
+                newest_ts = ts_ns
+            oldest_ts = ts_ns
+            if len(page_items) >= limit:
+                break
+
+        if not page_items or newest_ts is None or oldest_ts is None:
+            return LogsEntriesResponse(items=[], before=None, after=None)
+
+        before_token = (
+            self._encode_cursor(oldest_ts) if oldest_ts > since_ns else None
+        )
+        after_token = self._encode_cursor(newest_ts)
+        return LogsEntriesResponse(
+            items=page_items, before=before_token, after=after_token
+        )
 
     def _query_range(
         self,
@@ -169,6 +351,7 @@ class LokiLogStore(OtelLogStore):
             RuntimeError: If the request fails.
         """
         url = self.config.base_url.rstrip("/") + "/loki/api/v1/query_range"
+
         headers = self._get_headers()
 
         params = {
@@ -184,6 +367,7 @@ class LokiLogStore(OtelLogStore):
             raise RuntimeError(
                 f"Failed to fetch logs from Loki: {resp.status_code} - {resp.text[:200]}"
             )
+
         payload = resp.json()
         if payload.get("status") != "success":
             raise RuntimeError(f"Failed to fetch logs from Loki: {payload!r}")
@@ -227,184 +411,3 @@ class LokiLogStore(OtelLogStore):
             params.append(f"| severity_number >= {threshold}")
 
         return f"{selector} " + " ".join(params)
-
-    def fetch(
-        self,
-        logs_model: LogsResponse,
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[LogEntry]:
-        """Fetch log entries from Loki (non-paginated helper)."""
-        if limit <= 0:
-            return []
-
-        start = _to_unix_ns(start_time or logs_model.created)
-        end = _to_unix_ns(end_time or datetime.now(timezone.utc))
-        query = self._build_logql_query(logs_model=logs_model, filter_=None)
-
-        raw_lines = self._query_range(
-            query=query,
-            start_ns=start,
-            end_ns=end,
-            limit=min(limit, 5000),
-            direction="forward",
-        )
-
-        items: List[LogEntry] = []
-        raw_lines.sort(key=lambda x: x[0])
-        for ts_ns, line in raw_lines:
-            entry = parse_log_entry(line)
-            if entry is None:
-                continue
-            entry.timestamp = datetime.fromtimestamp(
-                ts_ns / 1_000_000_000, tz=timezone.utc
-            )
-            items.append(entry)
-            if len(items) >= limit:
-                break
-        return items
-
-    def fetch_entries(
-        self,
-        logs_model: LogsResponse,
-        limit: int,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        filter_: Optional[LogsEntriesFilter] = None,
-    ) -> LogsEntriesResponse:
-        """Fetch log entries from Loki with cursor-based pagination.
-
-        Args:
-            logs_model: The logs model containing metadata about the logs.
-            limit: Maximum number of log entries to return.
-            before: Cursor token pointing to older entries.
-            after: Cursor token pointing to newer entries.
-            filter_: Filters that must be applied during retrieval.
-
-        Returns:
-            A response containing log entries and pagination tokens.
-
-        Raises:
-            ValueError: If `limit` is not positive or if both `before`
-                and `after` are set.
-        """
-        if limit <= 0:
-            raise ValueError("`limit` must be positive.")
-
-        if before is not None and after is not None:
-            raise ValueError("Only one of `before` or `after` can be set.")
-
-        effective_filter = filter_ or LogsEntriesFilter()
-        query = self._build_logql_query(
-            logs_model=logs_model, filter_=effective_filter
-        )
-
-        since_ns = logs_model.created
-        until_ns = datetime.now(timezone.utc)
-
-        if effective_filter.since:
-            since_ns = effective_filter.since
-        if effective_filter.until:
-            until_ns = effective_filter.until
-
-        since_ns = _to_unix_ns(since_ns)
-        until_ns = _to_unix_ns(until_ns)
-
-        if after is not None:
-            watermark = _decode_cursor(token=after)
-            start_ns = max(since_ns, watermark.ts_ns + 1)
-
-            if start_ns > until_ns:
-                return LogsEntriesResponse(items=[], before=None, after=after)
-
-            raw_lines = self._query_range(
-                query=query,
-                start_ns=start_ns,
-                end_ns=until_ns,
-                limit=min(limit, 5000),
-                direction="forward",
-            )
-            raw_lines.sort(key=lambda x: x[0], reverse=True)
-
-            items: List[LogEntry] = []
-            newest_ts: Optional[int] = None
-            oldest_ts: Optional[int] = None
-            for ts_ns, line in raw_lines:
-                entry = parse_log_entry(line)
-                if entry is None:
-                    continue
-                entry.timestamp = datetime.fromtimestamp(
-                    ts_ns / 1_000_000_000, tz=timezone.utc
-                )
-                items.append(entry)
-                if newest_ts is None:
-                    newest_ts = ts_ns
-                oldest_ts = ts_ns
-                if len(items) >= limit:
-                    break
-
-            if not items or newest_ts is None or oldest_ts is None:
-                return LogsEntriesResponse(items=[], before=None, after=after)
-
-            before_token = (
-                _encode_cursor(pos=CursorToken(ts_ns=oldest_ts))
-                if oldest_ts > since_ns
-                else None
-            )
-            return LogsEntriesResponse(
-                items=items,
-                before=before_token,
-                after=_encode_cursor(pos=CursorToken(ts_ns=newest_ts)),
-            )
-
-        cursor_pos = (
-            _decode_cursor(token=before) if before is not None else None
-        )
-
-        end_ns = (
-            min(until_ns, cursor_pos.ts_ns - 1)
-            if cursor_pos is not None
-            else until_ns
-        )
-        if end_ns < since_ns:
-            return LogsEntriesResponse(items=[], before=None, after=None)
-
-        raw_lines = self._query_range(
-            query=query,
-            start_ns=since_ns,
-            end_ns=end_ns,
-            limit=min(limit, 5000),
-            direction="backward",
-        )
-        raw_lines.sort(key=lambda x: x[0], reverse=True)
-
-        page_items: List[LogEntry] = []
-        newest_ts: Optional[int] = None
-        oldest_ts: Optional[int] = None
-        for ts_ns, line in raw_lines:
-            entry = parse_log_entry(line)
-            if entry is None:
-                continue
-            entry.timestamp = datetime.fromtimestamp(
-                ts_ns / 1_000_000_000, tz=timezone.utc
-            )
-            page_items.append(entry)
-            if newest_ts is None:
-                newest_ts = ts_ns
-            oldest_ts = ts_ns
-            if len(page_items) >= limit:
-                break
-
-        if not page_items or newest_ts is None or oldest_ts is None:
-            return LogsEntriesResponse(items=[], before=None, after=None)
-
-        before_token = (
-            _encode_cursor(pos=CursorToken(ts_ns=oldest_ts))
-            if oldest_ts > since_ns
-            else None
-        )
-        after_token = _encode_cursor(pos=CursorToken(ts_ns=newest_ts))
-        return LogsEntriesResponse(
-            items=page_items, before=before_token, after=after_token
-        )
