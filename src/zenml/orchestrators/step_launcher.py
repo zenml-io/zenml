@@ -529,6 +529,9 @@ class StepLauncher:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
         """
+        # TODO: Rework once we attach resource pools to step operators.
+        self._acquire_resources_if_necessary(step_run_info)
+
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
