@@ -531,11 +531,10 @@ class ResourceRequestSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    # TODO: Rename to `preemption_initiated_by_id`
-    preempted_by_id: Optional[UUID] = build_foreign_key_field(
+    preemption_initiated_by_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=__tablename__,
-        source_column="preempted_by_id",
+        source_column="preemption_initiated_by_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
@@ -553,11 +552,13 @@ class ResourceRequestSchema(BaseSchema, table=True):
     step_run: Optional["StepRunSchema"] = Relationship(
         back_populates="resource_request"
     )
-    preempted_by: Optional["ResourceRequestSchema"] = Relationship(
-        sa_relationship_kwargs={
-            "foreign_keys": "[ResourceRequestSchema.preempted_by_id]",
-            "remote_side": "ResourceRequestSchema.id",
-        }
+    preemption_initiated_by: Optional["ResourceRequestSchema"] = (
+        Relationship(
+            sa_relationship_kwargs={
+                "foreign_keys": "[ResourceRequestSchema.preemption_initiated_by_id]",
+                "remote_side": "ResourceRequestSchema.id",
+            }
+        )
     )
 
     requested_resources: List["ResourceRequestResourceSchema"] = Relationship(
@@ -630,7 +631,11 @@ class ResourceRequestSchema(BaseSchema, table=True):
                     selectinload(
                         jl_arg(ResourceRequestSchema.step_run)
                     ).joinedload(jl_arg(StepRunSchema.pipeline_run)),
-                    selectinload(jl_arg(ResourceRequestSchema.preempted_by)),
+                    selectinload(
+                        jl_arg(
+                            ResourceRequestSchema.preemption_initiated_by
+                        )
+                    ),
                     selectinload(jl_arg(ResourceRequestSchema.user)),
                 ]
             )
@@ -655,7 +660,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
             component_id=request.component_id,
             step_run_id=request.step_run_id,
             status=ResourceRequestStatus.PENDING.value,
-            preempted_by_id=None,
+            preemption_initiated_by_id=None,
         )
 
     def update(
@@ -723,8 +728,8 @@ class ResourceRequestSchema(BaseSchema, table=True):
                 pipeline_run=self.step_run.pipeline_run.to_model()
                 if self.step_run
                 else None,
-                preempted_by=self.preempted_by.to_model()
-                if self.preempted_by
+                preemption_initiated_by_id=self.preemption_initiated_by.to_model()
+                if self.preemption_initiated_by
                 else None,
                 running_in_pool=running_in_pool,
             )

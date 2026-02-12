@@ -127,8 +127,9 @@ class ResourceRequestResponseResources(UserScopedResponseResources):
         title="The pipeline run that is requesting the resources.",
         default=None,
     )
-    preempted_by: Optional["ResourceRequestResponse"] = Field(
-        title="The request that preempted this request.", default=None
+    preemption_initiated_by_id: Optional["ResourceRequestResponse"] = Field(
+        title="The request that initiated the preemption of this request.",
+        default=None,
     )
     running_in_pool: Optional["ResourcePoolResponse"] = Field(
         title="The pool that the resource request is running in.", default=None
@@ -209,13 +210,15 @@ class ResourceRequestResponse(
         return self.get_resources().pipeline_run
 
     @property
-    def preempted_by(self) -> Optional["ResourceRequestResponse"]:
-        """The `preempted_by` property.
+    def preemption_initiated_by_id(
+        self,
+    ) -> Optional["ResourceRequestResponse"]:
+        """The `preemption_initiated_by_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().preempted_by
+        return self.get_resources().preemption_initiated_by_id
 
     @property
     def running_in_pool(self) -> Optional["ResourcePoolResponse"]:
@@ -246,9 +249,9 @@ class ResourceRequestFilter(UserScopedFilter):
         default=None,
         description="The id of the step run that is requesting the resources.",
     )
-    preempted_by_id: Union[UUID, str, None] = Field(
+    preemption_initiated_by_id: Union[UUID, str, None] = Field(
         default=None,
-        description="The id of the request that preempted this request.",
+        description="The id of the request that initiated the preemption of this request.",
     )
     status: Union[ResourceRequestStatus, str, None] = Field(
         default=None,

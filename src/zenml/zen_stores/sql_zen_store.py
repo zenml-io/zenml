@@ -6187,7 +6187,7 @@ class SqlZenStore(BaseZenStore):
                     )
                     .values(
                         status=ResourceRequestStatus.PREEMPTING.value,
-                        preempted_by_id=head_request_id,
+                        preemption_initiated_by_id=head_request_id,
                         status_reason=(
                             "Preempted to free resources for request "
                             "with higher priority."
