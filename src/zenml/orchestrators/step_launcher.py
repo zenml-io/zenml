@@ -548,6 +548,9 @@ class StepLauncher:
                 `submit(...)` or `launch(...)` methods.
             RuntimeError: If the step run failed.
         """
+        # TODO: Rework once we attach resource pools to step operators.
+        self._acquire_resources_if_necessary(step_run_info)
+
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
