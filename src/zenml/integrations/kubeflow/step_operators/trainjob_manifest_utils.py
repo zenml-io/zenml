@@ -168,9 +168,10 @@ def build_resources_per_node(
         resource_settings.gpu_count is not None
         and resource_settings.gpu_count > 0
     ):
-        gpu_value = str(resource_settings.gpu_count)
-        requests["nvidia.com/gpu"] = gpu_value
-        limits["nvidia.com/gpu"] = gpu_value
+        # TODO: Use correct value from resource settings
+        # gpu_value = str(resource_settings.gpu_count)
+        requests["nvidia.com/gpu"] = 1
+        limits["nvidia.com/gpu"] = 1
 
     if not requests and not limits:
         return {}
