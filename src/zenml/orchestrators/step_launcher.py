@@ -637,9 +637,9 @@ class StepLauncher:
         Raises:
             RuntimeError: If the resources could not be acquired.
         """
-        # resource_settings = self._step.config.resource_settings
-        # required_gpu_count = resource_settings.gpu_count or 0
-        required_gpu_count = 1
+        resource_settings = self._step.config.resource_settings
+        required_gpu_count = resource_settings.gpu_count or 0
+        # required_gpu_count = 1
         if required_gpu_count > 0:
             publish_utils.publish_step_run_status_update(
                 step_run_id=step_run_info.step_run_id,
