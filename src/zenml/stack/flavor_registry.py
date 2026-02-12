@@ -71,6 +71,7 @@ class FlavorRegistry:
         from zenml.image_builders import LocalImageBuilderFlavor
         from zenml.log_stores import (
             DatadogLogStoreFlavor,
+            LokiLogStoreFlavor,
             OtelLogStoreFlavor,
         )
         from zenml.orchestrators import (
@@ -90,6 +91,7 @@ class FlavorRegistry:
             LocalImageBuilderFlavor,
             DockerDeployerFlavor,
             DatadogLogStoreFlavor,
+            LokiLogStoreFlavor,
             LocalDeployerFlavor,
             OtelLogStoreFlavor,
         ]

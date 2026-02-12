@@ -611,9 +611,9 @@ class ArtifactLogStore(OtelLogStore):
         self,
         logs_model: "LogsResponse",
         limit: int,
-        before: Optional[str],
-        after: Optional[str],
-        filter_: "LogsEntriesFilter",
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: "LogsEntriesFilter" = None,
     ) -> "LogsEntriesResponse":
         """Fetch log entries from the artifact store.
 

@@ -32,7 +32,7 @@ from zenml.log_stores.base_log_store import (
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.logger import get_logger
-from zenml.models import LogsResponse
+from zenml.models import LogsEntriesFilter, LogsEntriesResponse, LogsResponse
 
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogExporter
@@ -334,4 +334,25 @@ class OtelLogStore(BaseLogStore):
         """
         raise NotImplementedError(
             "Log fetching is not supported by the OTEL log store."
+        )
+
+    def fetch_entries(
+        self,
+        logs_model: "LogsResponse",
+        limit: int,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: "LogsEntriesFilter" = None,
+    ) -> "LogsEntriesResponse":
+        """Fetch log entries from the OpenTelemetry backend.
+
+        Args:
+            logs_model: The logs model containing metadata about the logs.
+            limit: Maximum number of log entries to return.
+            before: Cursor token pointing to older entries.
+            after: Cursor token pointing to newer entries.
+            filter_: Filters that must be applied during retrieval.
+        """
+        raise NotImplementedError(
+            "Log entries fetching is not supported by the OTEL log store."
         )
