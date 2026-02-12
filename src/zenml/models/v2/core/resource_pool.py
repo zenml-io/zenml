@@ -90,6 +90,10 @@ class ResourcePoolAllocation(BaseModel):
     allocated_at: datetime = Field(
         title="The time the resource pool was allocated.",
     )
+    borrowed_resources: Dict[str, int] = Field(
+        title="Borrowed resources used by this allocation.",
+        default_factory=dict,
+    )
 
 
 class ResourcePoolQueueItem(BaseModel):
