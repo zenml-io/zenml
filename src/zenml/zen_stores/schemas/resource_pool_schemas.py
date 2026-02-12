@@ -562,6 +562,10 @@ class ResourceRequestSchema(BaseSchema, table=True):
 
     requested_resources: List["ResourceRequestResourceSchema"] = Relationship(
         back_populates="request",
+        sa_relationship_kwargs={
+            "passive_deletes": True,
+            "cascade": "all, delete-orphan",
+        },
     )
     status: str
     status_reason: Optional[str] = Field(default=None, nullable=True)
