@@ -54,6 +54,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 
+# TODO: rename to ResourcePoolQueueSchema
 class ResourcePoolRequestQueueSchema(BaseSchema, table=True):
     """Resource pool request queue schema."""
 
@@ -552,13 +553,11 @@ class ResourceRequestSchema(BaseSchema, table=True):
     step_run: Optional["StepRunSchema"] = Relationship(
         back_populates="resource_request"
     )
-    preemption_initiated_by: Optional["ResourceRequestSchema"] = (
-        Relationship(
-            sa_relationship_kwargs={
-                "foreign_keys": "[ResourceRequestSchema.preemption_initiated_by_id]",
-                "remote_side": "ResourceRequestSchema.id",
-            }
-        )
+    preemption_initiated_by: Optional["ResourceRequestSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "foreign_keys": "[ResourceRequestSchema.preemption_initiated_by_id]",
+            "remote_side": "ResourceRequestSchema.id",
+        }
     )
 
     requested_resources: List["ResourceRequestResourceSchema"] = Relationship(
@@ -632,9 +631,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
                         jl_arg(ResourceRequestSchema.step_run)
                     ).joinedload(jl_arg(StepRunSchema.pipeline_run)),
                     selectinload(
-                        jl_arg(
-                            ResourceRequestSchema.preemption_initiated_by
-                        )
+                        jl_arg(ResourceRequestSchema.preemption_initiated_by)
                     ),
                     selectinload(jl_arg(ResourceRequestSchema.user)),
                 ]

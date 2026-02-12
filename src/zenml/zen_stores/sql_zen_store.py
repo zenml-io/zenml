@@ -82,7 +82,6 @@ from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
-    OperationalError,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -4130,6 +4129,22 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_resource_pool)
             session.commit()
 
+            # TODO: refactor
+            # Detach first, so the frontend can detach an attach a policy for
+            # the same component within one call (= policy update)
+            if update.detach_policies:
+                for component_id in update.detach_policies:
+                    self._detach_resource_pool(
+                        session=session,
+                        component_id=component_id,
+                        resource_pool_id=existing_resource_pool.id,
+                    )
+
+                # Reject pending requests that might have been
+                # removed from their last eligible queue.
+                self._reject_requests_not_in_queue(session=session)
+                session.commit()
+
             if update.attach_policies:
                 for policy in update.attach_policies:
                     component = self._get_schema_by_id(
@@ -4165,22 +4180,14 @@ class SqlZenStore(BaseZenStore):
                     )
                 session.commit()
 
-            if update.detach_policies:
-                for component_id in update.detach_policies:
-                    self._detach_resource_pool(
-                        session=session,
-                        component_id=component_id,
-                        resource_pool_id=existing_resource_pool.id,
-                    )
-
-                # Reject pending requests that might have been
-                # removed from their last eligible queue.
-                self._reject_requests_not_in_queue(session=session)
-                session.commit()
-
             if update.capacity:
                 resources_decreased = False
                 resources_increased = False
+
+                self._acquire_resource_pool_lock(
+                    session,
+                    pool_id=existing_resource_pool.id,
+                )
 
                 for key, amount in update.capacity.items():
                     resource_pool_resource = session.exec(
@@ -4624,6 +4631,12 @@ class SqlZenStore(BaseZenStore):
         if resource_request.status == ResourceRequestStatus.PENDING.value:
             # After enqueuing the request, check if the request can be allocated
             # in any of the pools immediately
+            #
+            # This allocation attempt uses a pool-level row lock as a mutex.
+            # Commit the queue inserts first so we don't hold queue locks while
+            # acquiring the pool lock (avoids lock-order inversion/deadlocks
+            # under concurrent enqueues/allocations).
+            session.commit()
             queued_pool_ids = session.exec(
                 select(ResourcePoolRequestQueueSchema.pool_id)
                 .where(
@@ -4710,6 +4723,9 @@ class SqlZenStore(BaseZenStore):
 
         # Try allocating now that we've added new eligible requests into the
         # queue.
+        # Commit the inserts first so allocation can take the pool mutex before
+        # acquiring any queue row locks.
+        session.commit()
         self._allocate_queued_requests_for_pool(
             session=session, pool_id=pool_id, max_allocations=10
         )
@@ -4840,6 +4856,11 @@ class SqlZenStore(BaseZenStore):
             session: DB session.
             pool_id: The ID of the pool to rebuild the request queue for.
         """
+        # Acquire the pool lock first to keep lock ordering consistent with the
+        # allocator and release paths.
+        if not self._acquire_resource_pool_lock(session, pool_id=pool_id):
+            return
+
         # First delete the entire queue for this pool
         session.execute(
             delete(ResourcePoolRequestQueueSchema).where(
@@ -4962,6 +4983,34 @@ class SqlZenStore(BaseZenStore):
             )
         )
 
+    def _acquire_resource_pool_lock(
+        self,
+        session: Session,
+        pool_id: UUID,
+    ) -> bool:
+        """Acquire a row lock on a resource pool.
+
+        This is used to ensure a consistent lock order across allocation and
+        release paths and to serialize allocators per pool.
+
+        Args:
+            session: DB session.
+            pool_id: ID of the pool to lock.
+
+        Returns:
+            True if the lock was acquired, False otherwise.
+        """
+        if session.get_bind().dialect.name != "mysql":
+            return True
+
+        locked_pool_id = session.exec(
+            select(ResourcePoolSchema.id)
+            .where(col(ResourcePoolSchema.id) == pool_id)
+            .with_for_update()
+        ).first()
+
+        return locked_pool_id is not None
+
     def _allocate_queued_requests_for_pool(
         self, session: Session, pool_id: UUID, max_allocations: int = 100
     ) -> None:
@@ -4974,38 +5023,6 @@ class SqlZenStore(BaseZenStore):
 
         # noqa: DAR401
         """
-        # Prevent priority inversion / "parked claims": if multiple allocators
-        # run concurrently for the same pool, one can claim a high-priority item
-        # while another claims and allocates a lower-priority item that is
-        # temporarily the highest *visible* (unclaimed) queue entry. We avoid
-        # this by ensuring only one allocator drains a pool queue at a time.
-        if session.get_bind().dialect.name == "mysql":
-            # Prefer a short wait over skipping: this method is often invoked
-            # directly from request enqueue/release paths. If we simply skip
-            # while another allocator is draining, we can miss newly enqueued
-            # items until the next external trigger.
-            locked_pool_id: Optional[UUID] = None
-            for _ in range(20):
-                try:
-                    with session.begin_nested():
-                        locked_pool_id = session.exec(
-                            select(ResourcePoolSchema.id)
-                            .where(col(ResourcePoolSchema.id) == pool_id)
-                            .with_for_update(nowait=True)
-                        ).first()
-                except OperationalError:
-                    time.sleep(0.1)
-                    continue
-                break
-
-            if locked_pool_id is None:
-                logger.debug(
-                    "Pool %s: skipping allocation because another allocator is "
-                    "already draining this pool queue.",
-                    pool_id,
-                )
-                return
-
         used_by_component_key_subquery = (
             select(
                 col(ResourceRequestSchema.component_id).label("component_id"),
@@ -5215,6 +5232,13 @@ class SqlZenStore(BaseZenStore):
         class _PolicyLimitReached(Exception):
             pass
 
+        # Prevent priority inversion / "parked claims": if multiple allocators
+        # run concurrently for the same pool, one can claim a high-priority item
+        # while another claims and allocates a lower-priority item that is
+        # temporarily the highest *visible* (unclaimed) queue entry.
+        #
+        if not self._acquire_resource_pool_lock(session, pool_id=pool_id):
+            return
         allocations_done = 0
         skipped_due_to_policy_limit: Set[UUID] = set()
         while allocations_done < max_allocations:
@@ -5776,6 +5800,10 @@ class SqlZenStore(BaseZenStore):
 
         now = utc_now()
         with session.begin_nested():
+            self._acquire_resource_pool_lock(
+                session, pool_id=allocation.pool_id
+            )
+
             for resource_key, amount in requested_resource_rows:
                 if not amount:
                     continue
@@ -12934,9 +12962,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
-
-        Raises:
-            EntityExistsError: If the log entry already exists.
 
         Returns:
             The updated step run.
