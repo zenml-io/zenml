@@ -590,5 +590,5 @@ class ResourceRequestStatus(StrEnum):
     PREEMPTING = "preempting"
     PREEMPTED = "preempted"
     REJECTED = "rejected"
-    CANCELLED = "cancelled"
+    CANCELLED = "cancelled"  # TODO: not used yet
     RELEASED = "released"
