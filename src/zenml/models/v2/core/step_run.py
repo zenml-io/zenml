@@ -58,6 +58,7 @@ if TYPE_CHECKING:
         LogsRequest,
         LogsResponse,
     )
+    from zenml.models.v2.core.resource_request import ResourceRequestResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -330,6 +331,10 @@ class StepRunResponseResources(ProjectScopedResponseResources):
     outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
         title="The output artifact versions of the step run.",
         default_factory=dict,
+    )
+    resource_request: Optional["ResourceRequestResponse"] = Field(
+        title="The resource request of the step run.",
+        default=None,
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all

@@ -2049,7 +2049,11 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
     """
     from zenml.enums import ExecutionStatus
 
-    if status in {ExecutionStatus.INITIALIZING, ExecutionStatus.PROVISIONING}:
+    if status in {
+        ExecutionStatus.INITIALIZING,
+        ExecutionStatus.PROVISIONING,
+        ExecutionStatus.QUEUED,
+    }:
         return ":hourglass_flowing_sand:"
     if status == ExecutionStatus.FAILED:
         return ":x:"
@@ -2059,7 +2063,12 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
         return ":white_check_mark:"
     if status == ExecutionStatus.CACHED:
         return ":package:"
-    if status == ExecutionStatus.STOPPED or status == ExecutionStatus.STOPPING:
+    if status in {
+        ExecutionStatus.STOPPED,
+        ExecutionStatus.STOPPING,
+        ExecutionStatus.CANCELLING,
+        ExecutionStatus.CANCELLED,
+    }:
         return ":stop_sign:"
     raise RuntimeError(f"Unknown status: {status}")
 

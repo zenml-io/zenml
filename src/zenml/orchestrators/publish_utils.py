@@ -135,6 +135,23 @@ def publish_stopped_step_run(step_run_id: "UUID") -> "StepRunResponse":
     )
 
 
+def publish_cancelled_step_run(step_run_id: "UUID") -> "StepRunResponse":
+    """Publishes a cancelled step run.
+
+    Args:
+        step_run_id: The ID of the step run to update.
+
+    Returns:
+        The updated step run.
+    """
+    return publish_step_run_status_update(
+        step_run_id=step_run_id,
+        status=ExecutionStatus.CANCELLED,
+        end_time=utc_now(),
+        exception_info=step_exception_info.get(),
+    )
+
+
 def publish_successful_pipeline_run(
     pipeline_run_id: "UUID",
 ) -> "PipelineRunResponse":
@@ -261,6 +278,11 @@ def get_pipeline_run_status(
         or ExecutionStatus.RETRYING in step_statuses
     ):
         return ExecutionStatus.RUNNING
+    elif ExecutionStatus.QUEUED in step_statuses:
+        # If there is no running step but a queued one, we mark the run as
+        # queued so the user can immediately see that the run is waiting for
+        # resources.
+        return ExecutionStatus.QUEUED
     elif is_dynamic_pipeline:
         return run_status
     elif len(step_statuses) < num_steps:

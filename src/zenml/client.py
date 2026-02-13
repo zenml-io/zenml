@@ -151,6 +151,11 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
+    ResourcePoolFilter,
+    ResourcePoolRequest,
+    ResourcePoolResponse,
+    ResourcePoolSubjectPolicyRequest,
+    ResourcePoolUpdate,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -2223,6 +2228,164 @@ class Client(metaclass=ClientMetaClass):
             component.type,
             component.name,
         )
+
+    # -------------------------------- Resource Pools --------------------------
+
+    def create_resource_pool(
+        self,
+        name: str,
+        capacity: Dict[str, int],
+        description: Optional[str] = None,
+        policies: Optional[List[ResourcePoolSubjectPolicyRequest]] = None,
+    ) -> ResourcePoolResponse:
+        """Create a resource pool.
+
+        Args:
+            name: The name of the resource pool.
+            capacity: The capacity of the resource pool.
+            description: The description of the resource pool.
+            policies: The policies to attach to the resource pool.
+
+        Returns:
+            The created resource pool.
+        """
+        request = ResourcePoolRequest(
+            name=name,
+            description=description,
+            capacity=capacity,
+            policies=policies,
+        )
+        return self.zen_store.create_resource_pool(resource_pool=request)
+
+    def get_resource_pool(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
+    ) -> ResourcePoolResponse:
+        """Get a resource pool.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the resource pool to
+                get.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource pool.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_resource_pool,
+            list_method=self.list_resource_pools,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
+
+    def list_resource_pools(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        hydrate: bool = False,
+    ) -> Page[ResourcePoolResponse]:
+        """Lists resource pools.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of resource pool to filter by.
+            created: Filter by creation time.
+            updated: Filter by last updated time.
+            name: The name of the resource pool to filter by.
+            user: The ID of name of the user to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of resource pools.
+        """
+        filter_model = ResourcePoolFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            id=id,
+            name=name,
+            created=created,
+            updated=updated,
+            user=user,
+        )
+
+        return self.zen_store.list_resource_pools(
+            filter_model=filter_model, hydrate=hydrate
+        )
+
+    def update_resource_pool(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        description: Optional[str] = None,
+        capacity: Optional[Dict[str, int]] = None,
+        attach_policies: Optional[
+            List[ResourcePoolSubjectPolicyRequest]
+        ] = None,
+        detach_policies: Optional[List[UUID]] = None,
+    ) -> ResourcePoolResponse:
+        """Update a resource pool.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the resource pool to
+                update.
+            description: The new description of the resource pool.
+            capacity: The new capacity of the resource pool. Setting a value to
+                0 will remove the resource from the pool.
+            attach_policies: The policies to attach to the resource pool.
+            detach_policies: The policies to detach from the resource pool.
+
+        Returns:
+            The updated resource pool.
+        """
+        resource_pool = self.get_resource_pool(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        update_model = ResourcePoolUpdate(
+            description=description,
+            capacity=capacity,
+            attach_policies=attach_policies,
+            detach_policies=detach_policies,
+        )
+
+        return self.zen_store.update_resource_pool(
+            resource_pool_id=resource_pool.id,
+            update=update_model,
+        )
+
+    def delete_resource_pool(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete a resource pool.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the resource pool to
+                delete.
+        """
+        resource_pool = self.get_resource_pool(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        self.zen_store.delete_resource_pool(resource_pool_id=resource_pool.id)
 
     # --------------------------------- Flavors --------------------------------
 

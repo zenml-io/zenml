@@ -33,7 +33,12 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    ResourceRequestStatus,
+    StepRuntime,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
@@ -41,6 +46,7 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineSnapshotResponse,
+    ResourceRequestRequest,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
@@ -349,7 +355,11 @@ class StepLauncher:
                             step_run_id=step_run.id
                         )
 
-                        if (
+                        if step_run.status == ExecutionStatus.CANCELLING:
+                            publish_utils.publish_cancelled_step_run(
+                                step_run_id=step_run.id
+                            )
+                        elif (
                             isinstance(e, StepHeartBeatTerminationException)
                             or step_run.status == ExecutionStatus.STOPPING
                         ):
@@ -519,6 +529,9 @@ class StepLauncher:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
         """
+        # TODO: Rework once we attach resource pools to step operators.
+        self._acquire_resources_if_necessary(step_run_info)
+
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
@@ -566,6 +579,8 @@ class StepLauncher:
         Args:
             step_run_info: Additional information needed to run the step.
         """
+        self._acquire_resources_if_necessary(step_run_info)
+
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
@@ -610,3 +625,90 @@ class StepLauncher:
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )
+
+    def _acquire_resources_if_necessary(
+        self, step_run_info: StepRunInfo
+    ) -> None:
+        """Acquires resources if necessary.
+
+        Args:
+            step_run_info: Step run information.
+
+        Raises:
+            RuntimeError: If the resources could not be acquired.
+        """
+        resource_settings = self._step.config.resource_settings
+        required_gpu_count = resource_settings.gpu_count or 0
+        # required_gpu_count = 1
+        if required_gpu_count > 0:
+            publish_utils.publish_step_run_status_update(
+                step_run_id=step_run_info.step_run_id,
+                status=ExecutionStatus.QUEUED,
+            )
+            resource_request = Client().zen_store.create_resource_request(
+                ResourceRequestRequest(
+                    component_id=self._stack.orchestrator.id,
+                    step_run_id=step_run_info.step_run_id,
+                    requested_resources={
+                        "gpu": required_gpu_count,
+                    },
+                )
+            )
+            while True:
+                try:
+                    resource_request = Client().zen_store.get_resource_request(
+                        resource_request.id, hydrate=False
+                    )
+                except KeyError as e:
+                    raise RuntimeError(
+                        f"Resource request `{resource_request.id}` for step "
+                        f"`{step_run_info.pipeline_step_name}` not found. This "
+                        "is most likely because someone deleted the resource "
+                        "request."
+                    ) from e
+
+                if resource_request.status == ResourceRequestStatus.ALLOCATED:
+                    logger.info(
+                        "Resource request `%s` for step `%s` was approved.",
+                        resource_request.id,
+                        step_run_info.pipeline_step_name,
+                    )
+                    # TODO: start date should be set here, not on initial
+                    # creation.
+                    publish_utils.publish_step_run_status_update(
+                        step_run_id=step_run_info.step_run_id,
+                        status=ExecutionStatus.RUNNING,
+                    )
+                    return
+                elif resource_request.status == ResourceRequestStatus.REJECTED:
+                    reason = resource_request.status_reason or "Unknown reason"
+                    raise RuntimeError(
+                        f"Resource request `{resource_request.id}` for step "
+                        f"`{step_run_info.pipeline_step_name}` was rejected: "
+                        f"{reason}"
+                    )
+                elif (
+                    resource_request.status == ResourceRequestStatus.PREEMPTED
+                ):
+                    reason = resource_request.status_reason or "Unknown reason"
+                    raise RuntimeError(
+                        f"Resource request `{resource_request.id}` for step "
+                        f"`{step_run_info.pipeline_step_name}` was preempted: "
+                        f"{reason}"
+                    )
+                elif (
+                    resource_request.status == ResourceRequestStatus.CANCELLED
+                ):
+                    raise RuntimeError(
+                        f"Resource request `{resource_request.id}` for step "
+                        f"`{step_run_info.pipeline_step_name}` was cancelled."
+                    )
+
+                logger.info(
+                    "Waiting for resource request `%s` of step `%s` to be "
+                    "approved...",
+                    resource_request.id,
+                    step_run_info.pipeline_step_name,
+                )
+                # TODO: exponential backoff
+                time.sleep(10)
