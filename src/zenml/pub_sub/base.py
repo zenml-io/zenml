@@ -20,14 +20,20 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from zenml.constants import (
+    ENV_ZENML_CONSUMER_POLLING_PREFIX,
+    ENV_ZENML_CONSUMER_PREFIX,
+    ENV_ZENML_PRODUCER_PREFIX,
+)
 from zenml.pub_sub.models import (
     CriticalEvent,
     CriticalEventType,
     MessageEnvelope,
     MessagePayload,
 )
+from zenml.utils.env_utils import ConfigBase
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +54,12 @@ class MessageSubmissionError(Exception):
     """Raised when sending a message fails."""
 
 
-class ProducerConfig(BaseModel):
+class ProducerConfig(ConfigBase):
     """Config object grouping producer configuration params."""
+
+    @staticmethod
+    def prefixes() -> list[str]:
+        return [ENV_ZENML_PRODUCER_PREFIX]
 
     send_retries: int = Field(
         default=1,
@@ -211,8 +221,12 @@ class ProducerBase(ABC):
         raise MessageSubmissionError(f"Send failed for payload {payload.id}")
 
 
-class ConsumerRuntimeConfig(BaseModel):
+class ConsumerRuntimeConfig(ConfigBase):
     """Config shared by polling and push consumers."""
+
+    @staticmethod
+    def prefixes() -> list[str]:
+        return [ENV_ZENML_CONSUMER_PREFIX]
 
     late_ack: bool = Field(
         default=True,
@@ -435,6 +449,12 @@ class ConsumerBase(ABC):
 
 class PollingConfig(ConsumerRuntimeConfig):
     """Base config class for polling consumers."""
+
+    @staticmethod
+    def prefixes() -> list[str]:
+        return ConsumerRuntimeConfig.prefixes() + [
+            ENV_ZENML_CONSUMER_POLLING_PREFIX
+        ]
 
     interval: float = Field(
         default=1.0,

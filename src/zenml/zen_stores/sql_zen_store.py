@@ -176,6 +176,7 @@ from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyInternalResponse,
     APIKeyInternalUpdate,
@@ -332,7 +333,6 @@ from zenml.models import (
     UserResponse,
     UserScopedRequest,
     UserUpdate,
-    TRIGGER_RETURN_TYPE_UNION,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,

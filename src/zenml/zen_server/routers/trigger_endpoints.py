@@ -19,11 +19,11 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_SNAPSHOTS, TRIGGERS, VERSION_1
 from zenml.models import (
-    Page,
-    TriggerFilter,
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
     TRIGGER_UPDATE_TYPE_UNION,
+    Page,
+    TriggerFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response

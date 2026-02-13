@@ -136,6 +136,7 @@ from zenml.login.pro.utils import (
     get_troubleshooting_instructions,
 )
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -270,7 +271,6 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    TRIGGER_RETURN_TYPE_UNION,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,

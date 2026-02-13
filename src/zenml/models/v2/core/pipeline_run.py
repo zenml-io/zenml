@@ -68,8 +68,8 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
-    from zenml.zen_stores.schemas.base_schemas import BaseSchema
     from zenml.models.v2.core.triggers import TRIGGER_RETURN_TYPE_UNION
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
