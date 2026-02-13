@@ -667,7 +667,7 @@ class StepLauncher:
                         "request."
                     ) from e
 
-                if resource_request.status == ResourceRequestStatus.ACQUIRED:
+                if resource_request.status == ResourceRequestStatus.ALLOCATED:
                     logger.info(
                         "Resource request `%s` for step `%s` was approved.",
                         resource_request.id,

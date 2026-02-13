@@ -4585,7 +4585,7 @@ class SqlZenStore(BaseZenStore):
             # There are no policies assigned to the component. This means ZenML
             # isn't responsible for managing resources for this component, so
             # we approve the request immediately.
-            resource_request.status = ResourceRequestStatus.ACQUIRED.value
+            resource_request.status = ResourceRequestStatus.ALLOCATED.value
             resource_request.updated = utc_now()
             session.add(resource_request)
             return
@@ -5527,7 +5527,7 @@ class SqlZenStore(BaseZenStore):
                             == ResourceRequestStatus.PENDING.value,
                         )
                         .values(
-                            status=ResourceRequestStatus.ACQUIRED.value,
+                            status=ResourceRequestStatus.ALLOCATED.value,
                             updated=now,
                         )
                     )
@@ -6024,7 +6024,7 @@ class SqlZenStore(BaseZenStore):
             .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
             .where(
                 col(ResourceRequestSchema.status)
-                == ResourceRequestStatus.ACQUIRED.value
+                == ResourceRequestStatus.ALLOCATED.value
             )
         ).subquery()
 
@@ -6200,10 +6200,17 @@ class SqlZenStore(BaseZenStore):
                     .where(
                         col(ResourceRequestSchema.id) == victim_id,
                         col(ResourceRequestSchema.status)
-                        == ResourceRequestStatus.ACQUIRED.value,
+                        == ResourceRequestStatus.ALLOCATED.value,
                     )
                     .values(
                         status=ResourceRequestStatus.PREEMPTING.value,
+                        # The head request might not be the actual request that
+                        # benefits from this preemption. Because eviction is
+                        # asynchronous and might take some time, other requests
+                        # might jump ahead of the head request in the queue, or
+                        # other allocated requests might be released that allow
+                        # the head request to be allocated before the eviction
+                        # finishes.
                         preemption_initiated_by_id=head_request_id,
                         status_reason=(
                             "Preempted to free resources for request "
