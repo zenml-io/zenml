@@ -29,11 +29,11 @@ from sqlmodel import Field, Relationship, desc, select
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     TriggerRequest,
     TriggerResponseMetadata,
     TriggerResponseResources,
     TriggerUpdate,
-    TRIGGER_RETURN_TYPE_UNION,
 )
 from zenml.triggers.registry import (
     TYPE_TO_RESPONSE_BODY_MAPPING,
