@@ -89,7 +89,7 @@ from zenml.zen_stores.schemas.resource_pool_schemas import (
     ResourcePoolSubjectPolicySchema,
     ResourcePoolSubjectPolicyResourceSchema,
     ResourcePoolResourceSchema,
-    ResourcePoolRequestQueueSchema,
+    ResourcePoolQueueSchema,
     ResourcePoolAllocationSchema,
     ResourceRequestResourceSchema,
 )
@@ -144,7 +144,7 @@ __all__ = [
     "ProjectSchema",
     "ApiTransactionResultSchema",
     "ApiTransactionSchema",
-    "ResourcePoolRequestQueueSchema",
+    "ResourcePoolQueueSchema",
     "ResourcePoolAllocationSchema",
     "ResourcePoolSubjectPolicySchema",
     "ResourcePoolSubjectPolicyResourceSchema",

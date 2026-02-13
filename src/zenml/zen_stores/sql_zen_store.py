@@ -406,7 +406,7 @@ from zenml.zen_stores.schemas import (
     PipelineSnapshotSchema,
     ProjectSchema,
     ResourcePoolAllocationSchema,
-    ResourcePoolRequestQueueSchema,
+    ResourcePoolQueueSchema,
     ResourcePoolResourceSchema,
     ResourcePoolSchema,
     ResourcePoolSubjectPolicyResourceSchema,
@@ -4405,10 +4405,9 @@ class SqlZenStore(BaseZenStore):
             == ResourceRequestStatus.PENDING.value,
         )
         session.execute(
-            delete(ResourcePoolRequestQueueSchema).where(
-                col(ResourcePoolRequestQueueSchema.pool_id)
-                == resource_pool_id,
-                col(ResourcePoolRequestQueueSchema.request_id).in_(
+            delete(ResourcePoolQueueSchema).where(
+                col(ResourcePoolQueueSchema.pool_id) == resource_pool_id,
+                col(ResourcePoolQueueSchema.request_id).in_(
                     pending_request_ids
                 ),
             )
@@ -4611,10 +4610,9 @@ class SqlZenStore(BaseZenStore):
             )
 
         queued_anywhere = session.exec(
-            select(ResourcePoolRequestQueueSchema.id)
+            select(ResourcePoolQueueSchema.id)
             .where(
-                col(ResourcePoolRequestQueueSchema.request_id)
-                == resource_request.id
+                col(ResourcePoolQueueSchema.request_id) == resource_request.id
             )
             .limit(1)
         ).first()
@@ -4638,15 +4636,15 @@ class SqlZenStore(BaseZenStore):
             # under concurrent enqueues/allocations).
             session.commit()
             queued_pool_ids = session.exec(
-                select(ResourcePoolRequestQueueSchema.pool_id)
+                select(ResourcePoolQueueSchema.pool_id)
                 .where(
-                    col(ResourcePoolRequestQueueSchema.request_id)
+                    col(ResourcePoolQueueSchema.request_id)
                     == resource_request.id
                 )
                 .order_by(
-                    desc(ResourcePoolRequestQueueSchema.priority),
-                    col(ResourcePoolRequestQueueSchema.request_created),
-                    col(ResourcePoolRequestQueueSchema.pool_id),
+                    desc(ResourcePoolQueueSchema.priority),
+                    col(ResourcePoolQueueSchema.request_created),
+                    col(ResourcePoolQueueSchema.pool_id),
                 )
             ).all()
 
@@ -4688,9 +4686,9 @@ class SqlZenStore(BaseZenStore):
             request_id_expression=col(ResourceRequestSchema.id),
         )
 
-        already_enqueued = select(ResourcePoolRequestQueueSchema.id).where(
-            col(ResourcePoolRequestQueueSchema.pool_id) == pool_id,
-            col(ResourcePoolRequestQueueSchema.request_id)
+        already_enqueued = select(ResourcePoolQueueSchema.id).where(
+            col(ResourcePoolQueueSchema.pool_id) == pool_id,
+            col(ResourcePoolQueueSchema.request_id)
             == col(ResourceRequestSchema.id),
         )
 
@@ -4754,7 +4752,7 @@ class SqlZenStore(BaseZenStore):
         try:
             with session.begin_nested():
                 session.add(
-                    ResourcePoolRequestQueueSchema(
+                    ResourcePoolQueueSchema(
                         pool_id=pool_id,
                         request_id=request_id,
                         priority=priority,
@@ -4863,8 +4861,8 @@ class SqlZenStore(BaseZenStore):
 
         # First delete the entire queue for this pool
         session.execute(
-            delete(ResourcePoolRequestQueueSchema).where(
-                col(ResourcePoolRequestQueueSchema.pool_id) == pool_id
+            delete(ResourcePoolQueueSchema).where(
+                col(ResourcePoolQueueSchema.pool_id) == pool_id
             )
         )
         policies = session.exec(
@@ -4899,7 +4897,7 @@ class SqlZenStore(BaseZenStore):
 
             for request_id, request_created in eligible_request_rows:
                 session.add(
-                    ResourcePoolRequestQueueSchema(
+                    ResourcePoolQueueSchema(
                         pool_id=pool_id,
                         request_id=request_id,
                         priority=policy.priority,
@@ -4925,8 +4923,8 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(
                     ~exists(
-                        select(ResourcePoolRequestQueueSchema.id).where(
-                            col(ResourcePoolRequestQueueSchema.request_id)
+                        select(ResourcePoolQueueSchema.id).where(
+                            col(ResourcePoolQueueSchema.request_id)
                             == col(ResourceRequestSchema.id)
                         )
                     )
@@ -4961,8 +4959,8 @@ class SqlZenStore(BaseZenStore):
             )
             .where(
                 ~exists(
-                    select(ResourcePoolRequestQueueSchema.id).where(
-                        col(ResourcePoolRequestQueueSchema.request_id)
+                    select(ResourcePoolQueueSchema.id).where(
+                        col(ResourcePoolQueueSchema.request_id)
                         == col(ResourceRequestSchema.id)
                     )
                 )
@@ -5054,7 +5052,7 @@ class SqlZenStore(BaseZenStore):
             now: datetime,
             *,
             exclude_queue_item_ids: Set[UUID],
-        ) -> Optional[ResourcePoolRequestQueueSchema]:
+        ) -> Optional[ResourcePoolQueueSchema]:
             # "Dedicated-first" ordering: prefer requests that can be satisfied
             # fully from the component's currently unused reserved share.
             #
@@ -5116,7 +5114,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(
                     col(ResourceRequestResourceSchema.request_id)
-                    == col(ResourcePoolRequestQueueSchema.request_id),
+                    == col(ResourcePoolQueueSchema.request_id),
                     col(ResourceRequestResourceSchema.amount)
                     > reserved_free_expr,
                 )
@@ -5169,7 +5167,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(
                     col(ResourceRequestResourceSchema.request_id)
-                    == col(ResourcePoolRequestQueueSchema.request_id),
+                    == col(ResourcePoolQueueSchema.request_id),
                     col(ResourceRequestResourceSchema.amount) > 0,
                 )
                 .where(
@@ -5189,15 +5187,15 @@ class SqlZenStore(BaseZenStore):
                 )
             )
             return session.exec(
-                select(ResourcePoolRequestQueueSchema)
+                select(ResourcePoolQueueSchema)
                 .join(
                     ResourceRequestSchema,
                     col(ResourceRequestSchema.id)
-                    == col(ResourcePoolRequestQueueSchema.request_id),
+                    == col(ResourcePoolQueueSchema.request_id),
                 )
-                .where(col(ResourcePoolRequestQueueSchema.pool_id) == pool_id)
+                .where(col(ResourcePoolQueueSchema.pool_id) == pool_id)
                 .where(
-                    col(ResourcePoolRequestQueueSchema.id).not_in(
+                    col(ResourcePoolQueueSchema.id).not_in(
                         exclude_queue_item_ids
                     )
                     if exclude_queue_item_ids
@@ -5209,19 +5207,18 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(
                     or_(
-                        col(
-                            ResourcePoolRequestQueueSchema.claim_expires_at
-                        ).is_(None),
-                        col(ResourcePoolRequestQueueSchema.claim_expires_at)
-                        < now,
+                        col(ResourcePoolQueueSchema.claim_expires_at).is_(
+                            None
+                        ),
+                        col(ResourcePoolQueueSchema.claim_expires_at) < now,
                     )
                 )
                 .where(~limit_violation_exists)
                 .order_by(
                     desc(fits_fully_in_free_reserved_expr),
-                    desc(ResourcePoolRequestQueueSchema.priority),
-                    col(ResourcePoolRequestQueueSchema.request_created),
-                    col(ResourcePoolRequestQueueSchema.request_id),
+                    desc(ResourcePoolQueueSchema.priority),
+                    col(ResourcePoolQueueSchema.request_created),
+                    col(ResourcePoolQueueSchema.request_id),
                 )
                 .limit(1)
             ).first()
@@ -5263,20 +5260,17 @@ class SqlZenStore(BaseZenStore):
                     claim_token = uuid4()
                     claim_expires_at = now + timedelta(seconds=30)
                     result = session.execute(
-                        update(ResourcePoolRequestQueueSchema)
+                        update(ResourcePoolQueueSchema)
                         .where(
-                            col(ResourcePoolRequestQueueSchema.id) == head.id,
+                            col(ResourcePoolQueueSchema.id) == head.id,
                             or_(
                                 col(
-                                    ResourcePoolRequestQueueSchema.claim_expires_at
+                                    ResourcePoolQueueSchema.claim_expires_at
                                 ).is_(None),
-                                col(
-                                    ResourcePoolRequestQueueSchema.claim_expires_at
-                                )
+                                col(ResourcePoolQueueSchema.claim_expires_at)
                                 < now,
                             ),
-                            col(ResourcePoolRequestQueueSchema.pool_id)
-                            == pool_id,
+                            col(ResourcePoolQueueSchema.pool_id) == pool_id,
                         )
                         .values(
                             claim_token=claim_token,
@@ -5417,9 +5411,8 @@ class SqlZenStore(BaseZenStore):
                     for resource_key, amount in requested_resources:
                         if amount > max_by_key.get(resource_key, 0):
                             session.execute(
-                                delete(ResourcePoolRequestQueueSchema).where(
-                                    col(ResourcePoolRequestQueueSchema.id)
-                                    == head.id
+                                delete(ResourcePoolQueueSchema).where(
+                                    col(ResourcePoolQueueSchema.id) == head.id
                                 )
                             )
                             session.flush()
@@ -5552,11 +5545,10 @@ class SqlZenStore(BaseZenStore):
                     # so removing the current row is sufficient.
                     # TODO: this causes stale requests in queues.
                     session.execute(
-                        delete(ResourcePoolRequestQueueSchema).where(
-                            col(ResourcePoolRequestQueueSchema.id) == head.id,
-                            col(ResourcePoolRequestQueueSchema.pool_id)
-                            == pool_id,
-                            col(ResourcePoolRequestQueueSchema.claim_token)
+                        delete(ResourcePoolQueueSchema).where(
+                            col(ResourcePoolQueueSchema.id) == head.id,
+                            col(ResourcePoolQueueSchema.pool_id) == pool_id,
+                            col(ResourcePoolQueueSchema.claim_token)
                             == claim_token,
                         )
                     )
@@ -5574,10 +5566,10 @@ class SqlZenStore(BaseZenStore):
                 # back under its policy limit.
                 if claim_token is not None:
                     session.execute(
-                        update(ResourcePoolRequestQueueSchema)
+                        update(ResourcePoolQueueSchema)
                         .where(
-                            col(ResourcePoolRequestQueueSchema.id) == head.id,
-                            col(ResourcePoolRequestQueueSchema.claim_token)
+                            col(ResourcePoolQueueSchema.id) == head.id,
+                            col(ResourcePoolQueueSchema.claim_token)
                             == claim_token,
                         )
                         .values(
@@ -5604,8 +5596,8 @@ class SqlZenStore(BaseZenStore):
                     # blocking. Ths shouldn't happen as we only enqueue pending
                     # requests.
                     session.execute(
-                        delete(ResourcePoolRequestQueueSchema).where(
-                            col(ResourcePoolRequestQueueSchema.id) == head.id
+                        delete(ResourcePoolQueueSchema).where(
+                            col(ResourcePoolQueueSchema.id) == head.id
                         )
                     )
                     session.flush()
@@ -5624,8 +5616,8 @@ class SqlZenStore(BaseZenStore):
                 ).first()
                 if active_allocation is not None:
                     session.execute(
-                        delete(ResourcePoolRequestQueueSchema).where(
-                            col(ResourcePoolRequestQueueSchema.id) == head.id
+                        delete(ResourcePoolQueueSchema).where(
+                            col(ResourcePoolQueueSchema.id) == head.id
                         )
                     )
                     session.flush()
@@ -5635,10 +5627,10 @@ class SqlZenStore(BaseZenStore):
                 # head blocked if the allocation couldn't proceed.
                 if claim_token is not None:
                     session.execute(
-                        update(ResourcePoolRequestQueueSchema)
+                        update(ResourcePoolQueueSchema)
                         .where(
-                            col(ResourcePoolRequestQueueSchema.id) == head.id,
-                            col(ResourcePoolRequestQueueSchema.claim_token)
+                            col(ResourcePoolQueueSchema.id) == head.id,
+                            col(ResourcePoolQueueSchema.claim_token)
                             == claim_token,
                         )
                         .values(

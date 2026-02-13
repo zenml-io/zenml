@@ -55,15 +55,15 @@ from zenml.zen_stores.schemas.utils import jl_arg
 
 
 # TODO: rename to ResourcePoolQueueSchema
-class ResourcePoolRequestQueueSchema(BaseSchema, table=True):
-    """Resource pool request queue schema."""
+class ResourcePoolQueueSchema(BaseSchema, table=True):
+    """Resource pool queue schema."""
 
-    __tablename__ = "resource_pool_request_queue"
+    __tablename__ = "resource_pool_queue"
     __table_args__ = (
         UniqueConstraint(
             "pool_id",
             "request_id",
-            name="unique_resource_pool_request_queue_pool_id_request_id",
+            name="unique_resource_pool_queue_pool_id_request_id",
         ),
         build_index(
             table_name=__tablename__,
@@ -301,24 +301,24 @@ class ResourcePoolSchema(NamedSchema, table=True):
     # which requests will be allocated. To get that, we would have to consider
     # the free dedicated resources of each policy, which is a query that we only
     # run as part of the actual allocation process.
-    queue_items: List["ResourcePoolRequestQueueSchema"] = Relationship(
+    queue_items: List["ResourcePoolQueueSchema"] = Relationship(
         sa_relationship_kwargs={
             "primaryjoin": lambda: and_(
                 col(ResourcePoolSchema.id)
-                == col(ResourcePoolRequestQueueSchema.pool_id),
+                == col(ResourcePoolQueueSchema.pool_id),
                 exists(
                     select(1).where(
                         col(ResourceRequestSchema.id)
-                        == col(ResourcePoolRequestQueueSchema.request_id),
+                        == col(ResourcePoolQueueSchema.request_id),
                         col(ResourceRequestSchema.status)
                         == ResourceRequestStatus.PENDING.value,
                     )
                 ),
             ),
             "order_by": (
-                desc(col(ResourcePoolRequestQueueSchema.priority)),
-                ResourcePoolRequestQueueSchema.request_created,
-                ResourcePoolRequestQueueSchema.request_id,
+                desc(col(ResourcePoolQueueSchema.priority)),
+                ResourcePoolQueueSchema.request_created,
+                ResourcePoolQueueSchema.request_id,
             ),
             "passive_deletes": True,
         },
@@ -376,9 +376,7 @@ class ResourcePoolSchema(NamedSchema, table=True):
                     ),
                     selectinload(
                         jl_arg(ResourcePoolSchema.queue_items)
-                    ).joinedload(
-                        jl_arg(ResourcePoolRequestQueueSchema.request)
-                    ),
+                    ).joinedload(jl_arg(ResourcePoolQueueSchema.request)),
                     selectinload(
                         jl_arg(ResourcePoolSchema.allocations)
                     ).joinedload(jl_arg(ResourcePoolAllocationSchema.request)),
