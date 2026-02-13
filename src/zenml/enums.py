@@ -586,9 +586,8 @@ class ResourceRequestStatus(StrEnum):
     """Resource request statuses."""
 
     PENDING = "pending"
-    ACQUIRED = "acquired"
+    ALLOCATED = "allocated"
     PREEMPTING = "preempting"
     PREEMPTED = "preempted"
     REJECTED = "rejected"
-    CANCELLED = "cancelled"  # TODO: not used yet
     RELEASED = "released"

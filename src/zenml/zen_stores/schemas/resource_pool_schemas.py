@@ -54,7 +54,6 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 
-# TODO: rename to ResourcePoolQueueSchema
 class ResourcePoolQueueSchema(BaseSchema, table=True):
     """Resource pool queue schema."""
 
@@ -232,7 +231,7 @@ class ResourcePoolSubjectPolicySchema(BaseSchema, table=True):
 
 
 class ResourcePoolSubjectPolicyResourceSchema(BaseSchema, table=True):
-    """Per-resource min/max share configuration for a pool subject policy."""
+    """Resource pool subject policy resource schema."""
 
     __tablename__ = "resource_pool_subject_policy_resource"
     __table_args__ = (
@@ -261,7 +260,7 @@ class ResourcePoolSubjectPolicyResourceSchema(BaseSchema, table=True):
 
 
 class ResourcePoolSchema(NamedSchema, table=True):
-    """SQL Model for resource pools."""
+    """Resource pool schema."""
 
     __tablename__ = "resource_pool"
     __table_args__ = (
@@ -595,12 +594,15 @@ class ResourceRequestSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+    # TODO: Probably this should be non-nullable if we keep the current way of
+    # requesting resources once a step run is already created. In the Kubernetes
+    # static pipeline case, we need to think of a new solution.
     step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
         source_column="step_run_id",
         target_column="id",
-        ondelete="SET NULL",
+        ondelete="CASCADE",
         nullable=True,
     )
     preemption_initiated_by_id: Optional[UUID] = build_foreign_key_field(
@@ -641,6 +643,8 @@ class ResourceRequestSchema(BaseSchema, table=True):
     status: str
     status_reason: Optional[str] = Field(default=None, nullable=True)
 
+    # TODO: This should probably be called `pool`, and also include allocations
+    # that have been released already?
     @property
     def running_in_pool(self) -> Optional["ResourcePoolSchema"]:
         """Get the pool that the resource request is running in.
