@@ -4592,14 +4592,14 @@ class SqlZenStore(BaseZenStore):
             return
 
         for policy in policies:
-            violation = session.exec(
-                self._fits_pool_capacity_violation_subquery(
+            pool_violation = session.exec(
+                self._fits_pool_violation_subquery(
                     pool_id=policy.resource_pool_id,
                     component_id=resource_request.component_id,
                     request_id_expression=resource_request.id,
                 )
             ).first()
-            if violation is not None:
+            if pool_violation is not None:
                 continue
 
             self._enqueue_request_into_pool_queue(
@@ -4621,8 +4621,8 @@ class SqlZenStore(BaseZenStore):
         if queued_anywhere is None:
             resource_request.status = ResourceRequestStatus.REJECTED.value
             resource_request.status_reason = (
-                "No resource pool has a total capacity "
-                "that could fit the requested resources."
+                "The requested resources exceed the resources available in all "
+                "attached resource pool policies."
             )
             resource_request.updated = utc_now()
             session.add(resource_request)
@@ -4682,7 +4682,7 @@ class SqlZenStore(BaseZenStore):
             pool_id: The pool into which requests should be enqueued.
             priority: The component's priority for this pool.
         """
-        fits_violation = self._fits_pool_capacity_violation_subquery(
+        fits_pool_violation = self._fits_pool_violation_subquery(
             pool_id=pool_id,
             component_id=component_id,
             request_id_expression=col(ResourceRequestSchema.id),
@@ -4701,7 +4701,7 @@ class SqlZenStore(BaseZenStore):
                 col(ResourceRequestSchema.status)
                 == ResourceRequestStatus.PENDING.value
             )
-            .where(~exists(fits_violation))
+            .where(~exists(fits_pool_violation))
             .where(~exists(already_enqueued))
             .order_by(
                 col(ResourceRequestSchema.created),
@@ -4768,7 +4768,7 @@ class SqlZenStore(BaseZenStore):
         return True
 
     @staticmethod
-    def _fits_pool_capacity_violation_subquery(
+    def _fits_pool_violation_subquery(
         pool_id: UUID, component_id: UUID, request_id_expression: Any
     ) -> SelectOfScalar[UUID]:
         """Subquery that checks if a request fits into a pool given its policy.
@@ -4875,7 +4875,7 @@ class SqlZenStore(BaseZenStore):
         session.flush()
 
         for policy in policies:
-            fits_total_violation = self._fits_pool_capacity_violation_subquery(
+            fits_pool_violation = self._fits_pool_violation_subquery(
                 pool_id=pool_id,
                 component_id=policy.component_id,
                 request_id_expression=ResourceRequestSchema.id,
@@ -4890,7 +4890,7 @@ class SqlZenStore(BaseZenStore):
                     col(ResourceRequestSchema.status)
                     == ResourceRequestStatus.PENDING.value
                 )
-                .where(~exists(fits_total_violation))
+                .where(~exists(fits_pool_violation))
                 .order_by(
                     col(ResourceRequestSchema.created),
                     col(ResourceRequestSchema.id),
@@ -5860,12 +5860,7 @@ class SqlZenStore(BaseZenStore):
         requested_resources: Optional[Dict[str, int]],
         reclaim_budget: Dict[str, int],
     ) -> bool:
-        """Attempt to make room for the head request by evicting victims.
-
-        This method is intentionally best-effort and assumes eviction is
-        asynchronous: it marks victims as PREEMPTING and invokes the eviction
-        hook. Pool capacity is expected to be released later, which should then
-        trigger a new allocation attempt.
+        """Attempt to free resources for the head request by evicting victims.
 
         Args:
             session: DB session.
@@ -5882,8 +5877,10 @@ class SqlZenStore(BaseZenStore):
         Returns:
             True if eviction was triggered for at least one victim.
         """
-        # TODO: Introduce an "efficiency score" for picking victims to evict
-        # that helps us satisfy the head request most efficiently.
+        # TODO: Maybe introduce an efficiency score for picking eviction
+        # victims. For example: If the second victim can fully satisfy the
+        # request, but the first one can not, we do not have to evict the first
+        # victim. Currently, our algorithm would evict both.
         if requested_resources is None:
             requested_resource_rows = session.exec(
                 select(
@@ -6280,6 +6277,7 @@ class SqlZenStore(BaseZenStore):
             return
 
         step_run.status = ExecutionStatus.CANCELLING.value
+        # TODO: add status reason
         session.add(step_run)
 
     # -------------------------- Devices -------------------------
