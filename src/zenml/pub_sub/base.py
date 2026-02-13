@@ -20,14 +20,20 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from zenml.constants import (
+    ENV_ZENML_CONSUMER_POLLING_PREFIX,
+    ENV_ZENML_CONSUMER_PREFIX,
+    ENV_ZENML_PRODUCER_PREFIX,
+)
 from zenml.pub_sub.models import (
     CriticalEvent,
     CriticalEventType,
     MessageEnvelope,
     MessagePayload,
 )
+from zenml.utils.env_utils import ConfigBase
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +54,12 @@ class MessageSubmissionError(Exception):
     """Raised when sending a message fails."""
 
 
-class ProducerConfig(BaseModel):
+class ProducerConfig(ConfigBase):
     """Config object grouping producer configuration params."""
+
+    @staticmethod
+    def prefixes() -> list[str]:
+        return [ENV_ZENML_PRODUCER_PREFIX]
 
     send_retries: int = Field(
         default=1,
@@ -211,8 +221,12 @@ class ProducerBase(ABC):
         raise MessageSubmissionError(f"Send failed for payload {payload.id}")
 
 
-class ConsumerRuntimeConfig(BaseModel):
+class ConsumerRuntimeConfig(ConfigBase):
     """Config shared by polling and push consumers."""
+
+    @staticmethod
+    def prefixes() -> list[str]:
+        return [ENV_ZENML_CONSUMER_PREFIX]
 
     late_ack: bool = Field(
         default=True,
@@ -427,9 +441,20 @@ class ConsumerBase(ABC):
             )
         )
 
+    @abstractmethod
+    async def run(self) -> None:
+        """Starts the consumer task."""
+        pass
+
 
 class PollingConfig(ConsumerRuntimeConfig):
     """Base config class for polling consumers."""
+
+    @staticmethod
+    def prefixes() -> list[str]:
+        return ConsumerRuntimeConfig.prefixes() + [
+            ENV_ZENML_CONSUMER_POLLING_PREFIX
+        ]
 
     interval: float = Field(
         default=1.0,
@@ -450,7 +475,7 @@ class PollingConsumer(ConsumerBase, ABC):
         self,
         config: PollingConfig,
         executor: Executor,
-        event_handler: CriticalEventHandler,
+        event_handler: CriticalEventHandler | None = None,
     ) -> None:
         """Polling consumer constructor.
 
@@ -462,25 +487,16 @@ class PollingConsumer(ConsumerBase, ABC):
         super().__init__(
             config, executor=executor, event_handler=event_handler
         )
-        self._stopped = asyncio.Event()
-
-        self._task: asyncio.Task[None] | None = None
+        self._stopped: bool = False
 
         # Jitter is computed once at construction (fixed for this consumer instance).
         self._polling_interval = config.interval + random.uniform(
             -config.jitter, config.jitter
         )
 
-    def start(self) -> None:
-        """Run in the background on the current running event loop."""
-        if self._task is not None and not self._task.done():
-            return
-        self._stopped.clear()
-        self._task = asyncio.create_task(self.run())
-
     def stop(self) -> None:
         """Signal the run loop to stop."""
-        self._stopped.set()
+        self._stopped = True
 
     @property
     def polling_interval(self) -> float:
@@ -519,7 +535,7 @@ class PollingConsumer(ConsumerBase, ABC):
 
     async def run(self) -> None:
         """Run polling loop until stop() is called."""
-        while not self._stopped.is_set():
+        while not self._stopped:
             start = asyncio.get_running_loop().time()
             await self.poll_once()
 

@@ -136,6 +136,7 @@ from zenml.login.pro.utils import (
     get_troubleshooting_instructions,
 )
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -275,7 +276,6 @@ from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.triggers.registry import (
-    TRIGGER_RETURN_TYPE_UNION,
     TYPE_TO_RESPONSE_MAPPING,
 )
 from zenml.utils.networking_utils import (
@@ -2268,7 +2268,7 @@ class RestZenStore(BaseZenStore):
             snapshot_id: The ID of the snapshot.
         """
         self.put(
-            path=f"{TRIGGERS}/{trigger_id}/{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
             timeout=5,
         )
 

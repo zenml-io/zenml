@@ -20,6 +20,7 @@ import os
 import sys
 import threading
 import time
+from contextvars import ContextVar
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -89,6 +90,9 @@ _workload_manager: Optional[WorkloadManagerInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
 _memcache: Optional[MemoryCache] = None
 _request_manager: Optional[RequestManager] = None
+_auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
+    "auth_context", default=None
+)
 
 
 def zen_store() -> "SqlZenStore":
@@ -770,12 +774,19 @@ def stop_event_loop_lag_monitor() -> None:
         event_loop_lag_monitor_task = None
 
 
+def set_auth_context(auth_context: "AuthContext") -> None:
+    """Set the authentication context for the current request."""
+    _auth_context.set(auth_context)
+
+
 def get_auth_context() -> Optional["AuthContext"]:
     """Get the authentication context for the current request.
 
     Returns:
         The authentication context.
     """
+    if auth_context := _auth_context.get():
+        return auth_context
     request_context = request_manager().current_request
     return request_context.auth_context
 

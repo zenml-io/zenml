@@ -20,21 +20,22 @@ from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.session import object_session
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import TEXT, VARCHAR, String
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, desc, select
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     TriggerRequest,
     TriggerResponseMetadata,
     TriggerResponseResources,
     TriggerUpdate,
 )
 from zenml.triggers.registry import (
-    TRIGGER_RETURN_TYPE_UNION,
     TYPE_TO_RESPONSE_BODY_MAPPING,
     TYPE_TO_RESPONSE_MAPPING,
 )
@@ -46,6 +47,7 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.trigger_assoc import (
+    TriggerExecutionSchema,
     TriggerSnapshotSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -141,6 +143,30 @@ class TriggerSchema(NamedSchema, table=True):
         default=None,
         description="The next occurrence. Applicable for schedules.",
     )
+
+    @property
+    def latest_execution(self) -> TriggerExecutionSchema | None:
+        """Fetch the latest execution for this trigger.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest run for this pipeline.
+        """
+        if session := object_session(self):
+            stmt = (
+                select(TriggerExecutionSchema)
+                .where(TriggerExecutionSchema.trigger_id == self.id)
+                .order_by(desc(TriggerExecutionSchema.created_at))
+                .limit(1)
+            )
+
+            return session.execute(stmt).scalars().one_or_none()
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest run for pipeline."
+            )
 
     @classmethod
     def get_query_options(
@@ -262,6 +288,8 @@ class TriggerSchema(NamedSchema, table=True):
 
         resources = None
         if include_resources:
+            latest_execution = self.latest_execution
+
             resources = TriggerResponseResources(
                 user=self.user.to_model() if self.user else None,
                 snapshots=[
@@ -273,6 +301,9 @@ class TriggerSchema(NamedSchema, table=True):
                     )
                     for s in self.snapshots
                 ],
+                latest_run=latest_execution.pipeline_run.to_model()
+                if latest_execution
+                else None,
             )
 
         return response_cls(

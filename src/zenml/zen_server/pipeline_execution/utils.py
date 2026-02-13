@@ -72,7 +72,9 @@ from zenml.zen_server.pipeline_execution.runner_entrypoint_configuration import 
     RunnerEntrypointConfiguration,
 )
 from zenml.zen_server.utils import (
+    get_auth_context,
     server_config,
+    set_auth_context,
     snapshot_executor,
     workload_manager,
     zen_store,
@@ -144,6 +146,8 @@ def run_snapshot(
     request: PipelineSnapshotRunRequest,
     sync: bool = False,
     template_id: Optional[UUID] = None,
+    create_snapshot: bool = True,
+    implicit_auth_context: bool = True,
 ) -> PipelineRunResponse:
     """Run a pipeline from a snapshot.
 
@@ -154,6 +158,8 @@ def run_snapshot(
         sync: Whether to run the snapshot synchronously.
         template_id: The ID of the template from which to create the snapshot
             request.
+        create_snapshot: Whether to create a new, copy snapshot.
+        implicit_auth_context: Whether to create a new, implicit auth context.
 
     Raises:
         ValueError: If the snapshot can not be run.
@@ -164,6 +170,10 @@ def run_snapshot(
     Returns:
         ID of the new pipeline run.
     """
+    if not implicit_auth_context:
+        set_auth_context(auth_context)
+    logger.info("Current auth context: %s", get_auth_context())
+
     if not snapshot.runnable:
         if stack := snapshot.stack:
             validate_stack_is_runnable_from_server(

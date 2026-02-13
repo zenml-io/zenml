@@ -19,13 +19,11 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_SNAPSHOTS, TRIGGERS, VERSION_1
 from zenml.models import (
-    Page,
-    TriggerFilter,
-)
-from zenml.triggers.registry import (
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
     TRIGGER_UPDATE_TYPE_UNION,
+    Page,
+    TriggerFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -184,7 +182,7 @@ def delete_trigger(
 
 
 @router.put(
-    "/{trigger_id}}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
+    "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -216,7 +214,7 @@ def attach_trigger_to_snapshot(
 
 
 @router.delete(
-    "/{trigger_id}}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
+    "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper

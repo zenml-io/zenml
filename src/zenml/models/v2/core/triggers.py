@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -32,7 +33,11 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse, UserResponse
+    from zenml.models import (
+        PipelineRunResponse,
+        PipelineSnapshotResponse,
+        UserResponse,
+    )
 
 
 class TriggerBase(BaseModel, ABC):
@@ -120,16 +125,43 @@ class TriggerResponseResources(ProjectScopedResponseResources):
 
     snapshots: Optional[list["PipelineSnapshotResponse"]] = None
     user: Optional["UserResponse"] = None
+    latest_run: Optional["PipelineRunResponse"] = None
 
 
-class TriggerFilter(ProjectScopedFilter):
+class NonScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
 
-    name: str
-    active: bool
-    is_archived: bool
-    flavor: TriggerFlavor
-    type: TriggerType
+    name: str | None = Field(
+        default=None,
+        description="The name of the trigger.",
+    )
+    active: bool | None = Field(
+        default=None,
+        description="Whether the trigger should be active.",
+    )
+    is_archived: bool = Field(
+        default=False,
+        description="Whether the trigger should be archived.",
+    )
+    flavor: TriggerFlavor | None = Field(
+        default=None,
+        description="The trigger flavor.",
+    )
+    type: TriggerType | None = Field(
+        default=None,
+        description="The trigger type.",
+    )
+    next_occurrence: datetime | str | None = Field(
+        default=None,
+        description="The next occurrence of the trigger (applicable only for schedules).",
+        union_mode="left_to_right",
+    )
+
+
+class TriggerFilter(NonScopedTriggerFilter, ProjectScopedFilter):
+    """Public class for filtering triggers."""
+
+    pass
 
 
 class ScheduleTrigger(BaseModel):
@@ -273,6 +305,7 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
     flavor: Literal[TriggerFlavor.NATIVE_SCHEDULE] = (
         TriggerFlavor.NATIVE_SCHEDULE
     )
+    next_occurrence: datetime | None = None
 
     def get_config(self) -> str:
         """Returns the serialized blob of custom trigger fields.
@@ -294,10 +327,15 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
             self.interval,
         ]
 
-        if (
-            any(field is not None for field in occurrence_altering_values)
-            and self.flavor == TriggerFlavor.NATIVE_SCHEDULE
-        ):
+        if not self.flavor == TriggerFlavor.NATIVE_SCHEDULE:
+            return {}
+
+        if self.next_occurrence is not None:
+            return {
+                "next_occurrence": self.next_occurrence,
+            }
+
+        if any(field is not None for field in occurrence_altering_values):
             from zenml.utils.native_schedules import calculate_first_occurrence
 
             return {
@@ -308,6 +346,7 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
                     run_once_start_time=self.run_once_start_time,
                 )
             }
+
         return {}
 
 
@@ -441,3 +480,17 @@ class ScheduleTriggerResponse(
             A list of snapshots the triggers is attached to.
         """
         return self.get_resources().snapshots
+
+    @property
+    def latest_run(self) -> Optional["PipelineRunResponse"]:
+        """Implements the 'latest_run' property.
+
+        Returns:
+            The latest run of the trigger.
+        """
+        return self.get_resources().latest_run
+
+
+TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate
+TRIGGER_CREATE_TYPE_UNION = ScheduleTriggerRequest
+TRIGGER_RETURN_TYPE_UNION = ScheduleTriggerResponse

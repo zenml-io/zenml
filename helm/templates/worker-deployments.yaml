@@ -1,0 +1,284 @@
+{{- range $name, $worker := .Values.workerDeployments }}
+{{- if or (not (hasKey $worker "enabled")) $worker.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zenml.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "zenml.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  {{- if and $worker.autoscaling $worker.autoscaling.enabled }}
+  {{- else }}
+  replicas: {{ $worker.replicaCount | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zenml.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $name }}
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/server-secret.yaml") $ | sha256sum }}
+        {{- if $worker.secretEnvironment }}
+        checksum/worker-secret: {{ $worker.secretEnvironment | toJson | sha256sum }}
+        {{- end }}
+      {{- with $.Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "zenml.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $name }}
+    spec:
+      {{- if or $.Values.zenml.certificates.customCAs $.Values.zenml.certificates.secretRefs }}
+      initContainers:
+        - name: update-ca-certificates
+          image: "{{ $.Values.zenml.image.repository }}:{{ $.Values.zenml.image.tag | default $.Chart.Version }}"
+          imagePullPolicy: {{ $.Values.zenml.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Copy the system CA bundle
+              cp /etc/ssl/certs/ca-certificates.crt /updated-certs/ca-certificates.crt
+              # Append all custom certificates
+              for cert in /custom-certs/*.crt; do
+                if [ -f "$cert" ]; then
+                  cat "$cert" >> /updated-certs/ca-certificates.crt
+                fi
+              done
+          volumeMounts:
+            - name: custom-certs
+              mountPath: /custom-certs
+              readOnly: true
+            - name: ca-certificates
+              mountPath: /updated-certs
+      {{- end }}
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "zenml.serviceAccountName" $ }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: zenml-config
+        {{- if and $.Values.zenml.database.persistence.enabled (not $.Values.zenml.database.url) }}
+          persistentVolumeClaim:
+            claimName: {{ include "zenml.fullname" $ }}-config
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+      {{- if or $.Values.zenml.certificates.customCAs $.Values.zenml.certificates.secretRefs }}
+        - name: custom-certs
+          projected:
+            sources:
+            {{- range $.Values.zenml.certificates.customCAs }}
+            - secret:
+                name: {{ include "zenml.fullname" $ }}-custom-ca-{{ .name }}
+                items:
+                  - key: certificate
+                    path: {{ .name }}.crt
+            {{- end }}
+            {{- range $.Values.zenml.certificates.secretRefs }}
+            - secret:
+                name: {{ .name }}
+                items:
+                  - key: {{ .key }}
+                    path: {{ .name }}.crt
+            {{- end }}
+        - name: ca-certificates
+          emptyDir: {}
+      {{- end }}
+      {{- if or (and $.Values.zenml.database.sslCa $.Values.zenml.database.sslCa.secretRef) (and $.Values.zenml.database.sslCert $.Values.zenml.database.sslCert.secretRef) (and $.Values.zenml.database.sslKey $.Values.zenml.database.sslKey.secretRef) }}
+        - name: db-certs
+          projected:
+            sources:
+              {{- if and $.Values.zenml.database.sslCa $.Values.zenml.database.sslCa.secretRef }}
+              - secret:
+                  name: {{ $.Values.zenml.database.sslCa.secretRef.name }}
+                  items:
+                    - key: {{ $.Values.zenml.database.sslCa.secretRef.key }}
+                      path: {{ $.Values.zenml.database.sslCa.secretRef.key }}
+              {{- end }}
+              {{- if and $.Values.zenml.database.sslCert $.Values.zenml.database.sslCert.secretRef }}
+              - secret:
+                  name: {{ $.Values.zenml.database.sslCert.secretRef.name }}
+                  items:
+                    - key: {{ $.Values.zenml.database.sslCert.secretRef.key }}
+                      path: {{ $.Values.zenml.database.sslCert.secretRef.key }}
+              {{- end }}
+              {{- if and $.Values.zenml.database.sslKey $.Values.zenml.database.sslKey.secretRef }}
+              - secret:
+                  name: {{ $.Values.zenml.database.sslKey.secretRef.name }}
+                  items:
+                    - key: {{ $.Values.zenml.database.sslKey.secretRef.key }}
+                      path: {{ $.Values.zenml.database.sslKey.secretRef.key }}
+              {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ $name }}
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          {{- if $worker.image }}
+          image: "{{ $worker.image.repository | default $.Values.zenml.image.repository }}:{{ $worker.image.tag | default $.Values.zenml.image.tag | default $.Chart.Version }}"
+          imagePullPolicy: {{ $worker.image.pullPolicy | default $.Values.zenml.image.pullPolicy }}
+          {{- else }}
+          image: "{{ $.Values.zenml.image.repository }}:{{ $.Values.zenml.image.tag | default $.Chart.Version }}"
+          imagePullPolicy: {{ $.Values.zenml.image.pullPolicy }}
+          {{- end }}
+          {{- if $worker.command }}
+          command:
+            {{- toYaml $worker.command | nindent 12 }}
+          {{- end }}
+          {{- if $worker.args }}
+          args:
+            {{- toYaml $worker.args | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: zenml-config
+              mountPath: /zenml/.zenconfig
+          {{- if or $.Values.zenml.certificates.customCAs $.Values.zenml.certificates.secretRefs }}
+            - name: ca-certificates
+              mountPath: /updated-certs
+              readOnly: true
+          {{- end }}
+          {{- if or (and $.Values.zenml.database.sslCa $.Values.zenml.database.sslCa.secretRef) (and $.Values.zenml.database.sslCert $.Values.zenml.database.sslCert.secretRef) (and $.Values.zenml.database.sslKey $.Values.zenml.database.sslKey.secretRef) }}
+            - name: db-certs
+              mountPath: /dbcerts
+              readOnly: true
+          {{- end }}
+          env:
+          {{- if or $.Values.zenml.certificates.customCAs $.Values.zenml.certificates.secretRefs }}
+            - name: REQUESTS_CA_BUNDLE
+              value: /updated-certs/ca-certificates.crt
+            - name: SSL_CERT_FILE
+              value: /updated-certs/ca-certificates.crt
+          {{- end }}
+            - name: NODE_OPTIONS
+              value: --use-openssl-ca
+            {{- if $.Values.zenml.debug }}
+            - name: ZENML_LOGGING_VERBOSITY
+              value: "DEBUG"
+            {{- end }}
+            {{- if $.Values.zenml.analyticsOptIn }}
+            - name: ZENML_ANALYTICS_OPT_IN
+              value: "True"
+            {{- else if not $.Values.zenml.analyticsOptIn }}
+            - name: ZENML_ANALYTICS_OPT_IN
+              value: "False"
+            {{- end }}
+            - name: ZENML_DEFAULT_PROJECT_NAME
+              value: {{ $.Values.zenml.defaultProject | quote }}
+            {{- if $.Values.zenml.enableImplicitAuthMethods }}
+            - name: ZENML_ENABLE_IMPLICIT_AUTH_METHODS
+              value: "True"
+            {{- end }}
+            {{- if $.Values.zenml.database.url }}
+            - name: DISABLE_DATABASE_MIGRATION
+              value: "True"
+            {{- end }}
+
+            {{- range $k, $v := include "zenml.storeEnvVariables" $ | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := include "zenml.serverEnvVariables" $ | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := include "zenml.secretsStoreEnvVariables" $ | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := include "zenml.backupSecretsStoreEnvVariables" $ | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- if $.Values.zenml.proxy.enabled }}
+            - name: HTTP_PROXY
+              value: {{ $.Values.zenml.proxy.httpProxy | quote }}
+            - name: HTTPS_PROXY
+              value: {{ $.Values.zenml.proxy.httpsProxy | quote }}
+            - name: NO_PROXY
+              value: {{ include "zenml.noProxyList" $ | quote }}
+            - name: http_proxy
+              value: {{ $.Values.zenml.proxy.httpProxy | quote }}
+            - name: https_proxy
+              value: {{ $.Values.zenml.proxy.httpsProxy | quote }}
+            - name: no_proxy
+              value: {{ include "zenml.noProxyList" $ | quote }}
+            {{- end }}
+            {{- if and $.Values.zenml.database.url $.Values.zenml.database.passwordSecretRef }}
+            - name: ZENML_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.zenml.database.passwordSecretRef.name }}
+                  key: {{ $.Values.zenml.database.passwordSecretRef.key }}
+            {{- end }}
+            {{- if $.Values.zenml.environment }}
+            {{- range $key, $value := $.Values.zenml.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if $worker.environment }}
+            {{- range $key, $value := $worker.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          envFrom:
+          - secretRef:
+              name: {{ include "zenml.fullname" $ }}
+          {{- if $worker.secretEnvironment }}
+          - secretRef:
+              name: {{ include "zenml.fullname" $ }}-worker-{{ $name }}
+          {{- end }}
+          {{- if $worker.ports }}
+          ports:
+            {{- toYaml $worker.ports | nindent 12 }}
+          {{- end }}
+          {{- if $worker.livenessProbe }}
+          livenessProbe:
+            {{- toYaml $worker.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if $worker.readinessProbe }}
+          readinessProbe:
+            {{- toYaml $worker.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- if $worker.resources }}
+            {{- toYaml $worker.resources | nindent 12 }}
+            {{- else }}
+            {{- toYaml $.Values.resources | nindent 12 }}
+            {{- end }}
+      {{- if $worker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml $worker.nodeSelector | nindent 8 }}
+      {{- else }}
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- if $worker.affinity }}
+      affinity:
+        {{- toYaml $worker.affinity | nindent 8 }}
+      {{- else }}
+      {{- with $.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- if $worker.tolerations }}
+      tolerations:
+        {{- toYaml $worker.tolerations | nindent 8 }}
+      {{- else }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+{{- end }}
+{{- end }}

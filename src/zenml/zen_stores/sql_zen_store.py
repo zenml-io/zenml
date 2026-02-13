@@ -176,6 +176,7 @@ from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyInternalResponse,
     APIKeyInternalUpdate,
@@ -338,7 +339,6 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
-from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
 from zenml.utils import source_utils, tag_utils, uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -419,6 +419,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+    from zenml.models.v2.core.triggers import NonScopedTriggerFilter
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -7004,13 +7005,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=trigger, session=session)
-
             self._verify_name_uniqueness(
                 resource=trigger,
                 schema=TriggerSchema,
                 session=session,
             )
-
             new_trigger = TriggerSchema.from_request(trigger_request=trigger)
             session.add(new_trigger)
             session.commit()
@@ -7042,6 +7041,30 @@ class SqlZenStore(BaseZenStore):
             )
             return trigger.to_model(
                 include_metadata=hydrate, include_resources=True
+            )
+
+    def list_triggers_unscoped(
+        self,
+        triggers_filter_model: "NonScopedTriggerFilter",
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List triggers across projects.
+
+        Args:
+            triggers_filter_model: An unscoped trigger filter instance.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TriggerSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerSchema,
+                filter_model=triggers_filter_model,
+                hydrate=hydrate,
             )
 
     def list_triggers(
