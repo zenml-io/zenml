@@ -304,7 +304,26 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         mlflow.set_tracking_uri("")
 
     def configure_mlflow(self) -> None:
-        """Configures the MLflow tracking URI and any additional credentials."""
+        """Configures the MLflow tracking URI and any additional credentials.
+
+        Clears any pre-existing MLflow environment variables first to
+        prevent conflicts with orchestrator-injected values (e.g. AzureML
+        sets MLFLOW_TRACKING_TOKEN and MLFLOW_RUN_ID which can interfere
+        with ZenML's own credentials).
+        """
+        # Clear MLflow env vars that may have been injected by the
+        # orchestrator environment before we set ZenML's own values.
+        for var in [
+            MLFLOW_TRACKING_URI,
+            MLFLOW_TRACKING_USERNAME,
+            MLFLOW_TRACKING_PASSWORD,
+            MLFLOW_TRACKING_TOKEN,
+            MLFLOW_TRACKING_INSECURE_TLS,
+            "MLFLOW_EXPERIMENT_ID",
+            "MLFLOW_RUN_ID",
+        ]:
+            os.environ.pop(var, None)
+
         tracking_uri = self.get_tracking_uri()
         mlflow.set_tracking_uri(tracking_uri)
 
