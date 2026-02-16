@@ -1,0 +1,48 @@
+# Hydra configuration for Optuna sweep pipeline
+# Override from CLI: python run_hydra.py sweep.n_trials=10 search_space.learning_rate_init.high=0.5
+
+sweep:
+  study_name: fashion_mnist_sweep
+  storage_url: "sqlite:///optuna_study.db"
+  mode: simple  # Options: simple, adaptive
+
+  # Simple mode settings
+  n_trials: 5
+
+  # Adaptive mode settings
+  n_rounds: 3
+  trials_per_round: 3
+
+  # Common settings
+  max_iter: 100
+
+# ZenML pipeline configuration
+zenml_config:
+  enable_cache: true  # Set to false to disable caching
+
+# Search space configuration
+# This shows how Hydra can manage hyperparameter ranges
+# while ZenML handles orchestration
+search_space:
+  learning_rate_init:
+    low: 1e-4
+    high: 1e-1
+    log: true
+  alpha:
+    low: 1e-5
+    high: 1e-1
+    log: true
+  hidden_layer_sizes:
+    choices: [[64], [128], [64, 32], [128, 64]]
+
+# Model configuration (extensible for real use cases)
+model:
+  architecture: MLPClassifier
+  num_classes: 10
+
+# Data configuration
+data:
+  dataset: FashionMNIST
+  train_split: 0.8
+  val_split: 0.2
+  seed: 42

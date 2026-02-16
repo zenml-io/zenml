@@ -1,0 +1,8 @@
+zenml[server]>=0.93.1
+optuna>=3.0.0
+scikit-learn>=1.3.0
+
+# Optional: Hydra integration
+# Uncomment to enable run_hydra.py entry point
+hydra-core>=1.3.0
+omegaconf>=2.3.0
