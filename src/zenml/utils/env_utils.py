@@ -409,4 +409,4 @@ class ConfigBase(BaseModel, ABC):
         logger.info(
             f"Config identified the following variables: {list(env_vars.keys())}"
         )
-        return  cls.__call__(**env_vars)
+        return cls.__call__(**env_vars)

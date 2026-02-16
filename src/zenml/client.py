@@ -26,6 +26,7 @@ from typing import (
     Dict,
     Generator,
     List,
+    Literal,
     Mapping,
     Optional,
     Sequence,
@@ -189,6 +190,7 @@ from zenml.models import (
     TagResourceRequest,
     TagResponse,
     TagUpdate,
+    TriggerFilter,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -3937,13 +3939,13 @@ class Client(metaclass=ClientMetaClass):
             trigger_id=trigger_id,
             trigger_update=ScheduleTriggerUpdate(
                 name=name or trigger.name,
-                active=active is not None or trigger.active,
+                active=active if active is not None else trigger.active,
                 cron_expression=cron_expression or trigger.cron_expression,
                 interval=interval or trigger.interval,
                 run_once_start_time=run_once_start_time
                 or trigger.run_once_start_time,
-                start_time=start_time is not None or trigger.start_time,
-                end_time=end_time is not None or trigger.end_time,
+                start_time=start_time if start_time is not None else trigger.start_time,
+                end_time=end_time if end_time is not None else trigger.end_time,
             ),
         )
 
@@ -3959,6 +3961,66 @@ class Client(metaclass=ClientMetaClass):
             The trigger response.
         """
         return self.zen_store.get_trigger(trigger_id=trigger_id)
+
+    def list_schedule_triggers(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        user: str | UUID | None = None,
+        project: UUID | str | None = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        active: bool | None = None,
+        is_archived: bool = False,
+        flavor: TriggerFlavor = TriggerFlavor.NATIVE_SCHEDULE,
+        type: Literal[TriggerType.SCHEDULE] = TriggerType.SCHEDULE,
+        next_occurrence: datetime | None = None,
+    ) -> Page[ScheduleTriggerResponse]:
+        """List schedule triggers.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            project: The project name/ID to filter by.
+            user: Filter by user name/ID.
+            id: Use the id of schedule to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the schedule.
+            active: The active status of the schedule.
+            is_archived: The archived status of the schedule.
+            flavor: The flavor of the schedule.
+            type: The type of schedule.
+            next_occurrence: The next occurrence of the schedule.
+
+        Returns:
+            A Page of ScheduleTriggerResponse objects.
+        """
+        return self.zen_store.list_triggers(
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                user=user or self.active_user.id,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                active=active,
+                is_archived=is_archived,
+                flavor=flavor,
+                type=type,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                next_occurrence=next_occurrence,
+            )
+        )
 
     def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
         """Delete a trigger by ID.
