@@ -2236,7 +2236,7 @@ class RestZenStore(BaseZenStore):
             ValueError: In case of bad response.
         """
         body: dict[str, Any] = self.put(  # type: ignore[assignment]
-            f"TRIGGERS/{trigger_id}", body=trigger_update, params=None
+            f"{TRIGGERS}/{trigger_id}", body=trigger_update, params=None
         )
 
         try:
