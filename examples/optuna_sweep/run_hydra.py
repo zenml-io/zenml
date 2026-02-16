@@ -90,6 +90,7 @@ def main() -> None:
     print("\n🚀 Running sweep pipeline with Hydra config")
     print(f"   Study: {sweep_config['study_name']}")
     print(f"   Storage: {sweep_config['storage_url']}")
+    print("   Framework: PyTorch Lightning")
     print(f"   Mode: {mode}")
     print(f"   Cache: {'enabled' if enable_cache else 'disabled'}")
 

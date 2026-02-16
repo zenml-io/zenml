@@ -15,49 +15,104 @@
 # limitations under the License.
 """Step to retrain and save the best model from hyperparameter sweep."""
 
-from typing import Annotated, Any, Dict, List
+import warnings
+from typing import Annotated, Any, Dict
 
-import numpy as np
-from sklearn.datasets import fetch_openml
-from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler
+import torch
+from lightning import LightningModule, Trainer
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms
+from torchvision.datasets import FashionMNIST
 
-from zenml import log_metadata, log_model_metadata, step
+from zenml import log_metadata, step
 from zenml.config import ResourceSettings
+
+# Suppress Lightning warnings about num_workers (intentionally 0 for Mac compatibility)
+warnings.filterwarnings("ignore", message=".*does not have many workers.*")
+
+
+class FashionMNISTClassifier(LightningModule):
+    """Simple CNN for FashionMNIST classification."""
+
+    def __init__(self, learning_rate: float, hidden_dim: int):
+        super().__init__()
+        self.save_hyperparameters()
+        self.learning_rate = learning_rate
+
+        self.model = torch.nn.Sequential(
+            torch.nn.Conv2d(1, hidden_dim, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2),
+            torch.nn.Conv2d(
+                hidden_dim, hidden_dim * 2, kernel_size=3, padding=1
+            ),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2),
+            torch.nn.Flatten(),
+            torch.nn.Linear(hidden_dim * 2 * 7 * 7, 64),  # Smaller FC layer
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.2),
+            torch.nn.Linear(64, 10),
+        )
+        self.loss_fn = torch.nn.CrossEntropyLoss()
+
+    def forward(self, x):
+        return self.model(x)
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.loss_fn(logits, y)
+        acc = (logits.argmax(1) == y).float().mean()
+        self.log("train_loss", loss, prog_bar=True)
+        self.log("train_acc", acc, prog_bar=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.loss_fn(logits, y)
+        acc = (logits.argmax(1) == y).float().mean()
+        self.log("val_loss", loss, prog_bar=True)
+        self.log("val_acc", acc, prog_bar=True)
+        return {"val_loss": loss, "val_acc": acc}
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
 
 @step(
     settings={
         "resources": ResourceSettings(
             cpu_count=2,
+            gpu_count=0,  # Set to 1 for GPU training
             memory="4GB",
         )
     }
 )
 def retrain_best_model(
     sweep_summary: Dict[str, Any],
-    max_iter: int = 200,
-) -> Annotated[MLPClassifier, "best_model"]:
+    max_iter: int = 20,
+) -> Annotated[Any, "best_model"]:
     """Retrain the best model from hyperparameter sweep for production.
 
     This step identifies the best trial from the sweep results, then
-    retrains a model with those hyperparameters using more iterations
+    retrains a model with those hyperparameters using more epochs
     for better convergence. The final model is saved as a ZenML artifact.
 
     Args:
         sweep_summary: Summary from report_results containing best_params
-        max_iter: Maximum training iterations for final model (default: 200,
+        max_iter: Maximum training epochs for final model (default: 200,
             higher than sweep trials for better convergence)
 
     Returns:
-        Trained MLPClassifier model with best hyperparameters, ready for
+        Trained Lightning model with best hyperparameters, ready for
         production use
 
     Example:
-        >>> summary = {"best_params": {"learning_rate_init": 0.001, ...}}
+        >>> summary = {"best_params": {"learning_rate": 0.001, ...}}
         >>> model = retrain_best_model(summary, max_iter=200)
-        >>> # Model is automatically saved as ZenML artifact
     """
     best_params = sweep_summary["best_params"]
     best_val_loss = sweep_summary["best_val_loss"]
@@ -69,68 +124,82 @@ def retrain_best_model(
     print("   Hyperparameters:")
     for key, value in best_params.items():
         print(f"      {key}: {value}")
-    print(f"   Training for {max_iter} iterations (more than sweep trials)")
+    print(f"   Training for {max_iter} epochs (more than sweep trials)")
 
     # Extract hyperparameters
-    learning_rate_init = best_params["learning_rate_init"]
-    alpha = best_params["alpha"]
+    learning_rate = best_params["learning_rate"]
+    batch_size = best_params["batch_size"]
+    hidden_dim = best_params["hidden_dim"]
 
-    # Convert hidden_layer_sizes string back to tuple if needed
-    hidden_layer_sizes = best_params["hidden_layer_sizes"]
-    if isinstance(hidden_layer_sizes, str):
-        hidden_layer_sizes = tuple(map(int, hidden_layer_sizes.split(",")))
-    elif isinstance(hidden_layer_sizes, list):
-        hidden_layer_sizes = tuple(hidden_layer_sizes)
-
-    # Load FashionMNIST dataset (same as training trials)
+    # Load FashionMNIST dataset
     print("   Loading FashionMNIST dataset...")
-    X, y = fetch_openml(
-        "Fashion-MNIST", version=1, parser="auto", return_X_y=True
+    transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
     )
 
-    # Convert to numpy arrays and normalize
-    X = np.array(X, dtype=np.float32) / 255.0
-    y = np.array(y, dtype=np.int32)
-
-    # Split into train and validation sets (same split as trials)
-    X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+    full_dataset = FashionMNIST(
+        root="/tmp/data", train=True, download=True, transform=transform
     )
 
-    # Standardize features
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_val = scaler.transform(X_val)
+    train_size = int(0.8 * len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    train_dataset, val_dataset = random_split(
+        full_dataset,
+        [train_size, val_size],
+        generator=torch.Generator().manual_seed(42),
+    )
 
-    print(f"   Train samples: {len(X_train)}, Val samples: {len(X_val)}")
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=0
+    )
+    val_loader = DataLoader(
+        val_dataset, batch_size=256, shuffle=False, num_workers=0
+    )
+
+    print(
+        f"   Train samples: {len(train_dataset)}, Val samples: {len(val_dataset)}"
+    )
 
     # Build model with best hyperparameters
-    model = MLPClassifier(
-        hidden_layer_sizes=hidden_layer_sizes,
-        learning_rate_init=learning_rate_init,
-        alpha=alpha,
-        max_iter=max_iter,  # More iterations for production model
-        random_state=42,
-        verbose=False,
-        early_stopping=True,  # Enable early stopping for production
-        validation_fraction=0.1,
-        n_iter_no_change=15,  # More patience for production
+    model = FashionMNISTClassifier(
+        learning_rate=learning_rate,
+        hidden_dim=hidden_dim,
+    )
+
+    # Configure trainer with early stopping for production
+    trainer = Trainer(
+        max_epochs=max_iter,
+        accelerator="cpu",  # Use CPU (MPS can hang on Mac)
+        devices=1,
+        callbacks=[
+            EarlyStopping(
+                monitor="val_loss",
+                patience=15,  # More patience for production
+                mode="min",
+            ),
+            ModelCheckpoint(
+                monitor="val_loss",
+                mode="min",
+                save_top_k=1,
+            ),
+        ],
+        enable_progress_bar=False,
+        logger=False,
+        deterministic=True,
     )
 
     # Train the production model
-    print(f"   Training production model (up to {max_iter} iterations)...")
-    model.fit(X_train, y_train)
+    print(f"   Training production model (up to {max_iter} epochs)...")
+    trainer.fit(model, train_loader, val_loader)
 
-    # Evaluate on validation set
-    val_score = model.score(X_val, y_val)
-    val_accuracy = val_score * 100
-    val_loss = 1.0 - val_score
+    # Get final metrics
+    val_loss = float(trainer.callback_metrics.get("val_loss", 0.0))
+    val_accuracy = float(trainer.callback_metrics.get("val_acc", 0.0)) * 100
+    train_accuracy = (
+        float(trainer.callback_metrics.get("train_acc", 0.0)) * 100
+    )
 
-    # Also evaluate on training set for completeness
-    train_score = model.score(X_train, y_train)
-    train_accuracy = train_score * 100
-
-    print(f"   Training iterations: {model.n_iter_}")
+    print(f"   Training epochs: {trainer.current_epoch + 1}")
     print(
         f"   Final validation: loss={val_loss:.4f}, accuracy={val_accuracy:.2f}%"
     )
@@ -138,7 +207,6 @@ def retrain_best_model(
     print("✅ Production model trained and ready\n")
 
     # Log metadata on the model artifact
-    # This makes the model queryable in the dashboard
     log_metadata(
         metadata={
             "source": "hyperparameter_sweep",
@@ -146,23 +214,23 @@ def retrain_best_model(
             "val_loss": val_loss,
             "val_accuracy": val_accuracy,
             "train_accuracy": train_accuracy,
-            "learning_rate_init": learning_rate_init,
-            "alpha": alpha,
-            "hidden_layer_sizes": str(hidden_layer_sizes),
-            "n_iterations": model.n_iter_,
-            "max_iter": max_iter,
-            "converged": model.n_iter_ < max_iter,
+            "learning_rate": learning_rate,
+            "batch_size": batch_size,
+            "hidden_dim": hidden_dim,
+            "n_epochs": trainer.current_epoch + 1,
+            "max_epochs": max_iter,
+            "converged": trainer.current_epoch + 1 < max_iter,
         },
         infer_artifact=True,
     )
 
-    # Also log as metadata
+    # Also log as step metadata
     log_metadata(
         metadata={
             "hyperparameters": {
-                "learning_rate_init": learning_rate_init,
-                "alpha": alpha,
-                "hidden_layer_sizes": str(hidden_layer_sizes),
+                "learning_rate": learning_rate,
+                "batch_size": batch_size,
+                "hidden_dim": hidden_dim,
             },
             "metrics": {
                 "val_loss": val_loss,
@@ -170,9 +238,9 @@ def retrain_best_model(
                 "train_accuracy": train_accuracy,
             },
             "training": {
-                "n_iterations": model.n_iter_,
-                "max_iter": max_iter,
-                "converged": model.n_iter_ < max_iter,
+                "n_epochs": trainer.current_epoch + 1,
+                "max_epochs": max_iter,
+                "converged": trainer.current_epoch + 1 < max_iter,
             },
         }
     )

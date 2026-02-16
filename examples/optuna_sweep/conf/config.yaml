@@ -14,7 +14,7 @@ sweep:
   trials_per_round: 3
 
   # Common settings
-  max_iter: 100
+  max_iter: 10  # Reduced for faster testing on CPU
 
 # ZenML pipeline configuration
 zenml_config:
@@ -24,21 +24,20 @@ zenml_config:
 # This shows how Hydra can manage hyperparameter ranges
 # while ZenML handles orchestration
 search_space:
-  learning_rate_init:
+  learning_rate:
     low: 1e-4
-    high: 1e-1
+    high: 1e-2
     log: true
-  alpha:
-    low: 1e-5
-    high: 1e-1
-    log: true
-  hidden_layer_sizes:
-    choices: [[64], [128], [64, 32], [128, 64]]
+  batch_size:
+    choices: [64, 128]  # Smaller batches for CPU training
+  hidden_dim:
+    choices: [8, 16, 32]  # Fewer filters to reduce model size
 
 # Model configuration (extensible for real use cases)
 model:
-  architecture: MLPClassifier
+  architecture: CNN
   num_classes: 10
+  framework: PyTorch Lightning
 
 # Data configuration
 data:

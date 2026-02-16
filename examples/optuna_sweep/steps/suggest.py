@@ -51,9 +51,9 @@ def suggest_trials(
         search_space: Optional search space configuration (defaults to
             standard ranges if not provided). Expected format:
             {
-                "learning_rate_init": {"low": 1e-4, "high": 1e-1, "log": True},
-                "alpha": {"low": 1e-5, "high": 1e-1, "log": True},
-                "hidden_layer_sizes": {"choices": [(64,), (128,), (64, 32), (128, 64)]}
+                "learning_rate": {"low": 1e-4, "high": 1e-2, "log": True},
+                "batch_size": {"choices": [32, 64, 128, 256]},
+                "hidden_dim": {"choices": [16, 32, 64, 128]}
             }
         previous_summary: Optional summary from previous round (used for DAG
             visualization to connect rounds). Not used in logic - Optuna's
@@ -62,14 +62,14 @@ def suggest_trials(
     Returns:
         List of trial configurations, each containing:
         - trial_number: Optuna trial number for reporting
-        - learning_rate_init: Initial learning rate
-        - alpha: L2 regularization parameter
-        - hidden_layer_sizes: Tuple defining hidden layer architecture
+        - learning_rate: Learning rate for optimizer
+        - batch_size: Training batch size
+        - hidden_dim: Number of filters in conv layers
 
     Example:
         >>> configs = suggest_trials("my_study", "sqlite:///optuna.db", n_trials=3)
         >>> print(configs[0])
-        {'trial_number': 0, 'learning_rate_init': 0.001, 'alpha': 0.0001, 'hidden_layer_sizes': (128,)}
+        {'trial_number': 0, 'learning_rate': 0.001, 'batch_size': 64, 'hidden_dim': 32}
     """
     # Load or create study
     study = optuna.create_study(
@@ -86,13 +86,12 @@ def suggest_trials(
     print(f"   Existing trials: {len(study.trials)}")
 
     # Use search space config if provided, otherwise use defaults
+    # Lightweight defaults for CPU training
     if search_space is None:
         search_space = {
-            "learning_rate_init": {"low": 1e-4, "high": 1e-1, "log": True},
-            "alpha": {"low": 1e-5, "high": 1e-1, "log": True},
-            "hidden_layer_sizes": {
-                "choices": [(64,), (128,), (64, 32), (128, 64)]
-            },
+            "learning_rate": {"low": 1e-4, "high": 1e-2, "log": True},
+            "batch_size": {"choices": [64, 128]},  # Smaller batches for CPU
+            "hidden_dim": {"choices": [8, 16, 32]},  # Fewer filters
         }
 
     trial_configs = []
@@ -102,56 +101,37 @@ def suggest_trials(
         trial = study.ask()
 
         # Suggest hyperparameters based on search space
-        learning_rate_config = search_space["learning_rate_init"]
-        learning_rate_init = trial.suggest_float(
-            "learning_rate_init",
+        learning_rate_config = search_space["learning_rate"]
+        learning_rate = trial.suggest_float(
+            "learning_rate",
             learning_rate_config["low"],
             learning_rate_config["high"],
             log=learning_rate_config.get("log", False),
         )
 
-        alpha_config = search_space["alpha"]
-        alpha = trial.suggest_float(
-            "alpha",
-            alpha_config["low"],
-            alpha_config["high"],
-            log=alpha_config.get("log", False),
+        batch_size_config = search_space["batch_size"]
+        batch_size = trial.suggest_categorical(
+            "batch_size",
+            batch_size_config["choices"],
         )
 
-        hidden_layer_sizes_config = search_space["hidden_layer_sizes"]
-        # Convert list/tuple choices to strings for Optuna storage
-        # Optuna categorical distributions only accept primitive types
-        choices = hidden_layer_sizes_config["choices"]
-        if choices and isinstance(choices[0], (list, tuple)):
-            # Convert to strings: (64,) -> "64", (128, 64) -> "128,64"
-            string_choices = [
-                ",".join(map(str, c))
-                if isinstance(c, (list, tuple))
-                else str(c)
-                for c in choices
-            ]
-        else:
-            string_choices = [str(c) for c in choices]
-
-        hidden_layer_sizes_str = trial.suggest_categorical(
-            "hidden_layer_sizes",
-            string_choices,
+        hidden_dim_config = search_space["hidden_dim"]
+        hidden_dim = trial.suggest_categorical(
+            "hidden_dim",
+            hidden_dim_config["choices"],
         )
-
-        # Convert back to tuple: "128,64" -> (128, 64)
-        hidden_layer_sizes = tuple(map(int, hidden_layer_sizes_str.split(",")))
 
         config = {
             "trial_number": trial.number,
-            "learning_rate_init": learning_rate_init,
-            "alpha": alpha,
-            "hidden_layer_sizes": hidden_layer_sizes,
+            "learning_rate": learning_rate,
+            "batch_size": batch_size,
+            "hidden_dim": hidden_dim,
         }
         trial_configs.append(config)
 
         print(
-            f"   Trial {trial.number}: learning_rate_init={learning_rate_init:.6f}, "
-            f"alpha={alpha:.6f}, hidden_layer_sizes={hidden_layer_sizes}"
+            f"   Trial {trial.number}: learning_rate={learning_rate:.6f}, "
+            f"batch_size={batch_size}, hidden_dim={hidden_dim}"
         )
 
     print(f"✅ Generated {len(trial_configs)} trial configurations")

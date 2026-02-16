@@ -13,122 +13,189 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Training step for individual Optuna trials."""
+"""Training step for individual Optuna trials using PyTorch Lightning."""
 
+import warnings
 from typing import Annotated, Any, Dict
 
-import numpy as np
-from sklearn.datasets import fetch_openml
-from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler
+import torch
+from lightning import LightningModule, Trainer
+from lightning.pytorch.callbacks import EarlyStopping
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms
+from torchvision.datasets import FashionMNIST
 
 from zenml import log_metadata, step
 from zenml.config import ResourceSettings
+
+# Suppress Lightning warnings about num_workers (intentionally 0 for Mac compatibility)
+warnings.filterwarnings("ignore", message=".*does not have many workers.*")
+
+
+class FashionMNISTClassifier(LightningModule):
+    """Simple CNN for FashionMNIST classification."""
+
+    def __init__(self, learning_rate: float, hidden_dim: int):
+        super().__init__()
+        self.save_hyperparameters()
+        self.learning_rate = learning_rate
+
+        # Lightweight CNN architecture for CPU training
+        self.model = torch.nn.Sequential(
+            # Input: 1x28x28
+            torch.nn.Conv2d(1, hidden_dim, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2),  # 14x14
+            torch.nn.Conv2d(
+                hidden_dim, hidden_dim * 2, kernel_size=3, padding=1
+            ),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2),  # 7x7
+            torch.nn.Flatten(),
+            torch.nn.Linear(hidden_dim * 2 * 7 * 7, 64),  # Smaller FC layer
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.2),
+            torch.nn.Linear(64, 10),
+        )
+        self.loss_fn = torch.nn.CrossEntropyLoss()
+
+    def forward(self, x):
+        return self.model(x)
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.loss_fn(logits, y)
+        self.log("train_loss", loss, prog_bar=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.loss_fn(logits, y)
+        acc = (logits.argmax(1) == y).float().mean()
+        self.log("val_loss", loss, prog_bar=True)
+        self.log("val_acc", acc, prog_bar=True)
+        return {"val_loss": loss, "val_acc": acc}
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
 
 @step(
     settings={
         "resources": ResourceSettings(
             cpu_count=2,
+            gpu_count=0,  # Set to 1 for GPU training
             memory="4GB",
         )
     }
 )
 def train_trial(
     trial_config: Dict[str, Any],
-    max_iter: int = 100,
+    max_iter: int = 10,
 ) -> Annotated[Dict[str, Any], "trial_result"]:
-    """Train a single trial with given hyperparameters.
+    """Train a single trial with PyTorch Lightning.
 
-    This step trains an MLPClassifier on FashionMNIST using the hyperparameters
+    This step trains a CNN on FashionMNIST using the hyperparameters
     from the trial configuration. Training happens in isolation,
     allowing parallel execution across multiple trials.
 
     Args:
         trial_config: Trial configuration containing:
             - trial_number: Optuna trial ID
-            - learning_rate_init: Initial learning rate
-            - alpha: L2 regularization parameter
-            - hidden_layer_sizes: Tuple defining hidden layer architecture
-        max_iter: Maximum number of training iterations (default: 100)
+            - learning_rate: Learning rate for optimizer
+            - batch_size: Training batch size
+            - hidden_dim: Number of filters in conv layers
+        max_iter: Maximum number of training epochs (default: 100)
 
     Returns:
         Dictionary containing trial results:
         - trial_number: Trial ID for reporting back to Optuna
         - val_loss: Validation loss (optimization metric)
-        - learning_rate_init, alpha, hidden_layer_sizes: Hyperparameters used
-        - training_losses: List of training losses per iteration
+        - val_accuracy: Validation accuracy
+        - learning_rate, batch_size, hidden_dim: Hyperparameters used
 
     Example:
-        >>> config = {"trial_number": 0, "learning_rate_init": 0.001, "alpha": 0.0001, "hidden_layer_sizes": (128,)}
+        >>> config = {"trial_number": 0, "learning_rate": 0.001, "batch_size": 64, "hidden_dim": 32}
         >>> result = train_trial(config)
         >>> print(result["val_loss"])
         0.432
     """
     trial_number = trial_config["trial_number"]
-    learning_rate_init = trial_config["learning_rate_init"]
-    alpha = trial_config["alpha"]
-    hidden_layer_sizes = trial_config["hidden_layer_sizes"]
+    learning_rate = trial_config["learning_rate"]
+    batch_size = trial_config["batch_size"]
+    hidden_dim = trial_config["hidden_dim"]
 
     print(f"\n🚀 Training Trial {trial_number}")
     print(
-        f"   learning_rate_init={learning_rate_init:.6f}, alpha={alpha:.6f}, hidden_layer_sizes={hidden_layer_sizes}"
+        f"   learning_rate={learning_rate:.6f}, batch_size={batch_size}, hidden_dim={hidden_dim}"
     )
 
     # Load FashionMNIST dataset
     print("   Loading FashionMNIST dataset...")
-    X, y = fetch_openml(
-        "Fashion-MNIST", version=1, parser="auto", return_X_y=True
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,)),  # Normalize to [-1, 1]
+        ]
     )
 
-    # Convert to numpy arrays and normalize to [0, 1] range
-    X = np.array(X, dtype=np.float32) / 255.0
-    y = np.array(y, dtype=np.int32)
-
-    # Split into train and validation sets (80/20 split with fixed seed)
-    X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+    full_dataset = FashionMNIST(
+        root="/tmp/data", train=True, download=True, transform=transform
     )
 
-    # Standardize features for better MLP performance
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_val = scaler.transform(X_val)
-
-    print(f"   Train samples: {len(X_train)}, Val samples: {len(X_val)}")
-
-    # Build and train MLPClassifier
-    model = MLPClassifier(
-        hidden_layer_sizes=hidden_layer_sizes,
-        learning_rate_init=learning_rate_init,
-        alpha=alpha,
-        max_iter=max_iter,
-        random_state=42,
-        verbose=False,
-        early_stopping=False,  # We'll use validation_fraction for monitoring
-        validation_fraction=0.1,  # 10% of training data for internal validation
-        n_iter_no_change=10,  # Stop if no improvement for 10 iterations
+    # Split into train and validation (80/20 split with fixed seed)
+    train_size = int(0.8 * len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    train_dataset, val_dataset = random_split(
+        full_dataset,
+        [train_size, val_size],
+        generator=torch.Generator().manual_seed(42),
     )
 
-    # Train the model
-    print(f"   Training MLPClassifier for up to {max_iter} iterations...")
-    model.fit(X_train, y_train)
-
-    # Get training loss history
-    training_losses = (
-        model.loss_curve_ if hasattr(model, "loss_curve_") else []
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=0
+    )
+    val_loader = DataLoader(
+        val_dataset, batch_size=256, shuffle=False, num_workers=0
     )
 
-    # Validation
-    val_score = model.score(X_val, y_val)
-    val_accuracy = val_score * 100
+    print(
+        f"   Train samples: {len(train_dataset)}, Val samples: {len(val_dataset)}"
+    )
 
-    # Calculate validation loss using log loss
-    # MLPClassifier minimizes log loss, so we use 1 - accuracy as a proxy
-    val_loss = 1.0 - val_score
+    # Build and train model
+    model = FashionMNISTClassifier(
+        learning_rate=learning_rate,
+        hidden_dim=hidden_dim,
+    )
 
-    print(f"   Training iterations: {model.n_iter_}")
+    # Configure trainer
+    trainer = Trainer(
+        max_epochs=max_iter,
+        accelerator="cpu",  # Use CPU (MPS can hang on Mac)
+        devices=1,
+        callbacks=[
+            EarlyStopping(
+                monitor="val_loss",
+                patience=10,
+                mode="min",
+            )
+        ],
+        enable_progress_bar=False,
+        logger=False,
+        deterministic=True,
+    )
+
+    print(f"   Training for up to {max_iter} epochs...")
+    trainer.fit(model, train_loader, val_loader)
+
+    # Get final metrics
+    val_loss = float(trainer.callback_metrics.get("val_loss", 0.0))
+    val_accuracy = float(trainer.callback_metrics.get("val_acc", 0.0)) * 100
+
+    print(f"   Training epochs: {trainer.current_epoch + 1}")
     print(f"   Validation: loss={val_loss:.4f}, accuracy={val_accuracy:.2f}%")
     print(f"✅ Trial {trial_number} complete\n")
 
@@ -137,33 +204,26 @@ def train_trial(
         "trial_number": trial_number,
         "val_loss": val_loss,
         "val_accuracy": val_accuracy,
-        "learning_rate_init": learning_rate_init,
-        "alpha": alpha,
-        "hidden_layer_sizes": hidden_layer_sizes,
-        "training_losses": [float(loss) for loss in training_losses],
-        "n_iterations": model.n_iter_,
-        "max_iter": max_iter,
+        "learning_rate": learning_rate,
+        "batch_size": batch_size,
+        "hidden_dim": hidden_dim,
+        "n_epochs": trainer.current_epoch + 1,
+        "max_epochs": max_iter,
     }
 
     # Log metadata for dashboard visibility and MCP server queries
-    # This makes trials queryable: "show me all trials sorted by val_loss"
-    # Explicitly attach to the trial_result output artifact
     log_metadata(
         metadata={
             "trial_number": trial_number,
             "val_loss": val_loss,
             "val_accuracy": val_accuracy,
-            "learning_rate_init": learning_rate_init,
-            "alpha": alpha,
-            "hidden_layer_sizes": str(hidden_layer_sizes),
-            "training_losses": [float(loss) for loss in training_losses],
-            "final_train_loss": float(training_losses[-1])
-            if training_losses
-            else 0.0,
-            "n_iterations": model.n_iter_,
+            "learning_rate": learning_rate,
+            "batch_size": batch_size,
+            "hidden_dim": hidden_dim,
+            "n_epochs": trainer.current_epoch + 1,
         },
         artifact_name="trial_result",
-        infer_artifact=True,  # Required when specifying artifact_name within a step
+        infer_artifact=True,
     )
 
     return result

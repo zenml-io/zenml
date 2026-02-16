@@ -58,6 +58,7 @@ def main() -> None:
         print("🚀 Running simple parallel sweep pipeline")
         print(f"   Study: {STUDY_NAME}")
         print(f"   Storage: {STORAGE_URL}")
+        print("   Framework: PyTorch Lightning")
         print("   Mode: All trials in parallel")
         print(f"   Cache: {'enabled' if enable_cache else 'disabled'}\n")
 
@@ -65,13 +66,14 @@ def main() -> None:
             study_name=STUDY_NAME,
             storage_url=STORAGE_URL,
             n_trials=5,
-            max_iter=100,
+            max_iter=10,  # Reduced for faster testing
         )
 
     elif args.mode == "adaptive":
         print("🚀 Running adaptive multi-round sweep pipeline")
         print(f"   Study: {STUDY_NAME}")
         print(f"   Storage: {STORAGE_URL}")
+        print("   Framework: PyTorch Lightning")
         print("   Mode: Batched rounds with adaptive sampling")
         print(f"   Cache: {'enabled' if enable_cache else 'disabled'}\n")
 
@@ -79,8 +81,8 @@ def main() -> None:
             study_name=STUDY_NAME,
             storage_url=STORAGE_URL,
             n_rounds=3,
-            trials_per_round=3,
-            max_iter=100,
+            trials_per_round=2,  # Reduced parallelism for Mac
+            max_iter=10,  # Reduced for faster testing
         )
 
     print("\n✅ Sweep complete! Check the ZenML dashboard to see the DAG.")
