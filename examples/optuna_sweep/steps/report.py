@@ -13,12 +13,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Results reporting step using Optuna's tell API."""
+"""Results reporting step that aggregates trial results via ZenML artifacts.
 
-from typing import Annotated, Any, Dict, List
+This step does NOT depend on a shared Optuna storage backend. Instead it
+accumulates results from all rounds through the previous_summary artifact,
+making it portable across local and distributed orchestrators.
+"""
 
-import optuna
-from optuna.trial import TrialState
+from typing import Annotated, Any, Dict, List, Optional
 
 from zenml import step
 from zenml.config import ResourceSettings
@@ -33,113 +35,102 @@ from zenml.config import ResourceSettings
     }
 )
 def report_results(
-    study_name: str,
-    storage_url: str,
     results: List[Dict[str, Any]],
+    previous_summary: Optional[Dict[str, Any]] = None,
 ) -> Annotated[Dict[str, Any], "sweep_summary"]:
-    """Report trial results back to Optuna using the tell API.
+    """Aggregate trial results and identify the best configuration.
 
-    This step acts as a reducer, collecting results from all parallel
-    training trials and reporting them back to the Optuna study. It
-    prints a summary table and returns the best trial found.
+    Combines results from the current round with any previous rounds
+    (passed via previous_summary) and returns a cumulative summary.
+    History flows through ZenML artifacts, so no shared database is needed.
 
     Args:
-        study_name: Name of the Optuna study
-        storage_url: Storage backend URL
-        results: List of trial results from train_trial steps, each containing:
+        results: List of trial results from the current round's train_trial
+            steps, each containing:
             - trial_number: Trial ID
             - val_loss: Validation loss
             - learning_rate, batch_size, hidden_dim: Hyperparameters
-            - val_accuracy: Validation accuracy (optional)
+            - val_accuracy: Validation accuracy percentage
+        previous_summary: Optional summary from the previous round,
+            containing all_trials from all prior rounds.
 
     Returns:
         Summary dictionary containing:
         - best_trial_number: Trial with lowest validation loss
         - best_val_loss: Best validation loss achieved
         - best_params: Hyperparameters of best trial
-        - n_trials: Total number of trials reported
-        - all_trials: List of all trial summaries
+        - n_trials: Total number of trials across all rounds
+        - all_trials: Cumulative list of all trial summaries
 
     Example:
         >>> results = [
         ...     {"trial_number": 0, "val_loss": 0.45, "learning_rate": 0.001, ...},
         ...     {"trial_number": 1, "val_loss": 0.38, "learning_rate": 0.005, ...},
         ... ]
-        >>> summary = report_results("my_study", "sqlite:///optuna.db", results)
+        >>> summary = report_results(results)
         >>> print(summary["best_val_loss"])
         0.38
     """
-    # Load study
-    study = optuna.load_study(
-        study_name=study_name,
-        storage=storage_url,
-    )
-
-    print(
-        f"\n📊 Reporting {len(results)} trial results to Optuna study '{study_name}'"
-    )
+    print(f"\n📊 Reporting {len(results)} trial results")
     print("=" * 80)
 
-    # Report each trial result using tell()
-    for result in results:
-        trial_number = result["trial_number"]
-        val_loss = result["val_loss"]
-
-        trial = next(
-            (t for t in study.trials if t.number == trial_number), None
+    # Accumulate results from all rounds
+    all_trials: List[Dict[str, Any]] = []
+    if previous_summary and previous_summary.get("all_trials"):
+        all_trials.extend(previous_summary["all_trials"])
+        print(
+            f"   Carried forward {len(previous_summary['all_trials'])} "
+            f"trials from previous rounds"
         )
-        if trial is not None and trial.state != TrialState.RUNNING:
-            print(
-                f"Trial {trial_number:2d} | already reported (state={trial.state.name}), "
-                f"skipping tell"
-            )
-            continue
 
-        study.tell(trial_number, val_loss)
+    # Add current round's results
+    for result in results:
+        trial_entry = {
+            "trial_number": result["trial_number"],
+            "val_loss": result["val_loss"],
+            "val_accuracy": result.get("val_accuracy", 0),
+            "learning_rate": result["learning_rate"],
+            "batch_size": result["batch_size"],
+            "hidden_dim": result["hidden_dim"],
+        }
+        all_trials.append(trial_entry)
 
         print(
-            f"Trial {trial_number:2d} | "
-            f"val_loss={val_loss:.4f} | "
+            f"Trial {result['trial_number']:2d} | "
+            f"val_loss={result['val_loss']:.4f} | "
             f"learning_rate={result['learning_rate']:.6f} | "
             f"batch_size={result['batch_size']} | "
-            f"hidden_dim={result['hidden_dim']} | "
+            f"hidden_dim={str(result['hidden_dim']):>4s} | "
             f"val_acc={result.get('val_accuracy', 0):.2f}%"
         )
 
     print("=" * 80)
 
-    # Get best trial
-    best_trial = study.best_trial
-    print(f"\n🏆 Best Trial: {best_trial.number}")
-    print(f"   Validation Loss: {best_trial.value:.4f}")
-    print("   Hyperparameters:")
-    for key, value in best_trial.params.items():
-        print(f"      {key}: {value}")
-    print()
+    # Find overall best trial
+    best = min(all_trials, key=lambda t: t["val_loss"])
 
-    # Prepare summary
+    print(f"\n🏆 Best Trial: {best['trial_number']}")
+    print(f"   Validation Loss: {best['val_loss']:.4f}")
+    print("   Hyperparameters:")
+    print(f"      learning_rate: {best['learning_rate']}")
+    print(f"      batch_size: {best['batch_size']}")
+    print(f"      hidden_dim: {best['hidden_dim']}")
+
     summary = {
-        "best_trial_number": best_trial.number,
-        "best_val_loss": best_trial.value,
-        "best_params": best_trial.params,
-        "n_trials": len(results),
-        "all_trials": [
-            {
-                "trial_number": r["trial_number"],
-                "val_loss": r["val_loss"],
-                "val_accuracy": r.get("val_accuracy", 0),
-                "learning_rate": r["learning_rate"],
-                "batch_size": r["batch_size"],
-                "hidden_dim": r["hidden_dim"],
-            }
-            for r in results
-        ],
+        "best_trial_number": best["trial_number"],
+        "best_val_loss": best["val_loss"],
+        "best_params": {
+            "learning_rate": best["learning_rate"],
+            "batch_size": best["batch_size"],
+            "hidden_dim": best["hidden_dim"],
+        },
+        "n_trials": len(all_trials),
+        "all_trials": all_trials,
     }
 
-    # Show study statistics
-    print("\n📈 Study Statistics:")
-    print(f"   Total trials in study: {len(study.trials)}")
-    print(f"   Trials reported this run: {len(results)}")
-    print(f"   Best value overall: {study.best_value:.4f}")
+    print(f"\n📈 Study Statistics:")
+    print(f"   Total trials across all rounds: {len(all_trials)}")
+    print(f"   Trials reported this round: {len(results)}")
+    print(f"   Best value overall: {best['val_loss']:.4f}")
 
     return summary

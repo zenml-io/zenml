@@ -3,7 +3,6 @@
 
 sweep:
   study_name: fashion_mnist_sweep
-  storage_url: "sqlite:///optuna_study.db"
   mode: simple  # Options: simple, adaptive
 
   # Simple mode settings
