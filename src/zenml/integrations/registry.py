@@ -97,18 +97,27 @@ class IntegrationRegistry(object):
                 continue
 
     def activate_integrations(self) -> None:
-        """Method to activate the integrations with are registered in the registry."""
+        """Activate all installed integrations (best effort).
+
+        Attempts to activate each installed integration. If an individual
+        integration fails due to an ImportError or OSError (e.g. missing
+        optional dependencies, binary/DLL load failures), the error is
+        logged and activation continues for the remaining integrations.
+        """
         self._initialize()
         for name, integration in self._integrations.items():
             if integration.check_installation():
                 logger.debug(f"Activating integration `{name}`...")
                 try:
                     integration.activate()
+                # ImportError: missing optional dependencies
+                # OSError: binary/DLL load failures (e.g. torch on Windows)
                 except (ImportError, OSError) as e:
-                    logger.warning(
+                    logger.exception(
                         f"Failed to activate integration `{name}`: "
-                        f"{type(e).__name__}: {e}",
-                        exc_info=True,
+                        f"{type(e).__name__}: {e}. "
+                        "Continuing without this integration; "
+                        "its features will be unavailable."
                     )
                     continue
                 logger.debug(f"Integration `{name}` is activated.")
