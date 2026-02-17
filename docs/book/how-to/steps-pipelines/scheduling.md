@@ -97,6 +97,15 @@ zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID> --hard
 Using `--hard` permanently removes the schedule and any historical references to it. Pipeline runs that were triggered by this schedule will no longer show the schedule association.
 {% endhint %}
 
+### Kubernetes CronJob advanced configuration
+
+When using the Kubernetes orchestrator, scheduled pipelines are backed by Kubernetes CronJobs. You can customize CronJob-specific behavior through `KubernetesOrchestratorSettings`:
+
+- **`concurrency_policy`**: Controls whether concurrent job executions are allowed (`Allow`, `Forbid`, `Replace`)
+- **`starting_deadline_seconds`**: If a scheduled run misses its trigger time, it can still start within this window (in seconds)
+
+These settings are in addition to Job-level settings like `active_deadline_seconds` (runtime timeout), `ttl_seconds_after_finished` (cleanup delay), and history limits. See the [Kubernetes orchestrator docs](../component-guide/orchestrators/kubernetes.md) for the full list and examples.
+
 ### Orchestrator support for schedule management
 
 The functionality of these commands changes depending on whether the orchestrator supports schedule updates/deletions (see the "Native Schedule Management" column in the table above):

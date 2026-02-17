@@ -44,12 +44,15 @@ class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""
 
     NAME = GCP
-    # Adding the gcsfs<=2024.12.0 for now to solve the issue with the 
+    # Adding the gcsfs<=2024.12.0 for now to solve the issue with the
     # increased number of list calls. This is a temporary fix and should be
     # removed once the issue is resolved.
+    # grpcio 1.68.0-1.70.x has a known bug causing shutdown warnings
+    # (grpc/grpc#38490), fixed in 1.71.0.
     REQUIREMENTS = [
         "kfp>=2.6.0",
         "urllib3<2.6.0",
+        "grpcio!=1.68.*,!=1.69.*,!=1.70.*",
         "gcsfs!=2025.5.0,!=2025.5.0.post1,<=2024.12.0",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
@@ -62,7 +65,7 @@ class GcpIntegration(Integration):
         "google-cloud-logging>=3.8.0",
         "kubernetes",
     ]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes","kfp"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes", "kfp", "grpcio"]
 
     @classmethod
     def activate(cls) -> None:
