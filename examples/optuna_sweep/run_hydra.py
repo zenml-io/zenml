@@ -89,7 +89,6 @@ def main() -> None:
 
     print("\n🚀 Running sweep pipeline with Hydra config")
     print(f"   Study: {sweep_config['study_name']}")
-    print(f"   Storage: {sweep_config['storage_url']}")
     print("   Framework: PyTorch Lightning")
     print(f"   Mode: {mode}")
     print(f"   Cache: {'enabled' if enable_cache else 'disabled'}")
@@ -103,10 +102,9 @@ def main() -> None:
 
         sweep_pipeline.with_options(enable_cache=enable_cache)(
             study_name=sweep_config["study_name"],
-            storage_url=sweep_config["storage_url"],
             n_trials=sweep_config["n_trials"],
             max_iter=sweep_config["max_iter"],
-            search_space=search_space,  # Pass resolved search space
+            search_space=search_space,
         )
 
     elif mode == "adaptive":
@@ -118,7 +116,6 @@ def main() -> None:
 
         adaptive_sweep_pipeline.with_options(enable_cache=enable_cache)(
             study_name=sweep_config["study_name"],
-            storage_url=sweep_config["storage_url"],
             n_rounds=sweep_config.get("n_rounds", 3),
             trials_per_round=sweep_config.get("trials_per_round", 3),
             max_iter=sweep_config["max_iter"],

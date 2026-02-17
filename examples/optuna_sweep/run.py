@@ -20,9 +20,7 @@ import argparse
 
 from pipelines.sweep import adaptive_sweep_pipeline, sweep_pipeline
 
-# Study configuration
 STUDY_NAME = "fashion_mnist_sweep"
-STORAGE_URL = "sqlite:///optuna_study.db"  # Local SQLite for demo
 
 
 def main() -> None:
@@ -57,32 +55,28 @@ def main() -> None:
     if args.mode == "simple":
         print("🚀 Running simple parallel sweep pipeline")
         print(f"   Study: {STUDY_NAME}")
-        print(f"   Storage: {STORAGE_URL}")
         print("   Framework: PyTorch Lightning")
         print("   Mode: All trials in parallel")
         print(f"   Cache: {'enabled' if enable_cache else 'disabled'}\n")
 
         sweep_pipeline.with_options(enable_cache=enable_cache)(
             study_name=STUDY_NAME,
-            storage_url=STORAGE_URL,
             n_trials=5,
-            max_iter=10,  # Reduced for faster testing
+            max_iter=10,
         )
 
     elif args.mode == "adaptive":
         print("🚀 Running adaptive multi-round sweep pipeline")
         print(f"   Study: {STUDY_NAME}")
-        print(f"   Storage: {STORAGE_URL}")
         print("   Framework: PyTorch Lightning")
         print("   Mode: Batched rounds with adaptive sampling")
         print(f"   Cache: {'enabled' if enable_cache else 'disabled'}\n")
 
         adaptive_sweep_pipeline.with_options(enable_cache=enable_cache)(
             study_name=STUDY_NAME,
-            storage_url=STORAGE_URL,
             n_rounds=3,
-            trials_per_round=2,  # Reduced parallelism for Mac
-            max_iter=10,  # Reduced for faster testing
+            trials_per_round=2,
+            max_iter=10,
         )
 
     print("\n✅ Sweep complete! Check the ZenML dashboard to see the DAG.")

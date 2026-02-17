@@ -13,7 +13,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Hyperparameter sweep pipelines using Optuna + ZenML dynamic pipelines."""
+"""Hyperparameter sweep pipelines using Optuna + ZenML dynamic pipelines.
+
+Trial history flows through ZenML artifacts (not a shared Optuna database),
+so these pipelines work on any orchestrator — local or distributed.
+"""
 
 from typing import Annotated, Any, Dict, Optional
 
@@ -30,7 +34,6 @@ from zenml import pipeline
 @pipeline(dynamic=True)
 def sweep_pipeline(
     study_name: str = "fashion_mnist_sweep",
-    storage_url: str = "sqlite:///optuna_study.db",
     n_trials: int = 5,
     max_iter: int = 100,
     search_space: Optional[Dict[str, Any]] = None,
@@ -40,37 +43,26 @@ def sweep_pipeline(
     This pipeline demonstrates the basic pattern for hyperparameter optimization:
     1. Generate N trial configurations using Optuna's ask() API
     2. Fan out to train N models in parallel using .map()
-    3. Report all results back to Optuna using tell() API
+    3. Aggregate all results and identify the best configuration
 
     All N trials run in parallel. Perfect for small-scale sweeps where you
     want maximum parallelism.
 
     Args:
-        study_name: Name of the Optuna study (persistent across runs)
-        storage_url: Optuna storage backend URL (e.g., "sqlite:///optuna.db")
+        study_name: Name of the Optuna study (for logging)
         n_trials: Number of trials to run in parallel
         max_iter: Maximum training iterations per trial (default: 100)
         search_space: Optional custom search space configuration
-        enable_cache: Whether to enable caching (default: True)
 
     Returns:
         Summary dictionary with best trial info and all results
 
     Example:
-        >>> # Run with default cache enabled
         >>> summary = sweep_pipeline(
         ...     study_name="my_sweep",
-        ...     storage_url="sqlite:///optuna.db",
         ...     n_trials=10,
         ... )
         >>> print(f"Best val_loss: {summary['best_val_loss']:.4f}")
-        >>>
-        >>> # Disable cache via with_options
-        >>> summary = sweep_pipeline.with_options(enable_cache=False)(
-        ...     study_name="my_sweep",
-        ...     storage_url="sqlite:///optuna.db",
-        ...     n_trials=10,
-        ... )
 
     Pipeline DAG:
         suggest_trials
@@ -86,7 +78,6 @@ def sweep_pipeline(
     # Generate trial configurations
     trials = suggest_trials(
         study_name=study_name,
-        storage_url=storage_url,
         n_trials=n_trials,
         search_space=search_space,
     )
@@ -97,12 +88,8 @@ def sweep_pipeline(
         trial_config=trials
     )
 
-    # Reduce: report all results back to Optuna
-    summary = report_results(
-        study_name=study_name,
-        storage_url=storage_url,
-        results=results,
-    )
+    # Reduce: aggregate results and find best configuration
+    summary = report_results(results=results)
 
     # Retrain best model with more iterations for production
     # Model is saved as ZenML artifact automatically, no need to return it
@@ -117,7 +104,6 @@ def sweep_pipeline(
 @pipeline(dynamic=True)
 def adaptive_sweep_pipeline(
     study_name: str = "fashion_mnist_sweep",
-    storage_url: str = "sqlite:///optuna_study.db",
     n_rounds: int = 3,
     trials_per_round: int = 3,
     max_iter: int = 100,
@@ -130,34 +116,25 @@ def adaptive_sweep_pipeline(
     sample-efficient for large search spaces.
 
     Each round:
-    1. Suggests new trials based on previous results
+    1. Suggests new trials based on previous results (via artifact history)
     2. Trains trials in parallel
     3. Reports results, which inform the next round's suggestions
 
-    Use this when you want Optuna's adaptive sampling to learn from
-    early trials before launching later ones.
+    Trial history flows through ZenML artifacts, so this works on any
+    orchestrator — local or distributed.
 
     Args:
-        study_name: Name of the Optuna study
-        storage_url: Optuna storage backend URL
+        study_name: Name of the Optuna study (for logging)
         n_rounds: Number of optimization rounds
         trials_per_round: Parallel trials per round
         max_iter: Maximum training iterations per trial
         search_space: Optional custom search space configuration
 
     Returns:
-        Summary dictionary from the final round
+        Summary dictionary from the final round (includes all trials)
 
     Example:
-        >>> # Run with default cache enabled
         >>> summary = adaptive_sweep_pipeline(
-        ...     study_name="adaptive_sweep",
-        ...     n_rounds=5,
-        ...     trials_per_round=4,
-        ... )
-        >>>
-        >>> # Disable cache via with_options
-        >>> summary = adaptive_sweep_pipeline.with_options(enable_cache=False)(
         ...     study_name="adaptive_sweep",
         ...     n_rounds=5,
         ...     trials_per_round=4,
@@ -200,14 +177,12 @@ def adaptive_sweep_pipeline(
         print(f"{'=' * 80}\n")
 
         # Generate trials for this round
-        # Pass previous_summary to create DAG edge between rounds
-        # (first round gets minimal dict, subsequent rounds get real summary)
+        # previous_summary seeds the Optuna sampler with prior observations
         trials = suggest_trials(
             study_name=study_name,
-            storage_url=storage_url,
             n_trials=trials_per_round,
             search_space=search_space,
-            previous_summary=summary,  # Creates visual connection in DAG
+            previous_summary=summary,
         )
 
         # Train trials in parallel
@@ -215,19 +190,17 @@ def adaptive_sweep_pipeline(
             parameters={"max_iter": max_iter}
         ).map(trial_config=trials)
 
-        # Report results (informs next round's suggestions)
+        # Aggregate results (accumulates history across rounds)
         summary = report_results(
-            study_name=study_name,
-            storage_url=storage_url,
             results=results,
+            previous_summary=summary,
         )
 
     # Retrain best model with more iterations for production
-    # Model is saved as ZenML artifact automatically, no need to return it
     _ = retrain_best_model(
         sweep_summary=summary,
-        max_iter=200,  # More iterations than trials
+        max_iter=200,
     )
 
-    # Return summary from final round
+    # Return summary from final round (includes all trials)
     return summary  # type: ignore[return-value]

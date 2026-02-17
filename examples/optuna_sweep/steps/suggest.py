@@ -13,14 +13,53 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Trial suggestion step using Optuna's ask API."""
+"""Trial suggestion step using Optuna's ask API with in-memory studies.
+
+The Optuna study is created in-memory at each invocation and seeded with
+results from previous rounds (passed via ZenML artifacts). This avoids
+the need for a shared persistent Optuna storage backend, making the
+pipeline portable across local and distributed orchestrators.
+"""
 
 from typing import Annotated, Any, Dict, List, Optional
 
 import optuna
+from optuna.distributions import CategoricalDistribution, FloatDistribution
 
 from zenml import step
 from zenml.config import ResourceSettings
+
+DEFAULT_SEARCH_SPACE: Dict[str, Any] = {
+    "learning_rate": {"low": 1e-4, "high": 1e-2, "log": True},
+    "batch_size": {"choices": [64, 128]},
+    "hidden_dim": {"choices": [8, 16, 32]},
+}
+
+
+def _build_distributions(
+    search_space: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Build Optuna distribution objects from a search space config dict."""
+    distributions: Dict[str, Any] = {}
+
+    lr_cfg = search_space["learning_rate"]
+    distributions["learning_rate"] = FloatDistribution(
+        low=lr_cfg["low"],
+        high=lr_cfg["high"],
+        log=lr_cfg.get("log", False),
+    )
+
+    bs_cfg = search_space["batch_size"]
+    distributions["batch_size"] = CategoricalDistribution(
+        choices=bs_cfg["choices"],
+    )
+
+    hd_cfg = search_space["hidden_dim"]
+    distributions["hidden_dim"] = CategoricalDistribution(
+        choices=hd_cfg["choices"],
+    )
+
+    return distributions
 
 
 @step(
@@ -33,20 +72,21 @@ from zenml.config import ResourceSettings
 )
 def suggest_trials(
     study_name: str,
-    storage_url: str,
     n_trials: int = 5,
     search_space: Optional[Dict[str, Any]] = None,
     previous_summary: Optional[Dict[str, Any]] = None,
 ) -> Annotated[List[Dict[str, Any]], "trial_configs"]:
     """Generate trial configurations using Optuna's ask API.
 
-    This step creates or loads an Optuna study and uses the ask() method
-    to generate hyperparameter configurations. Each configuration becomes
-    a separate trial that will be trained in parallel.
+    Creates an in-memory Optuna study, replays any previous trial results
+    into it (so the TPE sampler learns from history), then uses ask() to
+    generate new hyperparameter suggestions.
+
+    History flows through ZenML artifacts (previous_summary) rather than
+    a shared database, so this works on any orchestrator.
 
     Args:
-        study_name: Name of the Optuna study (persistent across runs)
-        storage_url: Storage backend URL (e.g., "sqlite:///optuna.db")
+        study_name: Name of the Optuna study (for logging)
         n_trials: Number of trial configurations to generate
         search_space: Optional search space configuration (defaults to
             standard ranges if not provided). Expected format:
@@ -55,70 +95,77 @@ def suggest_trials(
                 "batch_size": {"choices": [32, 64, 128, 256]},
                 "hidden_dim": {"choices": [16, 32, 64, 128]}
             }
-        previous_summary: Optional summary from previous round (used for DAG
-            visualization to connect rounds). Not used in logic - Optuna's
-            persistent storage already contains all previous trial results.
+        previous_summary: Optional summary from a previous round containing
+            all_trials with results. Used to seed the Optuna sampler so it
+            makes informed suggestions based on prior observations.
 
     Returns:
         List of trial configurations, each containing:
-        - trial_number: Optuna trial number for reporting
+        - trial_number: Optuna trial number for identification
         - learning_rate: Learning rate for optimizer
         - batch_size: Training batch size
         - hidden_dim: Number of filters in conv layers
 
     Example:
-        >>> configs = suggest_trials("my_study", "sqlite:///optuna.db", n_trials=3)
+        >>> configs = suggest_trials("my_study", n_trials=3)
         >>> print(configs[0])
         {'trial_number': 0, 'learning_rate': 0.001, 'batch_size': 64, 'hidden_dim': 32}
     """
-    # Load or create study
+    if search_space is None:
+        search_space = DEFAULT_SEARCH_SPACE
+
+    # Create an in-memory study (no shared storage needed)
     study = optuna.create_study(
         study_name=study_name,
-        storage=storage_url,
-        load_if_exists=True,
-        direction="minimize",  # Minimize validation loss
+        direction="minimize",
     )
 
+    # Replay previous trial results so the TPE sampler learns from them
+    if previous_summary and previous_summary.get("all_trials"):
+        distributions = _build_distributions(search_space)
+        for trial_info in previous_summary["all_trials"]:
+            study.add_trial(
+                optuna.trial.create_trial(
+                    params={
+                        "learning_rate": trial_info["learning_rate"],
+                        "batch_size": trial_info["batch_size"],
+                        "hidden_dim": trial_info["hidden_dim"],
+                    },
+                    distributions=distributions,
+                    values=[trial_info["val_loss"]],
+                    state=optuna.trial.TrialState.COMPLETE,
+                )
+            )
+
+    n_previous = len(study.trials)
     print(
         f"📊 Generating {n_trials} trial configurations for study '{study_name}'"
     )
-    print(f"   Storage: {storage_url}")
-    print(f"   Existing trials: {len(study.trials)}")
-
-    # Use search space config if provided, otherwise use defaults
-    # Lightweight defaults for CPU training
-    if search_space is None:
-        search_space = {
-            "learning_rate": {"low": 1e-4, "high": 1e-2, "log": True},
-            "batch_size": {"choices": [64, 128]},  # Smaller batches for CPU
-            "hidden_dim": {"choices": [8, 16, 32]},  # Fewer filters
-        }
+    print(f"   Previous trials replayed: {n_previous}")
 
     trial_configs = []
 
     for _ in range(n_trials):
-        # Ask Optuna for a new trial suggestion
         trial = study.ask()
 
-        # Suggest hyperparameters based on search space
-        learning_rate_config = search_space["learning_rate"]
+        lr_cfg = search_space["learning_rate"]
         learning_rate = trial.suggest_float(
             "learning_rate",
-            learning_rate_config["low"],
-            learning_rate_config["high"],
-            log=learning_rate_config.get("log", False),
+            lr_cfg["low"],
+            lr_cfg["high"],
+            log=lr_cfg.get("log", False),
         )
 
-        batch_size_config = search_space["batch_size"]
+        bs_cfg = search_space["batch_size"]
         batch_size = trial.suggest_categorical(
             "batch_size",
-            batch_size_config["choices"],
+            bs_cfg["choices"],
         )
 
-        hidden_dim_config = search_space["hidden_dim"]
+        hd_cfg = search_space["hidden_dim"]
         hidden_dim = trial.suggest_categorical(
             "hidden_dim",
-            hidden_dim_config["choices"],
+            hd_cfg["choices"],
         )
 
         config = {
