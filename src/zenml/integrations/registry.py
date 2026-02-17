@@ -102,15 +102,7 @@ class IntegrationRegistry(object):
         for name, integration in self._integrations.items():
             if integration.check_installation():
                 logger.debug(f"Activating integration `{name}`...")
-                try:
-                    integration.activate()
-                except (ImportError, OSError) as e:
-                    logger.warning(
-                        f"Failed to activate integration `{name}`: "
-                        f"{type(e).__name__}: {e}",
-                        exc_info=True,
-                    )
-                    continue
+                integration.activate()
                 logger.debug(f"Integration `{name}` is activated.")
             else:
                 logger.debug(f"Integration `{name}` could not be activated.")

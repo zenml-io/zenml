@@ -26,6 +26,10 @@ from zenml.client import Client
 
 SUBPROCESS_TIMEOUT = 15 * 60  # 15 minutes per subprocess
 
+# macOS CI runners hit SQLite contention with 10 parallel processes;
+# Linux can handle the full load.
+NUM_PARALLEL_RUNS = 5 if platform.system() == "Darwin" else 10
+
 
 def _spawn(cmd: List[str]) -> Tuple[subprocess.Popen, str]:
     """Spawn a subprocess with output redirected to a temp file.
@@ -149,7 +153,7 @@ class TestArtifactsManagement:
 )
 def test_parallel_runs_get_different_run_indexes(clean_client: Client):
     procs: List[Tuple[subprocess.Popen, str]] = []
-    for _ in range(5):
+    for _ in range(NUM_PARALLEL_RUNS):
         procs.append(
             _spawn(
                 [
@@ -164,7 +168,7 @@ def test_parallel_runs_get_different_run_indexes(clean_client: Client):
     _wait_and_assert(procs)
 
     runs = clean_client.list_pipeline_runs(size=50)
-    assert len(runs) == 5
+    assert len(runs) == NUM_PARALLEL_RUNS
 
     run_indexes = {r.index for r in runs}
-    assert run_indexes == set(range(1, 6))
+    assert run_indexes == set(range(1, NUM_PARALLEL_RUNS + 1))

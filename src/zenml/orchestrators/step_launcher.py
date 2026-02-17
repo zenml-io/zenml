@@ -144,13 +144,12 @@ class StepLauncher:
 
         # Internal properties and methods
         self._step_run: Optional[StepRunResponse] = None
-        self._signal_handler: Optional[Callable[..., Any]] = None
         self._setup_signal_handlers()
 
     def _setup_signal_handlers(self) -> None:
-        """Set up signal handlers for graceful shutdown, saving previous handlers."""
+        """Set up signal handlers for graceful shutdown, chaining previous handlers."""
         try:
-            # Save previous handlers so we can restore them after the step
+            # Save previous handlers
             self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
             self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
         except ValueError as e:
@@ -237,8 +236,16 @@ class StepLauncher:
                 raise
             except Exception as e:
                 raise RunInterruptedException(str(e))
-
-        self._signal_handler = signal_handler
+            finally:
+                # Chain to previous handler if it exists and is not default/ignore
+                if signum == signal.SIGTERM and callable(
+                    self._prev_sigterm_handler
+                ):
+                    self._prev_sigterm_handler(signum, frame)
+                elif signum == signal.SIGINT and callable(
+                    self._prev_sigint_handler
+                ):
+                    self._prev_sigint_handler(signum, frame)
 
         # Register handlers for common termination signals
         try:
@@ -248,29 +255,6 @@ class StepLauncher:
             # This happens when not in the main thread
             logger.debug(f"Cannot register signal handlers: {e}")
             # Continue without signal handling - the step will still run
-
-    def _restore_signal_handlers(self) -> None:
-        """Restore previous signal handlers after step completion.
-
-        Each StepLauncher registers its own handler, so in the local
-        orchestrator (which runs N steps in-process) the handlers would
-        chain N deep. Restoring prevents that accumulation.
-        """
-        try:
-            if (
-                self._signal_handler is not None
-                and signal.getsignal(signal.SIGTERM) is self._signal_handler
-                and self._prev_sigterm_handler is not None
-            ):
-                signal.signal(signal.SIGTERM, self._prev_sigterm_handler)
-            if (
-                self._signal_handler is not None
-                and signal.getsignal(signal.SIGINT) is self._signal_handler
-                and self._prev_sigint_handler is not None
-            ):
-                signal.signal(signal.SIGINT, self._prev_sigint_handler)
-        except (ValueError, OSError) as e:
-            logger.debug("Failed to restore signal handlers: %s", e)
 
     def launch(self) -> StepRunResponse:
         """Launches the step.
@@ -292,132 +276,114 @@ class StepLauncher:
         ):
             logs_context = setup_logging_context(source="prepare_step")
 
-        try:
-            with logs_context:
-                pipeline_run, run_was_created = self._create_or_reuse_run()
+        with logs_context:
+            pipeline_run, run_was_created = self._create_or_reuse_run()
+
+            if isinstance(logs_context, LoggingContext):
+                logs_context.update(pipeline_run=pipeline_run)
+
+            if run_was_created:
+                pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
+                    run_id=pipeline_run.id
+                )
+                publish_utils.publish_pipeline_run_metadata(
+                    pipeline_run_id=pipeline_run.id,
+                    pipeline_run_metadata=pipeline_run_metadata,
+                )
+                if model_version := pipeline_run.model_version:
+                    step_run_utils.log_model_version_dashboard_url(
+                        model_version=model_version
+                    )
+
+            request_factory = step_run_utils.StepRunRequestFactory(
+                snapshot=self._snapshot,
+                pipeline_run=pipeline_run,
+                stack=self._stack,
+            )
+            dynamic_config = self._step if self._snapshot.is_dynamic else None
+            step_run_request = request_factory.create_request(
+                invocation_id=self._invocation_id,
+                dynamic_config=dynamic_config,
+            )
+            if isinstance(logs_context, LoggingContext):
+                step_run_request.logs = logs_context.log_model.id
+
+            try:
+                request_factory.populate_request(request=step_run_request)
+            except BaseException as e:
+                logger.exception(
+                    f"Failed preparing step `{self._invocation_id}`."
+                )
+                step_run_request.status = ExecutionStatus.FAILED
+                step_run_request.end_time = utc_now()
+                step_run_request.exception_info = (
+                    exception_utils.collect_exception_information(e)
+                )
+                raise
+            finally:
+                step_run = Client().zen_store.create_run_step(step_run_request)
 
                 if isinstance(logs_context, LoggingContext):
-                    logs_context.update(pipeline_run=pipeline_run)
+                    logs_context.update(step_run=step_run)
 
-                if run_was_created:
-                    pipeline_run_metadata = (
-                        self._stack.get_pipeline_run_metadata(
-                            run_id=pipeline_run.id
-                        )
-                    )
-                    publish_utils.publish_pipeline_run_metadata(
-                        pipeline_run_id=pipeline_run.id,
-                        pipeline_run_metadata=pipeline_run_metadata,
-                    )
-                    if model_version := pipeline_run.model_version:
-                        step_run_utils.log_model_version_dashboard_url(
-                            model_version=model_version
-                        )
-
-                request_factory = step_run_utils.StepRunRequestFactory(
-                    snapshot=self._snapshot,
-                    pipeline_run=pipeline_run,
-                    stack=self._stack,
-                )
-                dynamic_config = (
-                    self._step if self._snapshot.is_dynamic else None
-                )
-                step_run_request = request_factory.create_request(
-                    invocation_id=self._invocation_id,
-                    dynamic_config=dynamic_config,
-                )
-                if isinstance(logs_context, LoggingContext):
-                    step_run_request.logs = logs_context.log_model.id
-
-                try:
-                    request_factory.populate_request(request=step_run_request)
-                except BaseException as e:
-                    logger.exception(
-                        f"Failed preparing step `{self._invocation_id}`."
-                    )
-                    step_run_request.status = ExecutionStatus.FAILED
-                    step_run_request.end_time = utc_now()
-                    step_run_request.exception_info = (
-                        exception_utils.collect_exception_information(e)
-                    )
-                    raise
-                finally:
-                    step_run = Client().zen_store.create_run_step(
-                        step_run_request
+                self._step_run = step_run
+                if model_version := step_run.model_version:
+                    step_run_utils.log_model_version_dashboard_url(
+                        model_version=model_version
                     )
 
-                    if isinstance(logs_context, LoggingContext):
-                        logs_context.update(step_run=step_run)
+                if not step_run.status.is_finished:
+                    logger.info(f"Step `{self._invocation_id}` has started.")
 
-                    self._step_run = step_run
-                    if model_version := step_run.model_version:
-                        step_run_utils.log_model_version_dashboard_url(
-                            model_version=model_version
+                    start_time = time.time()
+                    try:
+                        self._run_step(
+                            pipeline_run=pipeline_run,
+                            step_run=step_run,
+                            force_write_logs=lambda: None,
+                        )
+                    except RunStoppedException as e:
+                        raise e
+                    except BaseException as e:  # noqa: E722
+                        step_run = Client().get_run_step(
+                            step_run_id=step_run.id
                         )
 
-                    if not step_run.status.is_finished:
-                        logger.info(
-                            f"Step `{self._invocation_id}` has started."
-                        )
-
-                        start_time = time.time()
-                        try:
-                            self._run_step(
-                                pipeline_run=pipeline_run,
-                                step_run=step_run,
-                                force_write_logs=lambda: None,
-                            )
-                        except RunStoppedException as e:
-                            raise e
-                        except BaseException as e:  # noqa: E722
-                            step_run = Client().get_run_step(
-                                step_run_id=step_run.id
-                            )
-
-                            if (
-                                isinstance(
-                                    e, StepHeartBeatTerminationException
-                                )
-                                or step_run.status == ExecutionStatus.STOPPING
-                            ):
-                                # Handle as a non-failure as exception is a propagation of graceful termination.
-                                publish_utils.publish_stopped_step_run(
-                                    step_run.id
-                                )
-
-                            else:
-                                logger.error(
-                                    "Failed to run step `%s`: %s",
-                                    self._invocation_id,
-                                    e,
-                                )
-                                publish_utils.publish_failed_step_run(
-                                    step_run.id
-                                )
-                            raise
-
-                        duration = time.time() - start_time
-                        logger.info(
-                            f"Step `{self._invocation_id}` has finished in "
-                            f"`{string_utils.get_human_readable_time(duration)}`."
-                        )
-                    else:
-                        logger.info(
-                            f"Using cached version of step "
-                            f"`{self._invocation_id}`."
-                        )
                         if (
-                            model_version := step_run.model_version
-                            or pipeline_run.model_version
+                            isinstance(e, StepHeartBeatTerminationException)
+                            or step_run.status == ExecutionStatus.STOPPING
                         ):
-                            step_run_utils.link_output_artifacts_to_model_version(
-                                artifacts=step_run.outputs,
-                                model_version=model_version,
-                            )
+                            # Handle as a non-failure as exception is a propagation of graceful termination.
+                            publish_utils.publish_stopped_step_run(step_run.id)
 
-            return step_run
-        finally:
-            self._restore_signal_handlers()
+                        else:
+                            logger.error(
+                                "Failed to run step `%s`: %s",
+                                self._invocation_id,
+                                e,
+                            )
+                            publish_utils.publish_failed_step_run(step_run.id)
+                        raise
+
+                    duration = time.time() - start_time
+                    logger.info(
+                        f"Step `{self._invocation_id}` has finished in "
+                        f"`{string_utils.get_human_readable_time(duration)}`."
+                    )
+                else:
+                    logger.info(
+                        f"Using cached version of step `{self._invocation_id}`."
+                    )
+                    if (
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
+                    ):
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=step_run.outputs,
+                            model_version=model_version,
+                        )
+
+        return step_run
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.

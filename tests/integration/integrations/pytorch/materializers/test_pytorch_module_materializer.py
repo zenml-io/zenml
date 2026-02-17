@@ -12,14 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+
 import pytest
+from torch.nn import Linear
 
-pytest.importorskip("torch")
-from torch.nn import Linear  # noqa: E402
-
-from tests.unit.test_general import _test_materializer  # noqa: E402
-from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (  # noqa: E402
+from tests.unit.test_general import _test_materializer
+from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (
     PyTorchModuleMaterializer,
+)
+
+pytestmark = pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="PyTorch integration is not installed on Windows CI.",
 )
 
 

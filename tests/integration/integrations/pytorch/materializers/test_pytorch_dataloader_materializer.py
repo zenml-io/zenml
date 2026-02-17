@@ -12,15 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+
 import pytest
+import torch
+from torch.utils.data.dataloader import DataLoader
+from torch.utils.data.dataset import TensorDataset
 
-torch = pytest.importorskip("torch")
-from torch.utils.data.dataloader import DataLoader  # noqa: E402
-from torch.utils.data.dataset import TensorDataset  # noqa: E402
-
-from tests.unit.test_general import _test_materializer  # noqa: E402
-from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (  # noqa: E402
+from tests.unit.test_general import _test_materializer
+from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (
     PyTorchDataLoaderMaterializer,
+)
+
+pytestmark = pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="PyTorch integration is not installed on Windows CI.",
 )
 
 

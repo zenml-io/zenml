@@ -12,15 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+
 import numpy as np
 import pandas as pd
 import pytest
+from neuralprophet import NeuralProphet
 
-NeuralProphet = pytest.importorskip("neuralprophet").NeuralProphet
-
-from tests.unit.test_general import _test_materializer  # noqa: E402
-from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (  # noqa: E402
+from tests.unit.test_general import _test_materializer
+from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (
     NeuralProphetMaterializer,
+)
+
+pytestmark = pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="NeuralProphet integration is not installed on Windows CI.",
 )
 
 
