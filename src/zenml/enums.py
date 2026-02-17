@@ -589,5 +589,6 @@ class ResourceRequestStatus(StrEnum):
     ALLOCATED = "allocated"
     PREEMPTING = "preempting"
     PREEMPTED = "preempted"
+    CANCELLED = "cancelled"
     REJECTED = "rejected"
     RELEASED = "released"

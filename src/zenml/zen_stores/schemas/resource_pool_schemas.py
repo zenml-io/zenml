@@ -642,6 +642,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
     )
     status: str
     status_reason: Optional[str] = Field(default=None, nullable=True)
+    preemptable: bool
 
     # TODO: This should probably be called `pool`, and also include allocations
     # that have been released already?
@@ -737,6 +738,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
             step_run_id=request.step_run_id,
             status=ResourceRequestStatus.PENDING.value,
             preemption_initiated_by_id=None,
+            preemptable=request.preemptable,
         )
 
     def update(
@@ -778,6 +780,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
             user_id=self.user_id,
             status=ResourceRequestStatus(self.status),
             status_reason=self.status_reason,
+            preemptable=self.preemptable,
         )
 
         metadata = None

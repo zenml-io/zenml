@@ -4596,6 +4596,7 @@ class SqlZenStore(BaseZenStore):
                     pool_id=policy.resource_pool_id,
                     component_id=resource_request.component_id,
                     request_id_expression=resource_request.id,
+                    preemptable_expression=resource_request.preemptable,
                 )
             ).first()
             if pool_violation is not None:
@@ -4619,7 +4620,7 @@ class SqlZenStore(BaseZenStore):
         if queued_anywhere is None:
             resource_request.status = ResourceRequestStatus.REJECTED.value
             resource_request.status_reason = (
-                "The requested resources exceed the resources available in all "
+                f"The requested resources exceed the {'reserved resources' if not resource_request.preemptable else 'resources'} available in all "
                 "attached resource pool policies."
             )
             resource_request.updated = utc_now()
@@ -4684,6 +4685,7 @@ class SqlZenStore(BaseZenStore):
             pool_id=pool_id,
             component_id=component_id,
             request_id_expression=col(ResourceRequestSchema.id),
+            preemptable_expression=col(ResourceRequestSchema.preemptable),
         )
 
         already_enqueued = select(ResourcePoolQueueSchema.id).where(
@@ -4767,7 +4769,10 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def _fits_pool_violation_subquery(
-        pool_id: UUID, component_id: UUID, request_id_expression: Any
+        pool_id: UUID,
+        component_id: UUID,
+        request_id_expression: Any,
+        preemptable_expression: Any = True,
     ) -> SelectOfScalar[UUID]:
         """Subquery that checks if a request fits into a pool given its policy.
 
@@ -4779,6 +4784,7 @@ class SqlZenStore(BaseZenStore):
           amount
         - The component policy limit for the key is smaller than the requested
           amount
+        - The request is non-preemptable and exceeds the reserved policy share
 
         Missing limit configuration defaults to the pool total capacity for that
         resource key.
@@ -4787,6 +4793,8 @@ class SqlZenStore(BaseZenStore):
             pool_id: The ID of the pool to check.
             component_id: The component ID for which to check the policy.
             request_id_expression: The expression for the request ID.
+            preemptable_expression: Whether the request is preemptable. Can be
+                either a Python bool or a SQL expression.
 
         Returns:
             The subquery.
@@ -4795,6 +4803,24 @@ class SqlZenStore(BaseZenStore):
             ResourcePoolSubjectPolicyResourceSchema.limit,
             ResourcePoolResourceSchema.total,
         )
+        if isinstance(preemptable_expression, bool):
+            reserved_violation_condition: Any = (
+                col(ResourceRequestResourceSchema.amount)
+                > func.coalesce(
+                    col(ResourcePoolSubjectPolicyResourceSchema.reserved), 0
+                )
+                if preemptable_expression is False
+                else False
+            )
+        else:
+            reserved_violation_condition = and_(
+                ~preemptable_expression,
+                col(ResourceRequestResourceSchema.amount)
+                > func.coalesce(
+                    col(ResourcePoolSubjectPolicyResourceSchema.reserved), 0
+                ),
+            )
+
         return (
             select(ResourceRequestResourceSchema.id)
             .select_from(ResourceRequestResourceSchema)
@@ -4837,6 +4863,7 @@ class SqlZenStore(BaseZenStore):
                     effective_max_expr.is_(None),
                     effective_max_expr
                     < col(ResourceRequestResourceSchema.amount),
+                    reserved_violation_condition,
                 )
             )
             .limit(1)
@@ -4877,6 +4904,7 @@ class SqlZenStore(BaseZenStore):
                 pool_id=pool_id,
                 component_id=policy.component_id,
                 request_id_expression=ResourceRequestSchema.id,
+                preemptable_expression=col(ResourceRequestSchema.preemptable),
             )
 
             eligible_request_rows = session.exec(
@@ -4932,8 +4960,8 @@ class SqlZenStore(BaseZenStore):
                 .values(
                     status=ResourceRequestStatus.REJECTED.value,
                     status_reason=(
-                        "No pool had a total capacity "
-                        "that could fit the requested resources."
+                        "No policy had capacity that could fit the requested "
+                        "resources."
                     ),
                     updated=now,
                 )
@@ -5229,6 +5257,9 @@ class SqlZenStore(BaseZenStore):
         class _PolicyLimitReached(Exception):
             pass
 
+        class _NonPreemptableReservedShareUnavailable(Exception):
+            pass
+
         # Prevent priority inversion / "parked claims": if multiple allocators
         # run concurrently for the same pool, one can claim a high-priority item
         # while another claims and allocates a lower-priority item that is
@@ -5237,11 +5268,12 @@ class SqlZenStore(BaseZenStore):
         if not self._acquire_resource_pool_lock(session, pool_id=pool_id):
             return
         allocations_done = 0
-        skipped_due_to_policy_limit: Set[UUID] = set()
+        skipped_due_to_temporary_ineligibility: Set[UUID] = set()
         while allocations_done < max_allocations:
             now = utc_now()
             head = _peek_head_queue_item(
-                now=now, exclude_queue_item_ids=skipped_due_to_policy_limit
+                now=now,
+                exclude_queue_item_ids=skipped_due_to_temporary_ineligibility,
             )
             if head is None:
                 return
@@ -5317,8 +5349,11 @@ class SqlZenStore(BaseZenStore):
                         key: amount for key, amount in requested_resources
                     }
 
-                    component_id = session.exec(
-                        select(ResourceRequestSchema.component_id).where(
+                    component_id, request_preemptable = session.exec(
+                        select(
+                            ResourceRequestSchema.component_id,
+                            ResourceRequestSchema.preemptable,
+                        ).where(
                             col(ResourceRequestSchema.id) == head.request_id
                         )
                     ).one()
@@ -5348,17 +5383,17 @@ class SqlZenStore(BaseZenStore):
                         component_id,
                     )
 
-                    shares_rows = session.exec(
+                    policy_resource_rows = session.exec(
                         select(
                             ResourceRequestResourceSchema.key,
                             func.coalesce(
                                 ResourcePoolSubjectPolicyResourceSchema.reserved,
                                 0,
-                            ).label("effective_min"),
+                            ).label("reserved"),
                             func.coalesce(
                                 ResourcePoolSubjectPolicyResourceSchema.limit,
                                 ResourcePoolResourceSchema.total,
-                            ).label("effective_max"),
+                            ).label("effective_limit"),
                         )
                         .select_from(ResourceRequestResourceSchema)
                         .outerjoin(
@@ -5402,14 +5437,18 @@ class SqlZenStore(BaseZenStore):
                             col(ResourceRequestResourceSchema.amount) > 0,
                         )
                     ).all()
-                    max_by_key: Dict[str, int] = {}
-                    for k, _, mx in shares_rows:
+                    reserved_by_key: Dict[str, int] = {}
+                    effective_limit_by_key: Dict[str, int] = {}
+                    for k, mn, mx in policy_resource_rows:
+                        reserved_by_key[k] = int(mn)
                         if mx is None:
                             raise _AllocationFailed()
-                        max_by_key[k] = int(mx)
+                        effective_limit_by_key[k] = int(mx)
 
                     for resource_key, amount in requested_resources:
-                        if amount > max_by_key.get(resource_key, 0):
+                        if amount > effective_limit_by_key.get(
+                            resource_key, 0
+                        ):
                             session.execute(
                                 delete(ResourcePoolQueueSchema).where(
                                     col(ResourcePoolQueueSchema.id) == head.id
@@ -5462,7 +5501,9 @@ class SqlZenStore(BaseZenStore):
                     }
                     for resource_key, amount in requested_resources:
                         used = used_by_key.get(str(resource_key), 0)
-                        effective_max = max_by_key.get(str(resource_key), 0)
+                        effective_max = effective_limit_by_key.get(
+                            str(resource_key), 0
+                        )
                         if used + int(amount) > int(effective_max):
                             logger.debug(
                                 "Pool %s: policy limit reached for component %s "
@@ -5476,6 +5517,89 @@ class SqlZenStore(BaseZenStore):
                                 head.request_id,
                             )
                             raise _PolicyLimitReached()
+
+                    if not request_preemptable:
+                        used_non_preemptable_rows = session.exec(
+                            select(
+                                col(ResourceRequestResourceSchema.key),
+                                func.sum(
+                                    col(ResourceRequestResourceSchema.amount)
+                                ),
+                            )
+                            .select_from(ResourcePoolAllocationSchema)
+                            .join(
+                                ResourceRequestSchema,
+                                col(ResourceRequestSchema.id)
+                                == col(
+                                    ResourcePoolAllocationSchema.request_id
+                                ),
+                            )
+                            .join(
+                                ResourceRequestResourceSchema,
+                                and_(
+                                    col(
+                                        ResourceRequestResourceSchema.request_id
+                                    )
+                                    == col(ResourceRequestSchema.id),
+                                    col(ResourceRequestResourceSchema.key).in_(
+                                        list(
+                                            requested_resources_for_head.keys()
+                                        )
+                                    ),
+                                    col(ResourceRequestResourceSchema.amount)
+                                    > 0,
+                                ),
+                            )
+                            .where(
+                                col(ResourcePoolAllocationSchema.pool_id)
+                                == pool_id
+                            )
+                            .where(
+                                col(
+                                    ResourcePoolAllocationSchema.released_at
+                                ).is_(None)
+                            )
+                            .where(
+                                col(ResourceRequestSchema.component_id)
+                                == component_id
+                            )
+                            .where(
+                                col(ResourceRequestSchema.preemptable).is_(
+                                    False
+                                )
+                            )
+                            .group_by(col(ResourceRequestResourceSchema.key))
+                        ).all()
+                        used_non_preemptable_by_key = {
+                            str(key): int(used or 0)
+                            for key, used in used_non_preemptable_rows
+                        }
+                        for resource_key, amount in requested_resources:
+                            used_non_preemptable = (
+                                used_non_preemptable_by_key.get(
+                                    resource_key, 0
+                                )
+                            )
+                            effective_reserved = reserved_by_key.get(
+                                resource_key, 0
+                            )
+                            if (
+                                used_non_preemptable + amount
+                                > effective_reserved
+                            ):
+                                logger.debug(
+                                    "Pool %s: reserved share unavailable for "
+                                    "non-preemptable request %s key=%s "
+                                    "used_non_preemptable=%s requested=%s "
+                                    "reserved=%s.",
+                                    pool_id,
+                                    head.request_id,
+                                    resource_key,
+                                    used_non_preemptable,
+                                    amount,
+                                    effective_reserved,
+                                )
+                                raise _NonPreemptableReservedShareUnavailable()
 
                     for resource_key, amount in requested_resources:
                         logger.debug(
@@ -5560,10 +5684,13 @@ class SqlZenStore(BaseZenStore):
                     )
                 allocations_done += 1
 
-            except _PolicyLimitReached:
+            except (
+                _PolicyLimitReached,
+                _NonPreemptableReservedShareUnavailable,
+            ):
                 # Release the claim lease and continue with the next eligible
-                # request. This request stays queued until the component falls
-                # back under its policy limit.
+                # request. This request stays queued until the temporary
+                # ineligibility condition no longer applies.
                 if claim_token is not None:
                     session.execute(
                         update(ResourcePoolQueueSchema)
@@ -5579,7 +5706,7 @@ class SqlZenStore(BaseZenStore):
                         )
                     )
                     session.flush()
-                skipped_due_to_policy_limit.add(head.id)
+                skipped_due_to_temporary_ineligibility.add(head.id)
                 continue
             except (IntegrityError, _AllocationFailed):
                 head_status = session.exec(
@@ -6026,6 +6153,7 @@ class SqlZenStore(BaseZenStore):
                 col(ResourceRequestSchema.status)
                 == ResourceRequestStatus.ALLOCATED.value
             )
+            .where(col(ResourceRequestSchema.preemptable).is_(True))
         ).subquery()
 
         borrowed_any_expr = func.max(
@@ -6127,10 +6255,6 @@ class SqlZenStore(BaseZenStore):
                     continue
                 candidates_seen.add(request_id)
                 priority_by_id[request_id] = int(prio)
-                if not self._can_preempt_request(
-                    session=session, request_id=request_id
-                ):
-                    continue
                 batch_ids.append(request_id)
 
             if not batch_ids:
@@ -6228,18 +6352,6 @@ class SqlZenStore(BaseZenStore):
             preempted_any = True
 
         return preempted_any
-
-    def _can_preempt_request(self, session: Session, request_id: UUID) -> bool:
-        """Check whether a request can be preempted.
-
-        Args:
-            session: DB session.
-            request_id: ID of the request.
-
-        Returns:
-            True if the request can be preempted, False otherwise.
-        """
-        return True
 
     def _trigger_resource_request_eviction(
         self, session: Session, request_id: UUID
