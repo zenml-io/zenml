@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration for the Skypilot master/orchestrator VM."""
 
-from typing import TYPE_CHECKING, List, Set
+from typing import TYPE_CHECKING, List, Optional, Set
 
 if TYPE_CHECKING:
     from uuid import UUID
 
 RUN_NAME_OPTION = "run_name"
 SNAPSHOT_ID_OPTION = "snapshot_id"
+RUN_ID_OPTION = "run_id"
 
 
 class SkypilotOrchestratorEntrypointConfiguration:
@@ -35,6 +36,7 @@ class SkypilotOrchestratorEntrypointConfiguration:
         options = {
             RUN_NAME_OPTION,
             SNAPSHOT_ID_OPTION,
+            RUN_ID_OPTION,
         }
         return options
 
@@ -57,12 +59,14 @@ class SkypilotOrchestratorEntrypointConfiguration:
         cls,
         run_name: str,
         snapshot_id: "UUID",
+        run_id: Optional["UUID"] = None,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
             run_name: Name of the ZenML run.
             snapshot_id: ID of the snapshot.
+            run_id: Optional ID of the pipeline run.
 
         Returns:
             List of entrypoint arguments.
@@ -73,5 +77,7 @@ class SkypilotOrchestratorEntrypointConfiguration:
             f"--{SNAPSHOT_ID_OPTION}",
             str(snapshot_id),
         ]
+        if run_id:
+            args.extend([f"--{RUN_ID_OPTION}", str(run_id)])
 
         return args

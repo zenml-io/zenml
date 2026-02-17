@@ -1,7 +1,8 @@
 """Utility functions for Skypilot orchestrators."""
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+import shlex
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import sky
 
@@ -15,6 +16,15 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from sky.clouds.cloud import Cloud
+
+UNSUPPORTED_LAUNCH_SETTINGS_KEYS = (
+    "stream_logs",
+    "detach_setup",
+    "detach_run",
+    "num_nodes",
+)
+
+_ENV_VAR_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def sanitize_cluster_name(name: str) -> str:
@@ -52,9 +62,10 @@ def prepare_docker_setup(
     if credentials:
         docker_username, docker_password = credentials
         sudo_prefix = "sudo " if use_sudo else ""
+        quoted_registry_uri = shlex.quote(container_registry_uri)
         setup = (
-            f"{sudo_prefix}docker login --username $DOCKER_USERNAME --password "
-            f"$DOCKER_PASSWORD {container_registry_uri}"
+            f'{sudo_prefix}docker login --username "$DOCKER_USERNAME" '
+            f"--password-stdin {quoted_registry_uri}"
         )
         task_envs = {
             "DOCKER_USERNAME": docker_username,
@@ -88,15 +99,27 @@ def create_docker_run_command(
     Returns:
         Docker run command as string.
     """
+    invalid_env_keys = [
+        key for key in environment if not _ENV_VAR_PATTERN.fullmatch(key)
+    ]
+    if invalid_env_keys:
+        raise ValueError(
+            "Invalid environment variable name(s) for docker run: "
+            f"{', '.join(invalid_env_keys)}."
+        )
+
     docker_environment_str = " ".join(
-        f"-e {k}={v}" for k, v in environment.items()
+        f"-e {shlex.quote(k)}" for k in environment
     )
-    custom_run_args = " ".join(docker_run_args)
+    custom_run_args = " ".join(shlex.quote(arg) for arg in docker_run_args)
     if custom_run_args:
         custom_run_args += " "
 
     sudo_prefix = "sudo " if use_sudo else ""
-    return f"{sudo_prefix}docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+    return (
+        f"{sudo_prefix}docker run --rm {custom_run_args}{docker_environment_str} "
+        f"{shlex.quote(image)} {entrypoint_str} {arguments_str}"
+    )
 
 
 def prepare_task_kwargs(
@@ -161,8 +184,20 @@ def prepare_resources_kwargs(
     Returns:
         Resources keyword arguments dictionary.
     """
+    if settings.infra:
+        invalid_resource_keys = [
+            key
+            for key in ("cloud", "region", "zone")
+            if key in settings.resources_settings
+        ]
+        if invalid_resource_keys:
+            raise ValueError(
+                "The `infra` setting cannot be combined with "
+                f"`resources_settings` keys {invalid_resource_keys}."
+            )
+
     resources_kwargs = {
-        "cloud": cloud,
+        "cloud": None if settings.infra else cloud,
         "instance_type": settings.instance_type or default_instance_type,
         "cpus": settings.cpus,
         "memory": settings.memory,
@@ -170,8 +205,8 @@ def prepare_resources_kwargs(
         "accelerator_args": settings.accelerator_args,
         "use_spot": settings.use_spot,
         "job_recovery": settings.job_recovery,
-        "region": settings.region,
-        "zone": settings.zone,
+        "region": None if settings.infra else settings.region,
+        "zone": None if settings.infra else settings.zone,
         "image_id": kubernetes_image
         if kubernetes_image
         else settings.image_id,
@@ -205,7 +240,6 @@ def prepare_launch_kwargs(
     Returns:
         Launch keyword arguments dictionary.
     """
-    # Determine values falling back to settings where applicable
     down_value = down if down is not None else settings.down
     idle_value = (
         idle_minutes_to_autostop
@@ -223,21 +257,14 @@ def prepare_launch_kwargs(
         **settings.launch_settings,  # Keep user-provided extras
     }
 
-    # Remove keys no longer supported by sky.launch.
-    for _deprecated in (
-        "stream_logs",
-        "detach_setup",
-        "detach_run",
-        "num_nodes",
-    ):
+    for _deprecated in UNSUPPORTED_LAUNCH_SETTINGS_KEYS:
         launch_kwargs.pop(_deprecated, None)
 
-    # Remove None values to avoid overriding SkyPilot defaults
     return {k: v for k, v in launch_kwargs.items() if v is not None}
 
 
 def sky_job_get(
-    request_id: str, stream_logs: bool, cluster_name: str
+    request_id: Any, stream_logs: bool, cluster_name: str
 ) -> Optional[SubmissionResult]:
     """Handle SkyPilot request results based on stream_logs setting.
 
@@ -254,14 +281,23 @@ def sky_job_get(
     Returns:
         Optional submission result.
     """
-    request_id_any = cast(Any, request_id)
     if stream_logs:
-        # Stream logs and wait for completion; returns (job_id, handle)
-        result = cast(Tuple[int, Any], sky.stream_and_get(request_id_any))
+        result = sky.stream_and_get(request_id)
     else:
-        # Just wait for completion without streaming logs
-        result = cast(Tuple[int, Any], sky.get(request_id_any))
+        result = sky.get(request_id)
+
+    if not isinstance(result, tuple) or not result:
+        raise RuntimeError(
+            "Failed to get SkyPilot job result for request "
+            f"{request_id!r}: expected a non-empty tuple, got {result!r}."
+        )
+
     job_id = result[0]
+    if type(job_id) is not int:
+        raise RuntimeError(
+            "Failed to parse SkyPilot job ID for request "
+            f"{request_id!r}: expected int, got {job_id!r}."
+        )
 
     def _wait_for_completion() -> None:
         status = sky.tail_logs(

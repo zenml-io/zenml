@@ -328,9 +328,9 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 * `retry_until_up`: Whether to retry launching the cluster until it is up.
 * `idle_minutes_to_autostop`: Automatically stop the cluster after this many minutes of idleness, i.e., no running or pending jobs in the cluster's job queue. Idleness gets reset whenever setting-up/running/pending jobs are found in the job queue. Setting this flag schedules an autostop after the launch completes. If not set, the cluster will not be autostopped.
 * `down`: Tear down the cluster after all jobs finish (successfully or abnormally). If `idle_minutes_to_autostop` is also set, the cluster will be torn down after the specified idle time. Note that if errors occur during provisioning/data syncing/setting up, the cluster will not be torn down for debugging purposes.
-* `infra`: SkyPilot shortcut string describing resources (e.g., `"K80:1,CPU-8,Mem-32"`). Mutually exclusive with explicit `instance_type`/`cpus`/`memory`/`accelerators`.
+* `infra`: SkyPilot infrastructure selector (e.g., `"aws/us-east-1"`, `"gcp/us-central1-a"`, `"k8s/my-cluster-ctx"`). Mutually exclusive with explicit cloud/region/zone selection.
 * `num_nodes`: Number of nodes for multi-node jobs.
-* `network_tier`: Network performance tier where supported by the cloud provider.
+* `network_tier`: Network performance tier where supported by the cloud provider. Valid values are `'standard'` (default) and `'best'`.
 * `stream_logs`: If True, show the logs in the terminal as they are generated while the cluster is running.
 * `docker_run_args`: Additional arguments to pass to the `docker run` command. For example, `['--gpus=all']` to use all GPUs available on the VM.
 * `ports`: Ports to expose. Could be an integer, a range, or a list of integers and ranges. All ports will be exposed to the public internet.

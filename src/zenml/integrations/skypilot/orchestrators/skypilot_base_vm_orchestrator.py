@@ -14,6 +14,7 @@
 """Implementation of the Skypilot base VM orchestrator."""
 
 import os
+import shlex
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from uuid import uuid4
@@ -31,6 +32,7 @@ from zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint_
     SkypilotOrchestratorEntrypointConfiguration,
 )
 from zenml.integrations.skypilot.utils import (
+    UNSUPPORTED_LAUNCH_SETTINGS_KEYS,
     create_docker_run_command,
     prepare_docker_setup,
     prepare_launch_kwargs,
@@ -262,6 +264,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             args = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
                 snapshot_id=snapshot.id,
+                run_id=placeholder_run.id if placeholder_run else None,
             )
         else:
             # Run the entire pipeline in one VM using PipelineEntrypointConfiguration
@@ -270,8 +273,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 snapshot_id=snapshot.id
             )
 
-        entrypoint_str = " ".join(command)
-        arguments_str = " ".join(args)
+        entrypoint_str = " ".join(shlex.quote(token) for token in command)
+        arguments_str = " ".join(shlex.quote(token) for token in args)
 
         task_envs = base_environment.copy()
 
@@ -368,6 +371,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     down=down,
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                 )
+                if isinstance(self.cloud, sky.clouds.Kubernetes):
+                    launch_kwargs.pop("idle_minutes_to_autostop", None)
                 logger.info(
                     f"Launching the task on a new cluster: {cluster_name}"
                 )
@@ -387,16 +392,18 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     "backend": None,
                 }
 
+                filtered_launch_settings = []
                 for key, value in settings.launch_settings.items():
-                    if key in {
-                        "stream_logs",
-                        "detach_setup",
-                        "detach_run",
-                        "num_nodes",
-                    }:
+                    if key in UNSUPPORTED_LAUNCH_SETTINGS_KEYS:
+                        filtered_launch_settings.append(key)
                         continue
                     if value is not None:
                         exec_kwargs[key] = value
+                if filtered_launch_settings:
+                    logger.debug(
+                        "Ignoring launch_settings keys for `sky.exec`: %s",
+                        ", ".join(sorted(set(filtered_launch_settings))),
+                    )
 
                 # Make sure the cluster is up
                 if settings.cluster_name is None:
@@ -411,9 +418,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 )
                 start_result = sky.stream_and_get(start_request_id)
                 if not start_result:
-                    logger.warning(
+                    logger.debug(
                         "SkyPilot start returned an empty response for cluster "
-                        f"{settings.cluster_name}."
+                        "%s. Cluster may already be running.",
+                        settings.cluster_name,
                     )
 
                 status_request_id = sky.status(
