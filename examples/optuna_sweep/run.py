@@ -59,7 +59,7 @@ def main() -> None:
         print("   Mode: All trials in parallel")
         print(f"   Cache: {'enabled' if enable_cache else 'disabled'}\n")
 
-        sweep_pipeline.with_options(enable_cache=enable_cache, config_path="conf/config_zenml.yaml")(
+        sweep_pipeline.with_options(enable_cache=enable_cache)(
             study_name=STUDY_NAME,
             n_trials=5,
             max_iter=10,
