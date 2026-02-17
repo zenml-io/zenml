@@ -159,6 +159,8 @@ the chance of the server receiving the maximum amount of retry requests.
 - **`job_monitoring_interval`** (default 3): The interval in seconds to monitor the job. Each interval is used to check for container issues and streaming logs for the job pods.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
+- **`concurrency_policy`**: CronJob concurrency policy for scheduled pipelines. Controls whether concurrent job executions are allowed. Valid values: `Allow` (Kubernetes default), `Forbid`, `Replace`. Only applies when a pipeline has a cron schedule.
+- **`starting_deadline_seconds`**: CronJob starting deadline in seconds for scheduled pipelines. If a scheduled run misses its trigger time, it can still start within this window. Only applies when a pipeline has a cron schedule. Note: this is different from `active_deadline_seconds`, which limits how long a *running* job can execute.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
 
 ```python
@@ -377,6 +379,35 @@ scheduled_pipeline = my_kubernetes_pipeline.with_options(schedule=schedule)
 # Run the pipeline once to register the schedule
 scheduled_pipeline()
 ```
+
+#### Customizing CronJob behavior
+
+You can customize the CronJob configuration using `KubernetesOrchestratorSettings`. This is useful when your cluster has specific policies for CronJob resources:
+
+```python
+from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+
+k8s_settings = KubernetesOrchestratorSettings(
+    concurrency_policy="Forbid",            # Prevent concurrent job executions
+    starting_deadline_seconds=20,           # Missed-schedule start window
+    successful_jobs_history_limit=2,        # Keep last 2 successful jobs
+    failed_jobs_history_limit=1,            # Keep last 1 failed job
+    active_deadline_seconds=180,            # Job runtime limit (3 minutes)
+    orchestrator_job_backoff_limit=2,       # Max retries before marking failed
+    ttl_seconds_after_finished=3600,        # Cleanup completed jobs after 1 hour
+    pod_stop_grace_period=90,               # Graceful shutdown window
+)
+
+scheduled_pipeline = my_kubernetes_pipeline.with_options(
+    schedule=schedule,
+    settings={"orchestrator.kubernetes": k8s_settings},
+)
+scheduled_pipeline()
+```
+
+{% hint style="info" %}
+`starting_deadline_seconds` controls how late a CronJob can start after its scheduled time (missed-schedule window), while `active_deadline_seconds` limits how long a running job can execute (runtime timeout). These are independent settings that apply at different stages of the job lifecycle.
+{% endhint %}
 
 Cron expressions follow the standard format (`minute hour day-of-month month day-of-week`):
 
