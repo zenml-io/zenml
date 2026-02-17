@@ -804,6 +804,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         ),
                         successful_jobs_history_limit=settings.successful_jobs_history_limit,
                         failed_jobs_history_limit=settings.failed_jobs_history_limit,
+                        concurrency_policy=settings.concurrency_policy,
+                        starting_deadline_seconds=settings.starting_deadline_seconds,
                     )
 
                     cron_job = self._k8s_batch_api.create_namespaced_cron_job(

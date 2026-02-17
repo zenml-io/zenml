@@ -111,20 +111,19 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Maximize space (/opt)
-        uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c  # v10
-        with:
-          # Python from actions/setup-python lives under /opt/hostedtoolcache on Linux runners,
-          # and this workflow installs ZenML via `--system` into that interpreter.
-          root-reserve-mb: 20000
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-          build-mount-path: /opt
+      - name: Free disk space (Ubuntu)
         if: inputs.os == 'ubuntu-latest'
+        run: |
+          set -euxo pipefail
+          echo "Before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force || true
+          echo "After cleanup:"
+          df -h
       - name: Set uv cache + temp dirs (/opt)
         if: inputs.os == 'ubuntu-latest'
         run: |
@@ -165,7 +164,7 @@ jobs:
           sudo rm -rf /var/lib/docker/* || true
           sudo systemctl start docker
       - name: Login to Docker Hub
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef  # v3
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef  # v3.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

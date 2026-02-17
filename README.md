@@ -215,3 +215,11 @@ Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?it
 
 ZenML is distributed under the terms of the Apache License Version 2.0. See
 [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+  <a href="https://www.linuxfoundation.org/"><img src="docs/book/.gitbook/assets/lf-member-silver.svg" alt="Linux Foundation Silver Member" height="100"/></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.cncf.io/"><img src="docs/book/.gitbook/assets/cncf-member-silver.svg" alt="CNCF Silver Member" height="100"/></a>
+</div>

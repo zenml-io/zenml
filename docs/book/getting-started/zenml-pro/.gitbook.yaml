@@ -6,3 +6,9 @@ structure:
 
 redirects:
   deployments/self-hosted: self-hosted-deployment.md
+  deployments/scenarios/hybrid-deployment/hybrid-deployment-ecs: deploy-workspace-ecs.md
+  deployments/scenarios/hybrid-deployment/hybrid-deployment-helm: deploy-workspace-k8s.md
+  deployments/scenarios/self-hosted-deployment/self-hosted-deployment-helm: deploy-control-plane-k8s.md
+  manage/configuration-details: deploy-details.md
+  manage/configuration-details/config-control-plane: deploy-control-plane-k8s.md
+  manage/configuration-details/config-workspace-server: deploy-workspace-k8s.md

@@ -77,7 +77,7 @@ The Control Plane handles sensitive authentication data but never accesses your 
 | Data Type | Sensitivity | Storage |
 |-----------|-------------|---------|
 | User credentials | High | Managed through IDP |
-| API tokens | High | Encrypted at rest |
+| API tokens | High | Secure cookie storage |
 | Organization settings | Medium | Control Plane database |
 | Audit logs | Medium | Control Plane database |
 | Workspace metadata | Low | Control Plane database |
@@ -85,7 +85,7 @@ The Control Plane handles sensitive authentication data but never accesses your 
 ## Related Documentation
 
 - [Scenarios](scenarios.md) - Choose the right deployment option
-- [Configuration Details](configuration-details.md) - Detailed configuration reference for each component
+- [Deployment Details](deploy-details.md) - Detailed configuration reference for each component
 - [Upgrades and Updates](upgrades-updates.md) - How to upgrade components
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
