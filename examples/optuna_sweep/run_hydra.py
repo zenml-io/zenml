@@ -86,6 +86,7 @@ def main() -> None:
     zenml_config = config.get("zenml_config", {})
     mode = sweep_config.get("mode", "simple")  # Default to simple mode
     enable_cache = zenml_config.get("enable_cache", True)
+    settings = zenml_config.get("settings", {})
 
     print("\n🚀 Running sweep pipeline with Hydra config")
     print(f"   Study: {sweep_config['study_name']}")
@@ -101,7 +102,7 @@ def main() -> None:
         print(f"   Trials: {sweep_config['n_trials']}")
         print(f"   Max iterations: {sweep_config['max_iter']}\n")
 
-        sweep_pipeline.with_options(enable_cache=enable_cache)(
+        sweep_pipeline.with_options(enable_cache=enable_cache, settings=settings)(
             study_name=sweep_config["study_name"],
             storage_url=sweep_config["storage_url"],
             n_trials=sweep_config["n_trials"],
@@ -116,7 +117,7 @@ def main() -> None:
         )
         print(f"   Max iterations: {sweep_config['max_iter']}\n")
 
-        adaptive_sweep_pipeline.with_options(enable_cache=enable_cache)(
+        adaptive_sweep_pipeline.with_options(enable_cache=enable_cache, settings=settings)(
             study_name=sweep_config["study_name"],
             storage_url=sweep_config["storage_url"],
             n_rounds=sweep_config.get("n_rounds", 3),

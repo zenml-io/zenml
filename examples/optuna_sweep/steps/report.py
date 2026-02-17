@@ -18,6 +18,7 @@
 from typing import Annotated, Any, Dict, List
 
 import optuna
+from optuna.trial import TrialState
 
 from zenml import step
 from zenml.config import ResourceSettings
@@ -48,8 +49,8 @@ def report_results(
         results: List of trial results from train_trial steps, each containing:
             - trial_number: Trial ID
             - val_loss: Validation loss
-            - lr, dropout, batch_size: Hyperparameters
-            - epoch_losses: Training loss history
+            - learning_rate, batch_size, hidden_dim: Hyperparameters
+            - val_accuracy: Validation accuracy (optional)
 
     Returns:
         Summary dictionary containing:
@@ -61,8 +62,8 @@ def report_results(
 
     Example:
         >>> results = [
-        ...     {"trial_number": 0, "val_loss": 0.45, "lr": 0.001, ...},
-        ...     {"trial_number": 1, "val_loss": 0.38, "lr": 0.005, ...},
+        ...     {"trial_number": 0, "val_loss": 0.45, "learning_rate": 0.001, ...},
+        ...     {"trial_number": 1, "val_loss": 0.38, "learning_rate": 0.005, ...},
         ... ]
         >>> summary = report_results("my_study", "sqlite:///optuna.db", results)
         >>> print(summary["best_val_loss"])
@@ -84,14 +85,24 @@ def report_results(
         trial_number = result["trial_number"]
         val_loss = result["val_loss"]
 
+        trial = next(
+            (t for t in study.trials if t.number == trial_number), None
+        )
+        if trial is not None and trial.state != TrialState.RUNNING:
+            print(
+                f"Trial {trial_number:2d} | already reported (state={trial.state.name}), "
+                f"skipping tell"
+            )
+            continue
+
         study.tell(trial_number, val_loss)
 
         print(
             f"Trial {trial_number:2d} | "
             f"val_loss={val_loss:.4f} | "
-            f"learning_rate_init={result['learning_rate_init']:.6f} | "
-            f"alpha={result['alpha']:.6f} | "
-            f"hidden_layer_sizes={str(result['hidden_layer_sizes']):12s} | "
+            f"learning_rate={result['learning_rate']:.6f} | "
+            f"batch_size={result['batch_size']} | "
+            f"hidden_dim={result['hidden_dim']} | "
             f"val_acc={result.get('val_accuracy', 0):.2f}%"
         )
 
@@ -117,9 +128,9 @@ def report_results(
                 "trial_number": r["trial_number"],
                 "val_loss": r["val_loss"],
                 "val_accuracy": r.get("val_accuracy", 0),
-                "learning_rate_init": r["learning_rate_init"],
-                "alpha": r["alpha"],
-                "hidden_layer_sizes": r["hidden_layer_sizes"],
+                "learning_rate": r["learning_rate"],
+                "batch_size": r["batch_size"],
+                "hidden_dim": r["hidden_dim"],
             }
             for r in results
         ],

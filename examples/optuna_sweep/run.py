@@ -62,7 +62,7 @@ def main() -> None:
         print("   Mode: All trials in parallel")
         print(f"   Cache: {'enabled' if enable_cache else 'disabled'}\n")
 
-        sweep_pipeline.with_options(enable_cache=enable_cache)(
+        sweep_pipeline.with_options(enable_cache=enable_cache, config_path="conf/config_zenml.yaml")(
             study_name=STUDY_NAME,
             storage_url=STORAGE_URL,
             n_trials=5,
@@ -85,7 +85,7 @@ def main() -> None:
             max_iter=10,  # Reduced for faster testing
         )
 
-    print("\n✅ Sweep complete! Check the ZenML dashboard to see the DAG.")
+    print("\n✅ Sweep submitted! Check the ZenML dashboard to see the DAG.")
 
 
 if __name__ == "__main__":

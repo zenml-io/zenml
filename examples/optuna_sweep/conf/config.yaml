@@ -19,6 +19,13 @@ sweep:
 # ZenML pipeline configuration
 zenml_config:
   enable_cache: true  # Set to false to disable caching
+  settings:
+    docker:
+      requirements: "requirements.txt"
+      python_package_installer: "uv"
+      build_config:
+        build_options:
+          platform: linux/amd64
 
 # Search space configuration
 # This shows how Hydra can manage hyperparameter ranges
