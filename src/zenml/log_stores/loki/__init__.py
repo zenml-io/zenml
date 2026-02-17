@@ -12,9 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Loki log store implementation."""
-
-from zenml.log_stores.loki.loki_flavor import LokiLogStoreConfig, LokiLogStoreFlavor
-from zenml.log_stores.loki.loki_log_store import LokiLogStore
-
-__all__ = ["LokiLogStore", "LokiLogStoreConfig", "LokiLogStoreFlavor"]
-
