@@ -109,58 +109,8 @@ class LokiLogStore(OtelLogStore):
 
         return headers
 
-    def fetch(
-        self,
-        logs_model: LogsResponse,
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[LogEntry]:
-        """Fetch log entries from Loki.
-
-        Args:
-            logs_model: The logs model containing metadata about the logs.
-            limit: Maximum number of log entries to return.
-            start_time: The start time of the log entries.
-            end_time: The end time of the log entries.
-
-        Returns:
-            The log entries.
-
-        Raises:
-            ValueError: If `limit` is not positive.
-        """
-        if limit <= 0:
-            raise ValueError("`limit` must be positive.")
-
-        start = _to_unix_ns(start_time or logs_model.created)
-        end = _to_unix_ns(end_time or datetime.now(timezone.utc))
-        query = self._build_logql_query(logs_model=logs_model, filter_=None)
-
-        raw_lines = self._query_range(
-            query=query,
-            start_ns=start,
-            end_ns=end,
-            limit=min(limit, 5000),
-            direction="forward",
-        )
-
-        items: List[LogEntry] = []
-        raw_lines.sort(key=lambda x: x[0])
-        for ts_ns, line in raw_lines:
-            entry = parse_log_entry(line)
-            if entry is None:
-                continue
-            entry.timestamp = datetime.fromtimestamp(
-                ts_ns / 1_000_000_000, tz=timezone.utc
-            )
-            items.append(entry)
-            if len(items) >= limit:
-                break
-        return items
-
     @classmethod
-    def _encode_cursor(cls, ts_ns: int) -> str:
+    def encode_cursor(cls, ts_ns: int) -> str:
         """Encode a cursor timestamp into a base64 URL-safe string.
 
         Args:
@@ -174,7 +124,7 @@ class LokiLogStore(OtelLogStore):
         return base64.urlsafe_b64encode(data).decode("ascii")
 
     @classmethod
-    def _decode_cursor(cls, token: str) -> int:
+    def decode_cursor(cls, token: str) -> int:
         """Decode a base64 URL-safe string into a cursor timestamp.
 
         Args:
@@ -187,7 +137,7 @@ class LokiLogStore(OtelLogStore):
         decoded = json.loads(raw.decode("utf-8"))
         return int(decoded.get("ts_ns"))
 
-    def fetch_entries(
+    def fetch(
         self,
         logs_model: LogsResponse,
         limit: int,
@@ -217,7 +167,7 @@ class LokiLogStore(OtelLogStore):
         if before is not None and after is not None:
             raise ValueError("Only one of `before` or `after` can be set.")
 
-        query = self._build_logql_query(logs_model=logs_model, filter_=filter_)
+        query = self.build_query(logs_model=logs_model, filter_=filter_)
 
         since_ns = logs_model.created
         until_ns = datetime.now(timezone.utc)
@@ -231,7 +181,7 @@ class LokiLogStore(OtelLogStore):
         until_ns = _to_unix_ns(until_ns)
 
         if after is not None:
-            after_cursor = self._decode_cursor(after)
+            after_cursor = self.decode_cursor(after)
             start_ns = max(since_ns, after_cursor + 1)
 
             if start_ns > until_ns:
@@ -250,6 +200,7 @@ class LokiLogStore(OtelLogStore):
             newest_ts: Optional[int] = None
             oldest_ts: Optional[int] = None
             for ts_ns, line in raw_lines:
+                # TODO: Change the parsing here or move it to util
                 entry = parse_log_entry(line)
                 if entry is None:
                     continue
@@ -267,19 +218,15 @@ class LokiLogStore(OtelLogStore):
                 return LogsEntriesResponse(items=[], before=None, after=after)
 
             before_token = (
-                self._encode_cursor(oldest_ts)
-                if oldest_ts > since_ns
-                else None
+                self.encode_cursor(oldest_ts) if oldest_ts > since_ns else None
             )
             return LogsEntriesResponse(
                 items=items,
                 before=before_token,
-                after=self._encode_cursor(newest_ts),
+                after=self.encode_cursor(newest_ts),
             )
 
-        cursor_pos = (
-            self._decode_cursor(before) if before is not None else None
-        )
+        cursor_pos = self.decode_cursor(before) if before is not None else None
 
         end_ns = (
             min(until_ns, cursor_pos - 1)
@@ -319,9 +266,9 @@ class LokiLogStore(OtelLogStore):
             return LogsEntriesResponse(items=[], before=None, after=None)
 
         before_token = (
-            self._encode_cursor(oldest_ts) if oldest_ts > since_ns else None
+            self.encode_cursor(oldest_ts) if oldest_ts > since_ns else None
         )
-        after_token = self._encode_cursor(newest_ts)
+        after_token = self.encode_cursor(newest_ts)
         return LogsEntriesResponse(
             items=page_items, before=before_token, after=after_token
         )
@@ -383,12 +330,12 @@ class LokiLogStore(OtelLogStore):
                 lines.append((ts_ns, line))
         return lines
 
-    def _build_logql_query(
+    def build_query(
         self, *, logs_model: LogsResponse, filter_: Optional[LogsEntriesFilter]
     ) -> str:
         """Build a LogQL query to fetch log entries from Loki.
 
-        Important note: Loki normalization replaces '.' with '_' for
+        Important: Loki normalization replaces '.' with '_' for
         label/field names (e.g., 'zenml.log.id' becomes 'zenml_log_id').
 
         Args:

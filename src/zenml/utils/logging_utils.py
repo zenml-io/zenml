@@ -455,7 +455,7 @@ def fetch_logs(
                 f"Stack component '{logs.artifact_store_id}' is not an artifact store."
             )
         artifact_store = cast(
-            "BaseArtifactStore",
+            BaseArtifactStore,
             StackComponent.from_model(artifact_store_model),
         )
         log_store = ArtifactLogStore.from_artifact_store(
@@ -477,7 +477,7 @@ def setup_logging_context(
     step_run: Optional["StepRunResponse"] = None,
     block_on_exit: bool = True,
 ) -> LoggingContext:
-    """Setup a logging context for a given source.
+    """Set up a logging context for a given source.
 
     Args:
         source: The source of the logs.

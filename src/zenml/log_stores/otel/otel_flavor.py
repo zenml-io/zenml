@@ -21,6 +21,7 @@ from zenml import __version__
 from zenml.constants import (
     LOGS_OTEL_EXPORT_TIMEOUT_MILLIS,
     LOGS_OTEL_MAX_EXPORT_BATCH_SIZE,
+    LOGS_OTEL_MAX_QUERY_SIZE,
     LOGS_OTEL_MAX_QUEUE_SIZE,
     LOGS_OTEL_SCHEDULE_DELAY_MILLIS,
 )
@@ -67,6 +68,10 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
     max_queue_size: int = Field(
         default=LOGS_OTEL_MAX_QUEUE_SIZE,
         description="Maximum queue size for batch log processor",
+    )
+    max_query_size: int = Field(
+        default=LOGS_OTEL_MAX_QUERY_SIZE,
+        description="Maximum number of log entries to fetch with one request.",
     )
     schedule_delay_millis: int = Field(
         default=LOGS_OTEL_SCHEDULE_DELAY_MILLIS,

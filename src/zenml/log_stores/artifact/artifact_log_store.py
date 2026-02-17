@@ -12,12 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Artifact log store implementation."""
+# TODO: Remove the 50k limit
 
 import base64
 import json
 import os
 import re
-from datetime import datetime
 from typing import (
     Any,
     Dict,
@@ -33,10 +33,10 @@ from typing import (
 from uuid import UUID
 
 from opentelemetry.sdk._logs.export import LogExporter
+from pydantic import Field
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import LoggingLevels, StackComponentType
-from zenml.exceptions import DoesNotExistException
 from zenml.log_stores import BaseLogStore
 from zenml.log_stores.base_log_store import BaseLogStoreOrigin
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
@@ -63,7 +63,7 @@ END_OF_STREAM_MESSAGE = "END_OF_STREAM"
 CHUNK_SIZE = 256 * 1024  # 256KB
 
 
-class CursorToken(NamedTuple):
+class ArtifactLogStoreCursor(NamedTuple):
     """Cursor token payload for artifact-store logs.
 
     `offset` is a byte offset pointing to the start of a log line within the
@@ -74,45 +74,7 @@ class CursorToken(NamedTuple):
     offset: int
 
 
-def _encode_cursor(*, pos: "CursorToken") -> str:
-    """Encode a cursor position into a base64 string.
-
-    Since the token is used to paginate logs, it needs to be URL-safe.
-
-    Args:
-        pos: The cursor position.
-
-    Returns:
-        The base64 encoded string.
-    """
-    payload = {
-        "file_idx": int(pos.file_idx),
-        "offset": int(pos.offset),
-    }
-    data = json.dumps(payload, sort_keys=True).encode("utf-8")
-    return base64.urlsafe_b64encode(data).decode("ascii")
-
-
-def _decode_cursor(*, token: str) -> "CursorToken":
-    """Decode a cursor position from a base64 string.
-
-    Args:
-        token: The base64 encoded string.
-
-    Returns:
-        The cursor position.
-    """
-    raw = base64.urlsafe_b64decode(token.encode("ascii"))
-    decoded = json.loads(raw.decode("utf-8"))
-
-    file_idx = int(decoded["file_idx"])
-    offset = int(decoded["offset"])
-    if file_idx < 0 or offset < 0:
-        raise ValueError("Invalid cursor position.")
-
-    return CursorToken(file_idx=file_idx, offset=offset)
-
-
+# TODO: Move this to util
 def _matches_filter(entry: LogEntry, filter_: LogsEntriesFilter) -> bool:
     """Check if a log entry matches the filter.
 
@@ -169,8 +131,8 @@ def _get_logs_file_paths(
 def iterate_forward(
     artifact_store: "BaseArtifactStore",
     paths: Sequence[str],
-    starting_position: Optional[CursorToken],
-) -> Generator[Tuple[CursorToken, str], None, None]:
+    starting_position: Optional[ArtifactLogStoreCursor],
+) -> Generator[Tuple[ArtifactLogStoreCursor, str], None, None]:
     """Iterate log lines forward (oldest to newest).
 
     Args:
@@ -207,14 +169,17 @@ def iterate_forward(
                     break
 
                 line = raw.rstrip(b"\n\r").decode("utf-8", errors="replace")
-                yield (CursorToken(file_idx=file_idx, offset=offset), line)
+                yield (
+                    ArtifactLogStoreCursor(file_idx=file_idx, offset=offset),
+                    line,
+                )
 
 
 def iterate_backward(
     artifact_store: "BaseArtifactStore",
     paths: Sequence[str],
-    starting_position: Optional[CursorToken],
-) -> Generator[Tuple[CursorToken, str], None, None]:
+    starting_position: Optional[ArtifactLogStoreCursor],
+) -> Generator[Tuple[ArtifactLogStoreCursor, str], None, None]:
     """Iterate log lines backward (newest to oldest).
 
     Args:
@@ -265,7 +230,9 @@ def iterate_backward(
                     if raw:
                         line = raw.decode("utf-8", errors="replace")
                         yield (
-                            CursorToken(file_idx=file_idx, offset=line_start),
+                            ArtifactLogStoreCursor(
+                                file_idx=file_idx, offset=line_start
+                            ),
                             line,
                         )
                     continue
@@ -274,7 +241,12 @@ def iterate_backward(
                     raw = buffer.rstrip(b"\r")
                     if raw:
                         line = raw.decode("utf-8", errors="replace")
-                        yield (CursorToken(file_idx=file_idx, offset=0), line)
+                        yield (
+                            ArtifactLogStoreCursor(
+                                file_idx=file_idx, offset=0
+                            ),
+                            line,
+                        )
                     break
 
                 read_start = max(0, buffer_start - CHUNK_SIZE)
@@ -318,79 +290,6 @@ def remove_ansi_escape_codes(text: str) -> str:
         the version of the input string where the escape codes are removed.
     """
     return ansi_escape.sub("", text)
-
-
-def fetch_log_records(
-    artifact_store: "BaseArtifactStore",
-    logs_uri: str,
-    limit: int,
-) -> List[LogEntry]:
-    """Fetches log entries.
-
-    Args:
-        artifact_store: The artifact store.
-        logs_uri: The URI of the artifact (file or directory).
-        limit: Maximum number of log entries to return.
-
-    Returns:
-        List of log entries.
-    """
-    log_entries = []
-
-    for line in _stream_logs_line_by_line(artifact_store, logs_uri):
-        if log_entry := parse_log_entry(line):
-            log_entries.append(log_entry)
-
-        if len(log_entries) >= limit:
-            break
-
-    return log_entries
-
-
-def _stream_logs_line_by_line(
-    artifact_store: "BaseArtifactStore",
-    logs_uri: str,
-) -> Generator[str, None, None]:
-    """Stream logs line by line without loading the entire file into memory.
-
-    This generator yields log lines one by one, handling both single files
-    and directories with multiple log files.
-
-    Args:
-        artifact_store: The artifact store.
-        logs_uri: The URI of the log file or directory.
-
-    Yields:
-        Individual log lines as strings.
-
-    Raises:
-        DoesNotExistException: If the artifact does not exist in the artifact store.
-    """
-    if not artifact_store.exists(logs_uri):
-        return
-
-    if not artifact_store.isdir(logs_uri):
-        # Single file case
-        with artifact_store.open(logs_uri, "r") as file:
-            for line in file:
-                yield line.rstrip("\n\r")
-    else:
-        # Directory case - may contain multiple log files
-        files = artifact_store.listdir(logs_uri)
-        if not files:
-            raise DoesNotExistException(
-                f"Folder '{logs_uri}' is empty in artifact store "
-                f"'{artifact_store.name}'."
-            )
-
-        # Sort files to read them in order
-        files.sort()
-
-        for file in files:
-            file_path = os.path.join(logs_uri, str(file))
-            with artifact_store.open(file_path, "r") as f:
-                for line in f:
-                    yield line.rstrip("\n\r")
 
 
 def parse_log_entry(log_line: str) -> Optional[LogEntry]:
@@ -438,6 +337,11 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
 
 class ArtifactLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the artifact log store."""
+
+    max_query_size: int = Field(
+        default=10000,
+        description="Maximum number of log entries to fetch with one request.",
+    )
 
 
 class ArtifactLogStoreOrigin(OtelLogStoreOrigin):
@@ -555,59 +459,46 @@ class ArtifactLogStore(OtelLogStore):
                 body=END_OF_STREAM_MESSAGE,
             )
 
-    def fetch(
-        self,
-        logs_model: "LogsResponse",
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List["LogEntry"]:
-        """Fetch logs from the artifact store.
+    @classmethod
+    def encode_cursor(cls, pos: "ArtifactLogStoreCursor") -> str:
+        """Encode a cursor position into a base64 string.
+
+        Since the token is used to paginate logs, it needs to be URL-safe.
 
         Args:
-            logs_model: The logs model containing uri and artifact_store_id.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
-            limit: Maximum number of log entries to return.
+            pos: The cursor position.
 
         Returns:
-            List of log entries from the artifact store.
-
-        Raises:
-            ValueError: If logs_model.uri is not provided.
+            The base64 encoded string.
         """
-        if not logs_model.uri:
-            raise ValueError(
-                "logs_model.uri is required for ArtifactLogStore.fetch()"
-            )
+        payload = {
+            "file_idx": int(pos.file_idx),
+            "offset": int(pos.offset),
+        }
+        data = json.dumps(payload, sort_keys=True).encode("utf-8")
+        return base64.urlsafe_b64encode(data).decode("ascii")
 
-        if not logs_model.artifact_store_id:
-            raise ValueError(
-                "logs_model.artifact_store_id is required "
-                "for ArtifactLogStore.fetch()"
-            )
+    @classmethod
+    def decode_cursor(cls, token: str) -> "ArtifactLogStoreCursor":
+        """Decode a cursor position from a base64 string.
 
-        if logs_model.artifact_store_id != self._artifact_store.id:
-            raise ValueError(
-                "logs_model.artifact_store_id does not match the artifact store "
-                "id of the log store."
-            )
+        Args:
+            token: The base64 encoded string.
 
-        if start_time or end_time:
-            logger.warning(
-                "start_time and end_time are not supported for "
-                "ArtifactLogStore.fetch(). Both parameters will be ignored."
-            )
+        Returns:
+            The cursor position.
+        """
+        raw = base64.urlsafe_b64decode(token.encode("ascii"))
+        decoded = json.loads(raw.decode("utf-8"))
 
-        log_entries = fetch_log_records(
-            artifact_store=self._artifact_store,
-            logs_uri=logs_model.uri,
-            limit=limit,
-        )
+        file_idx = int(decoded["file_idx"])
+        offset = int(decoded["offset"])
+        if file_idx < 0 or offset < 0:
+            raise ValueError("Invalid cursor position.")
 
-        return log_entries
+        return ArtifactLogStoreCursor(file_idx=file_idx, offset=offset)
 
-    def fetch_entries(
+    def fetch(
         self,
         logs_model: "LogsResponse",
         limit: int,
@@ -654,10 +545,10 @@ class ArtifactLogStore(OtelLogStore):
             return LogsEntriesResponse(items=[], before=None, after=None)
 
         items: List[LogEntry] = []
-        end_pos: Optional[CursorToken] = None
+        end_pos: Optional[ArtifactLogStoreCursor] = None
 
         if after is not None:
-            start_pos = _decode_cursor(token=after)
+            start_pos = self.decode_cursor(token=after)
 
             for pos, line in iterate_forward(
                 self._artifact_store,
@@ -686,9 +577,11 @@ class ArtifactLogStore(OtelLogStore):
                 with self._artifact_store.open(last_path, "rb") as f:
                     f.seek(0, 2)
                     eof = int(f.tell())
-                start_pos = CursorToken(file_idx=len(paths) - 1, offset=eof)
+                start_pos = ArtifactLogStoreCursor(
+                    file_idx=len(paths) - 1, offset=eof
+                )
             else:
-                start_pos = _decode_cursor(token=before)
+                start_pos = self.decode_cursor(token=before)
 
             gen = iterate_backward(
                 self._artifact_store,
@@ -711,8 +604,8 @@ class ArtifactLogStore(OtelLogStore):
 
         return LogsEntriesResponse(
             items=items,
-            before=_encode_cursor(pos=before) if before else None,
-            after=_encode_cursor(pos=after) if after else None,
+            before=self.encode_cursor(pos=before) if before else None,
+            after=self.encode_cursor(pos=after) if after else None,
         )
 
     def cleanup(self) -> None:

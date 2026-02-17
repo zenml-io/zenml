@@ -14,7 +14,6 @@
 """OpenTelemetry log store implementation."""
 
 import logging
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
 from opentelemetry.sdk._logs import (
@@ -32,7 +31,7 @@ from zenml.log_stores.base_log_store import (
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.logger import get_logger
-from zenml.models import LogsEntriesFilter, LogsEntriesResponse, LogsResponse
+from zenml.models import LogsEntriesFilter, LogsResponse
 
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogExporter
@@ -60,7 +59,7 @@ class OtelBatchLogRecordProcessor(BatchLogRecordProcessor):
         """
         if not blocking:
             # For a non-blocking flush, we simply need to wake up the worker
-            # thread and it will handle the flush in the background.
+            # thread, and it will handle the flush in the background.
             self._batch_processor._worker_awaken.set()
             return True
         else:
@@ -319,10 +318,11 @@ class OtelLogStore(BaseLogStore):
 
     def fetch(
         self,
-        logs_model: "LogsResponse",
+        logs_model: LogsResponse,
         limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
     ) -> List["LogEntry"]:
         """Fetch logs from the OpenTelemetry backend.
 
@@ -331,10 +331,11 @@ class OtelLogStore(BaseLogStore):
         an empty list.
 
         Args:
-            logs_model: The logs model containing run and step metadata.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
+            logs_model: The logs model containing metadata about the logs.
             limit: Maximum number of log entries to return.
+            before: Cursor token pointing to older entries.
+            after: Cursor token pointing to newer entries.
+            filter_: Filters that must be applied during retrieval.
 
         Raises:
             NotImplementedError: Log fetching is not supported by the OTEL log
@@ -342,25 +343,4 @@ class OtelLogStore(BaseLogStore):
         """
         raise NotImplementedError(
             "Log fetching is not supported by the OTEL log store."
-        )
-
-    def fetch_entries(
-        self,
-        logs_model: "LogsResponse",
-        limit: int,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        filter_: "LogsEntriesFilter" = None,
-    ) -> "LogsEntriesResponse":
-        """Fetch log entries from the OpenTelemetry backend.
-
-        Args:
-            logs_model: The logs model containing metadata about the logs.
-            limit: Maximum number of log entries to return.
-            before: Cursor token pointing to older entries.
-            after: Cursor token pointing to newer entries.
-            filter_: Filters that must be applied during retrieval.
-        """
-        raise NotImplementedError(
-            "Log entries fetching is not supported by the OTEL log store."
         )
