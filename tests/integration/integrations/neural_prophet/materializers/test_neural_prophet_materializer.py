@@ -14,19 +14,21 @@
 
 import platform
 
+import pytest
+
+if platform.system() == "Windows":
+    pytest.skip(
+        "NeuralProphet integration is not installed on Windows CI.",
+        allow_module_level=True,
+    )
+
 import numpy as np
 import pandas as pd
-import pytest
 from neuralprophet import NeuralProphet
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (
     NeuralProphetMaterializer,
-)
-
-pytestmark = pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="NeuralProphet integration is not installed on Windows CI.",
 )
 
 

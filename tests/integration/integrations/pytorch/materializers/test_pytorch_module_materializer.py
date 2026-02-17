@@ -15,16 +15,18 @@
 import platform
 
 import pytest
+
+if platform.system() == "Windows":
+    pytest.skip(
+        "PyTorch integration is not installed on Windows CI.",
+        allow_module_level=True,
+    )
+
 from torch.nn import Linear
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (
     PyTorchModuleMaterializer,
-)
-
-pytestmark = pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="PyTorch integration is not installed on Windows CI.",
 )
 
 

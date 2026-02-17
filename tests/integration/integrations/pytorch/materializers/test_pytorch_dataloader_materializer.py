@@ -15,6 +15,13 @@
 import platform
 
 import pytest
+
+if platform.system() == "Windows":
+    pytest.skip(
+        "PyTorch integration is not installed on Windows CI.",
+        allow_module_level=True,
+    )
+
 import torch
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import TensorDataset
@@ -22,11 +29,6 @@ from torch.utils.data.dataset import TensorDataset
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (
     PyTorchDataLoaderMaterializer,
-)
-
-pytestmark = pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="PyTorch integration is not installed on Windows CI.",
 )
 
 
