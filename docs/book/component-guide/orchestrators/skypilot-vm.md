@@ -284,13 +284,13 @@ zenml service-connector list-types --type kubernetes
 ┗━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-Next, configure a service connector using the CLI or the dashboard with the AWS credentials. For example, the following command uses the local AWS CLI credentials to auto-configure the service connector:
+Next, configure a service connector using the CLI or the dashboard with the Kubernetes credentials. For example, the following command uses the local Kubernetes CLI credentials to auto-configure the service connector:
 
 ```shell
 zenml service-connector register kubernetes-skypilot --type kubernetes -i
 ```
 
-This will automatically configure the service connector with the appropriate credentials and permissions to provision VMs on AWS. You can then use the service connector to configure your registered VM Orchestrator stack component using the following command:
+This will automatically configure the service connector with the appropriate credentials and permissions to access the Kubernetes cluster. You can then use the service connector to configure your registered VM Orchestrator stack component using the following command:
 
 ```shell
 # Register the orchestrator
@@ -499,8 +499,6 @@ skypilot_settings = SkypilotKubernetesOrchestratorSettings(
     cpus="2",
     memory="16",
     accelerators="V100:2",
-    image_id="ami-1234567890abcdef0",
-    disk_size=100,
     cluster_name="my_cluster",
     retry_until_up=True,
     stream_logs=True,

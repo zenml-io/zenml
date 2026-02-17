@@ -64,7 +64,8 @@ def prepare_docker_setup(
         sudo_prefix = "sudo " if use_sudo else ""
         quoted_registry_uri = shlex.quote(container_registry_uri)
         setup = (
-            f'{sudo_prefix}docker login --username "$DOCKER_USERNAME" '
+            f'echo "$DOCKER_PASSWORD" | {sudo_prefix}docker login '
+            f'--username "$DOCKER_USERNAME" '
             f"--password-stdin {quoted_registry_uri}"
         )
         task_envs = {
@@ -141,14 +142,9 @@ def prepare_task_kwargs(
     Returns:
         Task keyword arguments dictionary.
     """
-    # Merge envs from settings with existing task_envs
     merged_envs = {}
-
-    # First add user-provided envs
     if settings.envs:
         merged_envs.update(settings.envs)
-
-    # Then add task_envs which take precedence
     if task_envs:
         merged_envs.update(task_envs)
 

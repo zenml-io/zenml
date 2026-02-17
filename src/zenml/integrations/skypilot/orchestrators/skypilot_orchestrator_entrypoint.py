@@ -164,8 +164,6 @@ def _generate_cluster_name(
     max_run_part_len = (
         _MAX_CLUSTER_NAME_LENGTH - len("cluster--") - _CLUSTER_HASH_LENGTH
     )
-    if max_run_part_len < 1:
-        raise RuntimeError("Invalid SkyPilot cluster naming constraints.")
     run_part = run_part[:max_run_part_len]
 
     return sanitize_cluster_name(f"cluster-{run_part}-{digest}")
@@ -213,13 +211,7 @@ def _resolve_pipeline_run(
             "the entrypoint to avoid race conditions."
         )
 
-    try:
-        return runs[0]
-    except IndexError as e:
-        raise RuntimeError(
-            "Unable to resolve a pipeline run from the initializing run list. "
-            "Pass --run_id to the entrypoint to avoid race conditions."
-        ) from e
+    return runs[0]
 
 
 def main() -> None:

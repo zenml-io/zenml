@@ -386,7 +386,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 )
 
             else:
-                # Prepare exec parameters with additional launch settings
                 exec_kwargs: Dict[str, Any] = {
                     "down": down,
                     "backend": None,
@@ -405,7 +404,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                         ", ".join(sorted(set(filtered_launch_settings))),
                     )
 
-                # Make sure the cluster is up
                 if settings.cluster_name is None:
                     raise ValueError(
                         "Cluster name is required when reusing an existing cluster."
@@ -416,13 +414,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                     retry_until_up=settings.retry_until_up,
                 )
-                start_result = sky.stream_and_get(start_request_id)
-                if not start_result:
-                    logger.debug(
-                        "SkyPilot start returned an empty response for cluster "
-                        "%s. Cluster may already be running.",
-                        settings.cluster_name,
-                    )
+                sky.stream_and_get(start_request_id)
 
                 status_request_id = sky.status(
                     refresh=sky.StatusRefreshMode.AUTO,
