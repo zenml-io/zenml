@@ -2,6 +2,7 @@
 
 DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
+PKG_RESOURCES_CUTOFF_VERSION="0.84.0"
 
 export ZENML_ANALYTICS_OPT_IN=false
 export ZENML_DEBUG=true
@@ -243,9 +244,6 @@ function test_upgrade_to_version() {
         fi
     fi
 
-    # Get the major and minor version of Python
-    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
 
         if [ "$(version_compare "$VERSION" "0.68.1")" == ">" ]; then
@@ -253,6 +251,10 @@ function test_upgrade_to_version() {
         else
             zenml connect --url mysql://root:password@127.0.0.1/zenml --username root --password password
         fi
+    fi
+
+    if [ "$(version_compare "$VERSION" "$PKG_RESOURCES_CUTOFF_VERSION")" == "<" ]; then
+        uv pip install -U "setuptools<82"
     fi
 
     # Run the tests for this version
