@@ -105,6 +105,8 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     "www.terraform.io": {429},
     # Modal docs return 406 Not Acceptable to automated requests.
     "modal.com": {406},
+    # ghcr.io is a container registry API, not a web page; returns 502 to browsers.
+    "ghcr.io": {502},
 }
 
 # Default policies for troublesome domains that frequently rate-limit automated traffic.
