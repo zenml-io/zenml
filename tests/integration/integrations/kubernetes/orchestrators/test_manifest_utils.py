@@ -22,6 +22,7 @@ from kubernetes.client import (
 )
 
 from zenml.integrations.kubernetes.manifest_utils import (
+    build_cron_job_manifest,
     build_pod_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
@@ -110,3 +111,75 @@ def test_build_pod_manifest_pod_settings(
     assert manifest.spec.tolerations[0]["key"] == "node.kubernetes.io/name"
     assert manifest.spec.containers[0].resources["requests"]["memory"] == "2G"
     assert manifest.spec.containers[0].security_context.privileged is False
+
+
+@pytest.fixture
+def sample_job_template():
+    """Create a minimal V1JobTemplateSpec for CronJob tests."""
+    from kubernetes.client import (
+        V1Container,
+        V1JobSpec,
+        V1JobTemplateSpec,
+        V1PodTemplateSpec,
+    )
+
+    pod_template = V1PodTemplateSpec(
+        metadata=V1ObjectMeta(name="test-job"),
+        spec=V1PodSpec(
+            containers=[V1Container(name="main", image="test:latest")],
+            restart_policy="Never",
+        ),
+    )
+    return V1JobTemplateSpec(
+        metadata=V1ObjectMeta(name="test-job"),
+        spec=V1JobSpec(template=pod_template),
+    )
+
+
+def test_build_cron_job_manifest_concurrency_policy(sample_job_template):
+    """Test that concurrency_policy is set on the CronJob spec."""
+    manifest = build_cron_job_manifest(
+        job_template=sample_job_template,
+        cron_expression="0 * * * *",
+        concurrency_policy="Forbid",
+    )
+    assert manifest.spec.concurrency_policy == "Forbid"
+
+
+def test_build_cron_job_manifest_starting_deadline_seconds(
+    sample_job_template,
+):
+    """Test that starting_deadline_seconds is set on the CronJob spec."""
+    manifest = build_cron_job_manifest(
+        job_template=sample_job_template,
+        cron_expression="0 * * * *",
+        starting_deadline_seconds=300,
+    )
+    assert manifest.spec.starting_deadline_seconds == 300
+
+
+def test_build_cron_job_manifest_all_cron_fields(sample_job_template):
+    """Test that all CronJob-specific fields are correctly set together."""
+    manifest = build_cron_job_manifest(
+        job_template=sample_job_template,
+        cron_expression="*/5 * * * *",
+        successful_jobs_history_limit=3,
+        failed_jobs_history_limit=1,
+        concurrency_policy="Replace",
+        starting_deadline_seconds=600,
+    )
+    assert manifest.spec.schedule == "*/5 * * * *"
+    assert manifest.spec.successful_jobs_history_limit == 3
+    assert manifest.spec.failed_jobs_history_limit == 1
+    assert manifest.spec.concurrency_policy == "Replace"
+    assert manifest.spec.starting_deadline_seconds == 600
+
+
+def test_build_cron_job_manifest_defaults_none(sample_job_template):
+    """Test that new fields default to None when not specified."""
+    manifest = build_cron_job_manifest(
+        job_template=sample_job_template,
+        cron_expression="0 0 * * *",
+    )
+    assert manifest.spec.concurrency_policy is None
+    assert manifest.spec.starting_deadline_seconds is None

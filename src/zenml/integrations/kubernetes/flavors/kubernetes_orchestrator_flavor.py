@@ -87,6 +87,18 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=None,
         description="Number of failed scheduled jobs to retain in history.",
     )
+    concurrency_policy: Optional[str] = Field(
+        default=None,
+        description="Concurrency policy for scheduled pipeline CronJobs. "
+        "Controls whether concurrent job executions are allowed. "
+        "Valid values: 'Allow' (default K8s behavior), 'Forbid', 'Replace'",
+    )
+    starting_deadline_seconds: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="Deadline in seconds for starting a CronJob if it misses "
+        "its scheduled time. If the job cannot start within this window, "
+        "it is counted as missed",
+    )
     ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
         default=None,
         description="Seconds to keep finished jobs before automatic cleanup.",
