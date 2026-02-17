@@ -15,42 +15,13 @@
 # limitations under the License.
 """Document loading step for RLM analysis pipeline."""
 
-import json
 import logging
 from collections import Counter
-from pathlib import Path
 from typing import Annotated, Any, Dict, List, Tuple
 
 from zenml import step
 
 logger = logging.getLogger(__name__)
-
-
-def _find_data_file(source_path: str) -> Path:
-    """Resolve the data file path, trying multiple locations.
-
-    Args:
-        source_path: User-provided path to data file.
-
-    Returns:
-        Resolved Path object.
-
-    Raises:
-        FileNotFoundError: If no valid path is found.
-    """
-    candidates = [
-        Path(source_path),
-        Path(__file__).parent.parent / source_path,
-        Path("/app") / source_path,
-    ]
-    for p in candidates:
-        if p.exists():
-            return p
-    raise FileNotFoundError(
-        f"Data file not found. Tried: {[str(c) for c in candidates]}. "
-        f"Run setup_data.py to download the dataset, or use the bundled "
-        f"sample at data/sample_emails.json."
-    )
 
 
 def _build_summary(emails: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -95,32 +66,27 @@ def _build_summary(emails: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 @step
 def load_documents(
-    source_path: str,
+    emails: List[Dict[str, Any]],
 ) -> Tuple[
     Annotated[List[Dict[str, Any]], "documents"],
     Annotated[Dict[str, Any], "doc_summary"],
 ]:
-    """Load email documents from a JSON file and produce a corpus summary.
+    """Validate email data and produce a corpus summary.
 
-    The summary is used by the decomposition step to decide how to
-    partition the corpus. The full document list is passed to each
-    process_chunk step.
+    The email data is loaded client-side (in the pipeline function) and
+    passed here via ExternalArtifact so it works on both local and remote
+    orchestrators. This step validates the data and builds a summary for
+    the decomposition step.
 
     Args:
-        source_path: Path to the JSON data file.
+        emails: List of email dicts, each with from/to/date/subject/body.
 
     Returns:
         Tuple of (documents list, summary dict).
     """
-    data_path = _find_data_file(source_path)
-    logger.info("Loading documents from %s", data_path)
-
-    with open(data_path, encoding="utf-8") as f:
-        emails = json.load(f)
-
     if not isinstance(emails, list):
         raise ValueError(
-            f"Expected a JSON array of email objects, got {type(emails).__name__}"
+            f"Expected a list of email dicts, got {type(emails).__name__}"
         )
 
     logger.info(

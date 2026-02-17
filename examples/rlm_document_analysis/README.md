@@ -72,6 +72,22 @@ python run.py --source data/emails.json --query "your query"
 
 The full dataset is sourced from [corbt/enron-emails](https://huggingface.co/datasets/corbt/enron-emails) on Hugging Face.
 
+### Running on Remote Orchestrators (Kubernetes, etc.)
+
+Custom datasets (downloaded via `setup_data.py`) work on remote orchestrators
+without any extra steps. The pipeline reads the data file **client-side** (on your
+machine) and uploads it to the artifact store via `ExternalArtifact`. The remote
+steps receive the data as an artifact — no file paths needed inside the container.
+
+```bash
+# This works on both local and Kubernetes stacks
+zenml stack set kubernetes
+python run.py --source data/emails.json --query "your query"
+```
+
+When invoked via the deployment API/UI (no `--source` flag), the pipeline falls
+back to the bundled 60-email sample, which is included in the code archive.
+
 ## Quick Start
 
 Run commands from within this example directory:
@@ -179,7 +195,7 @@ The deployed service serves `ui/index.html` with controls for query, max chunks,
 ├── pipelines/
 │   └── rlm_pipeline.py            # Dynamic pipeline with fan-out + deployment settings
 ├── steps/
-│   ├── loading.py                  # Load emails + build corpus summary
+│   ├── loading.py                  # Validate emails + build corpus summary
 │   ├── decomposition.py           # LLM plans chunk boundaries
 │   ├── processing.py              # RLM-style multi-step analysis per chunk
 │   └── aggregation.py             # Synthesize findings + HTML report (external template)

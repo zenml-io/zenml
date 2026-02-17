@@ -24,6 +24,7 @@ Usage:
 """
 
 import argparse
+import datetime
 import email
 import email.utils
 import json
@@ -31,18 +32,24 @@ import sys
 from pathlib import Path
 
 
-def _normalize_date(raw_date: str) -> str:
-    """Convert an RFC 2822 date header to ISO 8601 format.
+def _normalize_date(raw_date: object) -> str:
+    """Convert a date value to ISO 8601 format.
+
+    Handles RFC 2822 strings, datetime objects (from HuggingFace datasets),
+    and other types via str() fallback.
 
     Args:
-        raw_date: Raw date string from email header
-            (e.g. "Mon, 14 Jun 1999 09:22:00 -0700").
+        raw_date: Date string, datetime object, or other value.
 
     Returns:
-        ISO 8601 date string, or the original string if parsing fails.
+        ISO 8601 date string, or the original value as string if parsing fails.
     """
     if not raw_date:
         return ""
+    if isinstance(raw_date, datetime.datetime):
+        return raw_date.isoformat()
+    if not isinstance(raw_date, str):
+        return str(raw_date)
     try:
         dt = email.utils.parsedate_to_datetime(raw_date)
         return dt.isoformat()

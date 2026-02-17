@@ -56,7 +56,7 @@ The number of `process_chunk` steps is decided by the LLM at runtime based on th
 |--------|------|
 | `run.py` | CLI entry point — parses args and calls the pipeline |
 | `pipelines/rlm_pipeline.py` | Pipeline definition with dynamic fan-out loop + deployment settings |
-| `steps/loading.py` | Loads JSON emails, builds corpus summary |
+| `steps/loading.py` | Validates emails and builds corpus summary (data loaded client-side in pipeline function) |
 | `steps/decomposition.py` | LLM plans chunk boundaries (or even-split fallback) |
 | `steps/processing.py` | **Core RLM loop** per chunk: preview → plan → search → reflect → (repeat or summarize) |
 | `steps/aggregation.py` | Synthesizes chunk findings + trajectories into HTML report (external template) |
@@ -66,6 +66,14 @@ The number of `process_chunk` steps is decided by the LLM at runtime based on th
 | `data/report_template.html` | External HTML report template with `str.format()` placeholders |
 | `ui/index.html` | Deployable static dashboard for ZenML pipeline deployment |
 | `setup_data.py` | Downloads full Enron dataset from HuggingFace |
+
+### Data loading via ExternalArtifact
+
+Data files are read **client-side** in the pipeline function (not inside a step) and passed via `ExternalArtifact`. This ensures custom datasets (downloaded via `setup_data.py`) work on both local and remote orchestrators — the file only needs to exist on the machine launching the pipeline.
+
+The pipeline function resolves the file path using `_resolve_data_file()` (tries relative, example root, Docker `/app/`, `/app/code/`), reads the JSON, and wraps it in `ExternalArtifact(value=emails_data)`. ZenML uploads the data to the artifact store, making it available to all steps.
+
+For deployments invoked via API/UI, `source_path` defaults to the bundled sample (`data/sample_emails.json`), which is included in the code archive.
 
 ### Key dynamic pipeline patterns
 
