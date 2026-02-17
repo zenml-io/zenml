@@ -15,6 +15,7 @@
 
 import os
 import platform
+import shutil
 import subprocess
 from typing import Any, Dict, List
 
@@ -369,6 +370,9 @@ class Environment(metaclass=SingletonMetaClass):
     def get_python_packages() -> List[str]:
         """Returns a list of installed Python packages.
 
+        Tries `pip freeze` first, then falls back to `uv pip freeze` for
+        environments where only uv is installed (no pip in PATH).
+
         Raises:
             RuntimeError: If the process to get the list of installed packages
                 fails.
@@ -379,6 +383,20 @@ class Environment(metaclass=SingletonMetaClass):
         try:
             output = subprocess.check_output(["pip", "freeze"]).decode()
             return output.strip().split("\n")
+        except FileNotFoundError:
+            # pip not found in PATH, try uv as a fallback
+            if shutil.which("uv"):
+                try:
+                    output = subprocess.check_output(
+                        ["uv", "pip", "freeze"]
+                    ).decode()
+                    return output.strip().split("\n")
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    pass
+            raise RuntimeError(
+                "Failed to get list of installed Python packages. "
+                "Neither pip nor uv was found in your environment."
+            )
         except subprocess.CalledProcessError:
             raise RuntimeError(
                 "Failed to get list of installed Python packages"

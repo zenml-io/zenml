@@ -10623,7 +10623,7 @@ class SqlZenStore(BaseZenStore):
 
             return StepHeartbeatResponse(
                 id=step_run_id,
-                status=ExecutionStatus(run.status),
+                status=ExecutionStatus(step_run.status),
                 latest_heartbeat=latest_heartbeat,
                 heartbeat_enabled=step_run.heartbeat_threshold is not None,
                 pipeline_run_status=ExecutionStatus(run.status),

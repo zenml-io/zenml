@@ -37,7 +37,7 @@ To get access to ZenML Pro, [book a call](https://www.zenml.io/book-your-demo).
 
 | Feature Category | ZenML OSS | ZenML Pro |
 |-----------------|-----------|-----------|
-| **User Management** | Single-user mode | Multi-user support with [SSO](self-hosted.md#identity-provider), [organizations](organization.md), and [teams](teams.md) |
+| **User Management** | Single-user mode | Multi-user support with SSO, [organizations](organization.md), and [teams](teams.md) |
 | **Access Control** | ❌ No RBAC | Full [role-based access control](roles.md) with customizable permissions |
 | **Multi-tenancy** |  ❌ No workspaces/projects | [Workspaces](workspaces.md) and [projects](projects.md) for team and resource isolation |
 | **ZenML Web UI** | Basic pipeline and run visualization | Pro UI with [Model Control Plane](https://docs.zenml.io/concepts/models), [Artifact Control Plane](https://docs.zenml.io/concepts/dashboard-features), and comparison views |
@@ -66,7 +66,7 @@ This documentation is organized to help you understand, deploy, and manage ZenML
 |---------|-------------|
 | [**System Architecture**](system-architecture.md) | How ZenML Pro services (Control Plane, Workspace Server, Workload Manager) communicate and interact |
 | [**Scenarios**](scenarios.md) | Decision guide to help you choose between SaaS, Hybrid, and Self-hosted deployments |
-| [**Configuration Details**](configuration-details.md) | Reference for configurable options, environment variables, and permissions for each component |
+| [**Deployment Details**](deploy-details.md) | Reference for configurable options, environment variables, and permissions for each component |
 | [**Upgrades and Updates**](upgrades-updates.md) | How to upgrade each ZenML Pro component |
 | [**Core Concepts**](hierarchy.md) | Organizations, Workspaces, Projects, Teams, and Hierarchy |
 | [**Access Management**](roles.md) | Roles, Permissions, Service Accounts, and Secrets |

@@ -7,16 +7,21 @@
 * [Scenarios](scenarios.md)
   * [SaaS](saas-deployment.md)
   * [Hybrid](hybrid-deployment.md)
-    * [Kubernetes with Helm](hybrid-deployment-helm.md)
-    * [AWS ECS](hybrid-deployment-ecs.md)
   * [Self-hosted](self-hosted-deployment.md)
-    * [Kubernetes with Helm](self-hosted-deployment-helm.md)
+* [Deployment Details](deploy-details.md)
+  * [Prerequisites](deploy-prerequisites.md)
+  * Control Plane
+    * [Kubernetes with Helm](deploy-control-plane-k8s.md)
+  * Workspace Server
+    * [Enroll Workspaces](enroll-workspace.md)
+    * [Kubernetes with Helm](deploy-workspace-k8s.md)
+    * [AWS ECS](deploy-workspace-ecs.md)
+    * [Enable Snapshot Support](deploy-workspace-snapshots.md)
 
 ## Manage
 
-* [Configuration Details](configuration-details.md)
-  * [Control Plane](config-control-plane.md)
-  * [Workspace Server](config-workspace-server.md)
+* [Single Sign-On (SSO)](sso.md)
+* [User Accounts](user-accounts.md)
 * [Upgrades and Updates](upgrades-updates.md)
   * [Control Plane](upgrades-control-plane.md)
   * [Workspace Server](upgrades-workspace-server.md)

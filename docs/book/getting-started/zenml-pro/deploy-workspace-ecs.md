@@ -28,24 +28,26 @@ In this setup:
 
 ## Prerequisites
 
-Before starting, complete the setup described in [Hybrid Deployment Overview](hybrid-deployment.md):
-- Step 1: Set up ZenML Pro organization
-- Step 2: Configure your infrastructure (database, networking, TLS)
-- Step 3: Obtain Pro credentials from ZenML Support
+Before starting, make sure you go through the [general prerequisites for hybrid deployments](deploy-prerequisites.md) and have collected the necessary artifacts and information. Particular requirements for AWS ECS deployments are listed below.
 
-You'll also need:
 - AWS Account with appropriate IAM permissions
 - Basic familiarity with AWS ECS, VPC, and RDS
 
-## Step 1: Set Up AWS Infrastructure
+## Install the ZenML Pro Workspace Server
 
-### VPC and Subnets
+### Step 1: Enroll the Workspace in the ZenML Pro Control Plane
+
+Make sure to enroll the workspace in the ZenML Pro control plane by following the [Enroll a Workspace in the ZenML Pro Control Plane](enroll-workspace.md) guide and collect the necessary enrollment credentials.
+
+### Step 2: Set Up AWS Infrastructure
+
+#### VPC and Subnets
 
 Create a VPC with:
 - **Public subnets** (at least 2 across different availability zones) - for the Application Load Balancer
 - **Private subnets** (at least 2 across different availability zones) - for ECS tasks and RDS
 
-### Security Groups
+#### Security Groups
 
 Create three security groups:
 
@@ -62,7 +64,7 @@ Create three security groups:
    - Inbound: TCP (3306 for MySQL) from the ECS security group
    - Outbound: Not restricted
 
-### NAT Gateway
+#### NAT Gateway
 
 To enable ECS tasks to reach ZenML Cloud:
 
@@ -70,14 +72,14 @@ To enable ECS tasks to reach ZenML Cloud:
 2. Create a NAT Gateway in one of your public subnets
 3. Wait for the NAT Gateway to be available
 
-### Route Tables
+#### Route Tables
 
 For your private subnets (where ECS tasks run):
 1. Create a route table
 2. Add a default route (`0.0.0.0/0`) pointing to the NAT Gateway
 3. Associate this route table with your private subnets
 
-## Step 2: Set Up RDS Database
+### Step 3: Set Up RDS Database
 
 Create an RDS database instance. **Important**: Workspace servers only support MySQL, not PostgreSQL.
 
@@ -97,13 +99,13 @@ Create an RDS database instance. **Important**: Workspace servers only support M
 2. Create the initial database: `zenml_hybrid`
 3. Create a database user with full permissions on the database
 
-## Step 3: Store Secrets in AWS Secrets Manager
+### Step 4: Store Secrets in AWS Secrets Manager
 
 Store your Pro credentials securely:
 
 1. **OAuth2 Client Secret**
    - Secret name: `zenml/pro/oauth2-client-secret`
-   - Value: Your `ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET` from ZenML
+   - Value: Your workspace enrollment key
 
 2. (Optional) **Database Password**
    - Secret name: `zenml/rds/password`
@@ -111,11 +113,11 @@ Store your Pro credentials securely:
 
 Note the ARN of your OAuth2 secret - you'll reference it in the task definition.
 
-## Step 4: Create ECS IAM Roles
+### Step 5: Create ECS IAM Roles
 
 Create two IAM roles:
 
-### Task Execution Role
+#### Task Execution Role
 
 This role allows ECS to pull images and manage logs:
 - Attach: `AmazonECSTaskExecutionRolePolicy`
@@ -125,12 +127,12 @@ This role allows ECS to pull images and manage logs:
   - Action: `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`
   - Resource: Your CloudWatch log group
 
-### Task Role
+#### Task Role
 
 This role is for application-level permissions (optional for basic setup):
 - Leave empty for now, or add policies if your tasks need to access other AWS services
 
-## Step 5: Create ECS Task Definition
+### Step 6: Create ECS Task Definition
 
 In the AWS Console or using AWS CLI/Terraform, create a task definition with:
 
@@ -156,10 +158,10 @@ Set these in the task definition:
 | `ZENML_SERVER_DEPLOYMENT_TYPE` | `cloud` |
 | `ZENML_SERVER_PRO_API_URL` | `https://cloudapi.zenml.io` |
 | `ZENML_SERVER_PRO_DASHBOARD_URL` | `https://cloud.zenml.io` |
-| `ZENML_SERVER_PRO_ORGANIZATION_ID` | Your organization ID from Step 1 |
-| `ZENML_SERVER_PRO_ORGANIZATION_NAME` | Your organization name from Step 1 |
-| `ZENML_SERVER_PRO_WORKSPACE_ID` | From ZenML Support |
-| `ZENML_SERVER_PRO_WORKSPACE_NAME` | Your workspace name |
+| `ZENML_SERVER_PRO_ORGANIZATION_ID` | Your organization ID from enrollment |
+| `ZENML_SERVER_PRO_ORGANIZATION_NAME` | Your organization name from enrollment |
+| `ZENML_SERVER_PRO_WORKSPACE_ID` | Your workspace ID from enrollment |
+| `ZENML_SERVER_PRO_WORKSPACE_NAME` | Your workspace name from enrollment |
 | `ZENML_SERVER_PRO_OAUTH2_AUDIENCE` | `https://cloudapi.zenml.io` |
 | `ZENML_SERVER_SERVER_URL` | `https://zenml.mycompany.com` |
 | `ZENML_DATABASE_URL` | `mysql://user:password@hostname:3306/zenml_hybrid` (MySQL only - PostgreSQL not supported) |
@@ -182,7 +184,7 @@ Configure CloudWatch logs:
 - **Log Stream Prefix**: `ecs`
 - **Region**: Your AWS region
 
-## Step 6: Create ECS Cluster and Service
+### Step 7: Create ECS Cluster and Service
 
 Create an ECS cluster named `zenml-hybrid`.
 
@@ -207,7 +209,7 @@ Then create an ECS service within this cluster:
 - **Container Port**: 8000
 - (Leave the target group selection for the next step)
 
-## Step 7: Set Up Application Load Balancer
+### Step 8: Set Up Application Load Balancer
 
 Create an Application Load Balancer (ALB):
 
@@ -215,7 +217,7 @@ Create an Application Load Balancer (ALB):
 - **Subnets**: Your public subnets
 - **Security Group**: ALB security group
 
-### Target Group
+#### Target Group
 
 Create a target group for your ECS service:
 
@@ -228,7 +230,7 @@ Create a target group for your ECS service:
 - **Healthy Threshold**: 2
 - **Unhealthy Threshold**: 3
 
-### Listeners
+#### Listeners
 
 Create two listeners on your ALB:
 
@@ -239,7 +241,7 @@ Create two listeners on your ALB:
 2. **HTTP Listener (Port 80)**
    - **Default Action**: Redirect to HTTPS (port 443)
 
-## Step 8: Configure DNS
+### Step 9: Configure DNS
 
 In your DNS provider (Route 53 or external):
 
@@ -250,7 +252,7 @@ In your DNS provider (Route 53 or external):
 
 2. Allow time for DNS propagation (typically 5-15 minutes)
 
-## Step 9: Verify the Deployment
+### Step 10: Verify the Deployment
 
 1. **Check ECS Service Status**
    - Go to ECS console → Clusters → zenml-hybrid → Services
@@ -348,81 +350,6 @@ Monitor database health:
 2. Review CloudWatch metrics for connection count and CPU
 3. Monitor free storage space and create alerts
 
-## (Optional) Enable Snapshot Support / Workload Manager
-
-Pipeline snapshots (running pipelines from the UI) require a workload manager. For ECS deployments, you'll typically use the AWS Kubernetes implementation if you also have a Kubernetes cluster available, or configure settings as appropriate for your infrastructure.
-
-### Prerequisites for Workload Manager
-
-To enable snapshots on ECS-deployed ZenML workspaces:
-
-1. **Kubernetes Cluster Access** - You'll need a Kubernetes cluster where the workload manager can run jobs. This could be:
-   - The same EKS cluster as your other infrastructure
-   - A separate EKS cluster dedicated to workloads
-   - Another Kubernetes distribution in your environment
-
-2. **Container Registry Access** - The workload manager needs access to your container registry to:
-   - Pull base ZenML images
-   - Push/pull runner images (if building them)
-
-3. **Storage Access** - For AWS implementation:
-   - S3 bucket for logs storage
-   - IAM permissions to read/write to the bucket
-
-### Configuration Options
-
-**Option A: AWS Kubernetes Workload Manager (Recommended for ECS)**
-
-If you have an EKS cluster or other Kubernetes cluster available:
-
-1. Create a dedicated namespace:
-   ```
-   kubectl create namespace zenml-workload-manager
-   kubectl -n zenml-workload-manager create serviceaccount zenml-runner
-   ```
-
-2. Add these environment variables to your ECS task definition:
-
-   | Variable | Value |
-   |----------|-------|
-   | `ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE` | `zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager` |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` | `zenml-workload-manager` |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` | `zenml-runner` |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` | `true` |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY` | Your ECR registry URI |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` | `true` |
-   | `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` | Your S3 bucket for logs |
-   | `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_REGION` | Your AWS region |
-   | `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` | `2` (or higher) |
-   | `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES` | `{"requests": {"cpu": "500m", "memory": "512Mi"}, "limits": {"cpu": "2000m", "memory": "2Gi"}}` |
-
-3. Ensure the ECS task has permissions to access:
-   - The Kubernetes cluster (kubeconfig/IAM role)
-   - Your ECR registry
-   - Your S3 bucket for logs
-
-**Option B: Kubernetes-based (Simpler Alternative)**
-
-If you prefer a basic setup without AWS-specific features:
-
-Add these environment variables to your ECS task definition:
-
-| Variable | Value |
-|----------|-------|
-| `ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE` | `zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager` |
-| `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` | `zenml-workload-manager` |
-| `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` | `zenml-runner` |
-| `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` | Your prebuilt ZenML image URI |
-
-### Updating Task Definition
-
-After configuring the workload manager environment variables:
-
-1. Create a new task definition revision with the updated environment variables
-2. Update your ECS service to use the new task definition
-3. ECS will gradually replace running tasks with the new version
-4. Monitor CloudWatch logs to verify the workload manager is operational
-
 ## Troubleshooting
 
 ### Task Won't Start
@@ -509,6 +436,6 @@ To remove the deployment:
 ## Related Documentation
 
 - [Hybrid Deployment Overview](hybrid-deployment.md)
-- [Self-hosted Deployment Guide](self-hosted.md)
+- [Self-hosted Deployment Overview](self-hosted-deployment.md)
 - [AWS ECS Documentation](https://docs.aws.amazon.com/ecs/)
 - [AWS RDS Documentation](https://docs.aws.amazon.com/rds/)
