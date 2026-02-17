@@ -38,6 +38,7 @@ import json
 import os
 from pathlib import Path
 from typing import Annotated, Any, Dict, List, Tuple
+from uuid import UUID
 
 from steps import (
     aggregate_results,
@@ -79,14 +80,14 @@ deployment_settings = DeploymentSettings(
 
 
 def _resolve_data_file(source_path: str) -> Path:
-    """Resolve the data file path, trying multiple locations.
+    """Resolve a data file path, trying multiple locations.
 
-    This runs client-side (in the pipeline function) so that the data
-    can be loaded before being sent to remote orchestrators via
-    ExternalArtifact.
+    Used as a fallback when no pre-uploaded artifact is provided (e.g.,
+    deployment via API/UI). Tries paths relative to this file, in Docker
+    container locations, and as-is.
 
     Args:
-        source_path: User-provided path to data file.
+        source_path: Path to data file (typically the bundled sample).
 
     Returns:
         Resolved Path object.
@@ -119,7 +120,7 @@ def _resolve_data_file(source_path: str) -> Path:
     },
 )
 def rlm_analysis_pipeline(
-    source_path: str = BUNDLED_SAMPLE,
+    emails_artifact_id: str = "",
     query: str = "What financial irregularities or concerns are discussed?",
     max_chunks: int = 4,
     max_iterations: int = 6,
@@ -129,24 +130,25 @@ def rlm_analysis_pipeline(
 ]:
     """Analyze an email corpus using the RLM pattern with dynamic fan-out.
 
-    1. Load email data client-side and pass via ExternalArtifact
+    1. Load email data and pass to the first step via ExternalArtifact
     2. Build a corpus summary
     3. Use LLM to decompose the query into chunk-level sub-queries
     4. Fan out N process_chunk steps (determined at runtime)
     5. Each chunk runs a constrained RLM loop (preview → plan → search → summarize)
     6. Aggregate all findings into a synthesis + HTML report
 
-    Data loading happens here (in the pipeline function, which runs on the
-    client) rather than in a step. This ensures the data file only needs to
-    exist on the machine that launches the pipeline — not inside the remote
-    container. The data is uploaded to the artifact store via ExternalArtifact
-    and made available to all steps regardless of orchestrator.
+    For remote orchestrators (Kubernetes, etc.), the data must be pre-uploaded
+    to the artifact store by the caller (run.py does this via save_artifact)
+    because this pipeline function executes inside the orchestrator pod, not
+    on the client machine. The emails_artifact_id parameter references the
+    pre-uploaded artifact.
 
-    For deployments (invoked via API/UI), source_path defaults to the bundled
-    sample which is included in the code archive.
+    For deployments (invoked via API/UI) or when no artifact ID is provided,
+    falls back to reading the bundled sample from the code archive.
 
     Args:
-        source_path: Path to JSON file containing email data.
+        emails_artifact_id: UUID of a pre-uploaded email corpus artifact.
+            If empty, falls back to the bundled sample dataset.
         query: Research question to investigate across the corpus.
         max_chunks: Maximum parallel chunks (1-10). Controls DAG width.
         max_iterations: Max LLM calls per chunk (2-12). Controls step depth.
@@ -158,18 +160,25 @@ def rlm_analysis_pipeline(
     max_chunks = min(max(max_chunks, 1), 10)
     max_iterations = min(max(max_iterations, 2), 12)
 
-    # Load data client-side and pass to step via ExternalArtifact.
-    # This works on both local and remote orchestrators because the file
-    # is read here (on the client) and the data is uploaded to the artifact
-    # store automatically.
-    data_path = _resolve_data_file(source_path)
-    with open(data_path, encoding="utf-8") as f:
-        emails_data = json.load(f)
+    # Resolve the email data as an artifact for the load_documents step.
+    # When called from run.py: data was pre-uploaded via save_artifact(),
+    # so we fetch the artifact version by ID (no file I/O needed in the pod).
+    # When called from deployment API/UI: no artifact ID is provided,
+    # so we read the bundled sample from the code archive.
+    if emails_artifact_id:
+        from zenml.client import Client
+
+        emails_artifact = Client().get_artifact_version(
+            UUID(emails_artifact_id)
+        )
+    else:
+        data_path = _resolve_data_file(BUNDLED_SAMPLE)
+        with open(data_path, encoding="utf-8") as f:
+            emails_data = json.load(f)
+        emails_artifact = ExternalArtifact(value=emails_data)
 
     # Step 1: Validate data and build corpus summary
-    documents, doc_summary = load_documents(
-        emails=ExternalArtifact(value=emails_data),
-    )
+    documents, doc_summary = load_documents(emails=emails_artifact)
 
     # Step 2: Decompose into chunk specs
     chunk_specs = plan_decomposition(

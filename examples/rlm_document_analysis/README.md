@@ -75,9 +75,10 @@ The full dataset is sourced from [corbt/enron-emails](https://huggingface.co/dat
 ### Running on Remote Orchestrators (Kubernetes, etc.)
 
 Custom datasets (downloaded via `setup_data.py`) work on remote orchestrators
-without any extra steps. The pipeline reads the data file **client-side** (on your
-machine) and uploads it to the artifact store via `ExternalArtifact`. The remote
-steps receive the data as an artifact — no file paths needed inside the container.
+without any extra steps. The `run.py` script reads the data file on your machine
+and uploads it to the artifact store via `save_artifact()` before launching the
+pipeline. The remote steps receive the data as an artifact — no file paths
+needed inside the container.
 
 ```bash
 # This works on both local and Kubernetes stacks

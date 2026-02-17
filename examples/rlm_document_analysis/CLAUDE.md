@@ -67,13 +67,16 @@ The number of `process_chunk` steps is decided by the LLM at runtime based on th
 | `ui/index.html` | Deployable static dashboard for ZenML pipeline deployment |
 | `setup_data.py` | Downloads full Enron dataset from HuggingFace |
 
-### Data loading via ExternalArtifact
+### Data loading: client-side upload via save_artifact
 
-Data files are read **client-side** in the pipeline function (not inside a step) and passed via `ExternalArtifact`. This ensures custom datasets (downloaded via `setup_data.py`) work on both local and remote orchestrators — the file only needs to exist on the machine launching the pipeline.
+For remote orchestrators (Kubernetes), the pipeline function runs inside the orchestrator pod, not on the client machine. This means it can't read local files. The solution uses a two-phase approach:
 
-The pipeline function resolves the file path using `_resolve_data_file()` (tries relative, example root, Docker `/app/`, `/app/code/`), reads the JSON, and wraps it in `ExternalArtifact(value=emails_data)`. ZenML uploads the data to the artifact store, making it available to all steps.
+1. **`run.py` (client-side)**: Reads the data file and uploads it via `save_artifact()`. This happens on the user's machine before the pipeline is submitted.
+2. **Pipeline function (pod-side)**: Receives `emails_artifact_id` (a UUID string) and fetches the pre-uploaded artifact via `Client().get_artifact_version()`. No file I/O needed.
 
-For deployments invoked via API/UI, `source_path` defaults to the bundled sample (`data/sample_emails.json`), which is included in the code archive.
+For deployments invoked via API/UI (no `run.py`), the pipeline falls back to reading the bundled sample (`data/sample_emails.json`) from the code archive using `ExternalArtifact(value=...)`.
+
+**Important**: `ExternalArtifact(id=...)` is not supported in ZenML 0.93.x — the validator rejects it. Use `Client().get_artifact_version()` to reference pre-uploaded artifacts instead.
 
 ### Key dynamic pipeline patterns
 
