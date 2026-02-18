@@ -112,6 +112,14 @@ install_integrations() {
     if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ]; then
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
+
+    # TODO: Revisit once pytorch Windows support stabilizes.
+    # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
+    # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471
+    os_name=$(python -c "import platform; print(platform.system())")
+    if [ "$os_name" = "Windows" ]; then
+        ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
+    fi
     
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""
