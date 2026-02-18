@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Time utils."""
 
+import random
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Union
+from typing import Iterator, Literal, Optional, Union
 
 
 def utc_now(tz_aware: Union[bool, datetime] = False) -> datetime:
@@ -136,3 +137,61 @@ def expires_in(
     if expires_at < now:
         return expired_str
     return seconds_to_human_readable(int((expires_at - now).total_seconds()))
+
+
+def exponential_backoff_delays(
+    attempts: Optional[int] = None,
+    initial_delay: float = 1.0,
+    max_delay: float = 30.0,
+    factor: float = 2.0,
+    jitter: Literal["none", "full", "equal"] = "full",
+) -> Iterator[float]:
+    """Yields exponential backoff delays for retry loops.
+
+    Implements jitter algorithms described in:
+    https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+
+    Example:
+        for delay in exponential_backoff_delays(attempts=5):
+            try:
+                do_work()
+                break
+            except Exception:
+                time.sleep(delay)
+
+    Args:
+        attempts: Number of delays to generate. If not provided, yields delays
+            forever.
+        initial_delay: Initial delay in seconds.
+        max_delay: Maximum delay in seconds.
+        factor: Multiplication factor applied per attempt.
+        jitter: Jitter mode. If set to `"full"`, samples from
+            `[0, computed_delay]`. If set to `"equal"`, samples from
+            `[computed_delay / 2, computed_delay]`. If set to `"none"`, no
+            jitter is applied.
+
+    Yields:
+        Delay values in seconds.
+    """
+    if attempts is not None and attempts < 0:
+        raise ValueError("`attempts` must be greater than or equal to 0.")
+    if initial_delay <= 0:
+        raise ValueError("`initial_delay` must be greater than 0.")
+    if max_delay <= 0:
+        raise ValueError("`max_delay` must be greater than 0.")
+    if factor < 1:
+        raise ValueError("`factor` must be greater than or equal to 1.")
+
+    if jitter not in {"none", "full", "equal"}:
+        raise ValueError("`jitter` must be one of 'none', 'full', or 'equal'.")
+
+    attempt = 0
+    while attempts is None or attempt < attempts:
+        delay = min(initial_delay * (factor**attempt), max_delay)
+        if jitter == "full":
+            delay = random.uniform(0, delay)
+        elif jitter == "equal":
+            half_delay = delay / 2
+            delay = half_delay + random.uniform(0, half_delay)
+        yield delay
+        attempt += 1

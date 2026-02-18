@@ -61,7 +61,7 @@ from zenml.utils.logging_utils import (
     is_step_logging_enabled,
     setup_logging_context,
 )
-from zenml.utils.time_utils import utc_now
+from zenml.utils.time_utils import exponential_backoff_delays, utc_now
 
 if TYPE_CHECKING:
     from zenml.step_operators import BaseStepOperator
@@ -710,7 +710,7 @@ class StepLauncher:
         """
         resource_settings = self._step.config.resource_settings
         required_gpu_count = resource_settings.gpu_count or 0
-        # required_gpu_count = 1
+
         if required_gpu_count > 0:
             publish_utils.publish_step_run_status_update(
                 step_run_id=step_run_info.step_run_id,
@@ -725,7 +725,12 @@ class StepLauncher:
                     },
                 )
             )
-            while True:
+            for delay in exponential_backoff_delays(
+                initial_delay=1.0,
+                max_delay=20.0,
+                factor=2.0,
+                jitter="equal",
+            ):
                 try:
                     resource_request = Client().zen_store.get_resource_request(
                         resource_request.id, hydrate=False
@@ -781,5 +786,4 @@ class StepLauncher:
                     resource_request.id,
                     step_run_info.pipeline_step_name,
                 )
-                # TODO: exponential backoff
-                time.sleep(10)
+                time.sleep(delay)

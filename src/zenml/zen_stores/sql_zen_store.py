@@ -4377,6 +4377,9 @@ class SqlZenStore(BaseZenStore):
                         f"({total_capacity})."
                     )
 
+        # TODO: We should probably enqueue all pending requests for the
+        # component here, and try allocating?
+
     def _detach_resource_pool(
         self, session: Session, component_id: UUID, resource_pool_id: UUID
     ) -> None:
@@ -4532,7 +4535,6 @@ class SqlZenStore(BaseZenStore):
             existing_resource_request.update(update)
             session.add(existing_resource_request)
             session.commit()
-            # session.refresh(existing_resource_pool)
 
             return existing_resource_request.to_model(
                 include_metadata=True, include_resources=True
