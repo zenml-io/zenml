@@ -24,6 +24,8 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
 
 ## Code Style & Quality Standards
 
+- **Use US English spelling** in all code, comments, docstrings, and documentation (e.g., "initialize", "stabilize", "color"). The CI enforces this via `typos` (configured in `.typos.toml`).
+
 ### Commenting policy — explain why, not what
 - Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
 - Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.

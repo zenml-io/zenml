@@ -78,7 +78,7 @@ def test_integration_install_inexistent_integration(
     )
     result = runner.invoke(integration, ["install", not_an_integration])
 
-    assert result.exit_code == 0
+    assert result.exit_code != 0
     mock_install_package.assert_not_called()
 
 
