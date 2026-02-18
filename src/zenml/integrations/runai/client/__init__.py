@@ -20,10 +20,12 @@ from zenml.integrations.runai.client.runai_client import (
     RunAICluster,
     RunAIClusterNotFoundError,
     RunAIConnectionError,
+    RunAIInferenceWorkload,
     RunAIProject,
     RunAIProjectNotFoundError,
     RunAITrainingWorkload,
     RunAIWorkloadNotFoundError,
+    InferenceWorkloadResult,
     WorkloadSubmissionResult,
 )
 
@@ -34,9 +36,11 @@ __all__ = [
     "RunAICluster",
     "RunAIClusterNotFoundError",
     "RunAIConnectionError",
+    "RunAIInferenceWorkload",
     "RunAIProject",
     "RunAIProjectNotFoundError",
     "RunAITrainingWorkload",
     "RunAIWorkloadNotFoundError",
+    "InferenceWorkloadResult",
     "WorkloadSubmissionResult",
 ]

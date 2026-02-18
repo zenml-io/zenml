@@ -11,24 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Run:AI integration flavors."""
+"""Run:AI deployers."""
 
-from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
-    RunAIStepOperatorConfig,
-    RunAIStepOperatorFlavor,
-    RunAIStepOperatorSettings,
-)
-from zenml.integrations.runai.flavors.runai_deployer_flavor import (
-    RunAIDeployerConfig,
-    RunAIDeployerFlavor,
-    RunAIDeployerSettings,
-)
+from zenml.integrations.runai.deployers.runai_deployer import RunAIDeployer
 
-__all__ = [
-    "RunAIStepOperatorConfig",
-    "RunAIStepOperatorFlavor",
-    "RunAIStepOperatorSettings",
-    "RunAIDeployerConfig",
-    "RunAIDeployerFlavor",
-    "RunAIDeployerSettings",
-]
+__all__ = ["RunAIDeployer"]

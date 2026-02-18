@@ -20,6 +20,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 RUNAI_STEP_OPERATOR_FLAVOR = "runai"
+RUNAI_DEPLOYER_FLAVOR = "runai"
 
 
 class RunAIIntegration(Integration):
@@ -38,10 +39,11 @@ class RunAIIntegration(Integration):
             List of stack component flavors for this integration.
         """
         from zenml.integrations.runai.flavors import (
+            RunAIDeployerFlavor,
             RunAIStepOperatorFlavor,
         )
 
-        return [RunAIStepOperatorFlavor]
+        return [RunAIStepOperatorFlavor, RunAIDeployerFlavor]
 
 
 RunAIIntegration.check_installation()

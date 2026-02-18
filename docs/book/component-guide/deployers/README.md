@@ -35,6 +35,7 @@ Out of the box, ZenML comes with a `local` deployer already part of the default 
 | [GCP Cloud Run](gcp-cloud-run.md)            | `gcp`     | `gcp`         | Deploys pipelines to Google Cloud Run for serverless execution             |
 | [AWS App Runner](aws-app-runner.md)           | `aws`     | `aws`         | Deploys pipelines to AWS App Runner for serverless execution                       |
 | [Hugging Face](huggingface.md)                | `huggingface` | `huggingface` | Deploys pipelines to Hugging Face Spaces as Docker Spaces            |
+| [Run:AI](runai.md)                            | `runai`   | `runai`       | Deploys pipelines to Run:AI inference workloads                         |
 
 If you would like to see the available flavors of deployers, you can use the command:
 

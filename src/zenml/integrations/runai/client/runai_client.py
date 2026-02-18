@@ -18,6 +18,7 @@ from typing import Any, List, NoReturn, Optional, cast
 from pydantic import BaseModel, ConfigDict, Field
 from runai.api_client import ApiClient
 from runai.configuration import Configuration
+from runai.models.inference_creation_request import InferenceCreationRequest
 from runai.models.training_creation_request import TrainingCreationRequest
 from runai.runai_client import RunaiClient as RunapyClient
 
@@ -109,6 +110,14 @@ class WorkloadSubmissionResult(BaseModel):
     workload_name: str
 
 
+class InferenceWorkloadResult(BaseModel):
+    """Result of creating an inference workload on Run:AI."""
+
+    workload_id: str
+    workload_name: str
+    endpoint_url: Optional[str] = None
+
+
 class RunAITrainingWorkload(BaseModel):
     """Typed representation of a Run:AI training workload."""
 
@@ -119,6 +128,19 @@ class RunAITrainingWorkload(BaseModel):
     name: Optional[str] = None
     actual_phase: Optional[str] = Field(default=None, alias="actualPhase")
     status: Optional[str] = None
+
+
+class RunAIInferenceWorkload(BaseModel):
+    """Typed representation of a Run:AI inference workload."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    id: Optional[str] = None
+    workload_id: Optional[str] = Field(default=None, alias="workloadId")
+    name: Optional[str] = None
+    actual_phase: Optional[str] = Field(default=None, alias="actualPhase")
+    status: Optional[str] = None
+    endpoint_url: Optional[str] = Field(default=None, alias="endpointUrl")
 
 
 class RunAIClient:
@@ -543,6 +565,198 @@ class RunAIClient:
                 "Failed to query Run:AI workload "
                 f"{workload_id} ({type(exc).__name__}): {exc}",
             )
+
+    def create_inference_workload(
+        self, request: InferenceCreationRequest
+    ) -> InferenceWorkloadResult:
+        """Submit an inference workload to Run:AI.
+
+        Args:
+            request: InferenceCreationRequest from runai.models.
+
+        Returns:
+            InferenceWorkloadResult with the workload ID and endpoint URL.
+
+        Raises:
+            RunAIClientError: If submission fails.
+        """
+        try:
+            response = self._raw_client.workloads.inferences.create_inference1(
+                inference_creation_request=request
+            )
+            workload_id = self._extract_workload_id(response)
+            endpoint_url = self._extract_endpoint_url(response)
+            return InferenceWorkloadResult(
+                workload_id=workload_id or request.name,
+                workload_name=request.name,
+                endpoint_url=endpoint_url,
+            )
+        except RunAIClientError:
+            raise
+        except Exception as exc:
+            raise RunAIClientError(
+                f"Failed to submit Run:AI inference workload ({type(exc).__name__}): {exc}"
+            ) from exc
+
+    def _extract_endpoint_url(self, response: Any) -> Optional[str]:
+        """Extract endpoint URL from API response.
+
+        Args:
+            response: The API response object.
+
+        Returns:
+            The endpoint URL or None.
+        """
+        if not response.data:
+            return None
+
+        if isinstance(response.data, dict):
+            return (
+                response.data.get("endpointUrl")
+                or response.data.get("endpoint_url")
+                or response.data.get("url")
+            )
+        return (
+            getattr(response.data, "endpointUrl", None)
+            or getattr(response.data, "endpoint_url", None)
+            or getattr(response.data, "url", None)
+        )
+
+    def get_inference_workload(
+        self, workload_id: str
+    ) -> RunAIInferenceWorkload:
+        """Get full inference workload details.
+
+        Args:
+            workload_id: The workload ID to query.
+
+        Returns:
+            The workload details as a typed model.
+
+        Raises:
+            RunAIClientError: If the query fails or response is invalid.
+        """
+        try:
+            response = self._raw_client.workloads.inferences.get_inference(
+                workload_id
+            )
+            if not response.data:
+                raise RunAIClientError(
+                    f"Empty response when querying inference workload {workload_id}. "
+                    "The workload may not exist or the API returned no data."
+                )
+            if not isinstance(response.data, dict):
+                raise RunAIClientError(
+                    f"Unexpected response format for inference workload {workload_id}. "
+                    f"Expected dict, got {type(response.data).__name__}."
+                )
+            return RunAIInferenceWorkload.model_validate(response.data)
+        except RunAIClientError:
+            raise
+        except Exception as exc:
+            error_msg = str(exc).lower()
+            if "not found" in error_msg or "404" in error_msg:
+                raise RunAIWorkloadNotFoundError(workload_id) from exc
+            raise RunAIClientError(
+                f"Failed to query Run:AI inference workload {workload_id} "
+                f"({type(exc).__name__}): {exc}"
+            ) from exc
+
+    def get_inference_workload_status(self, workload_id: str) -> Optional[str]:
+        """Get the status of an inference workload.
+
+        Args:
+            workload_id: The workload ID to query.
+
+        Returns:
+            The workload status string, or None if the response is missing a
+            status field.
+
+        Raises:
+            RunAIWorkloadNotFoundError: If the workload was not found (404).
+            RunAIClientError: If the API call fails for other reasons or the
+                response is malformed.
+        """
+        try:
+            response = self._raw_client.workloads.inferences.get_inference(
+                workload_id
+            )
+            if not response.data:
+                raise RunAIClientError(
+                    f"Empty response when querying inference workload {workload_id}. "
+                    "The API returned no data."
+                )
+            if not isinstance(response.data, dict):
+                raise RunAIClientError(
+                    f"Unexpected response format for inference workload {workload_id}. "
+                    f"Expected dict, got {type(response.data).__name__}."
+                )
+            status = response.data.get("actualPhase") or response.data.get(
+                "status"
+            )
+            if status is None:
+                logger.warning(
+                    "Inference workload %s response has no status field. "
+                    "Available keys: %s",
+                    workload_id,
+                    list(response.data.keys()),
+                )
+            return cast(Optional[str], status)
+        except RunAIClientError:
+            raise
+        except Exception as exc:
+            error_msg = str(exc).lower()
+            if "not found" in error_msg or "404" in error_msg:
+                raise RunAIWorkloadNotFoundError(workload_id) from exc
+            raise RunAIClientError(
+                f"Failed to query inference workload status ({type(exc).__name__}): {exc}"
+            ) from exc
+
+    def get_inference_endpoint_url(self, workload_id: str) -> Optional[str]:
+        """Get the endpoint URL of an inference workload.
+
+        Args:
+            workload_id: The workload ID to query.
+
+        Returns:
+            The endpoint URL or None.
+        """
+        try:
+            workload = self.get_inference_workload(workload_id)
+        except RunAIClientError:
+            return None
+
+        if workload.endpoint_url:
+            return workload.endpoint_url
+
+        extra = getattr(workload, "model_extra", None) or {}
+        return (
+            extra.get("endpointUrl")
+            or extra.get("endpoint_url")
+            or extra.get("url")
+        )
+
+    def delete_inference_workload(self, workload_id: str) -> None:
+        """Delete an inference workload.
+
+        Args:
+            workload_id: The workload ID to delete.
+
+        Raises:
+            RunAIClientError: If deletion fails.
+        """
+        try:
+            self._raw_client.workloads.inferences.delete_inference(workload_id)
+        except RunAIClientError:
+            raise
+        except Exception as exc:
+            error_msg = str(exc).lower()
+            if "not found" in error_msg or "404" in error_msg:
+                raise RunAIWorkloadNotFoundError(workload_id) from exc
+            raise RunAIClientError(
+                f"Failed to delete Run:AI inference workload {workload_id} "
+                f"({type(exc).__name__}): {exc}"
+            ) from exc
 
     def delete_training_workload(self, workload_id: str) -> None:
         """Delete a training workload.
