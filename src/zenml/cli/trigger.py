@@ -22,7 +22,7 @@ def trigger() -> None:
 
 @trigger.group()
 def schedule() -> None:
-    """Commands for schedules triggers."""
+    """Commands for schedule triggers."""
 
 
 @schedule.command("create", help="Create a new schedule trigger.")
@@ -194,7 +194,7 @@ def attach_schedule_trigger(schedule_id: UUID, snapshot_id: UUID) -> None:
         cli_utils.declare(f"Attached schedule '{schedule_id}' to snapshot '{snapshot_id}'.")
 
 
-@schedule.command("attach", help="Detach schedule from snapshot")
+@schedule.command("detach", help="Detach schedule from snapshot")
 @click.argument("schedule_id", type=UUID)
 @click.argument("snapshot_id", type=UUID)
 def detach_schedule_trigger(schedule_id: UUID, snapshot_id: UUID) -> None:
