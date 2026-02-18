@@ -260,6 +260,8 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: 'yes'
+      reruns: 1
     secrets: inherit
   windows-integration-test:
     if: github.event.pull_request.draft == false

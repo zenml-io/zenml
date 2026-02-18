@@ -93,6 +93,8 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      WHYLOGS_NO_ANALYTICS: 'True'
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       # on MAC OS, we need to set this environment variable
