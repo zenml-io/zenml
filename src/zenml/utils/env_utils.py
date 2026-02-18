@@ -329,92 +329,81 @@ class ConfigBase(BaseModel, ABC):
     @staticmethod
     @abstractmethod
     def prefixes() -> list[str]:
-        """Implementation of the prefixes config method.
+        """Prefixes to use for env var name resolution.
 
         Returns:
             A list of prefixes to use for env var name resolution.
         """
-        pass
+        raise NotImplementedError
 
     @classmethod
-    def get_env_vars(cls) -> dict[str, Any]:
+    def get_env_vars(cls) -> dict[str, str]:
         """Method resolving the class variables from the environment.
 
         Notes:
-        *Conflicts*
-
-        Beware of variable name conflicts when composing configs via
+        - Beware of variable name conflicts when composing configs via
         inheritance. For instance, if you have DB and Cache env vars with a
         different prefix (e.g. {ZENML_REDIS_}CONN_URL, {ZENML_DB_}CONN_URL) this
         may lead to a conflict in naming when combining the 2 individual config
         objects (We get 2 variables named conn_url).
-
-        To avoid generating ambiguous configs the function detects duplicates and fails eagerly.
+        - To avoid generating ambiguous configs the function detects duplicates and fails eagerly.
         You can avoid such behaviors by using more generic prefixes and more precise
         variable names (e.g. prefix = ZENML_, variable = db_conn_url) or by controlling
         inheritance (try not to combine too many config classes, especially with common variable names).
-
-        *BaseSettings*
-
-        Why not use pydantic_settings.BaseSettings? Because - while neat - it doesn't provide the
+        - Why not use pydantic_settings.BaseSettings? Because - while neat - it doesn't provide the
         ability to compose config objects with different prefixes via inheritance.
 
         Returns:
-            A dictionary of variables. Keys are lowered, prefix-stripped variable names.
+            A dictionary of config variables.
 
         Raises:
-            RuntimeError: If the environment variables are conflicting.
+            RuntimeError: If config has conflicting variable names.
         """
-        # sort prefixes from longest to shortest.
         sorted_prefixes = sorted(
-            list(set(cls.prefixes())), key=lambda x: len(x), reverse=True
+            set(cls.prefixes()), key=lambda p: (-len(p), p)
         )
-
         logger.info("Config resolving prefixes: %s", sorted_prefixes)
 
-        env_vars = os.environ.copy()
-
-        parameters = {}
+        env_vars: dict[str, str] = os.environ.copy()
+        parameters: dict[str, str] = {}
+        sources: dict[str, str] = {}  # variable_name -> env key
 
         for prefix in sorted_prefixes:
-            found_keys = set()
+            found_keys: set[str] = set()
 
             for key, value in env_vars.items():
-                if key.startswith(prefix):
-                    found_keys.add(key)
+                if not key.startswith(prefix):
+                    continue
 
-                    variable_name = key.removeprefix(prefix).lower()
+                found_keys.add(key)
+                variable_name = key.removeprefix(prefix).lower()
 
-                    if variable_name in parameters:
-                        raise RuntimeError(
-                            "Environment variable extraction failed for %s. Variable %s is not uniquely "
-                            "defined, probably reused across multiple prefixes: %s.",
-                            cls.__name__,
-                            variable_name,
-                            [
-                                key
-                                for key in os.environ.keys()
-                                if key.endswith(variable_name.upper())
-                            ],
-                        )
+                if variable_name in parameters:
+                    raise RuntimeError(
+                        f"Environment variable extraction failed for {cls.__name__}. "
+                        f"Variable '{variable_name}' is not uniquely defined; it maps to both "
+                        f"{sources[variable_name]!r} and {key!r}."
+                    )
 
-                    parameters[variable_name] = value
+                parameters[variable_name] = value
+                sources[variable_name] = key
 
-                env_vars = {
-                    k: v for k, v in env_vars.items() if k not in found_keys
-                }
+            env_vars = {
+                k: v for k, v in env_vars.items() if k not in found_keys
+            }
 
         return parameters
 
     @classmethod
     def load_from_env(cls) -> Self:
-        """Resolves the environment and instantiates a new instance of the class.
+        """Resolve the environment and instantiate a new instance of the class.
 
         Returns:
-            A new instance of the class.
+            An instance of the class.
         """
         env_vars = cls.get_env_vars()
         logger.info(
-            f"Config identified the following variables: {list(env_vars.keys())}"
+            "Config identified the following variables: %s",
+            list(env_vars.keys()),
         )
-        return cls.__call__(**env_vars)  # type: ignore[no-any-return]
+        return cls(**env_vars)

@@ -148,15 +148,14 @@ def iso8601_to_utc_naive(value: str) -> datetime:
       - If `value` is invalid ISO 8601, raises ValueError.
 
     Args:
-      value: ISO 8601 datetime string (e.g. "2026-02-18T10:15:30+02:00", "...Z",
-        or "2026-02-18T10:15:30").
+        value: ISO 8601 datetime string (e.g. "2026-02-18T10:15:30+02:00)
 
     Returns:
-      A naive `datetime` representing the UTC time when tz info is provided,
-      otherwise the original naive datetime.
+        A naive `datetime` representing the UTC time when tz info is provided,
+        otherwise the original naive datetime.
 
     Raises:
-      ValueError: If the input cannot be parsed as ISO 8601.
+        ValueError: If the input cannot be parsed as ISO 8601.
     """
     s = value.strip()
     if not s:
