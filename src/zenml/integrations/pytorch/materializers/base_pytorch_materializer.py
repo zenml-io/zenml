@@ -17,7 +17,6 @@ import os
 from typing import Any, ClassVar, Type
 
 import cloudpickle
-import torch
 
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -40,6 +39,8 @@ class BasePyTorchMaterializer(BaseMaterializer):
         Returns:
             The loaded PyTorch object.
         """
+        import torch
+
         with fileio.open(os.path.join(self.uri, self.FILENAME), "rb") as f:
             # NOTE (security): The `torch.load` function uses `pickle` as
             # the default unpickler, which is NOT secure. This materializer
@@ -52,6 +53,8 @@ class BasePyTorchMaterializer(BaseMaterializer):
         Args:
             obj: The PyTorch object to save.
         """
+        import torch
+
         with fileio.open(os.path.join(self.uri, self.FILENAME), "wb") as f:
             # NOTE (security): The `torch.save` function uses `cloudpickle` as
             # the default unpickler, which is NOT secure. This materializer
