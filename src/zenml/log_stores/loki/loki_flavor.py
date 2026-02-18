@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Type
+from typing import Optional, Type
 
 from pydantic import Field, model_validator
 
@@ -36,7 +36,6 @@ class LokiLogStoreConfig(OtelLogStoreConfig):
             "URL. Example: 'http://localhost:3100' or 'https://loki.mycompany.tld'"
         ),
     )
-
     api_key: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         description=(
@@ -58,15 +57,6 @@ class LokiLogStoreConfig(OtelLogStoreConfig):
             "configured together with username"
         ),
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def set_default_endpoint(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Set the OTLP endpoint based on base_url if not provided."""
-        if isinstance(data, dict) and not data.get("endpoint"):
-            base_url = data.get("base_url", "http://localhost:3100")
-            data["endpoint"] = f"{base_url.rstrip('/')}/otlp/v1/logs"
-        return data
 
     @model_validator(mode="after")
     def validate_auth_configuration(self) -> "LokiLogStoreConfig":
