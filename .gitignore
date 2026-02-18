@@ -158,6 +158,7 @@ scratchpad/
 
 # zen
 *.csv
+!tests/integration/examples/neural_prophet/data/SF_PV.csv
 temp/*
 local_test/
 .zen/

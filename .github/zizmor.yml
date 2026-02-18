@@ -1,5 +1,12 @@
 ---
 rules:
+  # impostor-commit: Skip verification for repos that block git-upload-pack
+  # mheap/github-action-required-labels returns 401 when zizmor tries to
+  # list tags, causing the audit to fail. The SHA is verified manually.
+  impostor-commit:
+    ignore:
+      - require-release-label.yml
+
   # Require SHA pinning for all actions (security best practice)
   # Ignores: First-party template repos that need to stay on main branch
   # These are ZenML's own templates and are intentionally unpinned

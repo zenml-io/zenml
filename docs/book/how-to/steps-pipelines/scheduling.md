@@ -104,7 +104,7 @@ When using the Kubernetes orchestrator, scheduled pipelines are backed by Kubern
 - **`concurrency_policy`**: Controls whether concurrent job executions are allowed (`Allow`, `Forbid`, `Replace`)
 - **`starting_deadline_seconds`**: If a scheduled run misses its trigger time, it can still start within this window (in seconds)
 
-These settings are in addition to Job-level settings like `active_deadline_seconds` (runtime timeout), `ttl_seconds_after_finished` (cleanup delay), and history limits. See the [Kubernetes orchestrator docs](../component-guide/orchestrators/kubernetes.md) for the full list and examples.
+These settings are in addition to Job-level settings like `active_deadline_seconds` (runtime timeout), `ttl_seconds_after_finished` (cleanup delay), and history limits. See the [Kubernetes orchestrator docs](../../component-guide/orchestrators/kubernetes.md) for the full list and examples.
 
 ### Orchestrator support for schedule management
 
