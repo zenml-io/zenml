@@ -136,3 +136,44 @@ def expires_in(
     if expires_at < now:
         return expired_str
     return seconds_to_human_readable(int((expires_at - now).total_seconds()))
+
+
+def iso8601_to_utc_naive(value: str) -> datetime:
+    """Convert an ISO 8601 datetime string to a UTC-equivalent *naive* datetime.
+
+    Behavior:
+      - If `value` includes a timezone offset (e.g. `+02:00`) or `Z`, the result is
+        converted to UTC and returned as timezone-naive.
+      - If `value` is timezone-naive (no offset / no `Z`), it is returned as-is.
+      - If `value` is invalid ISO 8601, raises ValueError.
+
+    Args:
+      value: ISO 8601 datetime string (e.g. "2026-02-18T10:15:30+02:00", "...Z",
+        or "2026-02-18T10:15:30").
+
+    Returns:
+      A naive `datetime` representing the UTC time when tz info is provided,
+      otherwise the original naive datetime.
+
+    Raises:
+      ValueError: If the input cannot be parsed as ISO 8601.
+    """
+    s = value.strip()
+    if not s:
+        raise ValueError("Empty datetime string")
+
+    # Support 'Z' (UTC designator)
+    if s.endswith(("Z", "z")):
+        s = s[:-1] + "+00:00"
+
+    try:
+        dt = datetime.fromisoformat(s)
+    except ValueError as exc:
+        raise ValueError(f"Invalid ISO 8601 datetime: {value!r}") from exc
+
+    if dt.tzinfo is None:
+        # No timezone provided -> return as-is (naive)
+        return dt
+
+    # Convert to UTC, then drop tzinfo (return naive UTC-equivalent)
+    return dt.astimezone(timezone.utc).replace(tzinfo=None)

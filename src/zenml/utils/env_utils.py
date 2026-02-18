@@ -329,6 +329,11 @@ class ConfigBase(BaseModel, ABC):
     @staticmethod
     @abstractmethod
     def prefixes() -> list[str]:
+        """Implementation of the prefixes config method.
+
+        Returns:
+            A list of prefixes to use for env var name resolution.
+        """
         pass
 
     @classmethod
@@ -336,7 +341,6 @@ class ConfigBase(BaseModel, ABC):
         """Method resolving the class variables from the environment.
 
         Notes:
-
         *Conflicts*
 
         Beware of variable name conflicts when composing configs via
@@ -361,7 +365,6 @@ class ConfigBase(BaseModel, ABC):
         Raises:
             RuntimeError: If the environment variables are conflicting.
         """
-
         # sort prefixes from longest to shortest.
         sorted_prefixes = sorted(
             list(set(cls.prefixes())), key=lambda x: len(x), reverse=True
@@ -405,8 +408,13 @@ class ConfigBase(BaseModel, ABC):
 
     @classmethod
     def load_from_env(cls) -> Self:
+        """Resolves the environment and instantiates a new instance of the class.
+
+        Returns:
+            A new instance of the class.
+        """
         env_vars = cls.get_env_vars()
         logger.info(
             f"Config identified the following variables: {list(env_vars.keys())}"
         )
-        return cls.__call__(**env_vars)
+        return cls.__call__(**env_vars)  # type: ignore[no-any-return]

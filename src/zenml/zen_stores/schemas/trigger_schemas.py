@@ -104,6 +104,10 @@ class TriggerSchema(NamedSchema, table=True):
         ),
         description="JSON object - the extra trigger object parameters",
     )
+    concurrency: str = Field(
+        sa_column=Column(VARCHAR(20), nullable=False),
+        description="The trigger execution concurrency (SKIP, SUBMIT, etc.)",
+    )
 
     # -------------------- FOREIGN KEYS ------------------------------------
 

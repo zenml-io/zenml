@@ -572,3 +572,10 @@ class TriggerFlavor(StrEnum):
     """Enum representing trigger flavors."""
 
     NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors
+
+
+class TriggerRunConcurrency(StrEnum):
+    """Enum representing trigger run concurrency."""
+
+    SKIP = "skip"
+    SUBMIT = "submit"

@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import TriggerFlavor, TriggerType
+from zenml.enums import TriggerFlavor, TriggerRunConcurrency, TriggerType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.scoped import (
@@ -49,6 +49,11 @@ class TriggerBase(BaseModel, ABC):
     )
     active: bool
     type: TriggerType
+    concurrency: TriggerRunConcurrency = Field(
+        default=TriggerRunConcurrency.SKIP,
+        description="How to handle concurrently running triggers "
+        "(pipeline runs generated from the same trigger & snapshot).",
+    )
 
 
 class TriggerRequest(ProjectScopedRequest, TriggerBase, ABC):
@@ -155,6 +160,9 @@ class NonScopedTriggerFilter(BaseFilter):
         default=None,
         description="The next occurrence of the trigger (applicable only for schedules).",
         union_mode="left_to_right",
+    )
+    concurrency: TriggerRunConcurrency | None = Field(
+        default=None, description="The trigger concurrency."
     )
 
 
@@ -489,6 +497,15 @@ class ScheduleTriggerResponse(
             The latest run of the trigger.
         """
         return self.get_resources().latest_run
+
+    @property
+    def concurrency(self) -> TriggerRunConcurrency:
+        """Implements the 'concurrency' property.
+
+        Returns:
+            The concurrency of the trigger.
+        """
+        return self.get_body().concurrency
 
 
 TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate

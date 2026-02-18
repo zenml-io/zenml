@@ -59,6 +59,11 @@ class ProducerConfig(ConfigBase):
 
     @staticmethod
     def prefixes() -> list[str]:
+        """Implementation of the prefixes config method.
+
+        Returns:
+            A list of prefixes to use for env var name resolution.
+        """
         return [ENV_ZENML_PRODUCER_PREFIX]
 
     send_retries: int = Field(
@@ -226,6 +231,11 @@ class ConsumerRuntimeConfig(ConfigBase):
 
     @staticmethod
     def prefixes() -> list[str]:
+        """Implementation of the prefixes config method.
+
+        Returns:
+            A list of prefixes to use for env var name resolution.
+        """
         return [ENV_ZENML_CONSUMER_PREFIX]
 
     late_ack: bool = Field(
@@ -452,6 +462,11 @@ class PollingConfig(ConsumerRuntimeConfig):
 
     @staticmethod
     def prefixes() -> list[str]:
+        """Implementation of the prefixes config method.
+
+        Returns:
+            A list of prefixes to use for env var name resolution.
+        """
         return ConsumerRuntimeConfig.prefixes() + [
             ENV_ZENML_CONSUMER_POLLING_PREFIX
         ]
