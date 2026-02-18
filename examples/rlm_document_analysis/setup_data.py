@@ -107,7 +107,7 @@ def main() -> None:
         print("  pip install datasets")
         sys.exit(1)
 
-    print(f"Loading Enron email dataset from Hugging Face...")
+    print("Loading Enron email dataset from Hugging Face...")
     ds = load_dataset("corbt/enron-emails", streaming=True)
 
     emails = []
