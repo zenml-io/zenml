@@ -7147,8 +7147,8 @@ class SqlZenStore(BaseZenStore):
                             uri=log_request.uri,
                             # If we are sending a pipeline run request with a logs request
                             # object, we need to tie it to the same user and project.
-                            project=existing_run.project,
-                            user=existing_run.user,
+                            project=existing_run.project_id,
+                            user=existing_run.user_id,
                             # TODO: Remove fallback when not supporting
                             # clients <0.84.0 anymore
                             source=log_request.source or "orchestrator",
@@ -10728,8 +10728,8 @@ class SqlZenStore(BaseZenStore):
                             uri=log_request.uri,
                             # If we are sending a pipeline run request with a logs request
                             # object, we need to tie it to the same user and project.
-                            project=existing_step_run.project,
-                            user=existing_step_run.user,
+                            project=existing_step_run.project_id,
+                            user=existing_step_run.user_id,
                             # TODO: Remove fallback when not supporting
                             # clients <0.93.0 anymore
                             source=log_request.source or "step",

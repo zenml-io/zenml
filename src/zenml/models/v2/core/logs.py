@@ -45,7 +45,7 @@ class LogsRequest(ProjectScopedRequest):
 
     # TODO: This is being added for backwards compatibility with clients <0.84.0.
     # We can remove this with the upcoming breaking changes.
-    project_id: Optional[UUID] = Field(
+    project: Optional[UUID] = Field(  # type: ignore[assignment]
         default=None,
         title="The project to which this resource belongs.",
     )

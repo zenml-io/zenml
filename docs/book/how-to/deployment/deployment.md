@@ -13,6 +13,24 @@ A pipeline deployment is a long-running HTTP server that wraps your pipeline for
 
 When you deploy a pipeline, ZenML creates an HTTP server (called a **Deployment**) that can execute your pipeline multiple times in parallel by invoking HTTP endpoints.
 
+## Deployments vs Snapshots
+
+ZenML offers two distinct ways to execute pipelines beyond direct Python calls. They serve different operating models:
+
+| | **Deployments** | **Snapshots** |
+|---|---|---|
+| **What it is** | A long-running HTTP service wrapping your pipeline | A batch-style pipeline run triggered on demand |
+| **Stable URL** | Yes — persistent endpoint you can call repeatedly | No — each run is a one-off server-managed job |
+| **Response model** | Synchronous request/response with pipeline outputs | Fire-and-forget (poll for run status) |
+| **Custom endpoints, auth, middleware** | Yes — full ASGI app customization | No |
+| **Persistent state across calls** | Yes — `on_init` hooks, shared model loading | No |
+| **Best for** | Real-time inference, agents, interactive APIs | Scheduled retraining, batch jobs, CI/CD triggers |
+| **Availability** | OSS and Pro | Running snapshots requires Pro |
+
+{% hint style="info" %}
+Use **Deployments** when you need an always-on HTTP service (inference APIs, agents, interactive workflows). Use **Snapshots** when you need to trigger batch pipeline runs from a UI, SDK, or external system without maintaining a running service. See the [Snapshots documentation](../snapshots/snapshots.md) for more details.
+{% endhint %}
+
 ## Common Use Cases
 
 Pipeline deployments are ideal for scenarios requiring real-time, on-demand execution of ML workflows:
