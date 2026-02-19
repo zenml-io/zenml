@@ -13091,10 +13091,10 @@ class SqlZenStore(BaseZenStore):
                     new_status=step_run_update.status,
                 )
 
-            if (
-                existing_step_run.is_retriable
-                and step_run_update.status == ExecutionStatus.FAILED
-            ):
+            if existing_step_run.is_retriable and step_run_update.status in {
+                ExecutionStatus.FAILED,
+                ExecutionStatus.CANCELLED,
+            }:
                 # This step will be retried by the orchestrator, so we
                 # set its status accordingly.
                 step_run_update.status = ExecutionStatus.RETRYING
