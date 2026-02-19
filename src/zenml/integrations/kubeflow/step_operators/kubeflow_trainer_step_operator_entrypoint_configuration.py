@@ -47,6 +47,12 @@ class KubeflowTrainerStepOperatorEntrypointConfiguration(
     ) -> None:
         """Runs a single step using the Kubeflow Trainer step runner.
 
+        Overrides the base class implementation to inject distributed
+        environment normalization and to gate artifact materialization
+        on replica rank.  A full override is necessary because these
+        two hooks must run before and within the step-run construction
+        that the base class does not expose extension points for.
+
         Args:
             step: The step to run.
             snapshot: The snapshot configuration.

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Decorator utilities for Kubeflow Trainer step operator usage."""
 
-import copy
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from zenml import get_pipeline_context
@@ -21,35 +20,13 @@ from zenml.integrations.kubeflow import KUBEFLOW_TRAINER_STEP_OPERATOR_FLAVOR
 from zenml.integrations.kubeflow.flavors import (
     KubeflowTrainerStepOperatorSettings,
 )
+from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
+    deep_merge_dicts,
+)
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
-
-
-def _deep_merge_dicts(
-    base: Dict[str, Any], override: Dict[str, Any]
-) -> Dict[str, Any]:
-    """Deep merges override values into a base dict.
-
-    Args:
-        base: Base dictionary.
-        override: Dictionary values to merge.
-
-    Returns:
-        Merged dictionary.
-    """
-    merged = copy.deepcopy(base)
-    for key, value in override.items():
-        if (
-            isinstance(value, dict)
-            and key in merged
-            and isinstance(merged[key], dict)
-        ):
-            merged[key] = _deep_merge_dicts(merged[key], value)
-        else:
-            merged[key] = copy.deepcopy(value)
-    return merged
 
 
 def run_with_trainer(
@@ -120,7 +97,7 @@ def run_with_trainer(
             "`ml_policy` is deprecated; use `num_proc_per_node` and "
             "`trainer_overrides` instead."
         )
-        effective_trainer_overrides = _deep_merge_dicts(
+        effective_trainer_overrides = deep_merge_dicts(
             effective_trainer_overrides, dict(ml_policy)
         )
     if pod_template_override:
@@ -129,7 +106,7 @@ def run_with_trainer(
             "`trainer_overrides` for trainer fields and "
             "`pod_template_overrides` for TrainJob pod template overrides."
         )
-        effective_trainer_overrides = _deep_merge_dicts(
+        effective_trainer_overrides = deep_merge_dicts(
             effective_trainer_overrides, dict(pod_template_override)
         )
 

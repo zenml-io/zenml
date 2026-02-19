@@ -30,7 +30,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubeflow import KUBEFLOW_TRAINER_STEP_OPERATOR_FLAVOR
 from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
-    NUM_PROC_PER_NODE_AUTO_VALUES,
+    normalize_num_proc_per_node,
 )
 from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
@@ -41,118 +41,96 @@ if TYPE_CHECKING:
     )
 
 
-def _normalize_num_proc_per_node(
-    value: Union[int, str, None],
-) -> Optional[Union[int, Literal["auto", "cpu", "gpu"]]]:
-    """Normalizes and validates the Trainer `numProcPerNode` value.
-
-    Args:
-        value: Input value.
-
-    Returns:
-        Normalized value.
-
-    Raises:
-        ValueError: If the value is invalid.
-    """
-    if value is None:
-        return None
-
-    if isinstance(value, bool):
-        raise ValueError(
-            "`num_proc_per_node` must be an integer >= 1 or one of "
-            "`auto`, `cpu`, `gpu`."
-        )
-
-    if isinstance(value, int):
-        if value < 1:
-            raise ValueError("`num_proc_per_node` must be greater than 0.")
-        return value
-
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if normalized in NUM_PROC_PER_NODE_AUTO_VALUES:
-            return normalized
-
-        if normalized.isdigit():
-            parsed = int(normalized)
-            if parsed < 1:
-                raise ValueError("`num_proc_per_node` must be greater than 0.")
-            return parsed
-
-    raise ValueError(
-        "`num_proc_per_node` must be an integer >= 1 or one of "
-        "`auto`, `cpu`, `gpu`."
-    )
-
-
 class KubeflowTrainerStepOperatorSettings(BaseSettings):
     """Settings for the Kubeflow Trainer step operator."""
 
     runtime_ref_name: str = Field(
         ...,
-        description="Name of the Trainer runtime reference.",
+        description="Specifies the Kubeflow Trainer runtime reference name "
+        "that defines the training framework. "
+        "Examples: 'torch-distributed', 'mpi-v2'",
     )
     runtime_ref_kind: str = Field(
         default="ClusterTrainingRuntime",
-        description="Runtime kind for the Trainer runtime reference. "
-        "Examples: 'ClusterTrainingRuntime', 'TrainingRuntime'",
+        description="Determines the kind of Trainer runtime reference. "
+        "Examples: 'ClusterTrainingRuntime' (cluster-scoped), "
+        "'TrainingRuntime' (namespace-scoped)",
     )
     runtime_ref_api_group: str = Field(
         default="trainer.kubeflow.org",
-        description="API group for the Trainer runtime reference.",
+        description="Specifies the API group for the Trainer runtime "
+        "reference. Defaults to 'trainer.kubeflow.org'",
     )
     num_nodes: PositiveInt = Field(
         default=1,
-        description="Number of nodes to request for distributed training.",
+        description="Controls the number of worker nodes for distributed "
+        "training. Example: 4 for a 4-node distributed job",
     )
     num_proc_per_node: Optional[
         Union[PositiveInt, Literal["auto", "cpu", "gpu"]]
     ] = Field(
         default=None,
-        description="Trainer processes per node. Accepts an integer value or "
-        "one of `auto`, `cpu`, `gpu`.",
+        description="Configures the number of processes per node. Accepts a "
+        "positive integer or one of 'auto', 'cpu', 'gpu'. "
+        "Example: 2 for two processes per node",
     )
     trainer_overrides: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Additional fields merged into `spec.trainer`.",
+        description="Specifies additional fields deep-merged into the "
+        "TrainJob `spec.trainer` section. "
+        "Example: {'numProcPerNode': 'gpu'}",
     )
     trainer_env: Dict[str, str] = Field(
         default_factory=dict,
-        description="Additional environment variables for trainer replicas.",
+        description="Configures additional environment variables injected "
+        "into trainer replica pods. "
+        "Example: {'NCCL_DEBUG': 'INFO', 'OMP_NUM_THREADS': '1'}",
     )
     pod_template_overrides: List[Dict[str, Any]] = Field(
         default_factory=list,
-        description="Optional `spec.podTemplateOverrides` entries.",
+        description="Specifies optional TrainJob "
+        "`spec.podTemplateOverrides` entries for customizing pod "
+        "specs per replica type",
     )
     poll_interval_seconds: float = Field(
         default=5.0,
         gt=0,
-        description="Polling interval in seconds while watching TrainJob status.",
+        description="Controls how frequently the operator polls for "
+        "TrainJob status updates, in seconds. Example: 10.0",
     )
     timeout_seconds: Optional[PositiveInt] = Field(
         default=None,
-        description="Optional timeout in seconds for TrainJob completion.",
+        description="Configures an optional timeout in seconds for "
+        "TrainJob completion. If exceeded, the step fails. "
+        "Example: 3600 for a one-hour timeout",
     )
     delete_trainjob_after_completion: bool = Field(
         default=False,
-        description="Whether to delete the TrainJob after it reaches terminal state.",
+        description="Controls whether the TrainJob resource is deleted "
+        "after reaching a terminal state. Set to False to keep "
+        "the resource for debugging",
     )
     kubernetes_namespace: str = Field(
         default="default",
-        description="Kubernetes namespace where TrainJobs are created.",
+        description="Specifies the Kubernetes namespace where TrainJobs "
+        "are created and managed. Example: 'training'",
     )
     incluster: bool = Field(
         default=False,
-        description="Whether to use in-cluster Kubernetes authentication.",
+        description="Controls whether to use in-cluster Kubernetes "
+        "authentication. Set to True when the step operator "
+        "runs inside a Kubernetes pod",
     )
     kubernetes_context: Optional[str] = Field(
         default=None,
-        description="Kubernetes context to use when not running in-cluster.",
+        description="Specifies the kubeconfig context to use when not "
+        "running in-cluster. Example: 'my-cluster-context'",
     )
     image: Optional[str] = Field(
         default=None,
-        description="Optional image override for Trainer replicas.",
+        description="Configures an optional Docker image override for "
+        "Trainer replicas. Example: "
+        "'my-registry.io/training:v1.2'",
     )
 
     @field_validator("num_proc_per_node", mode="before")
@@ -168,7 +146,7 @@ class KubeflowTrainerStepOperatorSettings(BaseSettings):
         Returns:
             Normalized value.
         """
-        return _normalize_num_proc_per_node(value)
+        return normalize_num_proc_per_node(value)
 
     @field_validator("pod_template_overrides", mode="before")
     @classmethod

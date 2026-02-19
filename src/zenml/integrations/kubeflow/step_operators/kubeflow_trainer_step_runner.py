@@ -96,15 +96,15 @@ class KubeflowTrainerStepRunner(StepRunner):
             output_artifact_uris: Output artifact URIs for this execution.
             step_run_info: Runtime information for the step run.
         """
-        step_instance = self._load_step()
-        output_materializers = self._load_output_materializers()
+        step_instance = self.load_step()
+        output_materializers = self.load_output_materializers()
 
         spec = inspect.getfullargspec(inspect.unwrap(step_instance.entrypoint))
         output_annotations = parse_return_type_annotations(
             func=step_instance.entrypoint
         )
 
-        self._evaluate_artifact_names_in_collections(
+        self.evaluate_artifact_names_in_collections(
             step_run,
             output_annotations,
             [
@@ -129,7 +129,7 @@ class KubeflowTrainerStepRunner(StepRunner):
         step_failed = False
         try:
             with step_context:
-                function_params = self._parse_inputs(
+                function_params = self.parse_inputs(
                     args=spec.args,
                     annotations=spec.annotations,
                     input_artifacts=input_artifacts,
@@ -150,7 +150,7 @@ class KubeflowTrainerStepRunner(StepRunner):
                         **function_params
                     )
 
-                self._validate_outputs(return_values, output_annotations)
+                self.validate_outputs(return_values, output_annotations)
         except BaseException:  # noqa: E722
             step_failed = True
             raise

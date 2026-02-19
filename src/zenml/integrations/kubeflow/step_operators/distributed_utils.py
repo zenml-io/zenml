@@ -112,6 +112,8 @@ def normalize_kubeflow_trainer_distributed_env(
     if "LOCAL_RANK" not in env:
         pet_nproc_per_node = _read_positive_int(("PET_NPROC_PER_NODE",), env)
         if pet_nproc_per_node is not None:
+            # Always 0 because the flattening logic in trainjob_manifest_utils
+            # ensures each pod runs exactly one process (numProcPerNode=1).
             env["LOCAL_RANK"] = "0"
 
 

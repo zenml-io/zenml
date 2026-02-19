@@ -69,44 +69,49 @@ def _memory_to_kubernetes_quantity(memory: str) -> str:
     return memory
 
 
-def _deep_merge_dicts(
+def deep_merge_dicts(
     base: Dict[str, Any], override: Mapping[str, Any]
 ) -> Dict[str, Any]:
-    """Deep merges override into a base dict.
+    """Deep merges override values into a base dict without mutation.
 
     Args:
-        base: Base dict.
-        override: Dict values to merge.
+        base: Base dict (not modified).
+        override: Dict values to merge on top.
 
     Returns:
-        The merged dict.
+        A new merged dict.
     """
+    merged = copy.deepcopy(base)
     for key, value in override.items():
         if (
             isinstance(value, dict)
-            and key in base
-            and isinstance(base[key], dict)
+            and key in merged
+            and isinstance(merged[key], dict)
         ):
-            base[key] = _deep_merge_dicts(base[key], value)
+            merged[key] = deep_merge_dicts(merged[key], value)
         else:
-            base[key] = copy.deepcopy(value)
-    return base
+            merged[key] = copy.deepcopy(value)
+    return merged
 
 
-def _normalize_num_proc_per_node(
-    value: Union[int, str],
-) -> Union[int, Literal["auto", "cpu", "gpu"]]:
+def normalize_num_proc_per_node(
+    value: Union[int, str, None],
+) -> Optional[Union[int, Literal["auto", "cpu", "gpu"]]]:
     """Normalizes and validates Trainer `numProcPerNode`.
 
     Args:
-        value: Raw value.
+        value: Raw value — an integer >= 1, one of ``auto``/``cpu``/``gpu``,
+            or ``None`` to leave unset.
 
     Returns:
-        Normalized value.
+        Normalized value, or ``None`` when the input is ``None``.
 
     Raises:
         ValueError: If the value is invalid.
     """
+    if value is None:
+        return None
+
     if isinstance(value, bool):
         raise ValueError(
             "`num_proc_per_node` must be an integer >= 1 or one of "
@@ -207,10 +212,10 @@ def build_trainjob_manifest(
         runtime_ref_kind: Runtime reference kind.
         runtime_ref_api_group: Runtime reference api group.
         num_nodes: Number of trainer nodes.
-        num_proc_per_node: Optional trainer `numProcPerNode` value.
         resource_settings: Step resource settings.
         environment: Environment variables inherited from the launcher process.
         trainer_env: Additional trainer-specific environment variables.
+        num_proc_per_node: Optional trainer `numProcPerNode` value.
         trainer_overrides: Optional additional `spec.trainer` fields.
         pod_template_overrides: Optional `spec.podTemplateOverrides`.
         labels: Optional metadata labels.
@@ -234,7 +239,7 @@ def build_trainjob_manifest(
     }
 
     if num_proc_per_node is not None:
-        trainer_spec["numProcPerNode"] = _normalize_num_proc_per_node(
+        trainer_spec["numProcPerNode"] = normalize_num_proc_per_node(
             num_proc_per_node
         )
 
@@ -246,12 +251,12 @@ def build_trainjob_manifest(
         trainer_spec["resourcesPerNode"] = resources_per_node
 
     if trainer_overrides:
-        trainer_spec = _deep_merge_dicts(
+        trainer_spec = deep_merge_dicts(
             base=trainer_spec, override=trainer_overrides
         )
 
     if "numProcPerNode" in trainer_spec:
-        trainer_spec["numProcPerNode"] = _normalize_num_proc_per_node(
+        trainer_spec["numProcPerNode"] = normalize_num_proc_per_node(
             trainer_spec["numProcPerNode"]
         )
 
@@ -276,6 +281,20 @@ def build_trainjob_manifest(
         )
         trainer_spec["numNodes"] = total_workers
         trainer_spec["numProcPerNode"] = 1
+
+        rpn = trainer_spec.get("resourcesPerNode") or {}
+        gpu_request = (rpn.get("requests") or {}).get("nvidia.com/gpu")
+        if gpu_request:
+            logger.warning(
+                "After flattening, each of the %d pods requests %s "
+                "GPU(s) (total: %d GPUs). If gpu_count should be the "
+                "total across all workers, set gpu_count=%d and "
+                "num_proc_per_node=1 instead.",
+                total_workers,
+                gpu_request,
+                total_workers * int(gpu_request),
+                int(gpu_request),
+            )
     elif (
         effective_num_nodes is not None
         and effective_num_nodes > 1

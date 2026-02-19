@@ -29,6 +29,8 @@ from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator_e
     KubeflowTrainerStepOperatorEntrypointConfiguration,
 )
 from zenml.integrations.kubeflow.step_operators.trainer_job_watcher import (
+    RunStoppedException,
+    cancel_trainjob,
     wait_for_trainjob_to_finish,
 )
 from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
@@ -227,6 +229,9 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
     ) -> "k8s_client.CustomObjectsApi":
         """Kubernetes CustomObjectsApi client.
 
+        Args:
+            settings: Step operator settings for auth configuration.
+
         Returns:
             CustomObjectsApi client.
         """
@@ -276,8 +281,10 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
             trainjob_name: TrainJob name.
 
         Raises:
-            Exception: Any non-404 API exception.
+            kubernetes.client.exceptions.ApiException: Any non-404 API error.
         """
+        from kubernetes.client.exceptions import ApiException
+
         try:
             custom_objects_api.delete_namespaced_custom_object(
                 group=TRAINJOB_GROUP,
@@ -287,8 +294,8 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
                 name=trainjob_name,
                 body={},
             )
-        except Exception as e:
-            if getattr(e, "status", None) == 404:
+        except ApiException as e:
+            if e.status == 404:
                 return
             raise
 
@@ -383,12 +390,20 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
 
         try:
             wait_for_trainjob_to_finish(
+                step_run_id=info.step_run_id,
                 custom_objects_api=custom_objects_api,
                 namespace=namespace,
                 name=trainjob_name,
                 poll_interval_seconds=settings.poll_interval_seconds,
                 timeout_seconds=settings.timeout_seconds,
             )
+        except RunStoppedException:
+            cancel_trainjob(
+                custom_objects_api=custom_objects_api,
+                namespace=namespace,
+                name=trainjob_name,
+            )
+            raise RunStoppedException("Step run was cancelled, cancelling TrainJob.")
         finally:
             if settings.delete_trainjob_after_completion:
                 self._delete_trainjob(

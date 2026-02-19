@@ -15,7 +15,10 @@
 
 import time
 from typing import Any, Dict, Optional, Tuple, Union
+from uuid import UUID
 
+from zenml.client import Client
+from zenml.enums import ExecutionStatus
 from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
     TRAINJOB_GROUP,
     TRAINJOB_PLURAL,
@@ -25,10 +28,14 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-_SUCCESS_CONDITIONS = {"succeeded", "complete", "completed"}
-_FAILURE_CONDITIONS = {"failed", "failure"}
+_SUCCESS_CONDITIONS = {"complete"}
+_FAILURE_CONDITIONS = {"failed", "suspended"}
 _SUCCESS_PHASES = {"succeeded", "complete", "completed"}
 _FAILURE_PHASES = {"failed", "error", "cancelled"}
+
+
+class RunStoppedException(Exception):
+    """Raised when a step run is stopped."""
 
 
 def _is_condition_true(value: Union[bool, str]) -> bool:
@@ -109,11 +116,13 @@ def wait_for_trainjob_to_finish(
     namespace: str,
     name: str,
     poll_interval_seconds: float,
+    step_run_id: UUID,
     timeout_seconds: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Waits for a TrainJob to complete.
 
     Args:
+        step_run_id: ID of the step run.
         custom_objects_api: Kubernetes `CustomObjectsApi` instance.
         namespace: Namespace of the TrainJob.
         name: Name of the TrainJob.
@@ -128,8 +137,12 @@ def wait_for_trainjob_to_finish(
         The final TrainJob resource.
     """
     start_time = time.time()
+    client = Client()
 
     while True:
+        step_run_status = client.get_run_step(step_run_id)
+        if step_run_status.status == ExecutionStatus.CANCELLING:
+            raise RunStoppedException("Step run was cancelled, cancelling TrainJob.")
         trainjob = custom_objects_api.get_namespaced_custom_object(
             group=TRAINJOB_GROUP,
             version=TRAINJOB_VERSION,
@@ -154,3 +167,25 @@ def wait_for_trainjob_to_finish(
                 )
 
         time.sleep(poll_interval_seconds)
+
+
+def cancel_trainjob(
+    custom_objects_api: Any,
+    namespace: str,
+    name: str,
+) -> None:
+    """Suspends a running TrainJob.
+
+    Args:
+        custom_objects_api: Kubernetes `CustomObjectsApi` instance.
+        namespace: Namespace of the TrainJob.
+        name: Name of the TrainJob.
+    """
+    custom_objects_api.patch_namespaced_custom_object(
+        group=TRAINJOB_GROUP,
+        version=TRAINJOB_VERSION,
+        namespace=namespace,
+        plural=TRAINJOB_PLURAL,
+        name=name,
+        body={"spec": {"suspend": True}},
+    )

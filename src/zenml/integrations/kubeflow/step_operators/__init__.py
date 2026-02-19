@@ -22,7 +22,17 @@ if TYPE_CHECKING:
 
 
 def __getattr__(name: str) -> Any:
-    """Lazily imports step operator classes."""
+    """Lazily imports step operator classes.
+
+    Args:
+        name: Attribute name to resolve.
+
+    Returns:
+        The requested class.
+
+    Raises:
+        AttributeError: If the name is not a known export.
+    """
     if name == "KubeflowTrainerStepOperator":
         from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator import (  # noqa: E501
             KubeflowTrainerStepOperator,
