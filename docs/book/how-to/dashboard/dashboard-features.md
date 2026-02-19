@@ -3,6 +3,11 @@ description: Explore the features and capabilities of the ZenML dashboard
 icon: gauge-high
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Dashboard Features
 
 The ZenML dashboard is a powerful web-based interface that provides visualization, management, and analysis capabilities for your ML workflows. This guide offers a comprehensive overview of the dashboard's features, helping you leverage its full potential for monitoring, managing, and optimizing your machine learning pipelines.

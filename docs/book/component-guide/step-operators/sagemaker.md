@@ -2,6 +2,11 @@
 description: Executing individual steps in SageMaker.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Amazon SageMaker
 
 [SageMaker](https://aws.amazon.com/sagemaker/) offers specialized compute instances to run your training jobs and has a comprehensive UI to track and manage your models and logs. ZenML's SageMaker step operator allows you to submit individual steps to be run on Sagemaker compute instances.
