@@ -2,6 +2,11 @@
 description: Storing artifacts in Alibaba Cloud Object Storage Service (OSS).
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Alibaba Cloud OSS
 
 [Alibaba Cloud Object Storage Service (OSS)](https://www.alibabacloud.com/product/object-storage-service) is an S3-compatible object storage service. Since OSS provides an S3-compatible API, you can use ZenML's S3 Artifact Store integration to connect to [Alibaba Cloud](https://www.alibabacloud.com) OSS.

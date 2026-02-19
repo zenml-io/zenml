@@ -2,6 +2,11 @@
 description: Annotating data using Pigeon.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Pigeon
 
 Pigeon is a lightweight, open-source annotation tool designed for quick and easy labeling of data directly within Jupyter notebooks. It provides a simple and intuitive interface for annotating various types of data, including:
