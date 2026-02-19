@@ -51,7 +51,10 @@ Each log record includes ZenML metadata as OTEL attributes:
 | `zenml.pipeline.name`        | Pipeline name                                |
 | `zenml.pipeline.run.id`        | Pipeline run ID                                |
 | `zenml.pipeline.run.name`        | Pipeline run name                                |
+| `zenml.step.run.id`     | Step ID (for step-level logs)                |
 | `zenml.step.run.name`     | Step name (for step-level logs)                |
+| `zenml.workspace.id`        | Workspace ID (when connected to a ZenML Pro workspace)                               |
+| `zenml.workspace.name`     | Workspace name (when connected to a ZenML Pro workspace)               |
 
 These attributes enable powerful filtering and querying in your observability platform.
 
