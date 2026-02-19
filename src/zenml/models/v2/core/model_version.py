@@ -671,6 +671,13 @@ class ModelVersionFilter(
         *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
+    # Override BaseFilter default so that CLI list commands show newest
+    # model versions first, matching user expectations.
+    sort_by: str = Field(
+        default="desc:created",
+        description="Which column to sort by. Default is newest first.",
+    )
+
     name: Optional[str] = Field(
         default=None,
         description="The name of the Model Version",

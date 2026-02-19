@@ -716,6 +716,13 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
+    # Override BaseFilter default so that CLI list commands show newest
+    # step runs first, matching user expectations for time-sensitive entities.
+    sort_by: str = Field(
+        default="desc:created",
+        description="Which column to sort by. Default is newest runs first.",
+    )
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the step run",

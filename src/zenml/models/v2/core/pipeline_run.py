@@ -717,6 +717,13 @@ class PipelineRunFilter(
         *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
+    # Override BaseFilter default so that CLI list commands show newest
+    # pipeline runs first, matching the Client.list_pipeline_runs() default.
+    sort_by: str = Field(
+        default="desc:created",
+        description="Which column to sort by. Default is newest runs first.",
+    )
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",

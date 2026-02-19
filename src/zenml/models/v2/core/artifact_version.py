@@ -558,6 +558,13 @@ class ArtifactVersionFilter(
         *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
+    # Override BaseFilter default so that CLI list commands show newest
+    # artifact versions first, matching user expectations.
+    sort_by: str = Field(
+        default="desc:created",
+        description="Which column to sort by. Default is newest first.",
+    )
+
     artifact: Optional[Union[UUID, str]] = Field(
         default=None,
         description="The name or ID of the artifact which the search is scoped "
