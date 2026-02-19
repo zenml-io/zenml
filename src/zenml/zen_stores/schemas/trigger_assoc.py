@@ -14,6 +14,7 @@
 """SQL Model Implementations for Triggers Associations."""
 
 from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.sql.schema import Column, ForeignKey
@@ -39,14 +40,14 @@ class TriggerSnapshotSchema(SQLModel, table=True):
         ),
     )
 
-    trigger_id: int = Field(
+    trigger_id: UUID = Field(
         sa_column=Column(
             ForeignKey("trigger.id", ondelete="CASCADE"),
             nullable=False,
             primary_key=True,
         ),
     )
-    snapshot_id: int = Field(
+    snapshot_id: UUID = Field(
         sa_column=Column(
             ForeignKey("pipeline_snapshot.id", ondelete="CASCADE"),
             nullable=False,
@@ -73,14 +74,14 @@ class TriggerExecutionSchema(SQLModel, table=True):
         ),
     )
 
-    trigger_id: int = Field(
+    trigger_id: UUID = Field(
         sa_column=Column(
             ForeignKey("trigger.id", ondelete="CASCADE"),
             nullable=False,
             primary_key=True,
         ),
     )
-    pipeline_run_id: int = Field(
+    pipeline_run_id: UUID = Field(
         sa_column=Column(
             ForeignKey("pipeline_run.id", ondelete="CASCADE"),
             nullable=False,

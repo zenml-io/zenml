@@ -36,10 +36,9 @@ def upgrade() -> None:
     )
 
     with op.batch_alter_table("trigger", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("concurrency", sa.VARCHAR(length=20), nullable=False)
+        batch_op.alter_column(
+            "concurrency", existing_type=sa.VARCHAR(length=20), nullable=False
         )
-
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""

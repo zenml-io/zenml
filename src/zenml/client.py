@@ -3993,6 +3993,8 @@ class Client(metaclass=ClientMetaClass):
         flavor: TriggerFlavor = TriggerFlavor.NATIVE_SCHEDULE,
         type: Literal[TriggerType.SCHEDULE] = TriggerType.SCHEDULE,
         next_occurrence: datetime | None = None,
+        pipeline_id: str | UUID | None = None,
+        snapshot_id: str | UUID | None = None,
     ) -> Page[ScheduleTriggerResponse]:
         """List schedule triggers.
 
@@ -4013,6 +4015,8 @@ class Client(metaclass=ClientMetaClass):
             flavor: The flavor of the schedule.
             type: The type of schedule.
             next_occurrence: The next occurrence of the schedule.
+            pipeline_id: Filter triggers by pipeline with attached snapshots.
+            snapshot_id: Filter triggers by attached snapshot.
 
         Returns:
             A Page of ScheduleTriggerResponse objects.
@@ -4026,7 +4030,9 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 active=active,
-                concurrency=TriggerRunConcurrency(concurrency),
+                concurrency=TriggerRunConcurrency(concurrency)
+                if concurrency
+                else None,
                 is_archived=is_archived,
                 flavor=flavor,
                 type=type,
@@ -4035,6 +4041,8 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 next_occurrence=next_occurrence,
+                pipeline_id=str(pipeline_id) if pipeline_id else None,
+                snapshot_id=str(snapshot_id) if snapshot_id else None,
             )
         )
 

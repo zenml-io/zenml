@@ -15,14 +15,14 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Type
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerRunConcurrency, TriggerType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -38,6 +38,7 @@ if TYPE_CHECKING:
         PipelineSnapshotResponse,
         UserResponse,
     )
+    from zenml.models.v2.base.filter import AnySchema
 
 
 class TriggerBase(BaseModel, ABC):
@@ -169,7 +170,70 @@ class NonScopedTriggerFilter(BaseFilter):
 class TriggerFilter(NonScopedTriggerFilter, ProjectScopedFilter):
     """Public class for filtering triggers."""
 
-    pass
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "pipeline_id",
+        "snapshot_id",
+    ]
+
+    pipeline_id: str | None = Field(
+        default=None,
+        description="Filter triggers by pipeline ID (triggers that are attached to this pipeline's snapshots)",
+    )
+    snapshot_id: str | None = Field(
+        default=None,
+        description="Filter triggers by snapshot ID (triggers that are attached to this snapshot)",
+    )
+
+    @property
+    def filter_by_snapshot(self) -> bool:
+        """Implements the `filter_by_snapshot` property.
+
+        Returns:
+            True if filtering requires snapshot fields else False.
+        """
+        return any(f is not None for f in [self.pipeline_id, self.snapshot_id])
+
+    def apply_filter(
+        self, query: AnyQuery, table: Type["AnySchema"]
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from zenml.zen_stores.schemas import (
+            PipelineSnapshotSchema,
+            TriggerSchema,
+            TriggerSnapshotSchema,
+        )
+
+        query = ProjectScopedFilter.apply_filter(self, query, table)
+
+        if self.filter_by_snapshot:
+            query = query.join(
+                TriggerSnapshotSchema,
+                TriggerSchema.id == TriggerSnapshotSchema.trigger_id,
+            ).join(
+                PipelineSnapshotSchema,
+                TriggerSnapshotSchema.snapshot_id == PipelineSnapshotSchema.id,
+            )
+
+            if self.pipeline_id is not None:
+                query = query.where(
+                    PipelineSnapshotSchema.pipeline_id == self.pipeline_id
+                )
+
+            if self.snapshot_id is not None:
+                query = query.where(
+                    TriggerSnapshotSchema.snapshot_id == self.snapshot_id
+                )
+
+        return query
 
 
 class ScheduleTrigger(BaseModel):
