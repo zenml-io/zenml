@@ -620,14 +620,26 @@ def download_artifact_files_from_response(
                     with artifact_store.open(
                         file_path, mode="rb"
                     ) as store_file:
-                        # Use a loop to read and write chunks of the file
-                        # instead of reading the entire file into memory
+                        # Stream chunks into a single ZIP entry using
+                        # zipf.open() as a writable context manager.
+                        #
+                        # Bug fix (issue #4349): The previous implementation
+                        # called zipf.writestr(file_str, chunk) inside a
+                        # loop, which created a *new* ZIP entry for every
+                        # chunk instead of appending to the same entry.
+                        # Only the last chunk survived in the archive for
+                        # any file larger than CHUNK_SIZE (8 192) bytes.
+                        #
+                        # Fix: open a single writable ZIP entry via
+                        # zipf.open(file_str, 'w') and write each chunk
+                        # into it, so all chunks end up in one entry.
                         CHUNK_SIZE = 8192
-                        while True:
-                            if file_content := store_file.read(CHUNK_SIZE):
-                                zipf.writestr(file_str, file_content)
-                            else:
-                                break
+                        with zipf.open(file_str, "w") as zip_entry:
+                            while True:
+                                file_content = store_file.read(CHUNK_SIZE)
+                                if not file_content:
+                                    break
+                                zip_entry.write(file_content)
         except Exception as e:
             logger.error(
                 f"Failed to save artifact '{artifact.id}' to zip file "
