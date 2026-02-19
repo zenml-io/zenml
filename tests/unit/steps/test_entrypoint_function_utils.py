@@ -36,3 +36,30 @@ def test_passing_none_for_optional_artifact() -> None:
 
     with does_not_raise():
         entrypoint_function_definition.validate_input(key="key", value=None)
+
+
+# ---------------------------------------------------------------------------
+# Tests for string annotation resolution (from __future__ import annotations)
+# ---------------------------------------------------------------------------
+from zenml.steps.entrypoint_function_utils import validate_entrypoint_function
+
+
+def func_with_string_input_annotation(x: "int") -> "str":
+    return str(x)
+
+
+def test_string_input_annotation_is_resolved():
+    """validate_entrypoint_function should resolve string input annotations.
+
+    When ``from __future__ import annotations`` is used, parameter annotations
+    become plain strings.  The function must resolve them to real types so
+    that Pydantic input validation works correctly.
+    """
+    definition = validate_entrypoint_function(func_with_string_input_annotation)
+    assert definition.inputs["x"].annotation is int
+
+
+def test_string_return_annotation_is_resolved_via_entrypoint():
+    """validate_entrypoint_function should yield a resolved output annotation."""
+    definition = validate_entrypoint_function(func_with_string_input_annotation)
+    assert definition.outputs["output"].resolved_annotation is str
