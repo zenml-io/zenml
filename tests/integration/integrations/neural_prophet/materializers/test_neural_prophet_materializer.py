@@ -12,6 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+
+import pytest
+
+if platform.system() == "Windows":
+    pytest.skip(
+        "NeuralProphet integration is not installed on Windows CI.",
+        allow_module_level=True,
+    )
+
 import numpy as np
 import pandas as pd
 from neuralprophet import NeuralProphet

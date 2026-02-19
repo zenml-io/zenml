@@ -279,8 +279,7 @@ class KubernetesStepOperator(BaseStepOperator):
             job_name,
         )
         kube_utils.wait_for_job_to_finish(
-            batch_api=self._k8s_batch_api,
-            core_api=self._k8s_core_api,
+            get_client=self.get_kube_client,
             namespace=self.config.kubernetes_namespace,
             job_name=job_name,
             fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
