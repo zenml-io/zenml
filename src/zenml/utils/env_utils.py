@@ -25,13 +25,13 @@ from typing import (
     List,
     Match,
     Optional,
-    Self,
     TypeVar,
     Union,
     cast,
 )
 
 from pydantic import BaseModel
+from typing_extensions import Self
 
 from zenml.client import Client
 from zenml.logger import get_logger

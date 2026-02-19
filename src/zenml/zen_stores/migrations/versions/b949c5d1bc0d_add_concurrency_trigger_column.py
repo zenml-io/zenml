@@ -40,6 +40,7 @@ def upgrade() -> None:
             "concurrency", existing_type=sa.VARCHAR(length=20), nullable=False
         )
 
+
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
     with op.batch_alter_table("trigger", schema=None) as batch_op:

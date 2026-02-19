@@ -2801,6 +2801,7 @@ class Client(metaclass=ClientMetaClass):
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
+        trigger_id: UUID | None = None,
     ) -> Page[PipelineSnapshotResponse]:
         """List all snapshots.
 
@@ -2829,6 +2830,7 @@ class Client(metaclass=ClientMetaClass):
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            trigger_id: Filter by trigger ID (attached trigger to snapshot).
 
         Returns:
             A page with snapshots fitting the filter description
@@ -2855,6 +2857,7 @@ class Client(metaclass=ClientMetaClass):
             deployed=deployed,
             tag=tag,
             tags=tags,
+            trigger_id=trigger_id,
         )
         return self.zen_store.list_snapshots(
             snapshot_filter_model=snapshot_filter_model,
