@@ -97,9 +97,9 @@ if TYPE_CHECKING:
     ]
 
     from zenml.execution.pipeline.dynamic.outputs import (
-        AnyStepRunFuture,
+        AnyStepFuture,
         MapResultsFuture,
-        StepRunOutputsFuture,
+        StepFuture,
     )
     from zenml.pipelines.compilation_context import (
         PipelineCompilationContext,
@@ -574,8 +574,8 @@ class BaseStep:
         after: Union[
             str,
             StepArtifact,
-            "AnyStepRunFuture",
-            Sequence[Union[str, StepArtifact, "AnyStepRunFuture"]],
+            "AnyStepFuture",
+            Sequence[Union[str, StepArtifact, "AnyStepFuture"]],
             None,
         ] = None,
         **kwargs: Any,
@@ -642,8 +642,8 @@ class BaseStep:
         if run_context := DynamicPipelineRunContext.get():
             after = cast(
                 Union[
-                    "AnyStepRunFuture",
-                    Sequence["AnyStepRunFuture"],
+                    "AnyStepFuture",
+                    Sequence["AnyStepFuture"],
                     None,
                 ],
                 after,
@@ -704,11 +704,9 @@ class BaseStep:
         self,
         *args: Any,
         id: Optional[str] = None,
-        after: Union[
-            "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
-        ] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
         **kwargs: Any,
-    ) -> "StepRunOutputsFuture":
+    ) -> "StepFuture":
         """Submit the step to run concurrently in a separate thread.
 
         Args:
@@ -723,7 +721,7 @@ class BaseStep:
                 pipeline.
 
         Returns:
-            The step run output future.
+            The step future.
         """
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
@@ -747,9 +745,7 @@ class BaseStep:
     def map(
         self,
         *args: Any,
-        after: Union[
-            "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
-        ] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs.
@@ -819,9 +815,7 @@ class BaseStep:
     def product(
         self,
         *args: Any,
-        after: Union[
-            "AnyStepRunFuture", Sequence["AnyStepRunFuture"], None
-        ] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs using a cartesian product of the mapped inputs.
