@@ -169,7 +169,7 @@ class TriggerSchema(NamedSchema, table=True):
             return session.execute(stmt).scalars().one_or_none()
         else:
             raise RuntimeError(
-                "Missing DB session to fetch latest run for pipeline."
+                "Missing DB session to fetch latest execution for trigger."
             )
 
     @classmethod
