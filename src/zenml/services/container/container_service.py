@@ -26,7 +26,10 @@ from docker.client import DockerClient
 from docker.models.containers import Container
 from pydantic import Field
 
-from zenml.constants import ENV_ZENML_CONFIG_PATH
+from zenml.constants import (
+    ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE,
+)
 from zenml.enums import ServiceState
 from zenml.logger import get_logger
 from zenml.services.container.container_service_endpoint import (
@@ -299,7 +302,7 @@ class ContainerService(BaseService):
         pathlib.Path(self.status.log_file).touch()
 
         command = [
-            "python",
+            os.getenv(ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE, default="python"),
             "-m",
             entrypoint.__name__,
             "--config-file",
