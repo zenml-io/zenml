@@ -813,8 +813,7 @@ def get_container_termination_reason(
 
 
 def wait_for_job_to_finish(
-    batch_api: k8s_client.BatchV1Api,
-    core_api: k8s_client.CoreV1Api,
+    get_client: Callable[[], k8s_client.ApiClient],
     namespace: str,
     job_name: str,
     backoff_interval: float = 1,
@@ -827,8 +826,7 @@ def wait_for_job_to_finish(
     """Wait for a job to finish.
 
     Args:
-        batch_api: Kubernetes BatchV1Api client.
-        core_api: Kubernetes CoreV1Api client.
+        get_client: A function that returns a Kubernetes API client.
         namespace: Kubernetes namespace.
         job_name: Name of the job for which to wait.
         backoff_interval: The interval to wait between polling the job status.
@@ -847,6 +845,10 @@ def wait_for_job_to_finish(
     finished_pods = set()
 
     while True:
+        client = get_client()
+        batch_api = k8s_client.BatchV1Api(client)
+        core_api = k8s_client.CoreV1Api(client)
+
         job: k8s_client.V1Job = retry_on_api_exception(
             batch_api.read_namespaced_job
         )(name=job_name, namespace=namespace)

@@ -1139,12 +1139,27 @@ def list_stacks(
     type=click.STRING,
     required=False,
 )
-def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
+@click.option(
+    "--output",
+    "-o",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml", "csv", "tsv"]),
+    default=None,
+    help="Output format for the describe output. Uses ZENML_DEFAULT_OUTPUT env var if set, otherwise defaults to 'table'.",
+)
+def describe_stack(
+    stack_name_or_id: Optional[str] = None,
+    output_format: Optional[OutputFormat] = None,
+) -> None:
     """Show details about a named stack or the active stack.
 
     Args:
         stack_name_or_id: Name of the stack to describe.
+        output_format: Output format (table, json, yaml, csv, tsv).
     """
+    if output_format is None:
+        output_format = cli_utils.get_default_output_format()
+
     client = Client()
 
     with console.status("Describing the stack...\n"):
@@ -1155,12 +1170,16 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
         except KeyError as err:
             cli_utils.exception(err)
 
+        url = get_stack_url(stack_)
         cli_utils.print_stack_configuration(
             stack=stack_,
             active=stack_.id == client.active_stack_model.id,
+            output_format=output_format,
+            dashboard_url=url if output_format != "table" else None,
         )
 
-    print_model_url(get_stack_url(stack_))
+    if output_format == "table":
+        print_model_url(url)
 
 
 @stack.command("delete", help="Delete a stack given its name.")

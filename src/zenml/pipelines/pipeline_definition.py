@@ -22,6 +22,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ContextManager,
     Dict,
     Iterator,
     List,
@@ -97,8 +98,9 @@ from zenml.utils import (
     yaml_utils,
 )
 from zenml.utils.logging_utils import (
+    LoggingContext,
     is_pipeline_logging_enabled,
-    setup_run_logging,
+    setup_logging_context,
 )
 from zenml.utils.string_utils import format_name_template
 from zenml.utils.tag_utils import Tag
@@ -1039,29 +1041,33 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             logger.info("Preventing execution of pipeline '%s'.", self.name)
             return None
 
-        logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
+        logs_context: ContextManager[Any] = nullcontext()
+        if is_pipeline_logging_enabled(self.configuration):
+            logs_context = setup_logging_context(source="client")
 
-        with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            stack = Client().active_stack
-
-            snapshot = self._create_snapshot(**self._run_args)
-            self.log_pipeline_snapshot_metadata(snapshot)
-
-            run = (
-                create_placeholder_run(snapshot=snapshot)
-                if not snapshot.schedule
-                else None
+        with logs_context:
+            logger.info(
+                f"Initiating a new run for the pipeline: `{self.name}`."
             )
 
-            logs_context = nullcontext()
-            if run and is_pipeline_logging_enabled(
-                snapshot.pipeline_configuration
-            ):
-                logs_context = setup_run_logging(
-                    pipeline_run=run, source="client"
+            with track_handler(
+                AnalyticsEvent.RUN_PIPELINE
+            ) as analytics_handler:
+                stack = Client().active_stack
+
+                snapshot = self._create_snapshot(**self._run_args)
+                self.log_pipeline_snapshot_metadata(snapshot)
+
+                run = (
+                    create_placeholder_run(snapshot=snapshot)
+                    if not snapshot.schedule
+                    else None
                 )
 
-            with logs_context:
+                if run and isinstance(logs_context, LoggingContext):
+                    logs_context.update(pipeline_run=run)
+                    logs_context.attach(run)
+
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(
                         snapshot=snapshot,

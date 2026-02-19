@@ -23,6 +23,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ContextManager,
     Dict,
     List,
     Literal,
@@ -81,8 +82,9 @@ from zenml.steps.step_invocation import StepInvocation
 from zenml.steps.utils import OutputSignature
 from zenml.utils import env_utils, exception_utils, source_utils
 from zenml.utils.logging_utils import (
+    LoggingContext,
     is_pipeline_logging_enabled,
-    setup_run_logging,
+    setup_logging_context,
 )
 
 if TYPE_CHECKING:
@@ -188,106 +190,115 @@ class DynamicPipelineRunner:
         Raises:
             Exception: If the pipeline run failed.
         """
-        if self._run:
-            if self._run.status.is_finished:
-                logger.info("Run `%s` is already finished.", str(self._run.id))
-                return
-            if self._run.orchestrator_run_id:
-                logger.info("Continuing existing run `%s`.", str(self._run.id))
-                run = self._run
-            else:
-                run = Client().zen_store.update_run(
-                    run_id=self._run.id,
-                    run_update=PipelineRunUpdate(
-                        orchestrator_run_id=self._orchestrator_run_id,
-                    ),
-                )
-        else:
-            existing_runs = Client().list_pipeline_runs(
-                snapshot_id=self._snapshot.id,
-                orchestrator_run_id=self._orchestrator_run_id,
-            )
-            if existing_runs.total == 1:
-                run = existing_runs.items[0]
-                if run.status.is_finished:
-                    logger.info("Run `%s` is already finished.", str(run.id))
+        logs_context: ContextManager[Any] = nullcontext()
+        if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
+            logs_context = setup_logging_context(source="orchestrator")
+
+        with logs_context:
+            if self._run:
+                if self._run.status.is_finished:
+                    logger.info(
+                        "Run `%s` is already finished.", str(self._run.id)
+                    )
                     return
+                if self._run.orchestrator_run_id:
+                    logger.info(
+                        "Continuing existing run `%s`.", str(self._run.id)
+                    )
+                    run = self._run
                 else:
-                    logger.info("Continuing existing run `%s`.", str(run.id))
+                    run = Client().zen_store.update_run(
+                        run_id=self._run.id,
+                        run_update=PipelineRunUpdate(
+                            orchestrator_run_id=self._orchestrator_run_id,
+                        ),
+                    )
             else:
-                run = create_placeholder_run(
-                    snapshot=self._snapshot,
+                existing_runs = Client().list_pipeline_runs(
+                    snapshot_id=self._snapshot.id,
                     orchestrator_run_id=self._orchestrator_run_id,
                 )
-
-        logging_context = nullcontext()
-        if not run.triggered_by_deployment and is_pipeline_logging_enabled(
-            self._snapshot.pipeline_configuration
-        ):
-            logging_context = setup_run_logging(
-                pipeline_run=run,
-                source="orchestrator",
-            )
-
-        assert self._snapshot.stack
-
-        with (
-            logging_context,
-            InMemoryArtifactCache(),
-            env_utils.temporary_runtime_environment(
-                self._snapshot.pipeline_configuration, self._snapshot.stack
-            ),
-            DynamicPipelineRunContext(
-                pipeline=self.pipeline,
-                run=run,
-                snapshot=self._snapshot,
-                runner=self,
-            ),
-        ):
-            if not run.triggered_by_deployment:
-                # Only run the init hook if the run is not triggered by
-                # a deployment, as the deployment service will have
-                # already run the init hook.
-                self._orchestrator.run_init_hook(snapshot=self._snapshot)
-
-            try:
-                # TODO: what should be allowed as pipeline returns?
-                #  (artifacts, json serializable, anything?)
-                #  how do we show it in the UI?
-                params = self.pipeline.configuration.parameters or {}
-                self.pipeline._call_entrypoint(**params)
-                # The pipeline function finished successfully, but some
-                # steps might still be running. We now wait for all of
-                # them and raise any exceptions that occurred.
-                self.await_all_step_run_futures()
-            except Exception as e:
-                exception_info = exception_utils.collect_exception_information(
-                    exception=e,
-                    user_func=self.pipeline.entrypoint,
-                )
-                # TODO: this call already invalidates the token, so
-                # the steps will keep running but won't be able to
-                # report their status back to ZenML.
-                publish_failed_pipeline_run(
-                    run.id, exception_info=exception_info
-                )
-                logger.error(
-                    "Pipeline run failed. All in-progress step runs "
-                    "will still finish executing."
-                )
-                raise
-            finally:
-                if not run.triggered_by_deployment:
-                    # Only run the cleanup hook if the run is not triggered by
-                    # a deployment, as the deployment service will have
-                    # already run the cleanup hook.
-                    self._orchestrator.run_cleanup_hook(
-                        snapshot=self._snapshot
+                if existing_runs.total == 1:
+                    run = existing_runs.items[0]
+                    if run.status.is_finished:
+                        logger.info(
+                            "Run `%s` is already finished.", str(run.id)
+                        )
+                        return
+                    else:
+                        logger.info(
+                            "Continuing existing run `%s`.", str(run.id)
+                        )
+                else:
+                    run = create_placeholder_run(
+                        snapshot=self._snapshot,
+                        orchestrator_run_id=self._orchestrator_run_id,
                     )
-                self._executor.shutdown(wait=True, cancel_futures=True)
 
-            publish_successful_pipeline_run(run.id)
-            logger.info("Pipeline completed successfully.")
+            if isinstance(logs_context, LoggingContext):
+                logs_context.update(pipeline_run=run)
+                logs_context.attach(run)
+
+            assert self._snapshot.stack
+
+            with (
+                InMemoryArtifactCache(),
+                env_utils.temporary_runtime_environment(
+                    self._snapshot.pipeline_configuration, self._snapshot.stack
+                ),
+                DynamicPipelineRunContext(
+                    pipeline=self.pipeline,
+                    run=run,
+                    snapshot=self._snapshot,
+                    runner=self,
+                ),
+            ):
+                if not run.triggered_by_deployment:
+                    # Only run the init hook if the run is not triggered by
+                    # a deployment, as the deployment service will have
+                    # already run the init hook.
+                    self._orchestrator.run_init_hook(snapshot=self._snapshot)
+
+                try:
+                    # TODO: what should be allowed as pipeline returns?
+                    #  (artifacts, json serializable, anything?)
+                    #  how do we show it in the UI?
+                    params = self.pipeline.configuration.parameters or {}
+                    self.pipeline._call_entrypoint(**params)
+                    # The pipeline function finished successfully, but some
+                    # steps might still be running. We now wait for all of
+                    # them and raise any exceptions that occurred.
+                    self.await_all_step_run_futures()
+                except Exception as e:
+                    exception_info = (
+                        exception_utils.collect_exception_information(
+                            exception=e,
+                            user_func=self.pipeline.entrypoint,
+                        )
+                    )
+                    # TODO: this call already invalidates the token, so
+                    # the steps will keep running but won't be able to
+                    # report their status back to ZenML.
+                    publish_failed_pipeline_run(
+                        run.id, exception_info=exception_info
+                    )
+                    logger.error(
+                        "Pipeline run failed. All in-progress step runs "
+                        "will still finish executing."
+                    )
+                    raise
+                finally:
+                    if not run.triggered_by_deployment:
+                        # Only run the cleanup hook if the run is not triggered by
+                        # a deployment, as the deployment service will have
+                        # already run the cleanup hook.
+                        self._orchestrator.run_cleanup_hook(
+                            snapshot=self._snapshot
+                        )
+                    self._executor.shutdown(wait=True, cancel_futures=True)
+
+                publish_successful_pipeline_run(run.id)
+                logger.info("Pipeline completed successfully.")
 
     @overload
     def launch_step(

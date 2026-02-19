@@ -31,6 +31,7 @@ except ImportError:
     ) from None
 
 import base64
+import gzip
 import inspect
 import json
 import logging
@@ -230,7 +231,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    LogsRequest,
     LogsResponse,
+    LogsUpdate,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -369,6 +372,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     ActionSchema,
     APIKeySchema,
+    ApiTransactionResultSchema,
     ApiTransactionSchema,
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -1212,19 +1216,26 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
-        query = filter_model.apply_sorting(query=query, table=table)
-        query = query.distinct()
 
-        # Get the total amount of items in the database for a given query
+        # Get the total amount of items in the database for a given query.
+        # Sorting is not applied here since it's irrelevant for counting.
         custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
-            custom_fetch_result = custom_fetch(session, query, filter_model)
+            custom_fetch_result = custom_fetch(
+                session, query.distinct(), filter_model
+            )
             total = len(custom_fetch_result)
         else:
+            # For counting, we only need distinct IDs. Selecting only the ID
+            # column dramatically improves performance when the query involves
+            # JOINs and many columns.
+            count_query = (
+                query.with_only_columns(col(table.id))
+                .distinct()
+                .options(noload("*"))
+            )
             result = session.scalar(
-                select(func.count()).select_from(
-                    query.options(noload("*")).subquery()
-                )
+                select(func.count()).select_from(count_query.subquery())
             )
 
             if result:
@@ -1246,12 +1257,6 @@ class SqlZenStore(BaseZenStore):
                 f"{total_pages}."
             )
 
-        query_options = table.get_query_options(
-            include_metadata=hydrate, include_resources=True
-        )
-        if apply_query_options_from_schema and query_options:
-            query = query.options(*query_options)
-
         # Get a page of the actual data
         item_schemas: Sequence[AnySchema]
         if custom_fetch:
@@ -1262,6 +1267,17 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
+            # Apply sorting and distinct for the data fetch
+            query = filter_model.apply_sorting(
+                query=query, table=table
+            ).distinct()
+
+            query_options = table.get_query_options(
+                include_metadata=hydrate, include_resources=True
+            )
+            if apply_query_options_from_schema and query_options:
+                query = query.options(*query_options)
+
             query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
             )
@@ -2467,18 +2483,17 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    def _cleanup_expired_api_transactions(self, session: Session) -> None:
-        """Delete completed API transactions that have expired.
-
-        Args:
-            session: The session to use for the query.
-        """
-        session.execute(
-            delete(ApiTransactionSchema).where(
-                col(ApiTransactionSchema.completed),
-                col(ApiTransactionSchema.expired) < utc_now(),
+    def cleanup_expired_api_transactions(self) -> None:
+        """Delete completed API transactions that have expired."""
+        with Session(self.engine) as session:
+            session.execute(
+                delete(ApiTransactionSchema).where(
+                    col(ApiTransactionSchema.completed),
+                    col(ApiTransactionSchema.expired) < utc_now(),
+                )
             )
-        )
+
+            session.commit()
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2504,7 +2519,6 @@ class SqlZenStore(BaseZenStore):
             created = False
             try:
                 session.commit()
-                session.refresh(api_transaction_schema)
                 created = True
             except IntegrityError:
                 # We have to rollback the failed session first in order to
@@ -2523,6 +2537,28 @@ class SqlZenStore(BaseZenStore):
                 ),
                 created,
             )
+
+    def get_api_transaction_result(
+        self, api_transaction_id: UUID
+    ) -> Optional[str]:
+        """Get the result of an API transaction.
+
+        Args:
+            api_transaction_id: The ID of the API transaction to get the result for.
+
+        Returns:
+            The result of the API transaction.
+        """
+        with Session(self.engine) as session:
+            result_schema = session.exec(
+                select(ApiTransactionResultSchema).where(
+                    ApiTransactionResultSchema.id == api_transaction_id
+                )
+            ).first()
+            if result_schema is not None:
+                data = result_schema.result
+                return gzip.decompress(data).decode("utf-8")
+            return None
 
     def finalize_api_transaction(
         self,
@@ -2543,6 +2579,18 @@ class SqlZenStore(BaseZenStore):
             expired = updated + timedelta(
                 seconds=api_transaction_update.cache_time
             )
+
+            result_value = api_transaction_update.get_result()
+            if result_value is not None:
+                payload = result_value.encode("utf-8")
+                payload = gzip.compress(payload)
+                result_schema = ApiTransactionResultSchema(
+                    id=api_transaction_id,
+                    result=payload,
+                )
+                session.add(result_schema)
+                session.flush()
+
             result = session.execute(
                 update(ApiTransactionSchema)
                 .where(col(ApiTransactionSchema.id) == api_transaction_id)
@@ -2550,16 +2598,16 @@ class SqlZenStore(BaseZenStore):
                     completed=True,
                     updated=updated,
                     expired=expired,
-                    result=api_transaction_update.get_result(),
                 )
             )
-            self._cleanup_expired_api_transactions(session=session)
-            session.commit()
 
             if result.rowcount == 0:  # type: ignore[attr-defined]
+                # The result is also rolled back
                 raise KeyError(
                     f"API transaction with ID {api_transaction_id} not found."
                 )
+
+            session.commit()
 
     def delete_api_transaction(self, api_transaction_id: UUID) -> None:
         """Delete an API transaction.
@@ -4382,7 +4430,6 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
 
     # ------------------------ Logs ------------------------
-
     def get_logs(self, logs_id: UUID, hydrate: bool = True) -> LogsResponse:
         """Gets logs with the given ID.
 
@@ -4402,6 +4449,154 @@ class SqlZenStore(BaseZenStore):
             )
             return logs.to_model(
                 include_metadata=hydrate, include_resources=True
+            )
+
+    def _create_logs(
+        self, logs: LogsRequest, session: Session, verify: bool = True
+    ) -> LogsSchema:
+        """Create a logs entry.
+
+        Args:
+            logs: The logs entry to create.
+            session: The session to use.
+            verify: Whether to verify the existence of the referenced schemas.
+
+        Returns:
+            The created logs entry.
+        """
+        if logs.artifact_store_id:
+            self._get_reference_schema_by_id(
+                resource=logs,
+                reference_schema=StackComponentSchema,
+                reference_id=logs.artifact_store_id,
+                session=session,
+            )
+        if logs.log_store_id:
+            self._get_reference_schema_by_id(
+                resource=logs,
+                reference_schema=StackComponentSchema,
+                reference_id=logs.log_store_id,
+                session=session,
+            )
+        if verify and logs.pipeline_run_id:
+            self._get_reference_schema_by_id(
+                resource=logs,
+                reference_schema=PipelineRunSchema,
+                reference_id=logs.pipeline_run_id,
+                session=session,
+            )
+        if verify and logs.step_run_id:
+            self._get_reference_schema_by_id(
+                resource=logs,
+                reference_schema=StepRunSchema,
+                reference_id=logs.step_run_id,
+                session=session,
+            )
+        log_entry = LogsSchema.from_request(logs)
+
+        session.add(log_entry)
+        session.commit()
+        session.refresh(log_entry)
+        return log_entry
+
+    def create_logs(self, logs: LogsRequest) -> LogsResponse:
+        """Create a logs entry.
+
+        Args:
+            logs: The logs entry to create.
+
+        Returns:
+            The created logs entry.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(request_model=logs, session=session)
+            log_schema = self._create_logs(logs, session)
+            return log_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _update_logs(
+        self,
+        logs_schema: LogsSchema,
+        logs_update: LogsUpdate,
+        session: Session,
+    ) -> LogsSchema:
+        """Update a logs entry.
+
+        Args:
+            logs_schema: The logs entry to update.
+            logs_update: The update to be applied to the logs entry.
+            session: The session to use.
+
+        Returns:
+            The updated logs entry.
+
+        Raises:
+            IllegalOperationError: If the log entry is already associated
+                with a different entity.
+        """
+        if (
+            logs_schema.pipeline_run_id is not None
+            or logs_schema.step_run_id is not None
+        ):
+            if (
+                logs_schema.pipeline_run_id != logs_update.pipeline_run_id
+                or logs_schema.step_run_id != logs_update.step_run_id
+            ):
+                raise IllegalOperationError(
+                    "The logs entry is already associated with a different entity."
+                )
+
+        if logs_update.pipeline_run_id:
+            self._get_reference_schema_by_id(
+                resource=logs_schema,
+                reference_schema=PipelineRunSchema,
+                reference_id=logs_update.pipeline_run_id,
+                session=session,
+            )
+            logs_schema.pipeline_run_id = logs_update.pipeline_run_id
+            logs_schema.log_key = (
+                f"{logs_update.pipeline_run_id}-{logs_schema.source}"
+            )
+
+        if logs_update.step_run_id:
+            self._get_reference_schema_by_id(
+                resource=logs_schema,
+                reference_schema=StepRunSchema,
+                reference_id=logs_update.step_run_id,
+                session=session,
+            )
+            logs_schema.step_run_id = logs_update.step_run_id
+            logs_schema.log_key = (
+                f"{logs_update.step_run_id}-{logs_schema.source}"
+            )
+
+        session.add(logs_schema)
+        session.commit()
+        session.refresh(logs_schema)
+        return logs_schema
+
+    def update_logs(
+        self, logs_id: UUID, logs_update: LogsUpdate
+    ) -> LogsResponse:
+        """Update an existing logs entry.
+
+        Args:
+            logs_id: The ID of the logs entry to update.
+            logs_update: Update to be applied to the logs entry.
+
+        Returns:
+            The updated logs entry.
+        """
+        with Session(self.engine) as session:
+            logs_schema = self._get_schema_by_id(
+                resource_id=logs_id,
+                schema_class=LogsSchema,
+                session=session,
+            )
+            logs_schema = self._update_logs(logs_schema, logs_update, session)
+            return logs_schema.to_model(
+                include_metadata=True, include_resources=True
             )
 
     # ----------------------------- Pipelines -----------------------------
@@ -6457,44 +6652,40 @@ class SqlZenStore(BaseZenStore):
                 "already exists."
             )
 
-        # Add logs entry for the run if exists
         if pipeline_run.logs is not None:
-            if pipeline_run.logs.artifact_store_id:
-                self._get_reference_schema_by_id(
+            if isinstance(pipeline_run.logs, UUID):
+                logs = self._get_reference_schema_by_id(
                     resource=pipeline_run,
-                    reference_schema=StackComponentSchema,
-                    reference_id=pipeline_run.logs.artifact_store_id,
+                    reference_schema=LogsSchema,
+                    reference_id=pipeline_run.logs,
                     session=session,
-                    reference_type="logs artifact store",
+                )
+                self._update_logs(
+                    logs_schema=logs,
+                    logs_update=LogsUpdate(pipeline_run_id=new_run.id),
+                    session=session,
                 )
             else:
-                self._get_reference_schema_by_id(
-                    resource=pipeline_run,
-                    reference_schema=StackComponentSchema,
-                    reference_id=pipeline_run.logs.log_store_id,
+                logs_request = pipeline_run.logs
+                # We create a new logs request here because we need to make sure
+                # that the source and the run id are properly set.
+                self._create_logs(
+                    logs=LogsRequest(
+                        id=logs_request.id,
+                        uri=logs_request.uri,
+                        # If we are sending a pipeline run request with a logs request
+                        # object, we need to tie it to the same user and project.
+                        project=pipeline_run.project,
+                        user=pipeline_run.user,
+                        # TODO: Remove fallback when not supporting
+                        # clients <0.84.0 anymore
+                        source=logs_request.source or "client",
+                        artifact_store_id=logs_request.artifact_store_id,
+                        log_store_id=logs_request.log_store_id,
+                        pipeline_run_id=new_run.id,
+                    ),
                     session=session,
-                    reference_type="logs log store",
-                )
-
-            log_entry = LogsSchema(
-                id=pipeline_run.logs.id,
-                uri=pipeline_run.logs.uri,
-                # TODO: Remove fallback when not supporting
-                # clients <0.84.0 anymore
-                source=pipeline_run.logs.source or "client",
-                pipeline_run_id=new_run.id,
-                artifact_store_id=pipeline_run.logs.artifact_store_id,
-                log_store_id=pipeline_run.logs.log_store_id,
-            )
-            try:
-                session.add(log_entry)
-                session.commit()
-            except IntegrityError:
-                session.rollback()
-                raise EntityExistsError(
-                    "Unable to create log entry: A log entry with this "
-                    f"source '{pipeline_run.logs.source}' already exists "
-                    f"within the scope of the same pipeline run '{new_run.id}'."
+                    verify=False,
                 )
 
         try:
@@ -6890,10 +7081,12 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
                 hydrate=hydrate,
-                custom_schema_to_model_conversion=lambda schema: schema.to_model(
-                    include_metadata=hydrate,
-                    include_resources=True,
-                    include_full_metadata=include_full_metadata,
+                custom_schema_to_model_conversion=lambda schema: (
+                    schema.to_model(
+                        include_metadata=hydrate,
+                        include_resources=True,
+                        include_full_metadata=include_full_metadata,
+                    )
                 ),
                 apply_query_options_from_schema=True,
             )
@@ -6911,8 +7104,6 @@ class SqlZenStore(BaseZenStore):
             The updated pipeline run.
 
         Raises:
-            EntityExistsError: If a log entry with the same source already
-                exists within the scope of the same pipeline run.
             IllegalOperationError: If the orchestrator run id is being updated
                 on a non-placeholder run or if the orchestrator run id is
                 already set and is different from the new orchestrator run id.
@@ -6948,50 +7139,25 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_run)
 
-            # Add logs if specified
             if run_update.add_logs:
-                try:
-                    for log_request in run_update.add_logs:
-                        # Validate the artifact store exists
-                        if log_request.artifact_store_id:
-                            self._get_reference_schema_by_id(
-                                resource=log_request,
-                                reference_schema=StackComponentSchema,
-                                reference_id=log_request.artifact_store_id,
-                                session=session,
-                                reference_type="logs artifact store",
-                            )
-                        else:
-                            self._get_reference_schema_by_id(
-                                resource=log_request,
-                                reference_schema=StackComponentSchema,
-                                reference_id=log_request.log_store_id,
-                                session=session,
-                                reference_type="logs log store",
-                            )
-
-                        # Create the log entry
-                        log_entry = LogsSchema(
+                for log_request in run_update.add_logs:
+                    self._create_logs(
+                        logs=LogsRequest(
                             id=log_request.id,
                             uri=log_request.uri,
+                            # If we are sending a pipeline run request with a logs request
+                            # object, we need to tie it to the same user and project.
+                            project=existing_run.project,
+                            user=existing_run.user,
                             # TODO: Remove fallback when not supporting
                             # clients <0.84.0 anymore
                             source=log_request.source or "orchestrator",
                             pipeline_run_id=existing_run.id,
                             artifact_store_id=log_request.artifact_store_id,
                             log_store_id=log_request.log_store_id,
-                        )
-                        session.add(log_entry)
-
-                    session.commit()
-                except IntegrityError:
-                    session.rollback()
-                    raise EntityExistsError(
-                        "Unable to create log entry: One of the provided sources "
-                        f"({', '.join(log.source for log in run_update.add_logs)}) "
-                        "already exists within the scope of the same pipeline run "
-                        f"'{existing_run.id}'. Existing entry sources: "
-                        f"{', '.join(log.source for log in existing_run.logs)}"
+                        ),
+                        session=session,
+                        verify=False,
                     )
 
             self._attach_tags_to_resources(
@@ -8379,8 +8545,10 @@ class SqlZenStore(BaseZenStore):
                     query=query,
                     table=UserSchema,
                     filter_model=filter_model,
-                    custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
-                        include_metadata=hydrate, include_resources=True
+                    custom_schema_to_model_conversion=lambda user: (
+                        user.to_service_account_model(
+                            include_metadata=hydrate, include_resources=True
+                        )
                     ),
                     hydrate=hydrate,
                 )
@@ -10070,45 +10238,44 @@ class SqlZenStore(BaseZenStore):
                     f"'{step_run.pipeline_run_id}'."
                 )
 
-            # Add logs entry for the step if exists
+            # Add logs entry for the step
             if step_run.logs is not None:
-                if step_run.logs.artifact_store_id:
-                    self._get_reference_schema_by_id(
+                if isinstance(step_run.logs, UUID):
+                    logs_schema = self._get_reference_schema_by_id(
                         resource=step_run,
-                        reference_schema=StackComponentSchema,
-                        reference_id=step_run.logs.artifact_store_id,
+                        reference_schema=LogsSchema,
+                        reference_id=step_run.logs,
                         session=session,
-                        reference_type="logs artifact store",
+                    )
+                    self._update_logs(
+                        logs_schema=logs_schema,
+                        logs_update=LogsUpdate(step_run_id=step_schema.id),
+                        session=session,
                     )
                 else:
-                    self._get_reference_schema_by_id(
-                        resource=step_run,
-                        reference_schema=StackComponentSchema,
-                        reference_id=step_run.logs.log_store_id,
+                    logs_request = step_run.logs
+                    # We create a new logs request here because we need to make sure
+                    # that the source, the run id and the step id are properly set.
+                    self._create_logs(
+                        logs=LogsRequest(
+                            id=logs_request.id,
+                            uri=logs_request.uri,
+                            # If we are sending a step run request with a logs request
+                            # object, we need to tie it to the same user and project.
+                            project=step_run.project,
+                            user=step_run.user,
+                            # TODO: Remove fallback when not supporting
+                            # clients <0.93.0 anymore
+                            source=logs_request.source or "step",
+                            artifact_store_id=logs_request.artifact_store_id,
+                            log_store_id=logs_request.log_store_id,
+                            pipeline_run_id=step_schema.pipeline_run_id,
+                            step_run_id=step_schema.id,
+                        ),
                         session=session,
-                        reference_type="logs log store",
+                        verify=False,
                     )
 
-                log_entry = LogsSchema(
-                    id=step_run.logs.id,
-                    uri=step_run.logs.uri,
-                    # TODO: Remove fallback when not supporting
-                    # clients <0.93.0 anymore
-                    source=step_run.logs.source or "step",
-                    step_run_id=step_schema.id,
-                    artifact_store_id=step_run.logs.artifact_store_id,
-                    log_store_id=step_run.logs.log_store_id,
-                )
-                try:
-                    session.add(log_entry)
-                    session.commit()
-                except IntegrityError:
-                    session.rollback()
-                    raise EntityExistsError(
-                        "Unable to create log entry: A log entry with this "
-                        f"source '{step_run.logs.source}' already exists "
-                        f"within the scope of the same step '{step_schema.id}'."
-                    )
             # If cached, attach metadata of the original step
             if (
                 step_run.status == ExecutionStatus.CACHED
@@ -10456,7 +10623,7 @@ class SqlZenStore(BaseZenStore):
 
             return StepHeartbeatResponse(
                 id=step_run_id,
-                status=ExecutionStatus(run.status),
+                status=ExecutionStatus(step_run.status),
                 latest_heartbeat=latest_heartbeat,
                 heartbeat_enabled=step_run.heartbeat_threshold is not None,
                 pipeline_run_status=ExecutionStatus(run.status),
@@ -10474,7 +10641,6 @@ class SqlZenStore(BaseZenStore):
             step_run_update: The update to be applied to the step.
 
         Raises:
-            EntityExistsError: If the log entry already exists.
             ValueError: If trying to update the step status to retried.
 
         Returns:
@@ -10555,48 +10721,24 @@ class SqlZenStore(BaseZenStore):
 
             # Add logs if specified
             if step_run_update.add_logs:
-                try:
-                    for log_request in step_run_update.add_logs:
-                        # Validate the artifact store exists
-                        if log_request.artifact_store_id:
-                            self._get_reference_schema_by_id(
-                                resource=log_request,
-                                reference_schema=StackComponentSchema,
-                                reference_id=log_request.artifact_store_id,
-                                session=session,
-                                reference_type="logs artifact store",
-                            )
-                        else:
-                            self._get_reference_schema_by_id(
-                                resource=log_request,
-                                reference_schema=StackComponentSchema,
-                                reference_id=log_request.log_store_id,
-                                session=session,
-                                reference_type="logs log store",
-                            )
-
-                        # Create the log entry
-                        log_entry = LogsSchema(
+                for log_request in step_run_update.add_logs:
+                    self._create_logs(
+                        logs=LogsRequest(
                             id=log_request.id,
                             uri=log_request.uri,
+                            # If we are sending a pipeline run request with a logs request
+                            # object, we need to tie it to the same user and project.
+                            project=existing_step_run.project,
+                            user=existing_step_run.user,
                             # TODO: Remove fallback when not supporting
                             # clients <0.93.0 anymore
                             source=log_request.source or "step",
                             step_run_id=existing_step_run.id,
                             artifact_store_id=log_request.artifact_store_id,
                             log_store_id=log_request.log_store_id,
-                        )
-                        session.add(log_entry)
-
-                    session.commit()
-                except IntegrityError:
-                    session.rollback()
-                    raise EntityExistsError(
-                        "Unable to create log entry: One of the provided sources "
-                        f"({', '.join(log.source for log in step_run_update.add_logs)}) "
-                        "already exists within the scope of the same step "
-                        f"'{step_run_id}'. Existing entry sources: "
-                        f"{', '.join(log.source for log in existing_step_run.logs)}"
+                        ),
+                        session=session,
+                        verify=False,
                     )
 
             return existing_step_run.to_model(

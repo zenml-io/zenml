@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.10'
       - name: Login to Docker Hub
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef  # v3
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef  # v3.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -64,7 +64,7 @@ jobs:
         with:
           python-version: '3.10'
       - name: Login to Docker Hub
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef  # v3
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef  # v3.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       - name: Get the version from the github tag ref
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
       - name: Set up Python 3.11
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
         with:
@@ -154,10 +154,10 @@ jobs:
       - name: Get the sha of the latest commit on plugins/main
         id: get_sha
         run: |
-          echo "::set-output name=sha::$(curl -s -H "Authorization: token ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}" https://api.github.com/repos/zenml-io/zenml-cloud-plugins/commits/main | jq -r '.sha')"
+          echo "sha=$(curl -s -H "Authorization: token ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}" https://api.github.com/repos/zenml-io/zenml-cloud-plugins/commits/main | jq -r '.sha')" >> "$GITHUB_OUTPUT"
       - name: Get the version from the github tag ref
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
       - name: Create a tag on ZenML Cloud plugins repo
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7
         with:

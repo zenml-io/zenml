@@ -30,6 +30,7 @@ from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     OutputFormat,
     _component_display_name,
+    get_default_output_format,
     is_sorted_or_filtered,
     list_options,
     print_model_url,
@@ -84,7 +85,7 @@ def generate_stack_component_get_command(
 
 def generate_stack_component_describe_command(
     component_type: StackComponentType,
-) -> Callable[[str], None]:
+) -> Callable[..., None]:
     """Generates a `describe` command for the specific stack component type.
 
     Args:
@@ -94,17 +95,32 @@ def generate_stack_component_describe_command(
         A function that can be used as a `click` command.
     """
 
+    @click.option(
+        "--output",
+        "-o",
+        "output_format",
+        type=click.Choice(["table", "json", "yaml", "csv", "tsv"]),
+        default=None,
+        help="Output format for the describe output. Uses ZENML_DEFAULT_OUTPUT env var if set, otherwise defaults to 'table'.",
+    )
     @click.argument(
         "name_id_or_prefix",
         type=str,
         required=False,
     )
-    def describe_stack_component_command(name_id_or_prefix: str) -> None:
+    def describe_stack_component_command(
+        name_id_or_prefix: Optional[str] = None,
+        output_format: Optional[OutputFormat] = None,
+    ) -> None:
         """Prints details about the active/specified component.
 
         Args:
             name_id_or_prefix: Name or id of the component to describe.
+            output_format: Output format (table, json, yaml, csv, tsv).
         """
+        if output_format is None:
+            output_format = get_default_output_format()
+
         client = Client()
         try:
             component_ = client.get_stack_component(
@@ -129,13 +145,17 @@ def generate_stack_component_describe_command(
             else:
                 connector_requirements = None
 
+            url = get_component_url(component_)
             cli_utils.print_stack_component_configuration(
                 component=component_,
                 active_status=component_.id == active_component_id,
                 connector_requirements=connector_requirements,
+                output_format=output_format,
+                dashboard_url=url if output_format != "table" else None,
             )
 
-            print_model_url(get_component_url(component_))
+            if output_format == "table":
+                print_model_url(url)
 
     return describe_stack_component_command
 
