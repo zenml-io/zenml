@@ -45,6 +45,7 @@ from zenml.integrations.skypilot.utils import (
     sky_job_get,
 )
 from zenml.logger import get_logger
+from zenml.models import PipelineRunResponse
 from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
@@ -174,7 +175,7 @@ def _resolve_pipeline_run(
     run_name: str,
     snapshot_id: str,
     run_id: Optional[str],
-) -> Any:
+) -> PipelineRunResponse:
     """Resolves the pipeline run for the orchestrator entrypoint.
 
     Args:
@@ -376,7 +377,9 @@ def main() -> None:
                     cluster_name,
                     **launch_kwargs,
                 )
-                sky_job_get(launch_request_id, True, cluster_name)
+                sky_job_get(
+                    launch_request_id, settings.stream_logs, cluster_name
+                )
 
                 # Pop the resource configuration for this step
                 unique_resource_configs.pop(step_name)
