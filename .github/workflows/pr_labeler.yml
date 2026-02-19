@@ -14,9 +14,9 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: JulienKode/team-labeler-action@a205b2457cc66b356257560e3c7bb853a9e8199e  # v1.1.0
+      - uses: JulienKode/team-labeler-action@edc2a1d3b252624ac7611293835edad9f1392ed4  # v2.0.2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: TimonVS/pr-labeler-action@8b99f404a073744885d8021d1de4e40c6eaf38e2  # v4.1.1
+      - uses: TimonVS/pr-labeler-action@f9c084306ce8b3f488a8f3ee1ccedc6da131d1af  # v5.0.0
         with:
           configuration-path: .github/branch-labels.yml

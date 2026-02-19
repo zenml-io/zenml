@@ -28,11 +28,11 @@ jobs:
       CURRENT_VENV: .venv-current
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0  # Fetch all history for all branches and tags
       - name: Set up Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.11'
       - name: Install system dependencies
@@ -125,7 +125,7 @@ jobs:
           cat performance_report.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       - name: Find existing comment
-        uses: peter-evans/find-comment@a54c31d7fa095754bfef525c0c8e5e5674c4b4b1  # v2
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad  # v4.0.0
         if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues
           == 'true'
         id: find-comment
@@ -134,7 +134,7 @@ jobs:
           comment-author: github-actions[bot]
           body-includes: <!-- PERFORMANCE_REPORT -->
       - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d  # v2
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9  # v5.0.0
         if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues
           == 'true'
         with:
@@ -145,7 +145,7 @@ jobs:
 
       # Upload results as artifacts
       - name: Upload profiling results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
         with:
           name: profiling-results
           path: |
