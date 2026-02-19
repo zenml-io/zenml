@@ -27491,17 +27491,7 @@ two ways depending on its configuration:
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/orchestrators/step_launcher.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">116</span>
 <span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span>
@@ -27522,7 +27512,17 @@ two ways depending on its configuration:
 <span class="normal">134</span>
 <span class="normal">135</span>
 <span class="normal">136</span>
-<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">snapshot</span><span class="p">:</span> <span class="n">PipelineSnapshotResponse</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="n">Step</span><span class="p">,</span>
@@ -27642,17 +27642,7 @@ two ways depending on its configuration:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/orchestrators/step_launcher.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">249</span>
-<span class="normal">250</span>
-<span class="normal">251</span>
-<span class="normal">252</span>
-<span class="normal">253</span>
-<span class="normal">254</span>
-<span class="normal">255</span>
-<span class="normal">256</span>
-<span class="normal">257</span>
-<span class="normal">258</span>
-<span class="normal">259</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">259</span>
 <span class="normal">260</span>
 <span class="normal">261</span>
 <span class="normal">262</span>
@@ -27764,7 +27754,22 @@ two ways depending on its configuration:
 <span class="normal">368</span>
 <span class="normal">369</span>
 <span class="normal">370</span>
-<span class="normal">371</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepRunResponse</span><span class="p">:</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepRunResponse</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Launches the step.</span>
 
 <span class="sd">    Raises:</span>
@@ -27775,69 +27780,75 @@ two ways depending on its configuration:
 <span class="sd">        The step run response.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">publish_utils</span><span class="o">.</span><span class="n">step_exception_info</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-    <span class="n">pipeline_run</span><span class="p">,</span> <span class="n">run_was_created</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_or_reuse_run</span><span class="p">()</span>
 
-    <span class="k">if</span> <span class="n">run_was_created</span><span class="p">:</span>
-        <span class="n">pipeline_run_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stack</span><span class="o">.</span><span class="n">get_pipeline_run_metadata</span><span class="p">(</span>
-            <span class="n">run_id</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span>
-        <span class="p">)</span>
-        <span class="n">publish_utils</span><span class="o">.</span><span class="n">publish_pipeline_run_metadata</span><span class="p">(</span>
-            <span class="n">pipeline_run_id</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-            <span class="n">pipeline_run_metadata</span><span class="o">=</span><span class="n">pipeline_run_metadata</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">model_version</span> <span class="o">:=</span> <span class="n">pipeline_run</span><span class="o">.</span><span class="n">model_version</span><span class="p">:</span>
-            <span class="n">step_run_utils</span><span class="o">.</span><span class="n">log_model_version_dashboard_url</span><span class="p">(</span>
-                <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span>
+    <span class="n">logs_context</span><span class="p">:</span> <span class="n">ContextManager</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">nullcontext</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">is_step_logging_enabled</span><span class="p">(</span>
+        <span class="n">step_configuration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_step</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+        <span class="n">pipeline_configuration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">pipeline_configuration</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">logs_context</span> <span class="o">=</span> <span class="n">setup_logging_context</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;prepare_step&quot;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">logs_context</span><span class="p">:</span>
+        <span class="n">pipeline_run</span><span class="p">,</span> <span class="n">run_was_created</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_or_reuse_run</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logs_context</span><span class="p">,</span> <span class="n">LoggingContext</span><span class="p">):</span>
+            <span class="n">logs_context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">run_was_created</span><span class="p">:</span>
+            <span class="n">pipeline_run_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stack</span><span class="o">.</span><span class="n">get_pipeline_run_metadata</span><span class="p">(</span>
+                <span class="n">run_id</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span>
             <span class="p">)</span>
-
-    <span class="n">request_factory</span> <span class="o">=</span> <span class="n">step_run_utils</span><span class="o">.</span><span class="n">StepRunRequestFactory</span><span class="p">(</span>
-        <span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">,</span>
-        <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
-        <span class="n">stack</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stack</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">dynamic_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">is_dynamic</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="n">step_run_request</span> <span class="o">=</span> <span class="n">request_factory</span><span class="o">.</span><span class="n">create_request</span><span class="p">(</span>
-        <span class="n">invocation_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="p">,</span>
-        <span class="n">dynamic_config</span><span class="o">=</span><span class="n">dynamic_config</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">request_factory</span><span class="o">.</span><span class="n">populate_request</span><span class="p">(</span><span class="n">request</span><span class="o">=</span><span class="n">step_run_request</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed preparing step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">)</span>
-        <span class="n">step_run_request</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">FAILED</span>
-        <span class="n">step_run_request</span><span class="o">.</span><span class="n">end_time</span> <span class="o">=</span> <span class="n">utc_now</span><span class="p">()</span>
-        <span class="n">step_run_request</span><span class="o">.</span><span class="n">exception_info</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">exception_utils</span><span class="o">.</span><span class="n">collect_exception_information</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">raise</span>
-    <span class="k">finally</span><span class="p">:</span>
-        <span class="n">step_run</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">create_run_step</span><span class="p">(</span><span class="n">step_run_request</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_step_run</span> <span class="o">=</span> <span class="n">step_run</span>
-        <span class="k">if</span> <span class="n">model_version</span> <span class="o">:=</span> <span class="n">step_run</span><span class="o">.</span><span class="n">model_version</span><span class="p">:</span>
-            <span class="n">step_run_utils</span><span class="o">.</span><span class="n">log_model_version_dashboard_url</span><span class="p">(</span>
-                <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span>
+            <span class="n">publish_utils</span><span class="o">.</span><span class="n">publish_pipeline_run_metadata</span><span class="p">(</span>
+                <span class="n">pipeline_run_id</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">pipeline_run_metadata</span><span class="o">=</span><span class="n">pipeline_run_metadata</span><span class="p">,</span>
             <span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">step_run</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">is_finished</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="si">}</span><span class="s2">` has started.&quot;</span><span class="p">)</span>
-
-            <span class="n">logs_context</span> <span class="o">=</span> <span class="n">nullcontext</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">is_step_logging_enabled</span><span class="p">(</span>
-                <span class="n">step_configuration</span><span class="o">=</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
-                <span class="n">pipeline_configuration</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
-            <span class="p">):</span>
-                <span class="n">logs_context</span> <span class="o">=</span> <span class="n">setup_step_logging</span><span class="p">(</span>
-                    <span class="n">step_run</span><span class="o">=</span><span class="n">step_run</span><span class="p">,</span>
-                    <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
-                    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;prepare_step&quot;</span><span class="p">,</span>
+            <span class="k">if</span> <span class="n">model_version</span> <span class="o">:=</span> <span class="n">pipeline_run</span><span class="o">.</span><span class="n">model_version</span><span class="p">:</span>
+                <span class="n">step_run_utils</span><span class="o">.</span><span class="n">log_model_version_dashboard_url</span><span class="p">(</span>
+                    <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span>
                 <span class="p">)</span>
 
-            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-            <span class="k">with</span> <span class="n">logs_context</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="s2">&quot;Preparing to run step `</span><span class="si">%s</span><span class="s2">`.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span>
+        <span class="n">request_factory</span> <span class="o">=</span> <span class="n">step_run_utils</span><span class="o">.</span><span class="n">StepRunRequestFactory</span><span class="p">(</span>
+            <span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">,</span>
+            <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
+            <span class="n">stack</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stack</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">dynamic_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">is_dynamic</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">step_run_request</span> <span class="o">=</span> <span class="n">request_factory</span><span class="o">.</span><span class="n">create_request</span><span class="p">(</span>
+            <span class="n">invocation_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="p">,</span>
+            <span class="n">dynamic_config</span><span class="o">=</span><span class="n">dynamic_config</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logs_context</span><span class="p">,</span> <span class="n">LoggingContext</span><span class="p">):</span>
+            <span class="n">step_run_request</span><span class="o">.</span><span class="n">logs</span> <span class="o">=</span> <span class="n">logs_context</span><span class="o">.</span><span class="n">log_model</span><span class="o">.</span><span class="n">id</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">request_factory</span><span class="o">.</span><span class="n">populate_request</span><span class="p">(</span><span class="n">request</span><span class="o">=</span><span class="n">step_run_request</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed preparing step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="si">}</span><span class="s2">`.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">step_run_request</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">FAILED</span>
+            <span class="n">step_run_request</span><span class="o">.</span><span class="n">end_time</span> <span class="o">=</span> <span class="n">utc_now</span><span class="p">()</span>
+            <span class="n">step_run_request</span><span class="o">.</span><span class="n">exception_info</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">exception_utils</span><span class="o">.</span><span class="n">collect_exception_information</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">step_run</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">create_run_step</span><span class="p">(</span><span class="n">step_run_request</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logs_context</span><span class="p">,</span> <span class="n">LoggingContext</span><span class="p">):</span>
+                <span class="n">logs_context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">step_run</span><span class="o">=</span><span class="n">step_run</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_step_run</span> <span class="o">=</span> <span class="n">step_run</span>
+            <span class="k">if</span> <span class="n">model_version</span> <span class="o">:=</span> <span class="n">step_run</span><span class="o">.</span><span class="n">model_version</span><span class="p">:</span>
+                <span class="n">step_run_utils</span><span class="o">.</span><span class="n">log_model_version_dashboard_url</span><span class="p">(</span>
+                    <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span>
                 <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">step_run</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">is_finished</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="si">}</span><span class="s2">` has started.&quot;</span><span class="p">)</span>
+
+                <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_run_step</span><span class="p">(</span>
                         <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
@@ -27867,24 +27878,23 @@ two ways depending on its configuration:
                         <span class="n">publish_utils</span><span class="o">.</span><span class="n">publish_failed_step_run</span><span class="p">(</span><span class="n">step_run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
                     <span class="k">raise</span>
 
-            <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="si">}</span><span class="s2">` has finished in &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">string_utils</span><span class="o">.</span><span class="n">get_human_readable_time</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span><span class="si">}</span><span class="s2">`.&quot;</span>
-            <span class="p">)</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Using cached version of step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="si">}</span><span class="s2">`.&quot;</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="p">(</span>
-                <span class="n">model_version</span> <span class="o">:=</span> <span class="n">step_run</span><span class="o">.</span><span class="n">model_version</span>
-                <span class="ow">or</span> <span class="n">pipeline_run</span><span class="o">.</span><span class="n">model_version</span>
-            <span class="p">):</span>
-                <span class="n">step_run_utils</span><span class="o">.</span><span class="n">link_output_artifacts_to_model_version</span><span class="p">(</span>
-                    <span class="n">artifacts</span><span class="o">=</span><span class="n">step_run</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span>
-                    <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span><span class="p">,</span>
+                <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="si">}</span><span class="s2">` has finished in &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">string_utils</span><span class="o">.</span><span class="n">get_human_readable_time</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span><span class="si">}</span><span class="s2">`.&quot;</span>
                 <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Using cached version of step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_invocation_id</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">model_version</span> <span class="o">:=</span> <span class="n">step_run</span><span class="o">.</span><span class="n">model_version</span>
+                    <span class="ow">or</span> <span class="n">pipeline_run</span><span class="o">.</span><span class="n">model_version</span>
+                <span class="p">):</span>
+                    <span class="n">step_run_utils</span><span class="o">.</span><span class="n">link_output_artifacts_to_model_version</span><span class="p">(</span>
+                        <span class="n">artifacts</span><span class="o">=</span><span class="n">step_run</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span>
+                        <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span><span class="p">,</span>
+                    <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">step_run</span>
 </code></pre></div></td></tr></table></div>
@@ -29652,8 +29662,7 @@ the exception info.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/orchestrators/step_runner.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 97</span>
-<span class="normal"> 98</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 98</span>
 <span class="normal"> 99</span>
 <span class="normal">100</span>
 <span class="normal">101</span>
@@ -29671,7 +29680,8 @@ the exception info.</p>
 <span class="normal">113</span>
 <span class="normal">114</span>
 <span class="normal">115</span>
-<span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">116</span>
+<span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -29896,8 +29906,7 @@ the exception info.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/orchestrators/step_runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">127</span>
-<span class="normal">128</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">128</span>
 <span class="normal">129</span>
 <span class="normal">130</span>
 <span class="normal">131</span>
@@ -30149,7 +30158,9 @@ the exception info.</p>
 <span class="normal">377</span>
 <span class="normal">378</span>
 <span class="normal">379</span>
-<span class="normal">380</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">pipeline_run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">,</span>
     <span class="n">step_run</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
@@ -30172,12 +30183,13 @@ the exception info.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.deployers.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">runtime</span>
 
-    <span class="n">logs_context</span> <span class="o">=</span> <span class="n">nullcontext</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">is_step_logging_enabled</span><span class="p">(</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">pipeline_run</span><span class="o">.</span><span class="n">config</span><span class="p">):</span>
-        <span class="n">logs_context</span> <span class="o">=</span> <span class="n">setup_step_logging</span><span class="p">(</span>
-            <span class="n">step_run</span><span class="o">=</span><span class="n">step_run</span><span class="p">,</span>
-            <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
-            <span class="n">source</span><span class="o">=</span><span class="s2">&quot;step&quot;</span><span class="p">,</span>
+    <span class="n">logs_context</span><span class="p">:</span> <span class="n">ContextManager</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">nullcontext</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">is_step_logging_enabled</span><span class="p">(</span>
+        <span class="n">step_configuration</span><span class="o">=</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+        <span class="n">pipeline_configuration</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">logs_context</span> <span class="o">=</span> <span class="n">setup_logging_context</span><span class="p">(</span>
+            <span class="n">source</span><span class="o">=</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="n">step_run</span><span class="o">=</span><span class="n">step_run</span><span class="p">,</span> <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span>
         <span class="p">)</span>
 
     <span class="k">with</span> <span class="n">logs_context</span><span class="p">:</span>

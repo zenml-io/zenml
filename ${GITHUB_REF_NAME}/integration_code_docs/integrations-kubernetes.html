@@ -21155,9 +21155,7 @@ if not provided.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1158</span>
-<span class="normal">1159</span>
-<span class="normal">1160</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1160</span>
 <span class="normal">1161</span>
 <span class="normal">1162</span>
 <span class="normal">1163</span>
@@ -21185,7 +21183,9 @@ if not provided.</p>
 <span class="normal">1185</span>
 <span class="normal">1186</span>
 <span class="normal">1187</span>
-<span class="normal">1188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apply_default_resource_requests</span><span class="p">(</span>
+<span class="normal">1188</span>
+<span class="normal">1189</span>
+<span class="normal">1190</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apply_default_resource_requests</span><span class="p">(</span>
     <span class="n">memory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">cpu</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">pod_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">KubernetesPodSettings</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -21344,9 +21344,7 @@ if not provided.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1255</span>
-<span class="normal">1256</span>
-<span class="normal">1257</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1257</span>
 <span class="normal">1258</span>
 <span class="normal">1259</span>
 <span class="normal">1260</span>
@@ -21446,7 +21444,9 @@ if not provided.</p>
 <span class="normal">1354</span>
 <span class="normal">1355</span>
 <span class="normal">1356</span>
-<span class="normal">1357</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_service_url</span><span class="p">(</span>
+<span class="normal">1357</span>
+<span class="normal">1358</span>
+<span class="normal">1359</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_service_url</span><span class="p">(</span>
     <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">k8s_client</span><span class="o">.</span><span class="n">V1Service</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -21706,9 +21706,7 @@ that will cause the job to fail.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 957</span>
-<span class="normal"> 958</span>
-<span class="normal"> 959</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 959</span>
 <span class="normal"> 960</span>
 <span class="normal"> 961</span>
 <span class="normal"> 962</span>
@@ -21796,7 +21794,9 @@ that will cause the job to fail.</p>
 <span class="normal">1044</span>
 <span class="normal">1045</span>
 <span class="normal">1046</span>
-<span class="normal">1047</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_job_status</span><span class="p">(</span>
+<span class="normal">1047</span>
+<span class="normal">1048</span>
+<span class="normal">1049</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_job_status</span><span class="p">(</span>
     <span class="n">batch_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">BatchV1Api</span><span class="p">,</span>
     <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -21999,9 +21999,7 @@ that will cause the job to fail.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1196</span>
-<span class="normal">1197</span>
-<span class="normal">1198</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1198</span>
 <span class="normal">1199</span>
 <span class="normal">1200</span>
 <span class="normal">1201</span>
@@ -22050,7 +22048,9 @@ that will cause the job to fail.</p>
 <span class="normal">1244</span>
 <span class="normal">1245</span>
 <span class="normal">1246</span>
-<span class="normal">1247</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_resource_settings_to_k8s_format</span><span class="p">(</span>
+<span class="normal">1247</span>
+<span class="normal">1248</span>
+<span class="normal">1249</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_resource_settings_to_k8s_format</span><span class="p">(</span>
     <span class="n">resource_settings</span><span class="p">:</span> <span class="s2">&quot;ResourceSettings&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert ZenML ResourceSettings to Kubernetes resource format.</span>
@@ -22618,9 +22618,7 @@ retries.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1050</span>
-<span class="normal">1051</span>
-<span class="normal">1052</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1052</span>
 <span class="normal">1053</span>
 <span class="normal">1054</span>
 <span class="normal">1055</span>
@@ -22635,7 +22633,9 @@ retries.</p>
 <span class="normal">1064</span>
 <span class="normal">1065</span>
 <span class="normal">1066</span>
-<span class="normal">1067</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_config_map</span><span class="p">(</span>
+<span class="normal">1067</span>
+<span class="normal">1068</span>
+<span class="normal">1069</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_config_map</span><span class="p">(</span>
     <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -23433,9 +23433,7 @@ the secret already existing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1112</span>
-<span class="normal">1113</span>
-<span class="normal">1114</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1114</span>
 <span class="normal">1115</span>
 <span class="normal">1116</span>
 <span class="normal">1117</span>
@@ -23448,7 +23446,9 @@ the secret already existing.</p>
 <span class="normal">1124</span>
 <span class="normal">1125</span>
 <span class="normal">1126</span>
-<span class="normal">1127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_config_map</span><span class="p">(</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_config_map</span><span class="p">(</span>
     <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -23688,9 +23688,7 @@ the secret already existing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1091</span>
-<span class="normal">1092</span>
-<span class="normal">1093</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1093</span>
 <span class="normal">1094</span>
 <span class="normal">1095</span>
 <span class="normal">1096</span>
@@ -23706,7 +23704,9 @@ the secret already existing.</p>
 <span class="normal">1106</span>
 <span class="normal">1107</span>
 <span class="normal">1108</span>
-<span class="normal">1109</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_config_map</span><span class="p">(</span>
+<span class="normal">1109</span>
+<span class="normal">1110</span>
+<span class="normal">1111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_config_map</span><span class="p">(</span>
     <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -24248,9 +24248,7 @@ the secret already existing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1130</span>
-<span class="normal">1131</span>
-<span class="normal">1132</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1132</span>
 <span class="normal">1133</span>
 <span class="normal">1134</span>
 <span class="normal">1135</span>
@@ -24273,7 +24271,9 @@ the secret already existing.</p>
 <span class="normal">1152</span>
 <span class="normal">1153</span>
 <span class="normal">1154</span>
-<span class="normal">1155</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_parent_job_name</span><span class="p">(</span>
+<span class="normal">1155</span>
+<span class="normal">1156</span>
+<span class="normal">1157</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_parent_job_name</span><span class="p">(</span>
     <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span>
     <span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -25765,9 +25765,7 @@ currently active context. Will be ignored if <code>incluster</code> is True.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/kube_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1070</span>
-<span class="normal">1071</span>
-<span class="normal">1072</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1072</span>
 <span class="normal">1073</span>
 <span class="normal">1074</span>
 <span class="normal">1075</span>
@@ -25783,7 +25781,9 @@ currently active context. Will be ignored if <code>incluster</code> is True.</p>
 <span class="normal">1085</span>
 <span class="normal">1086</span>
 <span class="normal">1087</span>
-<span class="normal">1088</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_config_map</span><span class="p">(</span>
+<span class="normal">1088</span>
+<span class="normal">1089</span>
+<span class="normal">1090</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_config_map</span><span class="p">(</span>
     <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -26120,7 +26120,7 @@ from the secret.</p>
 
 
 <h6 id="zenml.integrations.kubernetes.kube_utils.wait_for_job_to_finish" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">wait_for_job_to_finish</span><span class="p">(</span><span class="n">batch_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">BatchV1Api</span><span class="p">,</span> <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">job_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">backoff_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">maximum_backoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">exponential_backoff</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fail_on_container_waiting_reasons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stream_logs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">container_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+            <code class="highlight language-python"><span class="n">wait_for_job_to_finish</span><span class="p">(</span><span class="n">get_client</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">ApiClient</span><span class="p">],</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">job_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">backoff_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">maximum_backoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">exponential_backoff</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fail_on_container_waiting_reasons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stream_logs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">container_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
 </h6>
 
@@ -26143,30 +26143,14 @@ from the secret.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>batch_api</code>
+                <code>get_client</code>
             </td>
             <td>
-                  <code><span title="kubernetes.client.BatchV1Api">BatchV1Api</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Kubernetes BatchV1Api client.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>core_api</code>
-            </td>
-            <td>
-                  <code><span title="kubernetes.client.CoreV1Api">CoreV1Api</span></code>
+                  <code><span title="typing.Callable">Callable</span>[[], <span title="kubernetes.client.ApiClient">ApiClient</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Kubernetes CoreV1Api client.</p>
+                <p>A function that returns a Kubernetes API client.</p>
               </div>
             </td>
             <td>
@@ -26471,9 +26455,10 @@ that will cause the job to fail.</p>
 <span class="normal">951</span>
 <span class="normal">952</span>
 <span class="normal">953</span>
-<span class="normal">954</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">wait_for_job_to_finish</span><span class="p">(</span>
-    <span class="n">batch_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">BatchV1Api</span><span class="p">,</span>
-    <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span>
+<span class="normal">954</span>
+<span class="normal">955</span>
+<span class="normal">956</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">wait_for_job_to_finish</span><span class="p">(</span>
+    <span class="n">get_client</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">ApiClient</span><span class="p">],</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">job_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">backoff_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -26486,8 +26471,7 @@ that will cause the job to fail.</p>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Wait for a job to finish.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        batch_api: Kubernetes BatchV1Api client.</span>
-<span class="sd">        core_api: Kubernetes CoreV1Api client.</span>
+<span class="sd">        get_client: A function that returns a Kubernetes API client.</span>
 <span class="sd">        namespace: Kubernetes namespace.</span>
 <span class="sd">        job_name: Name of the job for which to wait.</span>
 <span class="sd">        backoff_interval: The interval to wait between polling the job status.</span>
@@ -26506,6 +26490,10 @@ that will cause the job to fail.</p>
     <span class="n">finished_pods</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span>
+        <span class="n">batch_api</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">BatchV1Api</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+        <span class="n">core_api</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+
         <span class="n">job</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1Job</span> <span class="o">=</span> <span class="n">retry_on_api_exception</span><span class="p">(</span>
             <span class="n">batch_api</span><span class="o">.</span><span class="n">read_namespaced_job</span>
         <span class="p">)(</span><span class="n">name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">)</span>
@@ -27479,7 +27467,7 @@ path.</p>
 
 
 <h6 id="zenml.integrations.kubernetes.manifest_utils.build_cron_job_manifest" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">build_cron_job_manifest</span><span class="p">(</span><span class="n">job_template</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1JobTemplateSpec</span><span class="p">,</span> <span class="n">cron_expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">successful_jobs_history_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">failed_jobs_history_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1CronJob</span></code>
+            <code class="highlight language-python"><span class="n">build_cron_job_manifest</span><span class="p">(</span><span class="n">job_template</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1JobTemplateSpec</span><span class="p">,</span> <span class="n">cron_expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">successful_jobs_history_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">failed_jobs_history_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">concurrency_policy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">starting_deadline_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1CronJob</span></code>
 
 </h6>
 
@@ -27564,6 +27552,40 @@ path.</p>
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>concurrency_policy</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The concurrency policy for the cron job
+(Allow, Forbid, or Replace).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>starting_deadline_seconds</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="int">int</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The deadline in seconds for starting
+a job if it misses its scheduled time.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -27622,11 +27644,21 @@ path.</p>
 <span class="normal">510</span>
 <span class="normal">511</span>
 <span class="normal">512</span>
-<span class="normal">513</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_cron_job_manifest</span><span class="p">(</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_cron_job_manifest</span><span class="p">(</span>
     <span class="n">job_template</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1JobTemplateSpec</span><span class="p">,</span>
     <span class="n">cron_expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">successful_jobs_history_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">failed_jobs_history_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">concurrency_policy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">starting_deadline_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1CronJob</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Kubernetes cron job manifest.</span>
 
@@ -27635,6 +27667,10 @@ path.</p>
 <span class="sd">        cron_expression: The cron expression to use for the cron job.</span>
 <span class="sd">        successful_jobs_history_limit: The number of successful jobs to keep.</span>
 <span class="sd">        failed_jobs_history_limit: The number of failed jobs to keep.</span>
+<span class="sd">        concurrency_policy: The concurrency policy for the cron job</span>
+<span class="sd">            (Allow, Forbid, or Replace).</span>
+<span class="sd">        starting_deadline_seconds: The deadline in seconds for starting</span>
+<span class="sd">            a job if it misses its scheduled time.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The Kubernetes cron job manifest.</span>
@@ -27643,6 +27679,8 @@ path.</p>
         <span class="n">schedule</span><span class="o">=</span><span class="n">cron_expression</span><span class="p">,</span>
         <span class="n">successful_jobs_history_limit</span><span class="o">=</span><span class="n">successful_jobs_history_limit</span><span class="p">,</span>
         <span class="n">failed_jobs_history_limit</span><span class="o">=</span><span class="n">failed_jobs_history_limit</span><span class="p">,</span>
+        <span class="n">concurrency_policy</span><span class="o">=</span><span class="n">concurrency_policy</span><span class="p">,</span>
+        <span class="n">starting_deadline_seconds</span><span class="o">=</span><span class="n">starting_deadline_seconds</span><span class="p">,</span>
         <span class="n">job_template</span><span class="o">=</span><span class="n">job_template</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -30775,8 +30813,7 @@ the <code>incluster</code> setting in the config.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">864</span>
-<span class="normal">865</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">865</span>
 <span class="normal">866</span>
 <span class="normal">867</span>
 <span class="normal">868</span>
@@ -30946,8 +30983,7 @@ the <code>incluster</code> setting in the config.</p>
         <span class="n">job_name</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">kube_utils</span><span class="o">.</span><span class="n">wait_for_job_to_finish</span><span class="p">(</span>
-        <span class="n">batch_api</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_k8s_batch_api</span><span class="p">,</span>
-        <span class="n">core_api</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_k8s_core_api</span><span class="p">,</span>
+        <span class="n">get_client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_kube_client</span><span class="p">,</span>
         <span class="n">namespace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">kubernetes_namespace</span><span class="p">,</span>
         <span class="n">job_name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span>
         <span class="n">fail_on_container_waiting_reasons</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">fail_on_container_waiting_reasons</span><span class="p">,</span>
@@ -33966,8 +34002,7 @@ the <code>incluster</code> setting in the config.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">864</span>
-<span class="normal">865</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">865</span>
 <span class="normal">866</span>
 <span class="normal">867</span>
 <span class="normal">868</span>
@@ -34137,8 +34172,7 @@ the <code>incluster</code> setting in the config.</p>
         <span class="n">job_name</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">kube_utils</span><span class="o">.</span><span class="n">wait_for_job_to_finish</span><span class="p">(</span>
-        <span class="n">batch_api</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_k8s_batch_api</span><span class="p">,</span>
-        <span class="n">core_api</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_k8s_core_api</span><span class="p">,</span>
+        <span class="n">get_client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_kube_client</span><span class="p">,</span>
         <span class="n">namespace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">kubernetes_namespace</span><span class="p">,</span>
         <span class="n">job_name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span>
         <span class="n">fail_on_container_waiting_reasons</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">fail_on_container_waiting_reasons</span><span class="p">,</span>
@@ -34954,8 +34988,7 @@ specific steps.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator_entrypoint.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">203</span>
-<span class="normal">204</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">204</span>
 <span class="normal">205</span>
 <span class="normal">206</span>
 <span class="normal">207</span>
@@ -35631,108 +35664,117 @@ specific steps.</p>
 <span class="normal">877</span>
 <span class="normal">878</span>
 <span class="normal">879</span>
-<span class="normal">880</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">880</span>
+<span class="normal">881</span>
+<span class="normal">882</span>
+<span class="normal">883</span>
+<span class="normal">884</span>
+<span class="normal">885</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint of the k8s master/orchestrator pod.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the orchestrator pod is not associated with a job.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Orchestrator pod started.&quot;</span><span class="p">)</span>
-
     <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">()</span>
 
     <span class="n">orchestrator_pod_name</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
 
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
     <span class="n">snapshot</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_snapshot</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">snapshot_id</span><span class="p">)</span>
-    <span class="n">active_stack</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack</span>
-    <span class="n">orchestrator</span> <span class="o">=</span> <span class="n">active_stack</span><span class="o">.</span><span class="n">orchestrator</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">orchestrator</span><span class="p">,</span> <span class="n">KubernetesOrchestrator</span><span class="p">)</span>
-    <span class="n">namespace</span> <span class="o">=</span> <span class="n">orchestrator</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">kubernetes_namespace</span>
 
-    <span class="n">pipeline_settings</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
-        <span class="n">KubernetesOrchestratorSettings</span><span class="p">,</span>
-        <span class="n">orchestrator</span><span class="o">.</span><span class="n">get_settings</span><span class="p">(</span><span class="n">snapshot</span><span class="p">),</span>
-    <span class="p">)</span>
+    <span class="n">logs_context</span><span class="p">:</span> <span class="n">ContextManager</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">nullcontext</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">is_pipeline_logging_enabled</span><span class="p">(</span><span class="n">snapshot</span><span class="o">.</span><span class="n">pipeline_configuration</span><span class="p">):</span>
+        <span class="n">logs_context</span> <span class="o">=</span> <span class="n">setup_logging_context</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;orchestrator&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Get a Kubernetes client from the active Kubernetes orchestrator, but</span>
-    <span class="c1"># override the `incluster` setting to `True` since we are running inside</span>
-    <span class="c1"># the Kubernetes cluster.</span>
-    <span class="n">api_client_config</span> <span class="o">=</span> <span class="n">orchestrator</span><span class="o">.</span><span class="n">get_kube_client</span><span class="p">(</span>
-        <span class="n">incluster</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">configuration</span>
-    <span class="n">api_client_config</span><span class="o">.</span><span class="n">connection_pool_maxsize</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">pipeline_settings</span><span class="o">.</span><span class="n">max_parallelism</span>
-    <span class="p">)</span>
-    <span class="n">kube_client</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">ApiClient</span><span class="p">(</span><span class="n">api_client_config</span><span class="p">)</span>
-    <span class="n">core_api</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">(</span><span class="n">kube_client</span><span class="p">)</span>
-    <span class="n">batch_api</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">BatchV1Api</span><span class="p">(</span><span class="n">kube_client</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">logs_context</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Orchestrator pod started.&quot;</span><span class="p">)</span>
 
-    <span class="n">job_name</span> <span class="o">=</span> <span class="n">kube_utils</span><span class="o">.</span><span class="n">get_parent_job_name</span><span class="p">(</span>
-        <span class="n">core_api</span><span class="o">=</span><span class="n">core_api</span><span class="p">,</span>
-        <span class="n">pod_name</span><span class="o">=</span><span class="n">orchestrator_pod_name</span><span class="p">,</span>
-        <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">job_name</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Failed to fetch job name for orchestrator pod.&quot;</span><span class="p">)</span>
+        <span class="n">active_stack</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack</span>
+        <span class="n">orchestrator</span> <span class="o">=</span> <span class="n">active_stack</span><span class="o">.</span><span class="n">orchestrator</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">orchestrator</span><span class="p">,</span> <span class="n">KubernetesOrchestrator</span><span class="p">)</span>
+        <span class="n">namespace</span> <span class="o">=</span> <span class="n">orchestrator</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">kubernetes_namespace</span>
 
-    <span class="n">run_id</span><span class="p">,</span> <span class="n">orchestrator_run_id</span> <span class="o">=</span> <span class="n">_get_orchestrator_job_state</span><span class="p">(</span>
-        <span class="n">batch_api</span><span class="o">=</span><span class="n">batch_api</span><span class="p">,</span>
-        <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
-        <span class="n">job_name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">run_id</span> <span class="ow">and</span> <span class="n">orchestrator_run_id</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Continuing existing run `</span><span class="si">%s</span><span class="s2">`.&quot;</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)</span>
-        <span class="n">pipeline_run</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_pipeline_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
-        <span class="n">nodes</span> <span class="o">=</span> <span class="n">_reconstruct_nodes</span><span class="p">(</span>
-            <span class="n">snapshot</span><span class="o">=</span><span class="n">snapshot</span><span class="p">,</span>
-            <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
-            <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
-            <span class="n">batch_api</span><span class="o">=</span><span class="n">batch_api</span><span class="p">,</span>
+        <span class="n">pipeline_settings</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
+            <span class="n">KubernetesOrchestratorSettings</span><span class="p">,</span>
+            <span class="n">orchestrator</span><span class="o">.</span><span class="n">get_settings</span><span class="p">(</span><span class="n">snapshot</span><span class="p">),</span>
         <span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Reconstructed nodes: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">nodes</span><span class="p">)</span>
 
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">orchestrator_run_id</span> <span class="o">=</span> <span class="n">orchestrator_pod_name</span>
+        <span class="c1"># Get a Kubernetes client from the active Kubernetes orchestrator, but</span>
+        <span class="c1"># override the `incluster` setting to `True` since we are running inside</span>
+        <span class="c1"># the Kubernetes cluster.</span>
+        <span class="n">api_client_config</span> <span class="o">=</span> <span class="n">orchestrator</span><span class="o">.</span><span class="n">get_kube_client</span><span class="p">(</span>
+            <span class="n">incluster</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">configuration</span>
+        <span class="n">api_client_config</span><span class="o">.</span><span class="n">connection_pool_maxsize</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pipeline_settings</span><span class="o">.</span><span class="n">max_parallelism</span>
+        <span class="p">)</span>
+        <span class="n">kube_client</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">ApiClient</span><span class="p">(</span><span class="n">api_client_config</span><span class="p">)</span>
+        <span class="n">core_api</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">(</span><span class="n">kube_client</span><span class="p">)</span>
+        <span class="n">batch_api</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">BatchV1Api</span><span class="p">(</span><span class="n">kube_client</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">run_id</span><span class="p">:</span>
-            <span class="n">pipeline_run</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">update_run</span><span class="p">(</span>
-                <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
-                <span class="n">run_update</span><span class="o">=</span><span class="n">PipelineRunUpdate</span><span class="p">(</span>
-                    <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="n">orchestrator_run_id</span>
-                <span class="p">),</span>
+        <span class="n">job_name</span> <span class="o">=</span> <span class="n">kube_utils</span><span class="o">.</span><span class="n">get_parent_job_name</span><span class="p">(</span>
+            <span class="n">core_api</span><span class="o">=</span><span class="n">core_api</span><span class="p">,</span>
+            <span class="n">pod_name</span><span class="o">=</span><span class="n">orchestrator_pod_name</span><span class="p">,</span>
+            <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">job_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Failed to fetch job name for orchestrator pod.&quot;</span>
             <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">pipeline_run</span> <span class="o">=</span> <span class="n">create_placeholder_run</span><span class="p">(</span>
-                <span class="n">snapshot</span><span class="o">=</span><span class="n">snapshot</span><span class="p">,</span>
-                <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="n">orchestrator_run_id</span><span class="p">,</span>
-            <span class="p">)</span>
 
-        <span class="c1"># Store in the job annotations so we can continue the run if the pod</span>
-        <span class="c1"># is restarted</span>
-        <span class="n">kube_utils</span><span class="o">.</span><span class="n">update_job</span><span class="p">(</span>
+        <span class="n">run_id</span><span class="p">,</span> <span class="n">orchestrator_run_id</span> <span class="o">=</span> <span class="n">_get_orchestrator_job_state</span><span class="p">(</span>
             <span class="n">batch_api</span><span class="o">=</span><span class="n">batch_api</span><span class="p">,</span>
             <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
             <span class="n">job_name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span>
-            <span class="n">annotations</span><span class="o">=</span><span class="p">{</span>
-                <span class="n">RUN_ID_ANNOTATION_KEY</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
-                <span class="n">ORCHESTRATOR_RUN_ID_ANNOTATION_KEY</span><span class="p">:</span> <span class="n">orchestrator_run_id</span><span class="p">,</span>
-            <span class="p">},</span>
-        <span class="p">)</span>
-        <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">Node</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">step_name</span><span class="p">,</span> <span class="n">upstream_nodes</span><span class="o">=</span><span class="n">step</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">upstream_steps</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">snapshot</span><span class="o">.</span><span class="n">step_configurations</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-        <span class="p">]</span>
-
-    <span class="n">logs_context</span> <span class="o">=</span> <span class="n">nullcontext</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">is_pipeline_logging_enabled</span><span class="p">(</span><span class="n">snapshot</span><span class="o">.</span><span class="n">pipeline_configuration</span><span class="p">):</span>
-        <span class="n">logs_context</span> <span class="o">=</span> <span class="n">setup_run_logging</span><span class="p">(</span>
-            <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
-            <span class="n">source</span><span class="o">=</span><span class="s2">&quot;orchestrator&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">with</span> <span class="n">logs_context</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">run_id</span> <span class="ow">and</span> <span class="n">orchestrator_run_id</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Continuing existing run `</span><span class="si">%s</span><span class="s2">`.&quot;</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)</span>
+            <span class="n">pipeline_run</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_pipeline_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+            <span class="n">nodes</span> <span class="o">=</span> <span class="n">_reconstruct_nodes</span><span class="p">(</span>
+                <span class="n">snapshot</span><span class="o">=</span><span class="n">snapshot</span><span class="p">,</span>
+                <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">,</span>
+                <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
+                <span class="n">batch_api</span><span class="o">=</span><span class="n">batch_api</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Reconstructed nodes: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">nodes</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">orchestrator_run_id</span> <span class="o">=</span> <span class="n">orchestrator_pod_name</span>
+
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">run_id</span><span class="p">:</span>
+                <span class="n">pipeline_run</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">update_run</span><span class="p">(</span>
+                    <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+                    <span class="n">run_update</span><span class="o">=</span><span class="n">PipelineRunUpdate</span><span class="p">(</span>
+                        <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="n">orchestrator_run_id</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pipeline_run</span> <span class="o">=</span> <span class="n">create_placeholder_run</span><span class="p">(</span>
+                    <span class="n">snapshot</span><span class="o">=</span><span class="n">snapshot</span><span class="p">,</span>
+                    <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="n">orchestrator_run_id</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Store in the job annotations so we can continue the run if the pod</span>
+            <span class="c1"># is restarted</span>
+            <span class="n">kube_utils</span><span class="o">.</span><span class="n">update_job</span><span class="p">(</span>
+                <span class="n">batch_api</span><span class="o">=</span><span class="n">batch_api</span><span class="p">,</span>
+                <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
+                <span class="n">job_name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span>
+                <span class="n">annotations</span><span class="o">=</span><span class="p">{</span>
+                    <span class="n">RUN_ID_ANNOTATION_KEY</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+                    <span class="n">ORCHESTRATOR_RUN_ID_ANNOTATION_KEY</span><span class="p">:</span> <span class="n">orchestrator_run_id</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+            <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">Node</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">step_name</span><span class="p">,</span> <span class="n">upstream_nodes</span><span class="o">=</span><span class="n">step</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">upstream_steps</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">snapshot</span><span class="o">.</span><span class="n">step_configurations</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logs_context</span><span class="p">,</span> <span class="n">LoggingContext</span><span class="p">):</span>
+            <span class="n">logs_context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="p">)</span>
+            <span class="n">logs_context</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">pipeline_run</span><span class="p">)</span>
+
         <span class="n">step_command</span> <span class="o">=</span> <span class="n">StepEntrypointConfiguration</span><span class="o">.</span><span class="n">get_entrypoint_command</span><span class="p">()</span>
         <span class="n">mount_local_stores</span> <span class="o">=</span> <span class="n">active_stack</span><span class="o">.</span><span class="n">orchestrator</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">is_local</span>
 
@@ -36354,8 +36396,7 @@ specific steps.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator_entrypoint.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">87</span>
-<span class="normal">88</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">88</span>
 <span class="normal">89</span>
 <span class="normal">90</span>
 <span class="normal">91</span>
@@ -36363,7 +36404,8 @@ specific steps.</p>
 <span class="normal">93</span>
 <span class="normal">94</span>
 <span class="normal">95</span>
-<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
+<span class="normal">96</span>
+<span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse entrypoint arguments.</span>
 
 <span class="sd">    Returns:</span>
@@ -39598,8 +39640,7 @@ environment.</p>
 <span class="normal">285</span>
 <span class="normal">286</span>
 <span class="normal">287</span>
-<span class="normal">288</span>
-<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
+<span class="normal">288</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -39688,8 +39729,7 @@ environment.</p>
         <span class="n">job_name</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">kube_utils</span><span class="o">.</span><span class="n">wait_for_job_to_finish</span><span class="p">(</span>
-        <span class="n">batch_api</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_k8s_batch_api</span><span class="p">,</span>
-        <span class="n">core_api</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_k8s_core_api</span><span class="p">,</span>
+        <span class="n">get_client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_kube_client</span><span class="p">,</span>
         <span class="n">namespace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">kubernetes_namespace</span><span class="p">,</span>
         <span class="n">job_name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span>
         <span class="n">fail_on_container_waiting_reasons</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">fail_on_container_waiting_reasons</span><span class="p">,</span>
@@ -40493,8 +40533,7 @@ environment.</p>
 <span class="normal">285</span>
 <span class="normal">286</span>
 <span class="normal">287</span>
-<span class="normal">288</span>
-<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
+<span class="normal">288</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -40583,8 +40622,7 @@ environment.</p>
         <span class="n">job_name</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">kube_utils</span><span class="o">.</span><span class="n">wait_for_job_to_finish</span><span class="p">(</span>
-        <span class="n">batch_api</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_k8s_batch_api</span><span class="p">,</span>
-        <span class="n">core_api</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_k8s_core_api</span><span class="p">,</span>
+        <span class="n">get_client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_kube_client</span><span class="p">,</span>
         <span class="n">namespace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">kubernetes_namespace</span><span class="p">,</span>
         <span class="n">job_name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span>
         <span class="n">fail_on_container_waiting_reasons</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">fail_on_container_waiting_reasons</span><span class="p">,</span>

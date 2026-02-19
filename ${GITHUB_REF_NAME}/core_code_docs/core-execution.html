@@ -6038,9 +6038,7 @@ orchestrator will be inferred from the snapshot stack.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
-<span class="normal">102</span>
-<span class="normal">103</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
 <span class="normal">104</span>
 <span class="normal">105</span>
 <span class="normal">106</span>
@@ -6091,7 +6089,9 @@ orchestrator will be inferred from the snapshot stack.</p>
 <span class="normal">151</span>
 <span class="normal">152</span>
 <span class="normal">153</span>
-<span class="normal">154</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">snapshot</span><span class="p">:</span> <span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">,</span>
     <span class="n">run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">],</span>
@@ -6245,11 +6245,11 @@ orchestrator will be inferred from the snapshot stack.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">550</span>
-<span class="normal">551</span>
-<span class="normal">552</span>
-<span class="normal">553</span>
-<span class="normal">554</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">await_all_step_run_futures</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span>
+<span class="normal">564</span>
+<span class="normal">565</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">await_all_step_run_futures</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Await all step run output futures.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_futures</span><span class="p">:</span>
         <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
@@ -6450,18 +6450,7 @@ orchestrator will be inferred from the snapshot stack.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">320</span>
-<span class="normal">321</span>
-<span class="normal">322</span>
-<span class="normal">323</span>
-<span class="normal">324</span>
-<span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span>
-<span class="normal">328</span>
-<span class="normal">329</span>
-<span class="normal">330</span>
-<span class="normal">331</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">331</span>
 <span class="normal">332</span>
 <span class="normal">333</span>
 <span class="normal">334</span>
@@ -6626,7 +6615,18 @@ orchestrator will be inferred from the snapshot stack.</p>
 <span class="normal">493</span>
 <span class="normal">494</span>
 <span class="normal">495</span>
-<span class="normal">496</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch_step</span><span class="p">(</span>
+<span class="normal">496</span>
+<span class="normal">497</span>
+<span class="normal">498</span>
+<span class="normal">499</span>
+<span class="normal">500</span>
+<span class="normal">501</span>
+<span class="normal">502</span>
+<span class="normal">503</span>
+<span class="normal">504</span>
+<span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch_step</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -6945,18 +6945,7 @@ inputs.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">498</span>
-<span class="normal">499</span>
-<span class="normal">500</span>
-<span class="normal">501</span>
-<span class="normal">502</span>
-<span class="normal">503</span>
-<span class="normal">504</span>
-<span class="normal">505</span>
-<span class="normal">506</span>
-<span class="normal">507</span>
-<span class="normal">508</span>
-<span class="normal">509</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">509</span>
 <span class="normal">510</span>
 <span class="normal">511</span>
 <span class="normal">512</span>
@@ -6995,7 +6984,18 @@ inputs.</p>
 <span class="normal">545</span>
 <span class="normal">546</span>
 <span class="normal">547</span>
-<span class="normal">548</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span>
+<span class="normal">553</span>
+<span class="normal">554</span>
+<span class="normal">555</span>
+<span class="normal">556</span>
+<span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
     <span class="n">args</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
@@ -7091,9 +7091,7 @@ inputs.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">185</span>
-<span class="normal">186</span>
-<span class="normal">187</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">187</span>
 <span class="normal">188</span>
 <span class="normal">189</span>
 <span class="normal">190</span>
@@ -7196,112 +7194,132 @@ inputs.</p>
 <span class="normal">287</span>
 <span class="normal">288</span>
 <span class="normal">289</span>
-<span class="normal">290</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the pipeline.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        Exception: If the pipeline run failed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">is_finished</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Run `</span><span class="si">%s</span><span class="s2">` is already finished.&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
-            <span class="k">return</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">orchestrator_run_id</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Continuing existing run `</span><span class="si">%s</span><span class="s2">`.&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
-            <span class="n">run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">run</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">update_run</span><span class="p">(</span>
-                <span class="n">run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-                <span class="n">run_update</span><span class="o">=</span><span class="n">PipelineRunUpdate</span><span class="p">(</span>
-                    <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator_run_id</span><span class="p">,</span>
-                <span class="p">),</span>
-            <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">existing_runs</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">list_pipeline_runs</span><span class="p">(</span>
-            <span class="n">snapshot_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-            <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator_run_id</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">existing_runs</span><span class="o">.</span><span class="n">total</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">run</span> <span class="o">=</span> <span class="n">existing_runs</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">is_finished</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Run `</span><span class="si">%s</span><span class="s2">` is already finished.&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+    <span class="n">logs_context</span><span class="p">:</span> <span class="n">ContextManager</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">nullcontext</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">is_pipeline_logging_enabled</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">pipeline_configuration</span><span class="p">):</span>
+        <span class="n">logs_context</span> <span class="o">=</span> <span class="n">setup_logging_context</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;orchestrator&quot;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">logs_context</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">is_finished</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Run `</span><span class="si">%s</span><span class="s2">` is already finished.&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="p">)</span>
                 <span class="k">return</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">orchestrator_run_id</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Continuing existing run `</span><span class="si">%s</span><span class="s2">`.&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Continuing existing run `</span><span class="si">%s</span><span class="s2">`.&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+                <span class="n">run</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">update_run</span><span class="p">(</span>
+                    <span class="n">run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="n">run_update</span><span class="o">=</span><span class="n">PipelineRunUpdate</span><span class="p">(</span>
+                        <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator_run_id</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">run</span> <span class="o">=</span> <span class="n">create_placeholder_run</span><span class="p">(</span>
-                <span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">,</span>
+            <span class="n">existing_runs</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">list_pipeline_runs</span><span class="p">(</span>
+                <span class="n">snapshot_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                 <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator_run_id</span><span class="p">,</span>
             <span class="p">)</span>
-
-    <span class="n">logging_context</span> <span class="o">=</span> <span class="n">nullcontext</span><span class="p">()</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">run</span><span class="o">.</span><span class="n">triggered_by_deployment</span> <span class="ow">and</span> <span class="n">is_pipeline_logging_enabled</span><span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">pipeline_configuration</span>
-    <span class="p">):</span>
-        <span class="n">logging_context</span> <span class="o">=</span> <span class="n">setup_run_logging</span><span class="p">(</span>
-            <span class="n">pipeline_run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span>
-            <span class="n">source</span><span class="o">=</span><span class="s2">&quot;orchestrator&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">stack</span>
-
-    <span class="k">with</span> <span class="p">(</span>
-        <span class="n">logging_context</span><span class="p">,</span>
-        <span class="n">InMemoryArtifactCache</span><span class="p">(),</span>
-        <span class="n">env_utils</span><span class="o">.</span><span class="n">temporary_runtime_environment</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">pipeline_configuration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">stack</span>
-        <span class="p">),</span>
-        <span class="n">DynamicPipelineRunContext</span><span class="p">(</span>
-            <span class="n">pipeline</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">,</span>
-            <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span>
-            <span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">,</span>
-            <span class="n">runner</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
-        <span class="p">),</span>
-    <span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">run</span><span class="o">.</span><span class="n">triggered_by_deployment</span><span class="p">:</span>
-            <span class="c1"># Only run the init hook if the run is not triggered by</span>
-            <span class="c1"># a deployment, as the deployment service will have</span>
-            <span class="c1"># already run the init hook.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator</span><span class="o">.</span><span class="n">run_init_hook</span><span class="p">(</span><span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">)</span>
-
-        <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># TODO: what should be allowed as pipeline returns?</span>
-            <span class="c1">#  (artifacts, json serializable, anything?)</span>
-            <span class="c1">#  how do we show it in the UI?</span>
-            <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">or</span> <span class="p">{}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">_call_entrypoint</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
-            <span class="c1"># The pipeline function finished successfully, but some</span>
-            <span class="c1"># steps might still be running. We now wait for all of</span>
-            <span class="c1"># them and raise any exceptions that occurred.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">await_all_step_run_futures</span><span class="p">()</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">exception_info</span> <span class="o">=</span> <span class="n">exception_utils</span><span class="o">.</span><span class="n">collect_exception_information</span><span class="p">(</span>
-                <span class="n">exception</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
-                <span class="n">user_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">entrypoint</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="c1"># TODO: this call already invalidates the token, so</span>
-            <span class="c1"># the steps will keep running but won&#39;t be able to</span>
-            <span class="c1"># report their status back to ZenML.</span>
-            <span class="n">publish_failed_pipeline_run</span><span class="p">(</span>
-                <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">exception_info</span><span class="o">=</span><span class="n">exception_info</span>
-            <span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;Pipeline run failed. All in-progress step runs &quot;</span>
-                <span class="s2">&quot;will still finish executing.&quot;</span>
-            <span class="p">)</span>
-            <span class="k">raise</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">run</span><span class="o">.</span><span class="n">triggered_by_deployment</span><span class="p">:</span>
-                <span class="c1"># Only run the cleanup hook if the run is not triggered by</span>
-                <span class="c1"># a deployment, as the deployment service will have</span>
-                <span class="c1"># already run the cleanup hook.</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator</span><span class="o">.</span><span class="n">run_cleanup_hook</span><span class="p">(</span>
-                    <span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span>
+            <span class="k">if</span> <span class="n">existing_runs</span><span class="o">.</span><span class="n">total</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">run</span> <span class="o">=</span> <span class="n">existing_runs</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">is_finished</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;Run `</span><span class="si">%s</span><span class="s2">` is already finished.&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;Continuing existing run `</span><span class="si">%s</span><span class="s2">`.&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">run</span> <span class="o">=</span> <span class="n">create_placeholder_run</span><span class="p">(</span>
+                    <span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">,</span>
+                    <span class="n">orchestrator_run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator_run_id</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cancel_futures</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="n">publish_successful_pipeline_run</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Pipeline completed successfully.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logs_context</span><span class="p">,</span> <span class="n">LoggingContext</span><span class="p">):</span>
+            <span class="n">logs_context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">=</span><span class="n">run</span><span class="p">)</span>
+            <span class="n">logs_context</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">stack</span>
+
+        <span class="k">with</span> <span class="p">(</span>
+            <span class="n">InMemoryArtifactCache</span><span class="p">(),</span>
+            <span class="n">env_utils</span><span class="o">.</span><span class="n">temporary_runtime_environment</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">pipeline_configuration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="o">.</span><span class="n">stack</span>
+            <span class="p">),</span>
+            <span class="n">DynamicPipelineRunContext</span><span class="p">(</span>
+                <span class="n">pipeline</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">,</span>
+                <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span>
+                <span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">,</span>
+                <span class="n">runner</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">run</span><span class="o">.</span><span class="n">triggered_by_deployment</span><span class="p">:</span>
+                <span class="c1"># Only run the init hook if the run is not triggered by</span>
+                <span class="c1"># a deployment, as the deployment service will have</span>
+                <span class="c1"># already run the init hook.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator</span><span class="o">.</span><span class="n">run_init_hook</span><span class="p">(</span><span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># TODO: what should be allowed as pipeline returns?</span>
+                <span class="c1">#  (artifacts, json serializable, anything?)</span>
+                <span class="c1">#  how do we show it in the UI?</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">or</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">_call_entrypoint</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+                <span class="c1"># The pipeline function finished successfully, but some</span>
+                <span class="c1"># steps might still be running. We now wait for all of</span>
+                <span class="c1"># them and raise any exceptions that occurred.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">await_all_step_run_futures</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">exception_info</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">exception_utils</span><span class="o">.</span><span class="n">collect_exception_information</span><span class="p">(</span>
+                        <span class="n">exception</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+                        <span class="n">user_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">entrypoint</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="c1"># TODO: this call already invalidates the token, so</span>
+                <span class="c1"># the steps will keep running but won&#39;t be able to</span>
+                <span class="c1"># report their status back to ZenML.</span>
+                <span class="n">publish_failed_pipeline_run</span><span class="p">(</span>
+                    <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">exception_info</span><span class="o">=</span><span class="n">exception_info</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Pipeline run failed. All in-progress step runs &quot;</span>
+                    <span class="s2">&quot;will still finish executing.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">raise</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">run</span><span class="o">.</span><span class="n">triggered_by_deployment</span><span class="p">:</span>
+                    <span class="c1"># Only run the cleanup hook if the run is not triggered by</span>
+                    <span class="c1"># a deployment, as the deployment service will have</span>
+                    <span class="c1"># already run the cleanup hook.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator</span><span class="o">.</span><span class="n">run_cleanup_hook</span><span class="p">(</span>
+                        <span class="n">snapshot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span>
+                    <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cancel_futures</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">publish_successful_pipeline_run</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Pipeline completed successfully.&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7411,18 +7429,7 @@ passed as an input.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 976</span>
-<span class="normal"> 977</span>
-<span class="normal"> 978</span>
-<span class="normal"> 979</span>
-<span class="normal"> 980</span>
-<span class="normal"> 981</span>
-<span class="normal"> 982</span>
-<span class="normal"> 983</span>
-<span class="normal"> 984</span>
-<span class="normal"> 985</span>
-<span class="normal"> 986</span>
-<span class="normal"> 987</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 987</span>
 <span class="normal"> 988</span>
 <span class="normal"> 989</span>
 <span class="normal"> 990</span>
@@ -7462,7 +7469,18 @@ passed as an input.</p>
 <span class="normal">1024</span>
 <span class="normal">1025</span>
 <span class="normal">1026</span>
-<span class="normal">1027</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">await_step_inputs</span><span class="p">(</span><span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="normal">1027</span>
+<span class="normal">1028</span>
+<span class="normal">1029</span>
+<span class="normal">1030</span>
+<span class="normal">1031</span>
+<span class="normal">1032</span>
+<span class="normal">1033</span>
+<span class="normal">1034</span>
+<span class="normal">1035</span>
+<span class="normal">1036</span>
+<span class="normal">1037</span>
+<span class="normal">1038</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">await_step_inputs</span><span class="p">(</span><span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Await the inputs of a step.</span>
 
 <span class="sd">    Args:</span>
@@ -7702,18 +7720,7 @@ passed as an input.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">557</span>
-<span class="normal">558</span>
-<span class="normal">559</span>
-<span class="normal">560</span>
-<span class="normal">561</span>
-<span class="normal">562</span>
-<span class="normal">563</span>
-<span class="normal">564</span>
-<span class="normal">565</span>
-<span class="normal">566</span>
-<span class="normal">567</span>
-<span class="normal">568</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">568</span>
 <span class="normal">569</span>
 <span class="normal">570</span>
 <span class="normal">571</span>
@@ -7851,7 +7858,18 @@ passed as an input.</p>
 <span class="normal">703</span>
 <span class="normal">704</span>
 <span class="normal">705</span>
-<span class="normal">706</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compile_dynamic_step_invocation</span><span class="p">(</span>
+<span class="normal">706</span>
+<span class="normal">707</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span>
+<span class="normal">711</span>
+<span class="normal">712</span>
+<span class="normal">713</span>
+<span class="normal">714</span>
+<span class="normal">715</span>
+<span class="normal">716</span>
+<span class="normal">717</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compile_dynamic_step_invocation</span><span class="p">(</span>
     <span class="n">snapshot</span><span class="p">:</span> <span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">,</span>
     <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;DynamicPipeline&quot;</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
@@ -8125,18 +8143,7 @@ passed as an input.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">951</span>
-<span class="normal">952</span>
-<span class="normal">953</span>
-<span class="normal">954</span>
-<span class="normal">955</span>
-<span class="normal">956</span>
-<span class="normal">957</span>
-<span class="normal">958</span>
-<span class="normal">959</span>
-<span class="normal">960</span>
-<span class="normal">961</span>
-<span class="normal">962</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">962</span>
 <span class="normal">963</span>
 <span class="normal">964</span>
 <span class="normal">965</span>
@@ -8147,7 +8154,18 @@ passed as an input.</p>
 <span class="normal">970</span>
 <span class="normal">971</span>
 <span class="normal">972</span>
-<span class="normal">973</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_to_keyword_arguments</span><span class="p">(</span>
+<span class="normal">973</span>
+<span class="normal">974</span>
+<span class="normal">975</span>
+<span class="normal">976</span>
+<span class="normal">977</span>
+<span class="normal">978</span>
+<span class="normal">979</span>
+<span class="normal">980</span>
+<span class="normal">981</span>
+<span class="normal">982</span>
+<span class="normal">983</span>
+<span class="normal">984</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_to_keyword_arguments</span><span class="p">(</span>
     <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">args</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
     <span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -8286,18 +8304,7 @@ are not valid.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">838</span>
-<span class="normal">839</span>
-<span class="normal">840</span>
-<span class="normal">841</span>
-<span class="normal">842</span>
-<span class="normal">843</span>
-<span class="normal">844</span>
-<span class="normal">845</span>
-<span class="normal">846</span>
-<span class="normal">847</span>
-<span class="normal">848</span>
-<span class="normal">849</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">849</span>
 <span class="normal">850</span>
 <span class="normal">851</span>
 <span class="normal">852</span>
@@ -8396,7 +8403,18 @@ are not valid.</p>
 <span class="normal">945</span>
 <span class="normal">946</span>
 <span class="normal">947</span>
-<span class="normal">948</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">expand_mapped_inputs</span><span class="p">(</span>
+<span class="normal">948</span>
+<span class="normal">949</span>
+<span class="normal">950</span>
+<span class="normal">951</span>
+<span class="normal">952</span>
+<span class="normal">953</span>
+<span class="normal">954</span>
+<span class="normal">955</span>
+<span class="normal">956</span>
+<span class="normal">957</span>
+<span class="normal">958</span>
+<span class="normal">959</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">expand_mapped_inputs</span><span class="p">(</span>
     <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">product</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
@@ -8615,18 +8633,7 @@ are not valid.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">814</span>
-<span class="normal">815</span>
-<span class="normal">816</span>
-<span class="normal">817</span>
-<span class="normal">818</span>
-<span class="normal">819</span>
-<span class="normal">820</span>
-<span class="normal">821</span>
-<span class="normal">822</span>
-<span class="normal">823</span>
-<span class="normal">824</span>
-<span class="normal">825</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">825</span>
 <span class="normal">826</span>
 <span class="normal">827</span>
 <span class="normal">828</span>
@@ -8636,7 +8643,18 @@ are not valid.</p>
 <span class="normal">832</span>
 <span class="normal">833</span>
 <span class="normal">834</span>
-<span class="normal">835</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_config_template</span><span class="p">(</span>
+<span class="normal">835</span>
+<span class="normal">836</span>
+<span class="normal">837</span>
+<span class="normal">838</span>
+<span class="normal">839</span>
+<span class="normal">840</span>
+<span class="normal">841</span>
+<span class="normal">842</span>
+<span class="normal">843</span>
+<span class="normal">844</span>
+<span class="normal">845</span>
+<span class="normal">846</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_config_template</span><span class="p">(</span>
     <span class="n">snapshot</span><span class="p">:</span> <span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
     <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;DynamicPipeline&quot;</span><span class="p">,</span>
@@ -8767,18 +8785,7 @@ orchestrator will be inferred from the active stack.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/execution/pipeline/dynamic/runner.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">776</span>
-<span class="normal">777</span>
-<span class="normal">778</span>
-<span class="normal">779</span>
-<span class="normal">780</span>
-<span class="normal">781</span>
-<span class="normal">782</span>
-<span class="normal">783</span>
-<span class="normal">784</span>
-<span class="normal">785</span>
-<span class="normal">786</span>
-<span class="normal">787</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">787</span>
 <span class="normal">788</span>
 <span class="normal">789</span>
 <span class="normal">790</span>
@@ -8802,7 +8809,18 @@ orchestrator will be inferred from the active stack.</p>
 <span class="normal">808</span>
 <span class="normal">809</span>
 <span class="normal">810</span>
-<span class="normal">811</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_step_runtime</span><span class="p">(</span>
+<span class="normal">811</span>
+<span class="normal">812</span>
+<span class="normal">813</span>
+<span class="normal">814</span>
+<span class="normal">815</span>
+<span class="normal">816</span>
+<span class="normal">817</span>
+<span class="normal">818</span>
+<span class="normal">819</span>
+<span class="normal">820</span>
+<span class="normal">821</span>
+<span class="normal">822</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_step_runtime</span><span class="p">(</span>
     <span class="n">step_config</span><span class="p">:</span> <span class="s2">&quot;StepConfiguration&quot;</span><span class="p">,</span>
     <span class="n">pipeline_docker_settings</span><span class="p">:</span> <span class="s2">&quot;DockerSettings&quot;</span><span class="p">,</span>
     <span class="n">orchestrator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseOrchestrator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
