@@ -133,9 +133,6 @@ class DatadogLogStore(OtelLogStore):
                 self._decode_cursor(before)
             )
 
-        if since_ns > until_ns:
-            return LogsEntriesResponse(items=[], before=None, after=after)
-
         api_endpoint = (
             f"https://api.{self.config.site}/api/v2/logs/events/search"
         )
@@ -182,10 +179,10 @@ class DatadogLogStore(OtelLogStore):
             if entry:
                 log_entries.append(entry)
 
-        before_token = self._encode_cursor(log_entries[0]["timestamp"])
-        after_token = self._encode_cursor(log_entries[-1]["timestamp"])
+        before_token = self._encode_cursor(log_entries[0].timestamp)
+        after_token = self._encode_cursor(log_entries[-1].timestamp)
 
-        log_entries.sort(key=lambda x: x[0])
+        log_entries.sort(key=lambda x: x.timestamp)
 
         return LogsEntriesResponse(
             items=log_entries,
@@ -237,11 +234,11 @@ class DatadogLogStore(OtelLogStore):
             f"@zenml.log.id:{logs_model.id}",
         ]
 
-        if filter_.level:
+        if filter_ and filter_.level:
             threshold = severity_number_threshold(filter_.level)
             query_parts.append(f"@severity_number:>={threshold}")
 
-        if filter_.search:
+        if filter_ and filter_.search:
             # Best-effort translation; we still post-filter to match
             # substring semantics.
             query_parts.append(filter_.search)
