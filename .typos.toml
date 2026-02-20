@@ -7,7 +7,9 @@ extend-exclude = [
     "tests/unit/materializers/test_built_in_materializer.py",
     "tests/integration/functional/cli/test_pipeline.py",
     "src/zenml/zen_server/dashboard/",
-    "examples/llm_finetuning/lit_gpt/"
+    "examples/llm_finetuning/lit_gpt/",
+    "RELEASE_NOTES.md",
+    "docs/book/how-to/manage-zenml-server/migration-guide/",
 ]
 
 [default.extend-identifiers]
@@ -40,6 +42,12 @@ OT = "OT"
 cll = "cll"
 ser = "ser"
 fo = "fo"
+Conveyer = "Conveyer"  # Column name in Steel Plates Faults dataset
+Packt = "Packt"  # Packt Publishing (publisher name)
+tokenzation = "tokenzation"  # Misspelled module in template-nlp (auto-synced to examples/e2e_nlp)
 
 [default]
 locale = "en-us"
+extend-ignore-re = [
+    "(?Rm)^.*#\\s*typos:\\s*ignore$",
+]
