@@ -15,13 +15,14 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Type
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import TriggerFlavor, TriggerType
+from zenml.enums import TriggerFlavor, TriggerRunConcurrency, TriggerType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -32,7 +33,12 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineSnapshotResponse, UserResponse
+    from zenml.models import (
+        PipelineRunResponse,
+        PipelineSnapshotResponse,
+        UserResponse,
+    )
+    from zenml.models.v2.base.filter import AnySchema
 
 
 class TriggerBase(BaseModel, ABC):
@@ -44,6 +50,11 @@ class TriggerBase(BaseModel, ABC):
     )
     active: bool
     type: TriggerType
+    concurrency: TriggerRunConcurrency = Field(
+        default=TriggerRunConcurrency.SKIP,
+        description="How to handle concurrently running triggers "
+        "(pipeline runs generated from the same trigger & snapshot).",
+    )
 
 
 class TriggerRequest(ProjectScopedRequest, TriggerBase, ABC):
@@ -120,16 +131,116 @@ class TriggerResponseResources(ProjectScopedResponseResources):
 
     snapshots: Optional[list["PipelineSnapshotResponse"]] = None
     user: Optional["UserResponse"] = None
+    latest_run: Optional["PipelineRunResponse"] = None
 
 
-class TriggerFilter(ProjectScopedFilter):
+class UnScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
 
-    name: str
-    active: bool
-    is_archived: bool
-    flavor: TriggerFlavor
-    type: TriggerType
+    name: str | None = Field(
+        default=None,
+        description="The name of the trigger.",
+    )
+    active: bool | None = Field(
+        default=None,
+        description="Whether the trigger should be active.",
+    )
+    is_archived: bool = Field(
+        default=False,
+        description="Whether the trigger should be archived.",
+    )
+    flavor: TriggerFlavor | str | None = Field(
+        default=None,
+        description="The trigger flavor.",
+        union_mode="left_to_right",
+    )
+    type: TriggerType | str | None = Field(
+        default=None,
+        description="The trigger type.",
+        union_mode="left_to_right",
+    )
+    next_occurrence: datetime | str | None = Field(
+        default=None,
+        description="The next occurrence of the trigger (applicable only for schedules).",
+        union_mode="left_to_right",
+    )
+    concurrency: TriggerRunConcurrency | None = Field(
+        default=None, description="The trigger concurrency."
+    )
+
+
+class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
+    """Public class for filtering triggers."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "pipeline_id",
+        "snapshot_id",
+    ]
+
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        "type",
+    ]
+
+    pipeline_id: str | None = Field(
+        default=None,
+        description="Filter triggers by pipeline ID (triggers that are attached to this pipeline's snapshots)",
+    )
+    snapshot_id: str | None = Field(
+        default=None,
+        description="Filter triggers by snapshot ID (triggers that are attached to this snapshot)",
+    )
+
+    @property
+    def filter_by_snapshot(self) -> bool:
+        """Implements the `filter_by_snapshot` property.
+
+        Returns:
+            True if filtering requires snapshot fields else False.
+        """
+        return any(f is not None for f in [self.pipeline_id, self.snapshot_id])
+
+    def apply_filter(
+        self, query: AnyQuery, table: Type["AnySchema"]
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from zenml.zen_stores.schemas import (
+            PipelineSnapshotSchema,
+            TriggerSchema,
+            TriggerSnapshotSchema,
+        )
+
+        query = ProjectScopedFilter.apply_filter(self, query, table)
+
+        if self.filter_by_snapshot:
+            query = query.join(
+                TriggerSnapshotSchema,
+                TriggerSchema.id == TriggerSnapshotSchema.trigger_id,
+            ).join(
+                PipelineSnapshotSchema,
+                TriggerSnapshotSchema.snapshot_id == PipelineSnapshotSchema.id,
+            )
+
+            if self.pipeline_id is not None:
+                query = query.where(
+                    PipelineSnapshotSchema.pipeline_id == self.pipeline_id
+                )
+
+            if self.snapshot_id is not None:
+                query = query.where(
+                    TriggerSnapshotSchema.snapshot_id == self.snapshot_id
+                )
+
+        return query
 
 
 class ScheduleTrigger(BaseModel):
@@ -273,6 +384,7 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
     flavor: Literal[TriggerFlavor.NATIVE_SCHEDULE] = (
         TriggerFlavor.NATIVE_SCHEDULE
     )
+    next_occurrence: datetime | None = None
 
     def get_config(self) -> str:
         """Returns the serialized blob of custom trigger fields.
@@ -294,10 +406,15 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
             self.interval,
         ]
 
-        if (
-            any(field is not None for field in occurrence_altering_values)
-            and self.flavor == TriggerFlavor.NATIVE_SCHEDULE
-        ):
+        if not self.flavor == TriggerFlavor.NATIVE_SCHEDULE:
+            return {}
+
+        if self.next_occurrence is not None:
+            return {
+                "next_occurrence": self.next_occurrence,
+            }
+
+        if any(field is not None for field in occurrence_altering_values):
             from zenml.utils.native_schedules import calculate_first_occurrence
 
             return {
@@ -308,6 +425,7 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
                     run_once_start_time=self.run_once_start_time,
                 )
             }
+
         return {}
 
 
@@ -441,3 +559,26 @@ class ScheduleTriggerResponse(
             A list of snapshots the triggers is attached to.
         """
         return self.get_resources().snapshots
+
+    @property
+    def latest_run(self) -> Optional["PipelineRunResponse"]:
+        """Implements the 'latest_run' property.
+
+        Returns:
+            The latest run of the trigger.
+        """
+        return self.get_resources().latest_run
+
+    @property
+    def concurrency(self) -> TriggerRunConcurrency:
+        """Implements the 'concurrency' property.
+
+        Returns:
+            The concurrency of the trigger.
+        """
+        return self.get_body().concurrency
+
+
+TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate
+TRIGGER_CREATE_TYPE_UNION = ScheduleTriggerRequest
+TRIGGER_RETURN_TYPE_UNION = ScheduleTriggerResponse

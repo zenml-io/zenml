@@ -21,7 +21,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import Session, object_session, selectinload
+from sqlalchemy.orm import Session, joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, select
 
@@ -86,6 +86,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+    from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
+
 
 logger = get_logger(__name__)
 
@@ -263,6 +265,17 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
     )
 
+    # PipelineRun -> Trigger directly (through trigger_execution)
+    trigger: Optional["TriggerSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin="PipelineRunSchema.id == TriggerExecutionSchema.pipeline_run_id",
+            secondary="trigger_execution",
+            secondaryjoin="TriggerExecutionSchema.trigger_id == TriggerSchema.id",
+            uselist=False,  # We expect 1 or 0 triggers exactly.
+            viewonly=True,  # Avoid write ambiguity, write via TriggerExecutionSchema
+        )
+    )
+
     # Needed for cascade deletion
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
@@ -337,6 +350,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
+                    joinedload(jl_arg(PipelineRunSchema.trigger)),
                 ]
             )
 
@@ -682,6 +696,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     )
                     for visualization in self.visualizations
                 ],
+                trigger=self.trigger.to_model() if self.trigger else None,
             )
 
         return PipelineRunResponse(

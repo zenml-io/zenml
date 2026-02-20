@@ -20,25 +20,26 @@ from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.session import object_session
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import TEXT, VARCHAR, String
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, col, desc, select
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     TriggerRequest,
     TriggerResponseMetadata,
     TriggerResponseResources,
     TriggerUpdate,
 )
 from zenml.triggers.registry import (
-    TRIGGER_RETURN_TYPE_UNION,
     TYPE_TO_RESPONSE_BODY_MAPPING,
     TYPE_TO_RESPONSE_MAPPING,
 )
-from zenml.zen_stores.schemas import PipelineSnapshotSchema
+from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSnapshotSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import (
@@ -46,6 +47,7 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.trigger_assoc import (
+    TriggerExecutionSchema,
     TriggerSnapshotSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -102,6 +104,10 @@ class TriggerSchema(NamedSchema, table=True):
         ),
         description="JSON object - the extra trigger object parameters",
     )
+    concurrency: str = Field(
+        sa_column=Column(VARCHAR(20), nullable=False),
+        description="The trigger execution concurrency (SKIP, SUBMIT, etc.)",
+    )
 
     # -------------------- FOREIGN KEYS ------------------------------------
 
@@ -141,6 +147,35 @@ class TriggerSchema(NamedSchema, table=True):
         default=None,
         description="The next occurrence. Applicable for schedules.",
     )
+
+    @property
+    def latest_run(self) -> PipelineRunSchema | None:
+        """Fetch the latest execution for this trigger.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest run for this pipeline.
+        """
+        if session := object_session(self):
+            stmt = (
+                select(PipelineRunSchema)
+                .join(
+                    TriggerExecutionSchema,
+                    col(TriggerExecutionSchema.pipeline_run_id)
+                    == col(PipelineRunSchema.id),
+                )
+                .where(TriggerExecutionSchema.trigger_id == self.id)
+                .order_by(desc(TriggerExecutionSchema.created_at))
+                .limit(1)
+            )
+
+            return session.execute(stmt).scalars().one_or_none()
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest pipeline run for trigger."
+            )
 
     @classmethod
     def get_query_options(
@@ -192,6 +227,7 @@ class TriggerSchema(NamedSchema, table=True):
             configuration=trigger_request.get_config(),
             flavor=trigger_request.flavor,
             type=trigger_request.type,
+            concurrency=trigger_request.concurrency,
         )
 
         for field_name, value in extra_fields.items():
@@ -213,6 +249,9 @@ class TriggerSchema(NamedSchema, table=True):
 
         if trigger_update.name is not None:
             self.name = trigger_update.name
+
+        if trigger_update.concurrency is not None:
+            self.concurrency = trigger_update.concurrency
 
         self.configuration = trigger_update.get_config()
 
@@ -250,6 +289,7 @@ class TriggerSchema(NamedSchema, table=True):
             type=TriggerType(self.type),
             flavor=TriggerFlavor(self.flavor),
             name=self.name,
+            concurrency=self.concurrency,
             **json.loads(self.configuration),
         )
 
@@ -262,6 +302,8 @@ class TriggerSchema(NamedSchema, table=True):
 
         resources = None
         if include_resources:
+            latest_run = self.latest_run
+
             resources = TriggerResponseResources(
                 user=self.user.to_model() if self.user else None,
                 snapshots=[
@@ -273,6 +315,9 @@ class TriggerSchema(NamedSchema, table=True):
                     )
                     for s in self.snapshots
                 ],
+                latest_run=latest_run.to_model()
+                if latest_run is not None
+                else None,
             )
 
         return response_cls(

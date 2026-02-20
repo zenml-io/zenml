@@ -40,7 +40,7 @@ class CriticalEventType(StrEnum):
     EXECUTE_FAILED = "execute_operation_failed"
 
 
-class CriticalEvent(BaseModel):
+class CriticalEvent(BaseModel, arbitrary_types_allowed=True):
     """Class capturing a critical event basic properties."""
 
     value: CriticalEventType

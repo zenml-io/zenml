@@ -1,7 +1,7 @@
 """remove triggers [97109a4a8d26].
 
 Revision ID: 97109a4a8d26
-Revises: d1e8c2c4a9ef
+Revises: 8e36b8227160
 Create Date: 2026-01-26 21:21:19.364737
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "97109a4a8d26"
-down_revision = "73c397e3c3ba"
+down_revision = "8e36b8227160"
 branch_labels = None
 depends_on = None
 

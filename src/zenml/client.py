@@ -72,6 +72,7 @@ from zenml.enums import (
     StoreType,
     TaggableResourceTypes,
     TriggerFlavor,
+    TriggerRunConcurrency,
     TriggerType,
     VisualizationResourceTypes,
 )
@@ -189,6 +190,7 @@ from zenml.models import (
     TagResourceRequest,
     TagResponse,
     TagUpdate,
+    TriggerFilter,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -2798,6 +2800,7 @@ class Client(metaclass=ClientMetaClass):
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
+        trigger_id: UUID | None = None,
     ) -> Page[PipelineSnapshotResponse]:
         """List all snapshots.
 
@@ -2826,6 +2829,7 @@ class Client(metaclass=ClientMetaClass):
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            trigger_id: Filter by trigger ID (attached trigger to snapshot).
 
         Returns:
             A page with snapshots fitting the filter description
@@ -2852,6 +2856,7 @@ class Client(metaclass=ClientMetaClass):
             deployed=deployed,
             tag=tag,
             tags=tags,
+            trigger_id=trigger_id,
         )
         return self.zen_store.list_snapshots(
             snapshot_filter_model=snapshot_filter_model,
@@ -3869,6 +3874,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         project_id: str | UUID | None = None,
         active: bool = True,
+        concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
         cron_expression: str | None = None,
         interval: int | None = None,
         run_once_start_time: datetime | None = None,
@@ -3881,6 +3887,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the trigger.
             project_id: The project ID.
             active: Whether the trigger should be activated on creation.
+            concurrency: Option controlling trigger run concurrency behavior (SKIP, SUBMIT, etc.).
             cron_expression: Schedule frequency expressed as a cron expression.
             interval: Schedule frequency in second intervals.
             run_once_start_time: Schedule one-off execution
@@ -3897,6 +3904,7 @@ class Client(metaclass=ClientMetaClass):
                 type=TriggerType.SCHEDULE,
                 flavor=TriggerFlavor.NATIVE_SCHEDULE,
                 active=active,
+                concurrency=concurrency,
                 cron_expression=cron_expression,
                 interval=interval,
                 run_once_start_time=run_once_start_time,
@@ -3915,6 +3923,7 @@ class Client(metaclass=ClientMetaClass):
         run_once_start_time: datetime | None = None,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
+        concurrency: TriggerRunConcurrency | None = None,
     ) -> ScheduleTriggerResponse:
         """Update a native schedule trigger.
 
@@ -3927,6 +3936,7 @@ class Client(metaclass=ClientMetaClass):
             start_time: The new start time of the trigger.
             end_time: The new end time of the trigger.
             run_once_start_time: The new run_once_start_time of the trigger.
+            concurrency: The new trigger run concurrency.
 
         Returns:
             The updated trigger.
@@ -3937,12 +3947,20 @@ class Client(metaclass=ClientMetaClass):
             trigger_id=trigger_id,
             trigger_update=ScheduleTriggerUpdate(
                 name=name or trigger.name,
-                active=active is not None or trigger.active,
-                cron_expression=cron_expression,
-                interval=interval,
-                run_once_start_time=run_once_start_time,
-                start_time=start_time is not None or trigger.start_time,
-                end_time=end_time is not None or trigger.end_time,
+                active=active if active is not None else trigger.active,
+                cron_expression=cron_expression or trigger.cron_expression,
+                interval=interval or trigger.interval,
+                run_once_start_time=run_once_start_time
+                or trigger.run_once_start_time,
+                start_time=start_time
+                if start_time is not None
+                else trigger.start_time,
+                end_time=end_time
+                if end_time is not None
+                else trigger.end_time,
+                concurrency=concurrency
+                if concurrency is not None
+                else trigger.concurrency,
             ),
         )
 
@@ -3958,6 +3976,76 @@ class Client(metaclass=ClientMetaClass):
             The trigger response.
         """
         return self.zen_store.get_trigger(trigger_id=trigger_id)
+
+    def list_schedule_triggers(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        user: str | UUID | None = None,
+        project: UUID | str | None = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        active: bool | None = None,
+        concurrency: str | None = None,
+        is_archived: bool = False,
+        flavor: TriggerFlavor = TriggerFlavor.NATIVE_SCHEDULE,
+        next_occurrence: datetime | None = None,
+        pipeline_id: str | UUID | None = None,
+        snapshot_id: str | UUID | None = None,
+    ) -> Page[ScheduleTriggerResponse]:
+        """List schedule triggers.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            project: The project name/ID to filter by.
+            user: Filter by user name/ID.
+            id: Use the id of schedule to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the schedule.
+            active: The active status of the schedule.
+            concurrency: The concurrency of the schedule.
+            is_archived: The archived status of the schedule.
+            flavor: The flavor of the schedule.
+            type: The type of schedule.
+            next_occurrence: The next occurrence of the schedule.
+            pipeline_id: Filter triggers by pipeline with attached snapshots.
+            snapshot_id: Filter triggers by attached snapshot.
+
+        Returns:
+            A Page of ScheduleTriggerResponse objects.
+        """
+        return self.zen_store.list_triggers(
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                user=user or self.active_user.id,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                active=active,
+                concurrency=TriggerRunConcurrency(concurrency)
+                if concurrency
+                else None,
+                is_archived=is_archived,
+                flavor=flavor,
+                type=TriggerType.SCHEDULE,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                next_occurrence=next_occurrence,
+                pipeline_id=str(pipeline_id) if pipeline_id else None,
+                snapshot_id=str(snapshot_id) if snapshot_id else None,
+            )
+        )
 
     def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
         """Delete a trigger by ID.
@@ -4319,6 +4407,7 @@ class Client(metaclass=ClientMetaClass):
         include_full_metadata: bool = False,
         triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
         triggered_by_deployment_id: Optional[Union[UUID, str]] = None,
+        trigger_id: UUID | str | None = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -4372,6 +4461,7 @@ class Client(metaclass=ClientMetaClass):
                 the pipeline run.
             triggered_by_deployment_id: The ID of the deployment that triggered
                 the pipeline run.
+            trigger_id: The ID of the trigger that generated this run.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -4415,6 +4505,7 @@ class Client(metaclass=ClientMetaClass):
             templatable=templatable,
             triggered_by_step_run_id=triggered_by_step_run_id,
             triggered_by_deployment_id=triggered_by_deployment_id,
+            trigger_id=trigger_id,
         )
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,

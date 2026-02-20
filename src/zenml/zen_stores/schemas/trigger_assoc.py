@@ -14,12 +14,14 @@
 """SQL Model Implementations for Triggers Associations."""
 
 from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.sql.schema import Column, ForeignKey
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.schemas import PipelineRunSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 
 class TriggerSnapshotSchema(SQLModel, table=True):
@@ -38,19 +40,24 @@ class TriggerSnapshotSchema(SQLModel, table=True):
         ),
     )
 
-    trigger_id: int = Field(
-        sa_column=Column(
-            ForeignKey("trigger.id", ondelete="CASCADE"),
-            nullable=False,
-            primary_key=True,
-        ),
+    trigger_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="trigger",
+        source_column="trigger_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
     )
-    snapshot_id: int = Field(
-        sa_column=Column(
-            ForeignKey("pipeline_snapshot.id", ondelete="CASCADE"),
-            nullable=False,
-            primary_key=True,
-        ),
+
+    snapshot_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="pipeline_snapshot",
+        source_column="snapshot_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
     )
 
     created_at: datetime = Field(default_factory=utc_now)
@@ -72,19 +79,31 @@ class TriggerExecutionSchema(SQLModel, table=True):
         ),
     )
 
-    trigger_id: int = Field(
-        sa_column=Column(
-            ForeignKey("trigger.id", ondelete="CASCADE"),
-            nullable=False,
-            primary_key=True,
-        ),
+    trigger_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="trigger",
+        source_column="trigger_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
     )
-    pipeline_run_id: int = Field(
-        sa_column=Column(
-            ForeignKey("pipeline_run.id", ondelete="CASCADE"),
-            nullable=False,
-            primary_key=True,
-        ),
+
+    pipeline_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="pipeline_run",
+        source_column="pipeline_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
     )
 
     created_at: datetime = Field(default_factory=utc_now)
+
+    # TriggerExecution -> 1 PipelineRun
+    pipeline_run: "PipelineRunSchema" = Relationship(
+        sa_relationship_kwargs={
+            "lazy": "select",
+        },
+    )

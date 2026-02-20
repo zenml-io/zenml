@@ -320,6 +320,9 @@ from zenml.models.v2.core.triggers import (
     ScheduleTriggerResponseBody,
     ScheduleTriggerResponse,
     ScheduleTriggerUpdate,
+    TRIGGER_UPDATE_TYPE_UNION,
+    TRIGGER_CREATE_TYPE_UNION,
+    TRIGGER_RETURN_TYPE_UNION,
 )
 from zenml.models.v2.misc.param_groups import (
     PipelineRunIdentifier,
@@ -856,4 +859,7 @@ __all__ = [
     "ScheduleTriggerResponse",
     "ScheduleTriggerResponseBody",
     "ScheduleTriggerUpdate",
+    "TRIGGER_UPDATE_TYPE_UNION",
+    "TRIGGER_CREATE_TYPE_UNION",
+    "TRIGGER_RETURN_TYPE_UNION",
 ]

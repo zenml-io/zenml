@@ -21,6 +21,7 @@ from uuid import UUID
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import StackDeploymentProvider
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -152,7 +153,6 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
-from zenml.triggers.registry import TRIGGER_RETURN_TYPE_UNION
 
 
 class ZenStoreInterface(ABC):
