@@ -68,7 +68,7 @@ local = [
     "sqlmodel==0.0.18",
 ]
 server = [
-    "zenml[local]",  # Includes all the DB dependencies
+    "zenml[local,native-schedules]",  # Includes all the DB dependencies
     "fastapi>=0.100,<=0.115.8",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
@@ -80,6 +80,7 @@ server = [
     "secure~=1.0.1",
     "tldextract~=5.1.0",
     "itsdangerous~=2.2.0",
+    "croniter>=6.0.0",
 ]
 jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
@@ -169,9 +170,6 @@ dev = [
     "types-termcolor>=1.1.2",
     "types-psutil>=5.8.13",
     "types-passlib>=1.7.7",
-]
-native-schedules = [
-    "croniter>=6.0.0",
 ]
 
 [tool.pytest.ini_options]

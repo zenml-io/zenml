@@ -227,6 +227,7 @@ class TriggerSchema(NamedSchema, table=True):
             configuration=trigger_request.get_config(),
             flavor=trigger_request.flavor,
             type=trigger_request.type,
+            concurrency=trigger_request.concurrency,
         )
 
         for field_name, value in extra_fields.items():
@@ -248,6 +249,9 @@ class TriggerSchema(NamedSchema, table=True):
 
         if trigger_update.name is not None:
             self.name = trigger_update.name
+
+        if trigger_update.concurrency is not None:
+            self.concurrency = trigger_update.concurrency
 
         self.configuration = trigger_update.get_config()
 
@@ -285,6 +289,7 @@ class TriggerSchema(NamedSchema, table=True):
             type=TriggerType(self.type),
             flavor=TriggerFlavor(self.flavor),
             name=self.name,
+            concurrency=self.concurrency,
             **json.loads(self.configuration),
         )
 
