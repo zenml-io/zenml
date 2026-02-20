@@ -839,9 +839,10 @@ class PipelineRunFilter(
         union_mode="left_to_right",
     )
     model_config = ConfigDict(protected_namespaces=())
-    trigger_id: UUID | None = Field(
+    trigger_id: UUID | str | None = Field(
         default=None,
         description="The ID of the trigger that generated this pipeline run.",
+        union_mode="left_to_right",
     )
 
     def get_custom_filters(

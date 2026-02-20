@@ -775,7 +775,11 @@ def stop_event_loop_lag_monitor() -> None:
 
 
 def set_auth_context(auth_context: "AuthContext") -> None:
-    """Set the authentication context for the current request."""
+    """Set the authentication context for the current request.
+
+    Args:
+        auth_context: The authentication context.
+    """
     _auth_context.set(auth_context)
 
 
