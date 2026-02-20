@@ -2,6 +2,9 @@
 name: Dependabot Actions Smoke Test (temporary)
 run-name: dependabot-actions-smoke • ${{ github.ref_name }}
 on:
+  push:
+    branches: [dependabot/github_actions/develop/all-actions-fe4e0b3b48]
+    paths: [.github/workflows/test-dependabot-actions.yml]
   workflow_dispatch:
     inputs:
       expected_ref:
@@ -46,7 +49,7 @@ jobs:
     steps:
       - name: Validate ref_name matches expected
         env:
-          INPUTS_EXPECTED_REF: ${{ inputs.expected_ref }}
+          INPUTS_EXPECTED_REF: ${{ inputs.expected_ref || 'dependabot/github_actions/develop/all-actions-fe4e0b3b48' }}
         run: |
           set -euo pipefail
           echo "ref_name:      ${GITHUB_REF_NAME}"
@@ -58,11 +61,12 @@ jobs:
       - name: Preflight summary
         if: always()
         env:
-          INPUTS_EXPECTED_REF: ${{ inputs.expected_ref }}
+          INPUTS_EXPECTED_REF: ${{ inputs.expected_ref || 'dependabot/github_actions/develop/all-actions-fe4e0b3b48' }}
         run: |
           {
             echo "### Preflight"
             echo ""
+            echo "- trigger: \`${{ github.event_name }}\`"
             echo "- ref_name: \`${GITHUB_REF_NAME}\`"
             echo "- expected_ref: \`${INPUTS_EXPECTED_REF}\`"
             echo "- status: **${{ job.status }}**"
@@ -168,7 +172,7 @@ jobs:
     name: aws-actions/configure-aws-credentials v6.0.0
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    if: ${{ (inputs.run_cloud_checks == true || github.event_name == 'push') && github.repository == 'zenml-io/zenml' }}
     permissions:
       contents: read
       id-token: write
@@ -194,7 +198,7 @@ jobs:
     name: google-github-actions/auth v3.0.0
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    if: ${{ (inputs.run_cloud_checks == true || github.event_name == 'push') && github.repository == 'zenml-io/zenml' }}
     steps:
       - name: Auth to GCP (service account JSON)
         id: gcp_auth
@@ -220,7 +224,7 @@ jobs:
     name: google-github-actions/setup-gcloud v3.0.1
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    if: ${{ (inputs.run_cloud_checks == true || github.event_name == 'push') && github.repository == 'zenml-io/zenml' }}
     steps:
       - name: Setup gcloud
         id: setup_gcloud
@@ -242,7 +246,7 @@ jobs:
     name: google-github-actions/get-gke-credentials v3.0.0
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    if: ${{ (inputs.run_cloud_checks == true || github.event_name == 'push') && github.repository == 'zenml-io/zenml' }}
     steps:
       - name: Auth to GCP
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
@@ -277,7 +281,7 @@ jobs:
     name: docker/login-action v3.7.0
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    if: ${{ (inputs.run_cloud_checks == true || github.event_name == 'push') && github.repository == 'zenml-io/zenml' }}
     steps:
       - name: Docker login
         id: docker_login
@@ -325,7 +329,7 @@ jobs:
     name: aquasecurity/trivy-action 0.34.0
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_security_actions }}
+    if: ${{ inputs.run_security_actions == true || github.event_name == 'push' }}
     steps:
       - name: Trivy scan (table output, no upload)
         id: trivy
@@ -350,7 +354,7 @@ jobs:
     name: github/codeql-action/upload-sarif v4.32.3
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_security_actions && github.repository == 'zenml-io/zenml' }}
+    if: ${{ (inputs.run_security_actions == true || github.event_name == 'push') && github.repository == 'zenml-io/zenml' }}
     permissions:
       contents: read
       security-events: write
@@ -393,7 +397,7 @@ jobs:
     name: github/codeql-action init+analyze v4.32.3
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_security_actions && github.repository == 'zenml-io/zenml' }}
+    if: ${{ (inputs.run_security_actions == true || github.event_name == 'push') && github.repository == 'zenml-io/zenml' }}
     timeout-minutes: 90
     permissions:
       actions: read
@@ -452,7 +456,7 @@ jobs:
     name: checkout credential posture (git push --dry-run)
     runs-on: ubuntu-latest
     needs: [preflight]
-    if: ${{ inputs.run_git_push_dryrun && github.repository == 'zenml-io/zenml' }}
+    if: ${{ (inputs.run_git_push_dryrun == true || github.event_name == 'push') && github.repository == 'zenml-io/zenml' }}
     permissions:
       contents: write
     steps:
