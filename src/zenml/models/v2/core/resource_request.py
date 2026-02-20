@@ -61,9 +61,8 @@ class ResourceRequestRequest(UserScopedRequest):
     component_id: UUID = Field(
         title="The id of the component that is requesting the resources.",
     )
-    step_run_id: Optional[UUID] = Field(
+    step_run_id: UUID = Field(
         title="The id of the step run that is requesting the resources.",
-        default=None,
     )
     requested_resources: Dict[str, PositiveInt] = Field(
         title="The resources requested."

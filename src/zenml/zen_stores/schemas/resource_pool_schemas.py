@@ -586,6 +586,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
         ),
     )
 
+    # TODO: handle deletion and free resources
     component_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
@@ -594,15 +595,12 @@ class ResourceRequestSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    # TODO: Probably this should be non-nullable if we keep the current way of
-    # requesting resources once a step run is already created. In the Kubernetes
-    # static pipeline case, we need to think of a new solution.
     step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
         source_column="step_run_id",
         target_column="id",
-        ondelete="CASCADE",
+        ondelete="SET NULL",
         nullable=True,
     )
     preemption_initiated_by_id: Optional[UUID] = build_foreign_key_field(

@@ -5039,6 +5039,78 @@ class SqlZenStore(BaseZenStore):
 
         return locked_pool_id is not None
 
+    def _cancel_orphaned_resource_requests_for_pool(
+        self, session: Session, pool_id: UUID
+    ) -> None:
+        """Cancel orphaned requests that are queued/allocated in a pool.
+
+        Args:
+            session: DB session.
+            pool_id: The pool for which to clean up orphaned requests.
+        """
+        requests = session.exec(
+            select(ResourceRequestSchema)
+            .where(col(ResourceRequestSchema.step_run_id).is_(None))
+            .where(
+                col(ResourceRequestSchema.status).in_(
+                    [
+                        ResourceRequestStatus.PENDING.value,
+                        ResourceRequestStatus.ALLOCATED.value,
+                        ResourceRequestStatus.PREEMPTING.value,
+                    ]
+                )
+            )
+            .where(
+                or_(
+                    exists(
+                        select(ResourcePoolQueueSchema.id).where(
+                            col(ResourcePoolQueueSchema.pool_id) == pool_id,
+                            col(ResourcePoolQueueSchema.request_id)
+                            == col(ResourceRequestSchema.id),
+                        )
+                    ),
+                    exists(
+                        select(ResourcePoolAllocationSchema.id).where(
+                            col(ResourcePoolAllocationSchema.pool_id)
+                            == pool_id,
+                            col(ResourcePoolAllocationSchema.request_id)
+                            == col(ResourceRequestSchema.id),
+                            col(ResourcePoolAllocationSchema.released_at).is_(
+                                None
+                            ),
+                        )
+                    ),
+                )
+            )
+        ).all()
+        if not requests:
+            return
+        now = utc_now()
+        for request in requests:
+            # Remove the request from all queues it is in.
+            session.execute(
+                delete(ResourcePoolQueueSchema).where(
+                    col(ResourcePoolQueueSchema.request_id) == request.id
+                )
+            )
+
+            if request.status in {
+                ResourceRequestStatus.ALLOCATED.value,
+                ResourceRequestStatus.PREEMPTING.value,
+            }:
+                self._release_request_resources(
+                    session=session, resource_request=request
+                )
+
+            request.status = ResourceRequestStatus.CANCELLED.value
+            request.status_reason = (
+                "Cancelled because owning step run no longer exists."
+            )
+            request.updated = now
+            session.add(request)
+
+        session.flush()
+
     def _allocate_queued_requests_for_pool(
         self, session: Session, pool_id: UUID, max_allocations: int = 100
     ) -> None:
@@ -5269,6 +5341,9 @@ class SqlZenStore(BaseZenStore):
         #
         if not self._acquire_resource_pool_lock(session, pool_id=pool_id):
             return
+        self._cancel_orphaned_resource_requests_for_pool(
+            session=session, pool_id=pool_id
+        )
         allocations_done = 0
         skipped_due_to_temporary_ineligibility: Set[UUID] = set()
         while allocations_done < max_allocations:
