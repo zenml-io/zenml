@@ -28,7 +28,7 @@ from .register import register_model
 from .tokenizer_loader import (
     tokenizer_loader,
 )
-from .tokenzation import (  # typos: ignore
+from .tokenzation import (
     tokenization_step,
 )
 from .training import model_trainer
