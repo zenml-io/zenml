@@ -25,6 +25,7 @@ Step operators to execute steps on one of the big cloud providers are provided b
 | [Kubernetes](kubernetes.md)        | `kubernetes` | `kubernetes` | Uses Kubernetes Pods to execute steps                                    |
 | [Modal](modal.md)                  | `modal`      | `modal`      | Uses Modal to execute steps                                              |
 | [SageMaker](sagemaker.md)          | `sagemaker`  | `aws`        | Uses SageMaker to execute steps                                          |
+| [Run:AI](runai.md)                 | `runai`      | `runai`      | Uses Run:AI to execute steps                                          |
 | [Spark](spark-kubernetes.md)       | `spark`      | `spark`      | Uses Spark on Kubernetes to execute steps in a distributed manner        |
 | [Vertex](vertex.md)                | `vertex`     | `gcp`        | Uses Vertex AI to execute steps                                          |
 | [Custom Implementation](custom.md) | _custom_     |              | Extend the step operator abstraction and provide your own implementation |

@@ -6,9 +6,18 @@ name: Require Release Label
 on:
   pull_request:
     types: [opened, labeled, unlabeled, synchronize]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 jobs:
   check-label:
-    if: github.repository == 'zenml-io/zenml'
+    if: >-
+      github.repository == 'zenml-io/zenml' && (
+        github.event.action == 'opened' ||
+        github.event.action == 'synchronize' ||
+        github.event.label.name == 'release-notes' ||
+        github.event.label.name == 'no-release-notes'
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Check for release label

@@ -128,6 +128,23 @@ def handle_int_env_var(var: str, default: int = 0) -> int:
         return default
 
 
+def handle_float_env_var(var: str, default: float = 0.0) -> float:
+    """Converts normal env var to float.
+
+    Args:
+        var: The environment variable to convert.
+        default: The default value to return if the env var is not set.
+
+    Returns:
+        The converted value.
+    """
+    value = os.getenv(var, "")
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 # Global constants
 APP_NAME = "zenml"
 
@@ -157,6 +174,7 @@ ENV_ZENML_AUTO_OPEN_DASHBOARD = "ZENML_AUTO_OPEN_DASHBOARD"
 ENV_ZENML_DISABLE_DATABASE_MIGRATION = "DISABLE_DATABASE_MIGRATION"
 ENV_ZENML_LOCAL_STORES_PATH = "ZENML_LOCAL_STORES_PATH"
 ENV_ZENML_CONTAINER = "ZENML_CONTAINER"
+ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE = "ZENML_CONTAINER_PYTHON_EXECUTABLE"
 ENV_ZENML_PAGINATION_DEFAULT_LIMIT = "ZENML_PAGINATION_DEFAULT_LIMIT"
 ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING = (
     "ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING"
@@ -220,6 +238,14 @@ ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY = (
 
 ENV_ZENML_DEFAULT_OUTPUT = "ZENML_DEFAULT_OUTPUT"
 ENV_ZENML_CLI_COLUMN_WIDTH = "ZENML_CLI_COLUMN_WIDTH"
+
+ENV_ZENML_DYNAMIC_PIPELINE_WORKER_COUNT = "ZENML_DYNAMIC_PIPELINE_WORKER_COUNT"
+ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL = (
+    "ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL"
+)
+ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY = (
+    "ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY"
+)
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
