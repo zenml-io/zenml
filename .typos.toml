@@ -44,6 +44,7 @@ ser = "ser"
 fo = "fo"
 Conveyer = "Conveyer"  # Column name in Steel Plates Faults dataset
 Packt = "Packt"  # Packt Publishing (publisher name)
+tokenzation = "tokenzation"  # Misspelled module in template-nlp (auto-synced to examples/e2e_nlp)
 
 [default]
 locale = "en-us"
