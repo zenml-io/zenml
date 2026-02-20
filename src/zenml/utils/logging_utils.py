@@ -34,13 +34,13 @@ from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.models import (
+    LogsEntriesResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
     PipelineRunResponse,
     StepRunResponse,
 )
-from zenml.models.v2.misc.log_models import LogEntry
 from zenml.utils import context_utils
 
 if TYPE_CHECKING:
@@ -397,7 +397,7 @@ def fetch_logs(
     logs: "LogsResponse",
     zen_store: "BaseZenStore",
     limit: int,
-) -> List["LogEntry"]:
+) -> LogsEntriesResponse:
     """Fetch logs from the log store.
 
     This function is designed to be called from the server side where we can't

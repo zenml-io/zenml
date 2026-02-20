@@ -80,10 +80,11 @@ class DatadogLogStore(OtelLogStore):
 
     def fetch(
         self,
-        logs_model: "LogsResponse",
+        logs_model: LogsResponse,
         limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
     ) -> List["LogEntry"]:
         """Fetch logs from Datadog's API.
 
@@ -93,10 +94,10 @@ class DatadogLogStore(OtelLogStore):
 
         Args:
             logs_model: The logs model containing run and step metadata.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
-
+            before: Cursor token pointing to older entries.
+            after: Cursor token pointing to newer entries.
+            filter_: Filters that must be applied during retrieval.
         Returns:
             List of log entries from Datadog.
         """

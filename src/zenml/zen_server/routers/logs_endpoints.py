@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for logs."""
 
+from datetime import datetime
 from typing import Optional, cast
 from uuid import UUID
 
@@ -50,6 +51,40 @@ router = APIRouter(
     tags=["logs"],
     responses={401: error_response, 403: error_response},
 )
+
+
+def get_logs_entries_filter(
+    search: Optional[str] = Query(
+        default=None,
+        description="Search query to match against log entry content.",
+    ),
+    level: Optional[str] = Query(
+        default=None,
+        description=(
+            "Minimum log level filter. Accepts level name (e.g. `INFO`) "
+            "or numeric value (e.g. `20`)."
+        ),
+    ),
+    since: Optional[datetime] = Query(
+        default=None,
+        description="Lower timestamp bound (inclusive).",
+    ),
+    until: Optional[datetime] = Query(
+        default=None,
+        description="Upper timestamp bound (inclusive).",
+    ),
+) -> LogsEntriesFilter:
+    """Build a logs entries filter from query parameters.
+
+    Parsing `level` as a string here allows `LogsEntriesFilter` to normalize
+    both names and numeric values (including numeric strings) consistently.
+    """
+    return LogsEntriesFilter(
+        search=search,
+        level=level,
+        since=since,
+        until=until,
+    )
 
 
 @router.post(
@@ -217,7 +252,7 @@ def update_logs(
 @async_fastapi_endpoint_wrapper
 def get_logs_entries(
     logs_id: UUID,
-    filter_: LogsEntriesFilter = Depends(),
+    filter_: LogsEntriesFilter = Depends(get_logs_entries_filter),
     limit: int = Query(
         default=LOGS_ENTRIES_API_MAX_LIMIT,
         description="Maximum number of entries to return.",
@@ -321,7 +356,7 @@ def get_logs_entries(
         raise ValueError("Only one of `before` or `after` can be set.")
 
     try:
-        return log_store.fetch_entries(
+        return log_store.fetch(
             logs_model=logs,
             limit=limit,
             before=before,

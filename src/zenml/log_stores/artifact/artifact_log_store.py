@@ -74,7 +74,6 @@ class ArtifactLogStoreCursor(NamedTuple):
     offset: int
 
 
-# TODO: Move this to util
 def _matches_filter(entry: LogEntry, filter_: LogsEntriesFilter) -> bool:
     """Check if a log entry matches the filter.
 

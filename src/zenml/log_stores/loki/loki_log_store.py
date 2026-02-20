@@ -18,13 +18,12 @@ from __future__ import annotations
 import base64
 import json
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import requests
 
-from zenml.log_stores.artifact.artifact_log_store import parse_log_entry
+from zenml.enums import LoggingLevels
 from zenml.log_stores.loki.loki_flavor import LokiLogStoreConfig
-from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
@@ -54,6 +53,18 @@ def _to_unix_ns(dt: datetime) -> int:
     return int(dt.timestamp() * 1_000_000_000)
 
 
+def _from_unix_ns(ns: int) -> datetime:
+    """Convert a Unix timestamp in nanoseconds to a datetime.
+
+    Args:
+        ns: The Unix timestamp in nanoseconds.
+
+    Returns:
+        The datetime.
+    """
+    return datetime.fromtimestamp(ns / 1_000_000_000, tz=timezone.utc)
+
+
 class LokiLogStore(OtelLogStore):
     """Log store that exports logs via OTLP and fetches from Loki."""
 
@@ -65,23 +76,6 @@ class LokiLogStore(OtelLogStore):
             The Loki log store configuration.
         """
         return cast(LokiLogStoreConfig, self._config)
-
-    def get_exporter(self) -> OTLPLogExporter:
-        """Get the OTLP log exporter configured with auth headers.
-
-        Returns:
-            The OTLP log exporter.
-        """
-        if not self._exporter:
-            self._exporter = OTLPLogExporter(
-                endpoint=f"{self.config.base_url}/otlp/v1/logs",
-                headers=self._get_headers(),
-                certificate_file=self.config.certificate_file,
-                client_key_file=self.config.client_key_file,
-                client_certificate_file=self.config.client_certificate_file,
-                compression=self.config.compression,
-            )
-        return self._exporter
 
     def _get_headers(self) -> Dict[str, str]:
         """Construct request headers for Loki ingest and query requests.
@@ -137,6 +131,53 @@ class LokiLogStore(OtelLogStore):
         decoded = json.loads(raw.decode("utf-8"))
         return int(decoded.get("ts_ns"))
 
+    @staticmethod
+    def translate(
+        raw_lines: List[Dict[str, Any]],
+    ) -> List[Tuple[int, LogEntry]]:
+        """Translate raw loki data to ZenML entries.
+
+        Each entry in the raw loki data has the following format:
+            "stream" -> dict that contains metadata about the stream
+            "values" -> list of lists of strings, first one is the timestamp,
+                second one is the message.
+
+        Args:
+            raw_lines: The raw loki data.
+
+        Returns:
+            The translated ZenML entry.
+        """
+        entries = []
+        for line in raw_lines:
+            values = line["values"][0]
+            stream = line["stream"]
+
+            message = str(values[1])
+
+            ts_ns = int(line.get("ts_ns", values[0]))
+            timestamp = _from_unix_ns(ts_ns)
+
+            severity_raw = stream.get("severity_text", "info").upper()
+            severity = str(severity_raw or "info").upper()
+            log_severity = (
+                LoggingLevels[severity]
+                if severity in LoggingLevels.__members__
+                else LoggingLevels.INFO
+            )
+            entries.append(
+                (
+                    ts_ns,
+                    LogEntry(
+                        message=message,
+                        level=log_severity,
+                        timestamp=timestamp,
+                    ),
+                )
+            )
+
+        return entries
+
     def fetch(
         self,
         logs_model: LogsResponse,
@@ -161,6 +202,12 @@ class LokiLogStore(OtelLogStore):
             ValueError: If `limit` is not positive or if both `before`
                 and `after` are set.
         """
+        if self.config.query_range_url is None:
+            raise ValueError(
+                "The query_range_url is not set in the configuration. "
+                "Fetching is impossible."
+            )
+
         if limit <= 0:
             raise ValueError("`limit` must be positive.")
 
@@ -182,153 +229,39 @@ class LokiLogStore(OtelLogStore):
 
         if after is not None:
             after_cursor = self.decode_cursor(after)
-            start_ns = max(since_ns, after_cursor + 1)
+            since_ns = max(since_ns, after_cursor + 1)
+        elif before is not None:
+            before_cursor = self.decode_cursor(before)
+            until_ns = min(until_ns, before_cursor - 1)
 
-            if start_ns > until_ns:
-                return LogsEntriesResponse(items=[], before=None, after=after)
+        if since_ns > until_ns:
+            return LogsEntriesResponse(items=[], before=None, after=after)
 
-            raw_lines = self._query_range(
-                query=query,
-                start_ns=start_ns,
-                end_ns=until_ns,
-                limit=min(limit, 5000),
-                direction="forward",
-            )
-            raw_lines.sort(key=lambda x: x[0], reverse=True)
-
-            items: List[LogEntry] = []
-            newest_ts: Optional[int] = None
-            oldest_ts: Optional[int] = None
-            for ts_ns, line in raw_lines:
-                # TODO: Change the parsing here or move it to util
-                entry = parse_log_entry(line)
-                if entry is None:
-                    continue
-                entry.timestamp = datetime.fromtimestamp(
-                    ts_ns / 1_000_000_000, tz=timezone.utc
-                )
-                items.append(entry)
-                if newest_ts is None:
-                    newest_ts = ts_ns
-                oldest_ts = ts_ns
-                if len(items) >= limit:
-                    break
-
-            if not items or newest_ts is None or oldest_ts is None:
-                return LogsEntriesResponse(items=[], before=None, after=after)
-
-            before_token = (
-                self.encode_cursor(oldest_ts) if oldest_ts > since_ns else None
-            )
-            return LogsEntriesResponse(
-                items=items,
-                before=before_token,
-                after=self.encode_cursor(newest_ts),
-            )
-
-        cursor_pos = self.decode_cursor(before) if before is not None else None
-
-        end_ns = (
-            min(until_ns, cursor_pos - 1)
-            if cursor_pos is not None
-            else until_ns
-        )
-        if end_ns < since_ns:
-            return LogsEntriesResponse(items=[], before=None, after=None)
-
-        raw_lines = self._query_range(
+        raw_lines = self.query_range(
             query=query,
             start_ns=since_ns,
-            end_ns=end_ns,
-            limit=min(limit, 5000),
-            direction="backward",
+            end_ns=until_ns,
+            limit=limit,
+            direction="forward" if after else "backward",
         )
-        raw_lines.sort(key=lambda x: x[0], reverse=True)
-
-        page_items: List[LogEntry] = []
-        newest_ts: Optional[int] = None
-        oldest_ts: Optional[int] = None
-        for ts_ns, line in raw_lines:
-            entry = parse_log_entry(line)
-            if entry is None:
-                continue
-            entry.timestamp = datetime.fromtimestamp(
-                ts_ns / 1_000_000_000, tz=timezone.utc
+        if not raw_lines:
+            return LogsEntriesResponse(
+                items=[],
+                before=None,
+                after=after if after is not None else None,
             )
-            page_items.append(entry)
-            if newest_ts is None:
-                newest_ts = ts_ns
-            oldest_ts = ts_ns
-            if len(page_items) >= limit:
-                break
+        entries = self.translate(raw_lines)
 
-        if not page_items or newest_ts is None or oldest_ts is None:
-            return LogsEntriesResponse(items=[], before=None, after=None)
+        before_token = self.encode_cursor(entries[0][0])
+        after_token = self.encode_cursor(entries[-1][0])
 
-        before_token = (
-            self.encode_cursor(oldest_ts) if oldest_ts > since_ns else None
-        )
-        after_token = self.encode_cursor(newest_ts)
+        entries.sort(key=lambda x: x[0])
+
         return LogsEntriesResponse(
-            items=page_items, before=before_token, after=after_token
+            items=[e[1] for e in entries],
+            before=before_token,
+            after=after_token,
         )
-
-    def _query_range(
-        self,
-        *,
-        query: str,
-        start_ns: int,
-        end_ns: int,
-        limit: int,
-        direction: str,
-    ) -> List[Tuple[int, str]]:
-        """Query the Loki API to fetch log entries in a range of timestamps.
-
-        Args:
-            query: The LogQL query to execute.
-            start_ns: The start timestamp in nanoseconds.
-            end_ns: The end timestamp in nanoseconds.
-            limit: The maximum number of log entries to return.
-            direction: The direction of the query.
-
-        Returns:
-            The log entries.
-
-        Raises:
-            RuntimeError: If the request fails.
-        """
-        url = self.config.base_url.rstrip("/") + "/loki/api/v1/query_range"
-
-        headers = self._get_headers()
-
-        params = {
-            "query": query,
-            "start": str(int(start_ns)),
-            "end": str(int(end_ns)),
-            "limit": str(int(limit)),
-            "direction": direction,
-        }
-        resp = requests.get(url, headers=headers, params=params, timeout=30)
-
-        if resp.status_code != 200:
-            raise RuntimeError(
-                f"Failed to fetch logs from Loki: {resp.status_code} - {resp.text[:200]}"
-            )
-
-        payload = resp.json()
-        if payload.get("status") != "success":
-            raise RuntimeError(f"Failed to fetch logs from Loki: {payload!r}")
-
-        data = payload.get("data") or {}
-        results = data.get("result") or []
-
-        lines: List[Tuple[int, str]] = []
-        for result in results:
-            values = cast(List[List[str]], result.get("values") or [])
-            for ts_raw, line in values:
-                ts_ns = int(ts_raw)
-                lines.append((ts_ns, line))
-        return lines
 
     def build_query(
         self, *, logs_model: LogsResponse, filter_: Optional[LogsEntriesFilter]
@@ -358,3 +291,55 @@ class LokiLogStore(OtelLogStore):
             params.append(f"| severity_number >= {threshold}")
 
         return f"{selector} " + " ".join(params)
+
+    def query_range(
+        self,
+        query: str,
+        start_ns: int,
+        end_ns: int,
+        limit: int,
+        direction: str,
+    ) -> List[Dict[str, Any]]:
+        """Query the Loki API to fetch log entries in a range of timestamps.
+
+        Args:
+            query: The LogQL query to execute.
+            start_ns: The start timestamp in nanoseconds.
+            end_ns: The end timestamp in nanoseconds.
+            limit: The maximum number of log entries to return.
+            direction: The direction of the query.
+
+        Returns:
+            The log entries.
+
+        Raises:
+            RuntimeError: If the request fails.
+        """
+        headers = self._get_headers()
+
+        params = {
+            "query": query,
+            "start": str(int(start_ns)),
+            "end": str(int(end_ns)),
+            "limit": str(int(limit)),
+            "direction": direction,
+        }
+        resp = requests.get(
+            url=self.config.query_range_url,
+            headers=headers,
+            params=params,
+            timeout=30,
+        )
+
+        if resp.status_code != 200:
+            raise RuntimeError(
+                f"Failed to fetch logs from Loki: {resp.status_code} - {resp.text[:200]}"
+            )
+
+        payload = resp.json()
+        if payload.get("status") != "success":
+            raise RuntimeError(f"Failed to fetch logs from Loki: {payload!r}")
+
+        data = payload.get("data") or {}
+        results = data.get("result") or []
+        return results

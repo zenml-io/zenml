@@ -29,18 +29,15 @@ from zenml.utils.secret_utils import PlainSerializedSecretStr
 class LokiLogStoreConfig(OtelLogStoreConfig):
     """Configuration for Loki log store."""
 
-    base_url: str = Field(
-        default="http://localhost:3100",
-        description=(
-            "Base URL for Loki HTTP query endpoints. Must be a reachable HTTP(S) "
-            "URL. Example: 'http://localhost:3100' or 'https://loki.mycompany.tld'"
-        ),
+    query_range_url: Optional[str] = Field(
+        default=None,
+        description="Base URL for Loki HTTP query endpoints.",
     )
     api_key: Optional[PlainSerializedSecretStr] = Field(
         default=None,
         description=(
-            "API key used to authenticate requests to Loki. If set, ZenML sends "
-            "an Authorization Bearer token unless overridden by headers"
+            "API key used to authenticate requests to Loki. If set, ZenML "
+            "sends an Authorization Bearer token unless overridden by headers."
         ),
     )
     username: Optional[PlainSerializedSecretStr] = Field(

@@ -42,14 +42,6 @@ class LogsRequest(ProjectScopedRequest):
         default=None,
         title="The URI of the logs file (for artifact store logs)",
     )
-
-    # TODO: This is being added for backwards compatibility with clients <0.84.0.
-    # We can remove this with the upcoming breaking changes.
-    project_id: Optional[UUID] = Field(
-        default=None,
-        title="The project to which this resource belongs.",
-    )
-
     # TODO: Remove default value when not supporting clients <0.84.0 anymore
     source: str = Field(default="", title="The source of the logs file")
     artifact_store_id: Optional[UUID] = Field(
