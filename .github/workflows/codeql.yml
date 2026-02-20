@@ -7,6 +7,9 @@ on:
     # The branches below must be a subset of the branches above
     branches: [develop]
     types: [opened]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   analyze:
     if: github.event.pull_request.draft == false && github.repository == 'zenml-io/zenml'
