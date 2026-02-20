@@ -3,6 +3,9 @@ name: Check Markdown Links
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   check-links:
     runs-on: ubuntu-latest
