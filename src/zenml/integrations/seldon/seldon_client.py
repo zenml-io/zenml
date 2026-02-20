@@ -532,7 +532,7 @@ class SeldonClient:
         """Initialize the Kubernetes clients.
 
         Args:
-            context: a Kubernetes configuratino context to use.
+            context: a Kubernetes configuration context to use.
             kube_client: a Kubernetes client to use.
 
         Raises:

@@ -243,7 +243,7 @@ def async_step() -> None:
     thread.join()
 ```
 
-As a workaournd, you can run it under the copied `contextvars` context so
+As a workaround, you can run it under the copied `contextvars` context so
 ZenML can associate the log records with the running step:
 
 ```python
