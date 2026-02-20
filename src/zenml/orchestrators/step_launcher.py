@@ -708,10 +708,17 @@ class StepLauncher:
         Raises:
             RuntimeError: If the resources could not be acquired.
         """
-        resource_settings = self._step.config.resource_settings
-        required_gpu_count = resource_settings.gpu_count or 0
+        requested_resources = self._stack.orchestrator.get_requested_resources(
+            step_run_info
+        )
+        # TODO: If some pools limit the amount of parallel steps, we need to
+        # include a `"step_run": 1` key in the requested_resources dictionary.
+        # But if a pool does not have this resource, this request would fail?
+        # How to handle this? Is this resource unlimited by default, instead of
+        # 0?
+        # requested_resources["step_run"] = 1
 
-        if required_gpu_count > 0:
+        if requested_resources:
             publish_utils.publish_step_run_status_update(
                 step_run_id=step_run_info.step_run_id,
                 status=ExecutionStatus.QUEUED,
@@ -720,9 +727,7 @@ class StepLauncher:
                 ResourceRequestRequest(
                     component_id=self._stack.orchestrator.id,
                     step_run_id=step_run_info.step_run_id,
-                    requested_resources={
-                        "gpu": required_gpu_count,
-                    },
+                    requested_resources=requested_resources,
                 )
             )
             for delay in exponential_backoff_delays(
