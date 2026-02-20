@@ -4250,6 +4250,33 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ResourcePoolSchema,
                 session=session,
             )
+            # Serialize with allocators for this pool before checking for active
+            # queue/allocation entries to avoid check-then-delete races.
+            self._acquire_resource_pool_lock(
+                session=session, pool_id=resource_pool_id
+            )
+            queued_count = session.exec(
+                select(func.count())
+                .select_from(ResourcePoolQueueSchema)
+                .where(
+                    col(ResourcePoolQueueSchema.pool_id) == resource_pool_id
+                )
+            ).one()
+            allocated_count = session.exec(
+                select(func.count())
+                .select_from(ResourcePoolAllocationSchema)
+                .where(
+                    col(ResourcePoolAllocationSchema.pool_id)
+                    == resource_pool_id
+                )
+                .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
+            ).one()
+            if queued_count or allocated_count:
+                raise IllegalOperationError(
+                    "Unable to delete resource pool while requests are still "
+                    f"active (queued={queued_count}, "
+                    f"allocated={allocated_count})."
+                )
             session.execute(
                 delete(ResourcePoolSchema).where(
                     col(ResourcePoolSchema.id) == resource_pool_id
@@ -4257,7 +4284,6 @@ class SqlZenStore(BaseZenStore):
             )
             self._reject_requests_not_in_queue(session)
             session.commit()
-            # TODO: How should we handle current running requests here? Evict?
 
     def _attach_resource_pool_policy(
         self,
@@ -4377,9 +4403,6 @@ class SqlZenStore(BaseZenStore):
                         f"({total_capacity})."
                     )
 
-        # TODO: We should probably enqueue all pending requests for the
-        # component here, and try allocating?
-
     def _detach_resource_pool(
         self, session: Session, component_id: UUID, resource_pool_id: UUID
     ) -> None:
@@ -4391,6 +4414,43 @@ class SqlZenStore(BaseZenStore):
                 from.
             resource_pool_id: The ID of the resource pool to detach.
         """
+        self._acquire_resource_pool_lock(
+            session=session, pool_id=resource_pool_id
+        )
+
+        queued_count = session.exec(
+            select(func.count())
+            .select_from(ResourcePoolQueueSchema)
+            .join(
+                ResourceRequestSchema,
+                col(ResourceRequestSchema.id)
+                == col(ResourcePoolQueueSchema.request_id),
+            )
+            .where(col(ResourcePoolQueueSchema.pool_id) == resource_pool_id)
+            .where(col(ResourceRequestSchema.component_id) == component_id)
+        ).one()
+        allocated_count = session.exec(
+            select(func.count())
+            .select_from(ResourcePoolAllocationSchema)
+            .join(
+                ResourceRequestSchema,
+                col(ResourceRequestSchema.id)
+                == col(ResourcePoolAllocationSchema.request_id),
+            )
+            .where(
+                col(ResourcePoolAllocationSchema.pool_id) == resource_pool_id
+            )
+            .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
+            .where(col(ResourceRequestSchema.component_id) == component_id)
+        ).one()
+
+        if queued_count or allocated_count:
+            raise IllegalOperationError(
+                "Unable to detach policy while requests are still active in "
+                f"the pool for this component (queued={queued_count}, "
+                f"allocated={allocated_count})."
+            )
+
         session.execute(
             delete(ResourcePoolSubjectPolicySchema).where(
                 col(ResourcePoolSubjectPolicySchema.component_id)
@@ -4399,23 +4459,6 @@ class SqlZenStore(BaseZenStore):
                 == resource_pool_id,
             )
         )
-
-        # Remove queued entries for pending requests of this component in the
-        # pool.
-        pending_request_ids = select(ResourceRequestSchema.id).where(
-            col(ResourceRequestSchema.component_id) == component_id,
-            col(ResourceRequestSchema.status)
-            == ResourceRequestStatus.PENDING.value,
-        )
-        session.execute(
-            delete(ResourcePoolQueueSchema).where(
-                col(ResourcePoolQueueSchema.pool_id) == resource_pool_id,
-                col(ResourcePoolQueueSchema.request_id).in_(
-                    pending_request_ids
-                ),
-            )
-        )
-        # TODO: How should we handle current running requests here? Evict?
 
     # -------------------- Resource Requests -------------
 

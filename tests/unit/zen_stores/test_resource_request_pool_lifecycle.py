@@ -1,21 +1,24 @@
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 from uuid import UUID, uuid4
 
 import pytest
 
 from zenml.config.step_configurations import Step
-from zenml.enums import ExecutionStatus, ResourceRequestStatus
+from zenml.enums import (
+    ExecutionStatus,
+    ResourceRequestStatus,
+    StackComponentType,
+)
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
-    ComponentRequest,
     PipelineRequest,
     ResourcePoolRequest,
     ResourcePoolSubjectPolicyRequest,
     ResourcePoolUpdate,
     ResourceRequestRequest,
 )
-from zenml.enums import StackComponentType
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
@@ -119,7 +122,9 @@ def _create_resource_request(
 
 
 def _get_request(clean_client, request_id: UUID):
-    return clean_client.zen_store.get_resource_request(request_id, hydrate=False)
+    return clean_client.zen_store.get_resource_request(
+        request_id, hydrate=False
+    )
 
 
 def _get_pool(clean_client, pool_id: UUID):
@@ -305,9 +310,18 @@ def test_allocation_respects_non_preemptable_reserved_share(
         preemptable=True,
     )
 
-    assert _get_request(clean_client, req_1.id).status == ResourceRequestStatus.ALLOCATED
-    assert _get_request(clean_client, req_2.id).status == ResourceRequestStatus.PENDING
-    assert _get_request(clean_client, req_3.id).status == ResourceRequestStatus.ALLOCATED
+    assert (
+        _get_request(clean_client, req_1.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+    assert (
+        _get_request(clean_client, req_2.id).status
+        == ResourceRequestStatus.PENDING
+    )
+    assert (
+        _get_request(clean_client, req_3.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
 
     hydrated_pool = _get_pool(clean_client, pool.id)
     active_ids = {item.request.id for item in hydrated_pool.active_requests}
@@ -326,8 +340,12 @@ def test_preemption_skips_non_preemptable_victims(
 ):
     store = clean_client.zen_store
     assert isinstance(store, SqlZenStore)
-    low_priority_component = _create_orchestrator_component(clean_client, "low")
-    high_priority_component = _create_orchestrator_component(clean_client, "high")
+    low_priority_component = _create_orchestrator_component(
+        clean_client, "low"
+    )
+    high_priority_component = _create_orchestrator_component(
+        clean_client, "high"
+    )
 
     pool = _create_pool(
         clean_client,
@@ -336,7 +354,7 @@ def test_preemption_skips_non_preemptable_victims(
             ResourcePoolSubjectPolicyRequest(
                 component_id=low_priority_component,
                 priority=1,
-                    reserved={"gpu": 1},
+                reserved={"gpu": 1},
                 limit={"gpu": 1},
             ),
             ResourcePoolSubjectPolicyRequest(
@@ -386,8 +404,14 @@ def test_preemption_skips_non_preemptable_victims(
         preemptable=True,
     )
 
-    assert _get_request(clean_client, victim.id).status == ResourceRequestStatus.ALLOCATED
-    assert _get_request(clean_client, head.id).status == ResourceRequestStatus.PENDING
+    assert (
+        _get_request(clean_client, victim.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+    assert (
+        _get_request(clean_client, head.id).status
+        == ResourceRequestStatus.PENDING
+    )
     assert evictions == []
     assert _get_pool(clean_client, pool.id).queued_requests
 
@@ -401,8 +425,12 @@ def test_preemption_triggers_for_preemptable_victims(
 ):
     store = clean_client.zen_store
     assert isinstance(store, SqlZenStore)
-    low_priority_component = _create_orchestrator_component(clean_client, "low")
-    high_priority_component = _create_orchestrator_component(clean_client, "high")
+    low_priority_component = _create_orchestrator_component(
+        clean_client, "low"
+    )
+    high_priority_component = _create_orchestrator_component(
+        clean_client, "high"
+    )
 
     _create_pool(
         clean_client,
@@ -462,7 +490,10 @@ def test_preemption_triggers_for_preemptable_victims(
     )
 
     assert evictions == [victim.id]
-    assert _get_request(clean_client, victim.id).status == ResourceRequestStatus.PREEMPTING
+    assert (
+        _get_request(clean_client, victim.id).status
+        == ResourceRequestStatus.PREEMPTING
+    )
 
 
 def test_orphaned_requests_are_cancelled_before_allocation(
@@ -498,7 +529,10 @@ def test_orphaned_requests_are_cancelled_before_allocation(
         requested_resources={"gpu": 1},
         preemptable=True,
     )
-    assert _get_request(clean_client, orphan_candidate.id).status == ResourceRequestStatus.ALLOCATED
+    assert (
+        _get_request(clean_client, orphan_candidate.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
 
     clean_client.zen_store.delete_run(run_1)
 
@@ -518,9 +552,16 @@ def test_orphaned_requests_are_cancelled_before_allocation(
 
     orphan = _get_request(clean_client, orphan_candidate.id)
     assert orphan.status == ResourceRequestStatus.CANCELLED
-    assert orphan.status_reason == "Cancelled because owning step run no longer exists."
-    assert _get_request(clean_client, next_request.id).status == ResourceRequestStatus.ALLOCATED
+    assert (
+        orphan.status_reason
+        == "Cancelled because owning step run no longer exists."
+    )
+    assert (
+        _get_request(clean_client, next_request.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
     assert _get_pool(clean_client, pool.id).active_requests
+
 
 def test_attaching_policy_allocates_pending_requests_from_other_pool(
     clean_client,
@@ -568,7 +609,10 @@ def test_attaching_policy_allocates_pending_requests_from_other_pool(
         step_run_id=step_2,
         requested_resources={"gpu": 1},
     )
-    assert _get_request(clean_client, pending.id).status == ResourceRequestStatus.PENDING
+    assert (
+        _get_request(clean_client, pending.id).status
+        == ResourceRequestStatus.PENDING
+    )
 
     clean_client.zen_store.update_resource_pool(
         pool_b.id,
@@ -591,146 +635,203 @@ def test_attaching_policy_allocates_pending_requests_from_other_pool(
     assert _get_pool(clean_client, pool_a.id).queued_requests == []
 
 
-# def test_detaching_policy_rejects_enqueued_requests(
-#     clean_client,
-#     sample_pipeline_snapshot_request_model,
-#     sample_pipeline_run_request_model,
-#     sample_step_request_model,
-# ):
-#     component_id = clean_client.active_stack.orchestrator.id
-#     pool = _create_pool(
-#         clean_client,
-#         capacity={"gpu": 1},
-#         policies=[
-#             ResourcePoolSubjectPolicyRequest(
-#                 component_id=component_id,
-#                 priority=1,
-#                 reserved={"gpu": 1},
-#                 limit={"gpu": 1},
-#             )
-#         ],
-#     )
+def test_detaching_policy_blocked_if_component_has_active_requests(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    component_id = clean_client.active_stack.orchestrator.id
+    pool = _create_pool(
+        clean_client,
+        capacity={"gpu": 1},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 1},
+                limit={"gpu": 1},
+            )
+        ],
+    )
 
-#     _, step_1 = _create_step_run_in_db(
-#         clean_client,
-#         sample_pipeline_snapshot_request_model,
-#         sample_pipeline_run_request_model,
-#         sample_step_request_model,
-#     )
-#     _, step_2 = _create_step_run_in_db(
-#         clean_client,
-#         sample_pipeline_snapshot_request_model,
-#         sample_pipeline_run_request_model,
-#         sample_step_request_model,
-#     )
+    _, step_1 = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    _, step_2 = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
 
-#     allocated = _create_resource_request(
-#         clean_client,
-#         component_id=component_id,
-#         step_run_id=step_1,
-#         requested_resources={"gpu": 1},
-#     )
-#     queued = _create_resource_request(
-#         clean_client,
-#         component_id=component_id,
-#         step_run_id=step_2,
-#         requested_resources={"gpu": 1},
-#     )
-#     assert _get_request(clean_client, queued.id).status == ResourceRequestStatus.PENDING
+    allocated = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_1,
+        requested_resources={"gpu": 1},
+    )
+    queued = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_2,
+        requested_resources={"gpu": 1},
+    )
+    assert (
+        _get_request(clean_client, queued.id).status
+        == ResourceRequestStatus.PENDING
+    )
 
-#     clean_client.zen_store.update_resource_pool(
-#         pool.id,
-#         ResourcePoolUpdate(detach_policies=[component_id]),
-#     )
+    with pytest.raises(IllegalOperationError):
+        clean_client.zen_store.update_resource_pool(
+            pool.id,
+            ResourcePoolUpdate(detach_policies=[component_id]),
+        )
 
-#     assert _get_request(clean_client, allocated.id).status == ResourceRequestStatus.ALLOCATED
-#     assert _get_request(clean_client, queued.id).status == ResourceRequestStatus.REJECTED
+    assert (
+        _get_request(clean_client, allocated.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+    assert (
+        _get_request(clean_client, queued.id).status
+        == ResourceRequestStatus.PENDING
+    )
 
 
-# def test_updating_pool_capacity_handles_allocated_and_queued_requests(
-#     clean_client,
-#     sample_pipeline_snapshot_request_model,
-#     sample_pipeline_run_request_model,
-#     sample_step_request_model,
-# ):
-#     component_id = clean_client.active_stack.orchestrator.id
-#     pool = _create_pool(
-#         clean_client,
-#         capacity={"gpu": 2},
-#         policies=[
-#             ResourcePoolSubjectPolicyRequest(
-#                 component_id=component_id,
-#                 priority=1,
-#                 reserved={"gpu": 0},
-#                 limit={"gpu": 2},
-#             )
-#         ],
-#     )
+def test_decreasing_pool_capacity_keeps_allocated_and_rebuilds_queue(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    component_id = clean_client.active_stack.orchestrator.id
+    pool = _create_pool(
+        clean_client,
+        capacity={"gpu": 2},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 0},
+                limit={"gpu": 2},
+            )
+        ],
+    )
 
-#     _, step_1 = _create_step_run_in_db(
-#         clean_client,
-#         sample_pipeline_snapshot_request_model,
-#         sample_pipeline_run_request_model,
-#         sample_step_request_model,
-#     )
-#     _, step_2 = _create_step_run_in_db(
-#         clean_client,
-#         sample_pipeline_snapshot_request_model,
-#         sample_pipeline_run_request_model,
-#         sample_step_request_model,
-#     )
-#     _, step_3 = _create_step_run_in_db(
-#         clean_client,
-#         sample_pipeline_snapshot_request_model,
-#         sample_pipeline_run_request_model,
-#         sample_step_request_model,
-#     )
-#     _, step_4 = _create_step_run_in_db(
-#         clean_client,
-#         sample_pipeline_snapshot_request_model,
-#         sample_pipeline_run_request_model,
-#         sample_step_request_model,
-#     )
+    _, step_1 = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    _, step_2 = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    _, step_3 = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
 
-#     allocated = _create_resource_request(
-#         clean_client,
-#         component_id=component_id,
-#         step_run_id=step_1,
-#         requested_resources={"gpu": 2},
-#     )
-#     pending_too_large = _create_resource_request(
-#         clean_client,
-#         component_id=component_id,
-#         step_run_id=step_2,
-#         requested_resources={"gpu": 2},
-#     )
-#     assert _get_request(clean_client, pending_too_large.id).status == ResourceRequestStatus.PENDING
+    allocated = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_1,
+        requested_resources={"gpu": 2},
+    )
+    pending_too_large = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_2,
+        requested_resources={"gpu": 2},
+    )
+    pending_small = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_3,
+        requested_resources={"gpu": 1},
+    )
+    assert (
+        _get_request(clean_client, pending_too_large.id).status
+        == ResourceRequestStatus.PENDING
+    )
+    assert (
+        _get_request(clean_client, pending_small.id).status
+        == ResourceRequestStatus.PENDING
+    )
 
-#     clean_client.zen_store.update_resource_pool(
-#         pool.id, ResourcePoolUpdate(capacity={"gpu": 1})
-#     )
+    clean_client.zen_store.update_resource_pool(
+        pool.id, ResourcePoolUpdate(capacity={"gpu": 1})
+    )
 
-#     assert _get_request(clean_client, allocated.id).status == ResourceRequestStatus.ALLOCATED
-#     assert _get_request(clean_client, pending_too_large.id).status == ResourceRequestStatus.REJECTED
+    assert (
+        _get_request(clean_client, allocated.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+    assert (
+        _get_request(clean_client, pending_too_large.id).status
+        == ResourceRequestStatus.REJECTED
+    )
+    assert (
+        _get_request(clean_client, pending_small.id).status
+        == ResourceRequestStatus.PENDING
+    )
 
-#     one_gpu_allocated = _create_resource_request(
-#         clean_client,
-#         component_id=component_id,
-#         step_run_id=step_3,
-#         requested_resources={"gpu": 1},
-#     )
-#     one_gpu_pending = _create_resource_request(
-#         clean_client,
-#         component_id=component_id,
-#         step_run_id=step_4,
-#         requested_resources={"gpu": 1},
-#     )
-#     assert _get_request(clean_client, one_gpu_allocated.id).status == ResourceRequestStatus.ALLOCATED
-#     assert _get_request(clean_client, one_gpu_pending.id).status == ResourceRequestStatus.PENDING
 
-#     clean_client.zen_store.update_resource_pool(
-#         pool.id, ResourcePoolUpdate(capacity={"gpu": 2})
-#     )
+def test_deleting_pool_blocked_if_pool_has_active_requests(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    component_id = clean_client.active_stack.orchestrator.id
+    pool = _create_pool(
+        clean_client,
+        capacity={"gpu": 1},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 1},
+                limit={"gpu": 1},
+            )
+        ],
+    )
 
-#     assert _get_request(clean_client, one_gpu_pending.id).status == ResourceRequestStatus.ALLOCATED
+    _, step_1 = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    _, step_2 = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
 
+    _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_1,
+        requested_resources={"gpu": 1},
+    )
+    _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_2,
+        requested_resources={"gpu": 1},
+    )
+
+    with pytest.raises(IllegalOperationError):
+        clean_client.zen_store.delete_resource_pool(pool.id)
+
+    assert _get_pool(clean_client, pool.id).id == pool.id
