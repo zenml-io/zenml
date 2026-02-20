@@ -92,7 +92,7 @@ An important component of the ZenML server deployment is the backing database. W
 
 We would recommend starting out with a simple (single) database instance and then monitoring it to decide if it needs scaling. Some common metrics to look out for:
 
-* CPU Utilization: If the CPU Utilization is consistently above 50%, you may need to scale your database. Some spikes in the utlization are expected but it should not be consistently high.
+* CPU Utilization: If the CPU Utilization is consistently above 50%, you may need to scale your database. Some spikes in the utilization are expected but it should not be consistently high.
 * Freeable Memory: It is natural for the freeable memory to go down with time as your database uses it for caching and buffering but if it drops below 100-200 MB, you may need to scale your database.
 
 ## Setting up an ingress/load balancer
