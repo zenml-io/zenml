@@ -15,7 +15,7 @@
 
 import base64
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 import requests
@@ -54,6 +54,17 @@ class DatadogLogStore(OtelLogStore):
         """
         return cast(DatadogLogStoreConfig, self._config)
 
+    def _get_headers(self) -> Dict[str, str]:
+        """"""
+        headers: Dict[str, str] = self.config.headers or {}
+
+        headers.update({
+            "dd-api-key": self.config.api_key.get_secret_value(),
+            "dd-application-key": self.config.application_key.get_secret_value(),
+         }
+        )
+        return headers
+
     def get_exporter(self) -> DatadogLogExporter:
         """Get the Datadog log exporter.
 
@@ -61,16 +72,9 @@ class DatadogLogStore(OtelLogStore):
             DatadogExporter with the proper configuration.
         """
         if not self._datadog_exporter:
-            headers = {
-                "dd-api-key": self.config.api_key.get_secret_value(),
-                "dd-application-key": self.config.application_key.get_secret_value(),
-            }
-            if self.config.headers:
-                headers.update(self.config.headers)
-
             self._datadog_exporter = DatadogLogExporter(
                 endpoint=self.config.endpoint,
-                headers=headers,
+                headers=self._get_headers(),
                 certificate_file=self.config.certificate_file,
                 client_key_file=self.config.client_key_file,
                 client_certificate_file=self.config.client_certificate_file,
@@ -85,7 +89,7 @@ class DatadogLogStore(OtelLogStore):
         before: Optional[str] = None,
         after: Optional[str] = None,
         filter_: Optional[LogsEntriesFilter] = None,
-    ) -> List["LogEntry"]:
+    ) -> LogsEntriesResponse:
         """Fetch logs from Datadog's API.
 
         This method queries Datadog's Logs API to retrieve logs for the
@@ -98,98 +102,99 @@ class DatadogLogStore(OtelLogStore):
             before: Cursor token pointing to older entries.
             after: Cursor token pointing to newer entries.
             filter_: Filters that must be applied during retrieval.
+
         Returns:
             List of log entries from Datadog.
         """
-        query_parts = [
-            f"service:{self.config.service_name}",
-            f"@zenml.log.id:{logs_model.id}",
-        ]
+        if limit <= 0:
+            raise ValueError("`limit` must be positive.")
 
-        query = " ".join(query_parts)
+        if before is not None and after is not None:
+            raise ValueError("Only one of `before` or `after` can be set.")
+
+        query = self.build_query(logs_model=logs_model, filter_=filter_)
+
+        cursor: Optional[str] = None
+
+        since_ns = logs_model.created
+        until_ns = datetime.now(timezone.utc)
+
+        if filter_ and filter_.since:
+            since_ns = filter_.since
+        if filter_ and filter_.until:
+            until_ns = filter_.until
+
+        if after is not None:
+            since_ns = datetime.strptime(
+                self._decode_cursor(after)
+            )
+        elif before is not None:
+            until_ns = datetime.strptime(
+                self._decode_cursor(before)
+            )
+
+        if since_ns > until_ns:
+            return LogsEntriesResponse(items=[], before=None, after=after)
 
         api_endpoint = (
             f"https://api.{self.config.site}/api/v2/logs/events/search"
         )
-        headers = {
-            "DD-API-KEY": self.config.api_key.get_secret_value(),
-            "DD-APPLICATION-KEY": self.config.application_key.get_secret_value(),
-            "Content-Type": "application/json",
+
+        headers = self._get_headers()
+        headers["Content-Type"] = "application/json"
+
+        body: Dict[str, Any] = {
+            "filter": {
+                "query": query,
+                "from": since_ns.isoformat(),
+                "to": until_ns.isoformat(),
+            },
+            "page": {
+                "limit": limit,
+            },
+            "sort": "timestamp",
         }
 
+        if cursor:
+            body["page"]["cursor"] = cursor
+
+        response = requests.post(
+            api_endpoint,
+            headers=headers,
+            json=body,
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+            logger.error(
+                f"Failed to fetch logs from Datadog: "
+                f"{response.status_code} - {response.text[:200]}"
+            )
+            raise Exception("")
+
+        data = response.json()
+        logs = data.get("data", [])
+
         log_entries: List[LogEntry] = []
-        cursor: Optional[str] = None
-        remaining = limit
 
-        try:
-            while remaining > 0:
-                # Datadog API limit is 1000 per request
-                page_limit = min(remaining, 1000)
+        for log in logs:
+            entry = self._parse_log_entry(log)
+            if entry:
+                log_entries.append(entry)
 
-                body: Dict[str, Any] = {
-                    "filter": {
-                        "query": query,
-                        "from": (
-                            start_time.isoformat()
-                            if start_time
-                            else logs_model.created.isoformat()
-                        ),
-                        "to": (
-                            end_time.isoformat()
-                            if end_time
-                            else datetime.now().astimezone().isoformat()
-                        ),
-                    },
-                    "page": {
-                        "limit": page_limit,
-                    },
-                    "sort": "timestamp",
-                }
+        before_token = self._encode_cursor(log_entries[0]["timestamp"])
+        after_token = self._encode_cursor(log_entries[-1]["timestamp"])
 
-                if cursor:
-                    body["page"]["cursor"] = cursor
+        log_entries.sort(key=lambda x: x[0])
 
-                response = requests.post(
-                    api_endpoint,
-                    headers=headers,
-                    json=body,
-                    timeout=30,
-                )
-
-                if response.status_code != 200:
-                    logger.error(
-                        f"Failed to fetch logs from Datadog: "
-                        f"{response.status_code} - {response.text[:200]}"
-                    )
-                    break
-
-                data = response.json()
-                logs = data.get("data", [])
-
-                if not logs:
-                    break
-
-                for log in logs:
-                    entry = self._parse_log_entry(log)
-                    if entry:
-                        log_entries.append(entry)
-
-                remaining -= len(logs)
-
-                # Get cursor for next page
-                cursor = data.get("meta", {}).get("page", {}).get("after")
-                if not cursor:
-                    break
-
-            logger.debug(f"Fetched {len(log_entries)} logs from Datadog")
-            return log_entries
-
-        except Exception as e:
-            logger.exception(f"Error fetching logs from Datadog: {e}")
-            return log_entries  # Return what we have so far
+        return LogsEntriesResponse(
+            items=log_entries,
+            before=before_token,
+            after=after_token,
+        )
 
     @classmethod
-    def _encode_cursor(cls, pos: Dict[str, Any]) -> str:
+    def _encode_cursor(cls, pos: datetime) -> str:
         """Encode a cursor token into a base64 URL-safe string.
 
         Args:
@@ -198,15 +203,11 @@ class DatadogLogStore(OtelLogStore):
         Returns:
             The encoded cursor.
         """
-        payload = {
-            "ts": pos.get("ts"),
-            "dd_id": pos.get("dd_id"),
-        }
-        data = json.dumps(payload, sort_keys=True).encode("utf-8")
+        data = json.dumps(pos, sort_keys=True).encode("utf-8")
         return base64.urlsafe_b64encode(data).decode("ascii")
 
     @classmethod
-    def _decode_cursor(cls, token: str) -> Dict[str, Any]:
+    def _decode_cursor(cls, token: str) -> datetime:
         """Decode a cursor token into a dictionary.
 
         Args:
@@ -217,77 +218,9 @@ class DatadogLogStore(OtelLogStore):
         """
         raw = base64.urlsafe_b64decode(token.encode("ascii"))
         decoded = json.loads(raw.decode("utf-8"))
-        return cast(Dict[str, Any], decoded)
+        return  datetime.strptime(decoded)
 
-    def fetch_entries(
-        self,
-        logs_model: LogsResponse,
-        limit: int,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        filter_: LogsEntriesFilter = None,
-    ) -> LogsEntriesResponse:
-        """Fetch log entries from Datadog with cursor-based pagination.
-
-        Args:
-            logs_model: The logs model containing metadata about the logs.
-            limit: Maximum number of log entries to return.
-            before: Cursor token pointing to older entries.
-            after: Cursor token pointing to newer entries.
-            filter_: Filters that must be applied during retrieval.
-
-        Returns:
-            A response containing log entries and pagination tokens.
-
-        Raises:
-            ValueError: If `limit` is not positive or if both `before`
-                and `after` are set.
-        """
-        if limit <= 0:
-            raise ValueError("`limit` must be positive.")
-
-        if before is not None and after is not None:
-            raise ValueError("Only one of `before` or `after` can be set.")
-
-        if after is not None:
-            after_cursor = self._decode_cursor(token=after)
-            items, _, after_pos = self._fetch_newer_page(
-                logs_model=logs_model,
-                limit=limit,
-                filter_=filter_,
-                cursor_pos=after_cursor,
-            )
-            after_token = self._encode_cursor(pos=after_pos)
-
-            return LogsEntriesResponse(
-                items=items, before=None, after=after_token
-            )
-
-        cursor_pos = None
-        if before is not None:
-            cursor_pos = self._decode_cursor(token=before)
-
-        items, before_pos, after_pos = self._fetch_latest_or_older_page(
-            logs_model=logs_model,
-            limit=limit,
-            filter_=filter_,
-            cursor_pos=cursor_pos,
-        )
-        before_token = (
-            self._encode_cursor(pos=before_pos)
-            if before_pos is not None
-            else None
-        )
-        after_token = (
-            self._encode_cursor(pos=after_pos)
-            if after_pos is not None
-            else None
-        )
-        return LogsEntriesResponse(
-            items=items, before=before_token, after=after_token
-        )
-
-    def _build_query(
+    def build_query(
         self, logs_model: LogsResponse, filter_: LogsEntriesFilter
     ) -> str:
         """Build a query to fetch log entries from Datadog.
@@ -309,204 +242,11 @@ class DatadogLogStore(OtelLogStore):
             query_parts.append(f"@severity_number:>={threshold}")
 
         if filter_.search:
-            # Best-effort translation; we still post-filter to match substring semantics.
+            # Best-effort translation; we still post-filter to match
+            # substring semantics.
             query_parts.append(filter_.search)
 
         return " ".join(query_parts)
-
-    def _fetch_latest_or_older_page(
-        self,
-        logs_model: LogsResponse,
-        limit: int,
-        filter_: LogsEntriesFilter,
-        cursor_pos: Optional[Dict[str, Any]],
-    ) -> Tuple[
-        List[LogEntry], Optional[Dict[str, Any]], Optional[Dict[str, Any]]
-    ]:
-        query = self._build_query(logs_model, filter_)
-        api_endpoint = (
-            f"https://api.{self.config.site}/api/v2/logs/events/search"
-        )
-        headers = {
-            "DD-API-KEY": self.config.api_key.get_secret_value(),
-            "DD-APPLICATION-KEY": self.config.application_key.get_secret_value(),
-            "Content-Type": "application/json",
-        }
-
-        from_time = (
-            filter_.since.isoformat()
-            if filter_.since
-            else logs_model.created.isoformat()
-        )
-        to_time = (
-            filter_.until.isoformat()
-            if filter_.until
-            else datetime.now().astimezone().isoformat()
-        )
-
-        body: Dict[str, Any] = {
-            "filter": {
-                "query": query,
-                "from": from_time,
-                "to": to_time,
-            },
-            "page": {"limit": min(limit, 1000)},
-            "sort": "-timestamp",
-        }
-        if cursor_pos and cursor_pos.get("dd_after"):
-            body["page"]["cursor"] = cursor_pos["dd_after"]
-
-        response = requests.post(
-            api_endpoint,
-            headers=headers,
-            json=body,
-            timeout=30,
-        )
-        if response.status_code != 200:
-            raise RuntimeError(
-                f"Failed to fetch logs from Datadog: {response.status_code}"
-            )
-
-        data = response.json()
-        raw_logs = data.get("data", [])
-        before_dd_after = data.get("meta", {}).get("page", {}).get("after")
-
-        entries_with_ids: List[Tuple[str, LogEntry]] = []
-        for raw in raw_logs:
-            entry = self._parse_log_entry(raw)
-            if entry is None:
-                continue
-            dd_id = raw.get("id", "")
-            if not self._matches_filter(entry, filter_):
-                continue
-            entries_with_ids.append((dd_id, entry))
-
-        items = [entry for _, entry in entries_with_ids]
-        if not items:
-            return ([], None, None)
-
-        newest_dd_id = entries_with_ids[0][0]
-        newest_ts = items[0].timestamp
-        before_pos = {"dd_after": before_dd_after} if before_dd_after else None
-        after_pos: Dict[str, Any] = {
-            "ts": newest_ts.isoformat() if newest_ts else None,
-            "dd_id": newest_dd_id,
-        }
-        return (items, before_pos, after_pos)
-
-    def _fetch_newer_page(
-        self,
-        logs_model: LogsResponse,
-        limit: int,
-        filter_: LogsEntriesFilter,
-        cursor_pos: Dict[str, Any],
-    ) -> Tuple[
-        List[LogEntry], Optional[Dict[str, Any]], Optional[Dict[str, Any]]
-    ]:
-        query = self._build_query(logs_model, filter_)
-        api_endpoint = (
-            f"https://api.{self.config.site}/api/v2/logs/events/search"
-        )
-        headers = {
-            "DD-API-KEY": self.config.api_key.get_secret_value(),
-            "DD-APPLICATION-KEY": self.config.application_key.get_secret_value(),
-            "Content-Type": "application/json",
-        }
-
-        cursor_ts_raw = cursor_pos.get("ts")
-        cursor_dd_id = str(cursor_pos.get("dd_id") or "")
-        if cursor_ts_raw:
-            cursor_ts = datetime.fromisoformat(
-                cursor_ts_raw.replace("Z", "+00:00")
-            )
-        else:
-            cursor_ts = logs_model.created
-
-        from_time = cursor_ts.isoformat()
-        to_time = (
-            filter_.until.isoformat()
-            if filter_.until
-            else datetime.now().astimezone().isoformat()
-        )
-
-        body: Dict[str, Any] = {
-            "filter": {
-                "query": query,
-                "from": from_time,
-                "to": to_time,
-            },
-            "page": {"limit": min(limit, 1000)},
-            "sort": "timestamp",
-        }
-
-        response = requests.post(
-            api_endpoint,
-            headers=headers,
-            json=body,
-            timeout=30,
-        )
-        if response.status_code != 200:
-            raise RuntimeError(
-                f"Failed to fetch logs from Datadog: {response.status_code}"
-            )
-
-        data = response.json()
-        raw_logs = data.get("data", [])
-
-        entries_with_ids: List[Tuple[str, LogEntry]] = []
-        for raw in raw_logs:
-            entry = self._parse_log_entry(raw)
-            if entry is None:
-                continue
-            dd_id = str(raw.get("id", ""))
-            if not self._matches_filter(entry, filter_):
-                continue
-
-            # Drop entries at/before cursor (best-effort tie-breaker).
-            if entry.timestamp is not None and entry.timestamp < cursor_ts:
-                continue
-            if (
-                entry.timestamp is not None
-                and entry.timestamp == cursor_ts
-                and cursor_dd_id
-                and dd_id <= cursor_dd_id
-            ):
-                continue
-
-            entries_with_ids.append((dd_id, entry))
-
-        if not entries_with_ids:
-            return ([], None, cursor_pos)
-
-        # We fetched ascending; return newest->oldest.
-        entries_with_ids.reverse()
-        items = [entry for _, entry in entries_with_ids]
-
-        newest_dd_id = entries_with_ids[0][0]
-        newest_ts = items[0].timestamp
-        after_pos: Dict[str, Any] = {
-            "ts": newest_ts.isoformat() if newest_ts else None,
-            "dd_id": newest_dd_id,
-        }
-        return (items, None, after_pos)
-
-    def _matches_filter(
-        self, entry: LogEntry, filter_: LogsEntriesFilter
-    ) -> bool:
-        if filter_.level is not None:
-            if entry.level is None or entry.level.value < filter_.level.value:
-                return False
-        if filter_.since is not None:
-            if entry.timestamp is None or entry.timestamp < filter_.since:
-                return False
-        if filter_.until is not None:
-            if entry.timestamp is None or entry.timestamp > filter_.until:
-                return False
-        if filter_.search is not None:
-            needle = filter_.search.lower().strip()
-            if needle and needle not in entry.message.lower():
-                return False
-        return True
 
     def _parse_log_entry(self, log: Dict[str, Any]) -> Optional[LogEntry]:
         """Parse a single log entry from Datadog's API response.

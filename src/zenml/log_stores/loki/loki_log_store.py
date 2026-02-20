@@ -83,7 +83,7 @@ class LokiLogStore(OtelLogStore):
         Returns:
             The request headers.
         """
-        headers: Dict[str, str] = dict(self.config.headers or {})
+        headers: Dict[str, str] = self.config.headers or {}
 
         if (
             self.config.username is not None
@@ -102,6 +102,91 @@ class LokiLogStore(OtelLogStore):
             )
 
         return headers
+
+    def fetch(
+        self,
+        logs_model: LogsResponse,
+        limit: int,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch log entries from Loki with cursor-based pagination.
+
+        Args:
+            logs_model: The logs model containing metadata about the logs.
+            limit: Maximum number of log entries to return.
+            before: Cursor token pointing to older entries.
+            after: Cursor token pointing to newer entries.
+            filter_: Filters that must be applied during retrieval.
+
+        Returns:
+            A response containing log entries and pagination tokens.
+
+        Raises:
+            ValueError: If `limit` is not positive or if both `before`
+                and `after` are set.
+        """
+        if limit <= 0:
+            raise ValueError("`limit` must be positive.")
+
+        if before is not None and after is not None:
+            raise ValueError("Only one of `before` or `after` can be set.")
+
+        if self.config.query_range_url is None:
+            raise ValueError(
+                "The query_range_url is not set in the configuration. "
+                "Fetching is impossible."
+            )
+
+        query = self.build_query(logs_model=logs_model, filter_=filter_)
+
+        since_ns = logs_model.created
+        until_ns = datetime.now(timezone.utc)
+
+        if filter_ and filter_.since:
+            since_ns = filter_.since
+        if filter_ and filter_.until:
+            until_ns = filter_.until
+
+        since_ns = _to_unix_ns(since_ns)
+        until_ns = _to_unix_ns(until_ns)
+
+        if after is not None:
+            after_cursor = self.decode_cursor(after)
+            since_ns = max(since_ns, after_cursor + 1)
+        elif before is not None:
+            before_cursor = self.decode_cursor(before)
+            until_ns = min(until_ns, before_cursor - 1)
+
+        if since_ns > until_ns:
+            return LogsEntriesResponse(items=[], before=None, after=after)
+
+        raw_lines = self.query_range(
+            query=query,
+            start_ns=since_ns,
+            end_ns=until_ns,
+            limit=limit,
+            direction="forward" if after else "backward",
+        )
+        if not raw_lines:
+            return LogsEntriesResponse(
+                items=[],
+                before=None,
+                after=after if after is not None else None,
+            )
+        entries = self.translate(raw_lines)
+
+        before_token = self.encode_cursor(entries[0][0])
+        after_token = self.encode_cursor(entries[-1][0])
+
+        entries.sort(key=lambda x: x[0])
+
+        return LogsEntriesResponse(
+            items=[e[1] for e in entries],
+            before=before_token,
+            after=after_token,
+        )
 
     @classmethod
     def encode_cursor(cls, ts_ns: int) -> str:
@@ -177,91 +262,6 @@ class LokiLogStore(OtelLogStore):
             )
 
         return entries
-
-    def fetch(
-        self,
-        logs_model: LogsResponse,
-        limit: int,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        filter_: Optional[LogsEntriesFilter] = None,
-    ) -> LogsEntriesResponse:
-        """Fetch log entries from Loki with cursor-based pagination.
-
-        Args:
-            logs_model: The logs model containing metadata about the logs.
-            limit: Maximum number of log entries to return.
-            before: Cursor token pointing to older entries.
-            after: Cursor token pointing to newer entries.
-            filter_: Filters that must be applied during retrieval.
-
-        Returns:
-            A response containing log entries and pagination tokens.
-
-        Raises:
-            ValueError: If `limit` is not positive or if both `before`
-                and `after` are set.
-        """
-        if self.config.query_range_url is None:
-            raise ValueError(
-                "The query_range_url is not set in the configuration. "
-                "Fetching is impossible."
-            )
-
-        if limit <= 0:
-            raise ValueError("`limit` must be positive.")
-
-        if before is not None and after is not None:
-            raise ValueError("Only one of `before` or `after` can be set.")
-
-        query = self.build_query(logs_model=logs_model, filter_=filter_)
-
-        since_ns = logs_model.created
-        until_ns = datetime.now(timezone.utc)
-
-        if filter_ and filter_.since:
-            since_ns = filter_.since
-        if filter_ and filter_.until:
-            until_ns = filter_.until
-
-        since_ns = _to_unix_ns(since_ns)
-        until_ns = _to_unix_ns(until_ns)
-
-        if after is not None:
-            after_cursor = self.decode_cursor(after)
-            since_ns = max(since_ns, after_cursor + 1)
-        elif before is not None:
-            before_cursor = self.decode_cursor(before)
-            until_ns = min(until_ns, before_cursor - 1)
-
-        if since_ns > until_ns:
-            return LogsEntriesResponse(items=[], before=None, after=after)
-
-        raw_lines = self.query_range(
-            query=query,
-            start_ns=since_ns,
-            end_ns=until_ns,
-            limit=limit,
-            direction="forward" if after else "backward",
-        )
-        if not raw_lines:
-            return LogsEntriesResponse(
-                items=[],
-                before=None,
-                after=after if after is not None else None,
-            )
-        entries = self.translate(raw_lines)
-
-        before_token = self.encode_cursor(entries[0][0])
-        after_token = self.encode_cursor(entries[-1][0])
-
-        entries.sort(key=lambda x: x[0])
-
-        return LogsEntriesResponse(
-            items=[e[1] for e in entries],
-            before=before_token,
-            after=after_token,
-        )
 
     def build_query(
         self, *, logs_model: LogsResponse, filter_: Optional[LogsEntriesFilter]

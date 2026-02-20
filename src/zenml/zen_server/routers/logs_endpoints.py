@@ -331,7 +331,7 @@ def get_logs_entries(
     elif logs.artifact_store_id:
         artifact_store_model = verify_permissions_and_get_entity(
             id=logs.artifact_store_id,
-            get_method=zen_store.get_stack_component,
+            get_method=store.get_stack_component,
         )
         if artifact_store_model.type != StackComponentType.ARTIFACT_STORE:
             raise IllegalOperationError(
