@@ -1,0 +1,541 @@
+---
+name: Dependabot Actions Smoke Test (temporary)
+run-name: dependabot-actions-smoke • ${{ github.ref_name }}
+on:
+  workflow_dispatch:
+    inputs:
+      expected_ref:
+        description: Expected branch ref_name to validate (default = Dependabot PR
+          branch).
+        required: true
+        default: dependabot/github_actions/develop/all-actions-fe4e0b3b48
+        type: string
+      run_cloud_checks:
+        description: Run AWS/GCP/GKE checks (requires org secrets; skipped on forks).
+        required: true
+        default: true
+        type: boolean
+      run_security_actions:
+        description: Run CodeQL/Trivy/SARIF-related checks.
+        required: true
+        default: true
+        type: boolean
+      run_git_push_dryrun:
+        description: Validate checkout credential posture via git push --dry-run (no
+          remote changes).
+        required: true
+        default: true
+        type: boolean
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  ZENML_DEBUG: 1
+  ZENML_ANALYTICS_OPT_IN: false
+  PYTHONIOENCODING: utf-8
+  UV_HTTP_TIMEOUT: 600
+defaults:
+  run:
+    shell: bash
+jobs:
+  preflight:
+    name: preflight (branch guard)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate ref_name matches expected
+        env:
+          INPUTS_EXPECTED_REF: ${{ inputs.expected_ref }}
+        run: |
+          set -euo pipefail
+          echo "ref_name:      ${GITHUB_REF_NAME}"
+          echo "expected_ref:  ${INPUTS_EXPECTED_REF}"
+          if [[ "${GITHUB_REF_NAME}" != "${INPUTS_EXPECTED_REF}" ]]; then
+            echo "::error title=Wrong branch::Run this workflow on '${INPUTS_EXPECTED_REF}' (or override expected_ref input)."
+            exit 1
+          fi
+      - name: Preflight summary
+        if: always()
+        env:
+          INPUTS_EXPECTED_REF: ${{ inputs.expected_ref }}
+        run: |
+          {
+            echo "### Preflight"
+            echo ""
+            echo "- ref_name: \`${GITHUB_REF_NAME}\`"
+            echo "- expected_ref: \`${INPUTS_EXPECTED_REF}\`"
+            echo "- status: **${{ job.status }}**"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_actions_checkout:
+    name: actions/checkout v6.0.2
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Basic git info
+        run: |
+          git rev-parse HEAD
+          git status --porcelain=v1
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### actions/checkout"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- checkout step outcome: \`${{ steps.checkout.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_actions_cache:
+    name: actions/cache v5.0.3
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    steps:
+      - name: Checkout (for consistent workspace)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Cache restore/save
+        id: cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
+        with:
+          path: .cache-smoke
+          key: dependabot-actions-smoke-${{ runner.os }}-v1
+      - name: Validate cache operation
+        run: |
+          set -euo pipefail
+          mkdir -p .cache-smoke
+          if [[ "${{ steps.cache.outputs.cache-hit }}" == "true" ]]; then
+            test -f .cache-smoke/marker
+          fi
+          date -Is > .cache-smoke/marker
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### actions/cache"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- cache-hit: \`${{ steps.cache.outputs.cache-hit }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_actions_setup_python:
+    name: actions/setup-python v6.2.0
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    steps:
+      - name: Setup Python
+        id: setup_python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.11'
+      - name: Verify python
+        run: |
+          python --version
+          python -c "import sys; print(sys.executable)"
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### actions/setup-python"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- setup-python step outcome: \`${{ steps.setup_python.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_astral_setup_uv:
+    name: astral-sh/setup-uv v7.3.0
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    steps:
+      - name: Setup uv
+        id: setup_uv
+        uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
+        with:
+          version: 0.8.14
+      - name: Verify uv
+        run: uv --version
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### astral-sh/setup-uv"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- setup-uv step outcome: \`${{ steps.setup_uv.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_aws_configure_credentials:
+    name: aws-actions/configure-aws-credentials v6.0.0
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Configure AWS credentials (OIDC assume-role)
+        id: aws_creds
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6.0.0
+        with:
+          role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Verify caller identity
+        run: aws sts get-caller-identity
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### aws-actions/configure-aws-credentials"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- configure step outcome: \`${{ steps.aws_creds.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_gcp_auth:
+    name: google-github-actions/auth v3.0.0
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    steps:
+      - name: Auth to GCP (service account JSON)
+        id: gcp_auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
+        with:
+          credentials_json: ${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}
+      - name: Verify credential file
+        run: |
+          set -euo pipefail
+          echo "GOOGLE_GHA_CREDS_PATH=${GOOGLE_GHA_CREDS_PATH:-<unset>}"
+          test -n "${GOOGLE_GHA_CREDS_PATH}"
+          test -f "${GOOGLE_GHA_CREDS_PATH}"
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### google-github-actions/auth"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- auth step outcome: \`${{ steps.gcp_auth.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_setup_gcloud:
+    name: google-github-actions/setup-gcloud v3.0.1
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    steps:
+      - name: Setup gcloud
+        id: setup_gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
+        with:
+          install_components: gke-gcloud-auth-plugin
+      - name: Verify gcloud
+        run: gcloud --version
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### google-github-actions/setup-gcloud"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- setup-gcloud step outcome: \`${{ steps.setup_gcloud.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_get_gke_credentials:
+    name: google-github-actions/get-gke-credentials v3.0.0
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    steps:
+      - name: Auth to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
+        with:
+          credentials_json: ${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
+        with:
+          install_components: gke-gcloud-auth-plugin
+      - name: Get GKE credentials
+        id: gke
+        uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395  # v3.0.0
+        with:
+          cluster_name: zenml-ci-cluster
+          location: us-east4
+          project_id: zenml-ci
+      - name: Verify kube context
+        run: |
+          set -euo pipefail
+          test -f "$HOME/.kube/config"
+          kubectl config get-contexts || true
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### google-github-actions/get-gke-credentials"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- get-gke-credentials step outcome: \`${{ steps.gke.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_docker_login:
+    name: docker/login-action v3.7.0
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_cloud_checks && github.repository == 'zenml-io/zenml' }}
+    steps:
+      - name: Docker login
+        id: docker_login
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Verify docker login
+        run: docker info >/dev/null
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### docker/login-action"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- login step outcome: \`${{ steps.docker_login.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_setup_helm:
+    name: azure/setup-helm v4.3.1
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    steps:
+      - name: Setup Helm (pinned to v3.9.2)
+        id: setup_helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4  # v4.3.1
+        with:
+          version: v3.9.2
+      - name: Verify helm version
+        run: |
+          set -euo pipefail
+          helm version --short
+          # Verify we got Helm 3, not Helm 4
+          helm version --short | grep -q '^v3\.'
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### azure/setup-helm"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- setup-helm step outcome: \`${{ steps.setup_helm.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_trivy_action:
+    name: aquasecurity/trivy-action 0.34.0
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_security_actions }}
+    steps:
+      - name: Trivy scan (table output, no upload)
+        id: trivy
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284  # 0.34.0
+        with:
+          image-ref: docker.io/alpine:3.20
+          format: table
+          output: trivy-smoke.txt
+          ignore-unfixed: true
+      - name: Show trivy output
+        run: sed -n '1,80p' trivy-smoke.txt || true
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### aquasecurity/trivy-action"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- trivy step outcome: \`${{ steps.trivy.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_upload_sarif:
+    name: github/codeql-action/upload-sarif v4.32.3
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_security_actions && github.repository == 'zenml-io/zenml' }}
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Create empty SARIF
+        run: |
+          cat > empty-smoke.sarif <<'JSON'
+          {
+            "version": "2.1.0",
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "runs": [
+              {
+                "tool": {
+                  "driver": {
+                    "name": "dependabot-actions-smoke",
+                    "informationUri": "https://github.com/zenml-io/zenml"
+                  }
+                },
+                "results": []
+              }
+            ]
+          }
+          JSON
+      - name: Upload SARIF
+        id: upload_sarif
+        uses: github/codeql-action/upload-sarif@9e907b5e64f6b83e7804b09294d44122997950d6  # v4.32.3
+        with:
+          sarif_file: empty-smoke.sarif
+          category: dependabot-actions-smoke
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### github/codeql-action/upload-sarif"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- upload-sarif step outcome: \`${{ steps.upload_sarif.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_codeql_init_analyze:
+    name: github/codeql-action init+analyze v4.32.3
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_security_actions && github.repository == 'zenml-io/zenml' }}
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Initialize CodeQL
+        id: codeql_init
+        uses: github/codeql-action/init@9e907b5e64f6b83e7804b09294d44122997950d6  # v4.32.3
+        with:
+          languages: python
+      - name: Perform CodeQL Analysis (no upload)
+        id: codeql_analyze
+        uses: github/codeql-action/analyze@9e907b5e64f6b83e7804b09294d44122997950d6  # v4.32.3
+        with:
+          category: /language:python
+          upload: false
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### github/codeql-action/init + analyze"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- init outcome: \`${{ steps.codeql_init.outcome }}\`"
+            echo "- analyze outcome: \`${{ steps.codeql_analyze.outcome }}\`"
+            echo ""
+            echo "> Upload disabled to avoid noise during temporary smoke test."
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_actions_github_script:
+    name: actions/github-script v8.0.0
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    steps:
+      - name: Run github-script (no side effects)
+        id: gh_script
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            core.info(`repo: ${context.repo.owner}/${context.repo.repo}`)
+            core.info(`ref: ${context.ref}`)
+            core.setOutput('ok', 'true')
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### actions/github-script"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- output ok: \`${{ steps.gh_script.outputs.ok }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+  smoke_checkout_push_dryrun:
+    name: checkout credential posture (git push --dry-run)
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: ${{ inputs.run_git_push_dryrun && github.repository == 'zenml-io/zenml' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout (default credential behavior)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Configure git identity
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions (smoke)"
+      - name: Create a local-only commit
+        run: |
+          set -euo pipefail
+          git checkout -B smoke/dryrun
+          f=".github/.dependabot-actions-smoke-${GITHUB_RUN_ID}.txt"
+          mkdir -p .github
+          echo "smoke ${GITHUB_RUN_ID} $(date -Is)" > "${f}"
+          git add "${f}"
+          git commit -m "smoke: checkout + push dry-run" --no-verify
+      - name: Push dry-run (no remote changes)
+        run: |
+          set -euo pipefail
+          git push --dry-run origin "HEAD:refs/heads/${GITHUB_REF_NAME}"
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### Checkout + git push dry-run"
+            echo ""
+            echo "- status: **${{ job.status }}**"
+            echo "- validated: checkout-produced credentials usable for push"
+            echo "- remote updated: **no** (dry-run only)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ── Roll-up summary ──────────────────────────────────────────
+  summary:
+    name: Summary (per-action results)
+    runs-on: ubuntu-latest
+    needs:
+      - preflight
+      - smoke_actions_checkout
+      - smoke_actions_cache
+      - smoke_actions_setup_python
+      - smoke_astral_setup_uv
+      - smoke_setup_helm
+      - smoke_actions_github_script
+      - smoke_trivy_action
+      - smoke_upload_sarif
+      - smoke_codeql_init_analyze
+      - smoke_aws_configure_credentials
+      - smoke_gcp_auth
+      - smoke_setup_gcloud
+      - smoke_get_gke_credentials
+      - smoke_docker_login
+      - smoke_checkout_push_dryrun
+    if: always()
+    steps:
+      - name: Write roll-up table
+        run: |-
+          {
+            echo "## Dependabot Actions Smoke Test Results"
+            echo ""
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| preflight | \`${{ needs.preflight.result }}\` |"
+            echo "| actions/checkout v6.0.2 | \`${{ needs.smoke_actions_checkout.result }}\` |"
+            echo "| actions/cache v5.0.3 | \`${{ needs.smoke_actions_cache.result }}\` |"
+            echo "| actions/setup-python v6.2.0 | \`${{ needs.smoke_actions_setup_python.result }}\` |"
+            echo "| astral-sh/setup-uv v7.3.0 | \`${{ needs.smoke_astral_setup_uv.result }}\` |"
+            echo "| azure/setup-helm v4.3.1 | \`${{ needs.smoke_setup_helm.result }}\` |"
+            echo "| actions/github-script v8.0.0 | \`${{ needs.smoke_actions_github_script.result }}\` |"
+            echo "| aquasecurity/trivy-action 0.34.0 | \`${{ needs.smoke_trivy_action.result }}\` |"
+            echo "| codeql upload-sarif v4.32.3 | \`${{ needs.smoke_upload_sarif.result }}\` |"
+            echo "| codeql init+analyze v4.32.3 | \`${{ needs.smoke_codeql_init_analyze.result }}\` |"
+            echo "| aws configure-credentials v6.0.0 | \`${{ needs.smoke_aws_configure_credentials.result }}\` |"
+            echo "| gcp auth v3.0.0 | \`${{ needs.smoke_gcp_auth.result }}\` |"
+            echo "| setup-gcloud v3.0.1 | \`${{ needs.smoke_setup_gcloud.result }}\` |"
+            echo "| get-gke-credentials v3.0.0 | \`${{ needs.smoke_get_gke_credentials.result }}\` |"
+            echo "| docker/login-action v3.7.0 | \`${{ needs.smoke_docker_login.result }}\` |"
+            echo "| checkout push dry-run | \`${{ needs.smoke_checkout_push_dryrun.result }}\` |"
+            echo ""
+            echo "> Cloud/security jobs show \`skipped\` if inputs disabled or running on a fork."
+            echo ""
+            echo "> **This workflow is temporary** — delete after dependabot PR merges."
+          } >> "$GITHUB_STEP_SUMMARY"
