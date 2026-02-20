@@ -24,7 +24,7 @@ from sqlalchemy.orm.session import object_session
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import TEXT, VARCHAR, String
-from sqlmodel import Field, Relationship, desc, select
+from sqlmodel import Field, Relationship, col, desc, select
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerType
@@ -39,7 +39,7 @@ from zenml.triggers.registry import (
     TYPE_TO_RESPONSE_BODY_MAPPING,
     TYPE_TO_RESPONSE_MAPPING,
 )
-from zenml.zen_stores.schemas import PipelineSnapshotSchema
+from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSnapshotSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import (
@@ -149,7 +149,7 @@ class TriggerSchema(NamedSchema, table=True):
     )
 
     @property
-    def latest_execution(self) -> TriggerExecutionSchema | None:
+    def latest_run(self) -> PipelineRunSchema | None:
         """Fetch the latest execution for this trigger.
 
         Raises:
@@ -160,7 +160,12 @@ class TriggerSchema(NamedSchema, table=True):
         """
         if session := object_session(self):
             stmt = (
-                select(TriggerExecutionSchema)
+                select(PipelineRunSchema)
+                .join(
+                    TriggerExecutionSchema,
+                    col(TriggerExecutionSchema.pipeline_run_id)
+                    == col(PipelineRunSchema.id),
+                )
                 .where(TriggerExecutionSchema.trigger_id == self.id)
                 .order_by(desc(TriggerExecutionSchema.created_at))
                 .limit(1)
@@ -169,7 +174,7 @@ class TriggerSchema(NamedSchema, table=True):
             return session.execute(stmt).scalars().one_or_none()
         else:
             raise RuntimeError(
-                "Missing DB session to fetch latest execution for trigger."
+                "Missing DB session to fetch latest pipeline run for trigger."
             )
 
     @classmethod
@@ -292,7 +297,7 @@ class TriggerSchema(NamedSchema, table=True):
 
         resources = None
         if include_resources:
-            latest_execution = self.latest_execution
+            latest_run = self.latest_run
 
             resources = TriggerResponseResources(
                 user=self.user.to_model() if self.user else None,
@@ -305,8 +310,8 @@ class TriggerSchema(NamedSchema, table=True):
                     )
                     for s in self.snapshots
                 ],
-                latest_run=latest_execution.pipeline_run.to_model()
-                if latest_execution
+                latest_run=latest_run.to_model()
+                if latest_run is not None
                 else None,
             )
 

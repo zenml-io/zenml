@@ -159,7 +159,7 @@ def run_snapshot(
         template_id: The ID of the template from which to create the snapshot
             request.
         create_new_snapshot: Whether to create a new, copy snapshot.
-        implicit_auth_context: Whether to create a new, implicit auth context.
+        implicit_auth_context: Whether to use implicit auth context or create an explicit new one.
 
     Raises:
         ValueError: If the snapshot can not be run.

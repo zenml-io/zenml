@@ -69,10 +69,16 @@ def upgrade() -> None:
         sa.Column("snapshot_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
-            ["snapshot_id"], ["pipeline_snapshot.id"], ondelete="CASCADE"
+            ["snapshot_id"],
+            ["pipeline_snapshot.id"],
+            ondelete="CASCADE",
+            name="fk_trigger_snapshot_snapshot_id_pipeline_snapshot",
         ),
         sa.ForeignKeyConstraint(
-            ["trigger_id"], ["trigger.id"], ondelete="CASCADE"
+            ["trigger_id"],
+            ["trigger.id"],
+            ondelete="CASCADE",
+            name="fk_trigger_snapshot_trigger_id_trigger",
         ),
         sa.PrimaryKeyConstraint("trigger_id", "snapshot_id"),
         sa.UniqueConstraint(
@@ -87,10 +93,16 @@ def upgrade() -> None:
         ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
-            ["pipeline_run_id"], ["pipeline_run.id"], ondelete="CASCADE"
+            ["pipeline_run_id"],
+            ["pipeline_run.id"],
+            ondelete="CASCADE",
+            name="fk_trigger_execution_pipeline_run_id_pipeline_run",
         ),
         sa.ForeignKeyConstraint(
-            ["trigger_id"], ["trigger.id"], ondelete="CASCADE"
+            ["trigger_id"],
+            ["trigger.id"],
+            ondelete="CASCADE",
+            name="fk_trigger_execution_trigger_id_trigger",
         ),
         sa.PrimaryKeyConstraint("trigger_id", "pipeline_run_id"),
         sa.UniqueConstraint(

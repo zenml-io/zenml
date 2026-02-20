@@ -134,7 +134,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
     latest_run: Optional["PipelineRunResponse"] = None
 
 
-class NonScopedTriggerFilter(BaseFilter):
+class UnScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
 
     name: str | None = Field(
@@ -149,13 +149,15 @@ class NonScopedTriggerFilter(BaseFilter):
         default=False,
         description="Whether the trigger should be archived.",
     )
-    flavor: TriggerFlavor | None = Field(
+    flavor: TriggerFlavor | str | None = Field(
         default=None,
         description="The trigger flavor.",
+        union_mode="left_to_right",
     )
-    type: TriggerType | None = Field(
+    type: TriggerType | str | None = Field(
         default=None,
         description="The trigger type.",
+        union_mode="left_to_right",
     )
     next_occurrence: datetime | str | None = Field(
         default=None,
@@ -167,13 +169,18 @@ class NonScopedTriggerFilter(BaseFilter):
     )
 
 
-class TriggerFilter(NonScopedTriggerFilter, ProjectScopedFilter):
+class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
     """Public class for filtering triggers."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_id",
         "snapshot_id",
+    ]
+
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        "type",
     ]
 
     pipeline_id: str | None = Field(
