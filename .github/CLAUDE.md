@@ -144,11 +144,13 @@ env:
 All CI workflows use:
 ```yaml
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 ```
 
 This cancels previous runs when new commits are pushed to the same branch.
+The PR-number-based group key ensures stable grouping across force-pushes
+(avoids zombie runs caused by `github.ref` instability for PR events).
 
 ### Selective Testing Phase 0 Guardrails
 

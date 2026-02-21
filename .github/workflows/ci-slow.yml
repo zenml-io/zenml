@@ -22,8 +22,11 @@ on:
       - .github/workflows/claude.yml
       - .claude/**
 concurrency:
-  # New commit on branch cancels running workflows of the same branch
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # New commit on branch cancels running workflows of the same branch.
+  # Use PR number when available for stable grouping across force-pushes;
+  # fall back to ref for push/dispatch events.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref
+    }}
   cancel-in-progress: true
 permissions:
   contents: read
@@ -111,7 +114,6 @@ jobs:
                   issue_number: prNumber,
                 }),
               ]);
-
               const refsToTry = [
                 context.payload.pull_request.base.ref,
                 context.payload.pull_request.head.sha,
@@ -140,7 +142,6 @@ jobs:
               if (Array.isArray(mapResponse.data) || !mapResponse.data.content) {
                 throw new Error("Selective testing map could not be loaded as a file.");
               }
-
               const mapping = JSON.parse(
                 Buffer.from(mapResponse.data.content, mapResponse.data.encoding).toString("utf8")
               );
@@ -278,9 +279,10 @@ jobs:
           fi
           bash scripts/test-migrations.sh mysql "$migration_type"
   mysql-db-migration-testing-random:
-    if: github.event.pull_request.draft == false && (needs.classify-changes.result != 'success'
-      || needs.classify-changes.outputs.needs_migrations == 'true' || needs.classify-changes.outputs.force_migrations
-      == 'true' || needs.classify-changes.outputs.ci_slow_profile == 'full')
+    if: github.event.pull_request.draft == false && (needs.classify-changes.result
+      != 'success' || needs.classify-changes.outputs.needs_migrations == 'true' ||
+      needs.classify-changes.outputs.force_migrations == 'true' || needs.classify-changes.outputs.ci_slow_profile
+      == 'full')
     needs: [run-slow-ci-label-is-set, classify-changes]
     env:
       ZENML_ANALYTICS_OPT_IN: false

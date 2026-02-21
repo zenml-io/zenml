@@ -22,8 +22,11 @@ on:
       - .github/workflows/claude.yml
       - .claude/**
 concurrency:
-  # New commit on branch cancels running workflows of the same branch
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # New commit on branch cancels running workflows of the same branch.
+  # Use PR number when available for stable grouping across force-pushes;
+  # fall back to ref for push/dispatch events.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref
+    }}
   cancel-in-progress: true
 permissions:
   contents: read
