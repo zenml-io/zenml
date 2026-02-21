@@ -160,6 +160,7 @@ def generate_config_schema(
     stack = snapshot.build.stack
     experiment_trackers = []
     step_operators = []
+    sandboxes = []
 
     settings_fields: Dict[str, Any] = {
         "resources": (Optional[ResourceSettings], None)
@@ -190,6 +191,8 @@ def generate_config_schema(
             experiment_trackers.append(component.name)
         if component.type == StackComponentType.STEP_OPERATOR:
             step_operators.append(component.name)
+        if component.type == StackComponentType.SANDBOX:
+            sandboxes.append(component.name)
 
     settings_model = create_model("Settings", **settings_fields)
 
@@ -201,6 +204,7 @@ def generate_config_schema(
             "outputs",
             "step_operator",
             "experiment_tracker",
+            "sandbox",
             "parameters",
         ]
         if not snapshot.is_dynamic:
@@ -228,6 +232,14 @@ def generate_config_schema(
         )
         generic_step_fields["step_operator"] = (
             Optional[Union[step_operator_enum, bool]],
+            None,
+        )
+    if sandboxes:
+        sandbox_enum = Enum(  # type: ignore[misc]
+            "Sandboxes", {s: s for s in sandboxes}
+        )
+        generic_step_fields["sandbox"] = (
+            Optional[Union[sandbox_enum, bool]],
             None,
         )
 

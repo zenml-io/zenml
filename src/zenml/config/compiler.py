@@ -661,6 +661,7 @@ class Compiler:
             if stack.experiment_tracker
             else set()
         )
+        available_sandboxes = {stack.sandbox.name} if stack.sandbox else set()
 
         for name, step in steps.items():
             step_operator = step.config.step_operator
@@ -698,6 +699,22 @@ class Compiler:
                     f"'{experiment_tracker}' which is not "
                     f"configured in the stack '{stack.name}'. Available "
                     f"experiment trackers: {available_experiment_trackers}."
+                )
+
+            sandbox = step.config.sandbox
+            if sandbox is True:
+                if not available_sandboxes:
+                    raise StackValidationError(
+                        f"Step `{name}` requires a sandbox, but no sandboxes "
+                        f"are configured in the stack '{stack.name}'."
+                    )
+            elif (
+                isinstance(sandbox, str) and sandbox not in available_sandboxes
+            ):
+                raise StackValidationError(
+                    f"Step `{name}` requires sandbox '{sandbox}' which is not "
+                    f"configured in the stack '{stack.name}'. Available "
+                    f"sandboxes: {available_sandboxes}."
                 )
 
     @staticmethod

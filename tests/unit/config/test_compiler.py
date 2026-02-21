@@ -93,6 +93,41 @@ def test_compiling_pipeline_with_missing_experiment_tracker(
         )
 
 
+def test_compiling_pipeline_with_missing_sandbox(
+    one_step_pipeline, empty_step, local_stack
+):
+    """Tests that compiling a pipeline with a missing sandbox fails."""
+    pipeline_instance = one_step_pipeline(empty_step.configure(sandbox=True))
+    pipeline_instance.prepare()
+    with pytest.raises(StackValidationError):
+        Compiler().compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+
+
+def test_compiling_pipeline_with_wrong_sandbox_name(
+    mocker, one_step_pipeline, empty_step, local_stack
+):
+    """Tests that compiling with an unknown sandbox name fails."""
+    configured_sandbox = mocker.Mock()
+    configured_sandbox.name = "configured-sandbox"
+    configured_sandbox.settings_class = None
+    local_stack._sandboxes = [configured_sandbox]
+
+    pipeline_instance = one_step_pipeline(
+        empty_step.configure(sandbox="unknown-sandbox")
+    )
+    pipeline_instance.prepare()
+    with pytest.raises(StackValidationError):
+        Compiler().compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+
+
 def test_pipeline_and_steps_dont_get_modified_during_compilation(
     one_step_pipeline, empty_step, local_stack
 ):

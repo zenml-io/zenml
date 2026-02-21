@@ -549,6 +549,7 @@ def test_step_decorator_configuration_gets_applied_during_initialization(
     config = {
         "experiment_tracker": "e",
         "step_operator": "s",
+        "sandbox": "sb",
         "extra": {"key": "value"},
     }
 
@@ -558,6 +559,7 @@ def test_step_decorator_configuration_gets_applied_during_initialization(
 
     assert step_instance.configuration.experiment_tracker == "e"
     assert step_instance.configuration.step_operator == "s"
+    assert step_instance.configuration.sandbox == "sb"
     assert step_instance.configuration.extra == {"key": "value"}
 
 
@@ -569,6 +571,7 @@ def test_step_configuration(empty_step):
         enable_cache=False,
         experiment_tracker="experiment_tracker",
         step_operator="step_operator",
+        sandbox="sandbox",
         extra={"key": "value"},
     )
 
@@ -577,6 +580,7 @@ def test_step_configuration(empty_step):
         step_instance.configuration.experiment_tracker == "experiment_tracker"
     )
     assert step_instance.configuration.step_operator == "step_operator"
+    assert step_instance.configuration.sandbox == "sandbox"
     assert step_instance.configuration.extra == {"key": "value"}
 
     # No merging
@@ -584,6 +588,7 @@ def test_step_configuration(empty_step):
         enable_cache=True,
         experiment_tracker="experiment_tracker2",
         step_operator="step_operator2",
+        sandbox="sandbox2",
         extra={"key2": "value2"},
         merge=False,
     )
@@ -592,6 +597,7 @@ def test_step_configuration(empty_step):
         step_instance.configuration.experiment_tracker == "experiment_tracker2"
     )
     assert step_instance.configuration.step_operator == "step_operator2"
+    assert step_instance.configuration.sandbox == "sandbox2"
     assert step_instance.configuration.extra == {"key2": "value2"}
 
     # With merging
@@ -599,6 +605,7 @@ def test_step_configuration(empty_step):
         enable_cache=False,
         experiment_tracker="experiment_tracker3",
         step_operator="step_operator3",
+        sandbox="sandbox3",
         extra={"key3": "value3"},
         merge=True,
     )
@@ -607,6 +614,7 @@ def test_step_configuration(empty_step):
         step_instance.configuration.experiment_tracker == "experiment_tracker3"
     )
     assert step_instance.configuration.step_operator == "step_operator3"
+    assert step_instance.configuration.sandbox == "sandbox3"
     assert step_instance.configuration.extra == {
         "key2": "value2",
         "key3": "value3",

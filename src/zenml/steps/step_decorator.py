@@ -71,6 +71,7 @@ def step(
     enable_step_logs: Optional[bool] = None,
     experiment_tracker: Optional[Union[bool, str]] = None,
     step_operator: Optional[Union[bool, str]] = None,
+    sandbox: Optional[Union[bool, str]] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
@@ -98,6 +99,7 @@ def step(
     enable_step_logs: Optional[bool] = None,
     experiment_tracker: Optional[Union[bool, str]] = None,
     step_operator: Optional[Union[bool, str]] = None,
+    sandbox: Optional[Union[bool, str]] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
@@ -129,6 +131,7 @@ def step(
         enable_step_logs: Specify whether step logs are enabled for this step.
         experiment_tracker: The experiment tracker to use for this step.
         step_operator: The step operator to use for this step.
+        sandbox: The sandbox to use for this step.
         output_materializers: Output materializers for this step. If
             given as a dict, the keys must be a subset of the output names
             of this step. If a single value (type or string) is given, the
@@ -182,6 +185,7 @@ def step(
             enable_step_logs=enable_step_logs,
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
+            sandbox=sandbox,
             output_materializers=output_materializers,
             environment=environment,
             secrets=secrets,

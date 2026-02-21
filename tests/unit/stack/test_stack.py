@@ -136,6 +136,36 @@ def test_stack_requirements(stack_with_mock_components):
     }
 
 
+def test_sandbox_is_only_active_for_steps_that_use_it(
+    mocker,
+    local_orchestrator,
+    local_artifact_store,
+    stub_sandbox,
+):
+    """Tests that sandbox components are only active for steps that opt in."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+        sandbox=stub_sandbox,
+    )
+
+    step_config = mocker.Mock()
+    step_config.uses_sandbox.return_value = False
+
+    active_components = stack._get_active_components_for_step(
+        step_config=step_config
+    )
+    assert StackComponentType.SANDBOX not in active_components
+
+    step_config.uses_sandbox.return_value = True
+    active_components = stack._get_active_components_for_step(
+        step_config=step_config
+    )
+    assert active_components[StackComponentType.SANDBOX] is stub_sandbox
+
+
 def test_stack_validation_fails_if_a_components_validator_fails(
     stack_with_mock_components, failing_stack_validator
 ):

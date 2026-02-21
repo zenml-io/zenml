@@ -179,6 +179,10 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="The experiment tracker to use for the step.",
     )
+    sandbox: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="The sandbox to use for the step.",
+    )
     parameters: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Parameters for the step function.",
@@ -273,6 +277,22 @@ class StepConfigurationUpdate(FrozenBaseModel):
             return True
         elif isinstance(self.experiment_tracker, str):
             return self.experiment_tracker == name
+        else:
+            return False
+
+    def uses_sandbox(self, name: str) -> bool:
+        """Checks if the step configuration uses the given sandbox.
+
+        Args:
+            name: The name of the sandbox.
+
+        Returns:
+            If the step configuration uses the given sandbox.
+        """
+        if isinstance(self.sandbox, bool):
+            return self.sandbox
+        elif isinstance(self.sandbox, str):
+            return self.sandbox == name
         else:
             return False
 

@@ -1003,6 +1003,9 @@ class Stack:
             if component.type == StackComponentType.EXPERIMENT_TRACKER:
                 return step_config.uses_experiment_tracker(component.name)
 
+            if component.type == StackComponentType.SANDBOX:
+                return step_config.uses_sandbox(component.name)
+
             return True
 
         return {
