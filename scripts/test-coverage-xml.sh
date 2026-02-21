@@ -3,6 +3,20 @@
 set -e
 set -x
 
+measure_stage() {
+    local stage="$1"
+    shift
+    local started_at
+    local finished_at
+    local elapsed
+
+    started_at=$(date +%s)
+    "$@"
+    finished_at=$(date +%s)
+    elapsed=$((finished_at - started_at))
+    echo "CI_TIMING ${stage} ${elapsed}"
+}
+
 # If only unittests are needed call
 # test-coverage-xml.sh unit
 # For only integration tests call
@@ -13,6 +27,17 @@ TEST_ENVIRONMENT=${2:-"default"}
 TEST_SPLITS=${3:-"1"}
 TEST_GROUP=${4:-"1"}
 STORE_DURATIONS=${5:-""}
+DURATIONS_FILE=".test_durations"
+
+if ! [[ "$TEST_SPLITS" =~ ^[0-9]+$ ]] || [[ "$TEST_SPLITS" -lt 1 ]]; then
+    echo "Warning: TEST_SPLITS='$TEST_SPLITS' is invalid. Falling back to 1." >&2
+    TEST_SPLITS=1
+fi
+
+if ! [[ "$TEST_GROUP" =~ ^[0-9]+$ ]] || [[ "$TEST_GROUP" -lt 1 ]] || [[ "$TEST_GROUP" -gt "$TEST_SPLITS" ]]; then
+    echo "Warning: TEST_GROUP='$TEST_GROUP' is invalid for TEST_SPLITS='$TEST_SPLITS'. Falling back to 1." >&2
+    TEST_GROUP=1
+fi
 
 # Control flaky test retries via environment variables.
 # - PYTEST_RERUNS: non-negative integer (0 disables reruns), defaults to 3 if unset or invalid.
@@ -42,33 +67,58 @@ if ! [[ "$RERUNS_DELAY" =~ ^[0-9]+$ ]]; then
 fi
 
 PYTEST_RERUN_ARGS=(--reruns "$RERUNS" --reruns-delay "$RERUNS_DELAY")
+DURATIONS_ARGS=()
+SPLIT_ARGS=()
+
+if [[ "$STORE_DURATIONS" == "store-durations" ]]; then
+    DURATIONS_ARGS=(--store-durations --durations-path="$DURATIONS_FILE")
+elif [[ "$TEST_SPLITS" -gt 1 ]]; then
+    if [[ -s "$DURATIONS_FILE" ]]; then
+        DURATIONS_ARGS=(--durations-path="$DURATIONS_FILE")
+        SPLIT_ARGS=(--splits="$TEST_SPLITS" --group="$TEST_GROUP" --splitting-algorithm least_duration)
+    else
+        echo "Warning: $DURATIONS_FILE is missing or empty. Falling back to duration_based_chunks splitting." >&2
+        SPLIT_ARGS=(--splits="$TEST_SPLITS" --group="$TEST_GROUP" --splitting-algorithm duration_based_chunks)
+    fi
+fi
+
+run_pytest() {
+    local target="$1"
+    shift
+    local extra_args=("$@")
+
+    coverage run -m pytest "$target" --color=yes -vv \
+        "${DURATIONS_ARGS[@]}" \
+        "${SPLIT_ARGS[@]}" \
+        --environment "$TEST_ENVIRONMENT" \
+        --no-provision \
+        "${extra_args[@]}" \
+        "${PYTEST_RERUN_ARGS[@]}" \
+        --instafail
+}
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 export EVIDENTLY_DISABLE_TELEMETRY=1
 
-./zen-test environment provision $TEST_ENVIRONMENT
+measure_stage provision ./zen-test environment provision "$TEST_ENVIRONMENT"
 
 # The '-vv' flag enables pytest-clarity output when tests fail.
 # Shows errors instantly in logs when test fails.
 if [ -n "$1" ]; then
-    if [ "$STORE_DURATIONS" == "store-durations" ]; then
-        coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations "${PYTEST_RERUN_ARGS[@]}" --instafail
-    else
-        coverage run -m pytest $TEST_SRC --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker "${PYTEST_RERUN_ARGS[@]}" --instafail
-    fi
+    measure_stage pytest_targeted run_pytest "$TEST_SRC" --cleanup-docker
 else
-    if [ "$STORE_DURATIONS" == "store-durations" ]; then
-        coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --store-durations --durations-path=.test_durations "${PYTEST_RERUN_ARGS[@]}" --instafail
-        coverage run -m pytest tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations "${PYTEST_RERUN_ARGS[@]}" --instafail
-    else
-        coverage run -m pytest tests/unit --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision "${PYTEST_RERUN_ARGS[@]}" --instafail
-        coverage run -m pytest tests/integration --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker "${PYTEST_RERUN_ARGS[@]}" --instafail
-    fi
+    measure_stage pytest_unit run_pytest tests/unit
+    measure_stage pytest_integration run_pytest tests/integration --cleanup-docker
 fi
 
-./zen-test environment cleanup $TEST_ENVIRONMENT
+measure_stage cleanup ./zen-test environment cleanup "$TEST_ENVIRONMENT"
 
-coverage combine
-coverage report --show-missing
-coverage xml
+if [[ "${CI_SKIP_COVERAGE_XML:-false}" == "true" ]]; then
+    echo "CI_TIMING coverage_skipped 0"
+    echo "Skipping coverage combine/report/xml because CI_SKIP_COVERAGE_XML=true"
+else
+    measure_stage coverage_combine coverage combine
+    measure_stage coverage_report coverage report --show-missing
+    measure_stage coverage_xml coverage xml
+fi

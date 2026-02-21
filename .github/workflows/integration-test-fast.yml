@@ -30,6 +30,22 @@ on:
         type: number
         required: false
         default: 3
+      test_scope:
+        description: Pytest scope under tests/ to execute (for example `integration`
+          or `integration/functional`)
+        type: string
+        required: false
+        default: integration
+      shards:
+        description: JSON array of shard indices to execute (must be contiguous 1..N)
+        type: string
+        required: false
+        default: '[1, 2, 3, 4, 5, 6]'
+      max_parallel:
+        description: Maximum number of shard jobs that run in parallel
+        type: number
+        required: false
+        default: 6
   workflow_dispatch:
     inputs:
       os:
@@ -82,14 +98,31 @@ on:
         type: number
         required: false
         default: 3
+      test_scope:
+        description: Pytest scope under tests/ to execute (for example `integration`
+          or `integration/functional`)
+        type: string
+        required: false
+        default: integration
+      shards:
+        description: JSON array of shard indices to execute (must be contiguous 1..N)
+        type: string
+        required: false
+        default: '[1, 2, 3, 4, 5, 6]'
+      max_parallel:
+        description: Maximum number of shard jobs that run in parallel
+        type: number
+        required: false
+        default: 6
 jobs:
   integration-tests-fast:
     name: integration-tests-fast
     runs-on: ${{ inputs.os }}
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max_parallel }}
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: ${{ fromJSON(inputs.shards) }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -286,12 +319,36 @@ jobs:
         uses: mxschmitt/action-tmate@a283f9441d2d96eb62436dc46d7014f5d357ac22  # v3.17
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Sharded Integration Tests (Ubuntu) - Fast CI
-        # Ubuntu integration tests run as 6 shards
+        # Shard indices are controlled by workflow inputs and must be contiguous (1..N).
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} 6 ${{ matrix.shard }}
+          TOTAL_SPLITS="$(python - <<'PY'
+          import json
+          import os
+          shards = json.loads(os.environ["INPUTS_SHARDS"])
+          if not isinstance(shards, list) or not shards:
+              raise SystemExit("`shards` must be a non-empty JSON array.")
+          if not all(isinstance(shard, int) and shard > 0 for shard in shards):
+              raise SystemExit("`shards` must contain only positive integers.")
+          expected = list(range(1, len(shards) + 1))
+          if sorted(shards) != expected:
+              raise SystemExit(
+                  f"`shards` must contain each shard in 1..N exactly once. Got {shards}."
+              )
+          matrix_shard = int(os.environ["MATRIX_SHARD"])
+          if matrix_shard not in shards:
+              raise SystemExit(
+                  f"Matrix shard {matrix_shard} is missing from configured shards {shards}."
+              )
+          print(len(shards))
+          PY
+          )"
+          bash scripts/test-coverage-xml.sh "${INPUTS_TEST_SCOPE}" "${INPUTS_TEST_ENVIRONMENT}" "${TOTAL_SPLITS}" "${MATRIX_SHARD}"
         env:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          INPUTS_TEST_SCOPE: ${{ inputs.test_scope }}
+          INPUTS_SHARDS: ${{ inputs.shards }}
+          MATRIX_SHARD: ${{ matrix.shard }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@a283f9441d2d96eb62436dc46d7014f5d357ac22  # v3.17

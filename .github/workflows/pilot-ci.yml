@@ -1,19 +1,9 @@
 ---
-name: ci-fast
+name: pilot-ci
 on:
   workflow_dispatch:
-  workflow_call:
-  push:
-    branches: [main]
-    paths-ignore:
-      - docs/**
-      - '*'
-      - '!pyproject.toml'
-      - '**.md'
-      - .github/workflows/claude.yml
-      - .claude/**
   pull_request:
-    types: [opened, synchronize, ready_for_review]
+    types: [opened, synchronize, ready_for_review, labeled]
     paths-ignore:
       - docs/**
       - '*'
@@ -30,35 +20,49 @@ permissions:
   pull-requests: read
   issues: read
 jobs:
-  docstring-check:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - name: Set up Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
-        with:
-          python-version: '3.10'
-      - name: Install darglint using uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
-          uv pip install --system darglint
-      - name: Check docstrings
-        run: bash scripts/docstring.sh
-  classify-changes:
+  pilot-ci-label-is-set:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
+    outputs:
+      enabled: ${{ steps.pilot-label.outputs.enabled }}
+      all_labels: ${{ steps.pilot-label.outputs.all_labels }}
+    steps:
+      - name: Get pilot CI label state
+        id: pilot-label
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            if (context.eventName !== "pull_request") {
+              core.setOutput("enabled", "true");
+              core.setOutput("all_labels", "");
+              return;
+            }
+            const prNumber = context.payload.pull_request.number;
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const labelNames = labels.map((label) => label.name);
+            core.setOutput("enabled", labelNames.includes("pilot-ci") ? "true" : "false");
+            core.setOutput("all_labels", labelNames.join(","));
+      - name: Pilot CI label not set
+        if: github.event_name == 'pull_request' && steps.pilot-label.outputs.enabled
+          != 'true'
+        run: |
+          echo "Skipping pilot-ci because the 'pilot-ci' label is not set on this PR."
+  classify-changes:
+    needs: [pilot-ci-label-is-set]
+    if: needs.pilot-ci-label-is-set.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
     outputs:
       needs_migrations: ${{ steps.classify.outputs.needs_migrations }}
       needs_server_env: ${{ steps.classify.outputs.needs_server_env }}
       force_migrations: ${{ steps.classify.outputs.force_migrations }}
       force_server_env: ${{ steps.classify.outputs.force_server_env }}
-      pilot_ci: ${{ steps.classify.outputs.pilot_ci }}
       default_test_scope: ${{ steps.classify.outputs.default_test_scope }}
     steps:
-      - name: Classify changed files for selective jobs
+      - name: Classify changed files for pilot jobs
         id: classify
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
@@ -68,7 +72,6 @@ jobs:
               needsServerEnv: "true",
               forceMigrations: "false",
               forceServerEnv: "false",
-              pilotCi: "false",
               defaultTestScope: "integration",
             };
             const setOutputs = (outputs) => {
@@ -76,7 +79,6 @@ jobs:
               core.setOutput("needs_server_env", outputs.needsServerEnv);
               core.setOutput("force_migrations", outputs.forceMigrations);
               core.setOutput("force_server_env", outputs.forceServerEnv);
-              core.setOutput("pilot_ci", outputs.pilotCi);
               core.setOutput("default_test_scope", outputs.defaultTestScope);
             };
             if (context.eventName !== "pull_request") {
@@ -213,24 +215,21 @@ jobs:
                 needsServerEnv: needsServerEnv ? "true" : "false",
                 forceMigrations: hasLabel(forceLabels.migrations) ? "true" : "false",
                 forceServerEnv: hasLabel(forceLabels.server_env) ? "true" : "false",
-                pilotCi: hasLabel(forceLabels.pilot_ci) ? "true" : "false",
                 defaultTestScope,
               });
             } catch (error) {
               core.warning(
-                `Failed to classify changed files. Falling back to broad coverage. ${error}`
+                `Failed to classify changed files for pilot-ci. Falling back to broad coverage. ${error}`
               );
               setOutputs(failClosed);
             }
   sqlite-db-migration-testing-random:
-    needs: [classify-changes]
+    needs: [pilot-ci-label-is-set, classify-changes]
     runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    # Fail closed: if classification fails, run migrations by default.
-    if: always() && needs.classify-changes.outputs.pilot_ci != 'true' && (github.event.pull_request.draft
-      == false || github.event_name == 'workflow_dispatch') && (needs.classify-changes.result
+    if: always() && needs.pilot-ci-label-is-set.outputs.enabled == 'true' && (needs.classify-changes.result
       != 'success' || needs.classify-changes.outputs.needs_migrations == 'true' ||
       needs.classify-changes.outputs.force_migrations == 'true')
     steps:
@@ -244,72 +243,9 @@ jobs:
           python-version: '3.10'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
-  spellcheck:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - name: Spelling checker
-        uses: crate-ci/typos@d01f29c66d1bf1a08730750f61d86c210b0d039d  # v1.27.0
-        with:
-          files: .
-          config: ./.typos.toml
-  api-docs-test:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - name: Set up Python 3.11
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
-        with:
-          python-version: '3.11'
-      - name: Test API docs buildable
-        run: bash scripts/generate-docs.sh -v DUMMY -c
-  update-templates-to-examples:
-    # this doesn't work on forked repositories (i.e. outside contributors)
-    # so we disable template updates for those PRs / branches
-    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
-      == false
-    uses: ./.github/workflows/update-templates-to-examples.yml
-    with:
-      python-version: '3.11'
-      os: ubuntu-latest
-    secrets: inherit
-  linting:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
-    uses: ./.github/workflows/linting.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  ubuntu-setup-and-unit-test:
-    needs: linting
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        # IMPORTANT: Since we are using the combination of `arc-runner-set`
-        # and `3.10` in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow. If you change the configuration
-        # here, please adjust the configuration of `ci-slow` accordingly.
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
   ubuntu-latest-integration-test-default:
-    needs: [linting, classify-changes]
-    if: always() && needs.linting.result == 'success' && needs.classify-changes.outputs.pilot_ci
-      != 'true' && github.event.pull_request.draft == false
+    needs: [pilot-ci-label-is-set, classify-changes]
+    if: always() && needs.pilot-ci-label-is-set.outputs.enabled == 'true'
     uses: ./.github/workflows/integration-test-fast.yml
     with:
       os: ubuntu-latest
@@ -320,10 +256,9 @@ jobs:
       max_parallel: 1
     secrets: inherit
   ubuntu-latest-integration-test-server:
-    needs: [linting, classify-changes]
+    needs: [pilot-ci-label-is-set, classify-changes]
     # Fail closed: if classification fails, run server env by default.
-    if: always() && needs.linting.result == 'success' && needs.classify-changes.outputs.pilot_ci
-      != 'true' && github.event.pull_request.draft == false && (needs.classify-changes.result
+    if: always() && needs.pilot-ci-label-is-set.outputs.enabled == 'true' && (needs.classify-changes.result
       != 'success' || needs.classify-changes.outputs.needs_server_env == 'true' ||
       needs.classify-changes.outputs.force_server_env == 'true')
     uses: ./.github/workflows/integration-test-fast.yml

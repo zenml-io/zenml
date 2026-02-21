@@ -4,6 +4,8 @@ on:
   workflow_call:
   schedule:
     - cron: 0 8 * * 1  # Run every Monday at 8 am
+permissions:
+  contents: write
 jobs:
   generate-test-duration-file:
     name: Generate test duration file
@@ -15,9 +17,9 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
-          # on MAC OS, we need to set this environment variable
-          # to fix problems with the fork() calls (see this thread
-          # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+      PYTEST_RERUNS: 0
+      # On macOS, set this to avoid Objective-C fork safety issues.
+      # See: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     defaults:
       run:
@@ -32,21 +34,34 @@ jobs:
           python-version: '3.10'
           os: ubuntu-latest
       - name: Generate test duration file
-        continue-on-error: true
-            # Ubuntu integration tests run as 6 shards
         run: |
           bash scripts/test-coverage-xml.sh "" default "" "" store-durations
-      - name: Check difference in .test_durations
+      - name: Upload .test_durations artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: test-durations
+          path: .test_durations
+          if-no-files-found: warn
+      - name: Commit .test_durations if tracked and changed
         run: |
-          git diff --quiet || echo "Changes found"
-          if [ -n "$(git status --porcelain)" ]; then
-            # Commit changes directly to the specified branch
-            git add .test_durations
-            git commit -m "Update with new changes for test duration file at $(date +'%Y%m%d-%H%M%S')"
-            git push origin develop
-          else
-            echo "No changes in .test_durations"
+          if ! git ls-files --error-unmatch .test_durations >/dev/null 2>&1; then
+            echo ".test_durations is not tracked in this branch. Skipping commit."
+            exit 0
           fi
+          if [ ! -f .test_durations ]; then
+            echo ".test_durations was not generated. Skipping commit."
+            exit 0
+          fi
+          git add .test_durations
+          if git diff --cached --quiet -- .test_durations; then
+            echo "No changes in .test_durations"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update test duration file at $(date +'%Y%m%d-%H%M%S')"
+          git push origin develop
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list

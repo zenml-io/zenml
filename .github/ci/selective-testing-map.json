@@ -1,0 +1,48 @@
+{
+  "default_test_scope": "integration/functional",
+  "full_test_scope": "integration",
+  "migration_matchers": [
+    "^src/zenml/zen_stores/migrations/",
+    "^src/zenml/zen_stores/schemas/",
+    "^scripts/test-migrations\\.sh$",
+    "^\\.github/workflows/ci-fast\\.yml$",
+    "^\\.github/workflows/ci-slow\\.yml$",
+    "^\\.github/workflows/pilot-ci\\.yml$",
+    "^\\.github/workflows/integration-test-fast\\.yml$",
+    "^\\.github/workflows/integration-test-slow\\.yml$"
+  ],
+  "server_env_matchers": [
+    "^src/zenml/zen_server/",
+    "^src/zenml/zen_stores/",
+    "^src/zenml/execution/",
+    "^src/zenml/orchestrators/",
+    "^tests/integration/functional/zen_server/",
+    "^tests/integration/functional/zen_stores/",
+    "^tests/harness/",
+    "^\\.github/workflows/ci-fast\\.yml$",
+    "^\\.github/workflows/pilot-ci\\.yml$",
+    "^\\.github/workflows/integration-test-fast\\.yml$",
+    "^scripts/test-coverage-xml\\.sh$"
+  ],
+  "full_scope_matchers": [
+    "^src/zenml/integrations/",
+    "^tests/integration/integrations/",
+    "^tests/integration/examples/",
+    "^src/zenml/materializers/",
+    "^src/zenml/steps/",
+    "^src/zenml/pipelines/",
+    "^src/zenml/execution/",
+    "^src/zenml/orchestrators/",
+    "^\\.github/workflows/ci-fast\\.yml$",
+    "^\\.github/workflows/pilot-ci\\.yml$",
+    "^\\.github/workflows/integration-test-fast\\.yml$",
+    "^scripts/test-coverage-xml\\.sh$"
+  ],
+  "force_labels": {
+    "pilot_ci": "pilot-ci",
+    "migrations": "force-migrations",
+    "server_env": "force-server-env",
+    "full_scope": "force-full-integration",
+    "slow_full": "run-slow-ci-full"
+  }
+}
