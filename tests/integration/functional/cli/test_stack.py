@@ -14,7 +14,7 @@
 
 import os
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID, uuid4
 
 import pytest
@@ -102,6 +102,38 @@ def test_describe_stack_bad_input_fails(
     describe_command = cli.commands["stack"].commands["describe"]
     result = runner.invoke(describe_command, [not_a_stack])
     assert result.exit_code == 1
+
+
+def test_register_stack_nonexistent_sandbox_fails(
+    clean_client: "Client",
+) -> None:
+    """Test stack register with a missing sandbox component fails."""
+    active_stack = clean_client.active_stack_model
+    artifact_store_name = active_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_name = active_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    runner = CliRunner()
+    register_command = cli.commands["stack"].commands["register"]
+    result = runner.invoke(
+        register_command,
+        [
+            "sandbox-stack",
+            "-a",
+            artifact_store_name,
+            "-o",
+            orchestrator_name,
+            "--sandbox",
+            "missing-sandbox",
+        ],
+    )
+
+    assert result.exit_code == 1
+    with pytest.raises(KeyError):
+        clean_client.get_stack("sandbox-stack")
 
 
 def test_update_stack_update_on_default_fails(clean_client: "Client") -> None:
@@ -317,22 +349,30 @@ def test_update_stack_adding_to_default_stack_fails(
     )
 
 
-def test_update_stack_nonexistent_stack_fails(clean_client: "Client") -> None:
+@pytest.mark.parametrize(
+    "update_args",
+    [["-i", "<image-builder>"], ["--sandbox", "unknown-sandbox"]],
+)
+def test_update_stack_nonexistent_stack_fails(
+    clean_client: "Client", update_args: List[str]
+) -> None:
     """Test stack update of nonexistent stack fails."""
-    local_image_builder = _create_local_image_builder(clean_client)
+    args = list(update_args)
 
-    local_image_builder_model = clean_client.create_stack_component(
-        name=local_image_builder.name,
-        flavor=local_image_builder.flavor,
-        component_type=local_image_builder.type,
-        configuration=local_image_builder.config.model_dump(),
-    )
+    if args[0] == "-i":
+        local_image_builder = _create_local_image_builder(clean_client)
+
+        local_image_builder_model = clean_client.create_stack_component(
+            name=local_image_builder.name,
+            flavor=local_image_builder.flavor,
+            component_type=local_image_builder.type,
+            configuration=local_image_builder.config.model_dump(),
+        )
+        args[1] = local_image_builder_model.name
 
     runner = CliRunner()
     update_command = cli.commands["stack"].commands["update"]
-    result = runner.invoke(
-        update_command, ["not_a_stack", "-i", local_image_builder_model.name]
-    )
+    result = runner.invoke(update_command, ["not_a_stack", *args])
 
     assert result.exit_code == 1
     assert clean_client.active_stack.image_builder is None
@@ -422,13 +462,14 @@ def test_rename_stack_non_active_stack_succeeds(
     assert clean_client.get_stack(new_stack.id).name == "axls_stack"
 
 
+@pytest.mark.parametrize("remove_flag", ["-i", "--sandbox"])
 def test_remove_component_from_nonexistent_stack_fails(
-    clean_client: "Client",
+    clean_client: "Client", remove_flag: str
 ) -> None:
     """Test stack remove-component of nonexistent stack fails."""
     runner = CliRunner()
     remove_command = cli.commands["stack"].commands["remove-component"]
-    result = runner.invoke(remove_command, ["not_a_stack", "-i"])
+    result = runner.invoke(remove_command, ["not_a_stack", remove_flag])
     assert result.exit_code == 1
 
 

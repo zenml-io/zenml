@@ -83,6 +83,10 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+_COMPONENT_TYPE_IMPORT_ALIASES: Dict[str, StackComponentType] = {
+    StackComponentType.SANDBOX.plural: StackComponentType.SANDBOX,
+}
+
 
 @cli.group(
     cls=TagGroup,
@@ -135,6 +139,13 @@ def stack() -> None:
     "--step_operator",
     "step_operator",
     help="Name of the step operator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--sandbox",
+    "sandbox",
+    help="Name of the sandbox for this stack.",
     type=str,
     required=False,
 )
@@ -255,6 +266,7 @@ def register_stack(
     container_registry: Optional[str] = None,
     model_registry: Optional[str] = None,
     step_operator: Optional[str] = None,
+    sandbox: Optional[str] = None,
     feature_store: Optional[str] = None,
     model_deployer: Optional[str] = None,
     experiment_tracker: Optional[str] = None,
@@ -279,6 +291,7 @@ def register_stack(
         container_registry: Name of the container registry for this stack.
         model_registry: Name of the model registry for this stack.
         step_operator: Name of the step operator for this stack.
+        sandbox: Name of the sandbox for this stack.
         feature_store: Name of the feature store for this stack.
         model_deployer: Name of the model deployer for this stack.
         experiment_tracker: Name of the experiment tracker for this stack.
@@ -536,6 +549,7 @@ def register_stack(
             (StackComponentType.MODEL_DEPLOYER, model_deployer),
             (StackComponentType.MODEL_REGISTRY, model_registry),
             (StackComponentType.STEP_OPERATOR, step_operator),
+            (StackComponentType.SANDBOX, sandbox),
             (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
             (StackComponentType.DEPLOYER, deployer),
@@ -653,6 +667,13 @@ def register_stack(
     required=False,
 )
 @click.option(
+    "--sandbox",
+    "sandbox",
+    help="Name of the new sandbox for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "-f",
     "--feature_store",
     "feature_store",
@@ -756,6 +777,7 @@ def update_stack(
     orchestrator: Optional[str] = None,
     container_registry: Optional[str] = None,
     step_operator: Optional[str] = None,
+    sandbox: Optional[str] = None,
     feature_store: Optional[str] = None,
     model_deployer: Optional[str] = None,
     experiment_tracker: Optional[str] = None,
@@ -778,6 +800,7 @@ def update_stack(
         orchestrator: Name of the new orchestrator for this stack.
         container_registry: Name of the new container registry for this stack.
         step_operator: Name of the new step operator for this stack.
+        sandbox: Name of the new sandbox for this stack.
         feature_store: Name of the new feature store for this stack.
         model_deployer: Name of the new model deployer for this stack.
         experiment_tracker: Name of the new experiment tracker for this
@@ -833,6 +856,8 @@ def update_stack(
             updates[StackComponentType.ORCHESTRATOR] = [orchestrator]
         if step_operator:
             updates[StackComponentType.STEP_OPERATOR] = [step_operator]
+        if sandbox:
+            updates[StackComponentType.SANDBOX] = [sandbox]
         if deployer:
             updates[StackComponentType.DEPLOYER] = [deployer]
         if log_store:
@@ -875,6 +900,13 @@ def update_stack(
     "--step_operator",
     "step_operator_flag",
     help="Include this to remove the step operator from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
+    "--sandbox",
+    "sandbox_flag",
+    help="Include this to remove the sandbox from this stack.",
     is_flag=True,
     required=False,
 )
@@ -962,6 +994,7 @@ def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
     step_operator_flag: Optional[bool] = False,
+    sandbox_flag: Optional[bool] = False,
     feature_store_flag: Optional[bool] = False,
     model_deployer_flag: Optional[bool] = False,
     experiment_tracker_flag: Optional[bool] = False,
@@ -980,6 +1013,7 @@ def remove_stack_component(
         container_registry_flag: To remove the container registry from this
             stack.
         step_operator_flag: To remove the step operator from this stack.
+        sandbox_flag: To remove the sandbox from this stack.
         feature_store_flag: To remove the feature store from this stack.
         model_deployer_flag: To remove the model deployer from this stack.
         experiment_tracker_flag: To remove the experiment tracker from this
@@ -1002,6 +1036,9 @@ def remove_stack_component(
 
         if step_operator_flag:
             stack_component_update[StackComponentType.STEP_OPERATOR] = []
+
+        if sandbox_flag:
+            stack_component_update[StackComponentType.SANDBOX] = []
 
         if feature_store_flag:
             stack_component_update[StackComponentType.FEATURE_STORE] = []
@@ -1434,7 +1471,14 @@ def import_stack(
     # import stack components
     component_ids = {}
     for component_type_str, component_config in data["components"].items():
-        component_type = StackComponentType(component_type_str)
+        try:
+            component_type = StackComponentType(component_type_str)
+        except ValueError:
+            component_type = _COMPONENT_TYPE_IMPORT_ALIASES.get(
+                component_type_str
+            )
+            if component_type is None:
+                raise
 
         component_id = _import_stack_component(
             component_type=component_type,
