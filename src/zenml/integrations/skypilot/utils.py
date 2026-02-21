@@ -99,6 +99,10 @@ def create_docker_run_command(
 
     Returns:
         Docker run command as string.
+
+    Raises:
+        ValueError: If any environment variable key does not match
+            Docker's supported environment variable name pattern.
     """
     invalid_env_keys = [
         key for key in environment if not _ENV_VAR_PATTERN.fullmatch(key)
@@ -179,6 +183,10 @@ def prepare_resources_kwargs(
 
     Returns:
         Resources keyword arguments dictionary.
+
+    Raises:
+        ValueError: If `infra` is combined with any of the
+            `resources_settings` keys `cloud`, `region`, or `zone`.
     """
     if settings.infra:
         invalid_resource_keys = [
@@ -276,6 +284,10 @@ def sky_job_get(
 
     Returns:
         Optional submission result.
+
+    Raises:
+        RuntimeError: If the SkyPilot request result is malformed or does not
+            contain an integer job ID.
     """
     if stream_logs:
         result = sky.stream_and_get(request_id)

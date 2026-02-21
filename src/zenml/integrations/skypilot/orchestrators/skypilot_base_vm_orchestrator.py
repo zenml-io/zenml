@@ -181,8 +181,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
-            Exception: If the pipeline run fails.
             RuntimeError: If the code is running in a notebook.
+            ValueError: If cluster reuse is requested without a cluster name.
 
         Returns:
             Optional submission result.
