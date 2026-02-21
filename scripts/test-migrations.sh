@@ -344,6 +344,11 @@ if [ "$MIGRATION_TYPE" == "full" ]; then
 elif [ "$MIGRATION_TYPE" == "latest" ]; then
     test_upgrade_to_version "$LATEST_VERSION"
     test_upgrade_to_version "current"
+elif [ "$MIGRATION_TYPE" == "bounded" ]; then
+    # Bounded mode keeps coverage deterministic for faster PR feedback.
+    # It validates the newest released upgrade path and the current checkout.
+    test_upgrade_to_version "$LATEST_VERSION"
+    test_upgrade_to_version "current"
 else
     # Test the most recent migration with MySQL
     test_upgrade_to_version "current"
