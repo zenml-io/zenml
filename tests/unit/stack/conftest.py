@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 from datetime import datetime
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 import pytest
@@ -21,6 +22,12 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.constants import ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT
 from zenml.enums import StackComponentType
 from zenml.orchestrators import BaseOrchestrator
+from zenml.sandboxes import (
+    BaseSandbox,
+    BaseSandboxConfig,
+    NetworkPolicy,
+    SandboxSession,
+)
 from zenml.stack import Stack, StackComponent, StackValidator
 from zenml.stack.stack_component import StackComponentConfig
 
@@ -104,6 +111,62 @@ def stub_component():
         config=_StubComponentConfig(),
         flavor=MOCK_FLAVOR,
         type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+class _StubSandboxConfig(BaseSandboxConfig):
+    pass
+
+
+class _LocalStubSandboxConfig(BaseSandboxConfig):
+    @property
+    def is_remote(self) -> bool:
+        return False
+
+
+class _StubSandbox(BaseSandbox):
+    def session(
+        self,
+        *,
+        image: Optional[str] = None,
+        cpu: Optional[float] = None,
+        memory_mb: Optional[int] = None,
+        gpu: Optional[str] = None,
+        timeout_seconds: int = 300,
+        env: Optional[Dict[str, str]] = None,
+        secret_refs: Optional[List[str]] = None,
+        network_policy: Optional[NetworkPolicy] = None,
+        tags: Optional[Dict[str, str]] = None,
+        workdir: Optional[str] = None,
+    ) -> SandboxSession:
+        raise NotImplementedError
+
+
+@pytest.fixture
+def stub_sandbox():
+    return _StubSandbox(
+        name="stub_sandbox",
+        id=uuid4(),
+        config=_StubSandboxConfig(),
+        flavor=MOCK_FLAVOR,
+        type=StackComponentType.SANDBOX,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def local_stub_sandbox():
+    return _StubSandbox(
+        name="local_stub_sandbox",
+        id=uuid4(),
+        config=_LocalStubSandboxConfig(),
+        flavor=MOCK_FLAVOR,
+        type=StackComponentType.SANDBOX,
         user=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),

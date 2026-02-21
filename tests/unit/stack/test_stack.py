@@ -27,7 +27,10 @@ from zenml.stack import Stack
 
 
 def test_initializing_a_stack_from_components(
-    local_orchestrator, local_artifact_store, local_container_registry
+    local_orchestrator,
+    local_artifact_store,
+    local_container_registry,
+    stub_sandbox,
 ):
     """Tests that a stack can be initialized from a dict of components."""
     components = {
@@ -48,6 +51,10 @@ def test_initializing_a_stack_from_components(
 
     stack = Stack.from_components(id=uuid4(), name="", components=components)
     assert stack.container_registry is local_container_registry
+
+    components[StackComponentType.SANDBOX] = stub_sandbox
+    stack = Stack.from_components(id=uuid4(), name="", components=components)
+    assert stack.sandbox is stub_sandbox
 
 
 def test_initializing_a_stack_with_missing_components():
@@ -71,7 +78,10 @@ def test_initializing_a_stack_with_wrong_components(local_orchestrator):
 
 
 def test_stack_returns_all_its_components(
-    local_orchestrator, local_artifact_store, local_container_registry
+    local_orchestrator,
+    local_artifact_store,
+    local_container_registry,
+    stub_sandbox,
 ):
     """Tests that the stack `components` property returns the correct stack components."""
     stack = Stack(
@@ -97,11 +107,13 @@ def test_stack_returns_all_its_components(
         orchestrator=local_orchestrator,
         artifact_store=local_artifact_store,
         container_registry=local_container_registry,
+        sandbox=stub_sandbox,
     )
 
     expected_components[StackComponentType.CONTAINER_REGISTRY] = (
         local_container_registry
     )
+    expected_components[StackComponentType.SANDBOX] = stub_sandbox
 
     assert all(
         stack.components[component_type] == component
@@ -172,7 +184,12 @@ def test_stack_submission(
     )
 
 
-def test_requires_remote_server(stack_with_mock_components, mocker):
+def test_requires_remote_server(
+    stack_with_mock_components,
+    stub_sandbox,
+    local_stub_sandbox,
+    mocker,
+):
     """Tests that the stack requires a remote server if either the orchestrator or the step operator are remote."""
     from zenml.step_operators import BaseStepOperator
 
@@ -195,6 +212,15 @@ def test_requires_remote_server(stack_with_mock_components, mocker):
     stack_with_mock_components.orchestrator.config.is_remote = False
     stack_with_mock_components.step_operator.config.is_remote = True
     assert stack_with_mock_components.requires_remote_server is True
+
+    stack_with_mock_components._step_operator = None
+    stack_with_mock_components.orchestrator.config.is_remote = False
+
+    stack_with_mock_components._sandboxes = [stub_sandbox]
+    assert stack_with_mock_components.requires_remote_server is True
+
+    stack_with_mock_components._sandboxes = [local_stub_sandbox]
+    assert stack_with_mock_components.requires_remote_server is False
 
 
 def test_submission_server_validation(

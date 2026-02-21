@@ -73,6 +73,7 @@ if TYPE_CHECKING:
         PipelineSnapshotResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
+    from zenml.sandboxes import BaseSandbox
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
     from zenml.utils import secret_utils
@@ -114,6 +115,7 @@ class Stack:
         model_registry: Optional["BaseModelRegistry"] = None,
         deployer: Optional["BaseDeployer"] = None,
         log_store: Optional["BaseLogStore"] = None,
+        sandbox: Optional["BaseSandbox"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -138,6 +140,7 @@ class Stack:
             model_registry: Model registry component of the stack.
             deployer: Deployer component of the stack.
             log_store: Log store component of the stack.
+            sandbox: Sandbox component of the stack.
         """
         self._id = id
         self._name = name
@@ -157,6 +160,7 @@ class Stack:
         self._image_builder = image_builder
         self._deployer = deployer
         self._log_store = log_store
+        self._sandboxes = [sandbox] if sandbox else []
 
     @classmethod
     def from_model(cls, stack_model: "StackResponse") -> "Stack":
@@ -247,6 +251,7 @@ class Stack:
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
+        from zenml.sandboxes import BaseSandbox
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -343,6 +348,10 @@ class Stack:
         if log_store is not None and not isinstance(log_store, BaseLogStore):
             _raise_type_error(log_store, BaseLogStore)
 
+        sandbox = components.get(StackComponentType.SANDBOX)
+        if sandbox is not None and not isinstance(sandbox, BaseSandbox):
+            _raise_type_error(sandbox, BaseSandbox)
+
         return Stack(
             id=id,
             name=name,
@@ -362,6 +371,7 @@ class Stack:
             model_registry=model_registry,
             deployer=deployer,
             log_store=log_store,
+            sandbox=sandbox,
         )
 
     @property
@@ -388,6 +398,7 @@ class Stack:
                 self.model_registry,
                 self.deployer,
                 self.log_store,
+                self.sandbox,
             ]
             if component is not None
         }
@@ -541,6 +552,15 @@ class Stack:
         assert self._log_store is not None
         return self._log_store
 
+    @property
+    def sandbox(self) -> Optional["BaseSandbox"]:
+        """The sandbox of the stack.
+
+        Returns:
+            The sandbox of the stack.
+        """
+        return self._sandboxes[0] if self._sandboxes else None
+
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
 
@@ -678,14 +698,19 @@ class Stack:
         """If the stack requires a remote ZenServer to run.
 
         This is the case if any code is getting executed remotely. This is the
-        case for both remote orchestrators as well as remote step operators.
+        case for remote orchestrators, remote step operators, and remote
+        sandboxes.
 
         Returns:
             If the stack requires a remote ZenServer to run.
         """
-        return self.orchestrator.config.is_remote or (
-            self.step_operator is not None
-            and self.step_operator.config.is_remote
+        return (
+            self.orchestrator.config.is_remote
+            or (
+                self.step_operator is not None
+                and self.step_operator.config.is_remote
+            )
+            or (self.sandbox is not None and self.sandbox.config.is_remote)
         )
 
     def _validate_secrets(self, raise_exception: bool) -> None:

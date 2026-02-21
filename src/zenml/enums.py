@@ -166,6 +166,7 @@ class StackComponentType(StrEnum):
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
     DEPLOYER = "deployer"
+    SANDBOX = "sandbox"
 
     @property
     def plural(self) -> str:
@@ -178,6 +179,8 @@ class StackComponentType(StrEnum):
             return "container_registries"
         elif self == StackComponentType.MODEL_REGISTRY:
             return "model_registries"
+        elif self == StackComponentType.SANDBOX:
+            return "sandboxes"
 
         return f"{self.value}s"
 

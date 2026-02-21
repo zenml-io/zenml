@@ -44,6 +44,7 @@ if TYPE_CHECKING:
         StepRunResponse,
     )
     from zenml.models.v2.core.step_run import StepRunInputResponse
+    from zenml.sandboxes import BaseSandbox
 
 
 logger = get_logger(__name__)
@@ -254,6 +255,17 @@ class StepContext(context_utils.BaseContext):
             )
 
         return self.model_version.to_model_class()
+
+    @property
+    def sandbox(self) -> Optional["BaseSandbox"]:
+        """Returns the active stack sandbox component.
+
+        Returns:
+            The active stack sandbox component or `None`.
+        """
+        from zenml.client import Client
+
+        return Client().active_stack.sandbox
 
     @property
     def inputs(self) -> Dict[str, List["StepRunInputResponse"]]:

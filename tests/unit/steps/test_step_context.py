@@ -133,3 +133,34 @@ def test_step_context_returns_instance_of_custom_materializer_class(
         custom_materializer_class=BuiltInMaterializer
     )
     assert isinstance(materializer, BuiltInMaterializer)
+
+
+def test_step_context_sandbox_returns_active_stack_sandbox(
+    step_context_with_no_output,
+    mocker,
+):
+    """Tests that step context exposes the sandbox from the active stack."""
+    sandbox = mocker.Mock()
+    mocker.patch(
+        "zenml.client.Client.active_stack",
+        return_value=mocker.Mock(sandbox=sandbox),
+        new_callable=mocker.PropertyMock,
+    )
+
+    with step_context_with_no_output:
+        assert get_step_context().sandbox is sandbox
+
+
+def test_step_context_sandbox_returns_none_when_not_configured(
+    step_context_with_no_output,
+    mocker,
+):
+    """Tests that step context returns `None` if no sandbox is configured."""
+    mocker.patch(
+        "zenml.client.Client.active_stack",
+        return_value=mocker.Mock(sandbox=None),
+        new_callable=mocker.PropertyMock,
+    )
+
+    with step_context_with_no_output:
+        assert get_step_context().sandbox is None

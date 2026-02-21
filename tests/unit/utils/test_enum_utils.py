@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.enums import StackComponentType
 from zenml.utils.enum_utils import StrEnum
 
 
@@ -33,3 +34,10 @@ def test_enum_utils():
     assert TestEnum.values() == ["aria", "b"]
     assert isinstance(TestEnum.A, TestEnum)
     assert str(TestEnum.A) == "aria"
+
+
+def test_stack_component_type_sandbox_pluralization():
+    """Tests that sandbox stack component type values are correct."""
+    assert StackComponentType.SANDBOX == "sandbox"
+    assert StackComponentType.SANDBOX.plural == "sandboxes"
+    assert StackComponentType.SANDBOX.plural != "sandboxs"
