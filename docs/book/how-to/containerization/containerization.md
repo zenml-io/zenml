@@ -425,6 +425,11 @@ If you're using `uv` and specify a custom parent image or Dockerfile that does n
 `uv` installs the packages for the Python system installation. Depending on the parent image, you might also need to include `"break-system-packages": None` in the installer args as well to make it work.
 {% endhint %}
 
+### Using custom python executable
+
+To use a custom python executable, instead of a standard `python` you can use the `ZENML_CONTAINER_PYTHON_EXECUTABLE` environment 
+variable to control the python executable being used in the entrypoint command, for example `ZENML_CONTAINER_PYTHON_EXECUTABLE=/home/user1/custom-venv/bin/python` can be used.
+
 ## Private PyPI Repositories
 
 For packages that require authentication from private repositories:
