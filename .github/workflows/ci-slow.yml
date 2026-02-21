@@ -468,6 +468,7 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS == 'true' && 'no' || 'yes' }}
     secrets: inherit
   macos-unit-test:
     if: github.event.pull_request.draft == false
