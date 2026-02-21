@@ -17,7 +17,6 @@ import asyncio
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
-from modal_proto import api_pb2
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -26,6 +25,11 @@ from zenml.enums import StackComponentType
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
+)
+from zenml.integrations.modal.utils import (
+    build_modal_image,
+    get_modal_app,
+    map_resource_settings,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -185,29 +189,25 @@ class ModalStepOperator(BaseStepOperator):
                 "No Docker credentials found for the container registry."
             )
 
-        my_secret = modal.secret._Secret.from_dict(
-            {
-                "REGISTRY_USERNAME": docker_username,
-                "REGISTRY_PASSWORD": docker_password,
-            }
+        zenml_image = build_modal_image(
+            base_image=image_name,
+            env=environment,
+            registry_username=docker_username,
+            registry_password=docker_password,
         )
-
-        spec = modal.image.DockerfileSpec(
-            commands=[f"FROM {image_name}"], context_files={}
-        )
-
-        zenml_image = modal.Image._from_args(
-            dockerfile_function=lambda *_, **__: spec,
-            force_build=False,
-            image_registry_config=modal.image._ImageRegistryConfig(
-                api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
-            ),
-        ).env(environment)
 
         resource_settings = info.config.resource_settings
         gpu_values = get_gpu_values(settings, resource_settings)
+        memory_mb = resource_settings.get_memory(ByteUnit.MB)
+        memory_int = int(memory_mb) if memory_mb is not None else None
+        resource_kwargs = map_resource_settings(
+            cpu=resource_settings.cpu_count,
+            memory_mb=memory_int,
+            gpu=gpu_values,
+            include_none=True,
+        )
 
-        app = modal.App(
+        app = get_modal_app(
             f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
         )
 
@@ -216,22 +216,16 @@ class ModalStepOperator(BaseStepOperator):
             future = loop.create_future()
             with modal.enable_output():
                 async with app.run():
-                    memory_mb = resource_settings.get_memory(ByteUnit.MB)
-                    memory_int = (
-                        int(memory_mb) if memory_mb is not None else None
-                    )
                     sb = await modal.Sandbox.create.aio(
                         "bash",
                         "-c",
                         " ".join(entrypoint_command),
                         image=zenml_image,
-                        gpu=gpu_values,
-                        cpu=resource_settings.cpu_count,
-                        memory=memory_int,
                         cloud=settings.cloud,
                         region=settings.region,
                         app=app,
                         timeout=86400,  # 24h, the max Modal allows
+                        **resource_kwargs,
                     )
 
                     await sb.wait.aio()

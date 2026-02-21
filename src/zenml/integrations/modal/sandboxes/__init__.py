@@ -11,24 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Modal integration flavors."""
+"""Modal sandbox implementation."""
 
-from zenml.integrations.modal.flavors.modal_sandbox_flavor import (
-    ModalSandboxConfig,
-    ModalSandboxFlavor,
-    ModalSandboxSettings,
-)
-from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
-    ModalStepOperatorConfig,
-    ModalStepOperatorFlavor,
-    ModalStepOperatorSettings,
-)
+from zenml.integrations.modal.sandboxes.modal_sandbox import ModalSandbox
 
-__all__ = [
-    "ModalSandboxConfig",
-    "ModalSandboxFlavor",
-    "ModalSandboxSettings",
-    "ModalStepOperatorConfig",
-    "ModalStepOperatorFlavor",
-    "ModalStepOperatorSettings",
-]
+__all__ = ["ModalSandbox"]
