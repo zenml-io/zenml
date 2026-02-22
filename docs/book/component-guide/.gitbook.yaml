@@ -76,6 +76,10 @@ redirects:
   orchestrators/skypilot-vm: orchestrators/skypilot-vm.md
   orchestrators/tekton: orchestrators/tekton.md
   orchestrators/vertex: orchestrators/vertex.md
+  sandboxes: sandboxes/README.md
+  sandboxes/daytona: sandboxes/daytona.md
+  sandboxes/modal: sandboxes/modal.md
+  sandboxes/monty: sandboxes/monty.md
   step-operators: step-operators/README.md
   step-operators/azureml: step-operators/azureml.md
   step-operators/custom: step-operators/custom.md

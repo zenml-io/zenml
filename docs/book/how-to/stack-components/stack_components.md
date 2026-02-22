@@ -27,6 +27,7 @@ Stacks may also include these optional components:
 * **Container Registry**: Stores Docker images for your pipeline steps
 * **Deployer**: Deploys pipelines as long-running HTTP services
 * **Step Operator**: Runs specific steps on specialized hardware
+* **Sandbox**: Runs commands and code in isolated [sandbox sessions](https://docs.zenml.io/stacks/sandboxes)
 * **Model Deployer**: Deploys models as prediction services
 * **Experiment Tracker**: Tracks metrics and parameters
 * **Feature Store**: Manages ML features
@@ -60,10 +61,10 @@ zenml stack register my-stack -a local-store -o local-orchestrator
 
 # Register a stack with additional components
 zenml stack register production-stack \
-    -artifact-store s3-store \
-    --orchestrator kubeflow \
-    --container-registry ecr-registry \
-    --experiment-tracker mlflow-tracker
+    -a s3-store \
+    -o kubeflow \
+    -c ecr-registry \
+    -e mlflow-tracker
 ```
 
 Or through the Python API:
