@@ -118,7 +118,7 @@ def my_monty_pipeline():
 | `external_functions` | `None` | Map of declared external functions available to sandbox code |
 | `type_check_stubs` | `None` | Type-checking stubs passed to the sandbox session |
 
-Plus all the common settings inherited from `BaseSandboxSettings` (`timeout_seconds`, `image`, `cpu`, `memory_mb`, `gpu`, `env`, `secret_refs`, `network_policy`, `tags`).
+Plus all the common settings inherited from `BaseSandboxSettings` (`timeout_seconds`, `image`, `cpu`, `memory_mb`, `gpu`, `env`, `secret_refs`, `network_policy`, `tags`, `forward_output_to_step_logs`).
 
 ### Capabilities
 

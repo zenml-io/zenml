@@ -54,6 +54,7 @@ from zenml.sandboxes import (
     SandboxProcess,
     SandboxSession,
     SandboxSessionMetadata,
+    forward_sandbox_output,
 )
 
 if TYPE_CHECKING:
@@ -511,6 +512,13 @@ class ModalCodeInterpreter(CodeInterpreter):
             output=response.get("output"),
         )
 
+        if self._session._forward_sandbox_logs:
+            forward_sandbox_output(
+                stdout=result.stdout,
+                stderr=result.stderr,
+                target_logger=logger,
+            )
+
         if self._session.raise_on_failure and result.exit_code != 0:
             raise SandboxExecError(result)
 
@@ -557,6 +565,7 @@ class ModalSandboxSession(SandboxSession):
         memory_cost_per_gib_second_usd: Optional[float],
         env: Optional[Dict[str, str]] = None,
         workdir: Optional[str] = None,
+        forward_sandbox_logs: bool = True,
     ) -> None:
         """Initializes a sandbox session wrapper.
 
@@ -575,6 +584,8 @@ class ModalSandboxSession(SandboxSession):
                 second of memory usage.
             env: Default environment variables for command execution.
             workdir: Default working directory for command execution.
+            forward_sandbox_logs: Whether to auto-forward sandbox output
+                into ZenML step logs.
         """
         self._sandbox = sandbox
         self._app_run_context = app_run_context
@@ -588,6 +599,7 @@ class ModalSandboxSession(SandboxSession):
         self._gpu = gpu
         self._cpu_cost_per_core_second_usd = cpu_cost_per_core_second_usd
         self._memory_cost_per_gib_second_usd = memory_cost_per_gib_second_usd
+        self._forward_sandbox_logs = forward_sandbox_logs
         self._created_at = time.monotonic()
         self._terminated = False
         self._router_fallback_retry_logged = False
@@ -716,6 +728,14 @@ class ModalSandboxSession(SandboxSession):
             stdout=stdout,
             stderr=stderr,
         )
+
+        if self._forward_sandbox_logs:
+            forward_sandbox_output(
+                stdout=result.stdout,
+                stderr=result.stderr,
+                target_logger=logger,
+            )
+
         should_check = check if check is not None else self._raise_on_failure
         if should_check and result.exit_code != 0:
             raise SandboxExecError(result)
@@ -1101,4 +1121,5 @@ class ModalSandbox(BaseSandbox):
             ),
             env=effective_env,
             workdir=workdir,
+            forward_sandbox_logs=step_settings.forward_output_to_step_logs,
         )

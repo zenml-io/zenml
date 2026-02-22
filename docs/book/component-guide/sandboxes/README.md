@@ -213,8 +213,41 @@ All sandbox flavors inherit these base settings:
 | `secret_refs` | Secret references to resolve into environment variables |
 | `network_policy` | Network access policy (`block_network` + CIDR allowlist) |
 | `tags` | Metadata labels attached to sessions |
+| `forward_output_to_step_logs` | Auto-forward sandbox stdout/stderr to step logs (default: `True`) |
 
 Provider-specific pages describe additional settings and behavior for each flavor.
+
+### Sandbox output in step logs
+
+By default, sandbox output from `exec_run()`, `run_code()`, and `code_interpreter()` is automatically forwarded into ZenML step logs. Each line is prefixed with `[sandbox:stdout]` or `[sandbox:stderr]` so you can distinguish sandbox output from regular step log entries:
+
+```
+[sandbox:stdout] Installing pandas...
+[sandbox:stdout] Successfully installed pandas-2.2.0
+[sandbox:stderr] WARNING: Running pip as root
+```
+
+This means you can review sandbox execution output directly in the ZenML dashboard or API logs without needing to access the sandbox provider's own log viewer.
+
+{% hint style="info" %}
+**Buffered vs streaming behavior:** For `exec_run()` and `run_code()`, output is forwarded after execution completes — stdout lines appear first, then stderr lines. For `exec_streaming()`, output is forwarded line-by-line as it arrives. Monty forwards output live during execution via its callback mechanism.
+{% endhint %}
+
+#### Disabling log forwarding
+
+If sandbox output is too noisy or you prefer to process it programmatically, disable forwarding per step:
+
+```python
+@step(
+    sandbox=True,
+    settings={"sandbox.modal": ModalSandboxSettings(forward_output_to_step_logs=False)},
+)
+def my_step() -> str:
+    ctx = get_step_context()
+    with ctx.sandbox.session() as sb:
+        result = sb.exec_run(["python", "-c", "print('hello')"])
+    return result.stdout.strip()  # Output is still in the result, just not in logs
+```
 
 ### Automatic metadata: `sandbox_info`
 

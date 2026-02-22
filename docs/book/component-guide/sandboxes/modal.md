@@ -148,7 +148,7 @@ These override component defaults per-step:
 | `cidr_allowlist` | `None` | CIDR ranges that remain reachable when network is blocked |
 | `verbose` | `None` | Show verbose Modal execution output (enables `modal.enable_output()`) |
 
-Plus all the common settings inherited from `BaseSandboxSettings` (`timeout_seconds`, `image`, `cpu`, `memory_mb`, `gpu`, `env`, `secret_refs`, `network_policy`, `tags`).
+Plus all the common settings inherited from `BaseSandboxSettings` (`timeout_seconds`, `image`, `cpu`, `memory_mb`, `gpu`, `env`, `secret_refs`, `network_policy`, `tags`, `forward_output_to_step_logs`).
 
 ### Configuration precedence
 

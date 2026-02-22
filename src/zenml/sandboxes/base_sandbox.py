@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base abstractions for ZenML sandbox stack components."""
 
+import logging
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -121,6 +122,53 @@ class SandboxExecError(Exception):
             f"Sandbox command failed with exit code {result.exit_code}"
             f"{': ' + stderr_tail if stderr_tail else ''}"
         )
+
+
+def _iter_output_lines(text: str) -> Iterator[str]:
+    """Splits buffered output into individual lines.
+
+    Args:
+        text: Raw output text from sandbox execution.
+
+    Yields:
+        Individual lines with trailing newlines stripped.
+    """
+    for line in text.splitlines():
+        yield line
+
+
+def forward_sandbox_output(
+    *,
+    stdout: str,
+    stderr: str,
+    target_logger: logging.Logger,
+    stdout_prefix: str = "[sandbox:stdout]",
+    stderr_prefix: str = "[sandbox:stderr]",
+) -> None:
+    """Forwards buffered sandbox output into ZenML step logs.
+
+    Replays captured stdout/stderr line-by-line through the Python logger
+    so that the output reaches the active LoggingContext and gets persisted
+    in step logs. Stdout lines are emitted at INFO level, stderr at WARNING.
+
+    Note: because the output is buffered, true interleaving of stdout and
+    stderr cannot be preserved — stdout is emitted first, then stderr.
+
+    Internal helper; not part of the public ZenML API.
+
+    Args:
+        stdout: Captured standard output from sandbox execution.
+        stderr: Captured standard error from sandbox execution.
+        target_logger: Logger instance to emit records through.
+        stdout_prefix: Prefix for stdout lines (default: [sandbox:stdout]).
+        stderr_prefix: Prefix for stderr lines (default: [sandbox:stderr]).
+    """
+    if stdout:
+        for line in _iter_output_lines(stdout):
+            target_logger.info("%s %s", stdout_prefix, line)
+    if stderr:
+        for line in _iter_output_lines(stderr):
+            target_logger.warning("%s %s", stderr_prefix, line)
 
 
 class SandboxProcess(ABC):
@@ -306,6 +354,15 @@ class BaseSandboxSettings(BaseSettings):
     secret_refs: Optional[List[str]] = None
     network_policy: Optional[NetworkPolicy] = None
     tags: Optional[Dict[str, str]] = None
+    forward_output_to_step_logs: bool = Field(
+        True,
+        description="Controls whether sandbox stdout/stderr is automatically "
+        "forwarded into ZenML step logs. When enabled, buffered output from "
+        "exec_run(), run_code(), and code_interpreter() is emitted as log "
+        "records prefixed with [sandbox:stdout] / [sandbox:stderr]. "
+        "Disable for noisy sandboxes or when output is processed by the "
+        "caller directly",
+    )
 
 
 class BaseSandbox(StackComponent, ABC):

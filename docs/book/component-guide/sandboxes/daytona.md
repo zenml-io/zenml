@@ -141,7 +141,7 @@ These override component defaults and are set per-step via the `settings` parame
 | `auto_stop_interval_minutes` | `None` | Inactivity threshold before Daytona auto-stops a session. If unset, a value is computed from `timeout_seconds` |
 | `auto_delete_interval_minutes` | `None` | Delay before auto-deleting a stopped session |
 
-Plus all the common settings inherited from `BaseSandboxSettings` (`timeout_seconds`, `image`, `cpu`, `memory_mb`, `gpu`, `env`, `secret_refs`, `network_policy`, `tags`).
+Plus all the common settings inherited from `BaseSandboxSettings` (`timeout_seconds`, `image`, `cpu`, `memory_mb`, `gpu`, `env`, `secret_refs`, `network_policy`, `tags`, `forward_output_to_step_logs`).
 
 ### Configuration precedence
 

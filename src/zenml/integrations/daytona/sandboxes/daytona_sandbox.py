@@ -54,6 +54,7 @@ from zenml.sandboxes import (
     SandboxProcess,
     SandboxSession,
     SandboxSessionMetadata,
+    forward_sandbox_output,
 )
 
 if TYPE_CHECKING:
@@ -796,6 +797,13 @@ class DaytonaCodeInterpreter(CodeInterpreter):
             output=_extract_output(response),
         )
 
+        if self._session._forward_sandbox_logs:
+            forward_sandbox_output(
+                stdout=result.stdout,
+                stderr=result.stderr,
+                target_logger=logger,
+            )
+
         if self._session.raise_on_failure and result.exit_code != 0:
             raise SandboxExecError(result)
 
@@ -836,6 +844,7 @@ class DaytonaSandboxSession(SandboxSession):
         env: Optional[Dict[str, str]] = None,
         workdir: Optional[str] = None,
         timeout_seconds: int = _DEFAULT_TIMEOUT_SECONDS,
+        forward_sandbox_logs: bool = True,
     ) -> None:
         """Initializes a sandbox session wrapper.
 
@@ -847,6 +856,8 @@ class DaytonaSandboxSession(SandboxSession):
             env: Default environment variables for command execution.
             workdir: Default working directory for command execution.
             timeout_seconds: Default timeout for command execution.
+            forward_sandbox_logs: Whether to auto-forward sandbox output
+                into ZenML step logs.
         """
         self._sandbox = sandbox
         self._daytona_module = daytona_module
@@ -855,6 +866,7 @@ class DaytonaSandboxSession(SandboxSession):
         self._default_env = dict(env or {})
         self._default_workdir = workdir
         self._default_timeout_seconds = timeout_seconds
+        self._forward_sandbox_logs = forward_sandbox_logs
 
         self._created_at = time.monotonic()
         self._terminated = False
@@ -1298,6 +1310,13 @@ class DaytonaSandboxSession(SandboxSession):
 
         self._metadata.commands_executed += 1
 
+        if self._forward_sandbox_logs:
+            forward_sandbox_output(
+                stdout=result.stdout,
+                stderr=result.stderr,
+                target_logger=logger,
+            )
+
         should_check = check if check is not None else self._raise_on_failure
         if should_check and result.exit_code != 0:
             raise SandboxExecError(result)
@@ -1433,6 +1452,13 @@ class DaytonaSandboxSession(SandboxSession):
                 raise
 
         self._metadata.commands_executed += 1
+
+        if self._forward_sandbox_logs:
+            forward_sandbox_output(
+                stdout=result.stdout,
+                stderr=result.stderr,
+                target_logger=logger,
+            )
 
         should_check = check if check is not None else self._raise_on_failure
         if should_check and result.exit_code != 0:
@@ -1922,4 +1948,5 @@ class DaytonaSandbox(BaseSandbox):
             env=effective_env,
             workdir=workdir,
             timeout_seconds=effective_timeout_seconds,
+            forward_sandbox_logs=step_settings.forward_output_to_step_logs,
         )

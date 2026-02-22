@@ -28,6 +28,7 @@ from zenml.sandboxes.base_sandbox import (
     SandboxRunMetadata,
     SandboxSession,
     SandboxSessionMetadata,
+    forward_sandbox_output,
 )
 
 __all__ = [
@@ -45,4 +46,5 @@ __all__ = [
     "SandboxRunMetadata",
     "SandboxSession",
     "SandboxSessionMetadata",
+    "forward_sandbox_output",
 ]

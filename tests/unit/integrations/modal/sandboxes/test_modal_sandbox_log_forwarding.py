@@ -230,7 +230,9 @@ def test_exec_process_retries_after_dns_error() -> None:
         app_run_context=None,
         app_run_context_is_async=False,
         raise_on_failure=False,
-        metadata=SandboxSessionMetadata(session_id="session-1", provider="modal"),
+        metadata=SandboxSessionMetadata(
+            session_id="session-1", provider="modal"
+        ),
         cpu=1.0,
         memory_mb=1024,
         gpu=None,
@@ -292,7 +294,9 @@ def test_code_interpreter_requires_command_router() -> None:
         app_run_context=None,
         app_run_context_is_async=False,
         raise_on_failure=False,
-        metadata=SandboxSessionMetadata(session_id="session-1", provider="modal"),
+        metadata=SandboxSessionMetadata(
+            session_id="session-1", provider="modal"
+        ),
         cpu=1.0,
         memory_mb=1024,
         gpu=None,

@@ -133,19 +133,30 @@ def _format_monty_error(error: BaseException) -> str:
 
 
 def _build_print_callback(
-    stdout_chunks: List[str], stderr_chunks: List[str]
+    stdout_chunks: List[str],
+    stderr_chunks: List[str],
+    *,
+    forward_to_step_logs: bool = True,
 ) -> Callable[[str, str], None]:
-    """Creates a print callback compatible with Monty execution."""
+    """Creates a print callback compatible with Monty execution.
+
+    Args:
+        stdout_chunks: Mutable list to accumulate stdout text.
+        stderr_chunks: Mutable list to accumulate stderr text.
+        forward_to_step_logs: Whether to forward output into ZenML step logs.
+    """
 
     def _callback(stream: str, text: str) -> None:
         line = str(text)
         if stream == "stderr":
             stderr_chunks.append(line)
-            logger.info("[sandbox:stderr] %s", line.rstrip())
+            if forward_to_step_logs:
+                logger.warning("[sandbox:stderr] %s", line.rstrip())
             return
 
         stdout_chunks.append(line)
-        logger.info("[sandbox:stdout] %s", line.rstrip())
+        if forward_to_step_logs:
+            logger.info("[sandbox:stdout] %s", line.rstrip())
 
     return _callback
 
@@ -233,7 +244,11 @@ class MontyCodeInterpreter(CodeInterpreter):
 
     def _print_callback(self, stream: str, text: str) -> None:
         """Captures Monty print output in sandbox execution results."""
-        callback = _build_print_callback(self._stdout_chunks, self._stderr_chunks)
+        callback = _build_print_callback(
+            self._stdout_chunks,
+            self._stderr_chunks,
+            forward_to_step_logs=self._session._forward_sandbox_logs,
+        )
         callback(stream, text)
 
     def _load_or_create_repl(self) -> Any:
@@ -380,6 +395,7 @@ class MontySandboxSession(SandboxSession):
         workdir: Optional[str],
         memory_mb: Optional[int],
         script_name: str,
+        forward_sandbox_logs: bool = True,
     ) -> None:
         """Initializes a Monty sandbox session wrapper."""
         self._raise_on_failure = raise_on_failure
@@ -390,6 +406,7 @@ class MontySandboxSession(SandboxSession):
         self._type_check_stubs = type_check_stubs
         self._declared_external_functions = list(declared_external_functions)
         self._script_name = script_name
+        self._forward_sandbox_logs = forward_sandbox_logs
         self._created_at = time.monotonic()
         self._terminated = False
         self._repl_state: Optional[bytes] = None
@@ -480,7 +497,11 @@ class MontySandboxSession(SandboxSession):
         monty_module = _load_monty_module()
         stdout_chunks: List[str] = []
         stderr_chunks: List[str] = []
-        print_callback = _build_print_callback(stdout_chunks, stderr_chunks)
+        print_callback = _build_print_callback(
+            stdout_chunks,
+            stderr_chunks,
+            forward_to_step_logs=self._forward_sandbox_logs,
+        )
 
         safe_inputs = dict(inputs or {})
         type_check_stubs = _merge_type_check_stubs(
@@ -737,9 +758,7 @@ class MontySandbox(BaseSandbox):
             )
         )
         effective_memory_mb = (
-            memory_mb
-            if memory_mb is not None
-            else step_settings.memory_mb
+            memory_mb if memory_mb is not None else step_settings.memory_mb
         )
         effective_env = dict(step_settings.env or {})
         if env:
@@ -783,13 +802,9 @@ class MontySandbox(BaseSandbox):
                 "execution_backend": "pydantic-monty",
                 "env_keys": sorted(effective_env.keys()),
                 "requested_image": image or step_settings.image,
-                "requested_cpu": cpu
-                if cpu is not None
-                else step_settings.cpu,
+                "requested_cpu": cpu if cpu is not None else step_settings.cpu,
                 "requested_memory_mb": effective_memory_mb,
-                "requested_gpu": gpu
-                if gpu is not None
-                else step_settings.gpu,
+                "requested_gpu": gpu if gpu is not None else step_settings.gpu,
                 "workdir": workdir,
             },
         )
@@ -806,4 +821,5 @@ class MontySandbox(BaseSandbox):
             workdir=workdir,
             memory_mb=effective_memory_mb,
             script_name=_DEFAULT_SCRIPT_NAME,
+            forward_sandbox_logs=step_settings.forward_output_to_step_logs,
         )
