@@ -84,6 +84,17 @@ class ModalSandboxFlavor(BaseSandboxFlavor):
         return self.generate_default_sdk_docs_url()
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        # TODO: upload dedicated logo to sandbox/modal.png in the
+        #  public-flavor-logos bucket and update this URL.
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/modal.png"
+
+    @property
     def config_class(self) -> Type[ModalSandboxConfig]:
         """Returns `ModalSandboxConfig` config class.
 
