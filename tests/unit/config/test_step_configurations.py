@@ -13,7 +13,13 @@
 #  permissions and limitations under the License.
 
 
-from zenml.config.step_configurations import InputSpec, StepSpec
+import pytest
+
+from zenml.config.step_configurations import (
+    InputSpec,
+    StepConfigurationUpdate,
+    StepSpec,
+)
 
 
 def test_step_spec_source_equality():
@@ -92,3 +98,22 @@ def test_step_spec_invocation_id_equality():
         upstream_steps=[],
         invocation_id="different_name",
     )
+
+
+@pytest.mark.parametrize(
+    "sandbox_setting,sandbox_name,expected",
+    [
+        (True, "sandbox-1", True),
+        (False, "sandbox-1", False),
+        ("sandbox-1", "sandbox-1", True),
+        ("sandbox-2", "sandbox-1", False),
+        (None, "sandbox-1", False),
+    ],
+)
+def test_step_configuration_update_uses_sandbox_matrix(
+    sandbox_setting, sandbox_name, expected
+):
+    """Tests sandbox selector matching behavior for step configuration."""
+    update = StepConfigurationUpdate(sandbox=sandbox_setting)
+
+    assert update.uses_sandbox(sandbox_name) is expected
