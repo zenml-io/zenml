@@ -394,27 +394,38 @@ class ModalSandboxProcess(SandboxProcess):
     Log forwarding happens while stdout/stderr iterators are consumed.
     """
 
-    def __init__(self, process: Any, terminate_session: Any) -> None:
+    def __init__(
+        self,
+        process: Any,
+        terminate_session: Any,
+        *,
+        session_id: Optional[str] = None,
+    ) -> None:
         """Initializes the process wrapper.
 
         Args:
             process: Underlying Modal process handle.
             terminate_session: Callback used as cancellation fallback.
+            session_id: Sandbox session identifier for log routing.
         """
         self._process = process
         self._terminate_session = terminate_session
         self._cached_exit_code: Optional[int] = None
+        self._log_extra = {
+            "zenml_log_source": "sandbox",
+            "zenml_sandbox_session_id": session_id or "",
+        }
 
     def stdout_iter(self) -> Iterator[str]:
         """Iterates over stdout chunks as they are produced."""
         for line in _iter_stream(getattr(self._process, "stdout", None)):
-            logger.info("[sandbox:stdout] %s", line.rstrip("\n"))
+            logger.info(line.rstrip("\n"), extra=self._log_extra)
             yield line
 
     def stderr_iter(self) -> Iterator[str]:
         """Iterates over stderr chunks as they are produced."""
         for line in _iter_stream(getattr(self._process, "stderr", None)):
-            logger.warning("[sandbox:stderr] %s", line.rstrip("\n"))
+            logger.warning(line.rstrip("\n"), extra=self._log_extra)
             yield line
 
     def wait(self, timeout_seconds: Optional[int] = None) -> int:
@@ -517,6 +528,7 @@ class ModalCodeInterpreter(CodeInterpreter):
                 stdout=result.stdout,
                 stderr=result.stderr,
                 target_logger=logger,
+                session_id=self._session._metadata.session_id,
             )
 
         if self._session.raise_on_failure and result.exit_code != 0:
@@ -734,6 +746,7 @@ class ModalSandboxSession(SandboxSession):
                 stdout=result.stdout,
                 stderr=result.stderr,
                 target_logger=logger,
+                session_id=self._metadata.session_id,
             )
 
         should_check = check if check is not None else self._raise_on_failure
@@ -762,7 +775,9 @@ class ModalSandboxSession(SandboxSession):
             workdir=workdir,
         )
         self._metadata.commands_executed += 1
-        return ModalSandboxProcess(process, self.terminate)
+        return ModalSandboxProcess(
+            process, self.terminate, session_id=self._metadata.session_id
+        )
 
     def run_code(
         self,

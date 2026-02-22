@@ -470,26 +470,32 @@ class _BufferedDaytonaProcess(SandboxProcess):
         *,
         result: SandboxExecResult,
         terminate_session: Any,
+        session_id: Optional[str] = None,
     ) -> None:
         """Initializes the buffered process wrapper.
 
         Args:
             result: Collected command result.
             terminate_session: Session termination callback.
+            session_id: Sandbox session identifier for log routing.
         """
         self._result = result
         self._terminate_session = terminate_session
+        self._log_extra = {
+            "zenml_log_source": "sandbox",
+            "zenml_sandbox_session_id": session_id or "",
+        }
 
     def stdout_iter(self) -> Iterator[str]:
         """Iterates over buffered stdout lines."""
         for line in _split_lines(self._result.stdout):
-            logger.info("[sandbox:stdout] %s", line.rstrip("\n"))
+            logger.info(line.rstrip("\n"), extra=self._log_extra)
             yield line
 
     def stderr_iter(self) -> Iterator[str]:
         """Iterates over buffered stderr lines."""
         for line in _split_lines(self._result.stderr):
-            logger.warning("[sandbox:stderr] %s", line.rstrip("\n"))
+            logger.warning(line.rstrip("\n"), extra=self._log_extra)
             yield line
 
     def wait(self, timeout_seconds: Optional[int] = None) -> int:
@@ -515,6 +521,8 @@ class DaytonaSandboxProcess(SandboxProcess):
         session: "DaytonaSandboxSession",
         session_id: str,
         command_id: Optional[str],
+        *,
+        sandbox_session_id: Optional[str] = None,
     ) -> None:
         """Initializes a streaming process handle.
 
@@ -522,10 +530,15 @@ class DaytonaSandboxProcess(SandboxProcess):
             session: Parent sandbox session.
             session_id: Daytona process session ID.
             command_id: Daytona command ID for log retrieval.
+            sandbox_session_id: ZenML sandbox session identifier for log routing.
         """
         self._session = session
         self._session_id = session_id
         self._command_id = command_id
+        self._log_extra = {
+            "zenml_log_source": "sandbox",
+            "zenml_sandbox_session_id": sandbox_session_id or "",
+        }
 
         self._stdout_queue: "queue.Queue[Optional[str]]" = queue.Queue()
         self._stderr_queue: "queue.Queue[Optional[str]]" = queue.Queue()
@@ -623,9 +636,9 @@ class DaytonaSandboxProcess(SandboxProcess):
                 break
 
             if stderr:
-                logger.warning("[sandbox:stderr] %s", line.rstrip("\n"))
+                logger.warning(line.rstrip("\n"), extra=self._log_extra)
             else:
-                logger.info("[sandbox:stdout] %s", line.rstrip("\n"))
+                logger.info(line.rstrip("\n"), extra=self._log_extra)
             yield line
 
     def stdout_iter(self) -> Iterator[str]:
@@ -802,6 +815,7 @@ class DaytonaCodeInterpreter(CodeInterpreter):
                 stdout=result.stdout,
                 stderr=result.stderr,
                 target_logger=logger,
+                session_id=self._session._metadata.session_id,
             )
 
         if self._session.raise_on_failure and result.exit_code != 0:
@@ -1315,6 +1329,7 @@ class DaytonaSandboxSession(SandboxSession):
                 stdout=result.stdout,
                 stderr=result.stderr,
                 target_logger=logger,
+                session_id=self._metadata.session_id,
             )
 
         should_check = check if check is not None else self._raise_on_failure
@@ -1346,6 +1361,7 @@ class DaytonaSandboxSession(SandboxSession):
                 session=self,
                 session_id=session_id,
                 command_id=command_id,
+                sandbox_session_id=self._metadata.session_id,
             )
         except Exception as e:
             daytona_error_class = _resolve_daytona_class(
@@ -1359,6 +1375,7 @@ class DaytonaSandboxSession(SandboxSession):
                         stderr=_as_text(e),
                     ),
                     terminate_session=self.terminate,
+                    session_id=self._metadata.session_id,
                 )
 
             if not _is_sdk_shape_error(e):
@@ -1378,6 +1395,7 @@ class DaytonaSandboxSession(SandboxSession):
             return _BufferedDaytonaProcess(
                 result=fallback_result,
                 terminate_session=self.terminate,
+                session_id=self._metadata.session_id,
             )
 
     def run_code(
@@ -1458,6 +1476,7 @@ class DaytonaSandboxSession(SandboxSession):
                 stdout=result.stdout,
                 stderr=result.stderr,
                 target_logger=logger,
+                session_id=self._metadata.session_id,
             )
 
         should_check = check if check is not None else self._raise_on_failure

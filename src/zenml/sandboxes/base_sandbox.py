@@ -142,14 +142,18 @@ def forward_sandbox_output(
     stdout: str,
     stderr: str,
     target_logger: logging.Logger,
-    stdout_prefix: str = "[sandbox:stdout]",
-    stderr_prefix: str = "[sandbox:stderr]",
+    session_id: Optional[str] = None,
+    source: str = "sandbox",
 ) -> None:
-    """Forwards buffered sandbox output into ZenML step logs.
+    """Forwards buffered sandbox output into a dedicated sandbox log stream.
 
     Replays captured stdout/stderr line-by-line through the Python logger
-    so that the output reaches the active LoggingContext and gets persisted
-    in step logs. Stdout lines are emitted at INFO level, stderr at WARNING.
+    with ``zenml_log_source`` extras so that the active ``LoggingContext``
+    routes them into a separate ``source="sandbox"`` log stream.
+
+    Stdout lines are emitted at INFO level, stderr at WARNING.  The
+    messages are emitted **without** text prefixes — the source is
+    conveyed structurally via the log stream.
 
     Note: because the output is buffered, true interleaving of stdout and
     stderr cannot be preserved — stdout is emitted first, then stderr.
@@ -160,15 +164,19 @@ def forward_sandbox_output(
         stdout: Captured standard output from sandbox execution.
         stderr: Captured standard error from sandbox execution.
         target_logger: Logger instance to emit records through.
-        stdout_prefix: Prefix for stdout lines (default: [sandbox:stdout]).
-        stderr_prefix: Prefix for stderr lines (default: [sandbox:stderr]).
+        session_id: Optional sandbox session identifier for traceability.
+        source: The log source label (default: ``"sandbox"``).
     """
+    extra = {
+        "zenml_log_source": source,
+        "zenml_sandbox_session_id": session_id or "",
+    }
     if stdout:
         for line in _iter_output_lines(stdout):
-            target_logger.info("%s %s", stdout_prefix, line)
+            target_logger.info(line, extra=extra)
     if stderr:
         for line in _iter_output_lines(stderr):
-            target_logger.warning("%s %s", stderr_prefix, line)
+            target_logger.warning(line, extra=extra)
 
 
 class SandboxProcess(ABC):

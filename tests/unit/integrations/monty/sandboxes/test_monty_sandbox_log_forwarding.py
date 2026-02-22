@@ -27,10 +27,18 @@ def test_monty_print_callback_forwards_stdout_and_stderr(mocker) -> None:
         "zenml.integrations.monty.sandboxes.monty_sandbox.logger.warning"
     )
 
+    expected_extra = {
+        "zenml_log_source": "sandbox",
+        "zenml_sandbox_session_id": "sess-abc",
+    }
+
     stdout_chunks: list[str] = []
     stderr_chunks: list[str] = []
     callback = _build_print_callback(
-        stdout_chunks, stderr_chunks, forward_to_step_logs=True
+        stdout_chunks,
+        stderr_chunks,
+        forward_to_step_logs=True,
+        session_id="sess-abc",
     )
 
     callback("stdout", "hello world\n")
@@ -39,8 +47,9 @@ def test_monty_print_callback_forwards_stdout_and_stderr(mocker) -> None:
     assert stdout_chunks == ["hello world\n"]
     assert stderr_chunks == ["error line\n"]
 
-    info_mock.assert_called_once_with("[sandbox:stdout] %s", "hello world")
-    warning_mock.assert_called_once_with("[sandbox:stderr] %s", "error line")
+    # Messages are plain (no prefix); routing info is in extras
+    info_mock.assert_called_once_with("hello world", extra=expected_extra)
+    warning_mock.assert_called_once_with("error line", extra=expected_extra)
 
 
 def test_monty_print_callback_respects_disabled_forwarding(mocker) -> None:
@@ -55,7 +64,9 @@ def test_monty_print_callback_respects_disabled_forwarding(mocker) -> None:
     stdout_chunks: list[str] = []
     stderr_chunks: list[str] = []
     callback = _build_print_callback(
-        stdout_chunks, stderr_chunks, forward_to_step_logs=False
+        stdout_chunks,
+        stderr_chunks,
+        forward_to_step_logs=False,
     )
 
     callback("stdout", "hello\n")

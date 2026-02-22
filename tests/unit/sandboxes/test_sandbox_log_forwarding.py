@@ -64,8 +64,9 @@ class TestForwardSandboxOutput:
 
         info_records = [r for r in caplog.records if r.levelno == logging.INFO]
         assert len(info_records) == 1
-        assert "[sandbox:stdout]" in info_records[0].message
-        assert "hello world" in info_records[0].message
+        # Messages are now plain (no prefix); routing info is in extras
+        assert info_records[0].message == "hello world"
+        assert getattr(info_records[0], "zenml_log_source", None) == "sandbox"
 
     def test_stderr_logged_at_warning_level(
         self, caplog: pytest.LogCaptureFixture
@@ -82,8 +83,10 @@ class TestForwardSandboxOutput:
             r for r in caplog.records if r.levelno == logging.WARNING
         ]
         assert len(warning_records) == 1
-        assert "[sandbox:stderr]" in warning_records[0].message
-        assert "error occurred" in warning_records[0].message
+        assert warning_records[0].message == "error occurred"
+        assert (
+            getattr(warning_records[0], "zenml_log_source", None) == "sandbox"
+        )
 
     def test_multiline_output_produces_one_record_per_line(
         self, caplog: pytest.LogCaptureFixture
@@ -116,20 +119,23 @@ class TestForwardSandboxOutput:
 
         assert len(caplog.records) == 0
 
-    def test_custom_prefixes(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_session_id_propagated_in_extras(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         test_logger = logging.getLogger("test.sandbox.forwarding")
         with caplog.at_level(logging.DEBUG, logger="test.sandbox.forwarding"):
             forward_sandbox_output(
                 stdout="out\n",
                 stderr="err\n",
                 target_logger=test_logger,
-                stdout_prefix="[custom:out]",
-                stderr_prefix="[custom:err]",
+                session_id="sess-42",
             )
 
-        messages = [r.message for r in caplog.records]
-        assert any("[custom:out]" in m for m in messages)
-        assert any("[custom:err]" in m for m in messages)
+        for record in caplog.records:
+            assert (
+                getattr(record, "zenml_sandbox_session_id", None) == "sess-42"
+            )
+            assert getattr(record, "zenml_log_source", None) == "sandbox"
 
     def test_stdout_before_stderr_ordering(
         self, caplog: pytest.LogCaptureFixture

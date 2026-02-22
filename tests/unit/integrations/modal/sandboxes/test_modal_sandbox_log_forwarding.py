@@ -110,7 +110,7 @@ class _PollingProcess:
 
 
 def test_modal_sandbox_process_forwards_logs(mocker) -> None:
-    """Ensures streaming stdout/stderr are logged and yielded."""
+    """Ensures streaming stdout/stderr are logged with routing extras."""
     info_mock = mocker.patch(
         "zenml.integrations.modal.sandboxes.modal_sandbox.logger.info"
     )
@@ -123,9 +123,15 @@ def test_modal_sandbox_process_forwards_logs(mocker) -> None:
         returncode=7,
     )
 
+    expected_extra = {
+        "zenml_log_source": "sandbox",
+        "zenml_sandbox_session_id": "sess-1",
+    }
+
     wrapper = ModalSandboxProcess(
         process=process,
         terminate_session=lambda **_: None,
+        session_id="sess-1",
     )
 
     stdout = list(wrapper.stdout_iter())
@@ -136,9 +142,10 @@ def test_modal_sandbox_process_forwards_logs(mocker) -> None:
     assert stderr == ["line err 1\n"]
     assert exit_code == 7
 
-    info_mock.assert_any_call("[sandbox:stdout] %s", "line out 1")
-    info_mock.assert_any_call("[sandbox:stdout] %s", "line out 2")
-    warning_mock.assert_any_call("[sandbox:stderr] %s", "line err 1")
+    # Messages are plain (no prefix); routing info is in extras
+    info_mock.assert_any_call("line out 1", extra=expected_extra)
+    info_mock.assert_any_call("line out 2", extra=expected_extra)
+    warning_mock.assert_any_call("line err 1", extra=expected_extra)
 
 
 class _FailingRouterSandbox:

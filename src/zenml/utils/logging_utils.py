@@ -96,6 +96,11 @@ class LogEntry(BaseModel):
         default_factory=uuid4,
         description="The unique identifier of the log entry",
     )
+    session_id: Optional[str] = Field(
+        default=None,
+        description="Sandbox session identifier when the log originates "
+        "from a sandbox session.",
+    )
 
     model_config = ConfigDict(
         # ignore extra attributes during model initialization
@@ -132,6 +137,7 @@ class LoggingContext(context_utils.BaseContext):
         self._origin: Optional["BaseLogStoreOrigin"] = None
         self._name = name
         self._block_on_exit = block_on_exit
+        self._child_origins: Dict[str, "BaseLogStoreOrigin"] = {}
 
     @property
     def name(self) -> str:
@@ -142,6 +148,42 @@ class LoggingContext(context_utils.BaseContext):
         """
         return self._name
 
+    def _ensure_origin_for_source(self, source: str) -> "BaseLogStoreOrigin":
+        """Get or lazily create a child origin for a non-default log source.
+
+        When sandbox code emits logs with ``zenml_log_source="sandbox"``,
+        this method creates a dedicated ``LogsResponse`` stream so those
+        logs are persisted separately from the step stream.
+
+        Args:
+            source: The log source name (e.g. ``"sandbox"``).
+
+        Returns:
+            A ``BaseLogStoreOrigin`` for the requested source.
+
+        Raises:
+            RuntimeError: If the main origin has not been registered yet.
+        """
+        if source in self._child_origins:
+            return self._child_origins[source]
+
+        child_request = generate_logs_request(source=source)
+
+        if self.log_model.step_run_id:
+            child_request.step_run_id = self.log_model.step_run_id
+        elif self.log_model.pipeline_run_id:
+            child_request.pipeline_run_id = self.log_model.pipeline_run_id
+
+        child_response = Client().zen_store.create_logs(child_request)
+
+        child_origin = self._log_store.register_origin(
+            name=str(child_response.id),
+            log_model=child_response,
+            metadata=dict(self._metadata),
+        )
+        self._child_origins[source] = child_origin
+        return child_origin
+
     @classmethod
     def emit(
         cls,
@@ -151,7 +193,9 @@ class LoggingContext(context_utils.BaseContext):
         """Emit a log record using the active logging context.
 
         This class method is called by stdout/stderr wrappers and logging
-        handlers to route logs to the active log store.
+        handlers to route logs to the active log store.  When the record
+        carries a ``zenml_log_source`` extra (set by sandbox emitters),
+        the record is routed to a dedicated child origin for that source.
 
         Args:
             record: The log record to emit.
@@ -165,10 +209,32 @@ class LoggingContext(context_utils.BaseContext):
                 message = record.getMessage()
                 if message and message.strip():
                     if context._origin:
+                        route_source = getattr(
+                            record, "zenml_log_source", None
+                        )
+                        if (
+                            route_source
+                            and route_source != context.log_model.source
+                        ):
+                            origin = context._ensure_origin_for_source(
+                                route_source
+                            )
+                        else:
+                            origin = context._origin
+
+                        emit_metadata = dict(metadata) if metadata else {}
+                        session_id = getattr(
+                            record, "zenml_sandbox_session_id", None
+                        )
+                        if session_id:
+                            emit_metadata["zenml.sandbox.session_id"] = (
+                                session_id
+                            )
+
                         context._log_store.emit(
-                            origin=context._origin,
+                            origin=origin,
                             record=record,
-                            metadata=metadata,
+                            metadata=emit_metadata or None,
                         )
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
@@ -182,18 +248,24 @@ class LoggingContext(context_utils.BaseContext):
     ) -> None:
         """Update the metadata of the logging context.
 
+        Propagates metadata updates to both the main origin and any
+        child origins created for routed sources (e.g. sandbox).
+
         Args:
             step_run: The step run.
             pipeline_run: The pipeline run.
         """
-        if step_run and self._origin:
-            self._origin.metadata.update(
-                get_step_log_metadata(step_run=step_run)
-            )
-        if pipeline_run and self._origin:
-            self._origin.metadata.update(
-                get_run_log_metadata(pipeline_run=pipeline_run)
-            )
+        all_origins = [self._origin] + list(self._child_origins.values())
+        if step_run:
+            step_meta = get_step_log_metadata(step_run=step_run)
+            for origin in all_origins:
+                if origin:
+                    origin.metadata.update(step_meta)
+        if pipeline_run:
+            run_meta = get_run_log_metadata(pipeline_run=pipeline_run)
+            for origin in all_origins:
+                if origin:
+                    origin.metadata.update(run_meta)
 
     def attach(
         self, response: Union["StepRunResponse", "PipelineRunResponse"]
@@ -241,6 +313,9 @@ class LoggingContext(context_utils.BaseContext):
     ) -> None:
         """Exit the context and restore previous context.
 
+        Child origins (e.g. sandbox) are deregistered first so their
+        exporters flush before the main origin tears down.
+
         Args:
             exc_type: The class of the exception.
             exc_val: The instance of the exception.
@@ -263,6 +338,11 @@ class LoggingContext(context_utils.BaseContext):
 
         with self._lock:
             super().__exit__(exc_type, exc_val, exc_tb)
+            for child_origin in self._child_origins.values():
+                self._log_store.deregister_origin(
+                    child_origin, blocking=self._block_on_exit
+                )
+            self._child_origins.clear()
             if self._origin:
                 self._log_store.deregister_origin(
                     self._origin, blocking=self._block_on_exit

@@ -137,6 +137,7 @@ def _build_print_callback(
     stderr_chunks: List[str],
     *,
     forward_to_step_logs: bool = True,
+    session_id: Optional[str] = None,
 ) -> Callable[[str, str], None]:
     """Creates a print callback compatible with Monty execution.
 
@@ -144,19 +145,24 @@ def _build_print_callback(
         stdout_chunks: Mutable list to accumulate stdout text.
         stderr_chunks: Mutable list to accumulate stderr text.
         forward_to_step_logs: Whether to forward output into ZenML step logs.
+        session_id: Sandbox session identifier for log routing.
     """
+    log_extra = {
+        "zenml_log_source": "sandbox",
+        "zenml_sandbox_session_id": session_id or "",
+    }
 
     def _callback(stream: str, text: str) -> None:
         line = str(text)
         if stream == "stderr":
             stderr_chunks.append(line)
             if forward_to_step_logs:
-                logger.warning("[sandbox:stderr] %s", line.rstrip())
+                logger.warning(line.rstrip(), extra=log_extra)
             return
 
         stdout_chunks.append(line)
         if forward_to_step_logs:
-            logger.info("[sandbox:stdout] %s", line.rstrip())
+            logger.info(line.rstrip(), extra=log_extra)
 
     return _callback
 
@@ -248,6 +254,7 @@ class MontyCodeInterpreter(CodeInterpreter):
             self._stdout_chunks,
             self._stderr_chunks,
             forward_to_step_logs=self._session._forward_sandbox_logs,
+            session_id=self._session._metadata.session_id,
         )
         callback(stream, text)
 
@@ -501,6 +508,7 @@ class MontySandboxSession(SandboxSession):
             stdout_chunks,
             stderr_chunks,
             forward_to_step_logs=self._forward_sandbox_logs,
+            session_id=self._metadata.session_id,
         )
 
         safe_inputs = dict(inputs or {})

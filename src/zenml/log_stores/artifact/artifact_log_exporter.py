@@ -133,11 +133,15 @@ class ArtifactLogExporter(LogExporter):
         filename = None
         lineno = None
 
+        session_id = None
         if log_record.attributes:
             attrs = dict(log_record.attributes)
             filename = attrs.get("code.filepath", None)
             lineno = attrs.get("code.lineno", None)
             module = attrs.get("code.function", None)
+            raw_session = attrs.get("zenml.sandbox.session_id")
+            if isinstance(raw_session, str) and raw_session:
+                session_id = raw_session
 
         message_bytes = message.encode("utf-8")
         if len(message_bytes) <= DEFAULT_MESSAGE_SIZE:
@@ -150,6 +154,7 @@ class ArtifactLogExporter(LogExporter):
                     module=module,
                     filename=filename,
                     lineno=lineno,
+                    session_id=session_id,
                 )
             ]
         else:
@@ -170,6 +175,7 @@ class ArtifactLogExporter(LogExporter):
                         chunk_index=i,
                         total_chunks=len(chunks),
                         id=entry_id,
+                        session_id=session_id,
                     )
                 )
 
