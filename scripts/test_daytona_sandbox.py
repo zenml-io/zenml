@@ -140,7 +140,7 @@ def daytona_sandbox_smoke_step() -> str:
     return json.dumps(summary, sort_keys=True)
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def daytona_sandbox_smoke_pipeline() -> None:
     """Pipeline wrapping the Daytona sandbox smoke step."""
     daytona_sandbox_smoke_step()

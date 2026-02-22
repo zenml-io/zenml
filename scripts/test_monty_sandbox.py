@@ -88,7 +88,7 @@ def monty_sandbox_smoke_step() -> str:
     return json.dumps(summary, sort_keys=True)
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def monty_sandbox_smoke_pipeline() -> None:
     """Pipeline wrapping the Monty sandbox smoke step."""
     monty_sandbox_smoke_step()
