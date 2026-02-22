@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Manual smoke test for the Phase 5 Modal sandbox implementation."""
+"""Runnable root-level smoke test for the Phase 5 Modal sandbox workflow."""
 
 import json
 from typing import Iterator, List
@@ -67,7 +67,7 @@ def modal_sandbox_smoke_step() -> str:
         )
 
     with context.sandbox.session(
-        image="python:3.11-slim",
+        image="python:3.12-slim",
         timeout_seconds=600,
         env={"ZENML_SANDBOX_SMOKE": "1"},
     ) as sandbox:
@@ -141,7 +141,7 @@ def modal_sandbox_smoke_step() -> str:
     return json.dumps(summary, sort_keys=True)
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def modal_sandbox_smoke_pipeline() -> None:
     """Pipeline wrapping the Modal sandbox smoke step."""
     modal_sandbox_smoke_step()

@@ -393,7 +393,7 @@ class BaseSandbox(StackComponent, ABC):
             info: Info about the executed step.
 
         Returns:
-            Serialized sandbox metadata keyed by `sandbox_info`.
+            Structured sandbox metadata keyed by `sandbox_info`.
         """
         if not self._step_sessions:
             return {}
@@ -420,7 +420,7 @@ class BaseSandbox(StackComponent, ABC):
                 capability.value for capability in self.capabilities
             ),
         )
-        return {"sandbox_info": metadata.model_dump_json()}
+        return {"sandbox_info": metadata.model_dump(mode="json")}
 
 
 class BaseSandboxFlavor(Flavor):

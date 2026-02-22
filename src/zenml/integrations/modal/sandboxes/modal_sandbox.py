@@ -16,6 +16,7 @@
 import asyncio
 import inspect
 import json
+import socket
 import time
 from contextlib import nullcontext
 from pathlib import Path
@@ -40,7 +41,6 @@ from zenml.integrations.modal.flavors import (
 )
 from zenml.integrations.modal.utils import (
     build_modal_image,
-    get_modal_app,
     map_resource_settings,
 )
 from zenml.logger import get_logger
@@ -60,6 +60,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
 
 logger = get_logger(__name__)
+_COMMAND_ROUTER_INIT_TIMEOUT_SECONDS = 5.0
 
 _INTERPRETER_BOOTSTRAP = r"""
 import contextlib
@@ -178,29 +179,48 @@ def _wait_for_process(
     process: Any, timeout_seconds: Optional[int] = None
 ) -> int:
     """Waits for process completion and returns its exit code."""
+    poll_method = getattr(process, "poll", None)
+    if timeout_seconds is not None and callable(poll_method):
+        deadline = time.monotonic() + timeout_seconds
+        while time.monotonic() < deadline:
+            poll_result = _call_modal(poll_method)
+            if poll_result is not None:
+                return int(poll_result)
+            time.sleep(0.1)
+        return -1
+
     wait_method = getattr(process, "wait", None)
     wait_result: Optional[Any] = None
     if callable(wait_method):
-        if timeout_seconds is None:
-            wait_result = _call_modal(wait_method)
-        else:
-            timeout_kwargs = [
-                {"timeout": timeout_seconds},
-                {"timeout_seconds": timeout_seconds},
-                {},
-            ]
-            for kwargs in timeout_kwargs:
-                try:
-                    wait_result = _call_modal(wait_method, **kwargs)
-                    break
-                except TypeError:
-                    continue
+        wait_result = _call_modal(wait_method)
 
     exit_code = getattr(process, "returncode", None)
     if exit_code is None and isinstance(wait_result, int):
         exit_code = wait_result
 
     return int(exit_code) if exit_code is not None else 0
+
+
+def _estimate_modal_cost_usd(
+    *,
+    duration_seconds: float,
+    cpu: float,
+    memory_mb: int,
+    cpu_cost_per_core_second_usd: float,
+    memory_cost_per_gib_second_usd: float,
+) -> float:
+    """Computes a best-effort Modal sandbox session cost estimate."""
+    safe_duration_seconds = max(0.0, duration_seconds)
+    safe_cpu = max(0.0, cpu)
+    safe_memory_gib = max(0, memory_mb) / 1024.0
+
+    cpu_cost = safe_duration_seconds * safe_cpu * cpu_cost_per_core_second_usd
+    memory_cost = (
+        safe_duration_seconds
+        * safe_memory_gib
+        * memory_cost_per_gib_second_usd
+    )
+    return cpu_cost + memory_cost
 
 
 def _write_to_stream(stream: Any, payload: str) -> None:
@@ -213,6 +233,11 @@ def _write_to_stream(stream: Any, payload: str) -> None:
     except TypeError:
         stream.write(payload.encode("utf-8"))
 
+    drain_method = getattr(stream, "drain", None)
+    if callable(drain_method):
+        _call_modal(drain_method)
+        return
+
     flush_method = getattr(stream, "flush", None)
     if callable(flush_method):
         _call_modal(flush_method)
@@ -224,16 +249,25 @@ def _readline_from_stream(stream: Any) -> str:
         raise RuntimeError("Missing process stdout handle.")
 
     readline_method = getattr(stream, "readline", None)
-    if not callable(readline_method):
-        raise RuntimeError(
-            "Process stdout handle does not support readline()."
-        )
+    if callable(readline_method):
+        return _decode_output(_call_modal(readline_method))
 
-    return _decode_output(_call_modal(readline_method))
+    iter_method = getattr(stream, "__iter__", None)
+    if callable(iter_method):
+        iterator = iter(stream)
+        try:
+            return _decode_output(next(iterator))
+        except StopIteration:
+            return ""
+
+    raise RuntimeError("Process stdout handle does not support line reads.")
 
 
 def _close_modal_context(context: Any, is_async: bool) -> None:
     """Closes a Modal context manager regardless of sync/async implementation."""
+    if context is None:
+        return
+
     if is_async:
         aexit = getattr(context, "__aexit__", None)
         if callable(aexit):
@@ -245,8 +279,119 @@ def _close_modal_context(context: Any, is_async: bool) -> None:
         exit_method(None, None, None)
 
 
+def _is_command_router_disabled(sandbox: Any) -> bool:
+    """Returns whether command-router initialization was previously disabled."""
+    if getattr(sandbox, "_zenml_command_router_disabled", False):
+        return True
+
+    sandbox_dict = getattr(sandbox, "__dict__", {})
+    if isinstance(sandbox_dict, dict):
+        for key, value in sandbox_dict.items():
+            if isinstance(key, str) and key.startswith("_sync_original_"):
+                if getattr(value, "_zenml_command_router_disabled", False):
+                    return True
+
+    return False
+
+
+def _patch_command_router_fallback(sandbox: Any) -> None:
+    """Patches Modal command router resolution to degrade gracefully.
+
+    Some environments fail DNS resolution for worker router hostnames. In that
+    case we fall back to the server-side exec path instead of failing commands.
+    """
+    patch_targets: List[tuple[str, Any]] = [("sandbox", sandbox)]
+    sandbox_dict = getattr(sandbox, "__dict__", {})
+    if isinstance(sandbox_dict, dict):
+        for key, value in sandbox_dict.items():
+            if isinstance(key, str) and key.startswith("_sync_original_"):
+                patch_targets.append((key, value))
+
+    seen_target_ids = set()
+    warned = False
+    router_disabled = False
+    patched_targets = 0
+
+    for target_name, target in patch_targets:
+        target_id = id(target)
+        if target_id in seen_target_ids:
+            continue
+        seen_target_ids.add(target_id)
+
+        get_router_client = getattr(target, "_get_command_router_client", None)
+        if not callable(get_router_client):
+            continue
+
+        if not hasattr(target, "_zenml_command_router_disabled"):
+            try:
+                target._zenml_command_router_disabled = False
+            except Exception:
+                logger.debug(
+                    "Unable to initialize command-router disabled state "
+                    "for %s.",
+                    target_name,
+                    exc_info=True,
+                )
+
+        async def _safe_get_command_router_client(
+            task_id: str,
+            _original_get_router_client: Any = get_router_client,
+        ) -> Any:
+            nonlocal warned, router_disabled
+            if router_disabled:
+                return None
+
+            try:
+                result = _original_get_router_client(task_id)
+                if inspect.isawaitable(result):
+                    return await asyncio.wait_for(
+                        result,
+                        timeout=_COMMAND_ROUTER_INIT_TIMEOUT_SECONDS,
+                    )
+                return result
+            except (socket.gaierror, asyncio.TimeoutError) as e:
+                router_disabled = True
+                for _, patched_target in patch_targets:
+                    try:
+                        patched_target._zenml_command_router_disabled = True
+                    except Exception:
+                        logger.debug(
+                            "Unable to persist command-router disabled state "
+                            "for %s.",
+                            patched_target,
+                            exc_info=True,
+                        )
+                if not warned:
+                    logger.warning(
+                        "Modal command router unavailable; falling back to "
+                        "server-side exec path and disabling future direct "
+                        "router attempts for this sandbox. Error: %s",
+                        e,
+                    )
+                    warned = True
+                return None
+
+        try:
+            target._get_command_router_client = _safe_get_command_router_client
+            patched_targets += 1
+        except Exception:
+            logger.debug(
+                "Unable to patch Modal command router fallback for %s.",
+                target_name,
+                exc_info=True,
+            )
+
+    logger.debug(
+        "Applied Modal command-router fallback patch to %d target(s).",
+        patched_targets,
+    )
+
+
 class ModalSandboxProcess(SandboxProcess):
-    """Streaming process wrapper for Modal sandbox exec handles."""
+    """Streaming process wrapper for Modal sandbox exec handles.
+
+    Log forwarding happens while stdout/stderr iterators are consumed.
+    """
 
     def __init__(self, process: Any, terminate_session: Any) -> None:
         """Initializes the process wrapper.
@@ -261,11 +406,15 @@ class ModalSandboxProcess(SandboxProcess):
 
     def stdout_iter(self) -> Iterator[str]:
         """Iterates over stdout chunks as they are produced."""
-        yield from _iter_stream(getattr(self._process, "stdout", None))
+        for line in _iter_stream(getattr(self._process, "stdout", None)):
+            logger.info("[sandbox:stdout] %s", line.rstrip("\n"))
+            yield line
 
     def stderr_iter(self) -> Iterator[str]:
         """Iterates over stderr chunks as they are produced."""
-        yield from _iter_stream(getattr(self._process, "stderr", None))
+        for line in _iter_stream(getattr(self._process, "stderr", None)):
+            logger.warning("[sandbox:stderr] %s", line.rstrip("\n"))
+            yield line
 
     def wait(self, timeout_seconds: Optional[int] = None) -> int:
         """Waits for process completion and returns the exit code."""
@@ -315,6 +464,8 @@ class ModalCodeInterpreter(CodeInterpreter):
         self._process = self._session._exec_process(
             ["python", "-u", "-c", _INTERPRETER_BOOTSTRAP],
             timeout_seconds=self._timeout_seconds,
+            text=True,
+            bufsize=1,
         )
         self._stdin = getattr(self._process, "stdin", None)
         self._stdout = getattr(self._process, "stdout", None)
@@ -370,9 +521,17 @@ class ModalCodeInterpreter(CodeInterpreter):
         if self._process is None:
             return
 
-        close_method = getattr(self._stdin, "close", None)
-        if callable(close_method):
-            _call_modal(close_method)
+        write_eof_method = getattr(self._stdin, "write_eof", None)
+        if callable(write_eof_method):
+            _call_modal(write_eof_method)
+
+        drain_method = getattr(self._stdin, "drain", None)
+        if callable(drain_method):
+            _call_modal(drain_method)
+        else:
+            close_method = getattr(self._stdin, "close", None)
+            if callable(close_method):
+                _call_modal(close_method)
 
         _wait_for_process(self._process, timeout_seconds=5)
         self._process = None
@@ -391,6 +550,11 @@ class ModalSandboxSession(SandboxSession):
         app_run_context_is_async: bool,
         raise_on_failure: bool,
         metadata: SandboxSessionMetadata,
+        cpu: Optional[float],
+        memory_mb: Optional[int],
+        gpu: Optional[str],
+        cpu_cost_per_core_second_usd: Optional[float],
+        memory_cost_per_gib_second_usd: Optional[float],
         env: Optional[Dict[str, str]] = None,
         workdir: Optional[str] = None,
     ) -> None:
@@ -402,6 +566,13 @@ class ModalSandboxSession(SandboxSession):
             app_run_context_is_async: Whether the run context is async.
             raise_on_failure: Default failure mode for exec operations.
             metadata: Metadata instance tracked by the component.
+            cpu: Effective CPU assigned to this sandbox session.
+            memory_mb: Effective memory assigned to this sandbox session.
+            gpu: Effective GPU assigned to this sandbox session.
+            cpu_cost_per_core_second_usd: Optional cost rate for one CPU
+                core-second.
+            memory_cost_per_gib_second_usd: Optional cost rate for one GiB
+                second of memory usage.
             env: Default environment variables for command execution.
             workdir: Default working directory for command execution.
         """
@@ -412,8 +583,14 @@ class ModalSandboxSession(SandboxSession):
         self._metadata = metadata
         self._default_env = dict(env or {})
         self._workdir = workdir
+        self._cpu = cpu
+        self._memory_mb = memory_mb
+        self._gpu = gpu
+        self._cpu_cost_per_core_second_usd = cpu_cost_per_core_second_usd
+        self._memory_cost_per_gib_second_usd = memory_cost_per_gib_second_usd
         self._created_at = time.monotonic()
         self._terminated = False
+        self._router_fallback_retry_logged = False
 
     @property
     def raise_on_failure(self) -> bool:
@@ -427,6 +604,8 @@ class ModalSandboxSession(SandboxSession):
         timeout_seconds: Optional[int] = None,
         env: Optional[Dict[str, str]] = None,
         workdir: Optional[str] = None,
+        text: bool = True,
+        bufsize: int = -1,
     ) -> Any:
         """Executes a command in the Modal sandbox and returns the process."""
         if not command:
@@ -446,7 +625,23 @@ class ModalSandboxSession(SandboxSession):
         if effective_workdir:
             exec_kwargs["workdir"] = effective_workdir
 
-        return _call_modal(self._sandbox.exec, *command, **exec_kwargs)
+        exec_kwargs["text"] = text
+        exec_kwargs["bufsize"] = bufsize
+
+        try:
+            return _call_modal(self._sandbox.exec, *command, **exec_kwargs)
+        except socket.gaierror as e:
+            if not self._router_fallback_retry_logged:
+                logger.warning(
+                    "Modal command execution failed while initializing the "
+                    "direct command router. Retrying with server-side exec "
+                    "fallback. Error: %s",
+                    e,
+                )
+                self._router_fallback_retry_logged = True
+
+            _patch_command_router_fallback(self._sandbox)
+            return _call_modal(self._sandbox.exec, *command, **exec_kwargs)
 
     def _finalize_metadata(self) -> None:
         """Updates duration metadata based on wall-clock runtime."""
@@ -454,6 +649,45 @@ class ModalSandboxSession(SandboxSession):
             self._metadata.duration_seconds,
             time.monotonic() - self._created_at,
         )
+
+        self._metadata.extra["cpu"] = self._cpu
+        self._metadata.extra["memory_mb"] = self._memory_mb
+        self._metadata.extra["gpu"] = self._gpu
+
+        if (
+            self._cpu is None
+            or self._memory_mb is None
+            or self._cpu_cost_per_core_second_usd is None
+            or self._memory_cost_per_gib_second_usd is None
+        ):
+            self._metadata.extra["estimated_cost_reason"] = (
+                "missing resource values or pricing rates"
+            )
+            return
+
+        estimated_cost_usd = _estimate_modal_cost_usd(
+            duration_seconds=self._metadata.duration_seconds,
+            cpu=self._cpu,
+            memory_mb=self._memory_mb,
+            cpu_cost_per_core_second_usd=self._cpu_cost_per_core_second_usd,
+            memory_cost_per_gib_second_usd=(
+                self._memory_cost_per_gib_second_usd
+            ),
+        )
+        self._metadata.estimated_cost_usd = estimated_cost_usd
+        self._metadata.extra["estimated_cost_breakdown"] = {
+            "duration_seconds": self._metadata.duration_seconds,
+            "cpu": self._cpu,
+            "memory_mb": self._memory_mb,
+            "memory_gib": self._memory_mb / 1024.0,
+            "cpu_cost_per_core_second_usd": (
+                self._cpu_cost_per_core_second_usd
+            ),
+            "memory_cost_per_gib_second_usd": (
+                self._memory_cost_per_gib_second_usd
+            ),
+            "estimated_cost_usd": estimated_cost_usd,
+        }
 
     def exec_run(
         self,
@@ -496,7 +730,11 @@ class ModalSandboxSession(SandboxSession):
         env: Optional[Dict[str, str]] = None,
         workdir: Optional[str] = None,
     ) -> SandboxProcess:
-        """Runs a command and yields streaming process output."""
+        """Runs a command and yields streaming process output.
+
+        The returned process forwards log lines to ZenML logging while callers
+        consume stdout and stderr iterators.
+        """
         process = self._exec_process(
             command,
             timeout_seconds=timeout_seconds,
@@ -542,6 +780,12 @@ class ModalSandboxSession(SandboxSession):
 
     def code_interpreter(self) -> CodeInterpreter:
         """Creates a persistent Python interpreter for repeated execution."""
+        if _is_command_router_disabled(self._sandbox):
+            raise RuntimeError(
+                "Modal code interpreter requires a direct command router "
+                "connection. This sandbox is running in server-side fallback "
+                "mode because command-router initialization failed."
+            )
         return ModalCodeInterpreter(self)
 
     def write_file(self, remote_path: str, content: Union[bytes, str]) -> None:
@@ -767,7 +1011,7 @@ class ModalSandbox(BaseSandbox):
                 cidr_allowlist=step_settings.cidr_allowlist,
             )
 
-        app = get_modal_app(self.config.app_name)
+        app = modal.App(self.config.app_name)
         modal_image = build_modal_image(base_image=effective_image)
 
         app_run_context = app.run()
@@ -815,6 +1059,7 @@ class ModalSandbox(BaseSandbox):
                     "1000000000",
                     **sandbox_kwargs,
                 )
+                _patch_command_router_fallback(sandbox)
         except Exception:
             _close_modal_context(app_run_context, app_run_context_is_async)
             raise
@@ -826,6 +1071,12 @@ class ModalSandbox(BaseSandbox):
             tags=effective_tags,
             extra={
                 "app_name": self.config.app_name,
+                "image": effective_image,
+                "cpu": effective_cpu,
+                "memory_mb": effective_memory_mb,
+                "gpu": effective_gpu,
+                "network_policy": effective_network_policy.model_dump(),
+                "pricing_url": "https://modal.com/pricing",
             },
         )
         object_id = getattr(sandbox, "object_id", None)
@@ -839,6 +1090,15 @@ class ModalSandbox(BaseSandbox):
             app_run_context_is_async=app_run_context_is_async,
             raise_on_failure=self.config.raise_on_failure,
             metadata=session_metadata,
+            cpu=effective_cpu,
+            memory_mb=effective_memory_mb,
+            gpu=effective_gpu,
+            cpu_cost_per_core_second_usd=(
+                self.config.cpu_cost_per_core_second_usd
+            ),
+            memory_cost_per_gib_second_usd=(
+                self.config.memory_cost_per_gib_second_usd
+            ),
             env=effective_env,
             workdir=workdir,
         )

@@ -49,6 +49,8 @@ class ModalSandboxConfig(BaseSandboxConfig, ModalSandboxSettings):
     default_timeout_seconds: int = 300
     default_cpu: float = 1.0
     default_memory_mb: int = 2048
+    cpu_cost_per_core_second_usd: Optional[float] = None
+    memory_cost_per_gib_second_usd: Optional[float] = None
 
 
 class ModalSandboxFlavor(BaseSandboxFlavor):
