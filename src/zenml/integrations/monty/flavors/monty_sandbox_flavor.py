@@ -39,16 +39,6 @@ class MontySandboxConfig(BaseSandboxConfig, MontySandboxSettings):
     type_check: bool = True
     raise_on_failure: bool = True
 
-    @property
-    def is_remote(self) -> bool:
-        """Whether this sandbox requires remote stack execution."""
-        return False
-
-    @property
-    def is_local(self) -> bool:
-        """Whether this sandbox is local-only."""
-        return True
-
 
 class MontySandboxFlavor(BaseSandboxFlavor):
     """Monty sandbox flavor."""

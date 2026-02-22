@@ -698,19 +698,15 @@ class Stack:
         """If the stack requires a remote ZenServer to run.
 
         This is the case if any code is getting executed remotely. This is the
-        case for remote orchestrators, remote step operators, and remote
-        sandboxes.
+        case for remote orchestrators and remote step operators, which need
+        the ZenML server to be reachable from the execution environment.
 
         Returns:
             If the stack requires a remote ZenServer to run.
         """
-        return (
-            self.orchestrator.config.is_remote
-            or (
-                self.step_operator is not None
-                and self.step_operator.config.is_remote
-            )
-            or (self.sandbox is not None and self.sandbox.config.is_remote)
+        return self.orchestrator.config.is_remote or (
+            self.step_operator is not None
+            and self.step_operator.config.is_remote
         )
 
     def _validate_secrets(self, raise_exception: bool) -> None:

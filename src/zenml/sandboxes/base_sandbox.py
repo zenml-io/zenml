@@ -279,8 +279,14 @@ class BaseSandboxConfig(StackComponentConfig):
 
     @property
     def is_remote(self) -> bool:
-        """Whether this sandbox component requires remote stack execution."""
-        return True
+        """Whether this sandbox component requires remote stack execution.
+
+        Sandboxes are called from within step code (like an external API),
+        so they do not require the ZenML server to be reachable from
+        the outside. This defaults to False unlike orchestrators and
+        step operators.
+        """
+        return False
 
     @property
     def is_local(self) -> bool:
