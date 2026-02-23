@@ -135,9 +135,9 @@ class DatadogLogStore(OtelLogStore):
             until_ns = filter_.until
 
         if after is not None:
-            since_ns = datetime.strptime(self._decode_cursor(after))
+            since_ns = self._decode_cursor(after)
         elif before is not None:
-            until_ns = datetime.strptime(self._decode_cursor(before))
+            until_ns = self._decode_cursor(before)
 
         api_endpoint = (
             f"https://api.{self.config.site}/api/v2/logs/events/search"
@@ -185,8 +185,17 @@ class DatadogLogStore(OtelLogStore):
             if entry:
                 log_entries.append(entry)
 
-        before_token = self._encode_cursor(log_entries[0].timestamp)
-        after_token = self._encode_cursor(log_entries[-1].timestamp)
+        before_token: Optional[str] = None
+        after_token: Optional[str] = None
+
+        if log_entries:
+            oldest_timestamp = log_entries[0].timestamp
+            newest_timestamp = log_entries[-1].timestamp
+
+            if oldest_timestamp is not None:
+                before_token = self._encode_cursor(oldest_timestamp)
+            if newest_timestamp is not None:
+                after_token = self._encode_cursor(newest_timestamp)
 
         return LogsEntriesResponse(
             items=log_entries,

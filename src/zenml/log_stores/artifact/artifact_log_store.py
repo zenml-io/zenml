@@ -555,7 +555,11 @@ class ArtifactLogStore(OtelLogStore):
                 starting_position=start_pos,
             ):
                 entry = parse_log_entry(line)
-                if entry is None or not _matches_filter(entry, filter_):
+                if (
+                    entry is None
+                    or filter_ is None
+                    or not _matches_filter(entry, filter_)
+                ):
                     continue
 
                 items.append(entry)
@@ -589,7 +593,11 @@ class ArtifactLogStore(OtelLogStore):
             )
             for pos, line in gen:
                 entry = parse_log_entry(line)
-                if entry is None or not _matches_filter(entry, filter_):
+                if (
+                    entry is None
+                    or filter_ is None
+                    or not _matches_filter(entry, filter_)
+                ):
                     continue
 
                 items.append(entry)
