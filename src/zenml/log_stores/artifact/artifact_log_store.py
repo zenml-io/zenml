@@ -142,7 +142,7 @@ def iterate_forward(
     Returns:
         A generator of tuples containing the cursor token and the log line.
 
-    Raises:
+    Yields:
         ValueError: If the starting position is out of range.
     """
     start_file_idx = (
@@ -189,7 +189,7 @@ def iterate_backward(
     Returns:
         A generator of tuples containing the cursor token and the log line.
 
-    Raises:
+    Yields:
         ValueError: If the starting position is out of range.
     """
     start_file_idx = (
@@ -486,12 +486,16 @@ class ArtifactLogStore(OtelLogStore):
 
         Returns:
             The cursor position.
+
+        Raises:
+            ValueError: If the cursor position is invalid.
         """
         raw = base64.urlsafe_b64decode(token.encode("ascii"))
         decoded = json.loads(raw.decode("utf-8"))
 
         file_idx = int(decoded["file_idx"])
         offset = int(decoded["offset"])
+
         if file_idx < 0 or offset < 0:
             raise ValueError("Invalid cursor position.")
 
@@ -513,6 +517,12 @@ class ArtifactLogStore(OtelLogStore):
             before: Cursor token pointing to older entries.
             after: Cursor token pointing to newer entries.
             filter_: Filters that must be applied during retrieval.
+
+        Returns:
+            A response containing log entries and pagination tokens.
+
+        Raises:
+            ValueError: If the logs model or the limit is invalid.
         """
         if limit <= 0:
             raise ValueError("`limit` must be positive.")
@@ -545,6 +555,8 @@ class ArtifactLogStore(OtelLogStore):
 
         items: List[LogEntry] = []
         end_pos: Optional[ArtifactLogStoreCursor] = None
+        before_cursor: Optional[ArtifactLogStoreCursor] = None
+        after_cursor: Optional[ArtifactLogStoreCursor] = None
 
         if after is not None:
             start_pos = self.decode_cursor(token=after)
@@ -569,12 +581,10 @@ class ArtifactLogStore(OtelLogStore):
 
             items.reverse()
 
-            before = start_pos
-            after = end_pos
+            before_cursor = start_pos
+            after_cursor = end_pos
 
         else:
-            items: List[LogEntry] = []
-
             if before is None:
                 last_path = paths[-1]
                 with self._artifact_store.open(last_path, "rb") as f:
@@ -606,13 +616,21 @@ class ArtifactLogStore(OtelLogStore):
                 if len(items) >= limit:
                     break
 
-            before = end_pos
-            after = start_pos
+            before_cursor = end_pos
+            after_cursor = start_pos
 
         return LogsEntriesResponse(
             items=items,
-            before=self.encode_cursor(pos=before) if before else None,
-            after=self.encode_cursor(pos=after) if after else None,
+            before=(
+                self.encode_cursor(pos=before_cursor)
+                if before_cursor is not None
+                else None
+            ),
+            after=(
+                self.encode_cursor(pos=after_cursor)
+                if after_cursor is not None
+                else None
+            ),
         )
 
     def cleanup(self) -> None:
