@@ -159,6 +159,8 @@ class DynamicPipelineRunner:
             self._orchestrator = orchestrator
         else:
             self._orchestrator = Stack.from_model(snapshot.stack).orchestrator
+
+        self._step_operator = Stack.from_model(snapshot.stack).step_operator
         self._futures: Dict[str, "StepFuture"] = {}
         self._invocation_ids: Set[str] = set()
 
@@ -257,30 +259,30 @@ class DynamicPipelineRunner:
             finished_step_runs = []
 
             for invocation_id, step_run in self._steps_to_monitor.items():
-                orchestrator_status: Optional[ExecutionStatus] = None
+                infra_status: Optional[ExecutionStatus] = None
                 try:
-                    orchestrator_status = (
-                        self._orchestrator.get_isolated_step_status(step_run)
+                    infra_status = self._get_isolated_step_infra_status(
+                        step_run
                     )
                 except Exception as e:
                     logger.error(
-                        "Failed to get orchestrator status for step `%s`: %s",
+                        "Failed to get infra status for step `%s`: %s",
                         invocation_id,
                         e,
                     )
                 else:
                     logger.debug(
-                        "Step `%s` orchestrator status: %s.",
+                        "Step `%s` infra status: %s.",
                         invocation_id,
-                        orchestrator_status,
+                        infra_status,
                     )
 
-                if orchestrator_status in [
+                if infra_status in [
                     ExecutionStatus.INITIALIZING,
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 ]:
-                    # Step still running on the orchestrator side, no need to
+                    # Step still running on the infra side, no need to
                     # do anything here.
                     continue
 
@@ -290,13 +292,13 @@ class DynamicPipelineRunner:
 
                 db_status = step_run.status
 
-                if orchestrator_status is None and db_status in [
+                if infra_status is None and db_status in [
                     ExecutionStatus.INITIALIZING,
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 ]:
                     # Step is running in the DB and we have no information on
-                    # the orchestrator side, so we wait for the next
+                    # the infra side, so we wait for the next
                     # monitoring interval to check again.
                     continue
 
@@ -308,11 +310,11 @@ class DynamicPipelineRunner:
                     # We now update this status to STOPPED.
                     step_run = publish_stopped_step_run(step_run.id)
                 elif (
-                    orchestrator_status
+                    infra_status
                     in [ExecutionStatus.FAILED, ExecutionStatus.STOPPED]
                     and db_status == ExecutionStatus.RUNNING
                 ):
-                    # Step failed/stopped on the orchestrator side, but the
+                    # Step failed/stopped on the infra side, but the
                     # code failed before it could report the status back to us.
                     step_run = publish_failed_step_run(step_run.id)
 
@@ -409,21 +411,53 @@ class DynamicPipelineRunner:
         ):
             return
 
-        if not self._orchestrator.can_stop_isolated_steps:
-            logger.warning(
-                "The orchestrator `%s` does not support stopping isolated "
-                "steps. All in progress steps will be left running.",
-                self._orchestrator.__class__.__name__,
-            )
-            return
-
         logger.info("Stopping isolated steps.")
 
-        for invocation_id, step_run in self._steps_to_monitor.items():
+        for step_run in self._steps_to_monitor.values():
+            self._try_to_stop_isolated_step(step_run)
+
+    def _get_isolated_step_infra_status(
+        self, step_run: "StepRunResponse"
+    ) -> Optional[ExecutionStatus]:
+        """Get the status of an isolated step from the component infrastructure.
+
+        Args:
+            step_run: The step run to get the status of.
+
+        Returns:
+            The status of the step run.
+        """
+        if step_run.config.step_operator:
+            assert self._step_operator
+            return self._step_operator.get_status(step_run)
+        else:
+            return self._orchestrator.get_isolated_step_status(step_run)
+
+    def _try_to_stop_isolated_step(self, step_run: "StepRunResponse") -> bool:
+        """Try to stop an isolated step.
+
+        Args:
+            step_run: The step run to stop.
+
+        Returns:
+            True if the step was stopped, False otherwise.
+        """
+        logger.info("Trying to stop isolated step `%s`.", step_run.name)
+        if step_run.config.step_operator:
+            assert self._step_operator
+            try:
+                self._step_operator.cancel(step_run)
+                return True
+            except Exception:
+                logger.exception("Failed to stop step `%s`.", step_run.name)
+        else:
             try:
                 self._orchestrator.stop_isolated_step(step_run)
+                return True
             except Exception:
-                logger.exception("Failed to stop step `%s`.", invocation_id)
+                logger.exception("Failed to stop step `%s`.", step_run.name)
+
+        return False
 
     def run_pipeline(self) -> None:
         """Run the pipeline.
@@ -714,26 +748,16 @@ class DynamicPipelineRunner:
         """
 
         def _launch_no_wait() -> StepRunResponse:
-            uses_step_operator = bool(step.config.step_operator)
-
             step_run = launch_step(
                 snapshot=self._snapshot,
                 step=step,
                 orchestrator_run_id=self._orchestrator_run_id,
-                # - Retry if the step uses a step operator
-                # - When running isolated steps using the orchestrator, the
-                #   monitoring loop is responsible for retrying failed steps.
-                retry=uses_step_operator,
-                # Step operators only support sync execution right now -> We
-                # wait for the step to finish synchronously.
-                wait=uses_step_operator,
+                # The monitoring loop is responsible for monitoring and retrying
+                # steps.
+                retry=False,
+                wait=True,
             )
-
-            if not uses_step_operator:
-                # Only monitor isolated steps using the orchestrator in the
-                # monitoring loop.
-                self._steps_to_monitor[step.spec.invocation_id] = step_run
-
+            self._steps_to_monitor[step.spec.invocation_id] = step_run
             return step_run
 
         concurrent_future = self._executor.submit(

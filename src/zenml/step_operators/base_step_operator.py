@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Base class for ZenML step operators."""
 
+import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, List, Type, cast
 
-from zenml.enums import StackComponentType
+from zenml.client import Client
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
+from zenml.models import StepRunResponse
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.step_operators.step_operator_entrypoint_configuration import (
@@ -61,24 +64,97 @@ class BaseStepOperator(StackComponent, ABC):
         """
         return StepOperatorEntrypointConfiguration
 
-    @abstractmethod
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Abstract method to execute a step.
+        """Submit a step run.
 
-        Subclasses must implement this method and launch a **synchronous**
-        job that executes the `entrypoint_command`.
+        This method should submit the step run and return without waiting for
+        it to finish.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+
+        Raises:
+            NotImplementedError: If the step operator does not implement this
+                method.
         """
+        raise NotImplementedError(
+            "Submitting step runs is not implemented for "
+            f"the {self.__class__.__name__} step operator."
+        )
+
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Get the status of a step run.
+
+        Args:
+            step_run: The step run to get the status of.
+
+        Raises:
+            NotImplementedError: If the step operator does not implement this
+                method.
+        """
+        raise NotImplementedError(
+            "Getting the status of step runs is not implemented for "
+            f"the {self.__class__.__name__} step operator."
+        )
+
+    def wait(self, step_run: "StepRunResponse") -> None:
+        """Wait for a step run to finish.
+
+        Args:
+            step_run: The step run to wait for.
+        """
+        sleep_interval = 1
+        max_sleep_interval = 16
+
+        while True:
+            try:
+                status = self.get_status(step_run)
+            except Exception as e:
+                logger.error(
+                    "Failed to get status of step run `%s`: %s",
+                    step_run.id,
+                    e,
+                )
+                # Fall back to the status of the ZenML server
+                status = (
+                    Client().get_run_step(step_run.id, hydrate=False).status
+                )
+
+            if status.is_finished:
+                return
+
+            logger.debug(
+                "Waiting for step run with ID %s to finish (current "
+                "status: %s)",
+                step_run.id,
+                status,
+            )
+            time.sleep(sleep_interval)
+            if sleep_interval < max_sleep_interval:
+                sleep_interval *= 2
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancel a step run.
+
+        Args:
+            step_run: The step run to cancel.
+
+        Raises:
+            NotImplementedError: If the step operator does not implement this
+                method.
+        """
+        raise NotImplementedError(
+            "Canceling step runs is not implemented for "
+            f"the {self.__class__.__name__} step operator."
+        )
 
 
 class BaseStepOperatorFlavor(Flavor):
