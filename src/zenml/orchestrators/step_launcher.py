@@ -536,6 +536,7 @@ class StepLauncher:
                 running asynchronously in a dynamic pipeline.
             NotImplementedError: If the step operator does not implement the
                 `submit(...)` or `launch(...)` methods.
+            RuntimeError: If the step run failed.
         """
         step_operator = _get_step_operator(
             stack=self._stack,
@@ -614,9 +615,11 @@ class StepLauncher:
             # We submitted the step run asynchronously, now we potentially need
             # to wait for it to finish.
             if self._wait:
-                step_operator.wait(
+                status = step_operator.wait(
                     step_run=step_run_info.step_run,
                 )
+                if not status.is_successful:
+                    raise RuntimeError(f"Step failed with status `{status}`.")
 
     def _run_step_with_dynamic_orchestrator(
         self,
@@ -626,6 +629,9 @@ class StepLauncher:
 
         Args:
             step_run_info: Additional information needed to run the step.
+
+        Raises:
+            RuntimeError: If the step run failed.
         """
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
@@ -644,9 +650,11 @@ class StepLauncher:
             environment=environment,
         )
         if self._wait:
-            self._stack.orchestrator.wait_for_isolated_step(
+            status = self._stack.orchestrator.wait_for_isolated_step(
                 step_run_info.step_run
             )
+            if not status.is_successful:
+                raise RuntimeError(f"Step failed with status `{status}`.")
 
     def _run_step_in_current_thread(
         self,

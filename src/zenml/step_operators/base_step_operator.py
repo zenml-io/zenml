@@ -105,11 +105,14 @@ class BaseStepOperator(StackComponent, ABC):
             f"the {self.__class__.__name__} step operator."
         )
 
-    def wait(self, step_run: "StepRunResponse") -> None:
+    def wait(self, step_run: "StepRunResponse") -> ExecutionStatus:
         """Wait for a step run to finish.
 
         Args:
             step_run: The step run to wait for.
+
+        Returns:
+            The final status of the step run.
         """
         sleep_interval = 1
         max_sleep_interval = 16
@@ -128,8 +131,8 @@ class BaseStepOperator(StackComponent, ABC):
                     Client().get_run_step(step_run.id, hydrate=False).status
                 )
 
-            if status.is_finished:
-                return
+            if status.is_finished or status == ExecutionStatus.RETRYING:
+                return status
 
             logger.debug(
                 "Waiting for step run with ID %s to finish (current "
