@@ -292,6 +292,12 @@ def get_logs_entries(
         ValueError: If `limit` is not positive or if both `before` and `after` are set.
         NotImplementedError: If the log store could not be instantiated.
     """
+    if limit is not None and limit <= 0:
+        raise ValueError("`limit` must be positive.")
+
+    if before is not None and after is not None:
+        raise ValueError("Only one of `before` or `after` can be set.")
+
     store = zen_store()
 
     logs = store.get_logs(logs_id)
@@ -314,7 +320,7 @@ def get_logs_entries(
         )
 
     logs = verify_permissions_and_get_entity(
-        id=logs_id, get_method=store.get_logs, hydrate=True
+        id=logs_id, get_method=store.get_logs
     )
 
     log_store: Optional[BaseLogStore] = None
@@ -358,12 +364,6 @@ def get_logs_entries(
         raise IllegalOperationError(
             "Logs response does not have a log store or artifact store."
         )
-
-    if limit is not None and limit <= 0:
-        raise ValueError("`limit` must be positive.")
-
-    if before is not None and after is not None:
-        raise ValueError("Only one of `before` or `after` can be set.")
 
     try:
         return log_store.fetch(
