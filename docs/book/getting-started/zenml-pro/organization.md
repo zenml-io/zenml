@@ -19,6 +19,12 @@ The billing information for your workspaces is managed on the organization level
 
 ![Image showing the organization settings page](.gitbook/assets/org_settings.png)
 
+## Add helpful links for the members of your organization
+
+Organizations can now be configured with custom external links that appear on the dashboard, making it easier to navigate to relevant resources. Additionally, customizable documentation buttons can be added to the header for quick access to important information.
+
+![Organization Links](.gitbook/assets/organization_custom_links.png)
+
 ## Other operations involving organizations
 
 There are a lot of other operations involving Organizations that you can perform directly through the API. You can find more information about the API by visiting [https://cloudapi.zenml.io/](https://cloudapi.zenml.io/).
