@@ -188,14 +188,7 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
         Raises:
             RuntimeError: If service connector client is unexpected.
         """
-        try:
-            from kubernetes import client as k8s_client
-        except ImportError as e:
-            raise ImportError(
-                "Missing optional dependency `kubernetes`. Install the "
-                "`kubeflow` integration dependencies to use the "
-                "`kubeflow_trainer` step operator."
-            ) from e
+        from kubernetes import client as k8s_client
 
         from zenml.integrations.kubernetes import kube_utils
 

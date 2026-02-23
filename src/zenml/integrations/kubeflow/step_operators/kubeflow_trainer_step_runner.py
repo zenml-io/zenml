@@ -88,6 +88,10 @@ class KubeflowTrainerStepRunner(StepRunner):
         """Executes the step entrypoint for a non-primary distributed replica.
 
         This path intentionally avoids ZenML run-state and artifact publishing.
+        It mirrors the execution portion of ``StepRunner.run`` while skipping
+        logging setup, heartbeat, hooks, artifact storage, and status
+        publishing.  If ``StepRunner.run`` gains a public extension point for
+        skipping publish side-effects, this method should be replaced.
 
         Args:
             pipeline_run: The model of the current pipeline run.
@@ -96,15 +100,15 @@ class KubeflowTrainerStepRunner(StepRunner):
             output_artifact_uris: Output artifact URIs for this execution.
             step_run_info: Runtime information for the step run.
         """
-        step_instance = self.load_step()
-        output_materializers = self.load_output_materializers()
+        step_instance = self._load_step()
+        output_materializers = self._load_output_materializers()
 
         spec = inspect.getfullargspec(inspect.unwrap(step_instance.entrypoint))
         output_annotations = parse_return_type_annotations(
             func=step_instance.entrypoint
         )
 
-        self.evaluate_artifact_names_in_collections(
+        self._evaluate_artifact_names_in_collections(
             step_run,
             output_annotations,
             [
@@ -129,7 +133,7 @@ class KubeflowTrainerStepRunner(StepRunner):
         step_failed = False
         try:
             with step_context:
-                function_params = self.parse_inputs(
+                function_params = self._parse_inputs(
                     args=spec.args,
                     annotations=spec.annotations,
                     input_artifacts=input_artifacts,
@@ -150,7 +154,7 @@ class KubeflowTrainerStepRunner(StepRunner):
                         **function_params
                     )
 
-                self.validate_outputs(return_values, output_annotations)
+                self._validate_outputs(return_values, output_annotations)
         except BaseException:  # noqa: E722
             step_failed = True
             raise

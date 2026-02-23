@@ -32,9 +32,14 @@ class KubeflowIntegration(Integration):
 
     NAME = KUBEFLOW
     # Only 1.x version that supports pyyaml 6.
-    REQUIREMENTS = ["kfp>=2.6.0", "kfp-kubernetes>=1.1.0"]
+    REQUIREMENTS = [
+        "kfp>=2.6.0",
+        "kfp-kubernetes>=1.1.0",
+        "kubernetes>=21.7,<26",
+    ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = [
         "kfp",  # it is used by GCP as well
+        "kubernetes",  # it is used by the kubernetes integration
     ]
 
     @classmethod

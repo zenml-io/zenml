@@ -174,18 +174,28 @@ def cancel_trainjob(
     namespace: str,
     name: str,
 ) -> None:
-    """Suspends a running TrainJob.
+    """Best-effort suspension of a running TrainJob.
 
     Args:
         custom_objects_api: Kubernetes `CustomObjectsApi` instance.
         namespace: Namespace of the TrainJob.
         name: Name of the TrainJob.
     """
-    custom_objects_api.patch_namespaced_custom_object(
-        group=TRAINJOB_GROUP,
-        version=TRAINJOB_VERSION,
-        namespace=namespace,
-        plural=TRAINJOB_PLURAL,
-        name=name,
-        body={"spec": {"suspend": True}},
-    )
+    from kubernetes.client.exceptions import ApiException
+
+    try:
+        custom_objects_api.patch_namespaced_custom_object(
+            group=TRAINJOB_GROUP,
+            version=TRAINJOB_VERSION,
+            namespace=namespace,
+            plural=TRAINJOB_PLURAL,
+            name=name,
+            body={"spec": {"suspend": True}},
+        )
+    except ApiException as e:
+        logger.warning(
+            "Failed to suspend TrainJob `%s` (HTTP %s): %s",
+            name,
+            e.status,
+            e.reason,
+        )

@@ -84,13 +84,6 @@ def run_with_trainer(
     Returns:
         The configured step.
     """
-    if num_nodes < 1:
-        raise ValueError("`num_nodes` must be greater than or equal to 1.")
-    if poll_interval_seconds <= 0:
-        raise ValueError("`poll_interval_seconds` must be greater than 0.")
-    if timeout_seconds is not None and timeout_seconds <= 0:
-        raise ValueError("`timeout_seconds` must be greater than 0.")
-
     effective_trainer_overrides = dict(trainer_overrides or {})
     if ml_policy:
         logger.warning(

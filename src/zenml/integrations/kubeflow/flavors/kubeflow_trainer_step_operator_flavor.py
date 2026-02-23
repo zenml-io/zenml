@@ -29,9 +29,6 @@ from pydantic import Field, PositiveInt, field_validator
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubeflow import KUBEFLOW_TRAINER_STEP_OPERATOR_FLAVOR
-from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
-    normalize_num_proc_per_node,
-)
 from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 
@@ -146,6 +143,10 @@ class KubeflowTrainerStepOperatorSettings(BaseSettings):
         Returns:
             Normalized value.
         """
+        from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
+            normalize_num_proc_per_node,
+        )
+
         return normalize_num_proc_per_node(value)
 
     @field_validator("pod_template_overrides", mode="before")

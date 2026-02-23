@@ -13,34 +13,8 @@
 #  permissions and limitations under the License.
 """Kubeflow integration step operators."""
 
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator import (  # noqa: F401
-        KubeflowTrainerStepOperator,
-    )
-
-
-def __getattr__(name: str) -> Any:
-    """Lazily imports step operator classes.
-
-    Args:
-        name: Attribute name to resolve.
-
-    Returns:
-        The requested class.
-
-    Raises:
-        AttributeError: If the name is not a known export.
-    """
-    if name == "KubeflowTrainerStepOperator":
-        from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator import (  # noqa: E501
-            KubeflowTrainerStepOperator,
-        )
-
-        return KubeflowTrainerStepOperator
-    raise AttributeError(
-        f"module `{__name__}` has no attribute `{name}`."
-    )
+from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator import (
+    KubeflowTrainerStepOperator,
+)
 
 __all__ = ["KubeflowTrainerStepOperator"]
