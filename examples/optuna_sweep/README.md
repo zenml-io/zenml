@@ -346,6 +346,7 @@ examples/optuna_sweep/
 +-- steps/
     +-- __init__.py
     +-- model.py                 # Shared FashionMNISTClassifier definition
+    +-- data.py                  # Shared FashionMNIST data loading
     +-- suggest.py               # Optuna ask API + trial suggestion
     +-- train.py                 # Single trial training (PyTorch Lightning)
     +-- save_best.py             # Retrain best model for production

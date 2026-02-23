@@ -70,8 +70,8 @@ def main() -> None:
     then passes it to the ZenML pipeline for orchestration.
     """
     # Initialize Hydra and load configuration with CLI overrides
-    initialize(config_path="conf", version_base=None)
-    cfg = compose(config_name="config", overrides=sys.argv[1:])
+    with initialize(config_path="conf", version_base=None):
+        cfg = compose(config_name="config", overrides=sys.argv[1:])
 
     # Convert to plain dict for ZenML
     config = hydra_config_to_dict(cfg)

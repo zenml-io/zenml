@@ -15,22 +15,15 @@
 # limitations under the License.
 """Step to retrain and save the best model from hyperparameter sweep."""
 
-import warnings
 from typing import Annotated, Any, Dict
 
-import torch
-from lightning import Trainer
+from lightning import LightningModule, Trainer
 from lightning.pytorch.callbacks import EarlyStopping
-from torch.utils.data import DataLoader, random_split
-from torchvision import transforms
-from torchvision.datasets import FashionMNIST
 
+from steps.data import get_fashion_mnist_loaders
 from steps.model import FashionMNISTClassifier
 from zenml import log_metadata, step
 from zenml.config import ResourceSettings
-
-# Suppress Lightning warnings about num_workers (intentionally 0 for Mac compatibility)
-warnings.filterwarnings("ignore", message=".*does not have many workers.*")
 
 
 @step(
@@ -45,7 +38,7 @@ warnings.filterwarnings("ignore", message=".*does not have many workers.*")
 def retrain_best_model(
     sweep_summary: Dict[str, Any],
     max_iter: int = 20,
-) -> Annotated[Any, "best_model"]:
+) -> Annotated[LightningModule, "best_model"]:
     """Retrain the best model from hyperparameter sweep for production.
 
     This step identifies the best trial from the sweep results, then
@@ -82,33 +75,10 @@ def retrain_best_model(
     batch_size = best_params["batch_size"]
     hidden_dim = best_params["hidden_dim"]
 
-    # Load FashionMNIST dataset
     print("   Loading FashionMNIST dataset...")
-    transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
-    )
-
-    full_dataset = FashionMNIST(
-        root="/tmp/data", train=True, download=True, transform=transform
-    )
-
-    train_size = int(0.8 * len(full_dataset))
-    val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = random_split(
-        full_dataset,
-        [train_size, val_size],
-        generator=torch.Generator().manual_seed(42),
-    )
-
-    train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, num_workers=0
-    )
-    val_loader = DataLoader(
-        val_dataset, batch_size=256, shuffle=False, num_workers=0
-    )
-
+    train_loader, val_loader = get_fashion_mnist_loaders(batch_size=batch_size)
     print(
-        f"   Train samples: {len(train_dataset)}, Val samples: {len(val_dataset)}"
+        f"   Train samples: {len(train_loader.dataset)}, Val samples: {len(val_loader.dataset)}"
     )
 
     # Build model with best hyperparameters
@@ -120,7 +90,7 @@ def retrain_best_model(
     # Configure trainer with early stopping for production
     trainer = Trainer(
         max_epochs=max_iter,
-        accelerator="cpu",  # Use CPU (MPS can hang on Mac)
+        accelerator="auto",
         devices=1,
         callbacks=[
             EarlyStopping(

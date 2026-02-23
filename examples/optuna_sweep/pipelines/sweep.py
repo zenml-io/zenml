@@ -19,7 +19,7 @@ Trial history flows through ZenML artifacts (not a shared Optuna database),
 so these pipelines work on any orchestrator — local or distributed.
 """
 
-from typing import Annotated, Any, Dict, Optional
+from typing import Any, Dict, Optional
 
 from steps import (
     report_results,
@@ -27,6 +27,7 @@ from steps import (
     suggest_trials,
     train_trial,
 )
+from steps.suggest import DEFAULT_SEARCH_SPACE
 
 from zenml import pipeline
 
@@ -35,9 +36,9 @@ from zenml import pipeline
 def sweep_pipeline(
     study_name: str = "fashion_mnist_sweep",
     n_trials: int = 5,
-    max_iter: int = 100,
+    max_iter: int = 10,
     search_space: Optional[Dict[str, Any]] = None,
-) -> Annotated[Dict[str, Any], "sweep_summary"]:
+) -> None:
     """Simple parallel hyperparameter sweep using Optuna + ZenML.
 
     This pipeline demonstrates the basic pattern for hyperparameter optimization:
@@ -51,18 +52,8 @@ def sweep_pipeline(
     Args:
         study_name: Name of the Optuna study (for logging)
         n_trials: Number of trials to run in parallel
-        max_iter: Maximum training iterations per trial (default: 100)
+        max_iter: Maximum training epochs per trial (default: 10)
         search_space: Optional custom search space configuration
-
-    Returns:
-        Summary dictionary with best trial info and all results
-
-    Example:
-        >>> summary = sweep_pipeline(
-        ...     study_name="my_sweep",
-        ...     n_trials=10,
-        ... )
-        >>> print(f"Best val_loss: {summary['best_val_loss']:.4f}")
 
     Pipeline DAG:
         suggest_trials
@@ -75,11 +66,14 @@ def sweep_pipeline(
                      │
                 report_results
     """
+    # Resolve search space early to avoid passing None as an artifact
+    resolved_search_space = search_space or DEFAULT_SEARCH_SPACE
+
     # Generate trial configurations
     trials = suggest_trials(
         study_name=study_name,
         n_trials=n_trials,
-        search_space=search_space,
+        search_space=resolved_search_space,
     )
 
     # Fan out: train all trials in parallel
@@ -98,17 +92,15 @@ def sweep_pipeline(
         max_iter=200,  # More iterations than trials for better convergence
     )
 
-    return summary
-
 
 @pipeline(dynamic=True)
 def adaptive_sweep_pipeline(
     study_name: str = "fashion_mnist_sweep",
     n_rounds: int = 3,
     trials_per_round: int = 3,
-    max_iter: int = 100,
+    max_iter: int = 10,
     search_space: Optional[Dict[str, Any]] = None,
-) -> Annotated[Dict[str, Any], "sweep_summary"]:
+) -> None:
     """Adaptive hyperparameter sweep with multiple rounds of optimization.
 
     This pipeline runs the sweep in batches (rounds), allowing Optuna to
@@ -130,11 +122,8 @@ def adaptive_sweep_pipeline(
         max_iter: Maximum training iterations per trial
         search_space: Optional custom search space configuration
 
-    Returns:
-        Summary dictionary from the final round (includes all trials)
-
     Example:
-        >>> summary = adaptive_sweep_pipeline(
+        >>> adaptive_sweep_pipeline(
         ...     study_name="adaptive_sweep",
         ...     n_rounds=5,
         ...     trials_per_round=4,
@@ -168,6 +157,9 @@ def adaptive_sweep_pipeline(
                          │
                     report_results_round_2
     """
+    # Resolve search space early to avoid passing None as an artifact
+    resolved_search_space = search_space or DEFAULT_SEARCH_SPACE
+
     # Initialize with minimal dict to avoid None artifact on first round
     summary = {"round": 0, "is_initial": True}
 
@@ -181,7 +173,7 @@ def adaptive_sweep_pipeline(
         trials = suggest_trials(
             study_name=study_name,
             n_trials=trials_per_round,
-            search_space=search_space,
+            search_space=resolved_search_space,
             previous_summary=summary,
         )
 
@@ -201,6 +193,3 @@ def adaptive_sweep_pipeline(
         sweep_summary=summary,
         max_iter=200,
     )
-
-    # Return summary from final round (includes all trials)
-    return summary  # type: ignore[return-value]
