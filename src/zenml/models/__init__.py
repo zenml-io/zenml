@@ -435,6 +435,8 @@ from zenml.models.v2.misc.auth_models import (
     OAuthRedirectResponse,
     OAuthTokenResponse,
 )
+
+
 from zenml.models.v2.misc.pipeline_run_dag import PipelineRunDAG
 from zenml.models.v2.misc.run_metadata import (
     RunMetadataEntry,
@@ -455,6 +457,7 @@ from zenml.models.v2.core.server_settings import (
     ServerSettingsUpdate,
 )
 from zenml.models.v2.misc.log_models import (   
+    LogEntry,
     LogsEntriesFilter,
     LogsEntriesResponse,
 )
@@ -924,6 +927,7 @@ __all__ = [
     "ArtifactVersionIdentifier",
     "ModelVersionIdentifier",
     "StepHeartbeatResponse",
+    "LogEntry",
     "LogsEntriesFilter",
     "LogsEntriesResponse",
 ]

@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, cast
 
 import requests
 
@@ -55,13 +55,18 @@ class DatadogLogStore(OtelLogStore):
         return cast(DatadogLogStoreConfig, self._config)
 
     def _get_headers(self) -> Dict[str, str]:
-        """"""
+        """Get the headers for the Datadog log store.
+
+        Returns:
+            The headers.
+        """
         headers: Dict[str, str] = self.config.headers or {}
 
-        headers.update({
-            "dd-api-key": self.config.api_key.get_secret_value(),
-            "dd-application-key": self.config.application_key.get_secret_value(),
-         }
+        headers.update(
+            {
+                "dd-api-key": self.config.api_key.get_secret_value(),
+                "dd-application-key": self.config.application_key.get_secret_value(),
+            }
         )
         return headers
 
@@ -125,13 +130,9 @@ class DatadogLogStore(OtelLogStore):
             until_ns = filter_.until
 
         if after is not None:
-            since_ns = datetime.strptime(
-                self._decode_cursor(after)
-            )
+            since_ns = datetime.strptime(self._decode_cursor(after))
         elif before is not None:
-            until_ns = datetime.strptime(
-                self._decode_cursor(before)
-            )
+            until_ns = datetime.strptime(self._decode_cursor(before))
 
         api_endpoint = (
             f"https://api.{self.config.site}/api/v2/logs/events/search"
@@ -149,7 +150,7 @@ class DatadogLogStore(OtelLogStore):
             "page": {
                 "limit": limit,
             },
-            "sort": "timestamp",
+            "sort": "timestamp" if after else "-timestamp",
         }
 
         if cursor:
@@ -182,8 +183,6 @@ class DatadogLogStore(OtelLogStore):
         before_token = self._encode_cursor(log_entries[0].timestamp)
         after_token = self._encode_cursor(log_entries[-1].timestamp)
 
-        log_entries.sort(key=lambda x: x.timestamp)
-
         return LogsEntriesResponse(
             items=log_entries,
             before=before_token,
@@ -200,7 +199,13 @@ class DatadogLogStore(OtelLogStore):
         Returns:
             The encoded cursor.
         """
-        data = json.dumps(pos, sort_keys=True).encode("utf-8")
+        if pos.tzinfo is None:
+            pos = pos.replace(tzinfo=timezone.utc)
+        else:
+            pos = pos.astimezone(timezone.utc)
+
+        payload = {"ts": pos.isoformat()}
+        data = json.dumps(payload, sort_keys=True).encode("utf-8")
         return base64.urlsafe_b64encode(data).decode("ascii")
 
     @classmethod
@@ -215,7 +220,10 @@ class DatadogLogStore(OtelLogStore):
         """
         raw = base64.urlsafe_b64decode(token.encode("ascii"))
         decoded = json.loads(raw.decode("utf-8"))
-        return  datetime.strptime(decoded)
+        timestamp = decoded["ts"]
+        if isinstance(timestamp, str):
+            timestamp = timestamp.replace("Z", "+00:00")
+        return datetime.fromisoformat(timestamp)
 
     def build_query(
         self, logs_model: LogsResponse, filter_: LogsEntriesFilter
@@ -273,9 +281,25 @@ class DatadogLogStore(OtelLogStore):
             otel_info = nested_attrs.get("otel", {})
             logger_name = otel_info.get("library", {}).get("name")
 
-            timestamp = datetime.fromisoformat(
-                log_fields["timestamp"].replace("Z", "+00:00")
-            )
+            # Prefer nested Datadog attributes timestamp (epoch ms), and
+            # fall back to outer attributes timestamp (ISO string).
+            timestamp_raw = nested_attrs.get("timestamp")
+            if timestamp_raw is None:
+                timestamp_raw = log_fields.get("timestamp")
+
+            if isinstance(timestamp_raw, (int, float)):
+                timestamp = datetime.fromtimestamp(
+                    float(timestamp_raw) / 1000.0,
+                    tz=timezone.utc,
+                )
+            elif isinstance(timestamp_raw, str):
+                timestamp = datetime.fromisoformat(
+                    timestamp_raw.replace("Z", "+00:00")
+                )
+            else:
+                raise ValueError(
+                    "Datadog log entry is missing a valid timestamp."
+                )
 
             severity = log_fields.get("status", "info").upper()
             log_severity = (

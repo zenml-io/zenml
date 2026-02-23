@@ -34,6 +34,7 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
+    LogEntry,
     Page,
     PipelineRunDAG,
     PipelineRunFilter,
@@ -45,7 +46,6 @@ from zenml.models import (
 )
 from zenml.utils import run_utils
 from zenml.utils.logging_utils import (
-    LogEntry,
     fetch_logs,
     search_logs_by_source,
 )

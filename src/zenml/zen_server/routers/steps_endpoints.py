@@ -30,6 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.models import (
+    LogEntry,
     Page,
     StepRunFilter,
     StepRunRequest,
@@ -38,7 +39,6 @@ from zenml.models import (
 )
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.logging_utils import (
-    LogEntry,
     fetch_logs,
     search_logs_by_source,
 )

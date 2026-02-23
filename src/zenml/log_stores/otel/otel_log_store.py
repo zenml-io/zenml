@@ -36,7 +36,7 @@ from zenml.models import LogsEntriesFilter, LogsResponse
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogExporter
 
-    from zenml.utils.logging_utils import LogEntry
+    from zenml.models import LogEntry
 
 logger = get_logger(__name__)
 

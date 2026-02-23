@@ -28,7 +28,7 @@ from zenml.log_stores.artifact.artifact_log_store import (
     remove_ansi_escape_codes,
 )
 from zenml.logger import get_logger
-from zenml.utils.logging_utils import LogEntry
+from zenml.models import LogEntry
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:

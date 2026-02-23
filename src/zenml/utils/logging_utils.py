@@ -487,7 +487,10 @@ def fetch_logs(
         )
 
     else:
-        return []
+        raise ValueError(
+            "The logs response does not have a log_store_id or a "
+            "artifact_store_id."
+        )
 
     try:
         return log_store.fetch(logs_model=logs, limit=limit)
