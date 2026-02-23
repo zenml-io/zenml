@@ -19,67 +19,18 @@ import warnings
 from typing import Annotated, Any, Dict
 
 import torch
-from lightning import LightningModule, Trainer
+from lightning import Trainer
 from lightning.pytorch.callbacks import EarlyStopping
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import FashionMNIST
 
+from steps.model import FashionMNISTClassifier
 from zenml import log_metadata, step
 from zenml.config import ResourceSettings
 
 # Suppress Lightning warnings about num_workers (intentionally 0 for Mac compatibility)
 warnings.filterwarnings("ignore", message=".*does not have many workers.*")
-
-
-class FashionMNISTClassifier(LightningModule):
-    """Simple CNN for FashionMNIST classification."""
-
-    def __init__(self, learning_rate: float, hidden_dim: int):
-        super().__init__()
-        self.save_hyperparameters()
-        self.learning_rate = learning_rate
-
-        # Lightweight CNN architecture for CPU training
-        self.model = torch.nn.Sequential(
-            # Input: 1x28x28
-            torch.nn.Conv2d(1, hidden_dim, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(2),  # 14x14
-            torch.nn.Conv2d(
-                hidden_dim, hidden_dim * 2, kernel_size=3, padding=1
-            ),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(2),  # 7x7
-            torch.nn.Flatten(),
-            torch.nn.Linear(hidden_dim * 2 * 7 * 7, 64),  # Smaller FC layer
-            torch.nn.ReLU(),
-            torch.nn.Dropout(0.2),
-            torch.nn.Linear(64, 10),
-        )
-        self.loss_fn = torch.nn.CrossEntropyLoss()
-
-    def forward(self, x):
-        return self.model(x)
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
-        loss = self.loss_fn(logits, y)
-        self.log("train_loss", loss, prog_bar=True)
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
-        loss = self.loss_fn(logits, y)
-        acc = (logits.argmax(1) == y).float().mean()
-        self.log("val_loss", loss, prog_bar=True)
-        self.log("val_acc", acc, prog_bar=True)
-        return {"val_loss": loss, "val_acc": acc}
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
 
 @step(
@@ -107,7 +58,7 @@ def train_trial(
             - learning_rate: Learning rate for optimizer
             - batch_size: Training batch size
             - hidden_dim: Number of filters in conv layers
-        max_iter: Maximum number of training epochs (default: 100)
+        max_iter: Maximum number of training epochs (default: 10)
 
     Returns:
         Dictionary containing trial results:

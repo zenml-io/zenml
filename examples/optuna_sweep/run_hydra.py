@@ -27,12 +27,14 @@ Usage:
     python run_hydra.py sweep.mode=adaptive                          # Run adaptive mode
     python run_hydra.py sweep.n_trials=10                            # Override trial count (simple mode)
     python run_hydra.py sweep.mode=adaptive sweep.n_rounds=5         # Adaptive with 5 rounds
-    python run_hydra.py search_space.learning_rate_init.high=0.5     # Override search space
+    python run_hydra.py search_space.learning_rate.high=0.5           # Override search space
     python run_hydra.py sweep.max_iter=50 sweep.n_trials=20          # Multiple overrides
 
 Requirements:
     pip install hydra-core omegaconf
 """
+
+import sys
 
 try:
     from hydra import compose, initialize
@@ -42,9 +44,8 @@ except ImportError:
         "❌ Hydra not installed. Install with: pip install hydra-core omegaconf"
     )
     print("   Or uncomment the Hydra section in requirements.txt")
-    exit(1)
+    sys.exit(1)
 
-import sys
 from typing import Any, Dict
 
 from pipelines.sweep import adaptive_sweep_pipeline, sweep_pipeline
@@ -126,7 +127,7 @@ def main() -> None:
     else:
         print(f"❌ Unknown mode: {mode}")
         print("   Valid modes: simple, adaptive")
-        exit(1)
+        sys.exit(1)
 
     print("\n✅ Sweep complete!")
     print("   Configuration was managed by Hydra")

@@ -19,67 +19,18 @@ import warnings
 from typing import Annotated, Any, Dict
 
 import torch
-from lightning import LightningModule, Trainer
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from lightning import Trainer
+from lightning.pytorch.callbacks import EarlyStopping
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import FashionMNIST
 
+from steps.model import FashionMNISTClassifier
 from zenml import log_metadata, step
 from zenml.config import ResourceSettings
 
 # Suppress Lightning warnings about num_workers (intentionally 0 for Mac compatibility)
 warnings.filterwarnings("ignore", message=".*does not have many workers.*")
-
-
-class FashionMNISTClassifier(LightningModule):
-    """Simple CNN for FashionMNIST classification."""
-
-    def __init__(self, learning_rate: float, hidden_dim: int):
-        super().__init__()
-        self.save_hyperparameters()
-        self.learning_rate = learning_rate
-
-        self.model = torch.nn.Sequential(
-            torch.nn.Conv2d(1, hidden_dim, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(2),
-            torch.nn.Conv2d(
-                hidden_dim, hidden_dim * 2, kernel_size=3, padding=1
-            ),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(2),
-            torch.nn.Flatten(),
-            torch.nn.Linear(hidden_dim * 2 * 7 * 7, 64),  # Smaller FC layer
-            torch.nn.ReLU(),
-            torch.nn.Dropout(0.2),
-            torch.nn.Linear(64, 10),
-        )
-        self.loss_fn = torch.nn.CrossEntropyLoss()
-
-    def forward(self, x):
-        return self.model(x)
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
-        loss = self.loss_fn(logits, y)
-        acc = (logits.argmax(1) == y).float().mean()
-        self.log("train_loss", loss, prog_bar=True)
-        self.log("train_acc", acc, prog_bar=True)
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
-        loss = self.loss_fn(logits, y)
-        acc = (logits.argmax(1) == y).float().mean()
-        self.log("val_loss", loss, prog_bar=True)
-        self.log("val_acc", acc, prog_bar=True)
-        return {"val_loss": loss, "val_acc": acc}
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
 
 @step(
@@ -103,8 +54,8 @@ def retrain_best_model(
 
     Args:
         sweep_summary: Summary from report_results containing best_params
-        max_iter: Maximum training epochs for final model (default: 200,
-            higher than sweep trials for better convergence)
+        max_iter: Maximum training epochs for final model (default: 20,
+            typically overridden by pipeline to a higher value for better convergence)
 
     Returns:
         Trained Lightning model with best hyperparameters, ready for
@@ -177,12 +128,8 @@ def retrain_best_model(
                 patience=15,  # More patience for production
                 mode="min",
             ),
-            ModelCheckpoint(
-                monitor="val_loss",
-                mode="min",
-                save_top_k=1,
-            ),
         ],
+        enable_checkpointing=False,
         enable_progress_bar=False,
         logger=False,
         deterministic=True,

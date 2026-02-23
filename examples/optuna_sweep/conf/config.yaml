@@ -1,5 +1,5 @@
 # Hydra configuration for Optuna sweep pipeline
-# Override from CLI: python run_hydra.py sweep.n_trials=10 search_space.learning_rate_init.high=0.5
+# Override from CLI: python run_hydra.py sweep.n_trials=10 search_space.learning_rate.high=0.5
 
 sweep:
   study_name: fashion_mnist_sweep
