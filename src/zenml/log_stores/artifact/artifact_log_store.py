@@ -139,10 +139,10 @@ def iterate_forward(
         paths: The paths of the log files.
         starting_position: The starting position of the iteration.
 
-    Returns:
-        A generator of tuples containing the cursor token and the log line.
-
     Yields:
+        ValueError: If the starting position is out of range.
+
+    Raises:
         ValueError: If the starting position is out of range.
     """
     start_file_idx = (
@@ -186,10 +186,10 @@ def iterate_backward(
         paths: The paths of the log files.
         starting_position: The starting position of the iteration.
 
-    Returns:
-        A generator of tuples containing the cursor token and the log line.
-
     Yields:
+        ValueError: If the starting position is out of range.
+
+    Raises:
         ValueError: If the starting position is out of range.
     """
     start_file_idx = (
