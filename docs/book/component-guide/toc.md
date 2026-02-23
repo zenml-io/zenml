@@ -54,6 +54,7 @@
   * [Google Cloud VertexAI](step-operators/vertex.md)
   * [Kubernetes](step-operators/kubernetes.md)
   * [Run:AI](step-operators/runai.md)
+  * [Hugging Face Jobs](step-operators/huggingface-jobs.md)
   * [Modal](step-operators/modal.md)
   * [Spark](step-operators/spark-kubernetes.md)
   * [Develop a Custom Step Operator](step-operators/custom.md)

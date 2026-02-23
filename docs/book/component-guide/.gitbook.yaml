@@ -80,6 +80,7 @@ redirects:
   step-operators/azureml: step-operators/azureml.md
   step-operators/custom: step-operators/custom.md
   step-operators/kubernetes: step-operators/kubernetes.md
+  step-operators/huggingface-jobs: step-operators/huggingface-jobs.md
   step-operators/modal: step-operators/modal.md
   step-operators/sagemaker: step-operators/sagemaker.md
   step-operators/spark-kubernetes: step-operators/spark-kubernetes.md
