@@ -322,6 +322,6 @@ def get_step_logs(
                 logs=logs,
                 zen_store=store,
                 limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-            )
+            ).items
 
     raise KeyError(f"No logs found for source '{source}' in step {step_id}")

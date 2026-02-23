@@ -14,7 +14,7 @@
 """OpenTelemetry log store implementation."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 from opentelemetry.sdk._logs import (
     Logger,
@@ -31,12 +31,11 @@ from zenml.log_stores.base_log_store import (
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.logger import get_logger
-from zenml.models import LogsEntriesFilter, LogsResponse
+from zenml.models import LogsEntriesFilter, LogsEntriesResponse, LogsResponse
 
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogExporter
 
-    from zenml.models import LogEntry
 
 logger = get_logger(__name__)
 
@@ -163,7 +162,7 @@ class OtelLogStore(BaseLogStore):
             raise RuntimeError("OpenTelemetry log store is not initialized")
         return self._provider
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> Optional[Dict[str, str]]:
         """Get the headers for the OpenTelemetry log store.
 
         Returns:
@@ -321,7 +320,7 @@ class OtelLogStore(BaseLogStore):
         before: Optional[str] = None,
         after: Optional[str] = None,
         filter_: Optional[LogsEntriesFilter] = None,
-    ) -> List["LogEntry"]:
+    ) -> LogsEntriesResponse:
         """Fetch logs from the OpenTelemetry backend.
 
         This method should be overridden by subclasses to implement

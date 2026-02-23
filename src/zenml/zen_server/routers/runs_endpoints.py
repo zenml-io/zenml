@@ -492,7 +492,7 @@ def run_logs(
                 logs=logs_response,
                 zen_store=store,
                 limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-            )
+            ).items
 
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")
 

@@ -141,16 +141,16 @@ class LokiLogStore(OtelLogStore):
 
         query = self.build_query(logs_model=logs_model, filter_=filter_)
 
-        since_ns = logs_model.created
-        until_ns = datetime.now(timezone.utc)
+        since = logs_model.created
+        until = datetime.now(timezone.utc)
 
         if filter_ and filter_.since:
-            since_ns = filter_.since
+            since = filter_.since
         if filter_ and filter_.until:
-            until_ns = filter_.until
+            until = filter_.until
 
-        since_ns = _to_unix_ns(since_ns)
-        until_ns = _to_unix_ns(until_ns)
+        since_ns = _to_unix_ns(since)
+        until_ns = _to_unix_ns(until)
 
         if after is not None:
             after_cursor = self.decode_cursor(after)
