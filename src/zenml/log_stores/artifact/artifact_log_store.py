@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Artifact log store implementation."""
-# TODO: Remove the 50k limit
 
 import base64
 import json
