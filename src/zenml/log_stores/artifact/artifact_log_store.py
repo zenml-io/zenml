@@ -571,8 +571,8 @@ class ArtifactLogStore(OtelLogStore):
                 entry = parse_log_entry(line)
                 if (
                     entry is None
-                    or filter_ is None
-                    or not _matches_filter(entry, filter_)
+                    or filter_ is not None
+                    and not _matches_filter(entry, filter_)
                 ):
                     continue
 
@@ -607,8 +607,8 @@ class ArtifactLogStore(OtelLogStore):
                 entry = parse_log_entry(line)
                 if (
                     entry is None
-                    or filter_ is None
-                    or not _matches_filter(entry, filter_)
+                    or filter_ is not None
+                    and not _matches_filter(entry, filter_)
                 ):
                     continue
 
@@ -618,6 +618,7 @@ class ArtifactLogStore(OtelLogStore):
                 if len(items) >= limit:
                     break
 
+            items.reverse()
             before_cursor = end_pos
             after_cursor = start_pos
 
