@@ -87,7 +87,7 @@ def b64_encode(input_: str) -> str:
 
 
 def b64_decode(input_: str) -> str:
-    """Returns a decoded string of the Base64 encoded input string.
+    """Returns a decoded string of the base 64 encoded input string.
 
     Args:
         input_: Base64 encoded string.
