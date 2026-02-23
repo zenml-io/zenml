@@ -416,6 +416,8 @@ def fetch_logs(
         DoesNotExistException: If the log store doesn't exist or is not the right type.
         NotImplementedError: If the log store's dependencies are not installed.
         RuntimeError: If the function is called from the client environment.
+        ValueError: If the logs entry does not have a log_store_id or an
+            artifact_store_id
     """
     from zenml.log_stores.base_log_store import BaseLogStore
     from zenml.stack import StackComponent
@@ -547,6 +549,9 @@ def severity_number_threshold(level: "LoggingLevels") -> int:
 
     Returns:
         The OTEL severity_number threshold.
+
+    Raises:
+        ValueError: If the log level is unknown.
     """
     from zenml.enums import LoggingLevels
 
@@ -560,3 +565,5 @@ def severity_number_threshold(level: "LoggingLevels") -> int:
         return 17
     if level == LoggingLevels.CRITICAL:
         return 21
+
+    raise ValueError("Unknown level value.")

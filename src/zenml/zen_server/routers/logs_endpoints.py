@@ -76,8 +76,15 @@ def get_logs_entries_filter(
 ) -> LogsEntriesFilter:
     """Build a logs entries filter from query parameters.
 
-    Parsing `level` as a string here allows `LogsEntriesFilter` to normalize
-    both names and numeric values (including numeric strings) consistently.
+    Args:
+        search: Search query to match against log entry content.
+        level: Minimum log level filter. Accepts level name
+            (e.g. `INFO`) or numeric value (e.g. `20`).
+        since: Lower timestamp bound (inclusive).
+        until: Upper timestamp bound (inclusive).
+
+    Returns:
+        The logs entries filter.
     """
     return LogsEntriesFilter(
         search=search,
@@ -280,7 +287,10 @@ def get_logs_entries(
         The log entries for the logs entity.
 
     Raises:
-        IllegalOperationError: If the logs are not associated with a pipeline run or step run before fetching.
+        IllegalOperationError: If the logs are not associated with a
+            pipeline run or step run before fetching.
+        ValueError: If `limit` is not positive or if both `before` and `after` are set.
+        NotImplementedError: If the log store could not be instantiated.
     """
     store = zen_store()
 

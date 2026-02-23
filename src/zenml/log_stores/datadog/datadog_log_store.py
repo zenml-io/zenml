@@ -110,6 +110,11 @@ class DatadogLogStore(OtelLogStore):
 
         Returns:
             List of log entries from Datadog.
+
+        Raises:
+            ValueError: If `limit` is not positive or if both `before` and
+                `after` are set.
+            Exception: If the request to Datadog's API fails.
         """
         if limit <= 0:
             raise ValueError("`limit` must be positive.")
@@ -226,7 +231,9 @@ class DatadogLogStore(OtelLogStore):
         return datetime.fromisoformat(timestamp)
 
     def build_query(
-        self, logs_model: LogsResponse, filter_: LogsEntriesFilter
+        self,
+        logs_model: LogsResponse,
+        filter_: Optional[LogsEntriesFilter] = None,
     ) -> str:
         """Build a query to fetch log entries from Datadog.
 
@@ -261,6 +268,9 @@ class DatadogLogStore(OtelLogStore):
 
         Returns:
             A LogEntry object, or None if parsing fails.
+
+        Raises:
+            ValueError: If the log entry is missing a valid timestamp.
         """
         try:
             log_fields = log.get("attributes", {})

@@ -114,9 +114,6 @@ class LogsEntriesFilter(BaseModel):
         Raises:
             ValueError: If `since` is greater than `until`.
         """
-        if self.search and not self.search.strip():
-            self.search = None
-
         if self.since and self.until:
             if self.since > self.until:
                 raise ValueError("`since` must be <= `until`.")

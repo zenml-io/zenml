@@ -314,7 +314,13 @@ class LokiLogStore(OtelLogStore):
 
         Raises:
             RuntimeError: If the request fails.
+            ValueError: The configuration does not include a query range URL.
         """
+        if self.config.query_range_url is None:
+            raise ValueError(
+                "The configuration does not include a query range url."
+            )
+
         headers = self._get_headers()
 
         params = {

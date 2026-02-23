@@ -57,7 +57,15 @@ class LokiLogStoreConfig(OtelLogStoreConfig):
 
     @model_validator(mode="after")
     def validate_auth_configuration(self) -> "LokiLogStoreConfig":
-        """Validate that only one authentication mode is configured."""
+        """Validate that only one authentication mode is configured.
+
+        Returns:
+            The validated configuration.
+
+        Raises:
+            ValueError: If `username` and `password` are not configured together.
+                or if `api_key` and `username` are configured together.
+        """
         has_api_key = self.api_key is not None
         has_username = self.username is not None
         has_password = self.password is not None
