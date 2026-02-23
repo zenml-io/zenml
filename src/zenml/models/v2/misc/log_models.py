@@ -102,8 +102,6 @@ class LogsEntriesFilter(BaseModel):
     since: Optional[datetime] = None
     until: Optional[datetime] = None
 
-    model_config = ConfigDict(frozen=True)
-
     @model_validator(mode="after")
     def validate_filter(self) -> "LogsEntriesFilter":
         """Validate and normalize filter fields.
