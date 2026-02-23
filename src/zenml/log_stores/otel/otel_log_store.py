@@ -316,7 +316,7 @@ class OtelLogStore(BaseLogStore):
     def fetch(
         self,
         logs_model: LogsResponse,
-        limit: int,
+        limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
         filter_: Optional[LogsEntriesFilter] = None,

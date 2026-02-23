@@ -337,8 +337,8 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
 class ArtifactLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the artifact log store."""
 
-    max_query_size: int = Field(
-        default=10000,
+    default_query_size: int = Field(
+        default=50000,
         description="Maximum number of log entries to fetch with one request.",
     )
 
@@ -504,7 +504,7 @@ class ArtifactLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
-        limit: int,
+        limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
         filter_: Optional["LogsEntriesFilter"] = None,
@@ -524,8 +524,11 @@ class ArtifactLogStore(OtelLogStore):
         Raises:
             ValueError: If the logs model or the limit is invalid.
         """
-        if limit <= 0:
-            raise ValueError("`limit` must be positive.")
+        if limit is None:
+            limit = self.config.default_query_size
+        else:
+            if limit <= 0:
+                raise ValueError("`limit` must be positive.")
 
         if before is not None and after is not None:
             raise ValueError("Only one of `before` or `after` can be set.")

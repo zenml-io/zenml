@@ -22,7 +22,6 @@ from zenml.constants import (
     API,
     HEARTBEAT,
     LOGS,
-    LOGS_MAX_ENTRIES_PER_REQUEST,
     STATUS,
     STEP_CONFIGURATION,
     STEPS,
@@ -318,10 +317,6 @@ def get_step_logs(
 
     if step.log_collection:
         if logs := search_logs_by_source(step.log_collection, source):
-            return fetch_logs(
-                logs=logs,
-                zen_store=store,
-                limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-            ).items
+            return fetch_logs(logs=logs, zen_store=store).items
 
     raise KeyError(f"No logs found for source '{source}' in step {step_id}")

@@ -90,7 +90,7 @@ class DatadogLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: LogsResponse,
-        limit: int,
+        limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
         filter_: Optional[LogsEntriesFilter] = None,
@@ -116,8 +116,11 @@ class DatadogLogStore(OtelLogStore):
                 `after` are set.
             Exception: If the request to Datadog's API fails.
         """
-        if limit <= 0:
-            raise ValueError("`limit` must be positive.")
+        if limit is None:
+            limit = self.config.default_query_size
+        else:
+            if limit <= 0:
+                raise ValueError("`limit` must be positive.")
 
         if before is not None and after is not None:
             raise ValueError("Only one of `before` or `after` can be set.")

@@ -396,7 +396,7 @@ def get_step_log_metadata(step_run: "StepRunResponse") -> Dict[str, Any]:
 def fetch_logs(
     logs: "LogsResponse",
     zen_store: "BaseZenStore",
-    limit: int,
+    limit: Optional[int] = None,
 ) -> LogsEntriesResponse:
     """Fetch logs from the log store.
 

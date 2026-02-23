@@ -22,7 +22,6 @@ from zenml.constants import (
     API,
     DISABLE_HEARTBEAT,
     LOGS,
-    LOGS_MAX_ENTRIES_PER_REQUEST,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -464,6 +463,8 @@ def run_logs(
 
     # Handle runner logs from workload manager
     if run.snapshot and source == "runner":
+        WORKLOAD_LOGS_MAX_ENTRIES = 50000
+
         snapshot = run.snapshot
         if (
             snapshot.template_id or snapshot.source_snapshot_id
@@ -481,18 +482,14 @@ def run_logs(
                 if log_record := parse_log_entry(line):
                     log_entries.append(log_record)
 
-                if len(log_entries) >= LOGS_MAX_ENTRIES_PER_REQUEST:
+                if len(log_entries) >= WORKLOAD_LOGS_MAX_ENTRIES:
                     break
 
             return log_entries
 
     if run.log_collection:
         if logs_response := search_logs_by_source(run.log_collection, source):
-            return fetch_logs(
-                logs=logs_response,
-                zen_store=store,
-                limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-            ).items
+            return fetch_logs(logs=logs_response, zen_store=store).items
 
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")
 
