@@ -20,7 +20,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Security
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.constants import API, LOGS, LOGS_ENTRIES_API_MAX_LIMIT, VERSION_1
+from zenml.constants import API, LOGS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
@@ -261,7 +261,7 @@ def get_logs_entries(
     logs_id: UUID,
     filter_: LogsEntriesFilter = Depends(get_logs_entries_filter),
     limit: int = Query(
-        default=LOGS_ENTRIES_API_MAX_LIMIT,
+        default=None,
         description="Maximum number of entries to return.",
     ),
     before: Optional[str] = Query(
@@ -359,7 +359,7 @@ def get_logs_entries(
             "Logs response does not have a log store or artifact store."
         )
 
-    if limit <= 0:
+    if limit is not None and limit <= 0:
         raise ValueError("`limit` must be positive.")
 
     if before is not None and after is not None:
