@@ -105,7 +105,7 @@ connectors-azure = [
     "azure-mgmt-containerregistry>=10.0.0",
     "azure-mgmt-storage>=20.0.0",
     "azure-storage-blob>=12.0.0",
-    "azure-mgmt-resource>=21.0.0",
+    "azure-mgmt-resource>=21.0.0,<25.0.0",
     "kubernetes>=18.20.0",
     "requests>=2.27.11,<3.0.0",
     "marshmallow<4.0.0",
