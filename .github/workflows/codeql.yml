@@ -7,6 +7,9 @@ on:
     # The branches below must be a subset of the branches above
     branches: [develop]
     types: [opened]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   analyze:
     if: github.event.pull_request.draft == false && github.repository == 'zenml-io/zenml'
@@ -23,9 +26,9 @@ jobs:
         language: [python]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@4bdb89f48054571735e3792627da6195c57459e2  # v3.31.10
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
@@ -35,6 +38,6 @@ jobs:
           # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           # queries: security-extended,security-and-quality
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@4bdb89f48054571735e3792627da6195c57459e2  # v3.31.10
         with:
           category: /language:${{matrix.language}}

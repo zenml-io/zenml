@@ -24,6 +24,9 @@ def trainer(
     X_train: csr_matrix,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    model = LogisticRegression(solver="liblinear")
+    model = LogisticRegression(
+        solver="lbfgs",
+        max_iter=200,
+    )
     model.fit(X_train, y_train)
     return model

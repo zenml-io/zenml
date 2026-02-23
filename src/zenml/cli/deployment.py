@@ -21,7 +21,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import fetch_snapshot, list_options
+from zenml.cli.utils import OutputFormat, fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.deployers.exceptions import DeploymentInvalidParametersError
@@ -72,11 +72,25 @@ def deployment() -> None:
 
 
 @deployment.command("list", help="List all registered deployments.")
-@list_options(DeploymentFilter)
-def list_deployments(**kwargs: Any) -> None:
+@list_options(
+    DeploymentFilter,
+    default_columns=[
+        "id",
+        "name",
+        "status",
+        "url",
+        "pipeline",
+        "stack",
+    ],
+)
+def list_deployments(
+    columns: str, output_format: OutputFormat, **kwargs: Any
+) -> None:
     """List all registered deployments for the filter.
 
     Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter deployments.
     """
     client = Client()
@@ -85,13 +99,15 @@ def list_deployments(**kwargs: Any) -> None:
             deployments = client.list_deployments(**kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-    else:
-        if not deployments.items:
-            cli_utils.declare("No deployments found for this filter.")
-            return
+        return
 
-        cli_utils.print_deployment_table(deployments=deployments.items)
-        cli_utils.print_page_info(deployments)
+    cli_utils.print_page(
+        deployments,
+        columns,
+        output_format,
+        cli_utils.generate_deployment_row,
+        empty_message="No deployments found for this filter.",
+    )
 
 
 @deployment.command("describe", help="Describe a deployment.")
@@ -256,7 +272,8 @@ def provision_deployment(
             dashboard_url = get_deployment_url(deployment)
             if dashboard_url:
                 cli_utils.declare(
-                    f"\nView in ZenML Cloud: [link]{dashboard_url}[/link]"
+                    f"\nView in ZenML Cloud: [link]{dashboard_url}[/link]",
+                    no_wrap=True,
                 )
 
 

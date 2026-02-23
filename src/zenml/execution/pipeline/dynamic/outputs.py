@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline execution outputs."""
 
+from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from typing import Any, Iterator, List, Optional, Tuple, Union, overload
+from uuid import UUID
 
 from zenml.logger import get_logger
-from zenml.models import ArtifactVersionResponse
+from zenml.models import ArtifactVersionResponse, StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -30,28 +32,176 @@ class OutputArtifact(ArtifactVersionResponse):
     chunk_index: Optional[int] = None
     chunk_size: Optional[int] = None
 
+    def chunk(self, index: int) -> "OutputArtifact":
+        """Get a chunk of the output artifact.
+
+        Args:
+            index: The index of the chunk.
+
+        Raises:
+            ValueError: If the output artifact can not be chunked or the index
+                is out of range.
+
+        Returns:
+            The artifact chunk.
+        """
+        if not self.item_count:
+            raise ValueError(
+                f"Output artifact `{self.output_name}` of step "
+                f"`{self.step_name}` can not be chunked."
+            )
+
+        if index < 0 or index >= self.item_count:
+            raise ValueError(
+                f"Chunk index `{index}` out of range for output artifact "
+                f"`{self.output_name}` of step `{self.step_name}`."
+            )
+
+        if self.chunk_index is not None and self.chunk_index != index:
+            raise ValueError(
+                f"Output artifact `{self.output_name}` of step "
+                f"`{self.step_name}` is already referring to a "
+                "different chunk."
+            )
+
+        return self.model_copy(update={"chunk_index": index, "chunk_size": 1})
+
 
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
 
 
-class _BaseStepRunFuture:
-    """Base step run future."""
+class BaseFuture(ABC):
+    """Base future."""
+
+    @abstractmethod
+    def running(self) -> bool:
+        """Check if the future is running.
+
+        Returns:
+            True if the future is running, False otherwise.
+        """
+
+    @abstractmethod
+    def result(self) -> Any:
+        """Get the result of the future.
+
+        Returns:
+            The result of the future.
+        """
+
+
+class _InlineStepFuture(BaseFuture):
+    """Future for an inline step run."""
+
+    def __init__(
+        self, wrapped: Future["StepRunResponse"], invocation_id: str
+    ) -> None:
+        """Initialize the inline step run future.
+
+        Args:
+            wrapped: The wrapped future object.
+            invocation_id: The invocation ID of the step run.
+        """
+        self._wrapped = wrapped
+        self.invocation_id = invocation_id
+
+    def running(self) -> bool:
+        """Check if the step run future is running.
+
+        Returns:
+            True if the step run future is running, False otherwise.
+        """
+        return self._wrapped.running()
+
+    def result(self) -> "StepRunResponse":
+        """Get the result of the step run future.
+
+        Returns:
+            The result of the step run future.
+        """
+        return self._wrapped.result()
+
+
+class _IsolatedStepFuture(BaseFuture):
+    """Future for an inline step run."""
 
     def __init__(
         self,
-        wrapped: Future[StepRunOutputs],
+        pipeline_run_id: UUID,
         invocation_id: str,
+        wrapped: Optional[Future["StepRunResponse"]] = None,
+    ) -> None:
+        """Initialize the step run future.
+
+        Args:
+            pipeline_run_id: The ID of the pipeline run.
+            invocation_id: The invocation ID of the step run.
+            wrapped: Optional future to wait for that submits the step run.
+        """
+        self._wrapped = wrapped
+        self.pipeline_run_id = pipeline_run_id
+        self.invocation_id = invocation_id
+
+    def running(self) -> bool:
+        """Check if the isolated step future is running.
+
+        Returns:
+            True if the isolated step future is running, False otherwise.
+        """
+        from zenml.execution.pipeline.dynamic.utils import get_latest_step_run
+
+        if self._wrapped and self._wrapped.running():
+            return True
+
+        step_run = get_latest_step_run(
+            self.pipeline_run_id, self.invocation_id, hydrate=False
+        )
+
+        return not step_run.status.is_finished
+
+    def result(self) -> "StepRunResponse":
+        """Get the result of the step future.
+
+        Raises:
+            RuntimeError: If the step failed.
+
+        Returns:
+            The result of the step future.
+        """
+        from zenml.execution.pipeline.dynamic.utils import (
+            wait_for_step_to_finish,
+        )
+
+        if self._wrapped:
+            # We first wait until the step run is submitted and only then
+            # start monitoring the actual step.
+            self._wrapped.result()
+
+        step_run = wait_for_step_to_finish(
+            pipeline_run_id=self.pipeline_run_id, step_name=self.invocation_id
+        )
+
+        if step_run.status.is_failed:
+            raise RuntimeError(f"Step `{self.invocation_id}` failed.")
+
+        return step_run
+
+
+class BaseStepFuture(BaseFuture):
+    """Base step future."""
+
+    def __init__(
+        self,
+        wrapped: Union[_InlineStepFuture, _IsolatedStepFuture],
         **kwargs: Any,
     ) -> None:
         """Initialize the dynamic step run future.
 
         Args:
             wrapped: The wrapped future object.
-            invocation_id: The invocation ID of the step run.
             **kwargs: Additional keyword arguments.
         """
         self._wrapped = wrapped
-        self._invocation_id = invocation_id
 
     @property
     def invocation_id(self) -> str:
@@ -60,27 +210,32 @@ class _BaseStepRunFuture:
         Returns:
             The step run invocation ID.
         """
-        return self._invocation_id
+        return self._wrapped.invocation_id
 
-    def _wait(self) -> None:
-        """Wait for the step run future to complete."""
-        self._wrapped.result()
+    def running(self) -> bool:
+        """Check if the step run future is running.
+
+        Returns:
+            True if the step run future is running, False otherwise.
+        """
+        return self._wrapped.running()
 
 
-class ArtifactFuture(_BaseStepRunFuture):
+class ArtifactFuture(BaseStepFuture):
     """Future for a step run output artifact."""
 
     def __init__(
-        self, wrapped: Future[StepRunOutputs], invocation_id: str, index: int
+        self,
+        wrapped: Union[_InlineStepFuture, _IsolatedStepFuture],
+        index: int,
     ) -> None:
         """Initialize the future.
 
         Args:
             wrapped: The wrapped future object.
-            invocation_id: The invocation ID of the step run.
             index: The index of the output artifact.
         """
-        super().__init__(wrapped=wrapped, invocation_id=invocation_id)
+        super().__init__(wrapped=wrapped)
         self._index = index
 
     def result(self) -> OutputArtifact:
@@ -92,14 +247,20 @@ class ArtifactFuture(_BaseStepRunFuture):
         Returns:
             The output artifact.
         """
-        result = self._wrapped.result()
+        step_run = self._wrapped.result()
+        from zenml.execution.pipeline.dynamic.utils import (
+            load_step_run_outputs,
+        )
+
+        result = load_step_run_outputs(step_run.id)
+
         if isinstance(result, OutputArtifact):
             return result
         elif isinstance(result, tuple):
             return result[self._index]
         else:
             raise RuntimeError(
-                f"Step {self._invocation_id} returned an invalid output: "
+                f"Step {self.invocation_id} returned an invalid output: "
                 f"{result}."
             )
 
@@ -114,24 +275,36 @@ class ArtifactFuture(_BaseStepRunFuture):
         """
         return self.result().load(disable_cache=disable_cache)
 
+    def chunk(self, index: int) -> "OutputArtifact":
+        """Get a chunk of the output artifact.
 
-class StepRunOutputsFuture(_BaseStepRunFuture):
+        This method will wait for the future to complete and then return the
+        artifact chunk.
+
+        Args:
+            index: The index of the chunk.
+
+        Returns:
+            The artifact chunk.
+        """
+        return self.result().chunk(index=index)
+
+
+class StepFuture(BaseStepFuture):
     """Future for a step run output."""
 
     def __init__(
         self,
-        wrapped: Future[StepRunOutputs],
-        invocation_id: str,
+        wrapped: Union[_InlineStepFuture, _IsolatedStepFuture],
         output_keys: List[str],
     ) -> None:
         """Initialize the future.
 
         Args:
             wrapped: The wrapped future object.
-            invocation_id: The invocation ID of the step run.
             output_keys: The output keys of the step run.
         """
-        super().__init__(wrapped=wrapped, invocation_id=invocation_id)
+        super().__init__(wrapped=wrapped)
         self._output_keys = output_keys
 
     def get_artifact(self, key: str) -> ArtifactFuture:
@@ -148,15 +321,18 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         """
         if key not in self._output_keys:
             raise KeyError(
-                f"Step run {self._invocation_id} does not have an output with "
+                f"Step run {self.invocation_id} does not have an output with "
                 f"the name: {key}."
             )
 
         return ArtifactFuture(
             wrapped=self._wrapped,
-            invocation_id=self._invocation_id,
             index=self._output_keys.index(key),
         )
+
+    def wait(self) -> None:
+        """Wait for the step to finish."""
+        self._wrapped.result()
 
     def artifacts(self) -> StepRunOutputs:
         """Get the step run output artifacts.
@@ -164,7 +340,7 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         Returns:
             The step run output artifacts.
         """
-        return self._wrapped.result()
+        return self.result()
 
     def result(self) -> StepRunOutputs:
         """Get the step run outputs this future represents.
@@ -172,7 +348,12 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         Returns:
             The step run outputs.
         """
-        return self._wrapped.result()
+        from zenml.execution.pipeline.dynamic.utils import (
+            load_step_run_outputs,
+        )
+
+        step_run = self._wrapped.result()
+        return load_step_run_outputs(step_run.id)
 
     def load(self, disable_cache: bool = False) -> Any:
         """Get the step run output artifact data.
@@ -224,7 +405,6 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
 
             return ArtifactFuture(
                 wrapped=self._wrapped,
-                invocation_id=self._invocation_id,
                 index=self._output_keys.index(output_key),
             )
         elif isinstance(key, slice):
@@ -232,7 +412,6 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
             return tuple(
                 ArtifactFuture(
                     wrapped=self._wrapped,
-                    invocation_id=self._invocation_id,
                     index=self._output_keys.index(output_key),
                 )
                 for output_key in output_keys
@@ -251,13 +430,12 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         """
         if not self._output_keys:
             raise ValueError(
-                f"Step {self._invocation_id} does not return any outputs."
+                f"Step {self.invocation_id} does not return any outputs."
             )
 
         for index in range(len(self._output_keys)):
             yield ArtifactFuture(
                 wrapped=self._wrapped,
-                invocation_id=self._invocation_id,
                 index=index,
             )
 
@@ -270,16 +448,24 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         return len(self._output_keys)
 
 
-class MapResultsFuture:
+class MapResultsFuture(BaseFuture):
     """Future that represents the results of a `step.map/product(...)` call."""
 
-    def __init__(self, futures: List[StepRunOutputsFuture]) -> None:
+    def __init__(self, futures: List[StepFuture]) -> None:
         """Initialize the map results future.
 
         Args:
             futures: The step run futures.
         """
         self.futures = futures
+
+    def running(self) -> bool:
+        """Check if the map results future is running.
+
+        Returns:
+            True if the map results future is running, False otherwise.
+        """
+        return any(future.running() for future in self.futures)
 
     def result(self) -> List[StepRunOutputs]:
         """Get the step run outputs this future represents.
@@ -288,6 +474,19 @@ class MapResultsFuture:
             The step run outputs.
         """
         return [future.result() for future in self.futures]
+
+    def load(self, disable_cache: bool = False) -> List[Any]:
+        """Load the step run output artifacts.
+
+        Args:
+            disable_cache: Whether to disable the artifact cache.
+
+        Returns:
+            The step run output artifacts.
+        """
+        return [
+            future.load(disable_cache=disable_cache) for future in self.futures
+        ]
 
     def unpack(self) -> Tuple[List[ArtifactFuture], ...]:
         """Unpack the map results future.
@@ -323,14 +522,14 @@ class MapResultsFuture:
         return tuple(map(list, zip(*self.futures)))
 
     @overload
-    def __getitem__(self, key: int) -> StepRunOutputsFuture: ...
+    def __getitem__(self, key: int) -> StepFuture: ...
 
     @overload
-    def __getitem__(self, key: slice) -> List[StepRunOutputsFuture]: ...
+    def __getitem__(self, key: slice) -> List[StepFuture]: ...
 
     def __getitem__(
         self, key: Union[int, slice]
-    ) -> Union[StepRunOutputsFuture, List[StepRunOutputsFuture]]:
+    ) -> Union[StepFuture, List[StepFuture]]:
         """Get a step run future.
 
         Args:
@@ -341,7 +540,7 @@ class MapResultsFuture:
         """
         return self.futures[key]
 
-    def __iter__(self) -> Iterator[StepRunOutputsFuture]:
+    def __iter__(self) -> Iterator[StepFuture]:
         """Iterate over the step run futures.
 
         Yields:
@@ -358,4 +557,4 @@ class MapResultsFuture:
         return len(self.futures)
 
 
-StepRunFuture = Union[ArtifactFuture, StepRunOutputsFuture, MapResultsFuture]
+AnyStepFuture = Union[ArtifactFuture, StepFuture, MapResultsFuture]

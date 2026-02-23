@@ -20,7 +20,7 @@ from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.logger import get_logger
-from zenml.models import PipelineSnapshotResponse
+from zenml.models import PipelineSnapshotResponse, StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -37,6 +37,7 @@ class StepRunInfo(FrozenBaseModel):
     spec: StepSpec
     pipeline: PipelineConfiguration
     snapshot: PipelineSnapshotResponse
+    step_run: StepRunResponse
 
     force_write_logs: Callable[..., Any]
 
@@ -59,6 +60,12 @@ class StepRunInfo(FrozenBaseModel):
             )
 
         if self.snapshot.is_dynamic:
+            if self.config.docker_settings.skip_build:
+                # If there are custom Docker settings for the step and no
+                # build is required, we can use the parent image directly.
+                assert self.config.docker_settings.parent_image
+                return self.config.docker_settings.parent_image
+
             step_key = self.config.template
             if not step_key:
                 logger.warning(

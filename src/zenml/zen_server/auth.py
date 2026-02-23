@@ -311,6 +311,18 @@ def authenticate_credentials(
             logger.error(error)
             raise CredentialsNotValid(error)
 
+        if (
+            server_config().auth_scheme == AuthScheme.EXTERNAL
+            and not user_model.external_user_id
+            and not user_model.is_service_account
+        ):
+            error = (
+                f"Authentication error: local account {user_model.name} is not "
+                f"allowed to authenticate with external authentication"
+            )
+            logger.error(error)
+            raise CredentialsNotValid(error)
+
         api_key_model: Optional[APIKeyInternalResponse] = None
         if decoded_token.api_key_id:
             # The API token was generated from an API key. We still have to
@@ -1015,6 +1027,7 @@ def generate_access_token(
 
     # Figure out if this is a same-site request or a cross-site request
     same_site = True
+    secure = True
     if response and request:
         # Extract the origin domain from the request; use the referer as a
         # fallback
@@ -1045,6 +1058,10 @@ def generate_access_token(
         if origin_domain and server_domain:
             same_site = is_same_or_subdomain(origin_domain, server_domain)
 
+        # For http only requests, we can't use the secure flag
+        if config.server_url and urlparse(config.server_url).scheme == "http":
+            secure = False
+
     csrf_token: Optional[str] = None
     session_id: Optional[UUID] = None
     if not same_site:
@@ -1070,8 +1087,8 @@ def generate_access_token(
             key=config.get_auth_cookie_name(),
             value=access_token,
             httponly=True,
-            secure=not same_site,
-            samesite="lax" if same_site else "none",
+            secure=not same_site and secure,
+            samesite="lax" if same_site or not secure else "none",
             max_age=config.jwt_token_expire_minutes * 60
             if config.jwt_token_expire_minutes
             else None,

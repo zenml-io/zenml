@@ -83,25 +83,43 @@ def test_create_secret_with_values():
 
 def test_list_secret_works():
     """Test that the secret list command works."""
-    runner = CliRunner()
-    with cleanup_secrets() as secret_name:
-        result1 = runner.invoke(
-            secret_list_command,
-        )
-        assert result1.exit_code == 0
-        assert secret_name not in result1.output
+    import io
 
-        runner = CliRunner()
-        runner.invoke(
-            secret_create_command,
-            [secret_name, "--test_value=aria", "--test_value2=axl"],
-        )
+    import zenml_cli
 
-        result2 = runner.invoke(
-            secret_list_command,
-        )
-        assert result2.exit_code == 0
-        assert secret_name in result2.output
+    # Save original _original_stdout for cleanup
+    original_stdout = zenml_cli._original_stdout
+
+    runner = CliRunner(mix_stderr=False)
+    try:
+        with cleanup_secrets() as secret_name:
+            # Capture clean_output writes by replacing _original_stdout
+            # with a StringIO buffer before each CLI invocation
+            buffer1 = io.StringIO()
+            zenml_cli._original_stdout = buffer1
+
+            result1 = runner.invoke(secret_list_command)
+            output1 = buffer1.getvalue() + result1.output
+
+            assert result1.exit_code == 0
+            assert secret_name not in output1
+
+            runner.invoke(
+                secret_create_command,
+                [secret_name, "--test_value=aria", "--test_value2=axl"],
+            )
+
+            buffer2 = io.StringIO()
+            zenml_cli._original_stdout = buffer2
+
+            result2 = runner.invoke(secret_list_command)
+            output2 = buffer2.getvalue() + result2.output
+
+            assert result2.exit_code == 0
+            assert secret_name in output2
+    finally:
+        # Restore original state
+        zenml_cli._original_stdout = original_stdout
 
 
 def test_get_secret_works():
@@ -251,7 +269,6 @@ def test_delete_secret_works():
 
 def test_rename_secret_works():
     """Test that the secret rename command works."""
-
     runner = CliRunner()
 
     with cleanup_secrets() as secret_name:

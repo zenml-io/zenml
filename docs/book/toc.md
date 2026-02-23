@@ -40,6 +40,7 @@
   * [Logging](how-to/steps-pipelines/logging.md)
   * [YAML Configuration](how-to/steps-pipelines/yaml_configuration.md)
   * [Source Code and Imports](how-to/steps-pipelines/sources.md)
+  * [Execution](how-to/steps-pipelines/execution.md)
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
   * [Dynamic Pipelines (Experimental)](how-to/steps-pipelines/dynamic_pipelines.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
@@ -64,7 +65,7 @@
 
 * [Community & content](reference/community-and-content.md)
 * [Environment Variables](reference/environment-variables.md)
-* [MCP Docs & llms.txt](reference/llms-txt.md)
+* [LLM Tooling](reference/llms-txt.md)
 * [FAQ](reference/faq.md)
 * [Global settings](reference/global-settings.md)
 * [Legacy docs](reference/legacy-docs.md)

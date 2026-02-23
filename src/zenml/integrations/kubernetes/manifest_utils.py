@@ -28,6 +28,7 @@ from zenml.integrations.airflow.orchestrators.dag_generator import (
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
+from zenml.utils import string_utils
 
 logger = get_logger(__name__)
 
@@ -167,7 +168,14 @@ def build_pod_manifest(
     labels = labels or {}
 
     if pod_settings:
-        add_pod_settings(pod_spec, pod_settings)
+        substitutions = {
+            "{{ image }}": image_name,
+        }
+        add_pod_settings(
+            pod_spec=pod_spec,
+            settings=pod_settings,
+            substitutions=substitutions,
+        )
 
     if pod_settings and pod_settings.labels:
         labels.update(pod_settings.labels)
@@ -197,12 +205,14 @@ def build_pod_manifest(
 def add_pod_settings(
     pod_spec: k8s_client.V1PodSpec,
     settings: KubernetesPodSettings,
+    substitutions: Dict[str, str],
 ) -> None:
     """Updates pod `spec` fields in place if passed in orchestrator settings.
 
     Args:
         pod_spec: Pod spec to update.
         settings: Pod settings to apply.
+        substitutions: Substitutions to apply to additional pod spec arguments.
     """
     if settings.node_selectors:
         pod_spec.node_selector = settings.node_selectors
@@ -262,6 +272,11 @@ def add_pod_settings(
         else:
             if value is None:
                 continue
+
+            def _substitute(v: str) -> str:
+                return substitutions.get(v, v)
+
+            value = string_utils.substitute_string(value, _substitute)
 
             existing_value = getattr(pod_spec, key)
             if isinstance(existing_value, list):
@@ -471,6 +486,8 @@ def build_cron_job_manifest(
     cron_expression: str,
     successful_jobs_history_limit: Optional[int] = None,
     failed_jobs_history_limit: Optional[int] = None,
+    concurrency_policy: Optional[str] = None,
+    starting_deadline_seconds: Optional[int] = None,
 ) -> k8s_client.V1CronJob:
     """Build a Kubernetes cron job manifest.
 
@@ -479,6 +496,10 @@ def build_cron_job_manifest(
         cron_expression: The cron expression to use for the cron job.
         successful_jobs_history_limit: The number of successful jobs to keep.
         failed_jobs_history_limit: The number of failed jobs to keep.
+        concurrency_policy: The concurrency policy for the cron job
+            (Allow, Forbid, or Replace).
+        starting_deadline_seconds: The deadline in seconds for starting
+            a job if it misses its scheduled time.
 
     Returns:
         The Kubernetes cron job manifest.
@@ -487,6 +508,8 @@ def build_cron_job_manifest(
         schedule=cron_expression,
         successful_jobs_history_limit=successful_jobs_history_limit,
         failed_jobs_history_limit=failed_jobs_history_limit,
+        concurrency_policy=concurrency_policy,
+        starting_deadline_seconds=starting_deadline_seconds,
         job_template=job_template,
     )
 

@@ -368,7 +368,7 @@ def install(
                     f"'{integration_name}' are already installed."
                 )
         except KeyError:
-            warning(f"Unable to find integration '{integration_name}'.")
+            error(f"Unable to find integration '{integration_name}'.")
 
     if requirements and (
         force

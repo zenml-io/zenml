@@ -491,6 +491,9 @@ class Compiler:
     def _get_heartbeat_flag(
         pipeline: "Pipeline", stack: "Stack", step_config: "StepConfiguration"
     ) -> bool:
+        if pipeline.enable_heartbeat is False:
+            return False
+
         if stack.orchestrator.flavor == "local":
             return False
         elif not pipeline.is_dynamic:
@@ -505,6 +508,7 @@ class Compiler:
             step_runtime = get_step_runtime(
                 step_config=step_config,
                 pipeline_docker_settings=pipeline.configuration.docker_settings,
+                orchestrator=stack.orchestrator,
             )
             if step_runtime == StepRuntime.ISOLATED:
                 # dynamic pipelines & isolated execution

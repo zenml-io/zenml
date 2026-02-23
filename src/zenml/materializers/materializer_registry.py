@@ -68,9 +68,22 @@ class MaterializerRegistry:
         Args:
             key: Indicates the type of object.
 
+        Raises:
+            RuntimeError: If a string annotation is passed.
+
         Returns:
             `BaseMaterializer` subclass that was registered for this key.
         """
+        if isinstance(key, str):
+            raise RuntimeError(
+                "String type annotations (e.g. `def my_step() -> "
+                "'np.ndarray`) are not supported yet for step outputs. Please "
+                "change to actual type annotations (e.g. `def my_step() -> "
+                "np.ndarray`) and remove any "
+                "`from __future__ import annotations` in modules where "
+                "your steps are defined."
+            )
+
         for class_ in key.__mro__:
             materializer = self.materializer_types.get(class_, None)
             if materializer:

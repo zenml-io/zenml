@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2025. All rights reserved.
+# Copyright (c) ZenML GmbH 2026. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ def inference_data_preprocessor(
     # artificially adding `target` column to avoid Pipeline issues
     dataset_inf[target] = pd.Series([1] * dataset_inf.shape[0])
     dataset_inf = preprocess_pipeline.transform(dataset_inf)
-    dataset_inf.drop(columns=["target"], inplace=True)
+    dataset_inf.drop(columns=[target], inplace=True)
     ### YOUR CODE ENDS HERE ###
 
     return dataset_inf

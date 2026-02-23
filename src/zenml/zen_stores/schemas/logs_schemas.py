@@ -20,35 +20,57 @@ from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
+    LogsRequest,
     LogsResponse,
     LogsResponseBody,
     LogsResponseMetadata,
+    LogsResponseResources,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class LogsSchema(BaseSchema, table=True):
     """SQL Model for logs."""
 
     __tablename__ = "logs"
+
+    # Fields
+    uri: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    source: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
+    log_key: Optional[str] = Field(
+        sa_column=Column(VARCHAR(255), nullable=True)
+    )
+
     __table_args__ = (
         UniqueConstraint(
-            "source",
-            "pipeline_run_id",
-            "step_run_id",
-            name="unique_source_per_run_and_step",
+            "log_key",
+            name="unique_log_key",
         ),
     )
 
-    # Fields
-    uri: str = Field(sa_column=Column(TEXT, nullable=False))
-    source: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
-
     # Foreign Keys
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
     pipeline_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=PipelineRunSchema.__tablename__,
@@ -65,23 +87,57 @@ class LogsSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    artifact_store_id: UUID = build_foreign_key_field(
+    artifact_store_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
-        source_column="stack_component_id",
+        source_column="artifact_store_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
+    )
+    log_store_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=StackComponentSchema.__tablename__,
+        source_column="log_store_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )
 
     # Relationships
-    artifact_store: Optional["StackComponentSchema"] = Relationship(
-        back_populates="run_or_step_logs"
-    )
+    project: "ProjectSchema" = Relationship()
+    user: Optional["UserSchema"] = Relationship()
     pipeline_run: Optional["PipelineRunSchema"] = Relationship(
         back_populates="logs"
     )
     step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
+
+    @classmethod
+    def from_request(cls, request: LogsRequest) -> "LogsSchema":
+        """Create a `LogsSchema` from a `LogsRequest`.
+
+        Args:
+            request: The `LogsRequest` to create the `LogsSchema` from.
+
+        Returns:
+            The created `LogsSchema`.
+        """
+        log_key = None
+        if request.pipeline_run_id or request.step_run_id:
+            log_key = f"{request.pipeline_run_id}-{request.step_run_id}-{request.source}"
+
+        return LogsSchema(
+            id=request.id,
+            uri=request.uri,
+            source=request.source,
+            project_id=request.project,
+            user_id=request.user,
+            pipeline_run_id=request.pipeline_run_id,
+            step_run_id=request.step_run_id,
+            artifact_store_id=request.artifact_store_id,
+            log_store_id=request.log_store_id,
+            log_key=log_key,
+        )
 
     def to_model(
         self,
@@ -104,16 +160,28 @@ class LogsSchema(BaseSchema, table=True):
             source=self.source,
             created=self.created,
             updated=self.updated,
+            project_id=self.project_id,
+            user_id=self.user_id,
         )
+
         metadata = None
         if include_metadata:
             metadata = LogsResponseMetadata(
                 step_run_id=self.step_run_id,
                 pipeline_run_id=self.pipeline_run_id,
                 artifact_store_id=self.artifact_store_id,
+                log_store_id=self.log_store_id,
             )
+
+        resources = None
+        if include_resources:
+            resources = LogsResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return LogsResponse(
             id=self.id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

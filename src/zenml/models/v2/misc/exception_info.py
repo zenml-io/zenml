@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """Exception information models."""
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from zenml.utils.pydantic_utils import before_validator_handler
 
 
 class ExceptionInfo(BaseModel):
@@ -24,7 +26,27 @@ class ExceptionInfo(BaseModel):
     traceback: str = Field(
         title="The traceback of the exception.",
     )
-    step_code_line: Optional[int] = Field(
+    user_code_line: Optional[int] = Field(
         default=None,
-        title="The line number of the step code that raised the exception.",
+        title="The line number of the user code that raised the exception.",
     )
+
+    # Keep the old attribute for dashboard backwards compatibility
+    model_config = ConfigDict(extra="allow")
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _migrate_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Pydantic validator function for migrating attributes.
+
+        Args:
+            data: The data to migrate.
+
+        Returns:
+            The migrated data.
+        """
+        if step_code_line := data.get("step_code_line", None):
+            data.setdefault("user_code_line", step_code_line)
+
+        return data

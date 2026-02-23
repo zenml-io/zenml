@@ -43,10 +43,11 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY README.md pyproject.toml ./
 
-# We first copy the __init__.py file to allow pip install-ing the Python
+# We first copy the __init__.py files to allow pip install-ing the Python
 # dependencies as a separate cache layer. This way, we can avoid re-installing
 # the dependencies when the source code changes but the dependencies don't.
 COPY src/zenml/__init__.py ./src/zenml/
+COPY src/zenml_cli/__init__.py ./src/zenml_cli/
 
 # Run pip install before copying the source files to install dependencies in
 # the virtual environment. Also create a requirements.txt file to keep track of

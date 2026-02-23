@@ -37,12 +37,20 @@ def stack_with_mock_components(mocker):
         spec=BaseOrchestrator,
         type=StackComponentType.ORCHESTRATOR,
         flavor=MOCK_FLAVOR,
+        id=uuid4(),
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     artifact_store = mocker.Mock(
         spec=BaseArtifactStore,
         type=StackComponentType.ARTIFACT_STORE,
         flavor=MOCK_FLAVOR,
         path="/",
+        id=uuid4(),
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     orchestrator.config.required_secrets = set()
     orchestrator.settings_class = None

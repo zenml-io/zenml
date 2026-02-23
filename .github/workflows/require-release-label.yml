@@ -1,0 +1,32 @@
+---
+# Requires PRs to have either 'release-notes' or 'no-release-notes' label
+# This ensures release notes are considered for every PR before merging.
+# The check is enforced via branch protection rules on develop.
+name: Require Release Label
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  check-label:
+    if: >-
+      github.repository == 'zenml-io/zenml' && (
+        github.event.action == 'opened' ||
+        github.event.action == 'synchronize' ||
+        github.event.label.name == 'release-notes' ||
+        github.event.label.name == 'no-release-notes'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for release label
+        uses: mheap/github-action-required-labels@8afbe8ae6ab7647d0c9f0cfa7c2f939650d22509  # v5
+        with:
+          mode: exactly
+          count: 1
+          labels: release-notes, no-release-notes
+          message: |-
+            This PR is missing a release label. Please add one of:
+            - `release-notes` - if this PR has user-facing changes that should appear in the changelog
+            - `no-release-notes` - if this is an internal change (refactoring, tests, CI, etc.)

@@ -433,11 +433,13 @@ def sample_pipeline_run(
             status=ExecutionStatus.COMPLETED,
             tags=[],
             in_progress=False,
+            index=1,
         ),
         metadata=PipelineRunResponseMetadata(
             config=PipelineConfiguration(name="aria_pipeline"),
             is_templatable=False,
             steps_substitutions=defaultdict(lambda: substitutions.copy()),
+            enable_heartbeat=True,
         ),
         resources=PipelineRunResponseResources(tags=[]),
     )

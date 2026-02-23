@@ -15,12 +15,32 @@
 
 from typing import Optional
 
+from pydantic import AliasChoices, Field
+
 from zenml.secret.base_secret import BaseSecretSchema
 
 
 class AWSSecretSchema(BaseSecretSchema):
-    """AWS Authentication Secret Schema definition."""
+    """AWS Authentication Secret Schema definition.
 
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    aws_session_token: Optional[str] = None
+    This schema supports both AWS-prefixed field names (for AWS S3) and
+    generic field names (for S3-compatible storage like MinIO, Alibaba OSS).
+
+    Supported field names:
+        - aws_access_key_id / access_key_id
+        - aws_secret_access_key / secret_access_key
+        - aws_session_token / session_token
+    """
+
+    aws_access_key_id: str = Field(
+        validation_alias=AliasChoices("aws_access_key_id", "access_key_id"),
+    )
+    aws_secret_access_key: str = Field(
+        validation_alias=AliasChoices(
+            "aws_secret_access_key", "secret_access_key"
+        ),
+    )
+    aws_session_token: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("aws_session_token", "session_token"),
+    )

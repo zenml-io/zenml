@@ -15,10 +15,10 @@ jobs:
     outputs:
       exit_code: ${{ steps.capture-outcome.outputs.exit_code }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@50fbc622fc4ef5163becd7fab6573eac35f8462e  # v1
       - name: Validate changelog.json against announcement-schema.json
         id: validate-changelog
-        uses: cardinalby/schema-validator-action@v3
+        uses: cardinalby/schema-validator-action@77eb17b070f282db4680215551cae4d9c379f2f4  # v3
         continue-on-error: true
         with:
           file: ./changelog.json
@@ -26,11 +26,13 @@ jobs:
       - name: Capture validation outcome
         id: capture-outcome
         run: |
-          if [ "${{ steps.validate-changelog.outcome }}" = "failure" ]; then
+          if [ "${STEPS_VALIDATE_CHANGELOG_OUTCOME}" = "failure" ]; then
             echo "exit_code=1" >> $GITHUB_OUTPUT
           else
             echo "exit_code=0" >> $GITHUB_OUTPUT
           fi
+        env:
+          STEPS_VALIDATE_CHANGELOG_OUTCOME: ${{ steps.validate-changelog.outcome }}
   post-summary:
     needs: [verify-changelog-json]
     if: always() && github.event.pull_request.draft == false
@@ -47,13 +49,13 @@ jobs:
           EOL
 
           # Check validation outcome
-          if [[ "${{ needs.verify-changelog-json.outputs.exit_code }}" != "0" ]]; then
+          if [[ "${NEEDS_VERIFY_CHANGELOG_JSON_OUTPUTS_EXIT_CODE}" != "0" ]]; then
             echo "❌ **Changelog validation failed**" >> $GITHUB_STEP_SUMMARY
             echo "The changelog.json file does not conform to the required schema structure." >> $GITHUB_STEP_SUMMARY
             cat << 'EOL' > comment_body.txt
           ❌ **Changelog validation failed**
           The `changelog.json` file does not conform to the required schema structure.
-          Please review the [changelog documentation](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/docs/changelog-items/info.md) for guidance on the proper structure and required fields.
+          Please review the [changelog documentation](https://github.com/${{ github.repository }}/blob/${GITHUB_BASE_REF}/docs/changelog-items/info.md) for guidance on the proper structure and required fields.
           EOL
             FAILED=true
           else
@@ -80,8 +82,10 @@ jobs:
 
           # Save failed status to output
           echo "failed=$FAILED" >> $GITHUB_OUTPUT
+        env:
+          NEEDS_VERIFY_CHANGELOG_JSON_OUTPUTS_EXIT_CODE: ${{ needs.verify-changelog-json.outputs.exit_code }}
       - name: Find Comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@3eae4d37986fb5a8592848f6a574fdf654e61f9e  # v3
         if: github.event_name == 'pull_request'
         id: find-comment
         with:
@@ -89,7 +93,7 @@ jobs:
           comment-author: github-actions[bot]
           body-includes: Changelog Validation Results
       - name: Create or Update Comment
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043  # v4
         if: github.event_name == 'pull_request'
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}

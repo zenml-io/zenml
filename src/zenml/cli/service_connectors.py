@@ -14,6 +14,7 @@
 """Service connector CLI commands."""
 
 from datetime import datetime
+from functools import partial
 from typing import Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
@@ -22,9 +23,9 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
+    OutputFormat,
     is_sorted_or_filtered,
     list_options,
-    print_page_info,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -964,7 +965,18 @@ def register_service_connector(
     help="""List available service connectors.
 """,
 )
-@list_options(ServiceConnectorFilter)
+@list_options(
+    ServiceConnectorFilter,
+    default_columns=[
+        "active",
+        "id",
+        "name",
+        "type",
+        "resource_types",
+        "resource_name",
+        "owner",
+    ],
+)
 @click.option(
     "--label",
     "-l",
@@ -975,12 +987,19 @@ def register_service_connector(
 )
 @click.pass_context
 def list_service_connectors(
-    ctx: click.Context, /, labels: Optional[List[str]] = None, **kwargs: Any
+    ctx: click.Context,
+    /,
+    columns: str,
+    output_format: OutputFormat,
+    labels: Optional[List[str]] = None,
+    **kwargs: Any,
 ) -> None:
     """List all service connectors.
 
     Args:
         ctx: The click context object
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
         labels: Labels to filter by.
         kwargs: Keyword arguments to filter the components.
     """
@@ -992,16 +1011,44 @@ def list_service_connectors(
         )
 
     connectors = client.list_service_connectors(**kwargs)
-    if not connectors:
-        cli_utils.declare("No service connectors found for the given filters.")
-        return
 
-    cli_utils.print_service_connectors_table(
-        client=client,
-        connectors=connectors.items,
-        show_active=not is_sorted_or_filtered(ctx),
+    show_active = not is_sorted_or_filtered(ctx)
+    if show_active and connectors.items:
+        active_connectors: List["ServiceConnectorResponse"] = []
+        for components in client.active_stack_model.components.values():
+            for component in components:
+                if component.connector:
+                    connector = component.connector
+                    if connector.id not in [c.id for c in active_connectors]:
+                        if isinstance(connector.connector_type, str):
+                            connector.set_connector_type(
+                                client.get_service_connector_type(
+                                    connector.connector_type
+                                )
+                            )
+                        active_connectors.append(connector)
+
+        active_connector_ids = [c.id for c in active_connectors]
+
+        for active_connector in active_connectors:
+            if active_connector.id not in {c.id for c in connectors.items}:
+                connectors.items.append(active_connector)
+
+        connectors.items.sort(key=lambda c: c.id not in active_connector_ids)
+    else:
+        active_connector_ids = None
+
+    row_formatter = partial(
+        cli_utils.generate_connector_row,
+        active_connector_ids=active_connector_ids,
     )
-    print_page_info(connectors)
+    cli_utils.print_page(
+        connectors,
+        columns,
+        output_format,
+        row_formatter,
+        empty_message="No service connectors found for the given filters.",
+    )
 
 
 @service_connector.command(

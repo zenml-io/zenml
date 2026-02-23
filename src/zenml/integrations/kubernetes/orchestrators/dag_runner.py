@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """DAG runner."""
 
+import contextvars
 import queue
 import threading
 import time
@@ -21,6 +22,10 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from zenml.constants import (
+    ENV_ZENML_DAG_RUNNER_WORKER_COUNT,
+    handle_int_env_var,
+)
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
@@ -122,9 +127,11 @@ class DagRunner:
         self.node_monitoring_function = node_monitoring_function
         self.node_stop_function = node_stop_function
         self.interrupt_function = interrupt_function
+
+        ctx = contextvars.copy_context()
         self.monitoring_thread = threading.Thread(
             name="DagRunner-Monitoring-Loop",
-            target=self._monitoring_loop,
+            target=lambda: ctx.run(self._monitoring_loop),
             daemon=True,
         )
         self.monitoring_interval = monitoring_interval
@@ -132,8 +139,11 @@ class DagRunner:
         self.interrupt_check_interval = interrupt_check_interval
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
+        worker_count = handle_int_env_var(
+            ENV_ZENML_DAG_RUNNER_WORKER_COUNT, 10
+        )
         self.startup_executor = ThreadPoolExecutor(
-            max_workers=10, thread_name_prefix="DagRunner-Startup"
+            max_workers=worker_count, thread_name_prefix="DagRunner-Startup"
         )
 
     @property
@@ -231,7 +241,8 @@ class DagRunner:
                     "Node `%s` started (status: %s)", node.id, node.status
                 )
 
-        self.startup_executor.submit(_start_node_task)
+        ctx = contextvars.copy_context()
+        self.startup_executor.submit(ctx.run, _start_node_task)
 
     def _stop_node(self, node: Node) -> None:
         """Stop a node.

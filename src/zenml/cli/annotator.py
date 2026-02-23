@@ -73,9 +73,8 @@ def register_annotator_subcommands() -> None:
         if not dataset_names:
             cli_utils.warning("No datasets found.")
             return
-        cli_utils.print_list_items(
-            list_items=dataset_names,
-            column_title="DATASETS",
+        cli_utils.print_table(
+            [{"DATASETS": name} for name in sorted(dataset_names)]
         )
 
     @dataset.command("stats")

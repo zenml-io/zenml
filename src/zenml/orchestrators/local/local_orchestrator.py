@@ -212,7 +212,9 @@ class LocalOrchestrator(BaseOrchestrator):
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()
 
-        runner = DynamicPipelineRunner(snapshot=snapshot, run=placeholder_run)
+        runner = DynamicPipelineRunner(
+            snapshot=snapshot, run=placeholder_run, orchestrator=self
+        )
         with temporary_environment(environment):
             runner.run_pipeline()
 

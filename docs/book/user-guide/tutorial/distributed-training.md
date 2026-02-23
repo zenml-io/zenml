@@ -47,6 +47,7 @@ from zenml.config import DockerSettings
 
 docker = DockerSettings(
     parent_image="pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
+    python_package_installer_args={"system": None},
     requirements=["zenml", "torchvision"]
 )
 
@@ -111,6 +112,7 @@ Use the same CUDA image as above **plus** add Accelerate to the requirements:
 ```python
 DockerSettings(
     parent_image="pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
+    python_package_installer_args={"system": None},
     requirements=["zenml", "accelerate", "torchvision"]
 )
 ```

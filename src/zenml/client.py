@@ -1562,8 +1562,9 @@ class Client(metaclass=ClientMetaClass):
             stack = self.get_stack(name_id_or_prefix=stack_name_id_or_prefix)
         except KeyError as e:
             raise KeyError(
-                f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
-                f"it is not registered yet. Please register it first."
+                f"Stack '{stack_name_id_or_prefix}' cannot be activated. Please "
+                "make sure it is registered and you have the necessary permissions "
+                "to access it."
             ) from e
 
         if self._config:
@@ -3677,6 +3678,8 @@ class Client(metaclass=ClientMetaClass):
                     runnable=True,
                     # Only try to run named snapshots
                     named_only=True,
+                    # Latest snapshots first
+                    sort_by="desc:created",
                 )
 
                 for snapshot in all_snapshots:
@@ -4526,6 +4529,7 @@ class Client(metaclass=ClientMetaClass):
         catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
         run_once_start_time: Optional[Union[datetime, str]] = None,
+        is_archived: bool = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -4551,6 +4555,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             run_once_start_time: Use to filter by run once start time.
+            is_archived: Use to filter by archived status.
 
         Returns:
             A list of schedules.
@@ -4575,6 +4580,7 @@ class Client(metaclass=ClientMetaClass):
             interval_second=interval_second,
             catchup=catchup,
             run_once_start_time=run_once_start_time,
+            is_archived=is_archived,
         )
         return self.zen_store.list_schedules(
             schedule_filter_model=schedule_filter_model,
@@ -4613,12 +4619,14 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         cron_expression: Optional[str] = None,
+        active: bool | None = None,
     ) -> ScheduleResponse:
         """Update a schedule.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the schedule to update.
             cron_expression: The new cron expression for the schedule.
+            active: Active status flag for the schedule.
 
         Returns:
             The updated schedule.
@@ -4642,7 +4650,13 @@ class Client(metaclass=ClientMetaClass):
             )
             return schedule
 
-        update = ScheduleUpdate(cron_expression=cron_expression)
+        if schedule.active == active:
+            logger.warning(
+                f"Schedule active value is already {active}, skipping update."
+            )
+            return schedule
+
+        update = ScheduleUpdate(cron_expression=cron_expression, active=active)
         orchestrator.update_schedule(schedule, update)
         return self.zen_store.update_schedule(
             schedule_id=schedule.id,
@@ -4653,6 +4667,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
+        soft: bool = True,
     ) -> None:
         """Delete a schedule.
 
@@ -4660,6 +4675,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix id of the schedule
                 to delete.
             project: The project name/ID to filter by.
+            soft: If set to true, archives the schedule. If false, hard deletes it.
         """
         schedule = self.get_schedule(
             name_id_or_prefix=name_id_or_prefix,
@@ -4681,7 +4697,13 @@ class Client(metaclass=ClientMetaClass):
         else:
             orchestrator.delete_schedule(schedule)
 
-        self.zen_store.delete_schedule(schedule_id=schedule.id)
+        if not soft:
+            logger.warning(
+                "You are deleting a schedule with option soft set to False. "
+                "All historical data and references to this schedule will be deleted."
+            )
+
+        self.zen_store.delete_schedule(schedule_id=schedule.id, soft=soft)
 
     # ----------------------------- Pipeline runs ------------------------------
 
@@ -4741,9 +4763,9 @@ class Client(metaclass=ClientMetaClass):
         linked_to_model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
+        index: Optional[int] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
-        unlisted: Optional[bool] = None,
         templatable: Optional[bool] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
@@ -4790,9 +4812,9 @@ class Client(metaclass=ClientMetaClass):
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
+            index: The index of the pipeline run
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
-            unlisted: If the runs should be unlisted or not.
             templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
             tags: Tags to filter by.
@@ -4839,11 +4861,11 @@ class Client(metaclass=ClientMetaClass):
             orchestrator_run_id=orchestrator_run_id,
             stack_id=stack_id,
             status=status,
+            index=index,
             start_time=start_time,
             end_time=end_time,
             tag=tag,
             tags=tags,
-            unlisted=unlisted,
             user=user,
             run_metadata=run_metadata,
             pipeline=pipeline,
@@ -4956,7 +4978,7 @@ class Client(metaclass=ClientMetaClass):
             cache_expired: Whether the cache expiration time of the step run
                 has passed.
             code_hash: The code hash of the step run to filter by.
-            status: The name of the run to filter by.
+            status: The status of the step run.
             run_metadata: Filter by run metadata.
             exclude_retried: Whether to exclude retried step runs.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -8225,6 +8247,7 @@ class Client(metaclass=ClientMetaClass):
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
         id: Optional[Union[UUID, str]] = None,
+        external_user_id: Optional[Union[UUID, str]] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
@@ -8240,6 +8263,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
             id: Use the id of stacks to filter by.
+            external_user_id: Use the external user id for filtering.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the service account name for filtering
@@ -8258,6 +8282,7 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 id=id,
+                external_user_id=external_user_id,
                 created=created,
                 updated=updated,
                 name=name,

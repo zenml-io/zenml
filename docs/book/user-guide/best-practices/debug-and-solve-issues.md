@@ -114,7 +114,7 @@ export ZENML_LOGGING_VERBOSITY=DEBUG
 Read more about how to set environment variables for:
 
 * For [Linux](https://www3.ntu.edu.sg/home/ehchua/programming/howto/Environment_Variables.html#zz-3./).
-* For [macOS](https://youngstone89.medium.com/setting-up-environment-variables-in-mac-os-28e5941c771c).
+* For [macOS](https://support.apple.com/guide/terminal/use-environment-variables-apd382cc5fa-4f58-4449-b20a-41c53c006f8f/mac).
 * For [Windows](https://www3.ntu.edu.sg/home/ehchua/programming/howto/Environment_Variables.html).
 
 ### Client and server logs

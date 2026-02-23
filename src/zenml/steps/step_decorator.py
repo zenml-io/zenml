@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
+    from zenml.config.step_configurations import GroupInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model import Model
     from zenml.steps import BaseStep
@@ -82,6 +83,8 @@ def step(
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
+    heartbeat_healthy_threshold: Optional[int] = None,
+    group: Optional[Union["GroupInfo", str]] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -107,6 +110,8 @@ def step(
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
+    heartbeat_healthy_threshold: Optional[int] = None,
+    group: Optional[Union["GroupInfo", str]] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -140,12 +145,17 @@ def step(
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
         retry: configuration of step retry in case of step failure.
-        substitutions: Extra placeholders for the step name.
+        substitutions: Extra substitutions for model and artifact name
+            placeholders.
         cache_policy: Cache policy for this step.
         runtime: The step runtime. If not configured, the step will
             run inline unless a step operator or docker/resource settings
             are configured. This is only applicable for dynamic
             pipelines.
+        heartbeat_healthy_threshold: The amount of time (in minutes) that a
+            running step has not received heartbeat and is considered healthy.
+            By default, set to 30 minutes.
+        group: The group information for this step.
 
     Returns:
         The step instance.
@@ -184,6 +194,8 @@ def step(
             substitutions=substitutions,
             cache_policy=cache_policy,
             runtime=runtime,
+            heartbeat_healthy_threshold=heartbeat_healthy_threshold,
+            group=group,
         )
 
         return step_instance

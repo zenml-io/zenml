@@ -118,6 +118,23 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     )
 
 
+def publish_stopped_step_run(step_run_id: "UUID") -> "StepRunResponse":
+    """Publishes a stopped step run.
+
+    Args:
+        step_run_id: The ID of the step run to update.
+
+    Returns:
+        The updated step run.
+    """
+    return publish_step_run_status_update(
+        step_run_id=step_run_id,
+        status=ExecutionStatus.STOPPED,
+        end_time=utc_now(),
+        exception_info=step_exception_info.get(),
+    )
+
+
 def publish_successful_pipeline_run(
     pipeline_run_id: "UUID",
 ) -> "PipelineRunResponse":
@@ -141,11 +158,13 @@ def publish_successful_pipeline_run(
 
 def publish_failed_pipeline_run(
     pipeline_run_id: "UUID",
+    exception_info: Optional[ExceptionInfo] = None,
 ) -> "PipelineRunResponse":
     """Publishes a failed pipeline run.
 
     Args:
         pipeline_run_id: The ID of the pipeline run to update.
+        exception_info: The exception information of the pipeline run.
 
     Returns:
         The updated pipeline run.
@@ -156,6 +175,7 @@ def publish_failed_pipeline_run(
             status=ExecutionStatus.FAILED,
             end_time=utc_now(),
             is_finished=True,
+            exception_info=exception_info,
         ),
     )
 

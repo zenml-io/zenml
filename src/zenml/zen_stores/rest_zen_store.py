@@ -72,6 +72,7 @@ from zenml.constants import (
     DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
@@ -184,7 +185,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    LogsRequest,
     LogsResponse,
+    LogsUpdate,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -1476,6 +1479,40 @@ class RestZenStore(BaseZenStore):
             params={"hydrate": hydrate},
         )
 
+    def create_logs(self, logs: LogsRequest) -> LogsResponse:
+        """Create a logs entry.
+
+        Args:
+            logs: The logs entry to create.
+
+        Returns:
+            The created logs entry.
+        """
+        return self._create_resource(
+            resource=logs,
+            route=LOGS,
+            response_model=LogsResponse,
+        )
+
+    def update_logs(
+        self, logs_id: UUID, logs_update: LogsUpdate
+    ) -> LogsResponse:
+        """Update an existing logs entry.
+
+        Args:
+            logs_id: The ID of the logs entry to update.
+            logs_update: The update to be applied to the logs entry.
+
+        Returns:
+            The updated logs entry.
+        """
+        return self._update_resource(
+            resource_id=logs_id,
+            resource_update=logs_update,
+            route=LOGS,
+            response_model=LogsResponse,
+        )
+
     # ----------------------------- Pipelines -----------------------------
 
     def create_pipeline(self, pipeline: PipelineRequest) -> PipelineResponse:
@@ -2272,6 +2309,17 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
         )
 
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables heartbeat for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+        """
+        self.put(
+            path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
+            timeout=10,
+        )
+
     # ----------------------------- Run Metadata -----------------------------
 
     def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
@@ -2363,15 +2411,17 @@ class RestZenStore(BaseZenStore):
             response_model=ScheduleResponse,
         )
 
-    def delete_schedule(self, schedule_id: UUID) -> None:
+    def delete_schedule(self, schedule_id: UUID, soft: bool = False) -> None:
         """Deletes a schedule.
 
         Args:
             schedule_id: The ID of the schedule to delete.
+            soft: Soft deletion will archive the schedule.
         """
         self._delete_resource(
             resource_id=schedule_id,
             route=SCHEDULES,
+            params={"soft": soft},
         )
 
     # --------------------------- Secrets ---------------------------

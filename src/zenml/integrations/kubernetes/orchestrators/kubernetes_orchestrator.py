@@ -30,6 +30,7 @@
 # inspired by the Kubernetes dag runner implementation of tfx
 """Kubernetes-native orchestrator."""
 
+import json
 import os
 import random
 import socket
@@ -48,6 +49,7 @@ from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
+from kubernetes.client import ApiException
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
@@ -81,7 +83,11 @@ from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.core.schedule import ScheduleUpdate
-from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
+from zenml.orchestrators import (
+    ContainerizedOrchestrator,
+    PipelineSubmissionError,
+    SubmissionResult,
+)
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
@@ -91,6 +97,7 @@ if TYPE_CHECKING:
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
         ScheduleResponse,
+        StepRunResponse,
     )
     from zenml.stack import Stack
 
@@ -468,13 +475,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             run_id=placeholder_run.id if placeholder_run else None,
         )
 
-        return self._submit_orchestrator_job(
+        result = self._submit_orchestrator_job(
             snapshot=snapshot,
             command=command,
             args=args,
             environment=base_environment,
             placeholder_run=placeholder_run,
         )
+
+        return result
 
     def submit_dynamic_pipeline(
         self,
@@ -720,6 +729,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If a schedule without cron expression is given.
+            PipelineSubmissionError: If an APIException happens during job submission,
+                it is propagated as custom error.
 
         Returns:
             Optional submission result.
@@ -762,98 +773,105 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             settings, pipeline_name=snapshot.pipeline_configuration.name
         )
 
-        with self._create_auth_secret_if_necessary(
-            snapshot, environment, orchestrator_pod_settings
-        ):
-            job_manifest = self._prepare_job_manifest(
-                name=job_name,
-                command=command,
-                args=args,
-                image=image,
-                environment=environment,
-                labels=labels,
-                annotations=annotations,
-                settings=settings,
-                pod_settings=orchestrator_pod_settings,
-                # In dynamic pipelines restarting the orchestrator pod is not
-                # supported yet. It will create new runs for each restart which
-                # we have to avoid.
-                backoff_limit=0
-                if snapshot.is_dynamic
-                else settings.orchestrator_job_backoff_limit,
-            )
+        try:
+            with self._create_auth_secret_if_necessary(
+                snapshot, environment, orchestrator_pod_settings
+            ):
+                job_manifest = self._prepare_job_manifest(
+                    name=job_name,
+                    command=command,
+                    args=args,
+                    image=image,
+                    environment=environment,
+                    labels=labels,
+                    annotations=annotations,
+                    settings=settings,
+                    pod_settings=orchestrator_pod_settings,
+                    backoff_limit=settings.orchestrator_job_backoff_limit,
+                )
 
-            if snapshot.schedule:
-                if not snapshot.schedule.cron_expression:
-                    raise RuntimeError(
-                        "The Kubernetes orchestrator only supports scheduling via "
-                        "CRON jobs, but the run was configured with a manual "
-                        "schedule. Use `Schedule(cron_expression=...)` instead."
+                if snapshot.schedule:
+                    if not snapshot.schedule.cron_expression:
+                        raise RuntimeError(
+                            "The Kubernetes orchestrator only supports scheduling via "
+                            "CRON jobs, but the run was configured with a manual "
+                            "schedule. Use `Schedule(cron_expression=...)` instead."
+                        )
+                    cron_expression = snapshot.schedule.cron_expression
+                    cron_job_manifest = build_cron_job_manifest(
+                        cron_expression=cron_expression,
+                        job_template=job_template_manifest_from_job(
+                            job_manifest
+                        ),
+                        successful_jobs_history_limit=settings.successful_jobs_history_limit,
+                        failed_jobs_history_limit=settings.failed_jobs_history_limit,
+                        concurrency_policy=settings.concurrency_policy,
+                        starting_deadline_seconds=settings.starting_deadline_seconds,
                     )
-                cron_expression = snapshot.schedule.cron_expression
-                cron_job_manifest = build_cron_job_manifest(
-                    cron_expression=cron_expression,
-                    job_template=job_template_manifest_from_job(job_manifest),
-                    successful_jobs_history_limit=settings.successful_jobs_history_limit,
-                    failed_jobs_history_limit=settings.failed_jobs_history_limit,
-                )
 
-                cron_job = self._k8s_batch_api.create_namespaced_cron_job(
-                    body=cron_job_manifest,
-                    namespace=self.config.kubernetes_namespace,
-                )
-                logger.info(
-                    f"Created Kubernetes CronJob `{cron_job.metadata.name}` "
-                    f"with CRON expression `{cron_expression}`."
-                )
-                return SubmissionResult(
-                    metadata={
-                        KUBERNETES_CRON_JOB_METADATA_KEY: cron_job.metadata.name,
-                    }
-                )
-            else:
-                kube_utils.create_job(
-                    batch_api=self._k8s_batch_api,
-                    namespace=self.config.kubernetes_namespace,
-                    job_manifest=job_manifest,
-                )
-
-                if settings.synchronous:
-
-                    def _wait_for_run_to_finish() -> None:
-                        logger.info(
-                            "Waiting for orchestrator job to finish..."
-                        )
-                        kube_utils.wait_for_job_to_finish(
-                            batch_api=self._k8s_batch_api,
-                            core_api=self._k8s_core_api,
-                            namespace=self.config.kubernetes_namespace,
-                            job_name=job_name,
-                            backoff_interval=settings.job_monitoring_interval,
-                            fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
-                            stream_logs=True,
-                        )
-
+                    cron_job = self._k8s_batch_api.create_namespaced_cron_job(
+                        body=cron_job_manifest,
+                        namespace=self.config.kubernetes_namespace,
+                    )
+                    logger.info(
+                        f"Created Kubernetes CronJob `{cron_job.metadata.name}` "
+                        f"with CRON expression `{cron_expression}`."
+                    )
                     return SubmissionResult(
-                        wait_for_completion=_wait_for_run_to_finish,
+                        metadata={
+                            KUBERNETES_CRON_JOB_METADATA_KEY: cron_job.metadata.name,
+                        }
                     )
                 else:
-                    logger.info(
-                        f"Orchestrator job `{job_name}` started. "
-                        f"Run the following command to inspect the logs: "
-                        f"`kubectl -n {self.config.kubernetes_namespace} logs "
-                        f"job/{job_name}`"
+                    kube_utils.create_job(
+                        batch_api=self._k8s_batch_api,
+                        namespace=self.config.kubernetes_namespace,
+                        job_manifest=job_manifest,
                     )
-                    return None
 
-    def run_isolated_step(
+                    if settings.synchronous:
+
+                        def _wait_for_run_to_finish() -> None:
+                            logger.info(
+                                "Waiting for orchestrator job to finish..."
+                            )
+                            kube_utils.wait_for_job_to_finish(
+                                get_client=self.get_kube_client,
+                                namespace=self.config.kubernetes_namespace,
+                                job_name=job_name,
+                                backoff_interval=settings.job_monitoring_interval,
+                                fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
+                                stream_logs=True,
+                            )
+
+                        return SubmissionResult(
+                            wait_for_completion=_wait_for_run_to_finish,
+                        )
+                    else:
+                        logger.info(
+                            f"Orchestrator job `{job_name}` started. "
+                            f"Run the following command to inspect the logs: "
+                            f"`kubectl -n {self.config.kubernetes_namespace} logs "
+                            f"job/{job_name}`"
+                        )
+                        return None
+
+        except ApiException as e:
+            body = json.loads(e.body or "{}")
+            raise PipelineSubmissionError(
+                f"Orchestrator failed to submit Kubernetes job with '{e.reason}' ({e.status}). "
+                f"{body.get('message', '')}"
+            )
+
+    def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Runs an isolated step on Kubernetes.
+        """Submit an isolated step.
 
         Args:
             step_run_info: The step run information.
-            environment: The environment variables to set.
+            environment: The environment variables to set in the execution
+                environment.
         """
         from zenml.step_operators.step_operator_entrypoint_configuration import (
             StepOperatorEntrypointConfiguration,
@@ -899,11 +917,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_name=step_run_info.pipeline_step_name,
         )
 
-        retry_config = step_run_info.config.retry
-        backoff_limit = (
-            retry_config.max_retries if retry_config else 0
-        ) + settings.backoff_limit_margin
-
         job_manifest = self._prepare_job_manifest(
             name=job_name,
             command=command,
@@ -914,7 +927,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             annotations=annotations,
             settings=settings,
             pod_settings=settings.pod_settings,
-            backoff_limit=backoff_limit,
+            # In the dynamic pipeline case, we can't handle retries at the
+            # orchestrator level because the entrypoint args contain a step
+            # run ID.
+            backoff_limit=settings.backoff_limit_margin,
         )
 
         kube_utils.create_job(
@@ -923,19 +939,78 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             job_manifest=job_manifest,
         )
 
-        logger.info(
-            "Waiting for job `%s` to finish...",
-            job_name,
+    def get_isolated_step_status(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Get the status of an isolated step.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The status.
+        """
+        label_selector = (
+            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
         )
-        kube_utils.wait_for_job_to_finish(
-            batch_api=self._k8s_batch_api,
-            core_api=self._k8s_core_api,
+        try:
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to list jobs for step run `%s`: %s", step_run.id, e
+            )
+            return ExecutionStatus.FAILED
+
+        if not job_list.items:
+            logger.warning("No jobs found for step run `%s`", step_run.id)
+            return ExecutionStatus.FAILED
+
+        job = job_list.items[0]
+        if job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return ExecutionStatus.COMPLETED
+                if condition.type == "Failed" and condition.status == "True":
+                    return ExecutionStatus.FAILED
+
+        return ExecutionStatus.RUNNING
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stop an isolated step.
+
+        Args:
+            step_run: The step run.
+        """
+        label_selector = (
+            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+        )
+        try:
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to list jobs for step run `%s`: %s", step_run.id, e
+            )
+            return
+
+        if not job_list.items:
+            logger.warning("No jobs found for step run `%s`", step_run.id)
+            return
+
+        job_name = job_list.items[0].metadata.name
+        self._k8s_batch_api.delete_namespaced_job(
+            name=job_name,
             namespace=self.config.kubernetes_namespace,
-            job_name=job_name,
-            fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
-            stream_logs=True,
+            propagation_policy="Foreground",
         )
-        logger.info("Job `%s` completed.", job_name)
+        logger.info(f"Successfully stopped step job: {job_name}")
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings
@@ -972,9 +1047,27 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         try:
             return os.environ[ENV_ZENML_KUBERNETES_RUN_ID]
         except KeyError:
-            # This means we're in a dynamic pipeline orchestration container,
-            # so we use the hostname (= pod name) as the run id
-            return socket.gethostname()
+            # This means we're in a dynamic pipeline orchestration container.
+            # In case the orchestrator pod is restarted, we need to return the
+            # same `orchestrator_run_id` as the previous pod, so we use the
+            # orchestrator job name (which created this pod and handles the
+            # restarts) as the unique ID.
+            pod_name = socket.gethostname()
+            orchestrator_run_id = None
+            try:
+                orchestrator_run_id = kube_utils.get_parent_job_name(
+                    core_api=self._k8s_core_api,
+                    pod_name=pod_name,
+                    namespace=self.config.kubernetes_namespace,
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to fetch orchestrator job name. Using pod name as "
+                    "fallback, which may cause issues if the orchestrator pod "
+                    "is restarted. Error: %s",
+                    e,
+                )
+            return orchestrator_run_id or pod_name
 
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = True
@@ -1197,11 +1290,19 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if not cron_job_name:
             raise RuntimeError("Unable to find cron job name for schedule.")
 
+        spec = {}
+
         if update.cron_expression:
+            spec["schedule"] = update.cron_expression
+
+        if update.active is not None:
+            spec["suspend"] = not update.active  # type: ignore[assignment]
+
+        if spec:
             self._k8s_batch_api.patch_namespaced_cron_job(
                 name=cron_job_name,
                 namespace=self.config.kubernetes_namespace,
-                body={"spec": {"schedule": update.cron_expression}},
+                body={"spec": spec},
             )
 
     def delete_schedule(self, schedule: "ScheduleResponse") -> None:
@@ -1211,15 +1312,31 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             schedule: The schedule to delete.
 
         Raises:
-            RuntimeError: If the cron job name is not found.
+            ApiException: Kubernetes API error (other than 404) if deletion fails.
         """
         cron_job_name = schedule.run_metadata.get(
             KUBERNETES_CRON_JOB_METADATA_KEY
         )
-        if not cron_job_name:
-            raise RuntimeError("Unable to find cron job name for schedule.")
 
-        self._k8s_batch_api.delete_namespaced_cron_job(
-            name=cron_job_name,
-            namespace=self.config.kubernetes_namespace,
-        )
+        if not cron_job_name:
+            logger.warning(
+                "Unable to find cron job for schedule %s.",
+                schedule.name,
+            )
+            return
+
+        try:
+            self._k8s_batch_api.delete_namespaced_cron_job(
+                name=cron_job_name,
+                namespace=self.config.kubernetes_namespace,
+            )
+        except ApiException as e:
+            if e.status == 404:
+                logger.warning(
+                    "Unable to find cron job %s for schedule %s.",
+                    cron_job_name,
+                    schedule.name,
+                )
+                return
+            else:
+                raise e

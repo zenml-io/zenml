@@ -15,11 +15,13 @@
 
 import os
 import platform
+import shutil
 import subprocess
 from typing import Any, Dict, List
 
 import distro
 
+import zenml
 from zenml.constants import INSIDE_ZENML_CONTAINER
 from zenml.enums import EnvironmentType
 from zenml.logger import get_logger
@@ -43,6 +45,7 @@ def get_run_environment_dict() -> Dict[str, Any]:
         "environment": str(get_environment()),
         **Environment.get_system_info(),
         "python_version": Environment.python_version(),
+        "zenml_version": zenml.__version__,
     }
 
     try:
@@ -367,6 +370,9 @@ class Environment(metaclass=SingletonMetaClass):
     def get_python_packages() -> List[str]:
         """Returns a list of installed Python packages.
 
+        Tries `pip freeze` first, then falls back to `uv pip freeze` for
+        environments where only uv is installed (no pip in PATH).
+
         Raises:
             RuntimeError: If the process to get the list of installed packages
                 fails.
@@ -377,6 +383,20 @@ class Environment(metaclass=SingletonMetaClass):
         try:
             output = subprocess.check_output(["pip", "freeze"]).decode()
             return output.strip().split("\n")
+        except FileNotFoundError:
+            # pip not found in PATH, try uv as a fallback
+            if shutil.which("uv"):
+                try:
+                    output = subprocess.check_output(
+                        ["uv", "pip", "freeze"]
+                    ).decode()
+                    return output.strip().split("\n")
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    pass
+            raise RuntimeError(
+                "Failed to get list of installed Python packages. "
+                "Neither pip nor uv was found in your environment."
+            )
         except subprocess.CalledProcessError:
             raise RuntimeError(
                 "Failed to get list of installed Python packages"

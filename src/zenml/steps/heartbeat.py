@@ -17,9 +17,15 @@ import _thread
 import logging
 import threading
 import time
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
+from zenml.utils.time_utils import to_utc_timezone
+
+if TYPE_CHECKING:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +39,12 @@ class StepHeartBeatTerminationException(Exception):
 class StepHeartbeatWorker:
     """Worker class implementing heartbeat polling and remote termination."""
 
-    STEP_HEARTBEAT_INTERVAL_SECONDS = 60
+    STEP_HEARTBEAT_INTERVAL_SECONDS = (
+        60 * 2
+    )  # submit heartbeats every 2 minutes.
+
+    MAX_HEARTBEAT_INTERVAL_SECONDS = 60 * 5
+    MAX_CONSECUTIVE_FAILURES = 3
 
     def __init__(self, step_id: UUID):
         """Heartbeat worker constructor.
@@ -46,6 +57,11 @@ class StepHeartbeatWorker:
         self._thread: threading.Thread | None = None
         self._running: bool = False
         self._terminated: bool = False
+
+        self._consecutive_failures: int = 0
+        self._heartbeat_interval_seconds: int = (
+            self.STEP_HEARTBEAT_INTERVAL_SECONDS
+        )
 
     # properties
 
@@ -74,7 +90,7 @@ class StepHeartbeatWorker:
         Returns:
             The heartbeat polling interval value.
         """
-        return self.STEP_HEARTBEAT_INTERVAL_SECONDS
+        return self._heartbeat_interval_seconds
 
     @property
     def name(self) -> str:
@@ -133,6 +149,7 @@ class StepHeartbeatWorker:
             while self._running:
                 try:
                     self._heartbeat()
+                    self._consecutive_failures = 0
                     # One-shot: signal the main thread and stop the loop.
                     if self._terminated:
                         logger.info(
@@ -144,10 +161,24 @@ class StepHeartbeatWorker:
                     # Ensure we stop our own loop as well.
 
                 except Exception as exc:
+                    self._consecutive_failures += 1
                     # Log-and-continue policy for all other errors.
                     logger.debug(
                         "%s heartbeat() failed with %s", self.name, str(exc)
                     )
+
+                    if (
+                        self._consecutive_failures
+                        == self.MAX_CONSECUTIVE_FAILURES
+                    ):
+                        logger.debug(
+                            "Reached %s consecutive failures - applying increased heartbeat interval..",
+                            self.MAX_CONSECUTIVE_FAILURES,
+                        )
+                        self._heartbeat_interval_seconds = (
+                            self.MAX_HEARTBEAT_INTERVAL_SECONDS
+                        )
+
                 # Sleep after each attempt (even after errors, unless stopped).
                 if self._running:
                     time.sleep(self.interval)
@@ -161,8 +192,58 @@ class StepHeartbeatWorker:
 
         response = store.update_step_heartbeat(step_run_id=self.step_id)
 
-        if response.status in {
+        if not response.heartbeat_enabled:
+            logger.debug("Heartbeat set to disabled - stopping worker")
+            self.stop()
+            return
+
+        if response.pipeline_run_status in {
             ExecutionStatus.STOPPED,
             ExecutionStatus.STOPPING,
         }:
             self._terminated = True
+
+
+def is_heartbeat_unhealthy(
+    step_run_id: UUID,
+    status: ExecutionStatus,
+    latest_heartbeat: datetime | None,
+    start_time: datetime | None = None,
+    heartbeat_threshold: int | None = None,
+) -> bool:
+    """Utility function - Checks if step heartbeats indicate un-healthy execution.
+
+    Args:
+        step_run_id: The run step id.
+        status: The run step status.
+        latest_heartbeat: The run step latest heartbeat.
+        start_time: The run step start time.
+        heartbeat_threshold: If heartbeat enabled the max minutes without heartbeat
+            for healthy, running tasks.
+
+    Returns:
+        True if the step heartbeat is unhealthy, False otherwise.
+    """
+    if not heartbeat_threshold:
+        return False
+
+    if status.is_finished:
+        return False
+
+    if latest_heartbeat:
+        heartbeat_diff = datetime.now(tz=timezone.utc) - to_utc_timezone(
+            latest_heartbeat
+        )
+    elif start_time:
+        heartbeat_diff = datetime.now(tz=timezone.utc) - to_utc_timezone(
+            start_time
+        )
+    else:
+        return False
+
+    logger.debug("Step %s heartbeat diff=%s", step_run_id, heartbeat_diff)
+
+    if heartbeat_diff.total_seconds() > heartbeat_threshold * 60:
+        return True
+
+    return False

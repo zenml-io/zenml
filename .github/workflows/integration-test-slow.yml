@@ -90,6 +90,8 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      WHYLOGS_NO_ANALYTICS: 'True'
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       # on MAC OS, we need to set this environment variable
@@ -111,45 +113,88 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 20000
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          build-mount-path: /var/lib/docker/
+      - name: Free disk space (Ubuntu)
+        if: inputs.os == 'ubuntu-latest'
+        run: |
+          set -euxo pipefail
+          echo "Before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force || true
+          echo "After cleanup:"
+          df -h
+      - name: Set uv cache + temp dirs (/opt)
+        if: inputs.os == 'ubuntu-latest'
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Move Docker data-root to /opt
         if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      - name: Reload Docker
-        run: sudo systemctl restart docker
+        run: |
+          sudo mkdir -p /etc/docker
+          sudo mkdir -p /opt/docker
+
+          # Ensure Docker stores images/layers on the expanded /opt volume.
+          if [ -f /etc/docker/daemon.json ]; then
+            sudo python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("/etc/docker/daemon.json")
+          data = json.loads(path.read_text())
+          data["data-root"] = "/opt/docker"
+          path.write_text(json.dumps(data))
+          PY
+          else
+            echo '{"data-root":"/opt/docker"}' | sudo tee /etc/docker/daemon.json >/dev/null
+          fi
+      - name: Restart Docker (with /opt data-root)
         if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        run: |
+          sudo systemctl stop docker || true
+          # Free up space previously used by Docker's default root on the OS disk.
+          sudo rm -rf /var/lib/docker/* || true
+          sudo systemctl start docker
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef  # v3.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
         if: github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
           'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - name: Restore uv cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        with:
+          path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
+          key: |
+            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          restore-keys: |
+            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838  # v1
         with:
           role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
           aws-region: us-east-1
         if: contains(inputs.test_environment, 'aws')
       - name: Configure GCP credentials
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed  # v2
         with:
           credentials_json: ${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}
         if: contains(inputs.test_environment, 'gcp')
       - name: Set up gcloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b  # v1
         with:
           install_components: gke-gcloud-auth-plugin
         if: contains(inputs.test_environment, 'gcp')
@@ -170,12 +215,12 @@ jobs:
         run: brew install libomp
       - name: Install kubectl on Linux
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
       - name: Install kubectl on MacOS
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/v1.35.0/bin/darwin/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
         if: runner.os=='macOS'
       - name: Install K3D
@@ -197,7 +242,7 @@ jobs:
           gcloud auth configure-docker --project zenml-ci
         if: contains(inputs.test_environment, 'gcp')
       - name: Login to Google GKE
-        uses: google-github-actions/get-gke-credentials@v2
+        uses: google-github-actions/get-gke-credentials@64bc7249bbcf78056bb92f14d3cedc2da193946c  # v2
         with:
           cluster_name: zenml-ci-cluster
           location: us-east4
@@ -205,14 +250,16 @@ jobs:
         if: contains(inputs.test_environment, 'gcp')
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@v3.17
+        uses: mxschmitt/action-tmate@a283f9441d2d96eb62436dc46d7014f5d357ac22  # v3.17
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Integration Tests - Slow CI
         run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT}
+        env:
+          INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@v3.17
+        uses: mxschmitt/action-tmate@a283f9441d2d96eb62436dc46d7014f5d357ac22  # v3.17
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Verify Python Env unaffected
         run: |-

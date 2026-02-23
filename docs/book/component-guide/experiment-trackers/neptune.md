@@ -4,6 +4,12 @@ description: Logging and visualizing experiments with neptune.ai
 
 # Neptune
 
+{% hint style="warning" %}
+**Neptune.ai has been acquired by OpenAI** (announced December 2025) and Neptune's standalone services will be discontinued on March 5, 2026. While the ZenML Neptune integration remains functional until that date, we recommend migrating to an alternative experiment tracker such as [MLflow](mlflow.md), [Weights & Biases](wandb.md), or [Comet](comet.md).
+
+If you have existing data in Neptune that you'd like to preserve, the [neptune-exporter](https://github.com/neptune-ai/neptune-exporter) CLI tool can help you migrate your experiment data to ZenML, MLflow, W&B, and other platforms. See the [Neptune transition hub](https://neptune.ai/blog/we-are-joining-openai) for more details about the shutdown timeline and migration options.
+{% endhint %}
+
 The Neptune Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Neptune-ZenML integration that uses [neptune.ai](https://neptune.ai/product/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ### When would you want to use it?
@@ -32,7 +38,7 @@ The Neptune Experiment Tracker needs to be configured with the credentials requi
 
 You need to configure the following credentials for authentication to Neptune:
 
-* `api_token`: [API key token](https://docs.neptune.ai/setup/setting_api_token) of your Neptune account. You can create a free Neptune account [here](https://app.neptune.ai/register). If left blank, Neptune will attempt to retrieve the token from your environment variables.
+* `api_token`: [API key token](https://web.archive.org/web/20250322035718/https://docs.neptune.ai/setup/setting_api_token/) of your Neptune account. You can create a free Neptune account [here](https://app.neptune.ai/register). If left blank, Neptune will attempt to retrieve the token from your environment variables.
 * `project`: The name of the project where you're sending the new run, in the form "workspace-name/project-name". If the project is not specified, Neptune will attempt to retrieve it from your environment variables.
 
 {% tabs %}
@@ -87,7 +93,7 @@ For more, up-to-date information on the Neptune Experiment Tracker implementatio
 
 ### How do you use it?
 
-To log information from a ZenML pipeline step using the Neptune Experiment Tracker component in the active stack, you need to enable an experiment tracker using the `@step` decorator. Then fetch the [Neptune run object](https://docs.neptune.ai/api/run/) and use logging capabilities as you would normally do. For example:
+To log information from a ZenML pipeline step using the Neptune Experiment Tracker component in the active stack, you need to enable an experiment tracker using the `@step` decorator. Then fetch the [Neptune run object](https://web.archive.org/web/20250311101837/https://docs.neptune.ai/api/run/) and use logging capabilities as you would normally do. For example:
 
 ```python
 from zenml.integrations.neptune.experiment_trackers.run_state import (
@@ -309,6 +315,6 @@ if __name__ == "__main__":
 
 ## Further reading
 
-Check [Neptune's docs](https://docs.neptune.ai/integrations/zenml/) for further information on how to use this integration and Neptune in general.
+Check [Neptune's docs](https://web.archive.org/web/20250316084453/https://docs.neptune.ai/integrations/zenml/) for further information on how to use this integration and Neptune in general.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

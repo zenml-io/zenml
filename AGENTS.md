@@ -7,12 +7,14 @@ This document provides guidance for Codex agents working with the ZenML codebase
 - `/src/zenml/` - Core source code
 - `/tests/` - Test suite (unit, integration)
 - `/docs/` - Documentation
-- `/examples/` - Example projects (IMPORTANT: Do not modify directly - this folder is updated by CI from other repositories)
+- `/examples/` - Example projects
 - `/scripts/` - Development utilities
 
 Use filesystem navigation tools to explore the codebase structure as needed.
 
 ## Code Style & Quality Standards
+
+- **Use US English spelling** in all code, comments, docstrings, and documentation (e.g., "initialize", "stabilize", "color"). CI enforces this via `typos` (configured in `.typos.toml`).
 
 ### Commenting policy — explain why, not what
 - Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
@@ -341,6 +343,10 @@ This ensures migrations handle existing data correctly. CI does basic migration 
   - `bug`: For bug fixes
   - `dependencies`: For dependency updates
   - `enhancement`: For new features or improvements
+- **REQUIRED: Release Notes Labels** - Every PR must have exactly one of these labels:
+  - `release-notes`: For user-facing features, significant updates, or changes that should appear in the changelog. Use this for new features, important bug fixes affecting users, API changes, or anything users should know about.
+  - `no-release-notes`: For internal changes, CI fixes, refactoring, minor bug fixes, documentation-only changes, or anything that doesn't need to be surfaced to users.
+  - The CI will block merging if neither label is present. When in doubt, use `no-release-notes` for internal/maintenance work.
 
 ### Continuous Integration
 - ZenML uses a two-tier CI approach:

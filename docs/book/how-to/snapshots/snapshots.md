@@ -15,6 +15,10 @@ Snapshots are the successor and replacement of ZenML run templates.
 Running snapshots is a [ZenML Pro](https://zenml.io/pro)-only feature.
 {% endhint %}
 
+{% hint style="info" %}
+**Looking for a long-running HTTP service?** Snapshots are designed for batch-style pipeline runs triggered on demand. If you need a persistent HTTP endpoint with request/response semantics, custom endpoints, middleware, and concurrent request handling, see [Pipeline Deployments](../deployment/deployment.md) instead. Deployments are available in both OSS and Pro.
+{% endhint %}
+
 ## Real-world Use Case
 
 Imagine your team has built a robust training pipeline that needs to be run regularly with different parameters:
@@ -47,11 +51,19 @@ Without snapshots, each scenario would require:
 
 - **Through REST API**: Your CI/CD system can trigger snapshots via API calls
 ```bash
-  curl -X POST 'https://your-zenml-server/api/v1/pipeline-snapshots/<ID>/runs' -H 'Authorization: Bearer <TOKEN>' -d '{"steps": {...}}'
+  curl -X POST 'https://your-zenml-server/api/v1/pipeline_snapshots/<ID>/runs' -H 'Authorization: Bearer <TOKEN>' -d '{"run_configuration": {...}}'
 ```
 - **Through Browser** (Pro feature): Non-technical stakeholders can run snapshots directly from the ZenML dashboard by simply filling in a form with the required parameters - no coding required!
 
 This enables your team to standardize execution patterns while maintaining flexibility - perfect for production ML workflows that need to be triggered from various systems.
+
+## Snapshots vs Deployments
+
+Snapshots and [Deployments](../deployment/deployment.md) both let you execute pipelines beyond direct Python calls, but they serve different purposes:
+
+- **Snapshots** launch a **batch-style pipeline run** each time they are triggered. There is no persistent service — the ZenML server creates a runner job, executes the pipeline, and the job exits. Use snapshots for scheduled retraining, CI/CD-triggered runs, or when non-engineers need to run pipelines from the dashboard.
+
+- **Deployments** create a **long-running HTTP service** with a stable URL, request/response semantics, custom endpoints, middleware, and shared state across calls. Use deployments for real-time inference, agents, interactive APIs, or any scenario needing an always-on endpoint. Deployments are available in both OSS and Pro.
 
 ## Understanding Pipeline Snapshots
 
@@ -182,7 +194,7 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <YOUR-TOKEN>' \
   -d '{
-  "steps": {"model_trainer": {"parameters": {"model_type": "rf"}}}
+  "run_configuration": { "steps": {"model_trainer": {"parameters": {"model_type": "rf"}}}}
 }'
 ```
 

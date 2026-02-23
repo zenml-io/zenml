@@ -1,5 +1,19 @@
 [
   {
+    "id": 4,
+    "slug": "dynamic-pipelines",
+    "title": "Dynamic pipelines are now available",
+    "description": "Introduced Dynamic Pipelines as an experimental feature, allowing you to generate DAG structures at runtime using native Python control flow (loops, conditionals). Key capabilities include dynamic parallelization, Map/Reduce patterns over collections, and granular runtime configuration (inline vs. isolated). Supported on local, Kubernetes, AWS Sagemaker, and Google Cloud Vertex orchestrators. Dynamic pipelines can be run from snapshots with configurable parameters, and include improvements to Kubernetes orchestrator handling and step mapping operations that return future objects with an `unpack()` method for better control flow.",
+    "published_at": "2025-12-05T06:42:19Z",
+    "published": true,
+    "audience": "oss",
+    "labels": [
+      "feature"
+    ],
+    "docs_url": "https://docs.zenml.io/concepts/steps_and_pipelines/dynamic_pipelines",
+    "should_highlight": true
+  },
+  {
     "id": 3,
     "slug": "panels-are-now-resizable",
     "title": "Panels are now resizable",
@@ -9,20 +23,24 @@
     "published_at": "2025-10-23T00:00:00Z",
     "should_highlight": false,
     "audience": "all",
-    "labels": ["feature"]
+    "labels": [
+      "feature"
+    ]
   },
   {
     "id": 2,
     "slug": "introducing-pipeline-deployments",
     "title": "Introducing Pipeline Deployments",
-    "description": "Pipeline Deployments turn pipelines into persistent HTTP services with warm state, reducing cold start latency by 10–100x while maintaining full traceability. Learn more in our blog post.",
+    "description": "Pipeline Deployments turn pipelines into persistent HTTP services with warm state, reducing cold start latency by 10-100x while maintaining full traceability. Learn more in our blog post.",
     "video_url": "https://www.youtube-nocookie.com/embed/whQytRE7kC8",
     "learn_more_url": "https://www.zenml.io/blog/why-pipelines-are-the-right-abstraction-for-real-time-ai-agents-included",
     "published": true,
     "published_at": "2025-10-02T00:00:00Z",
     "should_highlight": false,
     "audience": "all",
-    "labels": ["feature"]
+    "labels": [
+      "feature"
+    ]
   },
   {
     "id": 1,
@@ -35,6 +53,8 @@
     "published_at": "2025-09-12T00:00:00Z",
     "should_highlight": false,
     "audience": "all",
-    "labels": ["feature"]
+    "labels": [
+      "feature"
+    ]
   }
 ]

@@ -39,7 +39,9 @@ def test_regex_pattern_no_syntax_warning():
 
         # This should not produce any SyntaxWarning
         with pytest.warns(None) as warning_list:
-            result = collect_exception_information(test_exception, mock_step)
+            result = collect_exception_information(
+                test_exception, mock_step.entrypoint
+            )
 
         # Check that no SyntaxWarning was raised
         syntax_warnings = [

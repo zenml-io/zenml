@@ -26,7 +26,7 @@ add_tags(tags=["my_tag"], artifact="my_artifact_name_or_id")
 Alternatively, you can tag an artifact by using CLI as well:
 
 ```bash
-zenml artifacts update my_artifact -t my_tag
+zenml artifact update my_artifact -t my_tag
 ```
 
 ### Assigning tags to artifact versions
@@ -68,7 +68,7 @@ Moreover, you can tag an artifact version by using the CLI:
 
 ```bash
 # Tag the artifact version
-zenml artifacts versions update iris_dataset raw_2023 -t sklearn
+zenml artifact version update iris_dataset -v raw_2023 -t sklearn
 ```
 
 {% hint style="info" %}
@@ -96,8 +96,7 @@ from zenml import add_tags
 add_tags(tags=["my_tag"], run="run_name_or_id")
 ```
 
-Alternatively, you can use the same function within a step without\
-specifying any arguments, which will automatically tag the run:
+Alternatively, you can use the same function within a step without specifying any arguments, which will automatically tag the run:
 
 ```python
 from zenml import step, add_tags

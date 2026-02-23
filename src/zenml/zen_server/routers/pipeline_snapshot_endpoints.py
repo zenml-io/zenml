@@ -13,19 +13,27 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline snapshots."""
 
+import os
 from typing import Any, List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Security
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from starlette.background import BackgroundTask
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
+from zenml.artifacts.utils import load_artifact_store
 from zenml.constants import (
     API,
+    CODE,
+    DOWNLOAD_TOKEN,
     PIPELINE_SNAPSHOTS,
     RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
     VERSION_1,
 )
+from zenml.enums import DownloadType, StackComponentType
 from zenml.models import (
     Page,
     PipelineRunResponse,
@@ -35,7 +43,16 @@ from zenml.models import (
     PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
 )
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import (
+    AuthContext,
+    authorize,
+    generate_download_token,
+    verify_download_token,
+)
+from zenml.zen_server.download_utils import (
+    download_snapshot_code_archive,
+    verify_file_is_downloadable,
+)
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
@@ -48,7 +65,10 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    verify_permission,
+)
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
@@ -208,6 +228,123 @@ def delete_pipeline_snapshot(
         id=snapshot_id,
         get_method=zen_store().get_snapshot,
         delete_method=zen_store().delete_snapshot,
+    )
+
+
+@router.get(
+    "/{snapshot_id}" + DOWNLOAD_TOKEN,
+    responses={
+        400: error_response,
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def get_snapshot_code_download_token(
+    snapshot_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get a download token for the snapshot code.
+
+    Args:
+        snapshot_id: ID of the snapshot for which to get the code.
+
+    Returns:
+        The download token for the snapshot code.
+
+    Raises:
+        ValueError: If the snapshot has no code path or stack.
+    """
+    store = zen_store()
+    snapshot = store.get_snapshot(
+        snapshot_id,
+        hydrate=True,
+        step_configuration_filter=[],
+        include_config_schema=False,
+    )
+
+    if not snapshot.code_path:
+        raise ValueError(f"Snapshot {snapshot_id} has no code path.")
+
+    if not snapshot.stack:
+        raise ValueError(f"Snapshot {snapshot_id} has no stack.")
+
+    artifact_store_id = snapshot.stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].id
+    artifact_store_model = zen_store().get_stack_component(artifact_store_id)
+
+    models: List[BaseModel] = [snapshot, snapshot.stack, artifact_store_model]
+    batch_verify_permissions_for_models(models=models, action=Action.READ)
+
+    artifact_store = load_artifact_store(
+        artifact_store_id=artifact_store_id, zen_store=zen_store()
+    )
+    verify_file_is_downloadable(
+        file_path=snapshot.code_path, artifact_store=artifact_store
+    )
+
+    # The code download is handled in a separate tab by the browser. In this
+    # tab, we do not have the ability to set any headers and therefore cannot
+    # include the CSRF token in the request. To handle this, we instead generate
+    # a JWT token in this endpoint (which includes CSRF and RBAC checks) and
+    # then use that token to download the code in a separate endpoint
+    # which only verifies this short-lived token.
+    return generate_download_token(
+        download_type=DownloadType.SNAPSHOT_CODE,
+        resource_id=snapshot_id,
+    )
+
+
+@router.get(
+    "/{snapshot_id}" + CODE,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def download_snapshot_code(snapshot_id: UUID, token: str) -> FileResponse:
+    """Download the snapshot code.
+
+    Args:
+        snapshot_id: ID of the snapshot for which to get the code.
+        token: The token to authenticate the code download.
+
+    Returns:
+        The snapshot code.
+
+    Raises:
+        ValueError: If the snapshot has no code path or stack.
+    """
+    verify_download_token(
+        token=token,
+        download_type=DownloadType.SNAPSHOT_CODE,
+        resource_id=snapshot_id,
+    )
+
+    store = zen_store()
+    snapshot = store.get_snapshot(snapshot_id)
+    if not snapshot.code_path:
+        raise ValueError(f"Snapshot {snapshot_id} has no code path.")
+
+    if not snapshot.stack:
+        raise ValueError(f"Snapshot {snapshot_id} has no stack.")
+
+    artifact_store_id = snapshot.stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].id
+
+    artifact_store = load_artifact_store(
+        artifact_store_id=artifact_store_id, zen_store=store
+    )
+
+    archive_path = download_snapshot_code_archive(
+        code_path=snapshot.code_path, artifact_store=artifact_store
+    )
+    return FileResponse(
+        archive_path,
+        media_type="application/gzip",
+        filename=f"{snapshot.id}-code.tar.gz",
+        background=BackgroundTask(os.remove, archive_path),
     )
 
 

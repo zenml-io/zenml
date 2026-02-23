@@ -80,11 +80,11 @@ class ZenMLProjectTemplateLocation(BaseModel):
 ZENML_PROJECT_TEMPLATES = dict(
     e2e_batch=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-e2e-batch",
-        github_tag="2025.09.22",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2025.12.17",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="2024.11.28",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2025.12.17",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",
@@ -659,7 +659,11 @@ def info(
         write_yaml(file, user_info)
         declare(f"Wrote user debug info to file at '{file_write_path}'.")
     else:
-        cli_utils.print_user_info(user_info)
+        for key, value in user_info.items():
+            if key in ["packages", "query_packages"] and not bool(value):
+                continue
+
+            declare(f"{key.upper()}: {value}")
 
     if stack:
         try:
@@ -754,12 +758,14 @@ def backup_database(
             store_config, skip_default_registrations=True, skip_migrations=True
         )
         assert isinstance(store, SqlZenStore)
-        msg, location = store.backup_database(
+        backup_engine = store.initialize_database_backup_engine(
             strategy=DatabaseBackupStrategy(strategy) if strategy else None,
             location=location,
-            overwrite=overwrite,
         )
-        cli_utils.declare(f"Database was backed up to {msg}.")
+        backup_engine.backup_database(overwrite=overwrite)
+        cli_utils.declare(
+            f"Database was backed up to {backup_engine.backup_location}."
+        )
     else:
         cli_utils.warning(
             "Cannot backup database while connected to a ZenML server."
@@ -818,12 +824,14 @@ def restore_database(
             store_config, skip_default_registrations=True, skip_migrations=True
         )
         assert isinstance(store, SqlZenStore)
-        store.restore_database(
+        backup_engine = store.initialize_database_backup_engine(
             strategy=DatabaseBackupStrategy(strategy) if strategy else None,
             location=location,
-            cleanup=cleanup,
         )
-        cli_utils.declare("Database restore finished.")
+        backup_engine.restore_database(cleanup=cleanup)
+        cli_utils.declare(
+            f"Database was restored from {backup_engine.backup_location}."
+        )
     else:
         cli_utils.warning(
             "Cannot restore database while connected to a ZenML server."

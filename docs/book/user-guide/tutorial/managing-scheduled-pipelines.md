@@ -180,29 +180,40 @@ Make sure to replace `us-central1` with your actual Vertex AI region. You can fi
 
 ### Step 4: Update the Schedule
 
-Sometimes we need to modify an existing schedule. Since ZenML doesn't support direct schedule updates, we'll need to delete the old schedule and create a new one. This is a two-step process:
+Sometimes we need to modify an existing schedule. How you update a schedule depends on your orchestrator:
+
+- **Kubernetes orchestrator**: Supports direct schedule updates - ZenML will update the CronJob directly on the cluster
+- **Most other orchestrators** (including Vertex AI used in this tutorial): Do not support direct updates, so you'll need to delete the old schedule and create a new one
+
+For orchestrators that support direct updates, you can simply use:
+
+```bash
+zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='0 10 * * *'
+```
+
+For orchestrators like Vertex AI that don't support direct updates, follow this two-step process:
 
 1. Delete the existing schedules (both from ZenML and the orchestrator)
 2. Create a new schedule with the updated configuration
 
 #### Step 4.1: Delete the Existing Schedule
 
-First, delete the schedule from ZenML:
+First, delete the schedule from ZenML (this archives the schedule by default):
 
 ```python
-# Delete from ZenML
+# Archive the schedule from ZenML
 client.delete_schedule("daily-data-processing")
 ```
 
 Using the CLI:
 
 ```bash
-# Delete a specific schedule
+# Archive a specific schedule (soft delete)
 zenml pipeline schedule delete daily-data-processing
 ```
 
 {% hint style="warning" %}
-**Important**: You must also delete the schedule from the orchestrator. ZenML's delete command never removes the underlying orchestrator schedule.
+**Important**: For orchestrators that don't support native schedule deletion (like Vertex AI), you must also manually delete the schedule from the orchestrator. For orchestrators that do support it (like Kubernetes), ZenML will handle the orchestrator-side deletion automatically.
 {% endhint %}
 
 For Vertex AI, you need to delete the orchestrator schedule:
@@ -292,30 +303,45 @@ This assumes you've [registered an alerter](https://docs.zenml.io/stacks/alerter
 
 ### Step 6: Clean Up
 
-When you're done with a scheduled pipeline, proper cleanup is essential to prevent unexpected executions. You **must perform two separate deletion operations**:
+When you're done with a scheduled pipeline, proper cleanup is essential to prevent unexpected executions. The cleanup process depends on your orchestrator:
 
-1. Delete the schedule from ZenML's database
-2. Delete the schedule from the underlying orchestrator (Vertex AI in this example)
+- **Kubernetes orchestrator**: ZenML handles everything automatically - deleting the schedule in ZenML also deletes the CronJob from the cluster
+- **Most other orchestrators** (including Vertex AI): You must perform two separate deletion operations:
+  1. Delete the schedule from ZenML's database
+  2. Manually delete the schedule from the underlying orchestrator
+
+Since this tutorial uses Vertex AI, we'll demonstrate the two-step manual cleanup process.
 
 #### Step 6.1: Delete the Schedule from ZenML
 
-First, let's delete the schedule from ZenML:
+First, let's delete the schedule from ZenML. By default, deletion archives the schedule (soft delete), which preserves references in historical pipeline runs:
 
 ```python
+# Archive the schedule (soft delete - preserves historical references)
 client.delete_schedule("daily-data-processing")
 
 # Verify deletion from ZenML
 schedules = client.list_schedules()
 if not any(s.name == "daily-data-processing" for s in schedules):
-    print("Schedule deleted successfully from ZenML!")
+    print("Schedule archived successfully in ZenML!")
 else:
     print("Schedule still exists in ZenML!")
 ```
 
-#### Step 6.2: Delete the Schedule from the Orchestrator (Required)
+Using the CLI, you can also perform a hard delete if you want to permanently remove all references:
+
+```bash
+# Soft delete (archive) - default behavior
+zenml pipeline schedule delete daily-data-processing
+
+# Hard delete - permanently removes all references
+zenml pipeline schedule delete daily-data-processing --hard
+```
+
+#### Step 6.2: Delete the Schedule from the Orchestrator (Required for Vertex AI)
 
 {% hint style="warning" %}
-**CRITICAL**: Deleting a schedule from ZenML does NOT delete it from the orchestrator. If you only perform Step 6.1, your pipeline will continue to run on schedule in the orchestrator!
+**CRITICAL for Vertex AI and similar orchestrators**: Deleting a schedule from ZenML does NOT automatically delete it from the orchestrator. If you only perform Step 6.1, your pipeline will continue to run on schedule! (Note: The Kubernetes orchestrator is an exception - it handles orchestrator-side deletion automatically.)
 {% endhint %}
 
 Here's how to delete the schedule from Vertex AI:

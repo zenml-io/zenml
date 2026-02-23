@@ -64,7 +64,7 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        self.download_code_if_necessary()
+        self.prepare_code_environment()
 
         run = None
         if run_id := self.entrypoint_args.get(RUN_ID_OPTION, None):

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing steps runs."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -157,7 +157,7 @@ class StepRunRequest(ProjectScopedRequest):
         title="The IDs of the output artifact versions of the step run.",
         default_factory=dict,
     )
-    logs: Optional["LogsRequest"] = Field(
+    logs: Optional[Union[UUID, "LogsRequest"]] = Field(
         title="Logs associated with this step run.",
         default=None,
     )
@@ -204,6 +204,9 @@ class StepRunUpdate(BaseUpdate):
         "results anymore.",
         default=None,
     )
+    add_logs: Optional[List["LogsRequest"]] = Field(
+        default=None, title="New logs to add to the step run."
+    )
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -238,6 +241,10 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     substitutions: Dict[str, str] = Field(
         title="The substitutions of the step run.",
         default={},
+    )
+    heartbeat_threshold: Optional[int] = Field(
+        title="The applied heartbeat healthiness threshold ",
+        default=None,
     )
     model_config = ConfigDict(protected_namespaces=())
 
@@ -287,10 +294,6 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     )
 
     # References
-    logs: Optional["LogsResponse"] = Field(
-        title="Logs associated with this step run.",
-        default=None,
-    )
     snapshot_id: UUID = Field(
         title="The snapshot associated with the step run."
     )
@@ -313,6 +316,11 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
 
 class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
+
+    log_collection: Optional[List["LogsResponse"]] = Field(
+        title="Logs associated with this step run.",
+        default=None,
+    )
 
     model_version: Optional[ModelVersionResponse] = None
     inputs: Dict[str, List[StepRunInputResponse]] = Field(
@@ -601,6 +609,17 @@ class StepRunResponse(
         return self.get_body().end_time
 
     @property
+    def duration(self) -> Optional[timedelta]:
+        """The `duration` property.
+
+        Returns:
+            The duration of the step run.
+        """
+        if self.end_time is None or self.start_time is None:
+            return None
+        return self.end_time - self.start_time
+
+    @property
     def latest_heartbeat(self) -> Optional[datetime]:
         """The `latest_heartbeat` property.
 
@@ -610,13 +629,13 @@ class StepRunResponse(
         return self.get_body().latest_heartbeat
 
     @property
-    def logs(self) -> Optional["LogsResponse"]:
-        """The `logs` property.
+    def heartbeat_threshold(self) -> Optional[int]:
+        """The `heartbeat_threshold` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().logs
+        return self.get_body().heartbeat_threshold
 
     @property
     def snapshot_id(self) -> UUID:
@@ -662,6 +681,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_metadata().run_metadata
+
+    @property
+    def log_collection(self) -> Optional[List["LogsResponse"]]:
+        """The `log_collection` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().log_collection
 
     @property
     def model_version(self) -> Optional[ModelVersionResponse]:
@@ -826,3 +854,5 @@ class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     id: UUID
     status: ExecutionStatus
     latest_heartbeat: datetime
+    pipeline_run_status: ExecutionStatus | None = None
+    heartbeat_enabled: bool

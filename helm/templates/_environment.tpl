@@ -44,6 +44,28 @@ backup_strategy: {{ .ZenML.database.backupStrategy | quote }}
 backup_database: {{ .ZenML.database.backupDatabase | quote }}
 {{- else if eq .ZenML.database.backupStrategy "dump-file" }}
 backup_directory: "/backups"
+{{- else if eq .ZenML.database.backupStrategy "mydumper" }}
+backup_directory: "/backups"
+{{- if .ZenML.database.mydumperThreads }}
+mydumper_threads: {{ .ZenML.database.mydumperThreads | quote }}
+{{- end }}
+{{- if .ZenML.database.mydumperCompress }}
+mydumper_compress: {{ .ZenML.database.mydumperCompress | quote }}
+{{- end }}
+{{- if .ZenML.database.mydumperExtraArgs }}
+mydumper_extra_args: {{ .ZenML.database.mydumperExtraArgs | toJson | quote }}
+{{- end }}
+{{- if .ZenML.database.myloaderThreads }}
+myloader_threads: {{ .ZenML.database.myloaderThreads | quote }}
+{{- end }}
+{{- if .ZenML.database.myloaderExtraArgs }}
+myloader_extra_args: {{ .ZenML.database.myloaderExtraArgs | toJson | quote }}
+{{- end }}
+{{- else if eq .ZenML.database.backupStrategy "custom" }}
+custom_backup_engine: {{ .ZenML.database.customBackupEngine | quote }}
+{{- if .ZenML.database.customBackupEngineConfig }}
+custom_backup_engine_config: {{ .ZenML.database.customBackupEngineConfig | toJson | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- if .ZenML.database.poolSize }}

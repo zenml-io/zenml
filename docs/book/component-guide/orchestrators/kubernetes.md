@@ -141,6 +141,7 @@ The following configuration options can be set either through the orchestrator c
 - **`privileged`** (default: False): If the container should be run in privileged mode.
 - **`pod_settings`**: Node selectors, labels, affinity, and tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 - **`orchestrator_pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+  - If you're specifying `init_containers` as part of the `additional_pod_spec_args` of the pod settings, you can use an `"{{ image }}"` placeholder string. This placeholder will be replaced by the image that is also used to run the orchestration or step container.
 - **`pod_name_prefix`**: Prefix for the pod names. A random suffix and the step name will be appended to create unique pod names.
 - **`pod_startup_timeout`** (default: 600): The maximum time to wait for a pending step pod to start (in seconds). The orchestrator will delete the pending pod after this time has elapsed and raise an error. If configured, the `pod_failure_retry_delay` and `pod_failure_backoff` settings will also be used to calculate the delay between retries.
 - **`pod_failure_max_retries`** (default: 3): The maximum number of retries to create a step pod that fails to start.
@@ -158,6 +159,8 @@ the chance of the server receiving the maximum amount of retry requests.
 - **`job_monitoring_interval`** (default 3): The interval in seconds to monitor the job. Each interval is used to check for container issues and streaming logs for the job pods.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
+- **`concurrency_policy`**: CronJob concurrency policy for scheduled pipelines. Controls whether concurrent job executions are allowed. Valid values: `Allow` (Kubernetes default), `Forbid`, `Replace`. Only applies when a pipeline has a cron schedule.
+- **`starting_deadline_seconds`**: CronJob starting deadline in seconds for scheduled pipelines. If a scheduled run misses its trigger time, it can still start within this window. Only applies when a pipeline has a cron schedule. Note: this is different from `active_deadline_seconds`, which limits how long a *running* job can execute.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
 
 ```python
@@ -377,6 +380,35 @@ scheduled_pipeline = my_kubernetes_pipeline.with_options(schedule=schedule)
 scheduled_pipeline()
 ```
 
+#### Customizing CronJob behavior
+
+You can customize the CronJob configuration using `KubernetesOrchestratorSettings`. This is useful when your cluster has specific policies for CronJob resources:
+
+```python
+from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+
+k8s_settings = KubernetesOrchestratorSettings(
+    concurrency_policy="Forbid",            # Prevent concurrent job executions
+    starting_deadline_seconds=20,           # Missed-schedule start window
+    successful_jobs_history_limit=2,        # Keep last 2 successful jobs
+    failed_jobs_history_limit=1,            # Keep last 1 failed job
+    active_deadline_seconds=180,            # Job runtime limit (3 minutes)
+    orchestrator_job_backoff_limit=2,       # Max retries before marking failed
+    ttl_seconds_after_finished=3600,        # Cleanup completed jobs after 1 hour
+    pod_stop_grace_period=90,               # Graceful shutdown window
+)
+
+scheduled_pipeline = my_kubernetes_pipeline.with_options(
+    schedule=schedule,
+    settings={"orchestrator.kubernetes": k8s_settings},
+)
+scheduled_pipeline()
+```
+
+{% hint style="info" %}
+`starting_deadline_seconds` controls how late a CronJob can start after its scheduled time (missed-schedule window), while `active_deadline_seconds` limits how long a running job can execute (runtime timeout). These are independent settings that apply at different stages of the job lifecycle.
+{% endhint %}
+
 Cron expressions follow the standard format (`minute hour day-of-month month day-of-week`):
 
 * `"0 * * * *"` - Run hourly at the start of the hour
@@ -410,17 +442,40 @@ To view your scheduled jobs and their status:
 kubectl get cronjobs -n zenml
 ```
 
-To update a schedule, use the following command:
+To update a schedule's cron expression:
 ```bash
-# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
 zenml pipeline schedule update <SCHEDULE_NAME_OR_ID> --cron-expression='0 4 * * *'
+```
+
+#### Pausing and resuming a scheduled pipeline
+
+You can temporarily pause a scheduled pipeline without deleting it using the deactivate command. This sets the CronJob's `suspend` field to `true`, preventing any new executions while preserving the CronJob resource:
+
+```bash
+# Pause the schedule (sets suspend=true on the CronJob)
+zenml pipeline schedule deactivate <SCHEDULE_NAME_OR_ID>
+
+# Resume the schedule (sets suspend=false on the CronJob)
+zenml pipeline schedule activate <SCHEDULE_NAME_OR_ID>
+```
+
+You can verify the suspend status using kubectl:
+```shell
+kubectl get cronjob <cronjob-name> -n zenml -o jsonpath='{.spec.suspend}'
+```
 
 #### Deleting a scheduled pipeline
 
-When you no longer need a scheduled pipeline, you can delete the schedule as follows:
+When you no longer need a scheduled pipeline, you can delete the schedule. By default, deletion archives the schedule (soft delete), which preserves references in historical pipeline runs:
+
 ```bash
-# This deletes both the schedule metadata in ZenML as well as the underlying CronJob
+# Archive the schedule (soft delete - default)
+# This removes the CronJob from Kubernetes and archives the schedule in ZenML
 zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+
+# Permanently delete the schedule (hard delete)
+# This removes the CronJob and permanently deletes all schedule references
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID> --hard
 ```
 
 #### Troubleshooting

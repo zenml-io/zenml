@@ -59,6 +59,7 @@ class DownloadType(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     STEP_LOGS = "step_logs"
     RUN_LOGS = "run_logs"
+    SNAPSHOT_CODE = "snapshot_code"
 
 
 class VisualizationType(StrEnum):
@@ -83,10 +84,12 @@ class ExecutionStatus(StrEnum):
 
     INITIALIZING = "initializing"
     PROVISIONING = "provisioning"
+    RUNNING = "running"
     FAILED = "failed"
     COMPLETED = "completed"
-    RUNNING = "running"
     CACHED = "cached"
+    # When a step that can be retried failed, its status is set to retrying.
+    # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
     STOPPED = "stopped"
@@ -157,6 +160,7 @@ class StackComponentType(StrEnum):
     EXPERIMENT_TRACKER = "experiment_tracker"
     FEATURE_STORE = "feature_store"
     IMAGE_BUILDER = "image_builder"
+    LOG_STORE = "log_store"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"
@@ -471,6 +475,10 @@ class DatabaseBackupStrategy(StrEnum):
     DUMP_FILE = "dump-file"
     # Create a backup of the database in the remote database service
     DATABASE = "database"
+    # Use mydumper/myloader for parallel backup/restore (MySQL only)
+    MYDUMPER = "mydumper"
+    # Use a custom backup engine
+    CUSTOM = "custom"
 
 
 class PluginType(StrEnum):
@@ -561,3 +569,10 @@ class StepRuntime(StrEnum):
 
     INLINE = "inline"
     ISOLATED = "isolated"
+
+
+class GroupType(StrEnum):
+    """Enum representing different types of group."""
+
+    MANUAL = "manual"
+    MAP = "map"

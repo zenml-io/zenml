@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base orchestrator class."""
 
+import time
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -30,6 +31,7 @@ from uuid import UUID
 
 from pydantic import model_validator
 
+from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
@@ -43,6 +45,7 @@ from zenml.exceptions import (
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.orchestrators.exceptions import PipelineSubmissionError
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
     publish_pipeline_run_status_update,
@@ -62,6 +65,7 @@ if TYPE_CHECKING:
         PipelineSnapshotResponse,
         ScheduleResponse,
         ScheduleUpdate,
+        StepRunResponse,
     )
 
 logger = get_logger(__name__)
@@ -169,8 +173,13 @@ class BaseOrchestrator(StackComponent, ABC):
     def get_orchestrator_run_id(self) -> str:
         """Returns the run id of the active orchestrator run.
 
-        Important: This needs to be a unique ID and return the same value for
+        Important:
+        - This needs to be a unique ID and return the same value for
         all steps of a pipeline run.
+        - For dynamic pipelines, this needs to be a unique ID which will be
+        fetched in the orchestration environment. If the orchestrator supports
+        retries of the orchestration environment, this ID needs to be the same
+        for all retries.
 
         Returns:
             The orchestrator run id.
@@ -261,6 +270,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
+            PipelineSubmissionError: If a pipeline submission failed on the
+                orchestrator.
         """
         self._prepare_run(snapshot=snapshot)
 
@@ -355,10 +366,12 @@ class BaseOrchestrator(StackComponent, ABC):
                         invocation_id,
                         step,
                     ) in snapshot.step_configurations.items():
-                        from zenml.utils.env_utils import get_step_environment
+                        from zenml.utils.env_utils import (
+                            get_runtime_environment,
+                        )
 
-                        step_environment = get_step_environment(
-                            step_config=step.config,
+                        step_environment = get_runtime_environment(
+                            config=step.config,
                             stack=stack,
                         )
 
@@ -373,6 +386,7 @@ class BaseOrchestrator(StackComponent, ABC):
                         step_environments=step_environments,
                         placeholder_run=placeholder_run,
                     )
+
                 if placeholder_run:
                     publish_pipeline_run_status_update(
                         pipeline_run_id=placeholder_run.id,
@@ -425,7 +439,16 @@ class BaseOrchestrator(StackComponent, ABC):
                             raise RunMonitoringError(original_exception=e)
                         except BaseException as e:
                             raise RunMonitoringError(original_exception=e)
+        except PipelineSubmissionError as e:
+            # clean-up actions in case of failure
 
+            if snapshot.schedule:
+                # delete created DB schedules
+                Client().zen_store.delete_schedule(
+                    snapshot.schedule.id, soft=False
+                )
+
+            raise e
         finally:
             self._cleanup_run()
 
@@ -469,14 +492,14 @@ class BaseOrchestrator(StackComponent, ABC):
             Whether the orchestrator can run isolated steps.
         """
         return (
-            getattr(self.run_isolated_step, "__func__", None)
-            is not BaseOrchestrator.run_isolated_step
+            getattr(self.submit_isolated_step, "__func__", None)
+            is not BaseOrchestrator.submit_isolated_step
         )
 
-    def run_isolated_step(
+    def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Run an isolated step.
+        """Submit an isolated step.
 
         Args:
             step_run_info: The step run information.
@@ -488,7 +511,88 @@ class BaseOrchestrator(StackComponent, ABC):
                 method.
         """
         raise NotImplementedError(
-            "Running isolated steps is not implemented for "
+            "Submitting isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
+
+    def get_isolated_step_status(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Get the status of an isolated step run.
+
+        Args:
+            step_run: The step run.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not implement this
+                method.
+        """
+        raise NotImplementedError(
+            "Getting the status of isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
+
+    def wait_for_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Wait for an isolated step run to complete.
+
+        Args:
+            step_run: The step run.
+        """
+        sleep_interval = 1
+        max_sleep_interval = 16
+
+        while True:
+            try:
+                status = self.get_isolated_step_status(step_run)
+            except Exception as e:
+                logger.error(
+                    "Failed to get orchestrator status of isolated step "
+                    "`%s`: %s",
+                    step_run.id,
+                    e,
+                )
+                # Fall back to the status of the ZenML server
+                status = (
+                    Client().get_run_step(step_run.id, hydrate=False).status
+                )
+
+            if status.is_finished:
+                return
+
+            logger.debug(
+                "Waiting for isolated step with ID %s to finish (current "
+                "status: %s)",
+                step_run.id,
+                status,
+            )
+            time.sleep(sleep_interval)
+            if sleep_interval < max_sleep_interval:
+                sleep_interval *= 2
+
+    @property
+    def can_stop_isolated_steps(self) -> bool:
+        """Whether the orchestrator can stop isolated steps.
+
+        Returns:
+            Whether the orchestrator can stop isolated steps.
+        """
+        return (
+            getattr(self.stop_isolated_step, "__func__", None)
+            is not BaseOrchestrator.stop_isolated_step
+        )
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stop an isolated step run.
+
+        Args:
+            step_run: The step run to stop.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not implement this
+                method.
+        """
+        raise NotImplementedError(
+            "Stopping isolated steps is not implemented for "
             f"the {self.__class__.__name__} orchestrator."
         )
 
@@ -636,6 +740,10 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             ValueError: If the execution mode is not supported.
         """
+        if snapshot.is_dynamic:
+            # We can't validate execution modes for dynamic pipelines yet
+            return
+
         execution_mode = snapshot.pipeline_configuration.execution_mode
 
         if execution_mode not in self.supported_execution_modes:
@@ -678,20 +786,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 If False, forces immediate termination. Default is False.
 
         Raises:
-            NotImplementedError: If any orchestrator inheriting from the base
-                class does not implement this logic.
             IllegalOperationError: If the run has no orchestrator run id yet.
         """
-        # Check if the orchestrator supports cancellation
-        if (
-            getattr(self._stop_run, "__func__", None)
-            is BaseOrchestrator._stop_run
-        ):
-            raise NotImplementedError(
-                f"The '{self.__class__.__name__}' orchestrator does not "
-                "support stopping pipeline runs."
-            )
-
         if not run.orchestrator_run_id:
             raise IllegalOperationError(
                 "Cannot stop a pipeline run that has no orchestrator run id "
@@ -699,6 +795,7 @@ class BaseOrchestrator(StackComponent, ABC):
             )
 
         # Update pipeline status to STOPPING before calling concrete implementation
+        # Initiates graceful termination.
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
@@ -720,13 +817,24 @@ class BaseOrchestrator(StackComponent, ABC):
             run: A pipeline run response to stop (already updated to STOPPING status).
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is True.
-
-        Raises:
-            NotImplementedError: If any orchestrator inheriting from the base
-                class does not implement this logic.
         """
+        if graceful:
+            # This should work out of the box for HeartBeat step termination.
+            # Orchestrators should extend the functionality to cover other scenarios.
+            self._stop_run_gracefully(pipeline_run=run)
+        else:
+            self._stop_run_forcefully(pipeline_run=run)
+
+    def _stop_run_gracefully(
+        self, pipeline_run: "PipelineRunResponse"
+    ) -> None:
+        pass
+
+    def _stop_run_forcefully(
+        self, pipeline_run: "PipelineRunResponse"
+    ) -> None:
         raise NotImplementedError(
-            "The stop run functionality is not implemented for the "
+            "The forceful stop run functionality is not implemented for the "
             f"'{self.__class__.__name__}' orchestrator."
         )
 

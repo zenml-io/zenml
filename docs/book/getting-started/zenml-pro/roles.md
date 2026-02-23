@@ -1,8 +1,8 @@
 ---
-icon: lock
 description: >-
   Learn about the different roles and permissions you can assign to your team
   members in ZenML Pro.
+icon: lock
 ---
 
 # Roles & Permissions
@@ -40,24 +40,20 @@ At the organization level, ZenML Pro provides the following predefined roles:
    * Can create and manage workspaces
    * Can manage billing and team members
    * Can see and access all workspaces and projects
-
 2. **Organization Manager**
    * Permissions to create and view resources in the organization
    * Can manage most organization settings
    * Cannot access billing information
    * Does not automatically get access to all workspaces (needs explicit workspace role assignment)
-
 3. **Organization Viewer**
    * Permissions to view resources in the organization
    * Can connect to a workspace and view default stack and components.
    * Read-only access to organization resources
    * Can see all workspaces in the organization, but cannot access their contents without explicit roles
-
 4. **Billing Admin**
    * Permissions to manage the organization's billing information
    * Can view and modify billing settings
    * Does not automatically get access to workspaces
-
 5. **Organization Member**
    * Minimal permissions in the organization
    * Basic access to organization resources
@@ -69,20 +65,16 @@ To assign organization roles:
 {% stepper %}
 {% step %}
 Navigate to the **Organization** **Settings** page
-
-
 {% endstep %}
 
 {% step %}
 Click on the **Members** tab. Here you can update roles for existing members.
-
-
 {% endstep %}
 
 {% step %}
 Use the **Add members** button to add new members
 
-![Screenshot showing the invite modal](../../.gitbook/assets/add_org_members.png)
+![Screenshot showing the invite modal](.gitbook/assets/add_org_members.png)
 {% endstep %}
 {% endstepper %}
 
@@ -113,7 +105,6 @@ Workspace roles determine a user's permissions within a specific ZenML workspace
    * Can create and manage projects
    * Has complete control over all workspace resources
    * Has full CRUDS (Create, Read, Update, Delete, Share) permissions on all stacks in the workspace
-
 2. **Workspace Developer**
    * Permissions to create and view resources in the workspace and all projects
    * Can work with pipelines, artifacts, and models
@@ -121,7 +112,6 @@ Workspace roles determine a user's permissions within a specific ZenML workspace
    * Can create new stacks and has full CRUDS permissions on their own stacks
    * Has Read and Update permissions for all other stacks in the workspace
    * Has access to all projects in the workspace
-
 3. **Workspace Contributor**
    * Permissions to create resources in the workspace, but not access or create projects
    * Can add new resources to the workspace
@@ -129,13 +119,11 @@ Workspace roles determine a user's permissions within a specific ZenML workspace
    * Can create new stacks and has full CRUDS permissions on their own stacks
    * Has no permissions on stacks created by others (cannot see them)
    * Does not have access to projects unless explicitly granted
-
 4. **Workspace Viewer**
    * Permissions to view resources in the workspace and all projects
    * Read-only access to workspace resources
    * Can only view/read stacks in the workspace
    * Has read-only access to all projects in the workspace (due to backward compatibility)
-
 5. **Stack Admin**
    * Permissions to manage stacks, components and service connectors
    * Specialized role for infrastructure management
@@ -163,17 +151,14 @@ Projects have their own set of roles that provide fine-grained control over proj
    * Can manage project members and their roles
    * Can configure project settings
    * Has complete control over project resources
-
 2. **Project Developer**
    * Permissions to create and view resources in the project
    * Can work with pipelines, artifacts, and models
    * Cannot modify project settings or member roles
-
 3. **Project Contributor**
    * Permissions to create resources in the project
    * Can add new pipelines, artifacts, and models
    * Cannot modify existing resources or settings
-
 4. **Project Viewer**
    * Permissions to view resources in the project
    * Read-only access to project resources
@@ -186,9 +171,7 @@ Note that project-level roles do not grant any permissions to stacks, as stacks 
 ZenML Pro allows you to create custom roles with fine-grained permissions to meet your specific team requirements:
 
 * **Organization Level**: Currently, you cannot create custom organization roles via the ZenML Pro dashboard. However, this is possible via the [ZenML Pro API](https://cloudapi.zenml.io/).
-
 * **Workspace Level**: You can create custom workspace roles via the Workspace Settings page. This allows you to define specific combinations of permissions tailored to your team's workflow.
-
 * **Project Level**: Custom project roles can be created through the Project Settings page, enabling precise control over project-specific permissions.
 
 ### When to Use Custom Roles

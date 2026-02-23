@@ -47,8 +47,8 @@ from zenml.constants import (
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     handle_bool_env_var,
 )
-from zenml.enums import StepRuntime
-from zenml.exceptions import StepInterfaceError
+from zenml.enums import GroupType, StepRuntime
+from zenml.exceptions import SourceValidationException, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     )
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.step_configurations import (
+        GroupInfo,
         PartialArtifactConfiguration,
         PartialStepConfiguration,
         StepConfiguration,
@@ -96,9 +97,12 @@ if TYPE_CHECKING:
     ]
 
     from zenml.execution.pipeline.dynamic.outputs import (
+        AnyStepFuture,
         MapResultsFuture,
-        StepRunFuture,
-        StepRunOutputsFuture,
+        StepFuture,
+    )
+    from zenml.pipelines.compilation_context import (
+        PipelineCompilationContext,
     )
 
 
@@ -134,6 +138,8 @@ class BaseStep:
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
+        heartbeat_healthy_threshold: Optional[int] = None,
+        group: Optional[Union["GroupInfo", str]] = None,
     ) -> None:
         """Initializes a step.
 
@@ -165,12 +171,17 @@ class BaseStep:
                 function (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
-            substitutions: Extra placeholders to use in the name template.
+            substitutions: Extra substitutions for model and artifact name
+                placeholders.
             cache_policy: Cache policy for this step.
             runtime: The step runtime. If not configured, the step will
                 run inline unless a step operator or docker/resource settings
                 are configured. This is only applicable for dynamic
                 pipelines.
+            heartbeat_healthy_threshold: The amount of time (in minutes) that a
+                running step has not received heartbeat and is considered healthy.
+                By default, set to 30 minutes.",
+            group: The group information for this step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -238,6 +249,8 @@ class BaseStep:
             substitutions=substitutions,
             cache_policy=cache_policy,
             runtime=runtime,
+            heartbeat_healthy_threshold=heartbeat_healthy_threshold,
+            group=group,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -480,92 +493,31 @@ class BaseStep:
             default_parameters,
         )
 
-    def __call__(
+    def _handle_call_during_compilation(
         self,
-        *args: Any,
+        compilation_context: "PipelineCompilationContext",
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
         id: Optional[str] = None,
         after: Union[
             str,
             StepArtifact,
-            "StepRunFuture",
-            Sequence[Union[str, StepArtifact, "StepRunFuture"]],
+            Sequence[Union[str, StepArtifact]],
             None,
         ] = None,
-        **kwargs: Any,
-    ) -> Any:
-        """Handle a call of the step.
-
-        This method does one of two things:
-        * If there is an active pipeline context, it adds an invocation of the
-          step instance to the pipeline.
-        * If no pipeline is active, it calls the step entrypoint function.
+    ) -> Union[StepArtifact, List[StepArtifact]]:
+        """Handles a call during compilation of the step.
 
         Args:
-            *args: Entrypoint function arguments.
-            id: Invocation ID to use.
-            after: Upstream steps for the invocation.
-            **kwargs: Entrypoint function keyword arguments.
+            compilation_context: The compilation context.
+            args: The arguments passed to the step.
+            kwargs: The keyword arguments passed to the step.
+            id: The ID of the step invocation.
+            after: The upstream steps for the invocation
 
         Returns:
-            The outputs of the entrypoint function call.
+            The outputs of the step invocation.
         """
-        from zenml import get_step_context
-        from zenml.execution.pipeline.dynamic.run_context import (
-            DynamicPipelineRunContext,
-        )
-        from zenml.pipelines.compilation_context import (
-            PipelineCompilationContext,
-        )
-
-        try:
-            step_context = get_step_context()
-        except RuntimeError:
-            step_context = None
-
-        if step_context:
-            # We're currently inside the execution of a different step
-            # -> We don't want to launch another single step pipeline here,
-            # but instead just call the step function
-            return self.call_entrypoint(*args, **kwargs)
-
-        if run_context := DynamicPipelineRunContext.get():
-            after = cast(
-                Union[
-                    "StepRunFuture",
-                    Sequence["StepRunFuture"],
-                    None,
-                ],
-                after,
-            )
-            return run_context.runner.launch_step(
-                step=self,
-                id=id,
-                args=args,
-                kwargs=kwargs,
-                after=after,
-                concurrent=False,
-            )
-
-        compilation_context = PipelineCompilationContext.get()
-        if not compilation_context:
-            from zenml.execution.pipeline.utils import (
-                should_prevent_pipeline_execution,
-            )
-
-            # If the environment variable was set to explicitly not run on the
-            # stack, we do that.
-            run_without_stack = handle_bool_env_var(
-                ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
-            )
-            if run_without_stack:
-                return self.call_entrypoint(*args, **kwargs)
-
-            if should_prevent_pipeline_execution():
-                logger.info("Preventing execution of step '%s'.", self.name)
-                return
-
-            return run_as_single_step_pipeline(self, *args, **kwargs)
-
         (
             input_artifacts,
             external_artifacts,
@@ -615,6 +567,110 @@ class BaseStep:
             outputs.append(output)
         return outputs[0] if len(outputs) == 1 else outputs
 
+    def __call__(
+        self,
+        *args: Any,
+        id: Optional[str] = None,
+        after: Union[
+            str,
+            StepArtifact,
+            "AnyStepFuture",
+            Sequence[Union[str, StepArtifact, "AnyStepFuture"]],
+            None,
+        ] = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Handle a call of the step.
+
+        This method does one of two things:
+        * If there is an active pipeline context, it adds an invocation of the
+          step instance to the pipeline.
+        * If no pipeline is active, it calls the step entrypoint function.
+
+        Args:
+            *args: Entrypoint function arguments.
+            id: Invocation ID to use.
+            after: Upstream steps for the invocation.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Returns:
+            The outputs of the entrypoint function call.
+        """
+        from zenml import get_step_context
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+        from zenml.execution.pipeline.utils import (
+            should_prevent_pipeline_execution,
+        )
+        from zenml.pipelines.compilation_context import (
+            PipelineCompilationContext,
+        )
+
+        compilation_context = PipelineCompilationContext.get()
+        if compilation_context:
+            # We're currently compiling a static pipeline, which we want to
+            # allow even while inside a running step.
+            after = cast(
+                Union[
+                    str,
+                    "StepArtifact",
+                    Sequence[Union[str, "StepArtifact"]],
+                    None,
+                ],
+                after,
+            )
+            return self._handle_call_during_compilation(
+                compilation_context=compilation_context,
+                args=args,
+                kwargs=kwargs,
+                id=id,
+                after=after,
+            )
+
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            step_context = None
+
+        if step_context:
+            # We're currently inside the execution of a different step
+            # -> We don't want to launch another single step pipeline here,
+            # but instead just call the step function
+            return self.call_entrypoint(*args, **kwargs)
+
+        if run_context := DynamicPipelineRunContext.get():
+            after = cast(
+                Union[
+                    "AnyStepFuture",
+                    Sequence["AnyStepFuture"],
+                    None,
+                ],
+                after,
+            )
+            return run_context.runner.launch_step(
+                step=self,
+                id=id,
+                args=args,
+                kwargs=kwargs,
+                after=after,
+                concurrent=False,
+            )
+
+        # If the environment variable was set to explicitly not run on the
+        # stack, we do that.
+        run_without_stack = handle_bool_env_var(
+            ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
+        )
+        if run_without_stack:
+            return self.call_entrypoint(*args, **kwargs)
+
+        if should_prevent_pipeline_execution():
+            logger.info("Preventing execution of step '%s'.", self.name)
+            return
+
+        return run_as_single_step_pipeline(self, *args, **kwargs)
+
     def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
         """Calls the entrypoint function of the step.
 
@@ -648,9 +704,9 @@ class BaseStep:
         self,
         *args: Any,
         id: Optional[str] = None,
-        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
         **kwargs: Any,
-    ) -> "StepRunOutputsFuture":
+    ) -> "StepFuture":
         """Submit the step to run concurrently in a separate thread.
 
         Args:
@@ -665,7 +721,7 @@ class BaseStep:
                 pipeline.
 
         Returns:
-            The step run output future.
+            The step future.
         """
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
@@ -689,7 +745,7 @@ class BaseStep:
     def map(
         self,
         *args: Any,
-        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs.
@@ -759,7 +815,7 @@ class BaseStep:
     def product(
         self,
         *args: Any,
-        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs using a cartesian product of the mapped inputs.
@@ -876,6 +932,8 @@ class BaseStep:
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
+        group: Optional[Union["GroupInfo", str]] = None,
+        heartbeat_healthy_threshold: Optional[int] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -917,10 +975,15 @@ class BaseStep:
                 function (e.g. `module.my_function`).
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
-            substitutions: Extra placeholders to use in the name template.
+            substitutions: Extra substitutions for model and artifact name
+                placeholders.
             cache_policy: Cache policy for this step.
             runtime: The step runtime. This is only applicable for dynamic
                 pipelines.
+            heartbeat_healthy_threshold: The amount of time (in minutes) that a
+                running step has not received heartbeat and is considered healthy.
+                By default, set to 30 minutes.
+            group: The group information for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -979,6 +1042,9 @@ class BaseStep:
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + list(secrets)
 
+        if isinstance(group, str):
+            group = GroupInfo(id=group, name=group, type=GroupType.MANUAL)
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
@@ -1000,6 +1066,8 @@ class BaseStep:
                 "substitutions": substitutions,
                 "cache_policy": cache_policy,
                 "runtime": runtime,
+                "heartbeat_healthy_threshold": heartbeat_healthy_threshold,
+                "group": group,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -1029,6 +1097,8 @@ class BaseStep:
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
         runtime: Optional[StepRuntime] = None,
+        heartbeat_healthy_threshold: Optional[int] = None,
+        group: Optional[Union["GroupInfo", str]] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -1060,10 +1130,15 @@ class BaseStep:
                 function (e.g. `module.my_function`).
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
-            substitutions: Extra placeholders for the step name.
+            substitutions: Extra substitutions for model and artifact name
+                placeholders.
             cache_policy: Cache policy for this step.
             runtime: The step runtime. This is only applicable for dynamic
                 pipelines.
+            heartbeat_healthy_threshold: The amount of time (in minutes) that a
+                running step has not received heartbeat and is considered healthy.
+                By default, set to 30 minutes.
+            group: The group information for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -1094,6 +1169,8 @@ class BaseStep:
             substitutions=substitutions,
             cache_policy=cache_policy,
             runtime=runtime,
+            heartbeat_healthy_threshold=heartbeat_healthy_threshold,
+            group=group,
             merge=merge,
         )
         return step_copy
@@ -1284,14 +1361,16 @@ To avoid this consider setting step parameters only in one place (config or code
 
             if output.materializer_source:
                 for source in output.materializer_source:
-                    if not source_utils.validate_source_class(
-                        source, expected_class=BaseMaterializer
-                    ):
+                    try:
+                        source_utils.validate_source_class(
+                            source, expected_class=BaseMaterializer
+                        )
+                    except SourceValidationException as e:
                         raise StepInterfaceError(
                             f"Materializer source `{source}` "
                             f"for output '{output_name}' of step '{self.name}' "
                             "does not resolve to a `BaseMaterializer` subclass."
-                        )
+                        ) from e
 
     def _validate_inputs(
         self,

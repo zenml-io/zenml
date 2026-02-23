@@ -46,7 +46,10 @@ from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -74,6 +77,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             "pipeline_id",
             "name",
             name="unique_name_for_pipeline_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["source_snapshot_id"],
         ),
     )
 
@@ -110,6 +117,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
+    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_path: Optional[str] = Field(nullable=True)
 
     # Foreign keys
@@ -410,6 +418,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         return cls(
             name=name,
             description=request.description,
+            source_code=request.source_code,
             is_dynamic=request.is_dynamic,
             stack_id=request.stack,
             project_id=request.project,
@@ -486,12 +495,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             runnable = True
 
         deployable = False
-        if (
-            not self.is_dynamic
-            and self.build
-            and self.stack
-            and self.stack.has_deployer
-        ):
+        if self.build and self.stack and self.stack.has_deployer:
             deployable = True
 
         body = PipelineSnapshotResponseBody(
@@ -554,6 +558,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
             metadata = PipelineSnapshotResponseMetadata(
                 description=self.description,
+                source_code=self.source_code,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
