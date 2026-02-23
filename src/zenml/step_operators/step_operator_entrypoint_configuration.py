@@ -117,6 +117,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             config=step.config,
             spec=step.spec,
             snapshot=snapshot,
+            step_run=step_run,
             pipeline=snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
             pipeline_step_name=self.entrypoint_args[STEP_NAME_OPTION],
