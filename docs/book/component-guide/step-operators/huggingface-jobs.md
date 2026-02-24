@@ -37,8 +37,23 @@ zenml integration install huggingface
 ```
 
 * A remote artifact store as part of your stack (e.g., S3, GCS, Azure Blob). The Job cannot access local files.
-* A remote container registry as part of your stack. The Job pulls the Docker image from this registry.
+* A **publicly accessible** container registry as part of your stack. The Job pulls the Docker image from this registry.
 * An image builder as part of your stack (e.g., local Docker builder).
+
+{% hint style="warning" %}
+**Container registry requirement:** Hugging Face Jobs can only pull images from **public** Docker registries. Private registries (GCR, ECR, ACR, etc.) will fail with a `403 Forbidden` error because the HF Jobs API does not support registry authentication.
+
+**Recommended:** Use Docker Hub with a public repository:
+
+```shell
+zenml container-registry register dockerhub \
+    --flavor=default --uri=docker.io/<YOUR_DOCKERHUB_USERNAME>
+```
+
+Images pushed to Docker Hub are public by default, which is what HF Jobs needs.
+
+**Alternative — HF Spaces Docker images:** HF Jobs can also pull images from Hugging Face Spaces (using the `hf.co/spaces/<user>/<space>` format). Since Spaces are authenticated via the HF token, this can serve as a private image registry within the HF ecosystem. However, ZenML does not currently automate pushing images to HF Spaces — this would require a manual workflow outside the standard ZenML image builder.
+{% endhint %}
 
 We can then register the step operator and add it to our stack:
 
@@ -78,7 +93,7 @@ Once the step operator is part of your active stack, use it in individual steps:
 from zenml import step
 
 
-@step(step_operator=True)
+@step(step_operator="<NAME>")
 def trainer(...) -> ...:
     """Train a model on Hugging Face Jobs."""
     # This step will be executed as a HF Job.
@@ -104,6 +119,52 @@ By default (`pass_env_as_secrets=True`), all ZenML-provided environment variable
 
 Set `pass_env_as_secrets=False` if you prefer to send them as plain environment variables instead. Regardless of this setting, the HF token is always injected as an encrypted secret into the job.
 
+#### Using GPU hardware
+
+When you request GPU hardware via `hardware_flavor` (e.g. `a10g-small`, `a100-large`), the HF Job runs on a machine with a GPU — but your Docker image also needs the CUDA runtime for PyTorch, TensorFlow, or other GPU libraries to detect it.
+
+By default, ZenML uses a plain Python base image (`zenmldocker/zenml:...`), which does **not** include CUDA. To use GPUs, specify a CUDA-enabled parent image via `DockerSettings`:
+
+```python
+from zenml import step
+from zenml.config import DockerSettings
+from zenml.integrations.huggingface.flavors import (
+    HuggingFaceJobsStepOperatorSettings,
+)
+
+docker = DockerSettings(
+    parent_image="pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
+    python_package_installer_args={"system": None},
+    requirements=["zenml", "torchvision"],
+)
+
+hf_settings = HuggingFaceJobsStepOperatorSettings(
+    hardware_flavor="a10g-small",
+    timeout="2h",
+)
+
+
+@step(
+    step_operator="<NAME>",
+    settings={
+        "docker": docker,
+        "step_operator": hf_settings,
+    },
+)
+def gpu_trainer(...) -> ...:
+    """Train on a GPU via Hugging Face Jobs."""
+    import torch
+
+    assert torch.cuda.is_available()
+    ...
+```
+
+{% hint style="warning" %}
+Without a CUDA-enabled parent image, GPU hardware will be available but invisible to your code — `torch.cuda.is_available()` will return `False`. Always pair GPU hardware flavors with a matching CUDA base image.
+{% endhint %}
+
+For more details on building CUDA-enabled images and multi-GPU training, see the [Train with GPUs and Accelerate](../../user-guide/tutorial/distributed-training.md) guide.
+
 #### Additional configuration
 
 You can override hardware, timeout, and namespace on a per-step basis using `HuggingFaceJobsStepOperatorSettings`:
@@ -122,7 +183,7 @@ hf_settings = HuggingFaceJobsStepOperatorSettings(
 
 
 @step(
-    step_operator=True,
+    step_operator="<NAME>",
     settings={"step_operator": hf_settings},
 )
 def gpu_trainer(...) -> ...:

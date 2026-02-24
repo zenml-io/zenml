@@ -25,12 +25,19 @@ from typing import (
 )
 
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_LOGS_URL,
+    METADATA_ORCHESTRATOR_RUN_ID,
+    METADATA_ORCHESTRATOR_URL,
+)
 from zenml.enums import StackComponentType
 from zenml.integrations.huggingface.flavors.huggingface_jobs_step_operator_flavor import (
     HuggingFaceJobsStepOperatorConfig,
     HuggingFaceJobsStepOperatorSettings,
 )
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import Uri
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
@@ -307,6 +314,24 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
             job.url,
         )
 
+        # Publish the HF Job URL as step run metadata so it appears
+        # as a clickable link in the ZenML dashboard.
+        try:
+            step_metadata = {
+                METADATA_ORCHESTRATOR_RUN_ID: str(job.id),
+                METADATA_ORCHESTRATOR_URL: Uri(str(job.url)),
+                METADATA_ORCHESTRATOR_LOGS_URL: Uri(str(job.url)),
+            }
+            publish_step_run_metadata(
+                step_run_id=info.step_run_id,
+                step_run_metadata={self.id: step_metadata},
+            )
+        except Exception:
+            logger.debug(
+                "Failed to publish HuggingFace Job metadata.",
+                exc_info=True,
+            )
+
         log_offset = 0
 
         try:
@@ -352,8 +377,11 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                     message = (
                         job_info.status.message or "No error message provided."
                     )
+                    stage_str = (
+                        stage.value if hasattr(stage, "value") else stage
+                    )
                     raise RuntimeError(
-                        f"HuggingFace Job ended with stage={stage.value}. "
+                        f"HuggingFace Job ended with stage={stage_str}. "
                         f"Message: {message}. "
                         f"Job URL: {job.url}"
                     )
