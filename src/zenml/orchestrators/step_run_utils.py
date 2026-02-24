@@ -207,6 +207,8 @@ class StepRunRequestFactory:
             RuntimeError: If the pipeline run is not a replayed run.
             RuntimeError: If no step run is found for the step in the original
                 run.
+            RuntimeError: If the step wasn't successfully completed in the
+                original run.
         """
         if not self.pipeline_run.original_run:
             raise RuntimeError(
@@ -226,6 +228,11 @@ class StepRunRequestFactory:
                 f"`{self.pipeline_run.original_run.id}`."
             )
         original_step_run = step_runs[0]
+        if not original_step_run.status.is_successful:
+            raise RuntimeError(
+                f"Step `{request.name}` cannot be skipped because it wasn't "
+                "successfully completed in the original run."
+            )
 
         request.status = ExecutionStatus.SKIPPED
         request.original_step_run_id = original_step_run.id
