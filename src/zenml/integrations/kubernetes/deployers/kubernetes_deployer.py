@@ -428,6 +428,20 @@ class KubernetesDeployer(ContainerizedDeployer):
         if resource_limits:
             resources["limits"] = resource_limits
 
+        # Merge pod_settings.resources into the resources dict.
+        # pod_settings.resources uses the native Kubernetes format
+        # (e.g. {"requests": {"cpu": "100m"}, "limits": {"cpu": "200m"}})
+        # and takes precedence over pipeline-level ResourceSettings, which
+        # only supports requests (not limits).
+        if settings.pod_settings and settings.pod_settings.resources:
+            ps_resources = settings.pod_settings.resources
+            for key in ("requests", "limits"):
+                if key in ps_resources:
+                    if key in resources:
+                        resources[key].update(ps_resources[key])
+                    else:
+                        resources[key] = dict(ps_resources[key])
+
         secret_env_list = []
         for key in secret_env_vars.keys():
             secret_env_list.append(
