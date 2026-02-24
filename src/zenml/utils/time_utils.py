@@ -172,6 +172,9 @@ def exponential_backoff_delays(
 
     Yields:
         Delay values in seconds.
+
+    Raises:
+        ValueError: If any input argument is outside the supported range.
     """
     if attempts is not None and attempts < 0:
         raise ValueError("`attempts` must be greater than or equal to 0.")

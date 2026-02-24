@@ -875,7 +875,11 @@ class DynamicPipelineRunner:
         return MapResultsFuture(futures=step_futures)
 
     def await_all_step_futures(self) -> None:
-        """Await all step futures."""
+        """Await all scheduled step futures.
+
+        Raises:
+            RuntimeError: If one or more step futures failed while waiting.
+        """
         failed_steps = []
         for future in self._futures.values():
             try:

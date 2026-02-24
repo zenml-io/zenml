@@ -288,6 +288,12 @@ DEFAULT_STORE_DIRECTORY_NAME = "default_zen_store"
 # SQL Store backup directory subpath:
 SQL_STORE_BACKUP_DIRECTORY_NAME = "database_backup"
 
+# Resource pool defaults
+# Keys listed here default to effectively unbounded pool capacity when no
+# explicit value is provided for the pool resource.
+RESOURCE_POOL_UNBOUNDED_KEYS = {"step_run", "cpu", "memory"}
+RESOURCE_POOL_UNBOUNDED_CAPACITY = 2_147_483_647
+
 DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
 DEFAULT_PROJECT_NAME = "default"

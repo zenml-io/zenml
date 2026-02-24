@@ -138,6 +138,8 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
+    RESOURCE_POOL_UNBOUNDED_CAPACITY,
+    RESOURCE_POOL_UNBOUNDED_KEYS,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -4243,6 +4245,10 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             resource_pool_id: The ID of the resource pool to delete.
+
+        Raises:
+            IllegalOperationError: If the pool still has queued or allocated
+                requests.
         """
         with Session(self.engine) as session:
             self._get_schema_by_id(
@@ -4413,6 +4419,10 @@ class SqlZenStore(BaseZenStore):
             component_id: The ID of the component to detach the resource pool
                 from.
             resource_pool_id: The ID of the resource pool to detach.
+
+        Raises:
+            IllegalOperationError: If the component still has queued or
+                allocated requests in the pool.
         """
         self._acquire_resource_pool_lock(
             session=session, pool_id=resource_pool_id
@@ -4813,6 +4823,50 @@ class SqlZenStore(BaseZenStore):
         return True
 
     @staticmethod
+    def _effective_pool_total_expression(
+        resource_key_expression: Any,
+    ) -> Any:
+        """Build effective pool total expression with key-based defaults.
+
+        Args:
+            resource_key_expression: SQL expression that resolves to a resource
+                key.
+
+        Returns:
+            SQL expression for effective pool total capacity.
+        """
+        return func.coalesce(
+            ResourcePoolResourceSchema.total,
+            case(
+                (
+                    resource_key_expression.in_(RESOURCE_POOL_UNBOUNDED_KEYS),
+                    RESOURCE_POOL_UNBOUNDED_CAPACITY,
+                ),
+                else_=0,
+            ),
+        )
+
+    @staticmethod
+    def _effective_policy_limit_expression(
+        resource_key_expression: Any,
+    ) -> Any:
+        """Build effective policy limit expression with pool fallback.
+
+        Args:
+            resource_key_expression: SQL expression that resolves to a resource
+                key.
+
+        Returns:
+            SQL expression for effective policy limit.
+        """
+        return func.coalesce(
+            ResourcePoolSubjectPolicyResourceSchema.limit,
+            SqlZenStore._effective_pool_total_expression(
+                resource_key_expression=resource_key_expression,
+            ),
+        )
+
+    @staticmethod
     def _fits_pool_violation_subquery(
         pool_id: UUID,
         component_id: UUID,
@@ -4824,15 +4878,15 @@ class SqlZenStore(BaseZenStore):
         The returned subquery yields a row if at least one requested resource
         key/amount violates any of the following constraints:
 
-        - The pool doesn't have a resource of that key
-        - The pool total capacity for the key is smaller than the requested
-          amount
+        - The effective pool total capacity for the key is smaller than the
+          requested amount
         - The component policy limit for the key is smaller than the requested
           amount
         - The request is non-preemptable and exceeds the reserved policy share
 
         Missing limit configuration defaults to the pool total capacity for that
-        resource key.
+        resource key. For keys in `RESOURCE_POOL_UNBOUNDED_KEYS`, missing pool
+        capacity defaults to an effectively unbounded value.
 
         Args:
             pool_id: The ID of the pool to check.
@@ -4844,9 +4898,14 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The subquery.
         """
-        effective_max_expr = func.coalesce(
-            ResourcePoolSubjectPolicyResourceSchema.limit,
-            ResourcePoolResourceSchema.total,
+        resource_key_expr = col(ResourceRequestResourceSchema.key)
+        effective_pool_total_expr = (
+            SqlZenStore._effective_pool_total_expression(
+                resource_key_expression=resource_key_expr,
+            )
+        )
+        effective_max_expr = SqlZenStore._effective_policy_limit_expression(
+            resource_key_expression=resource_key_expr,
         )
         if isinstance(preemptable_expression, bool):
             reserved_violation_condition: Any = (
@@ -4902,10 +4961,8 @@ class SqlZenStore(BaseZenStore):
             .where(col(ResourceRequestResourceSchema.amount) > 0)
             .where(
                 or_(
-                    col(ResourcePoolResourceSchema.id).is_(None),
-                    ResourcePoolResourceSchema.total
+                    effective_pool_total_expr
                     < col(ResourceRequestResourceSchema.amount),
-                    effective_max_expr.is_(None),
                     effective_max_expr
                     < col(ResourceRequestResourceSchema.amount),
                     reserved_violation_condition,
@@ -5272,6 +5329,8 @@ class SqlZenStore(BaseZenStore):
             # Exclude queue items that would exceed the component policy limit.
             # These are temporarily ineligible (until other requests release
             # resources), so we must not let them block the pool queue head.
+            resource_key_expr = col(ResourceRequestResourceSchema.key)
+
             limit_violation_exists = exists(
                 select(1)
                 .select_from(ResourceRequestResourceSchema)
@@ -5316,18 +5375,14 @@ class SqlZenStore(BaseZenStore):
                     col(ResourceRequestResourceSchema.amount) > 0,
                 )
                 .where(
-                    or_(
-                        col(ResourcePoolResourceSchema.total).is_(None),
-                        (
-                            func.coalesce(
-                                col(used_by_component_key_subquery.c.used), 0
-                            )
-                            + col(ResourceRequestResourceSchema.amount)
+                    (
+                        func.coalesce(
+                            col(used_by_component_key_subquery.c.used), 0
                         )
-                        > func.coalesce(
-                            col(ResourcePoolSubjectPolicyResourceSchema.limit),
-                            col(ResourcePoolResourceSchema.total),
-                        ),
+                        + col(ResourceRequestResourceSchema.amount)
+                    )
+                    > self._effective_policy_limit_expression(
+                        resource_key_expression=resource_key_expr,
                     )
                 )
             )
@@ -5504,15 +5559,24 @@ class SqlZenStore(BaseZenStore):
                     )
 
                     policy_resource_rows = session.exec(
-                        select(
+                        select(  # type: ignore[call-overload]
                             ResourceRequestResourceSchema.key,
                             func.coalesce(
                                 ResourcePoolSubjectPolicyResourceSchema.reserved,
                                 0,
                             ).label("reserved"),
-                            func.coalesce(
-                                ResourcePoolSubjectPolicyResourceSchema.limit,
-                                ResourcePoolResourceSchema.total,
+                            col(ResourcePoolResourceSchema.id).label(
+                                "pool_resource_id"
+                            ),
+                            self._effective_pool_total_expression(
+                                resource_key_expression=col(
+                                    ResourceRequestResourceSchema.key
+                                )
+                            ).label("effective_pool_total"),
+                            self._effective_policy_limit_expression(
+                                resource_key_expression=col(
+                                    ResourceRequestResourceSchema.key
+                                )
                             ).label("effective_limit"),
                         )
                         .select_from(ResourceRequestResourceSchema)
@@ -5559,11 +5623,21 @@ class SqlZenStore(BaseZenStore):
                     ).all()
                     reserved_by_key: Dict[str, int] = {}
                     effective_limit_by_key: Dict[str, int] = {}
-                    for k, mn, mx in policy_resource_rows:
-                        reserved_by_key[k] = int(mn)
-                        if mx is None:
-                            raise _AllocationFailed()
-                        effective_limit_by_key[k] = int(mx)
+                    effective_pool_total_by_key: Dict[str, int] = {}
+                    has_explicit_pool_resource_by_key: Dict[str, bool] = {}
+                    for (
+                        k,
+                        min,
+                        pool_resource_id,
+                        pool_total,
+                        max,
+                    ) in policy_resource_rows:
+                        reserved_by_key[k] = int(min)
+                        has_explicit_pool_resource_by_key[k] = (
+                            pool_resource_id is not None
+                        )
+                        effective_pool_total_by_key[k] = int(pool_total)
+                        effective_limit_by_key[k] = int(max)
 
                     for resource_key, amount in requested_resources:
                         if amount > effective_limit_by_key.get(
@@ -5749,7 +5823,22 @@ class SqlZenStore(BaseZenStore):
                             )
                         )
                         if result.rowcount != 1:  # type: ignore[attr-defined]
-                            raise _AllocationFailed()
+                            is_unbounded_missing_row = (
+                                resource_key in RESOURCE_POOL_UNBOUNDED_KEYS
+                                and not has_explicit_pool_resource_by_key.get(
+                                    resource_key, False
+                                )
+                                and effective_pool_total_by_key.get(
+                                    resource_key, 0
+                                )
+                                >= RESOURCE_POOL_UNBOUNDED_CAPACITY
+                            )
+                            # rowcount==0 can be legitimate only when the key
+                            # has no explicit pool row and defaults to
+                            # unbounded capacity. Any other zero-row update
+                            # indicates a failed invariant and must fail.
+                            if not is_unbounded_missing_row:
+                                raise _AllocationFailed()
 
                     session.add(
                         ResourcePoolAllocationSchema(
@@ -6042,6 +6131,22 @@ class SqlZenStore(BaseZenStore):
             self._acquire_resource_pool_lock(
                 session, pool_id=allocation.pool_id
             )
+            explicit_pool_resource_keys = {
+                key
+                for key in session.exec(
+                    select(ResourcePoolResourceSchema.key).where(
+                        col(ResourcePoolResourceSchema.pool_id)
+                        == allocation.pool_id,
+                        col(ResourcePoolResourceSchema.key).in_(
+                            [
+                                k
+                                for k, amount in requested_resource_rows
+                                if amount
+                            ]
+                        ),
+                    )
+                ).all()
+            }
 
             for resource_key, amount in requested_resource_rows:
                 if not amount:
@@ -6067,6 +6172,14 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
                 if result.rowcount != 1:  # type: ignore[attr-defined]
+                    if (
+                        resource_key in RESOURCE_POOL_UNBOUNDED_KEYS
+                        and resource_key not in explicit_pool_resource_keys
+                    ):
+                        # No explicit pool row for an unbounded default key:
+                        # we never incremented occupied in DB for this key, so
+                        # there is nothing to decrement now.
+                        continue
                     logger.debug(
                         "Failed to decrement occupied resource `%s` of request "
                         "`%s` for pool `%s`.",
@@ -6160,8 +6273,10 @@ class SqlZenStore(BaseZenStore):
         for key, amount in requested_resources.items():
             total_occupied = pool_resources.get(key)
             if total_occupied is None:
-                # This shouldn't happen, as requests only get enqueued if the
-                # pools total capacity is sufficient.
+                if key in RESOURCE_POOL_UNBOUNDED_KEYS:
+                    continue
+                # This shouldn't happen for bounded keys, as requests only get
+                # enqueued if the pool's total capacity is sufficient.
                 return False
             total, occupied = total_occupied
             deficit = occupied + amount - total
