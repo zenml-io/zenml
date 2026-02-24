@@ -6,7 +6,7 @@ icon: traffic-light-go
 
 # Triggering Pipelines from External Systems
 
-This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's [Snapshots](https://docs.zenml.io/concepts/snapshots) to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
+This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods: ZenML Pro's [Snapshots](https://docs.zenml.io/concepts/snapshots) for batch-style triggering, [Pipeline Deployments](https://docs.zenml.io/how-to/deployment/deployment) for persistent HTTP services (available in OSS and Pro), and a custom API approach for fully bespoke solutions.
 
 ## Introduction: The Pipeline Triggering Challenge
 
@@ -21,7 +21,7 @@ In development environments, you typically run your ZenML pipelines directly fro
 Each scenario requires a reliable way to trigger the right version of your pipeline with the correct parameters, while maintaining security and operational standards.
 
 {% hint style="info" %}
-For our full reference documentation on pipeline triggering, see the [Snapshot docs](https://docs.zenml.io/concepts/snapshots) page.
+For full reference documentation, see the [Snapshot docs](https://docs.zenml.io/concepts/snapshots) for batch-style triggering and the [Pipeline Deployment docs](https://docs.zenml.io/how-to/deployment/deployment) for persistent HTTP services.
 {% endhint %}
 
 ## Prerequisites
@@ -325,12 +325,217 @@ Use this token in your API calls, and store it securely in your external system
 (e.g., as a GitHub Secret, AWS Secret, or environment variable). Read more
 about [service accounts and tokens](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key).
 
-## Method 2: Building a Custom Trigger API (Open Source)
+## Method 2: Pipeline Deployments (Open Source)
 
-If you're using the open-source version of ZenML or prefer a customized
-solution, you can create your own API wrapper around pipeline execution. This
-approach gives you full control over how pipelines are triggered and can be integrated
-into your existing infrastructure.
+[Pipeline Deployments](https://docs.zenml.io/how-to/deployment/deployment) are ZenML's built-in solution for running pipelines as long-running HTTP services. Unlike Snapshots (which launch batch jobs), Deployments create persistent web services with stable URLs that handle concurrent requests through HTTP endpoints.
+
+{% hint style="info" %}
+Pipeline Deployments are available in both the open-source and Pro versions of ZenML. They provide a fully managed deployment experience without needing to build your own API wrapper.
+{% endhint %}
+
+### Why Use Deployments?
+
+- **Persistent HTTP endpoint**: A stable URL for your pipeline that stays running and handles multiple requests
+- **Request/response semantics**: Send parameters, get pipeline outputs back as JSON
+- **Built-in lifecycle management**: Create, update, deprovision, and delete deployments through CLI or SDK
+- **Multiple backends**: Deploy to local, Docker, Kubernetes, GCP Cloud Run, AWS App Runner, or Hugging Face Spaces
+- **Customizable**: Add custom endpoints, authentication, middleware, and serve static dashboards alongside your API
+- **Shared state**: Use `on_init` hooks to load models once and share them across all requests
+
+### Deploying the Sample Pipeline
+
+To deploy our sample training pipeline, first ensure it accepts parameters with default values and returns meaningful outputs. Then adapt it slightly for deployment:
+
+```python
+from typing import Dict, Any, Union, Annotated
+from zenml import pipeline, step
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+@step
+def load_data(data_url: str) -> pd.DataFrame:
+    np.random.seed(42)
+    n_samples = 1000
+    print(f"Loading data from: {data_url}")
+    data = pd.DataFrame({
+        'feature_1': np.random.normal(0, 1, n_samples),
+        'feature_2': np.random.normal(0, 1, n_samples),
+        'feature_3': np.random.normal(0, 1, n_samples),
+        'target': np.random.choice([0, 1], n_samples)
+    })
+    return data
+
+@step
+def preprocess(data: pd.DataFrame) -> Dict[str, Any]:
+    X = data.drop('target', axis=1)
+    y = data['target']
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    return {
+        'X_train': X_train, 'X_test': X_test,
+        'y_train': y_train, 'y_test': y_test
+    }
+
+@step
+def train_and_evaluate(
+    datasets: Dict[str, Any],
+    model_type: str = "random_forest"
+) -> Annotated[Dict[str, float], "metrics"]:
+    X_train, y_train = datasets['X_train'], datasets['y_train']
+    X_test, y_test = datasets['X_test'], datasets['y_test']
+
+    if model_type == "random_forest":
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+    elif model_type == "gradient_boosting":
+        model = GradientBoostingClassifier(random_state=42)
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+
+    model.fit(X_train, y_train)
+    accuracy = accuracy_score(y_test, model.predict(X_test))
+    return {'accuracy': float(accuracy), 'model_type': model_type}
+
+@pipeline
+def training_pipeline(
+    data_url: str = "s3://example-bucket/data.csv",
+    model_type: str = "random_forest"
+) -> Dict[str, float]:
+    data = load_data(data_url)
+    datasets = preprocess(data)
+    return train_and_evaluate(datasets, model_type)
+```
+
+Now deploy it:
+
+```bash
+# Using the default stack (local deployer)
+zenml pipeline deploy my_module.training_pipeline --name training-service
+```
+
+Or via the SDK:
+
+```python
+deployment = training_pipeline.deploy(deployment_name="training-service")
+print(f"Deployment URL: {deployment.url}")
+```
+
+### Invoking the Deployment
+
+Once running, you can invoke the deployment from any external system:
+
+```bash
+# Via ZenML CLI
+zenml deployment invoke training-service \
+    --data_url="s3://production-bucket/latest-data.csv" \
+    --model_type="gradient_boosting"
+
+# Via curl (from any external system)
+curl -X POST http://your-deployment-url/invoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parameters": {
+      "data_url": "s3://production-bucket/latest-data.csv",
+      "model_type": "gradient_boosting"
+    }
+  }'
+```
+
+The response includes pipeline outputs, execution metadata, and run tracking:
+
+```json
+{
+    "success": true,
+    "outputs": {
+        "metrics": {"accuracy": 0.875, "model_type": "gradient_boosting"}
+    },
+    "execution_time": 8.2,
+    "metadata": {
+        "deployment_name": "training-service",
+        "run_id": "f2e9a3a7-afa3-459e-a970-8558358cf1fb",
+        "parameters_used": {
+            "data_url": "s3://production-bucket/latest-data.csv",
+            "model_type": "gradient_boosting"
+        }
+    }
+}
+```
+
+### Production Deployment with Kubernetes
+
+For production use, deploy to Kubernetes:
+
+```bash
+# Register a Kubernetes deployer
+zenml integration install kubernetes --uv -y
+zenml deployer register k8s-deployer --flavor=kubernetes \
+    --kubernetes_namespace=ml-services
+
+# Update your stack
+zenml stack update -d k8s-deployer
+
+# Deploy
+zenml pipeline deploy my_module.training_pipeline --name training-service
+```
+
+The Kubernetes deployer provides health probes, scaling, labels/annotations, and the ability to attach additional Kubernetes resources (Ingress, HPA, etc.). See the [Kubernetes deployer docs](https://docs.zenml.io/stacks/stack-components/deployers/kubernetes) for full details.
+
+### Adding Authentication
+
+```python
+@pipeline(
+    settings={
+        "deployer": {
+            "generate_auth_key": True,
+        }
+    }
+)
+def training_pipeline(
+    data_url: str = "s3://example-bucket/data.csv",
+    model_type: str = "random_forest"
+) -> Dict[str, float]:
+    ...
+```
+
+This generates an auth key that must be included in requests:
+
+```bash
+curl -X POST http://your-deployment-url/invoke \
+  -H "Authorization: Bearer <GENERATED_AUTH_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{"parameters": {"data_url": "s3://new-data/", "model_type": "random_forest"}}'
+```
+
+### Managing Deployments
+
+```bash
+# List all deployments
+zenml deployment list
+
+# View deployment details and connection info
+zenml deployment describe training-service
+
+# Follow logs
+zenml deployment logs training-service -f
+
+# Update with new code
+zenml pipeline deploy my_module.training_pipeline --name training-service --update
+
+# Tear down
+zenml deployment deprovision training-service
+```
+
+For comprehensive documentation on deployment configuration, lifecycle management, custom endpoints, middleware, and more, see the [Pipeline Deployment guide](https://docs.zenml.io/how-to/deployment/deployment).
+
+## Method 3: Building a Custom Trigger API (Open Source)
+
+If you need full control over the triggering mechanism beyond what Pipeline
+Deployments offer — for example, custom routing logic, integration with a
+specific framework, or embedding pipeline triggers within an existing
+application — you can create your own API wrapper around pipeline execution.
 
 The custom trigger API solution consists of the following components:
 
@@ -720,7 +925,7 @@ Preventing execution of pipeline '<pipeline_name>'. If this is not intended beha
 ```
 {% endhint %}
 
-The FastAPI example above uses threading, but due to ZenML's architecture, concurrent pipeline execution will fail. For production environments that need to handle concurrent pipeline requests, consider deploying your pipeline triggers through container orchestration platforms.
+The FastAPI example above uses threading, but due to ZenML's architecture, concurrent pipeline execution will fail. For production environments that need to handle concurrent pipeline requests, consider using [Pipeline Deployments](#method-2-pipeline-deployments-open-source) which handle this natively, or deploying your custom pipeline triggers through container orchestration platforms.
 
 #### Recommended Solutions for Concurrent Execution
 
@@ -822,9 +1027,13 @@ except Exception as e:
 
 The best approach for triggering pipelines depends on your specific needs:
 
-1. **ZenML Pro Snapshots**: Ideal for teams that need a complete, managed solution with UI support and centralized management
+| Approach | Best for | Availability |
+|---|---|---|
+| **[Pipeline Deployments](https://docs.zenml.io/how-to/deployment/deployment)** | Persistent HTTP services for real-time inference, agents, interactive APIs. Handles concurrent requests, offers custom endpoints, auth, and full lifecycle management. | OSS and Pro |
+| **[Snapshots](https://docs.zenml.io/concepts/snapshots)** | Batch-style pipeline runs triggered from the dashboard, SDK, CLI, or REST API. No persistent service needed. | Pro |
+| **Custom API** | Full control over triggering when you need to embed pipeline triggers within an existing application or framework. | OSS and Pro |
 
-2. **Custom API**: Best for teams that need full control over the triggering mechanism and want to embed it within their own infrastructure
+For most teams looking to expose pipelines as HTTP services, **Pipeline Deployments** are the recommended starting point — they provide a managed deployment experience with multiple infrastructure backends (local, Docker, Kubernetes, cloud) out of the box.
 
 Regardless of your approach, always prioritize:
 - Security (authentication and authorization)
