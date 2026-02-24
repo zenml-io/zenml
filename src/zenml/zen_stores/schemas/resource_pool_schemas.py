@@ -580,6 +580,10 @@ class ResourceRequestSchema(BaseSchema, table=True):
 
     __tablename__ = "resource_request"
     __table_args__ = (
+        UniqueConstraint(
+            "step_run_id",
+            name="unique_resource_request_step_run_id",
+        ),
         build_index(
             table_name=__tablename__,
             column_names=["component_id", "status", "created", "id"],
