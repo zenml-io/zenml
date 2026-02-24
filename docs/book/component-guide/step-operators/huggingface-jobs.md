@@ -20,7 +20,7 @@ To use the Hugging Face Jobs step operator you need:
 
 * A [Hugging Face account](https://huggingface.co/join) with Jobs access (Pro, Team, or Enterprise plan).
 * A Hugging Face API token with appropriate permissions. You can create one at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
-* `huggingface_hub >= 0.30.0` (the Jobs API was introduced in this version). The ZenML integration install handles this, but if you see an error about the Jobs API not being available, upgrade with:
+* `huggingface_hub >= 0.30.0` — the Jobs API was introduced in this version. The ZenML `huggingface` integration installs `huggingface_hub`, but the base integration minimum (`>0.19.0`) may resolve to an older version. If you see an error about the Jobs API not being available, upgrade explicitly:
 
 ```shell
 pip install 'huggingface_hub>=0.30.0'
@@ -41,7 +41,7 @@ zenml integration install huggingface
 * An image builder as part of your stack (e.g., local Docker builder).
 
 {% hint style="warning" %}
-**Container registry requirement:** Hugging Face Jobs can only pull images from **public** Docker registries. Private registries (GCR, ECR, ACR, etc.) will fail with a `403 Forbidden` error because the HF Jobs API does not support registry authentication.
+**Container registry requirement:** Hugging Face Jobs currently does not support registry authentication, so it can only pull images from registries that are publicly accessible without credentials. Private registries (GCR, ECR, ACR, etc.) will fail with a `403 Forbidden` error.
 
 **Recommended:** Use Docker Hub with a public repository:
 
@@ -50,7 +50,7 @@ zenml container-registry register dockerhub \
     --flavor=default --uri=docker.io/<YOUR_DOCKERHUB_USERNAME>
 ```
 
-Images pushed to Docker Hub are public by default, which is what HF Jobs needs.
+Ensure the repository is set to **public** in Docker Hub settings — new repositories may default to private depending on your Docker Hub plan.
 
 **Alternative — HF Spaces Docker images:** HF Jobs can also pull images from Hugging Face Spaces (using the `hf.co/spaces/<user>/<space>` format). Since Spaces are authenticated via the HF token, this can serve as a private image registry within the HF ecosystem. However, ZenML does not currently automate pushing images to HF Spaces — this would require a manual workflow outside the standard ZenML image builder.
 {% endhint %}
@@ -117,7 +117,17 @@ If none of these are available, the step will fail with a clear error message.
 
 By default (`pass_env_as_secrets=True`), all ZenML-provided environment variables — which may include cloud credentials for your artifact store — are sent as **HF encrypted secrets**. These are encrypted server-side and are not visible in job specs.
 
-Set `pass_env_as_secrets=False` if you prefer to send them as plain environment variables instead. Regardless of this setting, the HF token is always injected as an encrypted secret into the job.
+Set `pass_env_as_secrets=False` if you prefer to send them as plain environment variables instead. Regardless of this setting, the HF token is always injected as an encrypted secret and is never sent as a plain environment variable.
+
+#### Log streaming
+
+By default, log streaming is **disabled** (`stream_logs=False`). Enable it on the component config if you want real-time job output streamed to ZenML logs during execution:
+
+```shell
+zenml step-operator update <NAME> --stream_logs=True
+```
+
+Note that enabling log streaming increases HF API calls during polling and may produce transient errors while the job is initializing.
 
 #### Using GPU hardware
 
@@ -200,7 +210,7 @@ def gpu_trainer(...) -> ...:
 | `timeout`               | `Optional`       | `None`  | Default job timeout (seconds or string like `30m`, `2h`) |
 | `namespace`             | `Optional[str]`  | `None`  | HF namespace (user or organization)                      |
 | `pass_env_as_secrets`   | `bool`           | `True`  | Route env vars through HF encrypted secrets              |
-| `stream_logs`           | `bool`           | `True`  | Stream job logs during execution                         |
+| `stream_logs`           | `bool`           | `False` | Stream job logs during execution (opt-in)                |
 | `poll_interval_seconds` | `float`          | `10.0`  | Seconds between job status polls                         |
 
 **Per-step overrides** (`HuggingFaceJobsStepOperatorSettings`):

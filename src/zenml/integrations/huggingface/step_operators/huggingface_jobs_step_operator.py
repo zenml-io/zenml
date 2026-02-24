@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """HuggingFace Jobs step operator implementation."""
 
+import random
 import time
 from typing import (
     TYPE_CHECKING,
+    Any,
     Dict,
     List,
     Optional,
@@ -36,7 +38,7 @@ from zenml.integrations.huggingface.flavors.huggingface_jobs_step_operator_flavo
     HuggingFaceJobsStepOperatorSettings,
 )
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import Uri
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
@@ -52,20 +54,79 @@ HUGGINGFACE_JOBS_DOCKER_IMAGE_KEY = "huggingface_jobs_step_operator"
 
 _HF_JOBS_MIN_VERSION = "0.30.0"
 
+_HF_TOKEN_ENV_KEYS = ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN")
+
+_HF_JOBS_POLL_MAX_CONSECUTIVE_ERRORS = 3
+_HF_JOBS_POLL_BACKOFF_CAP_SECONDS = 300.0
+
 
 def _check_hf_jobs_availability() -> None:
     """Verify that the installed huggingface_hub supports the Jobs API.
 
+    Checks both that the package is installed and that the version is
+    new enough to include the Jobs API (>= 0.30.0).
+
     Raises:
-        RuntimeError: If the Jobs API is not available.
+        RuntimeError: If huggingface_hub is missing, too old, or lacks
+            the Jobs API symbols.
     """
+    installed_version: Optional[str] = None
+    try:
+        from importlib.metadata import version
+
+        installed_version = version("huggingface_hub")
+    except Exception:
+        pass
+
+    if installed_version is None:
+        raise RuntimeError(
+            f"`huggingface_hub` is not installed. The HuggingFace Jobs "
+            f"step operator requires `huggingface_hub>="
+            f"{_HF_JOBS_MIN_VERSION}`. Install it with: "
+            f"`pip install 'huggingface_hub>={_HF_JOBS_MIN_VERSION}'`"
+        )
+
+    # Best-effort version comparison using packaging if available,
+    # falling back to a simple tuple comparison.
+    try:
+        from packaging.version import Version
+
+        if Version(installed_version) < Version(_HF_JOBS_MIN_VERSION):
+            raise RuntimeError(
+                f"The HuggingFace Jobs step operator requires "
+                f"`huggingface_hub>={_HF_JOBS_MIN_VERSION}`, but "
+                f"version `{installed_version}` is installed. "
+                f"Upgrade with: `pip install 'huggingface_hub>="
+                f"{_HF_JOBS_MIN_VERSION}'`"
+            )
+    except ImportError:
+        # packaging not available — compare version tuples
+        try:
+            installed_tuple = tuple(
+                int(x) for x in installed_version.split(".")[:3]
+            )
+            min_tuple = tuple(
+                int(x) for x in _HF_JOBS_MIN_VERSION.split(".")[:3]
+            )
+            if installed_tuple < min_tuple:
+                raise RuntimeError(
+                    f"The HuggingFace Jobs step operator requires "
+                    f"`huggingface_hub>={_HF_JOBS_MIN_VERSION}`, but "
+                    f"version `{installed_version}` is installed. "
+                    f"Upgrade with: `pip install 'huggingface_hub>="
+                    f"{_HF_JOBS_MIN_VERSION}'`"
+                )
+        except (ValueError, TypeError):
+            pass  # unparseable version — fall through to capability check
+
+    # Final capability check: the Jobs API symbols must be importable.
     try:
         from huggingface_hub import run_job  # noqa: F401
     except ImportError:
         raise RuntimeError(
-            "The installed version of `huggingface_hub` does not support "
-            "the Jobs API. Please upgrade: "
-            "`pip install 'huggingface_hub>=0.30.0'`"
+            f"The installed `huggingface_hub` ({installed_version}) does "
+            f"not expose the Jobs API. Please upgrade: "
+            f"`pip install 'huggingface_hub>={_HF_JOBS_MIN_VERSION}'`"
         )
 
 
@@ -100,7 +161,7 @@ def _resolve_token(config: HuggingFaceJobsStepOperatorConfig) -> str:
 
         cached = HfFolder.get_token()
         if cached:
-            return cached
+            return str(cached)
     except Exception:
         pass
 
@@ -112,25 +173,97 @@ def _resolve_token(config: HuggingFaceJobsStepOperatorConfig) -> str:
     )
 
 
+def _resolve_space_hardware(
+    hardware_flavor_str: Optional[str],
+) -> Optional[Any]:
+    """Convert a hardware flavor string to a SpaceHardware enum value.
+
+    Tries the public import path first, then falls back to the private
+    module. Validates the flavor string and provides actionable errors.
+
+    Args:
+        hardware_flavor_str: The hardware flavor string (e.g. 'a10g-small').
+
+    Returns:
+        A SpaceHardware enum value, or None if no flavor was specified.
+
+    Raises:
+        RuntimeError: If SpaceHardware cannot be imported or the flavor
+            string is invalid.
+    """
+    if not hardware_flavor_str:
+        return None
+
+    space_hw_cls: Any = None
+    try:
+        import huggingface_hub
+
+        space_hw_cls = getattr(huggingface_hub, "SpaceHardware", None)
+    except ImportError:
+        pass
+
+    if space_hw_cls is None:
+        try:
+            from huggingface_hub._space_api import (
+                SpaceHardware as _SpaceHardware,
+            )
+
+            space_hw_cls = _SpaceHardware
+        except ImportError:
+            raise RuntimeError(
+                f"Cannot import SpaceHardware from huggingface_hub. "
+                f"Upgrade with: `pip install 'huggingface_hub>="
+                f"{_HF_JOBS_MIN_VERSION}'`"
+            )
+
+    # Try enum-by-value first, then attribute lookup with normalization
+    try:
+        return space_hw_cls(hardware_flavor_str)
+    except ValueError:
+        pass
+
+    normalized = hardware_flavor_str.upper().replace("-", "_")
+    hw = getattr(space_hw_cls, normalized, None)
+    if hw is not None:
+        return hw
+
+    raise RuntimeError(
+        f"Invalid hardware flavor '{hardware_flavor_str}'. "
+        f"Run `hf jobs hardware` to see available options."
+    )
+
+
 def split_environment(
     environment: Dict[str, str],
     pass_as_secrets: bool,
 ) -> Tuple[Dict[str, str], Dict[str, str]]:
     """Split environment variables into plain env and HF encrypted secrets.
 
-    When pass_as_secrets is True, all variables go to secrets (encrypted
-    server-side by HF). Otherwise they are sent as plain env vars.
+    HF token keys are always stripped from both dicts to prevent
+    accidental leakage. The step operator injects the resolved token
+    separately as an encrypted secret.
 
     Args:
         environment: The full environment dict from ZenML.
         pass_as_secrets: Whether to route vars through HF secrets.
 
     Returns:
-        A tuple of (plain_env, secrets).
+        A tuple of (plain_env, secrets), with token keys removed.
     """
     if pass_as_secrets:
-        return {}, dict(environment)
-    return dict(environment), {}
+        plain_env: Dict[str, str] = {}
+        secrets = dict(environment)
+    else:
+        plain_env = dict(environment)
+        secrets = {}
+
+    # Always strip token keys — the operator injects the canonical
+    # token into secrets separately.
+    for key in _HF_TOKEN_ENV_KEYS:
+        plain_env.pop(key, None)
+        secrets.pop(key, None)
+
+    return plain_env, secrets
 
 
 class HuggingFaceJobsStepOperator(BaseStepOperator):
@@ -139,7 +272,7 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
     HF Jobs execute Docker containers on Hugging Face infrastructure,
     supporting both CPU and GPU hardware flavors. This operator submits
     the ZenML step entrypoint command as a Job, polls until completion,
-    and streams logs back to ZenML.
+    and optionally streams logs back to ZenML.
 
     Requirements:
         - A Hugging Face Pro, Team, or Enterprise account with Jobs access.
@@ -260,7 +393,6 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
             inspect_job,
             run_job,
         )
-        from huggingface_hub._space_api import SpaceHardware
 
         settings = cast(
             HuggingFaceJobsStepOperatorSettings, self.get_settings(info)
@@ -272,9 +404,7 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
         hardware_flavor_str = (
             settings.hardware_flavor or self.config.hardware_flavor
         )
-        hardware_flavor = (
-            SpaceHardware(hardware_flavor_str) if hardware_flavor_str else None
-        )
+        hardware_flavor = _resolve_space_hardware(hardware_flavor_str)
         timeout = settings.timeout or self.config.timeout
         namespace = settings.namespace or self.config.namespace
 
@@ -282,9 +412,10 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
             environment, self.config.pass_env_as_secrets
         )
 
-        # Provide the HF token inside the job so user code can interact
-        # with the Hub (push/pull models, datasets, etc.)
-        secrets.setdefault("HF_TOKEN", token)
+        # Inject the resolved HF token as encrypted secrets so user
+        # code can interact with the Hub (push/pull models, datasets).
+        for key in _HF_TOKEN_ENV_KEYS:
+            secrets[key] = token
 
         job_name = f"zenml-{info.run_name}-{info.pipeline_step_name}"[:63]
         logger.info(
@@ -317,7 +448,7 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
         # Publish the HF Job URL as step run metadata so it appears
         # as a clickable link in the ZenML dashboard.
         try:
-            step_metadata = {
+            step_metadata: Dict[str, MetadataType] = {
                 METADATA_ORCHESTRATOR_RUN_ID: str(job.id),
                 METADATA_ORCHESTRATOR_URL: Uri(str(job.url)),
                 METADATA_ORCHESTRATOR_LOGS_URL: Uri(str(job.url)),
@@ -332,15 +463,51 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                 exc_info=True,
             )
 
+        # Poll until the job reaches a terminal state, with retry
+        # logic for transient API errors.
+        consecutive_errors = 0
         log_offset = 0
 
         try:
             while True:
-                job_info = inspect_job(
-                    job_id=job.id,
-                    namespace=namespace,
-                    token=token,
-                )
+                try:
+                    job_info = inspect_job(
+                        job_id=job.id,
+                        namespace=namespace,
+                        token=token,
+                    )
+                    consecutive_errors = 0
+                except Exception as poll_err:
+                    consecutive_errors += 1
+                    if (
+                        consecutive_errors
+                        >= _HF_JOBS_POLL_MAX_CONSECUTIVE_ERRORS
+                    ):
+                        raise RuntimeError(
+                            f"Failed to poll HuggingFace Job {job.id} "
+                            f"after {consecutive_errors} consecutive "
+                            f"errors. Last error: {poll_err}. "
+                            f"Job URL: {job.url}"
+                        ) from poll_err
+
+                    backoff = min(
+                        self.config.poll_interval_seconds
+                        * (2**consecutive_errors),
+                        _HF_JOBS_POLL_BACKOFF_CAP_SECONDS,
+                    )
+                    jitter = random.uniform(0, backoff * 0.1)
+                    logger.warning(
+                        "Transient error polling HF Job %s "
+                        "(attempt %d/%d): %s. Retrying in %.1fs.",
+                        job.id,
+                        consecutive_errors,
+                        _HF_JOBS_POLL_MAX_CONSECUTIVE_ERRORS,
+                        poll_err,
+                        backoff + jitter,
+                    )
+                    time.sleep(backoff + jitter)
+                    continue
+
                 stage = job_info.status.stage
 
                 if self.config.stream_logs:
@@ -399,13 +566,47 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                 "Interrupt received. Canceling HuggingFace Job %s...",
                 job.id,
             )
-            try:
-                cancel_job(job_id=job.id, namespace=namespace, token=token)
-                logger.info("HuggingFace Job %s cancel request sent.", job.id)
-            except Exception:
-                logger.warning(
-                    "Failed to cancel HuggingFace Job %s.",
-                    job.id,
-                    exc_info=True,
-                )
+            self._best_effort_cancel(cancel_job, job.id, namespace, token)
             raise
+        except RuntimeError:
+            # Job-terminal or poll-exhaustion errors: attempt cleanup
+            logger.warning(
+                "Attempting best-effort cancellation of HF Job %s...",
+                job.id,
+            )
+            self._best_effort_cancel(cancel_job, job.id, namespace, token)
+            raise
+        except Exception:
+            logger.warning(
+                "Unexpected error while monitoring HF Job %s. "
+                "Attempting best-effort cancellation...",
+                job.id,
+                exc_info=True,
+            )
+            self._best_effort_cancel(cancel_job, job.id, namespace, token)
+            raise
+
+    @staticmethod
+    def _best_effort_cancel(
+        cancel_fn: Any,
+        job_id: str,
+        namespace: Optional[str],
+        token: str,
+    ) -> None:
+        """Attempt to cancel a remote HF Job, suppressing errors.
+
+        Args:
+            cancel_fn: The huggingface_hub cancel_job callable.
+            job_id: The HF Job ID.
+            namespace: The HF namespace.
+            token: The HF API token.
+        """
+        try:
+            cancel_fn(job_id=job_id, namespace=namespace, token=token)
+            logger.info("HuggingFace Job %s cancel request sent.", job_id)
+        except Exception:
+            logger.debug(
+                "Failed to cancel HuggingFace Job %s.",
+                job_id,
+                exc_info=True,
+            )

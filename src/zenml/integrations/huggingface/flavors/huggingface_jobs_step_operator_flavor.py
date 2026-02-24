@@ -100,10 +100,11 @@ class HuggingFaceJobsStepOperatorConfig(
         "and not visible in job specs. Defaults to True for security",
     )
     stream_logs: bool = Field(
-        default=True,
+        default=False,
         description="Controls whether job logs are periodically fetched and "
-        "streamed to the ZenML log output during execution. Provides "
-        "real-time visibility into step progress. Disable for quieter output",
+        "streamed to the ZenML log output during execution. Enabling this "
+        "increases HF API calls and may cause transient log-fetch errors "
+        "during job initialization. Enable for real-time step visibility",
     )
     poll_interval_seconds: float = Field(
         default=10.0,
