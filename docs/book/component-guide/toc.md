@@ -47,6 +47,7 @@
   * [Artifact Log Store](log-stores/artifact.md)
   * [OpenTelemetry Log Store](log-stores/otel.md)
   * [Datadog Log Store](log-stores/datadog.md)
+  * [Grafana Loki Log Store](log-stores/loki.md)
   * [Develop a Custom Log Store](log-stores/custom.md)
 * [Step Operators](step-operators/README.md)
   * [Amazon SageMaker](step-operators/sagemaker.md)
