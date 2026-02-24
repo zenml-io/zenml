@@ -53,6 +53,7 @@ from typing import (
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
+from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
@@ -648,9 +649,14 @@ def retry_on_api_exception(
         retries = 0
         while retries <= max_retries:
             try:
+                if "_request_timeout" not in kwargs:
+                    kwargs["_request_timeout"] = 30
                 return func(*args, **kwargs)
-            except ApiException as e:
-                if e.status in fail_on_status_codes:
+            except (ApiException, ReadTimeoutError) as e:
+                if (
+                    isinstance(e, ApiException)
+                    and e.status in fail_on_status_codes
+                ):
                     raise
 
                 retries += 1
