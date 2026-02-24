@@ -283,6 +283,23 @@ class Executor(ABC):
             payload: A standard message payload.
         """
 
+    @abstractmethod
+    async def shutdown(self) -> None:
+        """Graceful executor shutdown (completes work, then exits)."""
+        pass
+
+    @abstractmethod
+    def max_message_capacity(self) -> int | None:
+        """Helper utility for variable batch size consumption.
+
+        Helpful when execution needs to be throttled. The executor
+        responds with the number of messages it can pickup for execution
+        at the moment.
+
+        Returns:
+            Number of messages the executor can handle (None if no limit).
+        """
+
 
 class ConsumerBase(ABC):
     """Async core pipeline shared by polling and push transports.
@@ -339,7 +356,6 @@ class ConsumerBase(ABC):
         Args:
             message: A MessageEnvelope object.
         """
-        # TODO: Blocking execution, extend with a fire-and-forget option in next iterations.
         await self._executor.execute(payload=message.payload)
 
     @abstractmethod
@@ -523,17 +539,34 @@ class PollingConsumer(ConsumerBase, ABC):
         return self._polling_interval
 
     @abstractmethod
-    async def receive_messages(self) -> list[Any]:
+    async def receive_messages(
+        self, batch_size: int | None = None
+    ) -> list[Any]:
         """Requests to get a batch of messages from the queue.
+
+        Args:
+            batch_size: Number of messages to get.
 
         Returns:
             A list of messages (broker-specific payload).
         """
 
+    @abstractmethod
+    def get_messages_batch_size(self) -> int:
+        """Getter for the batch size.
+
+        Enables implementations that adapt batch size per iteration
+        based on configuration, throttling or other factors.
+
+        Returns:
+            The size of the next batch of messages.
+        """
+
     async def poll_once(self) -> None:
         """Receive and handle one batch. Receive failures emit read_failed."""
         try:
-            raw_messages = await self.receive_messages()
+            batch_size = self.get_messages_batch_size()
+            raw_messages = await self.receive_messages(batch_size=batch_size)
         except Exception as exc:
             await self.handle_critical_event(
                 CriticalEvent(
@@ -550,11 +583,16 @@ class PollingConsumer(ConsumerBase, ABC):
 
     async def run(self) -> None:
         """Run polling loop until stop() is called."""
-        while not self._stopped:
-            start = asyncio.get_running_loop().time()
-            await self.poll_once()
+        try:
+            while not self._stopped:
+                start = asyncio.get_running_loop().time()
+                await self.poll_once()
 
-            elapsed = asyncio.get_running_loop().time() - start
-            remaining = self.polling_interval - elapsed
-            if remaining > 0:
-                await asyncio.sleep(remaining)
+                elapsed = asyncio.get_running_loop().time() - start
+                logger.debug("Elapsed time for polling: %s", elapsed)
+                remaining = self.polling_interval - elapsed
+                if remaining > 0:
+                    await asyncio.sleep(remaining)
+        finally:
+            self.stop()
+            await self._executor.shutdown()

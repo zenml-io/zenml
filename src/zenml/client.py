@@ -4014,7 +4014,6 @@ class Client(metaclass=ClientMetaClass):
             concurrency: The concurrency of the schedule.
             is_archived: The archived status of the schedule.
             flavor: The flavor of the schedule.
-            type: The type of schedule.
             next_occurrence: The next occurrence of the schedule.
             pipeline_id: Filter triggers by pipeline with attached snapshots.
             snapshot_id: Filter triggers by attached snapshot.
