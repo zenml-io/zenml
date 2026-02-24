@@ -648,6 +648,8 @@ def retry_on_api_exception(
         retries = 0
         while retries <= max_retries:
             try:
+                if "_request_timeout" not in kwargs:
+                    kwargs["_request_timeout"] = 60
                 return func(*args, **kwargs)
             except ApiException as e:
                 if e.status in fail_on_status_codes:
