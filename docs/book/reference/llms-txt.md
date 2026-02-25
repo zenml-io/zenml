@@ -105,7 +105,7 @@ ZenML skills work with tools that support the Agent Skills format:
 | [OpenCode](https://github.com/opencode-ai/opencode) | Open source AI agent | Native skills support |
 | [Amp](https://amp.dev) | AI coding assistant | Agent Skills integration |
 | [Cursor](https://cursor.sh) | AI-powered IDE | Via settings configuration |
-| [Gemini CLI](https://github.com/google/gemini-cli) | Google's terminal agent | Skills support |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google's terminal agent | Skills support |
 
 ### Installing ZenML skills
 

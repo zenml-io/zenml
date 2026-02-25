@@ -3,7 +3,7 @@
 #
 # Run: lychee --no-progress 'docs/book/**/*.md'
 
-# Exclude patterns for known false positives
+# Exclude patterns for known false positives (regex)
 exclude = [
     # Example/placeholder domains used in documentation
     "zenml-pro\\.my\\.domain",
@@ -13,9 +13,11 @@ exclude = [
     "my-",
     "YOUR_",
     "example\\.com",
-    "0\\.0\\.0\\.0",
-    "localhost",
-    "127\\.0\\.0\\.1",
+
+    # Local server URLs (used in code examples, not real endpoints)
+    "http://0\\.0\\.0\\.0",
+    "http://localhost",
+    "http://127\\.0\\.0\\.1",
 
     # Sites that block automated requests (bot protection / WAF)
     "portal\\.azure\\.com",
@@ -25,7 +27,7 @@ exclude = [
     "twitter\\.com",
     "x\\.com",
 
-    # ZenML Pro dashboard URLs (require authentication)
+    # ZenML Pro dashboard and workspace URLs (require authentication)
     "cloud\\.zenml\\.io",
     "cloudinfra\\.zenml\\.io",
 
