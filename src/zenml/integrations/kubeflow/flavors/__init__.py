@@ -17,8 +17,16 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
     KubeflowOrchestratorConfig,
     KubeflowOrchestratorFlavor,
 )
+from zenml.integrations.kubeflow.flavors.kubeflow_trainer_step_operator_flavor import (  # noqa
+    KubeflowTrainerStepOperatorConfig,
+    KubeflowTrainerStepOperatorFlavor,
+    KubeflowTrainerStepOperatorSettings,
+)
 
 __all__ = [
     "KubeflowOrchestratorFlavor",
     "KubeflowOrchestratorConfig",
+    "KubeflowTrainerStepOperatorConfig",
+    "KubeflowTrainerStepOperatorFlavor",
+    "KubeflowTrainerStepOperatorSettings",
 ]
