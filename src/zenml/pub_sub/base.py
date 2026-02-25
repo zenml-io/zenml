@@ -585,14 +585,19 @@ class PollingConsumer(ConsumerBase, ABC):
         """Run polling loop until stop() is called."""
         try:
             while not self._stopped:
-                start = asyncio.get_running_loop().time()
-                await self.poll_once()
+                try:
+                    start = asyncio.get_running_loop().time()
+                    await self.poll_once()
 
-                elapsed = asyncio.get_running_loop().time() - start
-                logger.debug("Elapsed time for polling: %s", elapsed)
-                remaining = self.polling_interval - elapsed
-                if remaining > 0:
-                    await asyncio.sleep(remaining)
+                    elapsed = asyncio.get_running_loop().time() - start
+                    logger.debug("Elapsed time for polling: %s", elapsed)
+                    remaining = self.polling_interval - elapsed
+                    if remaining > 0:
+                        await asyncio.sleep(remaining)
+                except Exception as exc:
+                    logger.exception(
+                        "Unhandled exception during polling: %s", exc_info=exc
+                    )
         finally:
             self.stop()
             await self._executor.shutdown()
