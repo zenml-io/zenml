@@ -433,7 +433,9 @@ class DynamicPipelineRunner:
         """
         logs_context: ContextManager[Any] = nullcontext()
         if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
-            logs_context = setup_logging_context(source="orchestrator")
+            logs_context = setup_logging_context(
+                source="orchestrator", pipeline_run=self._run
+            )
 
         with logs_context:
             if self._run.status.is_finished:
