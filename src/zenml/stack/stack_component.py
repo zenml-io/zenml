@@ -806,6 +806,12 @@ class StackComponent:
         if required_gpu_count > 0:
             requested_resources["gpu"] = required_gpu_count
 
+        if resource_settings.cpu_count is not None:
+            requested_resources["cpu"] = resource_settings.cpu_count
+
+        if resource_settings.memory is not None:
+            requested_resources["memory"] = resource_settings.get_memory()
+
         return requested_resources
 
     def __repr__(self) -> str:

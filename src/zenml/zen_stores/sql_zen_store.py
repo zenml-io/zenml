@@ -4154,10 +4154,13 @@ class SqlZenStore(BaseZenStore):
                         schema_class=StackComponentSchema,
                         session=session,
                     )
-                    if component.type != StackComponentType.ORCHESTRATOR.value:
+                    if component.type not in {
+                        StackComponentType.ORCHESTRATOR.value,
+                        StackComponentType.STEP_OPERATOR.value,
+                    }:
                         raise IllegalOperationError(
-                            "Resource pool policies can only be assigned to "
-                            "orchestrators."
+                            "Resource pool policies can only be attached to "
+                            "orchestrators and step operators."
                         )
                     self._attach_resource_pool_policy(
                         session=session,
