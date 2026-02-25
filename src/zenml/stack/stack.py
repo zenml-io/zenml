@@ -182,10 +182,54 @@ class Stack:
             hydrate=True,
         )
 
-        stack_components = {
-            model.type: StackComponent.from_model(model)
-            for model in component_models
-        }
+        stack_components = {}
+        missing_integrations: Dict[str, str] = {}
+        for model in component_models:
+            try:
+                stack_components[model.type] = StackComponent.from_model(
+                    model
+                )
+            except ImportError:
+                from zenml.integrations.registry import (
+                    integration_registry,
+                )
+
+                flavor_model = model.flavor
+                if (
+                    flavor_model.integration
+                    and not integration_registry.is_installed(
+                        flavor_model.integration
+                    )
+                ):
+                    missing_integrations[flavor_model.integration] = (
+                        flavor_model.name
+                    )
+                else:
+                    raise
+
+        if missing_integrations:
+            from zenml.integrations.registry import integration_registry
+
+            all_integrations = " ".join(missing_integrations.keys())
+            all_requirements = " ".join(
+                f"'{req}'"
+                for integration in missing_integrations
+                for req in integration_registry.select_integration_requirements(
+                    integration
+                )
+            )
+            component_details = ", ".join(
+                f"`{flavor}` ({integration})"
+                for integration, flavor in missing_integrations.items()
+            )
+            raise ImportError(
+                f"Your active stack requires the following integrations "
+                f"which are not installed: {component_details}. "
+                f"You can install all of them at once using the CLI:\n\n"
+                f"  zenml integration install {all_integrations}\n\n"
+                f"Or by manually installing the requirements:\n\n"
+                f"  pip install {all_requirements}\n"
+            )
         stack = Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,
