@@ -883,7 +883,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             TriggerSnapshotSchema,
         )
 
-        super().apply_filter(query=query, table=table)
+        query = super().apply_filter(query=query, table=table)
 
         if self.trigger_id is not None:
             query = query.join(
