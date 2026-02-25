@@ -466,6 +466,15 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         self.updated = utc_now()
         return self
 
+    @property
+    def is_runnable(self) -> bool:
+        """Implements the `is_runnable` property.
+
+        Returns:
+            True if the snapshot is runnable from server.
+        """
+        return self.build and not self.build.is_local and self.build.stack_id
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -490,10 +499,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The response.
         """
-        runnable = False
-        if self.build and not self.build.is_local and self.build.stack_id:
-            runnable = True
-
         deployable = False
         if self.build and self.stack and self.stack.has_deployer:
             deployable = True
@@ -503,7 +508,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            runnable=runnable,
+            runnable=self.runnable,
             deployable=deployable,
             is_dynamic=self.is_dynamic,
         )

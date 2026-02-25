@@ -7191,6 +7191,11 @@ class SqlZenStore(BaseZenStore):
             if not snapshot:
                 raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
 
+            if not snapshot.is_runnable:
+                raise IllegalOperationError(
+                    f"Can not attach trigger {trigger_id} to non-runnable snapshot {snapshot_id}"
+                )
+
             trigger = session.get(TriggerSchema, trigger_id)
 
             if not trigger:
