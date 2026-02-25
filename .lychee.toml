@@ -1,0 +1,49 @@
+# Lychee link checker configuration
+# https://github.com/lycheeverse/lychee
+#
+# Run: lychee --no-progress 'docs/book/**/*.md'
+
+# Exclude patterns for known false positives
+exclude = [
+    # Example/placeholder domains used in documentation
+    "zenml-pro\\.my\\.domain",
+    "zenml-pro\\.internal\\.mycompany\\.com",
+    "my-company",
+    "your-",
+    "my-",
+    "YOUR_",
+    "example\\.com",
+    "0\\.0\\.0\\.0",
+    "localhost",
+    "127\\.0\\.0\\.1",
+
+    # Sites that block automated requests (bot protection / WAF)
+    "portal\\.azure\\.com",
+    "azure\\.microsoft\\.com",
+    "dev\\.mysql\\.com",
+    "linkedin\\.com",
+    "twitter\\.com",
+    "x\\.com",
+
+    # ZenML Pro dashboard URLs (require authentication)
+    "cloud\\.zenml\\.io",
+    "cloudinfra\\.zenml\\.io",
+
+    # MCP endpoint (not a webpage, returns 405 for GET requests)
+    "docs\\.zenml\\.io/~gitbook/mcp",
+
+    # Segment analytics (intermittent connectivity)
+    "segment\\.com",
+]
+
+# Accept these additional status codes as valid
+accept = ["200", "429"]
+
+# Timeout per request in seconds
+timeout = 20
+
+# Maximum number of concurrent requests
+max_concurrency = 8
+
+# Don't check mail addresses
+include_mail = false
