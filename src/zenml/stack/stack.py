@@ -182,10 +182,20 @@ class Stack:
             hydrate=True,
         )
 
-        stack_components = {
-            model.type: StackComponent.from_model(model)
-            for model in component_models
-        }
+        try:
+            stack_components = {
+                model.type: StackComponent.from_model(model)
+                for model in component_models
+            }
+        except ImportError as e:
+            raise ImportError(
+                f"{e}\n\n"
+                "To install all requirements for this stack at once, "
+                "run:\n\n"
+                f"  zenml stack export-requirements "
+                f"'{stack_model.name}' -o stack-requirements.txt\n"
+                "  pip install -r stack-requirements.txt\n"
+            ) from e
         stack = Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,
