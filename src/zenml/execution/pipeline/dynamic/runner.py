@@ -414,7 +414,10 @@ class DynamicPipelineRunner:
         logger.info("Stopping isolated steps.")
 
         for step_run in self._steps_to_monitor.values():
-            self._try_to_stop_isolated_step(step_run)
+            try:
+                self._stop_isolated_step(step_run)
+            except Exception:
+                logger.exception("Failed to stop step `%s`.", step_run.name)
 
     def _get_isolated_step_infra_status(
         self, step_run: "StepRunResponse"
@@ -433,31 +436,17 @@ class DynamicPipelineRunner:
         else:
             return self._orchestrator.get_isolated_step_status(step_run)
 
-    def _try_to_stop_isolated_step(self, step_run: "StepRunResponse") -> bool:
-        """Try to stop an isolated step.
+    def _stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stop an isolated step.
 
         Args:
             step_run: The step run to stop.
-
-        Returns:
-            True if the step was stopped, False otherwise.
         """
-        logger.info("Trying to stop isolated step `%s`.", step_run.name)
         if step_run.config.step_operator:
             assert self._step_operator
-            try:
-                self._step_operator.cancel(step_run)
-                return True
-            except Exception:
-                logger.exception("Failed to stop step `%s`.", step_run.name)
+            self._step_operator.cancel(step_run)
         else:
-            try:
-                self._orchestrator.stop_isolated_step(step_run)
-                return True
-            except Exception:
-                logger.exception("Failed to stop step `%s`.", step_run.name)
-
-        return False
+            self._orchestrator.stop_isolated_step(step_run)
 
     def run_pipeline(self) -> None:
         """Run the pipeline.
@@ -754,8 +743,8 @@ class DynamicPipelineRunner:
                 orchestrator_run_id=self._orchestrator_run_id,
                 # The monitoring loop is responsible for monitoring and retrying
                 # steps.
+                wait=False,
                 retry=False,
-                wait=True,
             )
             self._steps_to_monitor[step.spec.invocation_id] = step_run
             return step_run
@@ -823,9 +812,9 @@ class DynamicPipelineRunner:
             snapshot=self._snapshot,
             step=step,
             orchestrator_run_id=self._orchestrator_run_id,
+            wait=True,
             retry=True,
             remaining_retries=remaining_retries,
-            wait=True,
         )
 
     def map(
