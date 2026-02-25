@@ -148,6 +148,7 @@ def run_snapshot(
     template_id: Optional[UUID] = None,
     create_new_snapshot: bool = True,
     implicit_auth_context: bool = True,
+    wait_runner_pod: bool = True,
 ) -> PipelineRunResponse:
     """Run a pipeline from a snapshot.
 
@@ -160,6 +161,7 @@ def run_snapshot(
             request.
         create_new_snapshot: Whether to create a new, copy snapshot.
         implicit_auth_context: Whether to use implicit auth context or create an explicit new one.
+        wait_runner_pod: Whether to wait for runner pod completion.
 
     Raises:
         ValueError: If the snapshot can not be run.
@@ -329,7 +331,7 @@ def run_snapshot(
             arguments=args,
             environment=environment,
             timeout_in_seconds=runner_timeout,
-            sync=True,
+            sync=wait_runner_pod,
         )
         workload_manager().log(
             workload_id=target_snapshot.id,
