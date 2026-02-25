@@ -80,7 +80,6 @@
 * [Deploying Agents](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)
 * [Agent examples](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations/)
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
-* [Forecasting time-series prediction](https://github.com/zenml-io/zenml-projects/tree/main/floracasts)
 * [ML classification](https://github.com/zenml-io/zenml-projects/tree/main/oncoclear)
 * [Computer Vision with YoloV8](https://github.com/zenml-io/zenml/tree/main/examples/computer_vision)
 * [Deep research agentic workflow](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)
