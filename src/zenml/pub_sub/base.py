@@ -488,7 +488,7 @@ class PollingConfig(ConsumerRuntimeConfig):
         ]
 
     interval: float = Field(
-        default=1.0,
+        default=10.0,
         description="Polling interval in seconds.",
         ge=0.0,
     )
@@ -590,7 +590,9 @@ class PollingConsumer(ConsumerBase, ABC):
                     await self.poll_once()
 
                     elapsed = asyncio.get_running_loop().time() - start
-                    logger.debug("Elapsed time for polling: %s", elapsed)
+
+                    if elapsed > self._polling_interval:
+                        logger.debug("Elapsed time for polling: %s", elapsed)
                     remaining = self.polling_interval - elapsed
                     if remaining > 0:
                         await asyncio.sleep(remaining)
