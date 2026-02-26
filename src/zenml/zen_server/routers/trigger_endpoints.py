@@ -17,7 +17,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, PIPELINE_SNAPSHOTS, TRIGGERS, VERSION_1
+from zenml.constants import (
+    API,
+    PIPELINE_SNAPSHOTS,
+    SCHEDULE_FEATURE,
+    TRIGGERS,
+    VERSION_1,
+)
 from zenml.models import (
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
@@ -27,6 +33,7 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import check_entitlement
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -35,7 +42,10 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission_for_model
+from zenml.zen_server.rbac.utils import (
+    verify_permission,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
@@ -66,6 +76,9 @@ def create_trigger(
     Returns:
         The created trigger.
     """
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
+
     return verify_permissions_and_create_entity(
         request_model=trigger,
         create_method=zen_store().create_trigger,
@@ -95,6 +108,9 @@ def list_triggers(
     Returns:
         List of trigger objects.
     """
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
+
     return verify_permissions_and_list_entities(
         filter_model=trigger_filter_model,
         resource_type=ResourceType.TRIGGER,
@@ -123,6 +139,9 @@ def get_trigger(
     Returns:
         A specific trigger object.
     """
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
+
     return verify_permissions_and_get_entity(
         id=trigger_id,
         get_method=zen_store().get_trigger,
@@ -149,6 +168,9 @@ def update_trigger(
     Returns:
         The updated trigger object.
     """
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
+
     return verify_permissions_and_update_entity(
         id=trigger_id,
         update_model=trigger_update,
@@ -173,6 +195,9 @@ def delete_trigger(
         trigger_id: ID of the trigger to delete.
         soft: Soft deletion will archive the trigger.
     """
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
+
     verify_permissions_and_delete_entity(
         id=trigger_id,
         get_method=zen_store().get_trigger,
@@ -197,15 +222,26 @@ def attach_trigger_to_snapshot(
         trigger_id: The ID of the trigger.
         snapshot_id: The ID of the snapshot.
     """
+
     verify_permission_for_model(
         model=zen_store().get_trigger(trigger_id=trigger_id, hydrate=True),
         action=Action.UPDATE,
     )
 
+    snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
+
     verify_permission_for_model(
-        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
+        model=snapshot,
         action=Action.READ,
     )
+
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_RUN,
+        action=Action.CREATE,
+        project_id=snapshot.project_id,
+    )
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
 
     zen_store().attach_trigger_to_snapshot(
         trigger_id=trigger_id,
@@ -238,6 +274,8 @@ def detach_trigger_from_snapshot(
         model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
         action=Action.READ,
     )
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
 
     zen_store().detach_trigger_from_snapshot(
         trigger_id=trigger_id,

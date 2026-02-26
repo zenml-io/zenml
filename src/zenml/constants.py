@@ -607,3 +607,6 @@ LOGS_OTEL_MAX_EXPORT_BATCH_SIZE = handle_int_env_var(
 LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
     ENV_ZENML_LOGS_OTEL_EXPORT_TIMEOUT_MILLIS, default=15000
 )
+
+# Subscription-based features
+SCHEDULE_FEATURE = "schedule"
