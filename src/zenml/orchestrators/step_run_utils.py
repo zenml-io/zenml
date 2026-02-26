@@ -221,6 +221,7 @@ class StepRunRequestFactory:
             name=request.name,
             size=1,
             hydrate=True,
+            exclude_retried=True,
         )
         if len(step_runs) == 0:
             raise RuntimeError(

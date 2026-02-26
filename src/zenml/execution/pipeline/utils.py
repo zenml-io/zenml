@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Union
 
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.enums import ExecutionStatus
 from zenml.exceptions import RunMonitoringError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -211,6 +212,13 @@ def skip_steps_and_prune_snapshot(
                 "Failed to populate step run request for step "
                 f"`{invocation_id}`: {str(e)}"
             ) from e
+
+        if request.status != ExecutionStatus.SKIPPED:
+            # This shouldn't happen, but just in case.
+            raise RuntimeError(
+                f"Expected step request `{invocation_id}` to have status "
+                f"`{ExecutionStatus.SKIPPED}`, but got `{request.status}`."
+            )
 
         Client().zen_store.create_run_step(request)
         skipped_invocations.add(invocation_id)
