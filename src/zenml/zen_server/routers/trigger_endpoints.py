@@ -76,7 +76,6 @@ def create_trigger(
     Returns:
         The created trigger.
     """
-
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     return verify_permissions_and_create_entity(
@@ -108,7 +107,6 @@ def list_triggers(
     Returns:
         List of trigger objects.
     """
-
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     return verify_permissions_and_list_entities(
@@ -139,7 +137,6 @@ def get_trigger(
     Returns:
         A specific trigger object.
     """
-
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     return verify_permissions_and_get_entity(
@@ -168,7 +165,6 @@ def update_trigger(
     Returns:
         The updated trigger object.
     """
-
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     return verify_permissions_and_update_entity(
@@ -195,7 +191,6 @@ def delete_trigger(
         trigger_id: ID of the trigger to delete.
         soft: Soft deletion will archive the trigger.
     """
-
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     verify_permissions_and_delete_entity(
@@ -222,7 +217,6 @@ def attach_trigger_to_snapshot(
         trigger_id: The ID of the trigger.
         snapshot_id: The ID of the snapshot.
     """
-
     verify_permission_for_model(
         model=zen_store().get_trigger(trigger_id=trigger_id, hydrate=True),
         action=Action.UPDATE,

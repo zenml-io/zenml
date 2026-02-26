@@ -473,7 +473,11 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             True if the snapshot is runnable from server.
         """
-        return self.build and not self.build.is_local and self.build.stack_id
+        return (
+            self.build is not None
+            and not self.build.is_local
+            and self.build.stack_id is not None
+        )
 
     def to_model(
         self,
@@ -508,7 +512,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            runnable=self.runnable,
+            runnable=self.is_runnable,
             deployable=deployable,
             is_dynamic=self.is_dynamic,
         )
