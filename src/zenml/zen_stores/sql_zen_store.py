@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+import uuid
 from contextlib import nullcontext
 
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
@@ -7161,6 +7162,8 @@ class SqlZenStore(BaseZenStore):
                 # Soft deletion - set is_archived
                 trigger.is_archived = True
                 trigger.active = False
+                # Renames to name_(hash) to enable re-using the name.
+                trigger.name = f"{trigger.name}_({str(uuid.uuid4())[:8]})"
                 session.add(trigger)
 
                 # archival does not cascade - need to delete associations
