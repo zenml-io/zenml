@@ -1906,6 +1906,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         steps_to_skip = set(skip or [])
 
         if skip_successful_steps:
+            # TODO: If a run has 1000s of successful steps, this will be very
+            # slow and memory intensive. The alternative would be to store a
+            # bool, and fetch the step runs during pruning one by one (which we
+            # already do anyway, as we need them to populate the request for the
+            # skipped steps).
             success_statuses = [
                 status.value
                 for status in ExecutionStatus
