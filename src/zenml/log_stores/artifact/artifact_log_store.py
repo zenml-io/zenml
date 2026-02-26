@@ -35,6 +35,7 @@ from opentelemetry.sdk._logs.export import LogExporter
 from pydantic import Field
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.log_stores import BaseLogStore
 from zenml.log_stores.base_log_store import BaseLogStoreOrigin
@@ -337,7 +338,7 @@ class ArtifactLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the artifact log store."""
 
     default_query_size: int = Field(
-        default=50000,
+        default=LOGS_MAX_ENTRIES_PER_REQUEST,
         description="Maximum number of log entries to fetch with one request.",
     )
 
