@@ -669,7 +669,7 @@ class BaseStep:
             logger.info("Preventing execution of step '%s'.", self.name)
             return
 
-        return run_as_single_step_pipeline(self, *args, **kwargs)
+        return run_as_single_step_pipeline(self, None, *args, **kwargs)
 
     def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
         """Calls the entrypoint function of the step.
@@ -1658,6 +1658,10 @@ To avoid this consider setting step parameters only in one place (config or code
 
         if debug:
             with DebugModeContext():
-                return run_as_single_step_pipeline(step_instance, **inputs)
+                return run_as_single_step_pipeline(
+                    step_instance, f"{self.name}_replay", **inputs
+                )
         else:
-            return run_as_single_step_pipeline(step_instance, **inputs)
+            return run_as_single_step_pipeline(
+                step_instance, f"{self.name}_replay", **inputs
+            )
