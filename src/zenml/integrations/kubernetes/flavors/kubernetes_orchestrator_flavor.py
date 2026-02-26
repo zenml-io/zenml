@@ -178,6 +178,10 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=30,
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
     )
+    api_request_timeout: Optional[float] = Field(
+        default=None,
+        description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
+    )
 
     # Deprecated fields
     timeout: Optional[int] = Field(

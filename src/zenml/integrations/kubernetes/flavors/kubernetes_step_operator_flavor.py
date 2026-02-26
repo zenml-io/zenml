@@ -72,6 +72,10 @@ class KubernetesStepOperatorSettings(BaseSettings):
         "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
         "should cause the job to fail immediately.",
     )
+    api_request_timeout: Optional[float] = Field(
+        default=None,
+        description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
+    )
 
     # Deprecated fields
     pod_startup_timeout: Optional[int] = Field(

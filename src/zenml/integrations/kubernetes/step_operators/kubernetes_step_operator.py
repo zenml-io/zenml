@@ -272,6 +272,7 @@ class KubernetesStepOperator(BaseStepOperator):
             batch_api=self._k8s_batch_api,
             namespace=self.config.kubernetes_namespace,
             job_manifest=job_manifest,
+            api_request_timeout=settings.api_request_timeout,
         )
 
         logger.info(
@@ -284,5 +285,6 @@ class KubernetesStepOperator(BaseStepOperator):
             job_name=job_name,
             fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
             stream_logs=True,
+            api_request_timeout=settings.api_request_timeout,
         )
         logger.info("Step operator job completed.")
