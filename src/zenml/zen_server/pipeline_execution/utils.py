@@ -149,6 +149,7 @@ def run_snapshot(
     create_new_snapshot: bool = True,
     implicit_auth_context: bool = True,
     wait_runner_pod: bool = True,
+    trigger_id: UUID | None = None,
 ) -> PipelineRunResponse:
     """Run a pipeline from a snapshot.
 
@@ -162,6 +163,7 @@ def run_snapshot(
         create_new_snapshot: Whether to create a new, copy snapshot.
         implicit_auth_context: Whether to use implicit auth context or create an explicit new one.
         wait_runner_pod: Whether to wait for runner pod completion.
+        trigger_id: The trigger ID that generated the snapshot run (optional).
 
     Raises:
         ValueError: If the snapshot can not be run.
@@ -243,6 +245,12 @@ def run_snapshot(
     placeholder_run = create_placeholder_run(
         snapshot=target_snapshot, trigger_info=trigger_info
     )
+
+    if trigger_id:
+        zen_store().create_trigger_execution(
+            trigger_id=trigger_id,
+            pipeline_run_id=placeholder_run.id,
+        )
 
     report_usage(
         feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
