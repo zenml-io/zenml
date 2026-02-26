@@ -294,6 +294,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
+                api_request_timeout=self.config.api_request_timeout,
             )
         except Exception as e:
             logger.warning(
@@ -329,6 +330,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
+                api_request_timeout=self.config.api_request_timeout,
             )
         except Exception as e:
             logger.warning(
@@ -344,7 +346,6 @@ class KubernetesStepOperator(BaseStepOperator):
         self._k8s_batch_api.delete_namespaced_job(
             name=job_name,
             namespace=self.config.kubernetes_namespace,
-            api_request_timeout=self.config.api_request_timeout,
             propagation_policy="Foreground",
         )
         logger.info(f"Successfully cancelled step job: {job_name}")
