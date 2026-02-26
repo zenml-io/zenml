@@ -20,7 +20,7 @@ from kubernetes import client as k8s_client
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
@@ -41,11 +41,12 @@ from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY = "kubernetes_step_operator"
+STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 
 class KubernetesStepOperator(BaseStepOperator):
@@ -190,13 +191,13 @@ class KubernetesStepOperator(BaseStepOperator):
         """
         return k8s_client.BatchV1Api(self.get_kube_client())
 
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launches a step on Kubernetes.
+        """Submits a step run to Kubernetes.
 
         Args:
             info: Information about the step run.
@@ -220,6 +221,7 @@ class KubernetesStepOperator(BaseStepOperator):
             "run_id": kube_utils.sanitize_label(str(info.run_id)),
             "run_name": kube_utils.sanitize_label(str(info.run_name)),
             "pipeline": kube_utils.sanitize_label(info.pipeline.name),
+            "step_run_id": kube_utils.sanitize_label(str(info.step_run_id)),
             "step_name": kube_utils.sanitize_label(info.pipeline_step_name),
         }
         step_annotations = {
@@ -275,16 +277,74 @@ class KubernetesStepOperator(BaseStepOperator):
             api_request_timeout=settings.api_request_timeout,
         )
 
-        logger.info(
-            "Waiting for step operator job `%s` to finish...",
-            job_name,
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Gets the status of a submitted step.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The step status.
+        """
+        label_selector = (
+            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
         )
-        kube_utils.wait_for_job_to_finish(
-            get_client=self.get_kube_client,
+        try:
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to list jobs for step run `%s`: %s", step_run.id, e
+            )
+            return ExecutionStatus.FAILED
+
+        if not job_list.items:
+            logger.warning("No jobs found for step run `%s`", step_run.id)
+            return ExecutionStatus.FAILED
+
+        job = job_list.items[0]
+        if job.status.conditions:
+            for condition in job.status.conditions:
+                if condition.type == "Complete" and condition.status == "True":
+                    return ExecutionStatus.COMPLETED
+                if condition.type == "Failed" and condition.status == "True":
+                    return ExecutionStatus.FAILED
+
+        return ExecutionStatus.RUNNING
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancels a submitted step.
+
+        Args:
+            step_run: The step run.
+        """
+        label_selector = (
+            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+        )
+        try:
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to list jobs for step run `%s`: %s", step_run.id, e
+            )
+            return
+
+        if not job_list.items:
+            logger.warning("No jobs found for step run `%s`", step_run.id)
+            return
+
+        job_name = job_list.items[0].metadata.name
+        self._k8s_batch_api.delete_namespaced_job(
+            name=job_name,
             namespace=self.config.kubernetes_namespace,
-            job_name=job_name,
-            fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
-            stream_logs=True,
             api_request_timeout=settings.api_request_timeout,
+            propagation_policy="Foreground",
         )
-        logger.info("Step operator job completed.")
+        logger.info(f"Successfully cancelled step job: {job_name}")

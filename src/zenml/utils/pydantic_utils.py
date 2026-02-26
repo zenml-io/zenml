@@ -281,7 +281,29 @@ def validate_function_args(
     # This raises a pydantic.ValidatonError in case the arguments are not valid
     validated_function(*args, **kwargs)
 
-    return signature.bind(*validated_args, **validated_kwargs).arguments
+    bound_arguments = dict(
+        signature.bind(*validated_args, **validated_kwargs).arguments
+    )
+
+    variadic_keyword_parameter = next(
+        (
+            parameter.name
+            for parameter in signature.parameters.values()
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD
+        ),
+        None,
+    )
+    if variadic_keyword_parameter and isinstance(
+        bound_arguments.get(variadic_keyword_parameter), dict
+    ):
+        # If the function defines a variadic keyword parameter, we expand the
+        # and include them flat in the return dictionary.
+        variadic_keyword_arguments = bound_arguments.pop(
+            variadic_keyword_parameter
+        )
+        bound_arguments.update(variadic_keyword_arguments)
+
+    return bound_arguments
 
 
 def model_validator_data_handler(

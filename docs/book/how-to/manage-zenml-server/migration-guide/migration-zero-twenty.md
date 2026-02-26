@@ -281,7 +281,7 @@ The `zenml profile migrate` CLI command also provides command line flags for cas
 
 Stack components can now be registered without having the required integrations installed. As part of this change, we split all existing stack component definitions into three classes: an implementation class that defines the logic of the stack component, a config class that defines the attributes and performs input validations, and a flavor class that links implementation and config classes together. See [**component flavor models #895**](https://github.com/zenml-io/zenml/pull/895) for more details.
 
-If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component) for updated information on how to do this.
+If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component) for updated information on how to do this.
 
 ## Shared ZenML Stacks and Stack Components
 
@@ -389,7 +389,7 @@ def my_step() -> None:
 
 With this change, all stack components (e.g. Orchestrators and Step Operators) that accepted a `docker_parent_image` as part of its Stack Configuration should now pass it through the `DockerSettings` object.
 
-Read more [here](https://docs.zenml.io//how-to/customize-docker-builds/docker-settings-on-a-pipeline).
+Read more [here](https://docs.zenml.io/how-to/customize-docker-builds/docker-settings-on-a-pipeline).
 
 **`ResourceConfiguration` is now renamed to `ResourceSettings`**
 
@@ -417,13 +417,13 @@ def my_step() -> None:
   ...
 ```
 
-Read more [here](https://docs.zenml.io//how-to/customize-docker-builds).
+Read more [here](https://docs.zenml.io/how-to/customize-docker-builds).
 
 **A new pipeline intermediate representation**
 
 All the aforementioned configurations as well as additional information required to run a ZenML pipelines are now combined into an intermediate representation called `PipelineDeployment`. Instead of the user-facing `BaseStep` and `BasePipeline` classes, all the ZenML orchestrators and step operators now use this intermediate representation to run pipelines and steps.
 
-**How to migrate**: If you have written a [custom orchestrator](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component) or [step operator](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component), then you should see the new base abstractions (seen in the links). You can adjust your stack component implementations accordingly.
+**How to migrate**: If you have written a [custom orchestrator](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component) or [step operator](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component), then you should see the new base abstractions (seen in the links). You can adjust your stack component implementations accordingly.
 
 ### `PipelineSpec` now uniquely defines pipelines
 

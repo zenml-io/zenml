@@ -154,3 +154,14 @@ def test_yaml_serialization_mixin(tmp_path):
     yaml_path.write_text(model.yaml())
 
     assert Model.from_yaml(str(yaml_path)) == model
+
+
+def test_validate_function_args_expands_variadic_keyword_arguments():
+    """Tests that the validate_function_args function expands variadic keyword
+    arguments."""
+
+    def f(a: int, **kwargs: int) -> None:
+        pass
+
+    validated = pydantic_utils.validate_function_args(f, None, 1, b="2", c=3)
+    assert validated == {"a": 1, "b": 2, "c": 3}
