@@ -178,6 +178,10 @@ tests:
             flavor: slack
       - capabilities:
           synchronized: true
+  - module: tests.integration.examples.test_rlm_document_analysis
+    requirements:
+      - capabilities:
+          synchronized: true
   - module: tests.integration.examples.test_seldon
     requirements:
       - integrations: [sklearn, tensorflow]

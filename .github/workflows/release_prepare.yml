@@ -149,21 +149,6 @@ jobs:
             --label "internal" --label "run-slow-ci" --label "release" --label "no-release-notes"
         env:
           NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
-      # Send a message to Discord to alert everyone for the release
-      - name: Send message to Discord
-        # Only run this part once when the release branch is created
-        if: ${{ github.event.created }}
-        run: |
-          curl -X POST \
-           -H "Content-Type: application/json" \
-           -d '{
-             "content": "${GITHUB_EVENT_SENDER_LOGIN} is preparing the release .\n\n@growth and @product, please do not merge anything to develop until the process is completed.",
-             "thread_name": "Preparing release: ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
-           }' \
-           ${{ secrets.DISCORD_WEBHOOK_RELEASE }}
-        env:
-          GITHUB_EVENT_SENDER_LOGIN: ${{ github.event.sender.login }}
-          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
   build-test-images:
     runs-on: ubuntu-latest
     needs: [fetch-versions, prepare-changes]
@@ -231,6 +216,7 @@ jobs:
           - cloud: aws
           - cloud: azure
           - cloud: gcp
+          - cloud: kubernetes_aws
     steps:
       - name: Free disk space
         run: |
