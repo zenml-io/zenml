@@ -1854,7 +1854,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         pipeline: Union[UUID, str, None] = None,
         pipeline_run: Union[UUID, str, None] = None,
         skip: Union[Set[str], Sequence[str], None] = None,
-        skip_successfull_steps: bool = False,
+        skip_successful_steps: bool = False,
         input_overrides: Optional[Mapping[str, Any]] = None,
         debug: bool = False,
     ) -> PipelineRunResponse:
@@ -1871,7 +1871,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             pipeline_run: The pipeline run to replay.
             skip: The steps to skip when replaying the pipeline. Steps that have
                 any unskipped upstream steps can not be skipped.
-            skip_successfull_steps: Whether to skip successful steps of the
+            skip_successful_steps: Whether to skip successful steps of the
                 original run when replaying the pipeline.
             input_overrides: Input overrides for the pipeline.
             debug: Whether to run the pipeline in debug mode. In debug mode, the
@@ -1905,7 +1905,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         steps_to_skip = set(skip or [])
 
-        if skip_successfull_steps:
+        if skip_successful_steps:
             success_statuses = [
                 status.value
                 for status in ExecutionStatus
