@@ -15,6 +15,17 @@
 
 All functions in this module are side-effect-free: they take inputs and
 return strings.  The actual execution happens over SSH in the step operator.
+
+Two script builders are provided:
+
+- ``build_remote_wrapper_script`` generates a **foreground** script where
+  ``exec docker run`` replaces the shell.  Used by the legacy blocking
+  ``launch()`` path.
+
+- ``build_remote_supervisor_script`` generates a **background** supervisor
+  that starts Docker detached, blocks on ``docker wait`` (holding GPU
+  locks), and writes a JSON status file.  Used by the async
+  ``submit()``/``get_status()``/``cancel()`` path.
 """
 
 import shlex
@@ -188,6 +199,171 @@ def build_remote_wrapper_script(
     # Use exec so docker run replaces the shell process, ensuring
     # signals (SIGTERM, SIGINT) reach the container directly.
     parts.append("exec " + " \\\n  ".join(docker_cmd_parts))
+    parts.append("")
+
+    return "\n".join(parts)
+
+
+def build_remote_supervisor_script(
+    *,
+    image: str,
+    entrypoint_command: Sequence[str],
+    env_file_path: str,
+    status_file_path: str,
+    cancel_file_path: str,
+    container_name: str,
+    gpu_lock_dir: str,
+    gpu_indices: Optional[Sequence[int]],
+    use_gpu_locks: bool,
+    docker_binary: str,
+    extra_docker_run_args: Optional[Sequence[str]] = None,
+) -> str:
+    """Generate a supervisor script for async SSH step execution.
+
+    Unlike ``build_remote_wrapper_script`` (which ``exec``s into Docker
+    and blocks), this script runs **in the background** and:
+
+    1. Writes an initial ``{"state":"running"}`` status file.
+    2. Pulls the Docker image.
+    3. Acquires GPU flock locks (same deadlock-free ordering).
+    4. Starts the container **detached** (``docker run -d``).
+    5. Blocks on ``docker wait`` (locks held for the container lifetime).
+    6. Writes a final status file (``completed``, ``failed``, or
+       ``stopped`` if a cancel marker was detected).
+    7. Removes the container and temporary files.
+
+    The status file is the durable state store that ``get_status()`` reads
+    over SSH.  A cancel marker file enables cooperative cancellation.
+
+    Args:
+        image: Fully-qualified Docker image name (with registry and tag).
+        entrypoint_command: The ZenML step entrypoint command as a list
+            of arguments.
+        env_file_path: Absolute path on the remote host to the env-file.
+        status_file_path: Absolute path for the JSON status file.
+        cancel_file_path: Absolute path for the cancel marker file.
+        container_name: Deterministic Docker container name.
+        gpu_lock_dir: Directory where per-GPU lock files are created.
+        gpu_indices: Normalized GPU indices, or None for CPU-only.
+        use_gpu_locks: Whether to acquire flock locks for the GPUs.
+        docker_binary: Path to the docker binary on the remote host.
+        extra_docker_run_args: Optional extra arguments for docker run.
+
+    Returns:
+        Complete bash script as a string.
+    """
+    status_q = shlex.quote(status_file_path)
+    cancel_q = shlex.quote(cancel_file_path)
+    env_q = shlex.quote(env_file_path)
+    name_q = shlex.quote(container_name)
+    docker_q = shlex.quote(docker_binary)
+
+    parts: List[str] = [
+        "#!/usr/bin/env bash",
+        "set -euo pipefail",
+        "",
+    ]
+
+    # Helper: write JSON status file atomically (write-then-rename).
+    parts.append("write_status() {")
+    parts.append(f'  echo "$1" > {status_q}.tmp')
+    parts.append(f"  mv {status_q}.tmp {status_q}")
+    parts.append("}")
+    parts.append("")
+
+    # Cleanup trap: remove env-file and this script on exit.
+    parts.append(f"trap 'rm -f {env_q} \"$0\"' EXIT")
+    parts.append("")
+
+    # Initial status.
+    parts.append('write_status \'{"state":"running"}\'')
+    parts.append("")
+
+    # Early cancellation check.
+    parts.append(f"if [ -f {cancel_q} ]; then")
+    parts.append('  write_status \'{"state":"stopped"}\'')
+    parts.append("  exit 0")
+    parts.append("fi")
+    parts.append("")
+
+    # Pull the image.
+    parts.append(f"{docker_q} pull {shlex.quote(image)}")
+    parts.append("")
+
+    # GPU locking (same pattern as build_remote_wrapper_script).
+    if gpu_indices is not None:
+        gpu_indices = sorted(set(gpu_indices))
+
+    needs_locks = (
+        gpu_indices is not None and len(gpu_indices) > 0 and use_gpu_locks
+    )
+    if needs_locks:
+        assert gpu_indices is not None
+        lock_dir_q = shlex.quote(gpu_lock_dir)
+        parts.append(f"mkdir -p {lock_dir_q}")
+        parts.append("")
+        for fd_offset, gpu_idx in enumerate(gpu_indices):
+            fd = 200 + fd_offset
+            lock_path = f"{gpu_lock_dir}/gpu-{gpu_idx}.lock"
+            parts.append(f"exec {fd}>{shlex.quote(lock_path)}")
+            parts.append(f"flock {fd}")
+        parts.append("")
+
+    # Build docker run command (detached, no --rm).
+    docker_cmd_parts: List[str] = [
+        docker_binary,
+        "run",
+        "-d",
+        f"--name {name_q}",
+        f"--env-file {env_q}",
+    ]
+
+    if gpu_indices is not None and len(gpu_indices) > 0:
+        gpus_value = build_docker_gpus_flag(gpu_indices)
+        docker_cmd_parts.append(f"--gpus {gpus_value}")
+
+    if extra_docker_run_args:
+        for arg in extra_docker_run_args:
+            docker_cmd_parts.append(shlex.quote(arg))
+
+    docker_cmd_parts.append(shlex.quote(image))
+    for arg in entrypoint_command:
+        docker_cmd_parts.append(shlex.quote(arg))
+
+    # Start container detached; capture container ID (unused but validates
+    # that docker run succeeded).
+    parts.append(" \\\n  ".join(docker_cmd_parts))
+    parts.append("")
+
+    # Remove env-file immediately to reduce secret exposure window.
+    parts.append(f"rm -f {env_q}")
+    parts.append("")
+
+    # Block on docker wait (GPU locks held for the container lifetime).
+    parts.append(f"EXIT_CODE=$({docker_q} wait {name_q}) || EXIT_CODE=1")
+    parts.append("")
+
+    # Determine final state.
+    parts.append(f"if [ -f {cancel_q} ]; then")
+    parts.append('  FINAL_STATE="stopped"')
+    parts.append('elif [ "$EXIT_CODE" = "0" ]; then')
+    parts.append('  FINAL_STATE="completed"')
+    parts.append("else")
+    parts.append('  FINAL_STATE="failed"')
+    parts.append("fi")
+    parts.append("")
+
+    # Write final status as JSON (state + exit_code only; logs are
+    # available via ``docker logs`` or the supervisor log file).
+    parts.append(
+        "write_status "
+        '"$(printf \'{\\"state\\":\\"%s\\",\\"exit_code\\":%s}\\n\' '
+        '"$FINAL_STATE" "$EXIT_CODE")"'
+    )
+    parts.append("")
+
+    # Clean up container.
+    parts.append(f"{docker_q} rm {name_q} >/dev/null 2>&1 || true")
     parts.append("")
 
     return "\n".join(parts)

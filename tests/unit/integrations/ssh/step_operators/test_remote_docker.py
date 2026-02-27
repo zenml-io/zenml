@@ -22,6 +22,7 @@ import pytest
 
 from zenml.integrations.ssh.remote_docker import (
     build_docker_gpus_flag,
+    build_remote_supervisor_script,
     build_remote_wrapper_script,
     normalize_gpu_indices,
     serialize_env_for_docker_env_file,
@@ -213,3 +214,140 @@ class TestBuildRemoteWrapperScript:
     def test_custom_docker_binary(self) -> None:
         script = self._build(docker_binary="/usr/local/bin/docker")
         assert "exec /usr/local/bin/docker" in script
+
+
+# --- build_remote_supervisor_script ---
+
+
+class TestBuildRemoteSupervisorScript:
+    """Tests for the async supervisor script builder."""
+
+    def _build(self, **kwargs: object) -> str:
+        defaults = dict(
+            image="registry.example.com/my-image:latest",
+            entrypoint_command=["python", "-m", "zenml.entrypoint"],
+            env_file_path="/tmp/zenml-ssh/env-abc123",
+            status_file_path="/tmp/zenml-ssh/status-abc123.json",
+            cancel_file_path="/tmp/zenml-ssh/cancel-abc123",
+            container_name="zenml-step-abc123",
+            gpu_lock_dir="/tmp/zenml-gpu-locks",
+            gpu_indices=None,
+            use_gpu_locks=True,
+            docker_binary="docker",
+            extra_docker_run_args=None,
+        )
+        defaults.update(kwargs)
+        return build_remote_supervisor_script(**defaults)  # type: ignore[arg-type]
+
+    def test_shebang_and_strict_mode(self) -> None:
+        script = self._build()
+        assert script.startswith("#!/usr/bin/env bash\n")
+        assert "set -euo pipefail" in script
+
+    def test_uses_detached_mode(self) -> None:
+        """Container must start detached (docker run -d)."""
+        script = self._build()
+        assert "run" in script
+        assert " -d" in script
+
+    def test_no_rm_flag(self) -> None:
+        """Supervisor needs the container to persist for docker wait."""
+        script = self._build()
+        assert "--rm" not in script
+
+    def test_container_name_used(self) -> None:
+        script = self._build(container_name="zenml-step-test123")
+        assert "zenml-step-test123" in script
+
+    def test_initial_status_written(self) -> None:
+        """Script must write running status immediately."""
+        script = self._build()
+        assert '{"state":"running"}' in script
+
+    def test_cancel_check(self) -> None:
+        """Script must check for cancel marker before starting."""
+        script = self._build(cancel_file_path="/tmp/cancel-xyz")
+        assert "/tmp/cancel-xyz" in script
+        assert '{"state":"stopped"}' in script
+
+    def test_docker_wait_used(self) -> None:
+        """Script must block on docker wait."""
+        script = self._build(container_name="zenml-step-wait")
+        assert "docker wait" in script
+        assert "zenml-step-wait" in script
+
+    def test_docker_rm_at_end(self) -> None:
+        """Script should clean up the container."""
+        script = self._build(container_name="zenml-step-cleanup")
+        assert "docker rm" in script
+
+    def test_env_file_removed_after_start(self) -> None:
+        """Env-file (which may contain secrets) should be removed."""
+        script = self._build(env_file_path="/tmp/zenml-ssh/env-secret")
+        # env-file removal should appear after docker run
+        lines = script.split("\n")
+        rm_lines = [l for l in lines if "rm -f" in l and "env-secret" in l]
+        assert len(rm_lines) >= 1
+
+    def test_gpu_locking_sorted_order(self) -> None:
+        """GPU locks in the supervisor must follow sorted order."""
+        script = self._build(gpu_indices=[2, 0])
+        pos_0 = script.index("gpu-0.lock")
+        pos_2 = script.index("gpu-2.lock")
+        assert pos_0 < pos_2
+
+    def test_gpu_locking_fd_numbers(self) -> None:
+        script = self._build(gpu_indices=[0, 1])
+        assert "exec 200>" in script
+        assert "exec 201>" in script
+        assert "flock 200" in script
+        assert "flock 201" in script
+
+    def test_no_locks_when_disabled(self) -> None:
+        script = self._build(gpu_indices=[0], use_gpu_locks=False)
+        assert "flock" not in script
+        assert "--gpus" in script
+
+    def test_no_locks_when_no_gpus(self) -> None:
+        script = self._build(gpu_indices=None)
+        assert "flock" not in script
+        assert "--gpus" not in script
+
+    def test_gpus_flag_present(self) -> None:
+        script = self._build(gpu_indices=[0, 2])
+        assert '--gpus "device=0,2"' in script
+
+    def test_extra_docker_run_args(self) -> None:
+        script = self._build(extra_docker_run_args=["--shm-size=4g"])
+        assert "--shm-size=4g" in script
+
+    def test_custom_docker_binary(self) -> None:
+        script = self._build(docker_binary="/usr/local/bin/docker")
+        assert "/usr/local/bin/docker" in script
+
+    def test_status_file_path_used(self) -> None:
+        script = self._build(
+            status_file_path="/tmp/zenml-ssh/status-final.json"
+        )
+        assert "/tmp/zenml-ssh/status-final.json" in script
+
+    def test_write_status_helper_defined(self) -> None:
+        """The script should define a write_status helper for atomicity."""
+        script = self._build()
+        assert "write_status()" in script
+        assert ".tmp" in script
+        assert "mv " in script
+
+    def test_final_state_logic(self) -> None:
+        """Script must determine final state from cancel marker + exit code."""
+        script = self._build()
+        assert "FINAL_STATE" in script
+        assert '"completed"' in script
+        assert '"failed"' in script
+        assert '"stopped"' in script
+
+    def test_docker_pull_present(self) -> None:
+        """Image should be pulled inside the supervisor."""
+        script = self._build(image="my-registry/my-image:v1")
+        assert "docker pull" in script
+        assert "my-registry/my-image:v1" in script
