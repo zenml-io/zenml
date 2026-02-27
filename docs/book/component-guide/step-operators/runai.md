@@ -19,6 +19,7 @@ You should use the Run:AI step operator if:
 
 * **Fractional GPU Support**: Allocate portions of a GPU (e.g., 0.25, 0.5, 0.75) to maximize resource utilization
 * **Training Workloads**: Submit individual ZenML steps as Run:AI training workloads
+* **Dynamic Pipeline Support**: Supports asynchronous step submission and monitoring in dynamic pipelines
 * **Project-based Resource Management**: Workloads are organized by Run:AI projects with quota policies
 * **SaaS and Self-hosted**: Works with both Run:AI SaaS and self-hosted deployments
 
@@ -82,6 +83,8 @@ def trainer(...) -> ...:
 {% hint style="info" %}
 ZenML will build a Docker image which includes your code and use it to run your steps on Run:AI. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
+
+The Run:AI step operator uses asynchronous workload submission under the hood. ZenML stores the Run:AI workload metadata for each step run and uses it for status monitoring and cancellation.
 
 ### Configuring GPU resources
 

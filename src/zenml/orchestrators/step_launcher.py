@@ -530,6 +530,13 @@ class StepLauncher:
         Args:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
+
+        Raises:
+            RuntimeError: If trying to use a step operator that does not support
+                running asynchronously in a dynamic pipeline.
+            NotImplementedError: If the step operator does not implement the
+                `submit(...)` or `launch(...)` methods.
+            RuntimeError: If the step run failed.
         """
         step_operator = _get_step_operator(
             stack=self._stack,
@@ -563,11 +570,56 @@ class StepLauncher:
             step_operator.name,
             self._invocation_id,
         )
-        step_operator.launch(
-            info=step_run_info,
-            entrypoint_command=entrypoint_command,
-            environment=environment,
-        )
+
+        try:
+            step_operator.submit(
+                info=step_run_info,
+                entrypoint_command=entrypoint_command,
+                environment=environment,
+            )
+        except NotImplementedError:
+            if not self._wait:
+                # We're running in a dynamic pipeline and for the monitoring to
+                # work correctly, we only allow running with step operators that
+                # support running asynchronously.
+                raise RuntimeError(
+                    f"The step operator `{step_operator.name}` does not "
+                    "support running asynchronously and therefore cannot be "
+                    "used in dynamic pipelines. To solve this, please "
+                    "implement the `submit(...)` and `get_status(...)` methods "
+                    "in the step operator class."
+                )
+
+            if hasattr(step_operator, "launch") and callable(
+                step_operator.launch
+            ):
+                # We fallback to the legacy launch method if it is implemented.
+                # The launch method is synchronous and will block until the step
+                # run is finished, so there is no need to wait for it.
+                logger.debug(
+                    "Falling back to the legacy launch method for "
+                    "step operator `%s`.",
+                    step_operator.name,
+                )
+                step_operator.launch(
+                    info=step_run_info,
+                    entrypoint_command=entrypoint_command,
+                    environment=environment,
+                )
+            else:
+                raise NotImplementedError(
+                    f"The step operator `{step_operator.name}` does not "
+                    "implement the `submit(...)` or `launch(...)` methods."
+                )
+        else:
+            # We submitted the step run asynchronously, now we potentially need
+            # to wait for it to finish.
+            if self._wait:
+                status = step_operator.wait(
+                    step_run=step_run_info.step_run,
+                )
+                if not status.is_successful:
+                    raise RuntimeError(f"Step failed with status `{status}`.")
 
     def _run_step_with_dynamic_orchestrator(
         self,
@@ -577,6 +629,9 @@ class StepLauncher:
 
         Args:
             step_run_info: Additional information needed to run the step.
+
+        Raises:
+            RuntimeError: If the step run failed.
         """
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
@@ -595,9 +650,11 @@ class StepLauncher:
             environment=environment,
         )
         if self._wait:
-            self._stack.orchestrator.wait_for_isolated_step(
+            status = self._stack.orchestrator.wait_for_isolated_step(
                 step_run_info.step_run
             )
+            if not status.is_successful:
+                raise RuntimeError(f"Step failed with status `{status}`.")
 
     def _run_step_in_current_thread(
         self,

@@ -25,9 +25,62 @@ ZenML includes built-in materializers for many common data types:
 
 ### Core Materializers
 
-<table data-full-width="true"><thead><tr><th>Materializer</th><th>Handled Data Types</th><th>Storage Format</th></tr></thead><tbody><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BuiltInMaterializer</a></td><td><code>bool</code>, <code>float</code>, <code>int</code>, <code>str</code>, <code>None</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BytesInMaterializer</a></td><td><code>bytes</code></td><td><code>.txt</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BuiltInContainerMaterializer</a></td><td><code>dict</code>, <code>list</code>, <code>set</code>, <code>tuple</code></td><td>Directory</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.numpy_materializer">NumpyMaterializer</a></td><td><code>np.ndarray</code></td><td><code>.npy</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.pandas_materializer">PandasMaterializer</a></td><td><code>pd.DataFrame</code>, <code>pd.Series</code></td><td><code>.csv</code> (or <code>.gzip</code> if <code>parquet</code> is installed)</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.pydantic_materializer">PydanticMaterializer</a></td><td><code>pydantic.BaseModel</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.service_materializer">ServiceMaterializer</a></td><td><code>zenml.services.service.BaseService</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.structured_string_materializer">StructuredStringMaterializer</a></td><td><code>zenml.types.CSVString</code>, <code>zenml.types.HTMLString</code>, <code>zenml.types.MarkdownString</code></td><td><code>.csv</code> / <code>.html</code> / <code>.md</code> (depending on type)</td></tr></tbody></table>
+<table data-full-width="true"><thead><tr><th>Materializer</th><th>Handled Data Types</th><th>Storage Format</th></tr></thead><tbody><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BuiltInMaterializer</a></td><td><code>bool</code>, <code>float</code>, <code>int</code>, <code>str</code>, <code>None</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BytesInMaterializer</a></td><td><code>bytes</code></td><td><code>.txt</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BuiltInContainerMaterializer</a></td><td><code>dict</code>, <code>list</code>, <code>set</code>, <code>tuple</code></td><td>Directory</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.numpy_materializer">NumpyMaterializer</a></td><td><code>np.ndarray</code></td><td><code>.npy</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.pandas_materializer">PandasMaterializer</a></td><td><code>pd.DataFrame</code>, <code>pd.Series</code></td><td><code>.csv</code> (or <code>.gzip</code> if <code>parquet</code> is installed)</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.pydantic_materializer">PydanticMaterializer</a></td><td><code>pydantic.BaseModel</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.service_materializer">ServiceMaterializer</a></td><td><code>zenml.services.service.BaseService</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.structured_string_materializer">StructuredStringMaterializer</a></td><td><code>zenml.types.CSVString</code>, <code>zenml.types.HTMLString</code>, <code>zenml.types.MarkdownString</code></td><td><code>.csv</code> / <code>.html</code> / <code>.md</code> (depending on type)</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.path_materializer">PathMaterializer</a></td><td><code>pathlib.Path</code></td><td><code>.tar.gz</code> (directories) or direct copy (files)</td></tr></tbody></table>
 
 ZenML also provides a CloudpickleMaterializer that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. For production use, you should implement a custom materializer for your specific data types.
+
+### Passing Files and Directories Between Steps
+
+The `PathMaterializer` lets you pass `pathlib.Path` objects between steps. This is especially useful when working with files or directories that need to be shared across steps — for example, dataset directories, exported model files, or any file-based artifacts.
+
+When a step returns a `Path`:
+
+- **Directories** are compressed into a `.tar.gz` archive and uploaded to the artifact store
+- **Single files** are copied directly to the artifact store
+
+When a downstream step receives the `Path`, the materializer downloads the contents to a local temporary directory and returns a `Path` pointing to it.
+
+```python
+from pathlib import Path
+from typing import Annotated
+
+from zenml import step, pipeline
+
+
+@step
+def prepare_dataset(num_samples: int = 100) -> Annotated[Path, "dataset_dir"]:
+    """Prepare a dataset directory with training files."""
+    output_dir = Path("training_data")
+    output_dir.mkdir(exist_ok=True)
+
+    # Write training files into the directory
+    (output_dir / "features.csv").write_text("feature1,feature2\n1.0,2.0\n")
+    (output_dir / "labels.csv").write_text("label\n1\n")
+
+    # ZenML will tar.gz this directory and upload it to the artifact store
+    return output_dir
+
+
+@step
+def train_model(dataset_dir: Path) -> None:
+    """Train a model using the dataset directory."""
+    # dataset_dir points to a local temp directory with the extracted contents
+    features = (dataset_dir / "features.csv").read_text()
+    labels = (dataset_dir / "labels.csv").read_text()
+    print(f"Training with features: {features}")
+
+
+@pipeline
+def training_pipeline():
+    dataset = prepare_dataset()
+    train_model(dataset)
+```
+
+This works transparently with remote orchestrators (Kubernetes, Vertex AI, etc.) where each step runs on a different pod — the artifact store acts as the shared transport layer.
+
+{% hint style="info" %}
+If you prefer the previous behavior where `Path` objects were serialized with `cloudpickle` (which only preserves the path string, not the file contents), you can disable the `PathMaterializer` by setting the environment variable `ZENML_DISABLE_PATH_MATERIALIZER=true`.
+{% endhint %}
 
 ### Integration-Specific Materializers
 
