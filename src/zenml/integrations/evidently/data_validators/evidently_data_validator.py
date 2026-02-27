@@ -64,7 +64,7 @@ class EvidentlyDataValidator(BaseDataValidator):
     ) -> Sequence[Any]:
         """Unpack Evidently options.
 
-        Implements de-serialization for [Evidently options](https://docs.evidentlyai.com/user-guide/customization)
+        Implements de-serialization for [Evidently options](https://docs.evidentlyai.com/metrics/customize_metric)
         that can be passed as constructor arguments when creating Profile and
         Dashboard objects. The convention used is that each item in the list
         consists of two elements:
