@@ -78,6 +78,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 R = TypeVar("R")
+_LATEST_EVENT_RESOURCE_VERSION: Optional[str] = None
+_SEEN_WARNING_EVENT_RESOURCE_VERSIONS_BY_POD: Dict[Tuple[str, str], str] = {}
 
 
 # This is to fix a bug in the kubernetes client which has some wrong
@@ -1177,8 +1179,24 @@ def _get_latest_warning_event_message(
     if not message:
         return None
 
-    if latest_event.count and latest_event.count > 1:
-        return f"{message} (repeated {latest_event.count} times)"
+    resource_version = (
+        latest_event.metadata.resource_version
+        if latest_event.metadata
+        else None
+    )
+    if (
+        resource_version
+        and resource_version
+        == _SEEN_WARNING_EVENT_RESOURCE_VERSIONS_BY_POD.get(
+            (namespace, pod_name)
+        )
+    ):
+        return None
+
+    _SEEN_WARNING_EVENT_RESOURCE_VERSIONS_BY_POD[(namespace, pod_name)] = (
+        resource_version
+    )
+
     return message
 
 
