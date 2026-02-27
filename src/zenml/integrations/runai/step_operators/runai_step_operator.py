@@ -30,7 +30,7 @@ from runai.models.training_spec_spec import TrainingSpecSpec
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.runai.client.runai_client import (
     RunAIClient,
     RunAIClientError,
@@ -41,22 +41,26 @@ from zenml.integrations.runai.constants import (
     is_failure_status,
     is_pending_status,
     is_success_status,
+    map_runai_status_to_execution_status,
 )
 from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
     RunAIStepOperatorConfig,
     RunAIStepOperatorSettings,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 RUNAI_STEP_OPERATOR_DOCKER_IMAGE_KEY = "runai_step_operator"
+RUNAI_WORKLOAD_ID_METADATA_KEY = "workload_id"
+RUNAI_WORKLOAD_NAME_METADATA_KEY = "workload_name"
 
 
 class RunAIStepOperator(BaseStepOperator):
@@ -178,13 +182,13 @@ class RunAIStepOperator(BaseStepOperator):
 
         return builds
 
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launches a step on Run:AI as a training workload.
+        """Submits a step to Run:AI as a training workload.
 
         Args:
             info: Information about the step run.
@@ -194,7 +198,7 @@ class RunAIStepOperator(BaseStepOperator):
 
         Raises:
             RunAIClientError: If building the Run:AI training request fails.
-            RuntimeError: If workload submission or execution fails.
+            RuntimeError: If workload submission fails.
         """
         settings = cast(RunAIStepOperatorSettings, self.get_settings(info))
 
@@ -265,8 +269,104 @@ class RunAIStepOperator(BaseStepOperator):
                 "Verify credentials, project name, cluster access, and quota."
             ) from exc
 
-        self._wait_for_completion(self.client, result.workload_id, settings)
+        publish_step_run_metadata(
+            info.step_run_id,
+            {
+                self.id: {
+                    RUNAI_WORKLOAD_ID_METADATA_KEY: result.workload_id,
+                    RUNAI_WORKLOAD_NAME_METADATA_KEY: result.workload_name,
+                }
+            },
+        )
+        info.step_run.run_metadata[RUNAI_WORKLOAD_ID_METADATA_KEY] = (
+            result.workload_id
+        )
+        info.step_run.run_metadata[RUNAI_WORKLOAD_NAME_METADATA_KEY] = (
+            result.workload_name
+        )
+
+    def _get_workload_id(self, step_run: "StepRunResponse") -> str:
+        """Gets the Run:AI workload ID from step run metadata.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The workload ID.
+
+        Raises:
+            RuntimeError: If the workload metadata is missing.
+        """
+        workload_id = step_run.run_metadata.get(RUNAI_WORKLOAD_ID_METADATA_KEY)
+        if not workload_id:
+            raise RuntimeError(
+                "Unable to determine the Run:AI workload ID for step run "
+                f"`{step_run.id}` because run metadata key "
+                f"`{RUNAI_WORKLOAD_ID_METADATA_KEY}` is missing."
+            )
+        return str(workload_id)
+
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Gets the status of a submitted step.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The step status.
+        """
+        workload_id = self._get_workload_id(step_run)
+        try:
+            status = self.client.get_training_workload_status(workload_id)
+        except RunAIWorkloadNotFoundError:
+            logger.warning(
+                "Run:AI workload `%s` for step run `%s` was not found.",
+                workload_id,
+                step_run.id,
+            )
+            return ExecutionStatus.FAILED
+
+        if status is None:
+            logger.warning(
+                "Run:AI workload `%s` for step run `%s` has no status.",
+                workload_id,
+                step_run.id,
+            )
+            return ExecutionStatus.FAILED
+
+        return map_runai_status_to_execution_status(status)
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancels a submitted step.
+
+        Args:
+            step_run: The step run.
+        """
+        workload_id = self._get_workload_id(step_run)
+        self.client.suspend_training_workload(workload_id)
+
+    def wait(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Waits for a submitted step to finish.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The final step status.
+
+        Raises:
+            RuntimeError: If polling fails, the workload times out, or the
+                workload finishes in a failed state.
+        """
+        settings = cast(RunAIStepOperatorSettings, self.get_settings(step_run))
+        workload_id = self._get_workload_id(step_run)
+        status = self._wait_for_completion(
+            client=self.client,
+            workload_id=workload_id,
+            settings=settings,
+        )
         logger.info("Run:AI step operator job completed.")
+        return status
 
     def _resolve_project_and_cluster(self) -> Tuple[str, str]:
         """Resolve Run:AI project and cluster IDs.
@@ -572,13 +672,16 @@ class RunAIStepOperator(BaseStepOperator):
         client: RunAIClient,
         workload_id: str,
         settings: RunAIStepOperatorSettings,
-    ) -> None:
+    ) -> ExecutionStatus:
         """Wait for a Run:AI workload to complete.
 
         Args:
             client: The RunAIClient instance.
             workload_id: The workload ID to wait for.
             settings: The step operator settings.
+
+        Returns:
+            The final status of the workload.
 
         Raises:
             RuntimeError: If the workload fails or times out.
@@ -626,7 +729,7 @@ class RunAIStepOperator(BaseStepOperator):
                     sleep_time = base_interval
                 elif status and is_success_status(status):
                     missing_status_retries = 0
-                    return
+                    return ExecutionStatus.COMPLETED
 
                 elif status and is_failure_status(status):
                     missing_status_retries = 0
