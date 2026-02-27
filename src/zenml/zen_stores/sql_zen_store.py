@@ -4643,9 +4643,11 @@ class SqlZenStore(BaseZenStore):
             # There are no policies assigned to the component. This means ZenML
             # isn't responsible for managing resources for this component, so
             # we approve the request immediately.
-            resource_request.status = ResourceRequestStatus.ALLOCATED.value
-            resource_request.updated = utc_now()
-            session.add(resource_request)
+            self._set_resource_request_status(
+                session=session,
+                resource_request=resource_request,
+                status=ResourceRequestStatus.ALLOCATED,
+            )
             return
 
         for policy in policies:
@@ -4676,13 +4678,16 @@ class SqlZenStore(BaseZenStore):
             .limit(1)
         ).first()
         if queued_anywhere is None:
-            resource_request.status = ResourceRequestStatus.REJECTED.value
-            resource_request.status_reason = (
+            rejection_reason = (
                 f"The requested resources exceed the {'reserved resources' if not resource_request.preemptable else 'resources'} available in all "
                 "attached resource pool policies."
             )
-            resource_request.updated = utc_now()
-            session.add(resource_request)
+            self._set_resource_request_status(
+                session=session,
+                resource_request=resource_request,
+                status=ResourceRequestStatus.REJECTED,
+                status_reason=rejection_reason,
+            )
             return
 
         if resource_request.status == ResourceRequestStatus.PENDING.value:
@@ -4824,6 +4829,85 @@ class SqlZenStore(BaseZenStore):
             # Someone else may have enqueued concurrently.
             return False
         return True
+
+    @staticmethod
+    def _set_resource_request_status(
+        session: Session,
+        resource_request: ResourceRequestSchema,
+        status: ResourceRequestStatus,
+        status_reason: Optional[str] = None,
+        preemption_initiated_by_id: Optional[UUID] = None,
+        updated: Optional[datetime] = None,
+    ) -> None:
+        """Apply a status transition to an ORM request object.
+
+        Args:
+            session: DB session.
+            resource_request: ORM request object to update.
+            status: New request status.
+            status_reason: Optional reason attached to the status.
+            preemption_initiated_by_id: Optional request ID that initiated
+                preemption.
+            updated: Optional timestamp. If not provided, current UTC time is
+                used.
+        """
+        resource_request.status = status.value
+        resource_request.updated = updated or utc_now()
+        if status_reason is not None:
+            resource_request.status_reason = status_reason
+        if preemption_initiated_by_id is not None:
+            resource_request.preemption_initiated_by_id = (
+                preemption_initiated_by_id
+            )
+        session.add(resource_request)
+
+    @staticmethod
+    def _attempt_resource_request_status_transition(
+        session: Session,
+        request_id: UUID,
+        new_status: ResourceRequestStatus,
+        expected_status: Optional[ResourceRequestStatus] = None,
+        status_reason: Optional[str] = None,
+        preemption_initiated_by_id: Optional[UUID] = None,
+        updated: Optional[datetime] = None,
+    ) -> bool:
+        """Attempt a resource request status transition.
+
+        Args:
+            session: DB session.
+            request_id: ID of the request to update.
+            new_status: Target status.
+            expected_status: Optional allowed current status. If provided,
+                the transition only succeeds when the current status is the
+                expected status.
+            status_reason: Optional reason attached to the status.
+            preemption_initiated_by_id: Optional request ID that initiated
+                preemption.
+            updated: Optional timestamp. If not provided, current UTC time is
+                used.
+
+        Returns:
+            True if the transition was applied, False otherwise.
+        """
+        query = update(ResourceRequestSchema).where(
+            col(ResourceRequestSchema.id) == request_id
+        )
+        if expected_status:
+            query = query.where(
+                col(ResourceRequestSchema.status) == expected_status.value
+            )
+
+        values: Dict[str, Any] = {
+            "status": new_status.value,
+            "updated": updated or utc_now(),
+        }
+        if status_reason is not None:
+            values["status_reason"] = status_reason
+        if preemption_initiated_by_id is not None:
+            values["preemption_initiated_by_id"] = preemption_initiated_by_id
+
+        result = session.execute(query.values(**values))
+        return result.rowcount == 1  # type: ignore[attr-defined, no-any-return]
 
     @staticmethod
     def _effective_pool_total_expression(
@@ -5144,12 +5228,15 @@ class SqlZenStore(BaseZenStore):
 
     def _cancel_orphaned_resource_requests_for_pool(
         self, session: Session, pool_id: UUID
-    ) -> None:
+    ) -> int:
         """Cancel orphaned requests that are queued/allocated in a pool.
 
         Args:
             session: DB session.
             pool_id: The pool for which to clean up orphaned requests.
+
+        Returns:
+            Number of orphaned requests cancelled.
         """
         requests = session.exec(
             select(ResourceRequestSchema)
@@ -5187,7 +5274,7 @@ class SqlZenStore(BaseZenStore):
             )
         ).all()
         if not requests:
-            return
+            return 0
         now = utc_now()
         for request in requests:
             # Remove the request from all queues it is in.
@@ -5205,24 +5292,31 @@ class SqlZenStore(BaseZenStore):
                     session=session, resource_request=request
                 )
 
-            request.status = ResourceRequestStatus.CANCELLED.value
-            request.status_reason = (
-                "Cancelled because owning step run no longer exists."
+            self._set_resource_request_status(
+                session=session,
+                resource_request=request,
+                status=ResourceRequestStatus.CANCELLED,
+                status_reason=(
+                    "Cancelled because owning step run no longer exists."
+                ),
+                updated=now,
             )
-            request.updated = now
-            session.add(request)
 
         session.flush()
+        return len(requests)
 
     def _allocate_queued_requests_for_pool(
         self, session: Session, pool_id: UUID, max_allocations: int = 100
-    ) -> None:
+    ) -> int:
         """Allocate as many queued requests for a pool as possible.
 
         Args:
             session: DB session.
             pool_id: ID of the pool whose queue should be processed.
             max_allocations: Maximum number of allocations to perform.
+
+        Returns:
+            Number of requests allocated in this invocation.
 
         # noqa: DAR401
         """
@@ -5441,7 +5535,7 @@ class SqlZenStore(BaseZenStore):
         # temporarily the highest *visible* (unclaimed) queue entry.
         #
         if not self._acquire_resource_pool_lock(session, pool_id=pool_id):
-            return
+            return 0
         self._cancel_orphaned_resource_requests_for_pool(
             session=session, pool_id=pool_id
         )
@@ -5454,7 +5548,7 @@ class SqlZenStore(BaseZenStore):
                 exclude_queue_item_ids=skipped_due_to_temporary_ineligibility,
             )
             if head is None:
-                return
+                return allocations_done
             logger.debug(
                 "Pool %s: considering queue item %s for request %s (prio=%s).",
                 pool_id,
@@ -5499,7 +5593,7 @@ class SqlZenStore(BaseZenStore):
                         # Stop here to avoid allocating a lower-priority request
                         # while a higher-priority one is being processed by the
                         # allocator that won the claim.
-                        return
+                        return allocations_done
                     logger.debug(
                         "Pool %s: claimed queue item %s for request %s (token=%s).",
                         pool_id,
@@ -5855,19 +5949,16 @@ class SqlZenStore(BaseZenStore):
                     # one active allocation across all pools).
                     session.flush()
 
-                    result = session.execute(
-                        update(ResourceRequestSchema)
-                        .where(
-                            col(ResourceRequestSchema.id) == head.request_id,
-                            col(ResourceRequestSchema.status)
-                            == ResourceRequestStatus.PENDING.value,
-                        )
-                        .values(
-                            status=ResourceRequestStatus.ALLOCATED.value,
+                    did_transition = (
+                        self._attempt_resource_request_status_transition(
+                            session=session,
+                            request_id=head.request_id,
+                            new_status=ResourceRequestStatus.ALLOCATED,
+                            expected_status=ResourceRequestStatus.PENDING,
                             updated=now,
                         )
                     )
-                    if result.rowcount != 1:  # type: ignore[attr-defined]
+                    if not did_transition:
                         raise _AllocationFailed()
 
                     # Only remove the claimed entry from this pool queue.
@@ -6053,11 +6144,13 @@ class SqlZenStore(BaseZenStore):
                 ):
                     # Eviction is asynchronous; a later resource release is
                     # expected to trigger another allocation attempt.
-                    return
+                    return allocations_done
 
                 # We couldn't free resources for the head request -> We stop and
                 # don't continue with the next requests in the queue.
-                return
+                return allocations_done
+
+        return allocations_done
 
     def _release_step_run_resources(
         self, session: Session, step_run_id: UUID
@@ -6193,18 +6286,177 @@ class SqlZenStore(BaseZenStore):
 
             allocation.released_at = now
             allocation.updated = now
-            if (
-                resource_request.status
+            new_request_status = (
+                ResourceRequestStatus.PREEMPTED
+                if resource_request.status
                 == ResourceRequestStatus.PREEMPTING.value
-            ):
-                resource_request.status = ResourceRequestStatus.PREEMPTED.value
-            else:
-                resource_request.status = ResourceRequestStatus.RELEASED.value
-            resource_request.updated = now
+                else ResourceRequestStatus.RELEASED
+            )
+            self._set_resource_request_status(
+                session=session,
+                resource_request=resource_request,
+                status=new_request_status,
+                updated=now,
+            )
             session.add(allocation)
-            session.add(resource_request)
 
         return allocation.pool_id
+
+    def _repair_pool_occupied_resources(
+        self, session: Session, pool_id: UUID
+    ) -> int:
+        """Repair occupied counters for all explicit pool resource rows.
+
+        Args:
+            session: DB session.
+            pool_id: The pool ID.
+
+        Returns:
+            Number of pool resource rows repaired.
+        """
+        occupied_by_key = {
+            str(key): int(occupied or 0)
+            for key, occupied in session.exec(
+                select(
+                    col(ResourceRequestResourceSchema.key),
+                    func.sum(col(ResourceRequestResourceSchema.amount)),
+                )
+                .select_from(ResourcePoolAllocationSchema)
+                .join(
+                    ResourceRequestResourceSchema,
+                    col(ResourceRequestResourceSchema.request_id)
+                    == col(ResourcePoolAllocationSchema.request_id),
+                )
+                .where(col(ResourcePoolAllocationSchema.pool_id) == pool_id)
+                .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
+                .group_by(col(ResourceRequestResourceSchema.key))
+            ).all()
+        }
+
+        now = utc_now()
+        pool_resources = session.exec(
+            select(ResourcePoolResourceSchema).where(
+                col(ResourcePoolResourceSchema.pool_id) == pool_id
+            )
+        ).all()
+        repaired_rows = 0
+        for pool_resource in pool_resources:
+            expected_occupied = occupied_by_key.get(pool_resource.key, 0)
+            if pool_resource.occupied != expected_occupied:
+                pool_resource.occupied = expected_occupied
+                pool_resource.updated = now
+                session.add(pool_resource)
+                repaired_rows += 1
+
+        session.flush()
+        return repaired_rows
+
+    def _prune_stale_queue_entries_for_pool(
+        self, session: Session, pool_id: UUID
+    ) -> int:
+        """Remove stale queue entries for non-pending requests in a pool.
+
+        Args:
+            session: DB session.
+            pool_id: ID of the pool whose queue should be pruned.
+
+        Returns:
+            Number of queue entries removed.
+        """
+        result = session.execute(
+            delete(ResourcePoolQueueSchema)
+            .where(col(ResourcePoolQueueSchema.pool_id) == pool_id)
+            .where(
+                exists(
+                    select(ResourceRequestSchema.id).where(
+                        col(ResourceRequestSchema.id)
+                        == col(ResourcePoolQueueSchema.request_id),
+                        col(ResourceRequestSchema.status)
+                        != ResourceRequestStatus.PENDING.value,
+                    )
+                )
+            )
+        )
+        removed = int(result.rowcount or 0)  # type: ignore[attr-defined]
+        session.flush()
+        return removed
+
+    def _reconcile_resource_pool(
+        self,
+        session: Session,
+        pool_id: UUID,
+        *,
+        max_allocations_per_pool: int = 100,
+    ) -> None:
+        """Run one reconciliation pass for a single pool.
+
+        Args:
+            session: DB session.
+            pool_id: The pool ID.
+            max_allocations_per_pool: Maximum allocations to perform.
+
+        The pass runs orphan cancellation, occupied counter repair, queue
+        rebuild and allocation in that order and logs action counters.
+        """
+        if not self._acquire_resource_pool_lock(session, pool_id=pool_id):
+            return
+
+        cancelled_requests = self._cancel_orphaned_resource_requests_for_pool(
+            session=session, pool_id=pool_id
+        )
+        repaired_rows = self._repair_pool_occupied_resources(
+            session=session, pool_id=pool_id
+        )
+        stale_queue_entries_removed = self._prune_stale_queue_entries_for_pool(
+            session=session, pool_id=pool_id
+        )
+        self._rebuild_resource_pool_request_queue(
+            session=session, pool_id=pool_id
+        )
+        allocations_made = self._allocate_queued_requests_for_pool(
+            session=session,
+            pool_id=pool_id,
+            max_allocations=max_allocations_per_pool,
+        )
+        logger.info(
+            "Resource pool `%s` reconciliation actions: "
+            "cancelled=%s repaired=%s stale_pruned=%s allocations=%s.",
+            pool_id,
+            cancelled_requests,
+            repaired_rows,
+            stale_queue_entries_removed,
+            allocations_made,
+        )
+
+    def reconcile_resource_pools(
+        self, max_allocations_per_pool: int = 100
+    ) -> None:
+        """Run one full reconciliation pass for all resource pools.
+
+        Args:
+            max_allocations_per_pool: Maximum allocations to perform per pool.
+
+        Failures are isolated per pool: one pool failure is logged and does not
+        stop reconciliation for other pools.
+        """
+        with Session(self.engine) as session:
+            pool_ids = session.exec(select(ResourcePoolSchema.id)).all()
+
+        for pool_id in pool_ids:
+            try:
+                with Session(self.engine) as session:
+                    self._reconcile_resource_pool(
+                        session=session,
+                        pool_id=pool_id,
+                        max_allocations_per_pool=max_allocations_per_pool,
+                    )
+                    session.commit()
+            except Exception:
+                logger.exception(
+                    "Resource pool reconciliation failed for pool `%s`.",
+                    pool_id,
+                )
+                continue
 
     def _attempt_preemption_for_head_request(
         self,
@@ -6557,15 +6809,12 @@ class SqlZenStore(BaseZenStore):
         preempted_any = False
         for victim_id in victims:
             with session.begin_nested():
-                result = session.execute(
-                    update(ResourceRequestSchema)
-                    .where(
-                        col(ResourceRequestSchema.id) == victim_id,
-                        col(ResourceRequestSchema.status)
-                        == ResourceRequestStatus.ALLOCATED.value,
-                    )
-                    .values(
-                        status=ResourceRequestStatus.PREEMPTING.value,
+                did_transition = (
+                    self._attempt_resource_request_status_transition(
+                        session=session,
+                        request_id=victim_id,
+                        new_status=ResourceRequestStatus.PREEMPTING,
+                        expected_status=ResourceRequestStatus.ALLOCATED,
                         # The head request might not be the actual request that
                         # benefits from this preemption. Because eviction is
                         # asynchronous and might take some time, other requests
@@ -6581,7 +6830,7 @@ class SqlZenStore(BaseZenStore):
                         updated=utc_now(),
                     )
                 )
-                if result.rowcount != 1:  # type: ignore[attr-defined]
+                if not did_transition:
                     continue
 
                 self._trigger_resource_request_eviction(

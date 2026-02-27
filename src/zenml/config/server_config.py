@@ -49,6 +49,8 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT,
     DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT,
+    DEFAULT_ZENML_SERVER_RESOURCE_POOL_RECONCILIATION_INTERVAL,
+    DEFAULT_ZENML_SERVER_RESOURCE_POOL_RECONCILIATION_MAX_ALLOCATIONS,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP,
@@ -253,6 +255,12 @@ class ServerConfiguration(BaseModel):
             value should be lower than the client's request timeout.
         api_transaction_cleanup_interval: The interval in seconds between
             cleanup batches.
+        resource_pool_reconciliation_enabled: Controls whether the server
+            starts the resource pool reconciliation background worker.
+        resource_pool_reconciliation_interval: The interval in seconds between
+            resource pool reconciliation passes.
+        resource_pool_reconciliation_max_allocations_per_pool: Maximum number
+            of allocations to perform per pool in each reconciliation pass.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -352,6 +360,13 @@ class ServerConfiguration(BaseModel):
 
     api_transaction_cleanup_interval: int = (
         DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL
+    )
+    resource_pool_reconciliation_enabled: bool = True
+    resource_pool_reconciliation_interval: PositiveInt = (
+        DEFAULT_ZENML_SERVER_RESOURCE_POOL_RECONCILIATION_INTERVAL
+    )
+    resource_pool_reconciliation_max_allocations_per_pool: PositiveInt = (
+        DEFAULT_ZENML_SERVER_RESOURCE_POOL_RECONCILIATION_MAX_ALLOCATIONS
     )
 
     max_request_body_size_in_bytes: int = (

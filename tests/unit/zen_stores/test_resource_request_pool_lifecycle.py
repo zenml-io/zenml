@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 from uuid import UUID, uuid4
 
 import pytest
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from zenml.config.step_configurations import Step
 from zenml.enums import (
@@ -19,6 +19,11 @@ from zenml.models import (
     ResourcePoolSubjectPolicyRequest,
     ResourcePoolUpdate,
     ResourceRequestRequest,
+)
+from zenml.zen_stores.schemas.resource_pool_schemas import (
+    ResourcePoolQueueSchema,
+    ResourcePoolResourceSchema,
+    ResourceRequestSchema,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -286,6 +291,121 @@ def test_non_preemptable_request_rejected_if_exceeds_reserved_share(
     assert (
         _get_request(clean_client, request.id).status
         == ResourceRequestStatus.REJECTED
+    )
+
+
+def test_request_allocated_when_equal_pool_total_capacity(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    component_id = clean_client.active_stack.orchestrator.id
+    _create_pool(
+        clean_client,
+        capacity={"gpu": 2},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 2},
+                limit={"gpu": 2},
+            )
+        ],
+    )
+
+    _, step_id = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    request = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_id,
+        requested_resources={"gpu": 2},
+    )
+    assert (
+        _get_request(clean_client, request.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+
+
+def test_request_allocated_when_equal_policy_limit(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    component_id = clean_client.active_stack.orchestrator.id
+    _create_pool(
+        clean_client,
+        capacity={"gpu": 3},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 1},
+                limit={"gpu": 2},
+            )
+        ],
+    )
+
+    _, step_id = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    request = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_id,
+        requested_resources={"gpu": 2},
+    )
+    assert (
+        _get_request(clean_client, request.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+
+
+def test_non_preemptable_request_allocated_when_equal_reserved_share(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    component_id = clean_client.active_stack.orchestrator.id
+    _create_pool(
+        clean_client,
+        capacity={"gpu": 3},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 2},
+                limit={"gpu": 3},
+            )
+        ],
+    )
+
+    _, step_id = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    request = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_id,
+        requested_resources={"gpu": 2},
+        preemptable=False,
+    )
+    assert (
+        _get_request(clean_client, request.id).status
+        == ResourceRequestStatus.ALLOCATED
     )
 
 
@@ -1700,3 +1820,197 @@ def test_delete_pool_blocked_when_only_allocated_requests_exist(
 
     assert "queued=0" in str(error.value)
     assert "allocated=1" in str(error.value)
+
+
+def test_reconciliation_cancels_orphaned_allocations_without_new_requests(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    store = clean_client.zen_store
+    assert isinstance(store, SqlZenStore)
+    component_id = clean_client.active_stack.orchestrator.id
+    _create_pool(
+        clean_client,
+        capacity={"gpu": 1},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 1},
+                limit={"gpu": 1},
+            )
+        ],
+    )
+
+    run_id, step_id = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    request = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_id,
+        requested_resources={"gpu": 1},
+    )
+    assert (
+        _get_request(clean_client, request.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+
+    clean_client.zen_store.delete_run(run_id)
+    store.reconcile_resource_pools()
+
+    assert (
+        _get_request(clean_client, request.id).status
+        == ResourceRequestStatus.CANCELLED
+    )
+
+
+def test_reconciliation_repairs_occupied_resource_counters(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    store = clean_client.zen_store
+    assert isinstance(store, SqlZenStore)
+    component_id = clean_client.active_stack.orchestrator.id
+    pool = _create_pool(
+        clean_client,
+        capacity={"gpu": 1},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 0},
+                limit={"gpu": 1},
+            )
+        ],
+    )
+
+    _, step_id = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    request = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_id,
+        requested_resources={"gpu": 1},
+    )
+    assert (
+        _get_request(clean_client, request.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+
+    with Session(store.engine) as session:
+        pool_resource = session.exec(
+            select(ResourcePoolResourceSchema)
+            .where(ResourcePoolResourceSchema.pool_id == pool.id)
+            .where(ResourcePoolResourceSchema.key == "gpu")
+        ).one()
+        pool_resource.occupied = 0
+        session.add(pool_resource)
+        session.commit()
+
+    store.reconcile_resource_pools()
+
+    with Session(store.engine) as session:
+        pool_resource = session.exec(
+            select(ResourcePoolResourceSchema)
+            .where(ResourcePoolResourceSchema.pool_id == pool.id)
+            .where(ResourcePoolResourceSchema.key == "gpu")
+        ).one()
+        assert pool_resource.occupied == 1
+
+
+def test_reconciliation_cleans_stale_queue_entries(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    store = clean_client.zen_store
+    assert isinstance(store, SqlZenStore)
+    component_id = clean_client.active_stack.orchestrator.id
+    pool = _create_pool(
+        clean_client,
+        capacity={"gpu": 1},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={"gpu": 0},
+                limit={"gpu": 1},
+            )
+        ],
+    )
+    _, step_id = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    request = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_id,
+        requested_resources={"gpu": 1},
+    )
+    request_model = _get_request(clean_client, request.id)
+    assert request_model.status == ResourceRequestStatus.ALLOCATED
+
+    with Session(store.engine) as session:
+        session.add(
+            ResourcePoolQueueSchema(
+                pool_id=pool.id,
+                request_id=request.id,
+                priority=1,
+                request_created=request_model.created,
+            )
+        )
+        session.commit()
+
+    with Session(store.engine) as session:
+        stale_queue_entries_before = len(
+            session.exec(
+                select(ResourcePoolQueueSchema.id)
+                .join(
+                    ResourceRequestSchema,
+                    ResourceRequestSchema.id
+                    == ResourcePoolQueueSchema.request_id,
+                )
+                .where(ResourcePoolQueueSchema.pool_id == pool.id)
+                .where(
+                    ResourceRequestSchema.status
+                    != ResourceRequestStatus.PENDING.value
+                )
+            ).all()
+        )
+        assert stale_queue_entries_before == 1
+
+    store.reconcile_resource_pools()
+
+    with Session(store.engine) as session:
+        stale_queue_entries_after = len(
+            session.exec(
+                select(ResourcePoolQueueSchema.id)
+                .join(
+                    ResourceRequestSchema,
+                    ResourceRequestSchema.id
+                    == ResourcePoolQueueSchema.request_id,
+                )
+                .where(ResourcePoolQueueSchema.pool_id == pool.id)
+                .where(
+                    ResourceRequestSchema.status
+                    != ResourceRequestStatus.PENDING.value
+                )
+            ).all()
+        )
+        assert stale_queue_entries_after == 0
