@@ -66,6 +66,10 @@ class ResourcePoolQueueSchema(BaseSchema, table=True):
         ),
         build_index(
             table_name=__tablename__,
+            column_names=["request_id"],
+        ),
+        build_index(
+            table_name=__tablename__,
             column_names=[
                 "pool_id",
                 "priority",
@@ -583,6 +587,10 @@ class ResourceRequestSchema(BaseSchema, table=True):
         UniqueConstraint(
             "step_run_id",
             name="unique_resource_request_step_run_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["step_run_id", "status", "id"],
         ),
         build_index(
             table_name=__tablename__,

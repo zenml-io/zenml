@@ -713,7 +713,7 @@ class StepLauncher:
             RuntimeError: If the resources could not be acquired.
         """
         # TODO: Bool on component that indicates if we should request resources?
-        # Probably don't need this if we request resources on the step run 
+        # Probably don't need this if we request resources on the step run
         # request instead.
         requested_resources = component.get_requested_resources(step_run_info)
         requested_resources["step_run"] = 1

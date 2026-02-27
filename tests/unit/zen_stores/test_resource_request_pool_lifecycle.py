@@ -424,6 +424,104 @@ def test_missing_policy_key_inherits_bounded_pool_capacity(
     )
 
 
+def test_explicit_policy_limit_zero_overrides_pool_capacity(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    component_id = clean_client.active_stack.orchestrator.id
+    _create_pool(
+        clean_client,
+        capacity={"gpu": 2},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={},
+                limit={"gpu": 0},
+            )
+        ],
+    )
+
+    _, step_id = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    request = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_id,
+        requested_resources={"gpu": 1},
+    )
+
+    assert (
+        _get_request(clean_client, request.id).status
+        == ResourceRequestStatus.REJECTED
+    )
+
+
+def test_policy_without_key_can_use_new_pool_key_after_capacity_update(
+    clean_client,
+    sample_pipeline_snapshot_request_model,
+    sample_pipeline_run_request_model,
+    sample_step_request_model,
+):
+    component_id = clean_client.active_stack.orchestrator.id
+    pool = _create_pool(
+        clean_client,
+        capacity={"gpu": 1},
+        policies=[
+            ResourcePoolSubjectPolicyRequest(
+                component_id=component_id,
+                priority=1,
+                reserved={},
+                limit={},
+            )
+        ],
+    )
+
+    _, step_before = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    before_update = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_before,
+        requested_resources={"disk": 1},
+    )
+    assert (
+        _get_request(clean_client, before_update.id).status
+        == ResourceRequestStatus.REJECTED
+    )
+
+    clean_client.zen_store.update_resource_pool(
+        pool.id, ResourcePoolUpdate(capacity={"gpu": 1, "disk": 2})
+    )
+
+    _, step_after = _create_step_run_in_db(
+        clean_client,
+        sample_pipeline_snapshot_request_model,
+        sample_pipeline_run_request_model,
+        sample_step_request_model,
+    )
+    after_update = _create_resource_request(
+        clean_client,
+        component_id=component_id,
+        step_run_id=step_after,
+        requested_resources={"disk": 2},
+    )
+    assert (
+        _get_request(clean_client, after_update.id).status
+        == ResourceRequestStatus.ALLOCATED
+    )
+
+
 def test_allocation_respects_non_preemptable_reserved_share(
     clean_client,
     sample_pipeline_snapshot_request_model,
