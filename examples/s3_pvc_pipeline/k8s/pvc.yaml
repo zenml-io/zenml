@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: zenml-data-pvc
+  namespace: zenml-baris
+spec:
+  accessModes:
+    - ReadWriteOnce # required for gp2 (AWS EBS); only one pod per node can mount
+    # - ReadWriteMany   # use if multiple pods (e.g. parallel training) need to read/write
+  storageClassName: gp2 # E.g: gp2, efs-sc, nfs. Check your cluster's default.
+  resources:
+    requests:
+      storage: 10Gi

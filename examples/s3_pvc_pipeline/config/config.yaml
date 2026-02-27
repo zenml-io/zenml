@@ -1,0 +1,35 @@
+# Run configuration for the FashionMNIST training pipeline.
+# ref: https://docs.zenml.io/concepts/steps_and_pipelines/configuration
+# ref: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration
+
+# run_name: "training_{data_version}_{date}_{time}"
+
+# Pipeline-level flags
+enable_cache: false
+enable_step_logs: true
+enable_artifact_metadata: true
+enable_artifact_visualization: true
+
+# Pipeline parameters (passed to steps)
+parameters:
+  service_connector_name_or_id: "aws"
+  s3_bucket: "persistent-data-store"
+  s3_prefix: "mnist/"
+  data_version: "v1"
+  train_ratio: 0.9
+  seed: 42
+  preprocess_mount_path: "/mnt/data"
+  hyperparams:
+    learning_rate: 0.001
+    batch_size: 64
+    hidden_dim: 32
+    max_epochs: 1
+# Step-level overrides (optional). Step-level config overrides pipeline-level.
+# steps:
+#   load_data:
+#     enable_cache: true
+#   train_model:
+#     parameters:
+#       hyperparams:
+#         learning_rate: 0.0005
+#         max_epochs: 2

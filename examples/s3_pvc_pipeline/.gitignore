@@ -1,0 +1,44 @@
+data/
+*cache*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# ZenML
+.zen/
+
+# Optuna
+optuna_study.db
+*.db
+
+# Hydra
+outputs/
+.hydra/
+multirun/
+
+# Environment
+.env
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PyTorch
+*.pth
+*.pt
+checkpoints/
