@@ -16,19 +16,23 @@
 Runs ZenML step entrypoints inside Docker containers on a remote Linux
 host accessed over SSH, with optional GPU selection and per-GPU mutual
 exclusion via flock.
+
+Supports both the legacy blocking ``launch()`` path and the async
+``submit()``/``get_status()``/``cancel()`` contract required for dynamic
+pipelines (PR #4515).
 """
 
-import uuid
+import json
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.ssh.flavors import (
     SSHStepOperatorConfig,
     SSHStepOperatorSettings,
 )
 from zenml.integrations.ssh.remote_docker import (
-    build_remote_wrapper_script,
+    build_remote_supervisor_script,
     normalize_gpu_indices,
     serialize_env_for_docker_env_file,
 )
@@ -38,17 +42,23 @@ from zenml.integrations.ssh.ssh_utils import (
     SSHConnectionConfig,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.metadata.metadata_types import MetadataType
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 SSH_STEP_OPERATOR_DOCKER_IMAGE_KEY = "ssh_step_operator"
+
+SSH_CONTAINER_NAME_METADATA_KEY = "ssh_container_name"
+SSH_STATUS_FILE_METADATA_KEY = "ssh_status_file"
+SSH_CANCEL_FILE_METADATA_KEY = "ssh_cancel_file"
 
 
 class SSHStepOperator(BaseStepOperator):
@@ -213,15 +223,20 @@ class SSHStepOperator(BaseStepOperator):
                 result.stdout.strip(),
             )
 
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Execute a step on the remote host via SSH + Docker.
+        """Submit a step for async execution on the remote host.
 
-        This method blocks until the remote container completes (or fails).
+        Uploads a supervisor script and launches it in the background via
+        ``nohup``.  The supervisor handles image pulling, GPU lock
+        acquisition, container lifecycle, and status reporting through a
+        JSON status file on the remote host.
+
+        Returns immediately after the supervisor is started.
 
         Args:
             info: The step run information.
@@ -229,30 +244,34 @@ class SSHStepOperator(BaseStepOperator):
             environment: Environment variables for the step container.
 
         Raises:
-            RuntimeError: If the remote command fails.
+            RuntimeError: If the supervisor script fails to start.
         """
         settings = cast(SSHStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=SSH_STEP_OPERATOR_DOCKER_IMAGE_KEY)
 
-        # Normalize GPU indices if specified
         gpu_indices: Optional[List[int]] = None
         if settings.gpu_indices is not None:
             gpu_indices = normalize_gpu_indices(settings.gpu_indices)
 
-        # Generate unique paths for this step run
-        run_id = str(uuid.uuid4())[:8]
+        # Deterministic identifiers derived from step_run_id.
+        step_run_id = str(info.step_run_id)
+        container_name = f"zenml-step-{step_run_id}"[:128]
         remote_workdir = self.config.remote_workdir
-        env_file_path = f"{remote_workdir}/env-{run_id}"
-        script_path = f"{remote_workdir}/run-{run_id}.sh"
+        env_file_path = f"{remote_workdir}/env-{step_run_id}"
+        script_path = f"{remote_workdir}/supervise-{step_run_id}.sh"
+        status_file_path = f"{remote_workdir}/status-{step_run_id}.json"
+        cancel_file_path = f"{remote_workdir}/cancel-{step_run_id}"
+        log_file_path = f"{remote_workdir}/supervise-{step_run_id}.log"
 
-        # Serialize environment to env-file format
         env_content = serialize_env_for_docker_env_file(environment)
 
-        # Generate the wrapper script
-        script_content = build_remote_wrapper_script(
+        script_content = build_remote_supervisor_script(
             image=image_name,
             entrypoint_command=entrypoint_command,
             env_file_path=env_file_path,
+            status_file_path=status_file_path,
+            cancel_file_path=cancel_file_path,
+            container_name=container_name,
             gpu_lock_dir=self.config.gpu_lock_dir,
             gpu_indices=gpu_indices,
             use_gpu_locks=settings.use_gpu_locks,
@@ -263,11 +282,12 @@ class SSHStepOperator(BaseStepOperator):
         conn_config = self._build_ssh_connection_config()
 
         logger.info(
-            "Connecting to %s:%d to execute step '%s' using image %s",
+            "Submitting step '%s' to %s:%d (image: %s, container: %s)",
+            info.pipeline_step_name,
             self.config.hostname,
             self.config.port,
-            info.pipeline_step_name,
             image_name,
+            container_name,
         )
         if gpu_indices:
             logger.info(
@@ -277,52 +297,172 @@ class SSHStepOperator(BaseStepOperator):
             )
 
         with SSHClient(conn_config) as ssh:
-            # Preflight: verify remote tools exist
             self._run_preflight_checks(ssh)
-
-            # Create remote workdir
             ssh.exec(f"mkdir -p {remote_workdir}")
-
-            # Upload env-file and wrapper script
             ssh.put_text(env_file_path, env_content, mode=0o600)
             ssh.put_text(script_path, script_content, mode=0o700)
 
-            # Pull the Docker image
-            logger.info("Pulling image %s on remote host...", image_name)
-            pull_result = ssh.exec(
-                f"{self.config.docker_binary} pull {image_name}",
-                stream=True,
-                get_pty=True,
-                combine_stderr=True,
+            # Launch supervisor in background; capture PID for diagnostics.
+            result = ssh.exec(
+                f"nohup bash {script_path} > {log_file_path} 2>&1 "
+                "< /dev/null & echo $!"
             )
-            if pull_result.exit_code != 0:
+            if result.exit_code != 0:
                 raise RuntimeError(
-                    f"Failed to pull Docker image '{image_name}' on "
-                    f"{self.config.hostname}. Check that the remote host "
-                    "can reach the container registry and that credentials "
-                    "are configured.\n"
-                    f"Exit code: {pull_result.exit_code}"
+                    f"Failed to start supervisor script on "
+                    f"{self.config.hostname}: {result.stderr.strip()}"
                 )
-
-            # Execute the wrapper script (blocks until completion)
-            logger.info("Running step '%s'...", info.pipeline_step_name)
-            run_result = ssh.exec(
-                f"bash {script_path}",
-                stream=True,
-                get_pty=True,
-                combine_stderr=True,
+            supervisor_pid = result.stdout.strip()
+            logger.info(
+                "Supervisor started (PID %s) for step '%s' on %s.",
+                supervisor_pid,
+                info.pipeline_step_name,
+                self.config.hostname,
             )
 
-            if run_result.exit_code != 0:
-                raise RuntimeError(
-                    f"Step '{info.pipeline_step_name}' failed on remote "
-                    f"host {self.config.hostname} with exit code "
-                    f"{run_result.exit_code}. Check the logs above for "
-                    "details."
-                )
+        # Persist metadata for get_status/cancel to recover job identity.
+        metadata: Dict[str, "MetadataType"] = {
+            SSH_CONTAINER_NAME_METADATA_KEY: container_name,
+            SSH_STATUS_FILE_METADATA_KEY: status_file_path,
+            SSH_CANCEL_FILE_METADATA_KEY: cancel_file_path,
+        }
+        publish_step_run_metadata(
+            step_run_id=info.step_run_id,
+            step_run_metadata={self.id: metadata},
+        )
+        # Mirror to in-memory for immediate access by wait().
+        for key, value in metadata.items():
+            info.step_run.run_metadata[key] = value
 
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Get the execution status of a submitted step.
+
+        Reads the JSON status file written by the remote supervisor script.
+        Falls back to ``docker inspect`` if the status file is unavailable.
+
+        Args:
+            step_run: The step run to check.
+
+        Returns:
+            The current execution status.
+        """
+        status_file = str(step_run.run_metadata[SSH_STATUS_FILE_METADATA_KEY])
+        container_name = str(
+            step_run.run_metadata[SSH_CONTAINER_NAME_METADATA_KEY]
+        )
+
+        conn_config = self._build_ssh_connection_config()
+        with SSHClient(conn_config) as ssh:
+            # Primary: read status file written by supervisor.
+            try:
+                content = ssh.read_text(status_file)
+                data = json.loads(content)
+                state = data.get("state", "")
+                return self._map_state_to_status(state)
+            except (FileNotFoundError, json.JSONDecodeError, KeyError):
+                pass
+
+            # Fallback: query Docker directly.
+            result = ssh.exec(
+                f"{self.config.docker_binary} inspect "
+                f"--format '{{{{.State.Status}}}}' {container_name}"
+            )
+            if result.exit_code == 0:
+                docker_state = result.stdout.strip().strip("'")
+                if docker_state == "running":
+                    return ExecutionStatus.RUNNING
+                if docker_state == "exited":
+                    exit_code_result = ssh.exec(
+                        f"{self.config.docker_binary} inspect "
+                        f"--format '{{{{.State.ExitCode}}}}' "
+                        f"{container_name}"
+                    )
+                    if (
+                        exit_code_result.exit_code == 0
+                        and exit_code_result.stdout.strip().strip("'") == "0"
+                    ):
+                        return ExecutionStatus.COMPLETED
+                    return ExecutionStatus.FAILED
+
+        return ExecutionStatus.FAILED
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancel a submitted step by stopping its Docker container.
+
+        Writes a cancel marker file (so the supervisor records the
+        correct final state) and then issues ``docker stop``.
+
+        Args:
+            step_run: The step run to cancel.
+        """
+        container_name = str(
+            step_run.run_metadata[SSH_CONTAINER_NAME_METADATA_KEY]
+        )
+        cancel_file = str(step_run.run_metadata[SSH_CANCEL_FILE_METADATA_KEY])
+
+        conn_config = self._build_ssh_connection_config()
+        try:
+            with SSHClient(conn_config) as ssh:
+                ssh.exec(f"touch {cancel_file}")
+                ssh.exec(f"{self.config.docker_binary} stop {container_name}")
+        except Exception:
+            logger.debug(
+                "Best-effort cancel failed for container %s.",
+                container_name,
+                exc_info=True,
+            )
+
+    def launch(
+        self,
+        info: "StepRunInfo",
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
+    ) -> None:
+        """Execute a step on the remote host (blocking legacy path).
+
+        Delegates to ``submit()`` + ``wait()`` to reuse the async
+        infrastructure while preserving the blocking call semantics
+        expected by static pipelines.
+
+        Args:
+            info: The step run information.
+            entrypoint_command: The entrypoint command for the step.
+            environment: Environment variables for the step container.
+
+        Raises:
+            RuntimeError: If the step fails.
+        """
+        self.submit(info, entrypoint_command, environment)
+        status = self.wait(info.step_run)
+        if not status.is_successful:
+            try:
+                self.cancel(info.step_run)
+            except Exception:
+                logger.debug("Failed to cancel SSH step.", exc_info=True)
+            raise RuntimeError(
+                f"Step '{info.pipeline_step_name}' failed on remote host "
+                f"{self.config.hostname} with status: {status}"
+            )
         logger.info(
             "Step '%s' completed successfully on %s.",
             info.pipeline_step_name,
             self.config.hostname,
         )
+
+    @staticmethod
+    def _map_state_to_status(state: str) -> ExecutionStatus:
+        """Map a supervisor state string to an ExecutionStatus.
+
+        Args:
+            state: One of "running", "completed", "failed", "stopped".
+
+        Returns:
+            The corresponding ExecutionStatus.
+        """
+        mapping = {
+            "running": ExecutionStatus.RUNNING,
+            "completed": ExecutionStatus.COMPLETED,
+            "failed": ExecutionStatus.FAILED,
+            "stopped": ExecutionStatus.FAILED,
+        }
+        return mapping.get(state, ExecutionStatus.RUNNING)

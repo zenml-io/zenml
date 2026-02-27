@@ -365,3 +365,43 @@ class SSHClient:
             sftp.chmod(remote_path, mode)
         finally:
             sftp.close()
+
+    def read_text(self, remote_path: str) -> str:
+        """Read a remote file's text contents via SFTP.
+
+        Args:
+            remote_path: Absolute path on the remote host.
+
+        Returns:
+            The file contents as a string.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            RuntimeError: If reading fails for another reason.
+        """
+        client = self._get_client()
+        sftp = client.open_sftp()
+        try:
+            with sftp.file(remote_path, "r") as f:
+                raw: bytes = f.read()
+                return raw.decode("utf-8", errors="replace")
+        except FileNotFoundError:
+            raise
+        except OSError as e:
+            raise FileNotFoundError(
+                f"Remote file not found or unreadable: {remote_path}"
+            ) from e
+        finally:
+            sftp.close()
+
+    def file_exists(self, remote_path: str) -> bool:
+        """Check if a file exists on the remote host.
+
+        Args:
+            remote_path: Absolute path on the remote host.
+
+        Returns:
+            True if the file exists, False otherwise.
+        """
+        result = self.exec(f"test -f {remote_path}")
+        return result.exit_code == 0
