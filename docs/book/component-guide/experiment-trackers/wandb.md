@@ -291,7 +291,7 @@ When using Weave with ZenML, there are a few important behaviors to understand:
 4. If `enable_weave=False` and no `project_name` is specified, Weave disabling will be skipped.
 
 {% hint style="info" %}
-For more information about Weights & Biases Weave and its capabilities, visit the [Weave documentation](https://docs.wandb.ai/guides/weave).
+For more information about Weights & Biases Weave and its capabilities, visit the [Weave documentation](https://docs.wandb.ai/weave).
 {% endhint %}
 
 ## Full Code Example
