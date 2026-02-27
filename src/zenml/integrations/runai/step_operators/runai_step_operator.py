@@ -353,10 +353,6 @@ class RunAIStepOperator(BaseStepOperator):
 
         Returns:
             The final step status.
-
-        Raises:
-            RuntimeError: If polling fails, the workload times out, or the
-                workload finishes in a failed state.
         """
         settings = cast(RunAIStepOperatorSettings, self.get_settings(step_run))
         workload_id = self._get_workload_id(step_run)
