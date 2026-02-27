@@ -32,7 +32,7 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.huggingface.flavors.huggingface_jobs_step_operator_flavor import (
     HuggingFaceJobsStepOperatorConfig,
     HuggingFaceJobsStepOperatorSettings,
@@ -46,11 +46,13 @@ from zenml.step_operators import BaseStepOperator
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 HUGGINGFACE_JOBS_DOCKER_IMAGE_KEY = "huggingface_jobs_step_operator"
+STEP_JOB_NAME_METADATA_KEY = "job_name"
+_HF_JOB_NAMESPACE_METADATA_KEY = "hf_job_namespace"
 
 _HF_JOBS_MIN_VERSION = "0.30.0"
 
@@ -364,35 +366,26 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
 
         return builds
 
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launch a step as a HuggingFace Job.
+        """Submit a step as a HuggingFace Job (non-blocking).
 
-        Submits the step's Docker image and entrypoint command to HF Jobs,
-        polls until the job reaches a terminal state, and optionally streams
-        logs during execution.
+        Creates the remote HF Job and returns immediately. The job
+        identity is persisted in step run metadata so that
+        ``get_status`` and ``cancel`` can recover it later.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
             environment: Environment variables for the step.
-
-        Raises:
-            RuntimeError: If the job fails, is canceled, or is deleted.
         """
         _check_hf_jobs_availability()
 
-        from huggingface_hub import (
-            JobStage,
-            cancel_job,
-            fetch_job_logs,
-            inspect_job,
-            run_job,
-        )
+        from huggingface_hub import run_job
 
         settings = cast(
             HuggingFaceJobsStepOperatorSettings, self.get_settings(info)
@@ -426,7 +419,6 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
             hardware_flavor_str or "cpu-basic",
         )
 
-        # Flush any buffered logs before submitting the remote job
         info.force_write_logs()
 
         job = run_job(
@@ -445,14 +437,18 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
             job.url,
         )
 
-        # Publish the HF Job URL as step run metadata so it appears
-        # as a clickable link in the ZenML dashboard.
+        # Persist job identity in server metadata (for dashboard links
+        # and cross-process recovery) and in the in-memory step run
+        # (so wait() can poll immediately without re-hydration).
         try:
             step_metadata: Dict[str, MetadataType] = {
+                STEP_JOB_NAME_METADATA_KEY: str(job.id),
                 METADATA_ORCHESTRATOR_RUN_ID: str(job.id),
                 METADATA_ORCHESTRATOR_URL: Uri(str(job.url)),
                 METADATA_ORCHESTRATOR_LOGS_URL: Uri(str(job.url)),
             }
+            if namespace:
+                step_metadata[_HF_JOB_NAMESPACE_METADATA_KEY] = namespace
             publish_step_run_metadata(
                 step_run_id=info.step_run_id,
                 step_run_metadata={self.id: step_metadata},
@@ -463,8 +459,79 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                 exc_info=True,
             )
 
-        # Poll until the job reaches a terminal state, with retry
-        # logic for transient API errors.
+        info.step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY] = str(job.id)
+        if namespace:
+            info.step_run.run_metadata[_HF_JOB_NAMESPACE_METADATA_KEY] = (
+                namespace
+            )
+
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Get the execution status of a submitted HuggingFace Job.
+
+        Args:
+            step_run: The step run to check.
+
+        Returns:
+            The current execution status.
+
+        Raises:
+            RuntimeError: If the job identity metadata is missing.
+        """
+        _check_hf_jobs_availability()
+
+        from huggingface_hub import JobStage, inspect_job
+
+        token = _resolve_token(self.config)
+        job_id, namespace = self._get_job_identity(step_run)
+
+        job_info = inspect_job(job_id=job_id, namespace=namespace, token=token)
+        stage = job_info.status.stage
+
+        if stage == JobStage.COMPLETED:
+            return ExecutionStatus.COMPLETED
+        if stage in (JobStage.ERROR, JobStage.CANCELED, JobStage.DELETED):
+            return ExecutionStatus.FAILED
+        return ExecutionStatus.RUNNING
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancel a submitted HuggingFace Job (best-effort).
+
+        Args:
+            step_run: The step run to cancel.
+        """
+        _check_hf_jobs_availability()
+
+        from huggingface_hub import cancel_job
+
+        token = _resolve_token(self.config)
+        job_id, namespace = self._get_job_identity(step_run)
+        self._best_effort_cancel(cancel_job, job_id, namespace, token)
+
+    def wait(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Wait for a HuggingFace Job to finish.
+
+        Overrides the base class to use HF-specific polling behavior:
+        configurable poll interval, transient error retry with backoff,
+        and optional log streaming.
+
+        Args:
+            step_run: The step run to wait for.
+
+        Returns:
+            The final execution status.
+        """
+        _check_hf_jobs_availability()
+
+        from huggingface_hub import (
+            JobStage,
+            cancel_job,
+            fetch_job_logs,
+            inspect_job,
+        )
+
+        token = _resolve_token(self.config)
+        job_id, namespace = self._get_job_identity(step_run)
+
         consecutive_errors = 0
         log_offset = 0
 
@@ -472,7 +539,7 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
             while True:
                 try:
                     job_info = inspect_job(
-                        job_id=job.id,
+                        job_id=job_id,
                         namespace=namespace,
                         token=token,
                     )
@@ -483,12 +550,15 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                         consecutive_errors
                         >= _HF_JOBS_POLL_MAX_CONSECUTIVE_ERRORS
                     ):
-                        raise RuntimeError(
-                            f"Failed to poll HuggingFace Job {job.id} "
-                            f"after {consecutive_errors} consecutive "
-                            f"errors. Last error: {poll_err}. "
-                            f"Job URL: {job.url}"
-                        ) from poll_err
+                        logger.error(
+                            "Failed to poll HuggingFace Job %s "
+                            "after %d consecutive errors. "
+                            "Last error: %s",
+                            job_id,
+                            consecutive_errors,
+                            poll_err,
+                        )
+                        return ExecutionStatus.FAILED
 
                     backoff = min(
                         self.config.poll_interval_seconds
@@ -499,7 +569,7 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                     logger.warning(
                         "Transient error polling HF Job %s "
                         "(attempt %d/%d): %s. Retrying in %.1fs.",
-                        job.id,
+                        job_id,
                         consecutive_errors,
                         _HF_JOBS_POLL_MAX_CONSECUTIVE_ERRORS,
                         poll_err,
@@ -514,7 +584,7 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                     try:
                         logs = list(
                             fetch_job_logs(
-                                job_id=job.id,
+                                job_id=job_id,
                                 namespace=namespace,
                                 token=token,
                             )
@@ -532,9 +602,9 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                 if stage == JobStage.COMPLETED:
                     logger.info(
                         "HuggingFace Job %s completed successfully.",
-                        job.id,
+                        job_id,
                     )
-                    return
+                    return ExecutionStatus.COMPLETED
 
                 if stage in (
                     JobStage.ERROR,
@@ -547,15 +617,17 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                     stage_str = (
                         stage.value if hasattr(stage, "value") else stage
                     )
-                    raise RuntimeError(
-                        f"HuggingFace Job ended with stage={stage_str}. "
-                        f"Message: {message}. "
-                        f"Job URL: {job.url}"
+                    logger.error(
+                        "HuggingFace Job %s ended with stage=%s. Message: %s",
+                        job_id,
+                        stage_str,
+                        message,
                     )
+                    return ExecutionStatus.FAILED
 
                 logger.debug(
                     "HuggingFace Job %s stage: %s. Polling again in %ss.",
-                    job.id,
+                    job_id,
                     stage.value if hasattr(stage, "value") else stage,
                     self.config.poll_interval_seconds,
                 )
@@ -564,27 +636,70 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
         except KeyboardInterrupt:
             logger.warning(
                 "Interrupt received. Canceling HuggingFace Job %s...",
-                job.id,
+                job_id,
             )
-            self._best_effort_cancel(cancel_job, job.id, namespace, token)
-            raise
-        except RuntimeError:
-            # Job-terminal or poll-exhaustion errors: attempt cleanup
-            logger.warning(
-                "Attempting best-effort cancellation of HF Job %s...",
-                job.id,
+            self._best_effort_cancel(cancel_job, job_id, namespace, token)
+            return ExecutionStatus.FAILED
+
+    def launch(
+        self,
+        info: "StepRunInfo",
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
+    ) -> None:
+        """Launch a step as a HuggingFace Job (legacy synchronous API).
+
+        This is a compatibility wrapper that calls ``submit`` followed
+        by ``wait``. New code should use ``submit`` / ``get_status`` /
+        ``cancel`` directly.
+
+        Args:
+            info: Information about the step run.
+            entrypoint_command: Command that executes the step.
+            environment: Environment variables for the step.
+
+        Raises:
+            RuntimeError: If the job fails or is canceled.
+        """
+        self.submit(info, entrypoint_command, environment)
+        status = self.wait(info.step_run)
+        if not status.is_successful:
+            try:
+                self.cancel(info.step_run)
+            except Exception:
+                logger.debug(
+                    "Failed to cancel HF Job after failure.",
+                    exc_info=True,
+                )
+            raise RuntimeError(f"HuggingFace Job failed with status: {status}")
+
+    def _get_job_identity(
+        self, step_run: "StepRunResponse"
+    ) -> Tuple[str, Optional[str]]:
+        """Recover HF Job identity from step run metadata.
+
+        Args:
+            step_run: The step run containing persisted metadata.
+
+        Returns:
+            A tuple of (job_id, namespace).
+
+        Raises:
+            RuntimeError: If the job ID metadata key is missing.
+        """
+        metadata = step_run.run_metadata
+        job_id = metadata.get(STEP_JOB_NAME_METADATA_KEY) or metadata.get(
+            METADATA_ORCHESTRATOR_RUN_ID
+        )
+        if not job_id:
+            raise RuntimeError(
+                f"Cannot find HuggingFace Job ID in step run metadata. "
+                f"Expected key '{STEP_JOB_NAME_METADATA_KEY}' or "
+                f"'{METADATA_ORCHESTRATOR_RUN_ID}'. Available keys: "
+                f"{list(metadata.keys())}"
             )
-            self._best_effort_cancel(cancel_job, job.id, namespace, token)
-            raise
-        except Exception:
-            logger.warning(
-                "Unexpected error while monitoring HF Job %s. "
-                "Attempting best-effort cancellation...",
-                job.id,
-                exc_info=True,
-            )
-            self._best_effort_cancel(cancel_job, job.id, namespace, token)
-            raise
+        namespace = metadata.get(_HF_JOB_NAMESPACE_METADATA_KEY)
+        return str(job_id), str(namespace) if namespace else None
 
     @staticmethod
     def _best_effort_cancel(
