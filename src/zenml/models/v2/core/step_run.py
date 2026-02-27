@@ -777,6 +777,11 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
+    version: Union[int, str, None] = Field(
+        default=None,
+        description="Version of the step run.",
+        union_mode="left_to_right",
+    )
     exclude_retried: Optional[bool] = Field(
         default=None,
         description="Whether to exclude retried step runs.",

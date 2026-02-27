@@ -91,7 +91,7 @@ The API key is shown only once during creation. Make sure to save it securely, a
 {% endhint %}
 
 You can learn more about how to generate a `ZENML_API_KEY` via service accounts
-[here](https://docs.zenml.io//how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
+[here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
 
 
 If you're using a ZenML Pro server, you will need to create a Personal Access Token or an organization-level service account and an API key for it. You can find more about Personal Access Tokens [here](https://docs.zenml.io/pro/access-management/personal-access-tokens) and organization-level service accounts and API keys [here](https://docs.zenml.io/pro/access-management/service-accounts).
@@ -99,7 +99,7 @@ If you're using a ZenML Pro server, you will need to create a Personal Access To
 ### Create the service connectors
 
 The key to successful registration is proper authentication between the components.
-[Service connectors](https://docs.zenml.io//how-to/infrastructure-deployment/auth-management) are ZenML's way of managing this:
+[Service connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) are ZenML's way of managing this:
 
 ```hcl
 # First, create a service connector

@@ -11,12 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of a VertexAI step operator.
-
-Code heavily inspired by TFX Implementation:
-https://github.com/tensorflow/tfx/blob/master/tfx/extensions/
-google_cloud_ai_platform/training_clients.py
-"""
+"""Implementation of a VertexAI step operator."""
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
@@ -24,7 +19,7 @@ from google.cloud import aiplatform
 
 from zenml import __version__
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.gcp.constants import (
     VERTEX_ENDPOINT_SUFFIX,
 )
@@ -35,19 +30,24 @@ from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
-from zenml.integrations.gcp.utils import build_job_request, monitor_job
+from zenml.integrations.gcp.utils import (
+    build_job_request,
+    convert_job_state,
+)
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 VERTEX_DOCKER_IMAGE_KEY = "vertex_step_operator"
+STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 
 class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
@@ -171,13 +171,13 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             )
         return self._job_service_client
 
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launches a step on VertexAI.
+        """Submits a step run to VertexAI.
 
         Args:
             info: Information about the step run.
@@ -228,8 +228,32 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             parent=parent, custom_job=job_request
         )
         logger.debug("Vertex AI response:", response)
-
-        monitor_job(
-            job_id=response.name,
-            get_client=self.get_job_service_client,
+        publish_step_run_metadata(
+            info.step_run_id,
+            {self.id: {STEP_JOB_NAME_METADATA_KEY: response.name}},
         )
+        info.step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY] = response.name
+
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Gets the status of a submitted step.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The step status.
+        """
+        client = self.get_job_service_client()
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        job = client.get_custom_job(name=job_name)
+        return convert_job_state(job.state)
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancels a submitted step.
+
+        Args:
+            step_run: The step run.
+        """
+        client = self.get_job_service_client()
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        client.cancel_custom_job(name=job_name)

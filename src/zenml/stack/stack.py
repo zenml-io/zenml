@@ -167,6 +167,9 @@ class Stack:
 
         Returns:
             The created Stack instance.
+
+        Raises:
+            ImportError: If a stack component's dependencies cannot be imported.
         """
         global _STACK_CACHE
         key = (stack_model.id, stack_model.updated)
@@ -182,10 +185,21 @@ class Stack:
             hydrate=True,
         )
 
-        stack_components = {
-            model.type: StackComponent.from_model(model)
-            for model in component_models
-        }
+        try:
+            stack_components = {
+                model.type: StackComponent.from_model(model)
+                for model in component_models
+            }
+        except ImportError as e:
+            stack_hint = (
+                "\n\nTo install all requirements for this stack at "
+                "once, run:\n\n"
+                f"  zenml stack export-requirements "
+                f"'{stack_model.name}' -o stack-requirements.txt\n"
+                "  pip install -r stack-requirements.txt"
+            )
+            e.args = (e.args[0] + stack_hint,) + e.args[1:]
+            raise
         stack = Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,
