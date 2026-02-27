@@ -60,6 +60,68 @@ class StepRunRequestFactory:
         self.snapshot = snapshot
         self.pipeline_run = pipeline_run
         self.stack = stack
+        self._original_step_run_cache: Dict[
+            str, Optional["StepRunResponse"]
+        ] = {}
+
+    def _get_original_step_run(
+        self, invocation_id: str
+    ) -> Optional["StepRunResponse"]:
+        """Get the original step run for a replayed invocation.
+
+        Args:
+            invocation_id: The invocation ID to look up.
+
+        Returns:
+            The corresponding step run from the original pipeline run, if it
+            exists.
+        """
+        if invocation_id in self._original_step_run_cache:
+            return self._original_step_run_cache[invocation_id]
+
+        if not self.pipeline_run.original_run:
+            return None
+
+        step_runs = Client().list_run_steps(
+            pipeline_run_id=self.pipeline_run.original_run.id,
+            name=invocation_id,
+            size=1,
+            hydrate=True,
+            exclude_retried=True,
+        )
+        original_step_run = step_runs[0] if step_runs else None
+        self._original_step_run_cache[invocation_id] = original_step_run
+        return original_step_run
+
+    def should_skip_step(self, invocation_id: str) -> bool:
+        """Check whether a step should be skipped.
+
+        Args:
+            invocation_id: The invocation ID to check.
+
+        Returns:
+            Whether the step should be skipped.
+        """
+        if invocation_id in self.snapshot.pipeline_configuration.steps_to_skip:
+            return True
+
+        if not self.snapshot.pipeline_configuration.skip_successful_steps:
+            return False
+
+        try:
+            original_step_run = self._get_original_step_run(invocation_id)
+        except Exception as e:
+            logger.warning(
+                "Failed to fetch original step run `%s` while trying to skip "
+                "successful steps: %s. The step will be executed.",
+                invocation_id,
+                str(e),
+            )
+            return False
+
+        return bool(
+            original_step_run and original_step_run.status.is_successful
+        )
 
     def has_caching_enabled(self, invocation_id: str) -> bool:
         """Check if the step has caching enabled.
@@ -116,7 +178,7 @@ class StepRunRequestFactory:
                 input resolution. This will be updated in-place with newly
                 fetched step runs.
         """
-        if request.name in self.snapshot.pipeline_configuration.steps_to_skip:
+        if self.should_skip_step(request.name):
             self._populate_skipped_step(request)
             return
 
@@ -197,7 +259,10 @@ class StepRunRequestFactory:
                 if request.docstring is None:
                     request.docstring = cached_step_run.docstring
 
-    def _populate_skipped_step(self, request: StepRunRequest) -> None:
+    def _populate_skipped_step(
+        self,
+        request: StepRunRequest,
+    ) -> None:
         """Populate a skipped step run request.
 
         Args:
@@ -216,19 +281,12 @@ class StepRunRequestFactory:
                 "pipeline run is not a replayed run."
             )
 
-        step_runs = Client().list_run_steps(
-            pipeline_run_id=self.pipeline_run.original_run.id,
-            name=request.name,
-            size=1,
-            hydrate=True,
-            exclude_retried=True,
-        )
-        if len(step_runs) == 0:
+        original_step_run = self._get_original_step_run(request.name)
+        if not original_step_run:
             raise RuntimeError(
                 f"No step run found for step `{request.name}` in original run "
                 f"`{self.pipeline_run.original_run.id}`."
             )
-        original_step_run = step_runs[0]
         if not original_step_run.status.is_successful:
             raise RuntimeError(
                 f"Step `{request.name}` cannot be skipped because it wasn't "

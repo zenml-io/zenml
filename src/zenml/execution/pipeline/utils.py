@@ -179,25 +179,42 @@ def skip_steps_and_prune_snapshot(
             "replayed run."
         )
 
+    logger.debug("Skipping steps and pruning snapshot.")
+
+    client = Client()
     request_factory = StepRunRequestFactory(
         snapshot=snapshot,
         pipeline_run=pipeline_run,
-        stack=Client().active_stack,
+        stack=client.active_stack,
     )
 
-    steps_to_skip = pipeline_run.config.steps_to_skip
+    explicitly_skipped_steps = set(pipeline_run.config.steps_to_skip)
     skipped_invocations = set()
 
     for invocation_id, step in snapshot.step_configurations.items():
-        if invocation_id not in steps_to_skip:
+        explicitly_skipped = invocation_id in explicitly_skipped_steps
+        should_skip = request_factory.should_skip_step(invocation_id)
+
+        if not should_skip:
             continue
 
         for upstream_step in step.spec.upstream_steps:
             if upstream_step not in skipped_invocations:
+                if not explicitly_skipped:
+                    logger.debug(
+                        "Not skipping successful step `%s` because upstream "
+                        "step `%s` is not skipped.",
+                        invocation_id,
+                        upstream_step,
+                    )
+                    should_skip = False
+                    break
                 raise RuntimeError(
                     f"Unable to skip step `{invocation_id}` because it has an "
                     f"upstream step `{upstream_step}` that is not skipped."
                 )
+        if not should_skip:
+            continue
 
         request = request_factory.create_request(invocation_id)
         try:
@@ -220,7 +237,7 @@ def skip_steps_and_prune_snapshot(
                 f"`{ExecutionStatus.SKIPPED}`, but got `{request.status}`."
             )
 
-        Client().zen_store.create_run_step(request)
+        client.zen_store.create_run_step(request)
         skipped_invocations.add(invocation_id)
         logger.info("Skipping step `%s`.", invocation_id)
 

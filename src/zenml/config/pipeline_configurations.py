@@ -101,6 +101,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     name: str
     execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE
     steps_to_skip: Set[str] = set()
+    skip_successful_steps: bool = False
 
     @property
     def docker_settings(self) -> "DockerSettings":

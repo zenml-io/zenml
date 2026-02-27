@@ -16,7 +16,6 @@
 import copy
 import hashlib
 import inspect
-import json
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from typing import (
@@ -54,7 +53,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.execution.pipeline.utils import (
     should_prevent_pipeline_execution,
@@ -93,7 +92,6 @@ from zenml.utils import (
     dashboard_utils,
     dict_utils,
     env_utils,
-    pagination_utils,
     pydantic_utils,
     settings_utils,
     source_utils,
@@ -1903,30 +1901,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         pipeline_instance = self.copy()
         pipeline_instance._original_run = original_run
 
-        steps_to_skip = set(skip or [])
-
-        if skip_successful_steps:
-            # TODO: If a run has 1000s of successful steps, this will be very
-            # slow and memory intensive. The alternative would be to store a
-            # bool, and fetch the step runs during pruning one by one (which we
-            # already do anyway, as we need them to populate the request for the
-            # skipped steps).
-            success_statuses = [
-                status.value
-                for status in ExecutionStatus
-                if status.is_successful
-            ]
-            for step_run in pagination_utils.depaginate(
-                Client().list_run_steps,
-                pipeline_run_id=original_run.id,
-                status=f"oneof:{json.dumps(success_statuses)}",
-            ):
-                steps_to_skip.add(step_run.name)
-
-        if steps_to_skip:
+        if skip or skip_successful_steps:
+            configuration_update: Dict[str, Any] = {
+                "skip_successful_steps": skip_successful_steps,
+                "steps_to_skip": set(skip) if skip else set(),
+            }
             pipeline_instance._configuration = (
                 pipeline_instance._configuration.model_copy(
-                    update={"steps_to_skip": steps_to_skip}
+                    update=configuration_update
                 )
             )
 
