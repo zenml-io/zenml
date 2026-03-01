@@ -16,6 +16,8 @@
 import os
 from typing import Mapping, MutableMapping, Optional, Sequence
 
+from zenml.logger import get_logger
+
 _GLOBAL_RANK_KEYS = (
     "RANK",
     "TRAINER_GLOBAL_RANK",
@@ -32,6 +34,8 @@ _WORLD_SIZE_KEYS = (
     "PMI_SIZE",
     "SLURM_NTASKS",
 )
+
+logger = get_logger(__name__)
 
 
 def _read_first_int(
@@ -54,7 +58,11 @@ def _read_first_int(
         try:
             return int(raw_value)
         except ValueError:
-            continue
+            logger.debug(
+                "Ignoring non-integer distributed env var %s=%r.",
+                key,
+                raw_value,
+            )
 
     return None
 

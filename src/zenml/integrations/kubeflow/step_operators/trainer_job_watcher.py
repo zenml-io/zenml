@@ -17,6 +17,8 @@ import time
 from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
+from kubernetes.client.exceptions import ApiException
+
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
@@ -141,7 +143,10 @@ def wait_for_trainjob_to_finish(
 
     while True:
         step_run_status = client.get_run_step(step_run_id)
-        if step_run_status.status == ExecutionStatus.CANCELLING:
+        if step_run_status.status in (
+            ExecutionStatus.STOPPING,
+            ExecutionStatus.STOPPED,
+        ):
             raise RunStoppedException("Step run was cancelled, cancelling TrainJob.")
         trainjob = custom_objects_api.get_namespaced_custom_object(
             group=TRAINJOB_GROUP,
@@ -181,8 +186,6 @@ def cancel_trainjob(
         namespace: Namespace of the TrainJob.
         name: Name of the TrainJob.
     """
-    from kubernetes.client.exceptions import ApiException
-
     try:
         custom_objects_api.patch_namespaced_custom_object(
             group=TRAINJOB_GROUP,

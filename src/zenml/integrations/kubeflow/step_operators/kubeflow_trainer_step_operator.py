@@ -14,9 +14,10 @@
 """Kubeflow Trainer v2 step operator implementation."""
 
 import os
-import random
-import re
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+
+from kubernetes import client as k8s_client
+from kubernetes.client.exceptions import ApiException
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
@@ -27,6 +28,12 @@ from zenml.integrations.kubeflow.flavors import (
 )
 from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator_entrypoint_configuration import (
     KubeflowTrainerStepOperatorEntrypointConfiguration,
+)
+from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator_naming_utils import (
+    build_trainjob_annotations,
+    build_trainjob_labels,
+    build_trainjob_name,
+    sanitize_kubernetes_name,
 )
 from zenml.integrations.kubeflow.step_operators.trainer_job_watcher import (
     RunStoppedException,
@@ -47,8 +54,6 @@ from zenml.step_operators.step_operator_entrypoint_configuration import (
 )
 
 if TYPE_CHECKING:
-    from kubernetes import client as k8s_client
-
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import PipelineSnapshotBase
 
@@ -57,24 +62,7 @@ logger = get_logger(__name__)
 KUBEFLOW_TRAINER_STEP_OPERATOR_DOCKER_IMAGE_KEY = (
     "kubeflow_trainer_step_operator"
 )
-_TRAINJOB_NAME_SUFFIX = "trainer"
-_TRAINJOB_STEP_SEGMENT_MAX_LENGTH = 10
-
-
-def _sanitize_kubernetes_name(name: str) -> str:
-    """Sanitizes a Kubernetes resource name.
-
-    Args:
-        name: Name to sanitize.
-
-    Returns:
-        Sanitized resource name.
-    """
-    sanitized = re.sub(r"[^a-z0-9-]", "-", name.lower())
-    sanitized = re.sub(r"^-+", "", sanitized)
-    sanitized = re.sub(r"-+", "-", sanitized)
-    sanitized = sanitized[:63]
-    return re.sub(r"-+$", "", sanitized)
+_sanitize_kubernetes_name = sanitize_kubernetes_name
 
 
 class KubeflowTrainerStepOperator(BaseStepOperator):
@@ -188,8 +176,6 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
         Raises:
             RuntimeError: If service connector client is unexpected.
         """
-        from kubernetes import client as k8s_client
-
         from zenml.integrations.kubernetes import kube_utils
 
         if settings.incluster:
@@ -228,8 +214,6 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
         Returns:
             CustomObjectsApi client.
         """
-        from kubernetes import client as k8s_client
-
         return k8s_client.CustomObjectsApi(self.get_kube_client(settings))
 
     def _resolve_namespace(
@@ -276,8 +260,6 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
         Raises:
             kubernetes.client.exceptions.ApiException: Any non-404 API error.
         """
-        from kubernetes.client.exceptions import ApiException
-
         try:
             custom_objects_api.delete_namespaced_custom_object(
                 group=TRAINJOB_GROUP,
@@ -318,32 +300,18 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
         args = entrypoint_command[3:]
 
         namespace = self._resolve_namespace(settings)
-        random_prefix = random.choice("abcdef") + "".join(
-            random.choices("0123456789abcdef", k=7)
+        trainjob_name = build_trainjob_name(info.pipeline_step_name)
+        labels = build_trainjob_labels(
+            project_id=str(info.snapshot.project_id),
+            run_id=str(info.run_id),
+            run_name=str(info.run_name),
+            pipeline_name=info.pipeline.name,
+            step_name=info.pipeline_step_name,
         )
-        # Keep compact to avoid Kubernetes 63-char name limits on derived resources.
-        step_segment = _sanitize_kubernetes_name(info.pipeline_step_name)[
-            :_TRAINJOB_STEP_SEGMENT_MAX_LENGTH
-        ]
-        if not step_segment:
-            step_segment = "step"
-        trainjob_name = _sanitize_kubernetes_name(
-            f"{random_prefix}-{step_segment}-{_TRAINJOB_NAME_SUFFIX}"
+        annotations = build_trainjob_annotations(
+            operator_id=str(self.id),
+            step_name=info.pipeline_step_name,
         )
-
-        labels = {
-            "project_id": _sanitize_kubernetes_name(
-                str(info.snapshot.project_id)
-            ),
-            "run_id": _sanitize_kubernetes_name(str(info.run_id)),
-            "run_name": _sanitize_kubernetes_name(str(info.run_name)),
-            "pipeline": _sanitize_kubernetes_name(info.pipeline.name),
-            "step_name": _sanitize_kubernetes_name(info.pipeline_step_name),
-        }
-        annotations = {
-            "zenml.step_operator": str(self.id),
-            "zenml.step_name": info.pipeline_step_name,
-        }
 
         trainjob_manifest = build_trainjob_manifest(
             trainjob_name=trainjob_name,
