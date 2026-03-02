@@ -29,6 +29,7 @@ from zenml.models import (
     ResourcePoolResponseBody,
     ResourcePoolResponseMetadata,
     ResourcePoolResponseResources,
+    ResourcePoolSubjectPolicyResponse,
     ResourcePoolUpdate,
     ResourceRequestRequest,
     ResourceRequestResponse,
@@ -40,11 +41,13 @@ from zenml.models import (
 from zenml.models.v2.core.resource_pool import (
     ResourcePoolAllocation,
     ResourcePoolQueueItem,
-    ResourcePoolSubjectPolicyResponse,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.zen_stores.schemas.resource_pool_policy_schemas import (
+    ResourcePoolSubjectPolicySchema,
+)
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
@@ -165,10 +168,7 @@ class ResourcePoolAllocationSchema(BaseSchema, table=True):
         if session := object_session(self):
             return session.execute(
                 select(ResourcePoolSubjectPolicySchema.priority)
-                .where(
-                    ResourcePoolSubjectPolicySchema.resource_pool_id
-                    == self.pool_id
-                )
+                .where(ResourcePoolSubjectPolicySchema.pool_id == self.pool_id)
                 .where(ResourceRequestSchema.id == self.request_id)
                 .where(
                     ResourcePoolSubjectPolicySchema.component_id
@@ -180,87 +180,6 @@ class ResourcePoolAllocationSchema(BaseSchema, table=True):
             raise RuntimeError(
                 "Missing DB session to fetch priority for allocation."
             )
-
-
-class ResourcePoolSubjectPolicySchema(BaseSchema, table=True):
-    """Resource pool subject policy schema."""
-
-    __tablename__ = "resource_pool_subject_policy"
-    __table_args__ = (
-        UniqueConstraint(
-            "component_id",
-            "resource_pool_id",
-            name="unique_component_id_resource_pool_id",
-        ),
-        build_index(
-            table_name=__tablename__,
-            column_names=["resource_pool_id", "priority", "component_id"],
-        ),
-        build_index(
-            table_name=__tablename__,
-            column_names=["component_id", "priority", "resource_pool_id"],
-        ),
-        build_index(
-            table_name=__tablename__,
-            column_names=["resource_pool_id", "component_id"],
-        ),
-    )
-
-    component_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=StackComponentSchema.__tablename__,
-        source_column="component_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    component: "StackComponentSchema" = Relationship()
-    resource_pool_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="resource_pool",
-        source_column="resource_pool_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-
-    priority: int
-    resources: List["ResourcePoolSubjectPolicyResourceSchema"] = Relationship(
-        back_populates="policy",
-        sa_relationship_kwargs={
-            "passive_deletes": True,
-            "cascade": "all, delete-orphan",
-        },
-    )
-
-
-class ResourcePoolSubjectPolicyResourceSchema(BaseSchema, table=True):
-    """Resource pool subject policy resource schema."""
-
-    __tablename__ = "resource_pool_subject_policy_resource"
-    __table_args__ = (
-        UniqueConstraint(
-            "policy_id",
-            "key",
-            name="unique_resource_pool_subject_policy_resource",
-        ),
-    )
-    policy_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ResourcePoolSubjectPolicySchema.__tablename__,
-        source_column="policy_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-        custom_constraint_name="fk_pool_subject_policy_resource_policy_id",
-    )
-    key: str
-    reserved: int = Field(default=0, nullable=False)
-    limit: Optional[int] = Field(default=None, nullable=True)
-
-    policy: Optional["ResourcePoolSubjectPolicySchema"] = Relationship(
-        back_populates="resources"
-    )
 
 
 class ResourcePoolSchema(NamedSchema, table=True):
@@ -447,7 +366,7 @@ class ResourcePoolSchema(NamedSchema, table=True):
 
         policies = session.execute(
             select(ResourcePoolSubjectPolicySchema)
-            .where(ResourcePoolSubjectPolicySchema.resource_pool_id == self.id)
+            .where(ResourcePoolSubjectPolicySchema.pool_id == self.id)
             .options(
                 selectinload(jl_arg(ResourcePoolSubjectPolicySchema.resources))
             )
@@ -816,9 +735,6 @@ class ResourceRequestSchema(BaseSchema, table=True):
                 step_run=self.step_run.to_model() if self.step_run else None,
                 pipeline_run=self.step_run.pipeline_run.to_model()
                 if self.step_run
-                else None,
-                preemption_initiated_by_id=self.preemption_initiated_by.to_model()
-                if self.preemption_initiated_by
                 else None,
                 running_in_pool=running_in_pool,
             )

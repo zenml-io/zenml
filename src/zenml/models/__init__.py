@@ -341,7 +341,15 @@ from zenml.models.v2.core.resource_pool import (
     ResourcePoolResponseResources,
     ResourcePoolAllocation,
     ResourcePoolQueueItem,
+)
+from zenml.models.v2.core.resource_pool_subject_policy import (
+    ResourcePoolSubjectPolicyFilter,
     ResourcePoolSubjectPolicyRequest,
+    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolSubjectPolicyResponseBody,
+    ResourcePoolSubjectPolicyResponseMetadata,
+    ResourcePoolSubjectPolicyResponseResources,
+    ResourcePoolSubjectPolicyUpdate,
 )
 from zenml.models.v2.core.resource_request import (
     ResourceRequestRequest,
@@ -608,6 +616,10 @@ ResourceRequestResponse.model_rebuild()
 ResourcePoolAllocation.model_rebuild()
 ResourcePoolQueueItem.model_rebuild()
 ResourcePoolSubjectPolicyRequest.model_rebuild()
+ResourcePoolSubjectPolicyResponseBody.model_rebuild()
+ResourcePoolSubjectPolicyResponseMetadata.model_rebuild()
+ResourcePoolSubjectPolicyResponseResources.model_rebuild()
+ResourcePoolSubjectPolicyResponse.model_rebuild()
 
 __all__ = [
     # V2 Base
@@ -809,7 +821,13 @@ __all__ = [
     "ResourcePoolResponseBody",
     "ResourcePoolResponseMetadata",
     "ResourcePoolResponseResources",
+    "ResourcePoolSubjectPolicyFilter",
     "ResourcePoolSubjectPolicyRequest",
+    "ResourcePoolSubjectPolicyResponse",
+    "ResourcePoolSubjectPolicyResponseBody",
+    "ResourcePoolSubjectPolicyResponseMetadata",
+    "ResourcePoolSubjectPolicyResponseResources",
+    "ResourcePoolSubjectPolicyUpdate",
     "ResourceRequestRequest",
     "ResourceRequestUpdate",
     "ResourceRequestFilter",

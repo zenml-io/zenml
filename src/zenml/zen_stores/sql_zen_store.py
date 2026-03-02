@@ -55,6 +55,7 @@ from typing import (
     ForwardRef,
     List,
     Literal,
+    Mapping,
     NoReturn,
     Optional,
     Sequence,
@@ -285,7 +286,10 @@ from zenml.models import (
     ResourcePoolFilter,
     ResourcePoolRequest,
     ResourcePoolResponse,
+    ResourcePoolSubjectPolicyFilter,
     ResourcePoolSubjectPolicyRequest,
+    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolSubjectPolicyUpdate,
     ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRequest,
@@ -3983,6 +3987,111 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Resource Pools -------------
 
+    def _apply_resource_pool_capacity_updates(
+        self,
+        session: Session,
+        pool_id: UUID,
+        capacity_updates: Dict[str, int],
+    ) -> Tuple[bool, bool]:
+        """Apply capacity updates to a pool.
+
+        Args:
+            session: DB session.
+            pool_id: Pool ID to update.
+            capacity_updates: Capacity values by key. A value of 0 removes the
+                key from the pool.
+
+        Returns:
+            A tuple `(resources_decreased, resources_increased)` indicating
+            whether at least one key moved down or up.
+        """
+        existing_resources_by_key = {
+            resource.key: resource
+            for resource in session.exec(
+                select(ResourcePoolResourceSchema).where(
+                    col(ResourcePoolResourceSchema.pool_id) == pool_id
+                )
+            ).all()
+        }
+
+        resources_decreased = False
+        resources_increased = False
+        for key, amount in capacity_updates.items():
+            resource = existing_resources_by_key.get(key)
+            if resource:
+                if amount < resource.total:
+                    resources_decreased = True
+                elif amount > resource.total:
+                    resources_increased = True
+
+                if amount == 0:
+                    session.delete(resource)
+                else:
+                    resource.total = amount
+                    session.add(resource)
+            elif amount > 0:
+                resources_increased = True
+                session.add(
+                    ResourcePoolResourceSchema(
+                        pool_id=pool_id,
+                        key=key,
+                        total=amount,
+                        occupied=0,
+                    )
+                )
+
+        return resources_decreased, resources_increased
+
+    def _validate_resource_pool_capacity_update(
+        self,
+        session: Session,
+        pool_id: UUID,
+        prospective_pool_capacity: Dict[str, int],
+    ) -> None:
+        """Validate a resource pool capacity update.
+
+        Args:
+            session: DB session.
+            pool_id: Resource pool ID.
+            prospective_pool_capacity: Prospective pool capacity.
+
+        Raises:
+            IllegalOperationError: If any attached policy would exceed the
+                prospective capacity for reserved or limit resources.
+        """
+        policies = session.exec(
+            select(ResourcePoolSubjectPolicySchema)
+            .where(col(ResourcePoolSubjectPolicySchema.pool_id) == pool_id)
+            .options(
+                selectinload(jl_arg(ResourcePoolSubjectPolicySchema.resources))
+            )
+        ).all()
+
+        policy_resource_rows: List[Tuple[UUID, str, int, Optional[int]]] = []
+        for policy in policies:
+            for resource in policy.resources:
+                policy_resource_rows.append(
+                    (
+                        policy.component_id,
+                        resource.key,
+                        resource.reserved,
+                        resource.limit,
+                    )
+                )
+
+        reserved_sum_by_key = (
+            self._validate_resource_rows_against_pool_capacity(
+                policy_resource_rows=policy_resource_rows,
+                pool_capacity=prospective_pool_capacity,
+                operation="update pool capacity",
+            )
+        )
+        self._validate_reserved_sum_by_key_against_pool_capacity(
+            reserved_sum_by_key=reserved_sum_by_key,
+            pool_capacity=prospective_pool_capacity,
+            operation="update pool capacity",
+        )
+
     def create_resource_pool(
         self, resource_pool: ResourcePoolRequest
     ) -> ResourcePoolResponse:
@@ -3994,8 +4103,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a resource pool with the same name already
                 exists.
-            IllegalOperationError: If a component that the resource pool should
-                be attached to is not an orchestrator.
 
         Returns:
             The created resource pool.
@@ -4017,32 +4124,11 @@ class SqlZenStore(BaseZenStore):
                     f"name {resource_pool.name} already exists."
                 )
 
-            for key, amount in resource_pool.capacity.items():
-                resource_pool_resource = ResourcePoolResourceSchema(
-                    pool_id=new_resource_pool.id,
-                    key=key,
-                    total=amount,
-                    occupied=0,
-                )
-                session.add(resource_pool_resource)
-
-            if resource_pool.policies:
-                for policy in resource_pool.policies:
-                    component = self._get_schema_by_id(
-                        resource_id=policy.component_id,
-                        schema_class=StackComponentSchema,
-                        session=session,
-                    )
-                    if component.type != StackComponentType.ORCHESTRATOR.value:
-                        raise IllegalOperationError(
-                            "Resource pool policies can only be assigned to "
-                            "orchestrators."
-                        )
-                    self._attach_resource_pool_policy(
-                        session=session,
-                        policy=policy,
-                        resource_pool_id=new_resource_pool.id,
-                    )
+            self._apply_resource_pool_capacity_updates(
+                session=session,
+                pool_id=new_resource_pool.id,
+                capacity_updates=resource_pool.capacity,
+            )
 
             session.commit()
             session.refresh(new_resource_pool)
@@ -4111,12 +4197,6 @@ class SqlZenStore(BaseZenStore):
             resource_pool_id: The ID of the resource pool to update.
             update: The update to be applied to the resource pool.
 
-        Raises:
-            EntityExistsError: If some components are already attached to the
-                resource pool.
-            IllegalOperationError: If a component that the resource pool should
-                be attached to is not an orchestrator.
-
         Returns:
             The updated resource pool.
         """
@@ -4131,98 +4211,43 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_resource_pool)
             session.commit()
 
-            # TODO: refactor
-            # Detach first, so the frontend can detach an attach a policy for
-            # the same component within one call (= policy update)
-            if update.detach_policies:
-                for component_id in update.detach_policies:
-                    self._detach_resource_pool(
-                        session=session,
-                        component_id=component_id,
-                        resource_pool_id=existing_resource_pool.id,
-                    )
-
-                # Reject pending requests that might have been
-                # removed from their last eligible queue.
-                self._reject_requests_not_in_queue(session=session)
-                session.commit()
-
-            if update.attach_policies:
-                for policy in update.attach_policies:
-                    component = self._get_schema_by_id(
-                        resource_id=policy.component_id,
-                        schema_class=StackComponentSchema,
-                        session=session,
-                    )
-                    if component.type not in {
-                        StackComponentType.ORCHESTRATOR.value,
-                        StackComponentType.STEP_OPERATOR.value,
-                    }:
-                        raise IllegalOperationError(
-                            "Resource pool policies can only be attached to "
-                            "orchestrators and step operators."
-                        )
-                    self._attach_resource_pool_policy(
-                        session=session,
-                        policy=policy,
-                        resource_pool_id=existing_resource_pool.id,
-                    )
-
-                try:
-                    session.commit()
-                except IntegrityError:
-                    raise EntityExistsError(
-                        "Unable to attach policies: Some components "
-                        "are already attached to the resource pool."
-                    )
-
-                for policy in update.attach_policies:
-                    self._enqueue_pending_requests_for_component_into_pool(
-                        session=session,
-                        component_id=policy.component_id,
-                        pool_id=existing_resource_pool.id,
-                        priority=policy.priority,
-                    )
-                session.commit()
-
             if update.capacity:
-                resources_decreased = False
-                resources_increased = False
-
                 self._acquire_resource_pool_lock(
                     session,
                     pool_id=existing_resource_pool.id,
                 )
 
-                for key, amount in update.capacity.items():
-                    resource_pool_resource = session.exec(
-                        select(ResourcePoolResourceSchema)
-                        .where(
-                            ResourcePoolResourceSchema.pool_id
+                current_capacity_by_key = dict(
+                    session.exec(
+                        select(
+                            col(ResourcePoolResourceSchema.key),
+                            col(ResourcePoolResourceSchema.total),
+                        ).where(
+                            col(ResourcePoolResourceSchema.pool_id)
                             == existing_resource_pool.id
                         )
-                        .where(ResourcePoolResourceSchema.key == key)
-                    ).first()
-                    if resource_pool_resource:
-                        if amount < resource_pool_resource.total:
-                            resources_decreased = True
-                        if amount > resource_pool_resource.total:
-                            resources_increased = True
+                    ).all()
+                )
+                prospective_capacity = dict(current_capacity_by_key)
+                for key, amount in update.capacity.items():
+                    if amount == 0:
+                        prospective_capacity.pop(key, None)
+                    else:
+                        prospective_capacity[key] = amount
 
-                        if amount == 0:
-                            session.delete(resource_pool_resource)
-                        else:
-                            resource_pool_resource.total = amount
-                            session.add(resource_pool_resource)
-                    elif amount > 0:
-                        resources_increased = True
-                        resource_pool_resource = ResourcePoolResourceSchema(
-                            pool_id=existing_resource_pool.id,
-                            key=key,
-                            total=amount,
-                            occupied=0,
-                        )
-                        session.add(resource_pool_resource)
+                self._validate_resource_pool_capacity_update(
+                    session=session,
+                    pool_id=existing_resource_pool.id,
+                    prospective_pool_capacity=prospective_capacity,
+                )
+
+                resources_decreased, resources_increased = (
+                    self._apply_resource_pool_capacity_updates(
+                        session=session,
+                        pool_id=existing_resource_pool.id,
+                        capacity_updates=update.capacity,
+                    )
+                )
                 session.commit()
 
                 if resources_decreased:
@@ -4294,22 +4319,298 @@ class SqlZenStore(BaseZenStore):
             self._reject_requests_not_in_queue(session)
             session.commit()
 
-    def _attach_resource_pool_policy(
+    def create_resource_pool_subject_policy(
+        self, policy: ResourcePoolSubjectPolicyRequest
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Create a resource pool subject policy.
+
+        Args:
+            policy: The policy to create.
+
+        Returns:
+            The created policy.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(request_model=policy, session=session)
+            component = self._get_schema_by_id(
+                resource_id=policy.component_id,
+                schema_class=StackComponentSchema,
+                session=session,
+            )
+            if component.type not in {
+                StackComponentType.ORCHESTRATOR.value,
+                StackComponentType.STEP_OPERATOR.value,
+            }:
+                raise IllegalOperationError(
+                    "Resource pool policies can only be attached to "
+                    "orchestrators and step operators."
+                )
+
+            created_policy = self._create_resource_pool_subject_policy(
+                session=session,
+                policy=policy,
+                resource_pool_id=policy.pool_id,
+            )
+            try:
+                session.commit()
+            except IntegrityError:
+                raise EntityExistsError(
+                    "Unable to create policy: The component is already "
+                    "attached to the resource pool."
+                )
+
+            self._enqueue_pending_requests_for_component_into_pool(
+                session=session,
+                component_id=policy.component_id,
+                pool_id=policy.pool_id,
+                priority=policy.priority,
+            )
+            session.commit()
+
+            return created_policy.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_resource_pool_subject_policy(
+        self, policy_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Get a resource pool subject policy by ID.
+
+        Args:
+            policy_id: The policy ID.
+            hydrate: Whether to include metadata fields.
+
+        Returns:
+            The requested policy.
+        """
+        with Session(self.engine) as session:
+            policy = self._get_schema_by_id(
+                resource_id=policy_id,
+                schema_class=ResourcePoolSubjectPolicySchema,
+                session=session,
+                query_options=ResourcePoolSubjectPolicySchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
+            )
+            return policy.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_resource_pool_subject_policies(
+        self,
+        filter_model: ResourcePoolSubjectPolicyFilter,
+        hydrate: bool = False,
+    ) -> Page[ResourcePoolSubjectPolicyResponse]:
+        """List resource pool subject policies.
+
+        Args:
+            filter_model: Pagination and filter model.
+            hydrate: Whether to include metadata fields.
+
+        Returns:
+            Matching policies.
+        """
+        with Session(self.engine) as session:
+            query = select(ResourcePoolSubjectPolicySchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ResourcePoolSubjectPolicySchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+                apply_query_options_from_schema=True,
+            )
+
+    def update_resource_pool_subject_policy(
+        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Update a resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to update.
+            update: The update model.
+
+        Returns:
+            The updated policy.
+        """
+        with Session(self.engine) as session:
+            existing_policy = self._get_schema_by_id(
+                resource_id=policy_id,
+                schema_class=ResourcePoolSubjectPolicySchema,
+                session=session,
+            )
+            self._acquire_resource_pool_lock(
+                session=session, pool_id=existing_policy.pool_id
+            )
+
+            if update.priority is not None:
+                existing_policy.priority = update.priority
+
+            if update.reserved is not None or update.limit is not None:
+                reserved_by_key = (
+                    update.reserved
+                    if update.reserved is not None
+                    else {
+                        resource.key: resource.reserved
+                        for resource in existing_policy.resources
+                    }
+                )
+                limit_by_key = (
+                    update.limit
+                    if update.limit is not None
+                    else {
+                        resource.key: resource.limit
+                        for resource in existing_policy.resources
+                        if resource.limit is not None
+                    }
+                )
+
+                (
+                    pool_capacity_by_key,
+                    all_keys,
+                ) = self._validate_policy_resources_against_pool_capacity(
+                    session=session,
+                    pool_id=existing_policy.pool_id,
+                    reserved=reserved_by_key,
+                    limit=limit_by_key,
+                    operation="update",
+                )
+
+                session.execute(
+                    delete(ResourcePoolSubjectPolicyResourceSchema).where(
+                        col(ResourcePoolSubjectPolicyResourceSchema.policy_id)
+                        == existing_policy.id
+                    )
+                )
+                session.flush()
+
+                for key in all_keys:
+                    session.add(
+                        ResourcePoolSubjectPolicyResourceSchema(
+                            policy_id=existing_policy.id,
+                            key=key,
+                            reserved=reserved_by_key.get(key, 0),
+                            limit=limit_by_key.get(key),
+                        )
+                    )
+
+                self._validate_policy_reserved_resources_sum(
+                    session=session,
+                    pool_id=existing_policy.pool_id,
+                    resource_keys=all_keys,
+                    pool_capacity=pool_capacity_by_key,
+                    operation="update",
+                )
+
+            existing_policy.updated = utc_now()
+            session.add(existing_policy)
+            session.commit()
+
+            session.refresh(existing_policy)
+
+            self._rebuild_resource_pool_request_queue(
+                session=session, pool_id=existing_policy.pool_id
+            )
+            self._allocate_queued_requests_for_pool(
+                session=session, pool_id=existing_policy.pool_id
+            )
+            self._reject_requests_not_in_queue(session=session)
+            session.commit()
+
+            return existing_policy.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
+        """Delete a resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to delete.
+
+        Raises:
+            IllegalOperationError: If the policy still has queued or allocated
+                requests in the pool.
+        """
+        with Session(self.engine) as session:
+            policy = self._get_schema_by_id(
+                resource_id=policy_id,
+                schema_class=ResourcePoolSubjectPolicySchema,
+                session=session,
+            )
+            self._acquire_resource_pool_lock(
+                session=session, pool_id=policy.pool_id
+            )
+
+            queued_count = session.exec(
+                select(func.count())
+                .select_from(ResourcePoolQueueSchema)
+                .join(
+                    ResourceRequestSchema,
+                    col(ResourceRequestSchema.id)
+                    == col(ResourcePoolQueueSchema.request_id),
+                )
+                .where(col(ResourcePoolQueueSchema.pool_id) == policy.pool_id)
+                .where(
+                    col(ResourceRequestSchema.component_id)
+                    == policy.component_id
+                )
+            ).one()
+            allocated_count = session.exec(
+                select(func.count())
+                .select_from(ResourcePoolAllocationSchema)
+                .join(
+                    ResourceRequestSchema,
+                    col(ResourceRequestSchema.id)
+                    == col(ResourcePoolAllocationSchema.request_id),
+                )
+                .where(
+                    col(ResourcePoolAllocationSchema.pool_id) == policy.pool_id
+                )
+                .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
+                .where(
+                    col(ResourceRequestSchema.component_id)
+                    == policy.component_id
+                )
+            ).one()
+
+            if queued_count or allocated_count:
+                raise IllegalOperationError(
+                    "Unable to delete policy while requests are still actively "
+                    f"using it (queued={queued_count}, "
+                    f"allocated={allocated_count})."
+                )
+
+            session.execute(
+                delete(ResourcePoolSubjectPolicySchema).where(
+                    col(ResourcePoolSubjectPolicySchema.component_id)
+                    == policy.component_id,
+                    col(ResourcePoolSubjectPolicySchema.pool_id)
+                    == policy.pool_id,
+                )
+            )
+
+            self._reject_requests_not_in_queue(session=session)
+            session.commit()
+
+    def _create_resource_pool_subject_policy(
         self,
         session: Session,
         policy: ResourcePoolSubjectPolicyRequest,
         resource_pool_id: UUID,
-    ) -> None:
-        """Attach a resource pool to a component.
+    ) -> ResourcePoolSubjectPolicySchema:
+        """Create a subject policy for a resource pool.
 
         Args:
             session: DB session.
-            policy: The policy to attach to the resource pool.
-            resource_pool_id: The ID of the resource pool to attach.
+            policy: The policy to create.
+            resource_pool_id: The ID of the resource pool.
 
         Raises:
-            IllegalOperationError: If the policy cannot be attached because
+            IllegalOperationError: If the policy cannot be created because
                 some resources exceed the pools capacity.
+
+        Returns:
+            The created policy schema.
         """
         # Make sure the pool exists
         self._get_schema_by_id(
@@ -4318,160 +4619,235 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-        pool_capacity_by_key = dict(
-            session.exec(
-                select(
-                    col(ResourcePoolResourceSchema.key),
-                    col(ResourcePoolResourceSchema.total),
-                ).where(
-                    col(ResourcePoolResourceSchema.pool_id) == resource_pool_id
-                )
-            ).all()
+        all_reserved = policy.reserved or {}
+        all_limit = policy.limit or {}
+        (
+            pool_capacity_by_key,
+            all_keys,
+        ) = self._validate_policy_resources_against_pool_capacity(
+            session=session,
+            pool_id=resource_pool_id,
+            reserved=all_reserved,
+            limit=all_limit,
+            operation="create",
         )
+
         policy_schema = ResourcePoolSubjectPolicySchema(
+            user_id=policy.user,
             component_id=policy.component_id,
-            resource_pool_id=resource_pool_id,
+            pool_id=resource_pool_id,
             priority=policy.priority,
         )
         session.add(policy_schema)
         session.flush()
 
-        all_reserved = policy.reserved or {}
-        all_limit = policy.limit or {}
-
-        all_keys = set(all_reserved.keys()) | set(all_limit.keys())
         for key in all_keys:
-            reserved = all_reserved.get(key, 0)
-            limit = all_limit.get(key)
-
-            if key not in pool_capacity_by_key:
-                raise IllegalOperationError(
-                    f"Unable to attach policy: Resource pool does not define "
-                    f"capacity for key `{key}`."
-                )
-
-            total_capacity = pool_capacity_by_key[key]
-            if reserved > total_capacity:
-                raise IllegalOperationError(
-                    f"Unable to attach policy: Reserved amount for key `{key}` "
-                    f"({reserved}) exceeds pool capacity ({total_capacity})."
-                )
-            if limit is not None:
-                if limit > total_capacity:
-                    raise IllegalOperationError(
-                        f"Unable to attach policy: Limit for key `{key}` "
-                        f"({limit}) exceeds pool capacity ({total_capacity})."
-                    )
-
             policy_resource = ResourcePoolSubjectPolicyResourceSchema(
                 policy_id=policy_schema.id,
                 key=key,
-                reserved=reserved,
-                limit=limit,
+                reserved=all_reserved.get(key, 0),
+                limit=all_limit.get(key),
             )
             session.add(policy_resource)
 
-        # Ensure that reserved resources across all policies never exceed
-        # the pools total capacity. This is required so that we can
-        # guarantee that all policies can be satisfied.
-        session.flush()
-        if all_keys:
-            reserved_sums_by_key = dict(
-                session.exec(
-                    select(
-                        col(ResourcePoolSubjectPolicyResourceSchema.key),
-                        func.sum(
-                            col(
-                                ResourcePoolSubjectPolicyResourceSchema.reserved
-                            )
-                        ),
-                    )
-                    .join(
-                        ResourcePoolSubjectPolicySchema,
-                        col(ResourcePoolSubjectPolicySchema.id)
-                        == col(
-                            ResourcePoolSubjectPolicyResourceSchema.policy_id
-                        ),
-                    )
-                    .where(
-                        col(ResourcePoolSubjectPolicySchema.resource_pool_id)
-                        == resource_pool_id,
-                        col(ResourcePoolSubjectPolicyResourceSchema.key).in_(
-                            all_keys
-                        ),
-                    )
-                    .group_by(col(ResourcePoolSubjectPolicyResourceSchema.key))
-                ).all()
-            )
-            for key, reserved_sum in reserved_sums_by_key.items():
-                total_capacity = pool_capacity_by_key[key]
-                if reserved_sum is not None and reserved_sum > total_capacity:
-                    raise IllegalOperationError(
-                        f"Unable to attach policy: Sum of reserved amounts for "
-                        f"key `{key}` ({reserved_sum}) exceeds pool capacity "
-                        f"({total_capacity})."
-                    )
+        self._validate_policy_reserved_resources_sum(
+            session=session,
+            pool_id=resource_pool_id,
+            resource_keys=all_keys,
+            pool_capacity=pool_capacity_by_key,
+            operation="create",
+        )
+        return policy_schema
 
-    def _detach_resource_pool(
-        self, session: Session, component_id: UUID, resource_pool_id: UUID
-    ) -> None:
-        """Detach a resource pool from a component.
+    def _validate_policy_resources_against_pool_capacity(
+        self,
+        session: Session,
+        pool_id: UUID,
+        reserved: Mapping[str, int],
+        limit: Mapping[str, Optional[int]],
+        operation: str,
+    ) -> Tuple[Dict[str, int], Set[str]]:
+        """Validate policy resources against pool capacity.
 
         Args:
             session: DB session.
-            component_id: The ID of the component to detach the resource pool
-                from.
-            resource_pool_id: The ID of the resource pool to detach.
+            pool_id: The resource pool ID.
+            reserved: Reserved resources.
+            limit: Resource limis.
+            operation: Operation name for error messages.
 
         Raises:
-            IllegalOperationError: If the component still has queued or
-                allocated requests in the pool.
+            IllegalOperationError: If values exceed pool capacity or key is
+                missing in pool capacity.
+
+        Returns:
+            A tuple `(pool_capacity, resource_keys)`.
         """
-        self._acquire_resource_pool_lock(
-            session=session, pool_id=resource_pool_id
+        pool_capacity_by_key = dict(
+            session.exec(
+                select(
+                    col(ResourcePoolResourceSchema.key),
+                    col(ResourcePoolResourceSchema.total),
+                ).where(col(ResourcePoolResourceSchema.pool_id) == pool_id)
+            ).all()
+        )
+        resource_keys = set(reserved.keys()) | set(limit.keys())
+        self._validate_resource_rows_against_pool_capacity(
+            policy_resource_rows=[
+                (None, key, reserved.get(key, 0), limit.get(key))
+                for key in resource_keys
+            ],
+            pool_capacity=pool_capacity_by_key,
+            operation=operation,
+        )
+        return pool_capacity_by_key, resource_keys
+
+    def _validate_policy_reserved_resources_sum(
+        self,
+        session: Session,
+        pool_id: UUID,
+        resource_keys: Set[str],
+        pool_capacity: Dict[str, int],
+        operation: str,
+    ) -> None:
+        """Validate total reserved resources across all policies in a pool.
+
+        Args:
+            session: DB session.
+            pool_id: The resource pool ID.
+            resource_keys: Resource keys to validate.
+            pool_capacity: Pool capacity by key.
+            operation: Operation name for error messages.
+
+        Raises:
+            IllegalOperationError: If sum of reserved resources exceeds pool
+                capacity for any key.
+        """
+        if not resource_keys:
+            return
+
+        reserved_sums_by_key = dict(
+            session.exec(
+                select(
+                    col(ResourcePoolSubjectPolicyResourceSchema.key),
+                    func.sum(
+                        col(ResourcePoolSubjectPolicyResourceSchema.reserved)
+                    ),
+                )
+                .join(
+                    ResourcePoolSubjectPolicySchema,
+                    col(ResourcePoolSubjectPolicySchema.id)
+                    == col(ResourcePoolSubjectPolicyResourceSchema.policy_id),
+                )
+                .where(col(ResourcePoolSubjectPolicySchema.pool_id) == pool_id)
+                .where(
+                    col(ResourcePoolSubjectPolicyResourceSchema.key).in_(
+                        resource_keys
+                    )
+                )
+                .group_by(col(ResourcePoolSubjectPolicyResourceSchema.key))
+            ).all()
+        )
+        self._validate_reserved_sum_by_key_against_pool_capacity(
+            reserved_sum_by_key={
+                key: (reserved_sum or 0)
+                for key, reserved_sum in reserved_sums_by_key.items()
+            },
+            pool_capacity=pool_capacity,
+            operation=operation,
         )
 
-        queued_count = session.exec(
-            select(func.count())
-            .select_from(ResourcePoolQueueSchema)
-            .join(
-                ResourceRequestSchema,
-                col(ResourceRequestSchema.id)
-                == col(ResourcePoolQueueSchema.request_id),
-            )
-            .where(col(ResourcePoolQueueSchema.pool_id) == resource_pool_id)
-            .where(col(ResourceRequestSchema.component_id) == component_id)
-        ).one()
-        allocated_count = session.exec(
-            select(func.count())
-            .select_from(ResourcePoolAllocationSchema)
-            .join(
-                ResourceRequestSchema,
-                col(ResourceRequestSchema.id)
-                == col(ResourcePoolAllocationSchema.request_id),
-            )
-            .where(
-                col(ResourcePoolAllocationSchema.pool_id) == resource_pool_id
-            )
-            .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
-            .where(col(ResourceRequestSchema.component_id) == component_id)
-        ).one()
+    def _validate_resource_rows_against_pool_capacity(
+        self,
+        policy_resource_rows: Sequence[
+            Tuple[Optional[UUID], str, int, Optional[int]]
+        ],
+        pool_capacity: Dict[str, int],
+        operation: str,
+    ) -> Dict[str, int]:
+        """Validate resource rows against pool capacity.
 
-        if queued_count or allocated_count:
-            raise IllegalOperationError(
-                "Unable to detach policy while requests are still active in "
-                f"the pool for this component (queued={queued_count}, "
-                f"allocated={allocated_count})."
+        Args:
+            policy_resource_rows: Tuples of
+                `(component_id, key, reserved, limit)`.
+            pool_capacity: Pool capacity keyed by resource key.
+            operation: Operation name used in error messages.
+
+        Raises:
+            IllegalOperationError: If a key is missing in the pool, or reserved
+                or limit exceed pool capacity.
+
+        Returns:
+            Reserved sums by key.
+        """
+        reserved_sum_by_key: Dict[str, int] = {}
+        for component_id, key, reserved, limit in policy_resource_rows:
+            total_capacity = pool_capacity.get(key)
+            if total_capacity is None:
+                component_message = (
+                    f" for component `{component_id}`"
+                    if component_id is not None
+                    else ""
+                )
+                raise IllegalOperationError(
+                    f"Unable to {operation}: Resource key `{key}`{component_message} "
+                    "is not defined in pool capacity."
+                )
+
+            if reserved > total_capacity:
+                component_message = (
+                    f" for component `{component_id}`"
+                    if component_id is not None
+                    else ""
+                )
+                raise IllegalOperationError(
+                    f"Unable to {operation}: Reserved amount `{reserved}` for "
+                    f"key `{key}`{component_message} exceeds pool capacity "
+                    f"`{total_capacity}`."
+                )
+
+            if limit is not None and limit > total_capacity:
+                component_message = (
+                    f" for component `{component_id}`"
+                    if component_id is not None
+                    else ""
+                )
+                raise IllegalOperationError(
+                    f"Unable to {operation}: Limit `{limit}` for key `{key}`"
+                    f"{component_message} exceeds pool capacity "
+                    f"`{total_capacity}`."
+                )
+
+            reserved_sum_by_key[key] = (
+                reserved_sum_by_key.get(key, 0) + reserved
             )
 
-        session.execute(
-            delete(ResourcePoolSubjectPolicySchema).where(
-                col(ResourcePoolSubjectPolicySchema.component_id)
-                == component_id,
-                col(ResourcePoolSubjectPolicySchema.resource_pool_id)
-                == resource_pool_id,
-            )
-        )
+        return reserved_sum_by_key
+
+    def _validate_reserved_sum_by_key_against_pool_capacity(
+        self,
+        reserved_sum_by_key: Dict[str, int],
+        pool_capacity: Dict[str, int],
+        operation: str,
+    ) -> None:
+        """Validate reserved sums against pool capacity.
+
+        Args:
+            reserved_sum_by_key: Reserved sums by key.
+            pool_capacity: Pool capacity by key.
+            operation: Operation name used in error messages.
+
+        Raises:
+            IllegalOperationError: If reserved sum exceeds pool capacity.
+        """
+        for key, reserved_sum in reserved_sum_by_key.items():
+            total_capacity = pool_capacity[key]
+            if reserved_sum > total_capacity:
+                raise IllegalOperationError(
+                    f"Unable to {operation}: Sum of reserved amounts for key "
+                    f"`{key}` ({reserved_sum}) exceeds pool capacity "
+                    f"({total_capacity})."
+                )
 
     # -------------------- Resource Requests -------------
 
@@ -4635,7 +5011,7 @@ class SqlZenStore(BaseZenStore):
             )
             .order_by(
                 desc(ResourcePoolSubjectPolicySchema.priority),
-                col(ResourcePoolSubjectPolicySchema.resource_pool_id),
+                col(ResourcePoolSubjectPolicySchema.pool_id),
             )
         ).all()
 
@@ -4653,7 +5029,7 @@ class SqlZenStore(BaseZenStore):
         for policy in policies:
             pool_violation = session.exec(
                 self._fits_pool_violation_subquery(
-                    pool_id=policy.resource_pool_id,
+                    pool_id=policy.pool_id,
                     component_id=resource_request.component_id,
                     request_id_expression=resource_request.id,
                     preemptable_expression=resource_request.preemptable,
@@ -4664,7 +5040,7 @@ class SqlZenStore(BaseZenStore):
 
             self._enqueue_request_into_pool_queue(
                 session=session,
-                pool_id=policy.resource_pool_id,
+                pool_id=policy.pool_id,
                 request_id=resource_request.id,
                 priority=policy.priority,
                 request_created=resource_request.created,
@@ -5018,8 +5394,7 @@ class SqlZenStore(BaseZenStore):
             .outerjoin(
                 ResourcePoolSubjectPolicySchema,
                 and_(
-                    col(ResourcePoolSubjectPolicySchema.resource_pool_id)
-                    == pool_id,
+                    col(ResourcePoolSubjectPolicySchema.pool_id) == pool_id,
                     col(ResourcePoolSubjectPolicySchema.component_id)
                     == component_id,
                 ),
@@ -5083,7 +5458,7 @@ class SqlZenStore(BaseZenStore):
         )
         policies = session.exec(
             select(ResourcePoolSubjectPolicySchema).where(
-                ResourcePoolSubjectPolicySchema.resource_pool_id == pool_id
+                ResourcePoolSubjectPolicySchema.pool_id == pool_id
             )
         ).all()
         session.flush()
@@ -5387,7 +5762,7 @@ class SqlZenStore(BaseZenStore):
                 .outerjoin(
                     ResourcePoolSubjectPolicySchema,
                     and_(
-                        col(ResourcePoolSubjectPolicySchema.resource_pool_id)
+                        col(ResourcePoolSubjectPolicySchema.pool_id)
                         == pool_id,
                         col(ResourcePoolSubjectPolicySchema.component_id)
                         == col(ResourceRequestSchema.component_id),
@@ -5434,7 +5809,7 @@ class SqlZenStore(BaseZenStore):
                 .outerjoin(
                     ResourcePoolSubjectPolicySchema,
                     and_(
-                        col(ResourcePoolSubjectPolicySchema.resource_pool_id)
+                        col(ResourcePoolSubjectPolicySchema.pool_id)
                         == pool_id,
                         col(ResourcePoolSubjectPolicySchema.component_id)
                         == col(ResourceRequestSchema.component_id),
@@ -5640,9 +6015,7 @@ class SqlZenStore(BaseZenStore):
                     session.exec(
                         select(ResourcePoolSubjectPolicySchema.id)
                         .where(
-                            col(
-                                ResourcePoolSubjectPolicySchema.resource_pool_id
-                            )
+                            col(ResourcePoolSubjectPolicySchema.pool_id)
                             == pool_id,
                             col(ResourcePoolSubjectPolicySchema.component_id)
                             == component_id,
@@ -5680,9 +6053,7 @@ class SqlZenStore(BaseZenStore):
                         .outerjoin(
                             ResourcePoolSubjectPolicySchema,
                             and_(
-                                col(
-                                    ResourcePoolSubjectPolicySchema.resource_pool_id
-                                )
+                                col(ResourcePoolSubjectPolicySchema.pool_id)
                                 == pool_id,
                                 col(
                                     ResourcePoolSubjectPolicySchema.component_id
@@ -5970,7 +6341,6 @@ class SqlZenStore(BaseZenStore):
                     # resources while waiting. Other pools ignore non-PENDING
                     # requests anyway (and will prune stale items defensively),
                     # so removing the current row is sufficient.
-                    # TODO: this causes stale requests in queues.
                     session.execute(
                         delete(ResourcePoolQueueSchema).where(
                             col(ResourcePoolQueueSchema.id) == head.id,
@@ -6095,9 +6465,7 @@ class SqlZenStore(BaseZenStore):
                     .outerjoin(
                         ResourcePoolSubjectPolicySchema,
                         and_(
-                            col(
-                                ResourcePoolSubjectPolicySchema.resource_pool_id
-                            )
+                            col(ResourcePoolSubjectPolicySchema.pool_id)
                             == pool_id,
                             col(ResourcePoolSubjectPolicySchema.component_id)
                             == component_id,
@@ -6134,11 +6502,11 @@ class SqlZenStore(BaseZenStore):
                     if budget > 0:
                         reclaim_budget[str(key)] = budget
 
-                if self._attempt_preemption_for_head_request(
+                if self._attempt_preemption_for_resource_request(
                     session=session,
                     pool_id=pool_id,
-                    head_request_id=head.request_id,
-                    head_priority=head.priority,
+                    request_id=head.request_id,
+                    priority=head.priority,
                     requested_resources=requested_resources_for_head,
                     reclaim_budget=reclaim_budget,
                 ):
@@ -6458,28 +6826,28 @@ class SqlZenStore(BaseZenStore):
                 )
                 continue
 
-    def _attempt_preemption_for_head_request(
+    def _attempt_preemption_for_resource_request(
         self,
         session: Session,
         pool_id: UUID,
-        head_request_id: UUID,
-        head_priority: int,
+        request_id: UUID,
+        priority: int,
         requested_resources: Optional[Dict[str, int]],
         reclaim_budget: Dict[str, int],
     ) -> bool:
-        """Attempt to free resources for the head request by evicting victims.
+        """Attempt to free resources for the request by evicting victims.
 
         Args:
             session: DB session.
             pool_id: ID of the pool for which to allocate.
-            head_request_id: ID of the blocked head request.
-            head_priority: Component priority of the head request in this pool.
+            request_id: ID of the blocked request.
+            priority: Policy priority of the request.
             requested_resources: Optional cached requested resources for the
                 head request.
             reclaim_budget: Budget that allows reclaiming borrowed
                 resources even from higher-priority requests. Values represent
-                the per-key shortfall of the head component below its reserved
-                share and are capped to the head request deficits.
+                the per-key shortfall of the request policy below its reserved
+                share and are capped to the request deficits.
 
         Returns:
             True if eviction was triggered for at least one victim.
@@ -6493,9 +6861,7 @@ class SqlZenStore(BaseZenStore):
                 select(
                     ResourceRequestResourceSchema.key,
                     ResourceRequestResourceSchema.amount,
-                ).where(
-                    ResourceRequestResourceSchema.request_id == head_request_id
-                )
+                ).where(ResourceRequestResourceSchema.request_id == request_id)
             ).all()
             requested_resources = {
                 key: amount
@@ -6613,8 +6979,7 @@ class SqlZenStore(BaseZenStore):
             .join(
                 ResourcePoolSubjectPolicySchema,
                 and_(
-                    col(ResourcePoolSubjectPolicySchema.resource_pool_id)
-                    == pool_id,
+                    col(ResourcePoolSubjectPolicySchema.pool_id) == pool_id,
                     col(ResourcePoolSubjectPolicySchema.component_id)
                     == col(ResourceRequestSchema.component_id),
                 ),
@@ -6685,10 +7050,10 @@ class SqlZenStore(BaseZenStore):
         borrowed_by_candidate: Dict[UUID, Dict[str, int]] = {}
 
         def _apply_candidate(
-            request_id: UUID, candidate_priority: int
+            candidate_id: UUID, candidate_priority: int
         ) -> bool:
-            resources = resources_by_candidate.get(request_id, {})
-            borrowed = borrowed_by_candidate.get(request_id, {})
+            resources = resources_by_candidate.get(candidate_id, {})
+            borrowed = borrowed_by_candidate.get(candidate_id, {})
 
             is_viable_candidate = False
             new_remaining_deficits = dict(remaining_deficits)
@@ -6723,7 +7088,7 @@ class SqlZenStore(BaseZenStore):
                     new_remaining_reclaim_budget[key] = new_budget
                 reclaimed_resources = True
 
-            if candidate_priority >= head_priority and not reclaimed_resources:
+            if candidate_priority >= priority and not reclaimed_resources:
                 # The request is equal/higher prio than the head request, and
                 # is not borrowing any of our dedicated resources. This means
                 # we cannot evict it.
@@ -6740,12 +7105,12 @@ class SqlZenStore(BaseZenStore):
             batch = candidate_rows[batch_start : batch_start + batch_size]
             batch_ids: List[UUID] = []
             priority_by_id: Dict[UUID, int] = {}
-            for request_id, _, prio, _ in batch:
-                if request_id in candidates_seen:
+            for candidate_id, _, candidate_priority, _ in batch:
+                if candidate_id in candidates_seen:
                     continue
-                candidates_seen.add(request_id)
-                priority_by_id[request_id] = int(prio)
-                batch_ids.append(request_id)
+                candidates_seen.add(candidate_id)
+                priority_by_id[candidate_id] = int(candidate_priority)
+                batch_ids.append(candidate_id)
 
             if not batch_ids:
                 continue
@@ -6766,8 +7131,10 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(col(ResourceRequestResourceSchema.amount) > 0)
             ).all()
-            for request_id, key, amount in batch_resource_rows:
-                resources_by_candidate.setdefault(request_id, {})[key] = amount
+            for candidate_id, key, amount in batch_resource_rows:
+                resources_by_candidate.setdefault(candidate_id, {})[key] = (
+                    amount
+                )
 
             batch_borrowed_rows = session.exec(
                 select(
@@ -6784,18 +7151,18 @@ class SqlZenStore(BaseZenStore):
                     col(candidate_rows_subquery.c.key),
                 )
             ).all()
-            for request_id, key, borrowed_amount in batch_borrowed_rows:
+            for candidate_id, key, borrowed_amount in batch_borrowed_rows:
                 if borrowed_amount and borrowed_amount > 0:
-                    borrowed_by_candidate.setdefault(request_id, {})[
+                    borrowed_by_candidate.setdefault(candidate_id, {})[
                         str(key)
                     ] = int(borrowed_amount)
 
-            for request_id in batch_ids:
-                candidate_priority = priority_by_id.get(request_id, 0)
+            for candidate_id in batch_ids:
+                candidate_priority = priority_by_id.get(candidate_id, 0)
                 if _apply_candidate(
-                    request_id, candidate_priority=candidate_priority
+                    candidate_id, candidate_priority=candidate_priority
                 ):
-                    victims.append(request_id)
+                    victims.append(candidate_id)
                 if not remaining_deficits:
                     break
             if not remaining_deficits:
@@ -6822,7 +7189,7 @@ class SqlZenStore(BaseZenStore):
                         # other allocated requests might be released that allow
                         # the head request to be allocated before the eviction
                         # finishes.
-                        preemption_initiated_by_id=head_request_id,
+                        preemption_initiated_by_id=request_id,
                         status_reason=(
                             "Preempted to free resources for request "
                             "with higher priority."

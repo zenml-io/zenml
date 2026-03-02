@@ -88,6 +88,7 @@ from zenml.constants import (
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
+    RESOURCE_POOL_SUBJECT_POLICIES,
     RESOURCE_POOLS,
     RESOURCE_REQUESTS,
     RUN_METADATA,
@@ -232,6 +233,10 @@ from zenml.models import (
     ResourcePoolFilter,
     ResourcePoolRequest,
     ResourcePoolResponse,
+    ResourcePoolSubjectPolicyFilter,
+    ResourcePoolSubjectPolicyRequest,
+    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolSubjectPolicyUpdate,
     ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRequest,
@@ -1467,6 +1472,93 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=resource_pool_id,
             route=RESOURCE_POOLS,
+        )
+
+    def create_resource_pool_subject_policy(
+        self, policy: ResourcePoolSubjectPolicyRequest
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Create a resource pool subject policy.
+
+        Args:
+            policy: The policy to create.
+
+        Returns:
+            The created policy.
+        """
+        return self._create_resource(
+            resource=policy,
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            response_model=ResourcePoolSubjectPolicyResponse,
+        )
+
+    def get_resource_pool_subject_policy(
+        self, policy_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Get a resource pool subject policy by ID.
+
+        Args:
+            policy_id: The ID of the policy to get.
+            hydrate: Flag deciding whether to hydrate the output model(s).
+
+        Returns:
+            The policy.
+        """
+        return self._get_resource(
+            resource_id=policy_id,
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            response_model=ResourcePoolSubjectPolicyResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_resource_pool_subject_policies(
+        self,
+        filter_model: ResourcePoolSubjectPolicyFilter,
+        hydrate: bool = False,
+    ) -> Page[ResourcePoolSubjectPolicyResponse]:
+        """List resource pool subject policies.
+
+        Args:
+            filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s).
+
+        Returns:
+            Matching policies.
+        """
+        return self._list_paginated_resources(
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            response_model=ResourcePoolSubjectPolicyResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_resource_pool_subject_policy(
+        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Update an existing resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to update.
+            update: The update to be applied to the policy.
+
+        Returns:
+            The updated policy.
+        """
+        return self._update_resource(
+            resource_id=policy_id,
+            resource_update=update,
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            response_model=ResourcePoolSubjectPolicyResponse,
+        )
+
+    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
+        """Delete a resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to delete.
+        """
+        self._delete_resource(
+            resource_id=policy_id,
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
         )
 
     # -------------------- Resource Requests -------------

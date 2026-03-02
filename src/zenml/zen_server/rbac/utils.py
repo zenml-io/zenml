@@ -460,6 +460,10 @@ def get_resource_type_for_model(
         PipelineSnapshotResponse,
         ProjectRequest,
         ProjectResponse,
+        ResourcePoolRequest,
+        ResourcePoolResponse,
+        ResourcePoolSubjectPolicyRequest,
+        ResourcePoolSubjectPolicyResponse,
         RunMetadataRequest,
         RunTemplateRequest,
         RunTemplateResponse,
@@ -497,8 +501,8 @@ def get_resource_type_for_model(
         CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
         ComponentRequest: ResourceType.STACK_COMPONENT,
         ComponentResponse: ResourceType.STACK_COMPONENT,
-        # ResourcePoolRequest: ResourceType.RESOURCE_POOL,
-        # ResourcePoolResponse: ResourceType.RESOURCE_POOL,
+        ResourcePoolRequest: ResourceType.RESOURCE_POOL,
+        ResourcePoolResponse: ResourceType.RESOURCE_POOL,
         EventSourceRequest: ResourceType.EVENT_SOURCE,
         EventSourceResponse: ResourceType.EVENT_SOURCE,
         FlavorRequest: ResourceType.FLAVOR,
@@ -540,6 +544,8 @@ def get_resource_type_for_model(
         TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
         ProjectResponse: ResourceType.PROJECT,
         ProjectRequest: ResourceType.PROJECT,
+        ResourcePoolSubjectPolicyRequest: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
+        ResourcePoolSubjectPolicyResponse: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
         # UserResponse: ResourceType.USER,
     }
 
@@ -658,6 +664,8 @@ def get_schema_for_resource_type(
         PipelineRunSchema,
         PipelineSchema,
         PipelineSnapshotSchema,
+        ResourcePoolSchema,
+        ResourcePoolSubjectPolicySchema,
         RunMetadataSchema,
         RunTemplateSchema,
         ScheduleSchema,
@@ -676,7 +684,7 @@ def get_schema_for_resource_type(
         ResourceType.STACK: StackSchema,
         ResourceType.FLAVOR: FlavorSchema,
         ResourceType.STACK_COMPONENT: StackComponentSchema,
-        # ResourceType.RESOURCE_POOL: ResourcePoolSchema,
+        ResourceType.RESOURCE_POOL: ResourcePoolSchema,
         ResourceType.PIPELINE: PipelineSchema,
         ResourceType.CODE_REPOSITORY: CodeRepositorySchema,
         ResourceType.MODEL: ModelSchema,
@@ -701,6 +709,7 @@ def get_schema_for_resource_type(
         ResourceType.EVENT_SOURCE: EventSourceSchema,
         ResourceType.TRIGGER: TriggerSchema,
         ResourceType.TRIGGER_EXECUTION: TriggerExecutionSchema,
+        ResourceType.RESOURCE_POOL_SUBJECT_POLICY: ResourcePoolSubjectPolicySchema,
     }
 
     return mapping[resource_type]

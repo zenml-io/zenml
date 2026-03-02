@@ -108,6 +108,10 @@ from zenml.models import (
     ResourcePoolFilter,
     ResourcePoolRequest,
     ResourcePoolResponse,
+    ResourcePoolSubjectPolicyFilter,
+    ResourcePoolSubjectPolicyRequest,
+    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolSubjectPolicyUpdate,
     ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRequest,
@@ -1048,6 +1052,71 @@ class ZenStoreInterface(ABC):
 
         Args:
             resource_pool_id: The ID of the resource pool to delete.
+        """
+
+    @abstractmethod
+    def create_resource_pool_subject_policy(
+        self, policy: ResourcePoolSubjectPolicyRequest
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Create a resource pool subject policy.
+
+        Args:
+            policy: The policy to create.
+
+        Returns:
+            The created policy.
+        """
+
+    @abstractmethod
+    def get_resource_pool_subject_policy(
+        self, policy_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Get a resource pool subject policy by ID.
+
+        Args:
+            policy_id: The ID of the policy to get.
+            hydrate: Whether to include metadata fields.
+
+        Returns:
+            The requested policy.
+        """
+
+    @abstractmethod
+    def list_resource_pool_subject_policies(
+        self,
+        filter_model: ResourcePoolSubjectPolicyFilter,
+        hydrate: bool = False,
+    ) -> Page[ResourcePoolSubjectPolicyResponse]:
+        """List resource pool subject policies.
+
+        Args:
+            filter_model: All filter parameters including pagination params.
+            hydrate: Whether to include metadata fields.
+
+        Returns:
+            Matching policies.
+        """
+
+    @abstractmethod
+    def update_resource_pool_subject_policy(
+        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Update an existing resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to update.
+            update: The update model.
+
+        Returns:
+            The updated policy.
+        """
+
+    @abstractmethod
+    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
+        """Delete a resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to delete.
         """
 
     # -------------------- Resource Requests -------------

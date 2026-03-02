@@ -31,7 +31,6 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.models import (
     Page,
     ResourcePoolFilter,
-    ResourcePoolSubjectPolicyRequest,
     ResourceRequestResponse,
 )
 
@@ -315,16 +314,12 @@ def attach_policy_to_resource_pool(
                 allow_name_prefix_match=False,
                 hydrate=False,
             )
-            Client().update_resource_pool(
-                name_id_or_prefix=pool.id,
-                attach_policies=[
-                    ResourcePoolSubjectPolicyRequest(
-                        component_id=component_model.id,
-                        priority=priority,
-                        reserved=parsed_reserved,
-                        limit=parsed_limit,
-                    )
-                ],
+            Client().create_resource_pool_subject_policy(
+                component_id=component_model.id,
+                pool_id=pool.id,
+                priority=priority,
+                reserved=parsed_reserved,
+                limit=parsed_limit,
             )
         except Exception as err:
             cli_utils.exception(err)
@@ -362,9 +357,18 @@ def detach_policy_from_resource_pool(
                 allow_name_prefix_match=False,
                 hydrate=False,
             )
-            Client().update_resource_pool(
-                name_id_or_prefix=pool.id,
-                detach_policies=[component_model.id],
+            policies = Client().list_resource_pool_subject_policies(
+                pool_id=pool.id,
+                component_id=component_model.id,
+                hydrate=False,
+            )
+            if not policies.items:
+                raise KeyError(
+                    f"No policy found for component `{component_model.name}` "
+                    f"in resource pool `{pool.name}`."
+                )
+            Client().delete_resource_pool_subject_policy(
+                policy_id=policies.items[0].id
             )
         except Exception as err:
             cli_utils.exception(err)

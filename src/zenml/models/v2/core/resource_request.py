@@ -133,10 +133,6 @@ class ResourceRequestResponseResources(UserScopedResponseResources):
         title="The pipeline run that is requesting the resources.",
         default=None,
     )
-    preemption_initiated_by_id: Optional["ResourceRequestResponse"] = Field(
-        title="The request that initiated the preemption of this request.",
-        default=None,
-    )
     running_in_pool: Optional["ResourcePoolResponse"] = Field(
         title="The pool that the resource request is running in.", default=None
     )
@@ -223,17 +219,6 @@ class ResourceRequestResponse(
             the value of the property.
         """
         return self.get_resources().pipeline_run
-
-    @property
-    def preemption_initiated_by_id(
-        self,
-    ) -> Optional["ResourceRequestResponse"]:
-        """The `preemption_initiated_by_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().preemption_initiated_by_id
 
     @property
     def running_in_pool(self) -> Optional["ResourcePoolResponse"]:

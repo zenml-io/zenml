@@ -86,12 +86,14 @@ from zenml.zen_stores.schemas.api_transaction_schemas import (
 from zenml.zen_stores.schemas.resource_pool_schemas import (
     ResourcePoolSchema,
     ResourceRequestSchema,
-    ResourcePoolSubjectPolicySchema,
-    ResourcePoolSubjectPolicyResourceSchema,
     ResourcePoolResourceSchema,
     ResourcePoolQueueSchema,
     ResourcePoolAllocationSchema,
     ResourceRequestResourceSchema,
+)
+from zenml.zen_stores.schemas.resource_pool_policy_schemas import (
+    ResourcePoolSubjectPolicySchema,
+    ResourcePoolSubjectPolicyResourceSchema,
 )
 
 __all__ = [
