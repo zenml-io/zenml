@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Artifact log store implementation."""
 
-import base64
-import json
 import os
 import re
 from typing import (
@@ -22,10 +20,8 @@ from typing import (
     Dict,
     Generator,
     List,
-    NamedTuple,
     Optional,
     Sequence,
-    Tuple,
     Type,
     cast,
 )
@@ -60,48 +56,7 @@ logger = get_logger(__name__)
 
 LOGS_EXTENSION = ".log"
 END_OF_STREAM_MESSAGE = "END_OF_STREAM"
-CHUNK_SIZE = 256 * 1024  # 256KB
-
-
-class ArtifactLogStoreCursor(NamedTuple):
-    """Cursor token payload for artifact-store logs.
-
-    `offset` is a byte offset pointing to the start of a log line within the
-    referenced file.
-    """
-
-    file_idx: int
-    offset: int
-
-
-def _matches_filter(entry: LogEntry, filter_: LogsEntriesFilter) -> bool:
-    """Check if a log entry matches the filter.
-
-    Args:
-        entry: The log entry to check.
-        filter_: The filter to apply.
-
-    Returns:
-        True if the log entry matches the filter, False otherwise.
-    """
-    if filter_.level is not None:
-        if entry.level is None or entry.level != filter_.level:
-            return False
-
-    if filter_.since is not None:
-        if entry.timestamp is None or entry.timestamp < filter_.since:
-            return False
-
-    if filter_.until is not None:
-        if entry.timestamp is None or entry.timestamp > filter_.until:
-            return False
-
-    if filter_.search is not None:
-        needle = filter_.search.lower().strip()
-        if needle and needle not in entry.message.lower():
-            return False
-
-    return True
+CHUNK_SIZE = 1024 * 1024 * 5  # 5MB
 
 
 def _get_logs_file_paths(
@@ -127,93 +82,24 @@ def _get_logs_file_paths(
     return [os.path.join(logs_uri, str(f)) for f in files]
 
 
-def iterate_forward(
+def iterate_backward_lines(
     artifact_store: "BaseArtifactStore",
     paths: Sequence[str],
-    starting_position: Optional[ArtifactLogStoreCursor],
-) -> Generator[Tuple[ArtifactLogStoreCursor, str], None, None]:
-    """Iterate log lines forward (oldest to newest).
-
-    Args:
-        artifact_store: The artifact store.
-        paths: The paths of the log files.
-        starting_position: The starting position of the iteration.
-
-    Yields:
-        ValueError: If the starting position is out of range.
-
-    Raises:
-        ValueError: If the starting position is out of range.
-    """
-    start_file_idx = (
-        starting_position.file_idx if starting_position is not None else 0
-    )
-    if start_file_idx < 0 or start_file_idx >= len(paths):
-        raise ValueError("Cursor file index is out of range.")
-
-    for file_idx in range(start_file_idx, len(paths)):
-        path = paths[file_idx]
-        with artifact_store.open(path, "rb") as f:
-            if (
-                starting_position is not None
-                and file_idx == starting_position.file_idx
-            ):
-                f.seek(starting_position.offset, 0)
-                f.readline()
-
-            while True:
-                offset = int(f.tell())
-                raw = f.readline()
-                if not raw:
-                    break
-
-                line = raw.rstrip(b"\n\r").decode("utf-8", errors="replace")
-                yield (
-                    ArtifactLogStoreCursor(file_idx=file_idx, offset=offset),
-                    line,
-                )
-
-
-def iterate_backward(
-    artifact_store: "BaseArtifactStore",
-    paths: Sequence[str],
-    starting_position: Optional[ArtifactLogStoreCursor],
-) -> Generator[Tuple[ArtifactLogStoreCursor, str], None, None]:
+) -> Generator[str, None, None]:
     """Iterate log lines backward (newest to oldest).
 
     Args:
         artifact_store: The artifact store.
         paths: The paths of the log files.
-        starting_position: The starting position of the iteration.
 
     Yields:
-        ValueError: If the starting position is out of range.
-
-    Raises:
-        ValueError: If the starting position is out of range.
+        Log lines ordered from newest to oldest.
     """
-    start_file_idx = (
-        starting_position.file_idx
-        if starting_position is not None
-        else len(paths) - 1
-    )
-    if start_file_idx < 0 or start_file_idx >= len(paths):
-        raise ValueError("Cursor file index is out of range.")
-
-    for file_idx in range(start_file_idx, -1, -1):
-        path = paths[file_idx]
-
+    for path in reversed(paths):
         with artifact_store.open(path, "rb") as f:
             f.seek(0, 2)
             file_size = int(f.tell())
-
-            if (
-                starting_position is not None
-                and file_idx == starting_position.file_idx
-            ):
-                pos = min(int(starting_position.offset), file_size)
-            else:
-                pos = file_size
+            pos = file_size
 
             buffer = b""
             buffer_start = pos
@@ -221,31 +107,20 @@ def iterate_backward(
             while True:
                 nl = buffer.rfind(b"\n")
                 if nl != -1:
-                    line_start = buffer_start + nl + 1
                     raw = buffer[nl + 1 :]
                     buffer = buffer[:nl]
 
                     raw = raw.rstrip(b"\r")
                     if raw:
                         line = raw.decode("utf-8", errors="replace")
-                        yield (
-                            ArtifactLogStoreCursor(
-                                file_idx=file_idx, offset=line_start
-                            ),
-                            line,
-                        )
+                        yield line
                     continue
 
                 if buffer_start == 0:
                     raw = buffer.rstrip(b"\r")
                     if raw:
                         line = raw.decode("utf-8", errors="replace")
-                        yield (
-                            ArtifactLogStoreCursor(
-                                file_idx=file_idx, offset=0
-                            ),
-                            line,
-                        )
+                        yield line
                     break
 
                 read_start = max(0, buffer_start - CHUNK_SIZE)
@@ -458,49 +333,6 @@ class ArtifactLogStore(OtelLogStore):
                 body=END_OF_STREAM_MESSAGE,
             )
 
-    @classmethod
-    def encode_cursor(cls, pos: "ArtifactLogStoreCursor") -> str:
-        """Encode a cursor position into a base64 string.
-
-        Since the token is used to paginate logs, it needs to be URL-safe.
-
-        Args:
-            pos: The cursor position.
-
-        Returns:
-            The base64 encoded string.
-        """
-        payload = {
-            "file_idx": int(pos.file_idx),
-            "offset": int(pos.offset),
-        }
-        data = json.dumps(payload, sort_keys=True).encode("utf-8")
-        return base64.urlsafe_b64encode(data).decode("ascii")
-
-    @classmethod
-    def decode_cursor(cls, token: str) -> "ArtifactLogStoreCursor":
-        """Decode a cursor position from a base64 string.
-
-        Args:
-            token: The base64 encoded string.
-
-        Returns:
-            The cursor position.
-
-        Raises:
-            ValueError: If the cursor position is invalid.
-        """
-        raw = base64.urlsafe_b64decode(token.encode("ascii"))
-        decoded = json.loads(raw.decode("utf-8"))
-
-        file_idx = int(decoded["file_idx"])
-        offset = int(decoded["offset"])
-
-        if file_idx < 0 or offset < 0:
-            raise ValueError("Invalid cursor position.")
-
-        return ArtifactLogStoreCursor(file_idx=file_idx, offset=offset)
-
     def fetch(
         self,
         logs_model: "LogsResponse",
@@ -513,25 +345,25 @@ class ArtifactLogStore(OtelLogStore):
 
         Args:
             logs_model: The logs model containing uri and artifact_store_id.
-            limit: Maximum number of log entries to return.
-            before: Cursor token pointing to older entries.
-            after: Cursor token pointing to newer entries.
-            filter_: Filters that must be applied during retrieval.
+            limit: Maximum number of log entries to return, capped at
+                `LOGS_MAX_ENTRIES_PER_REQUEST`.
+            before: Unused pagination cursor for artifact log stores.
+            after: Unused pagination cursor for artifact log stores.
+            filter_: Unused server-side filter for artifact log stores.
 
         Returns:
-            A response containing log entries and pagination tokens.
+            A response containing log entries without pagination tokens.
 
         Raises:
-            ValueError: If the logs model or the limit is invalid.
+            ValueError: If the logs model is invalid or the limit is not
+                positive.
         """
         if limit is None:
-            limit = self.config.default_query_size
+            effective_limit = LOGS_MAX_ENTRIES_PER_REQUEST
         else:
             if limit <= 0:
                 raise ValueError("`limit` must be positive.")
-
-        if before is not None and after is not None:
-            raise ValueError("Only one of `before` or `after` can be set.")
+            effective_limit = min(limit, LOGS_MAX_ENTRIES_PER_REQUEST)
 
         if not logs_model.uri:
             raise ValueError(
@@ -556,86 +388,33 @@ class ArtifactLogStore(OtelLogStore):
         if not paths:
             return LogsEntriesResponse(items=[], before=None, after=None)
 
-        items: List[LogEntry] = []
-        end_pos: Optional[ArtifactLogStoreCursor] = None
-        before_cursor: Optional[ArtifactLogStoreCursor] = None
-        after_cursor: Optional[ArtifactLogStoreCursor] = None
-
-        if after is not None:
-            start_pos = self.decode_cursor(token=after)
-
-            for pos, line in iterate_forward(
-                self._artifact_store,
-                paths,
-                starting_position=start_pos,
-            ):
-                entry = parse_log_entry(line)
-                if (
-                    entry is None
-                    or filter_ is not None
-                    and not _matches_filter(entry, filter_)
-                ):
-                    continue
-
-                items.append(entry)
-                end_pos = pos
-                if len(items) >= limit:
-                    break
-
-            items.reverse()
-
-            before_cursor = start_pos
-            after_cursor = end_pos
-
-        else:
-            if before is None:
-                last_path = paths[-1]
-                with self._artifact_store.open(last_path, "rb") as f:
-                    f.seek(0, 2)
-                    eof = int(f.tell())
-                start_pos = ArtifactLogStoreCursor(
-                    file_idx=len(paths) - 1, offset=eof
-                )
-            else:
-                start_pos = self.decode_cursor(token=before)
-
-            gen = iterate_backward(
-                self._artifact_store,
-                paths,
-                starting_position=start_pos,
+        if before is not None:
+            logger.warning(
+                "Ignoring `before` argument in ArtifactLogStore.fetch(). "
+                "Artifact log pagination is no longer supported."
             )
-            for pos, line in gen:
-                entry = parse_log_entry(line)
-                if (
-                    entry is None
-                    or filter_ is not None
-                    and not _matches_filter(entry, filter_)
-                ):
-                    continue
+        if after is not None:
+            logger.warning(
+                "Ignoring `after` argument in ArtifactLogStore.fetch(). "
+                "Artifact log pagination is no longer supported."
+            )
+        if filter_ is not None:
+            logger.warning(
+                "Ignoring `filter_` argument in ArtifactLogStore.fetch(). "
+                "Artifact log filtering moved to the client side."
+            )
 
-                items.append(entry)
-                end_pos = pos
+        items: List[LogEntry] = []
+        for line in iterate_backward_lines(self._artifact_store, paths):
+            entry = parse_log_entry(line)
+            if entry is None:
+                continue
 
-                if len(items) >= limit:
-                    break
+            items.append(entry)
+            if len(items) >= effective_limit:
+                break
 
-            items.reverse()
-            before_cursor = end_pos
-            after_cursor = start_pos
-
-        return LogsEntriesResponse(
-            items=items,
-            before=(
-                self.encode_cursor(pos=before_cursor)
-                if before_cursor is not None
-                else None
-            ),
-            after=(
-                self.encode_cursor(pos=after_cursor)
-                if after_cursor is not None
-                else None
-            ),
-        )
+        return LogsEntriesResponse(items=items, before=None, after=None)
 
     def cleanup(self) -> None:
         """Cleanup the artifact log store.
