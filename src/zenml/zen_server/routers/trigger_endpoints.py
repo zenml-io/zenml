@@ -17,6 +17,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
+from zenml.analytics import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.constants import (
     API,
     PIPELINE_SNAPSHOTS,
@@ -78,10 +80,18 @@ def create_trigger(
     """
     check_entitlement(feature=SCHEDULE_FEATURE)
 
-    return verify_permissions_and_create_entity(
-        request_model=trigger,
-        create_method=zen_store().create_trigger,
-    )
+    with track_handler(
+        event=AnalyticsEvent.CREATED_TRIGGER
+    ) as analytics_handler:
+        analytics_handler.metadata = {
+            "type": trigger.type.value,
+            "flavor": trigger.flavor.value,
+        }
+
+        return verify_permissions_and_create_entity(
+            request_model=trigger,
+            create_method=zen_store().create_trigger,
+        )
 
 
 @router.get(
@@ -193,12 +203,13 @@ def delete_trigger(
     """
     check_entitlement(feature=SCHEDULE_FEATURE)
 
-    verify_permissions_and_delete_entity(
-        id=trigger_id,
-        get_method=zen_store().get_trigger,
-        delete_method=zen_store().delete_trigger,
-        soft=soft,
-    )
+    with track_handler(event=AnalyticsEvent.DELETED_TRIGGER):
+        verify_permissions_and_delete_entity(
+            id=trigger_id,
+            get_method=zen_store().get_trigger,
+            delete_method=zen_store().delete_trigger,
+            soft=soft,
+        )
 
 
 @router.put(

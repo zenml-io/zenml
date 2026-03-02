@@ -93,3 +93,7 @@ class AnalyticsEvent(str, Enum):
     CREATE_DEPLOYMENT = "Deployment created"
     STOP_DEPLOYMENT = "Deployment stopped"
     DELETE_DEPLOYMENT = "Deployment deleted"
+
+    # Triggers
+    CREATED_TRIGGER = "Trigger created"
+    DELETED_TRIGGER = "Trigger deleted"
