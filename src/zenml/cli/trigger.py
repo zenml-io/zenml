@@ -41,7 +41,6 @@ def schedule() -> None:
 
 
 @schedule.command("create", help="Create a new schedule trigger.")
-@click.argument("schedule_id", type=UUID)
 @click.argument("name", type=str)
 @click.option(
     "--concurrency",
