@@ -357,6 +357,10 @@ def run_snapshot(
                 run_id=placeholder_run.id,
             )
 
+            analytics_handler.metadata["trigger_execution"] = (
+                True if trigger_id else False
+            )
+
             try:
                 _task()
             except Exception:

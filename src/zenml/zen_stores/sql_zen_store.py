@@ -11018,6 +11018,7 @@ class SqlZenStore(BaseZenStore):
                     ),
                     "duration_seconds": duration_seconds,
                     "dynamic": pipeline_run.snapshot.is_dynamic,
+                    "trigger_execution": pipeline_run.trigger is not None,
                     **stack_metadata,
                 }
 
