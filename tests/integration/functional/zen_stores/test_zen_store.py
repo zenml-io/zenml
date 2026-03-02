@@ -3245,13 +3245,16 @@ def test_logs_are_recorded_properly(clean_client):
     with run_context:
         steps = run_context.steps
         step1_logs = search_logs_by_source(steps[0].log_collection, "step")
+        print(step1_logs)
         client.active_stack.log_store.flush(blocking=True)
         step1_logs_content = client.active_stack.log_store.fetch(
             step1_logs, limit=100
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
-        assert any("log" in record.message for record in step1_logs_content)
+        assert any(
+            "log" in record.message for record in step1_logs_content.items
+        )
 
 
 def test_logs_dont_exist_when_disabled(clean_client):

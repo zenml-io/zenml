@@ -162,16 +162,15 @@ class LogsSchema(BaseSchema, table=True):
             updated=self.updated,
             project_id=self.project_id,
             user_id=self.user_id,
+            step_run_id=self.step_run_id,
+            pipeline_run_id=self.pipeline_run_id,
+            artifact_store_id=self.artifact_store_id,
+            log_store_id=self.log_store_id,
         )
 
         metadata = None
         if include_metadata:
-            metadata = LogsResponseMetadata(
-                step_run_id=self.step_run_id,
-                pipeline_run_id=self.pipeline_run_id,
-                artifact_store_id=self.artifact_store_id,
-                log_store_id=self.log_store_id,
-            )
+            metadata = LogsResponseMetadata()
 
         resources = None
         if include_resources:
