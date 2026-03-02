@@ -20,14 +20,13 @@ import warnings
 from typing import Tuple
 
 import filelock
-
-# Suppress Lightning warnings about num_workers (intentionally 0 for Mac compatibility)
-warnings.filterwarnings("ignore", message=".*does not have many workers.*")
-
 import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import FashionMNIST
+
+# Suppress Lightning warnings about num_workers (intentionally 0 for Mac compatibility)
+warnings.filterwarnings("ignore", message=".*does not have many workers.*")
 
 
 def get_fashion_mnist_loaders(
