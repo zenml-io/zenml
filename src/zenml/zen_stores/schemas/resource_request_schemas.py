@@ -143,16 +143,9 @@ class ResourceRequestSchema(BaseSchema, table=True):
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema."""
-        options = []
-
-        if include_metadata:
-            options.extend(
-                [
-                    selectinload(
-                        jl_arg(ResourceRequestSchema.requested_resources)
-                    ),
-                ]
-            )
+        options = [
+            selectinload(jl_arg(ResourceRequestSchema.requested_resources)),
+        ]
 
         if include_resources:
             options.extend(
@@ -204,6 +197,9 @@ class ResourceRequestSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             user_id=self.user_id,
+            requested_resources={
+                r.key: r.amount for r in self.requested_resources
+            },
             status=ResourceRequestStatus(self.status),
             status_reason=self.status_reason,
             preemptable=self.preemptable,
@@ -211,11 +207,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
 
         metadata = None
         if include_metadata:
-            metadata = ResourceRequestResponseMetadata(
-                requested_resources={
-                    r.key: r.amount for r in self.requested_resources
-                },
-            )
+            metadata = ResourceRequestResponseMetadata()
 
         resources = None
         if include_resources:

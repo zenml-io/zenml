@@ -283,7 +283,9 @@ from zenml.models import (
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
+    ResourcePoolAllocation,
     ResourcePoolFilter,
+    ResourcePoolQueueItem,
     ResourcePoolRequest,
     ResourcePoolResponse,
     ResourcePoolSubjectPolicyFilter,
@@ -4187,6 +4189,175 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
             )
+
+    def list_resource_pool_queue_items(
+        self,
+        resource_pool_id: UUID,
+    ) -> List[ResourcePoolQueueItem]:
+        """List queued items for a resource pool.
+
+        Args:
+            resource_pool_id: The resource pool ID.
+
+        Returns:
+            Queue items in queue order.
+        """
+        with Session(self.engine) as session:
+            self._get_schema_by_id(
+                resource_id=resource_pool_id,
+                schema_class=ResourcePoolSchema,
+                session=session,
+            )
+            queue_items = session.exec(
+                select(ResourcePoolQueueSchema)
+                .where(
+                    col(ResourcePoolQueueSchema.pool_id) == resource_pool_id
+                )
+                .join(
+                    ResourceRequestSchema,
+                    col(ResourceRequestSchema.id)
+                    == col(ResourcePoolQueueSchema.request_id),
+                )
+                .where(
+                    col(ResourceRequestSchema.status)
+                    == ResourceRequestStatus.PENDING.value
+                )
+                .order_by(
+                    desc(col(ResourcePoolQueueSchema.priority)),
+                    col(ResourcePoolQueueSchema.request_created),
+                    col(ResourcePoolQueueSchema.request_id),
+                )
+                .options(
+                    selectinload(
+                        jl_arg(ResourcePoolQueueSchema.request)
+                    ).selectinload(
+                        jl_arg(ResourceRequestSchema.requested_resources)
+                    ),
+                    selectinload(jl_arg(ResourcePoolQueueSchema.request))
+                    .selectinload(jl_arg(ResourceRequestSchema.step_run))
+                    .selectinload(jl_arg(StepRunSchema.pipeline_run)),
+                    selectinload(
+                        jl_arg(ResourcePoolQueueSchema.request)
+                    ).selectinload(jl_arg(ResourceRequestSchema.user)),
+                )
+            ).all()
+
+            # These might not be allocated in exactly that order, depending on
+            # the resources that get freed. But this is the best we can do
+            # without actually running the very expensive allocator query.
+            return [
+                ResourcePoolQueueItem(
+                    request=item.request.to_model(
+                        include_metadata=True, include_resources=True
+                    ),
+                    priority=item.priority,
+                )
+                for item in queue_items
+            ]
+
+    def list_resource_pool_allocations(
+        self,
+        resource_pool_id: UUID,
+    ) -> List[ResourcePoolAllocation]:
+        """List active allocations for a resource pool.
+
+        Args:
+            resource_pool_id: The resource pool ID.
+
+        Returns:
+            Active allocations in allocation order.
+        """
+        with Session(self.engine) as session:
+            self._get_schema_by_id(
+                resource_id=resource_pool_id,
+                schema_class=ResourcePoolSchema,
+                session=session,
+            )
+            allocations = session.exec(
+                select(ResourcePoolAllocationSchema)
+                .where(
+                    col(ResourcePoolAllocationSchema.pool_id)
+                    == resource_pool_id
+                )
+                .where(col(ResourcePoolAllocationSchema.released_at).is_(None))
+                .order_by(
+                    col(ResourcePoolAllocationSchema.allocated_at),
+                    col(ResourcePoolAllocationSchema.request_id),
+                )
+                .options(
+                    selectinload(
+                        jl_arg(ResourcePoolAllocationSchema.request)
+                    ).selectinload(
+                        jl_arg(ResourceRequestSchema.requested_resources)
+                    ),
+                    selectinload(jl_arg(ResourcePoolAllocationSchema.request))
+                    .selectinload(jl_arg(ResourceRequestSchema.step_run))
+                    .selectinload(jl_arg(StepRunSchema.pipeline_run)),
+                    selectinload(
+                        jl_arg(ResourcePoolAllocationSchema.request)
+                    ).selectinload(jl_arg(ResourceRequestSchema.user)),
+                    selectinload(
+                        jl_arg(ResourcePoolAllocationSchema.policy)
+                    ).selectinload(
+                        jl_arg(ResourcePoolSubjectPolicySchema.resources)
+                    ),
+                )
+            ).all()
+            borrowed_resources = self._get_borrowed_resources_per_allocation(
+                allocations=allocations
+            )
+            return [
+                ResourcePoolAllocation(
+                    request=allocation.request.to_model(
+                        include_metadata=True, include_resources=True
+                    ),
+                    priority=allocation.priority,
+                    allocated_at=allocation.allocated_at,
+                    borrowed_resources=borrowed_resources.get(
+                        allocation.id, {}
+                    ),
+                )
+                for allocation in allocations
+            ]
+
+    def _get_borrowed_resources_per_allocation(
+        self,
+        allocations: Sequence[ResourcePoolAllocationSchema],
+    ) -> Dict[UUID, Dict[str, int]]:
+        """Compute borrowed resources per allocation from loaded schemas."""
+        current_usage_by_policy: Dict[UUID, Dict[str, int]] = {}
+        borrowed_by_allocation: Dict[UUID, Dict[str, int]] = {}
+
+        for allocation in allocations:
+            if allocation.policy is None:
+                continue
+
+            policy_id = allocation.policy.id
+            reserved_resources = {
+                resource.key: resource.reserved
+                for resource in allocation.policy.resources
+            }
+            policy_usage = current_usage_by_policy.setdefault(policy_id, {})
+
+            borrowed_resources: Dict[str, int] = {}
+            requested_resources = {
+                resource.key: resource.amount
+                for resource in allocation.request.requested_resources
+            }
+            for resource_key, requested_amount in requested_resources.items():
+                used_before = policy_usage.get(resource_key, 0)
+                reserved_amount = reserved_resources.get(resource_key, 0)
+                available_reserved = max(0, reserved_amount - used_before)
+                borrowed_amount = max(0, requested_amount - available_reserved)
+
+                if borrowed_amount:
+                    borrowed_resources[resource_key] = borrowed_amount
+
+                policy_usage[resource_key] = used_before + requested_amount
+
+            borrowed_by_allocation[allocation.id] = borrowed_resources
+
+        return borrowed_by_allocation
 
     def update_resource_pool(
         self, resource_pool_id: UUID, update: ResourcePoolUpdate

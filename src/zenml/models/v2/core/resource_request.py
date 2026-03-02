@@ -100,6 +100,9 @@ class ResourceRequestUpdate(BaseUpdate):
 class ResourceRequestResponseBody(UserScopedResponseBody):
     """Response body for resource requests."""
 
+    requested_resources: Dict[str, int] = Field(
+        title="The resources requested."
+    )
     status: ResourceRequestStatus = Field(
         title="The status of the resource request."
     )
@@ -114,10 +117,6 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
 
 class ResourceRequestResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for resource requests."""
-
-    requested_resources: Dict[str, int] = Field(
-        title="The resources requested."
-    )
 
 
 class ResourceRequestResponseResources(UserScopedResponseResources):
@@ -165,7 +164,7 @@ class ResourceRequestResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().requested_resources
+        return self.get_body().requested_resources
 
     @property
     def status(self) -> ResourceRequestStatus:

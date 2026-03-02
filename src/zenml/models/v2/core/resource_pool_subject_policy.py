@@ -126,17 +126,16 @@ class ResourcePoolSubjectPolicyResponseBody(UserScopedResponseBody):
         title="The priority of the policy in the resource pool. Higher "
         "means preferred.",
     )
-
-
-class ResourcePoolSubjectPolicyResponseMetadata(UserScopedResponseMetadata):
-    """Response metadata for resource pool subject policies."""
-
     reserved: Dict[str, NonNegativeInt] = Field(
         title="The resources that are reserved for the policy.",
     )
     limit: Dict[str, NonNegativeInt] = Field(
         title="The maximum resources that the policy can use.",
     )
+
+
+class ResourcePoolSubjectPolicyResponseMetadata(UserScopedResponseMetadata):
+    """Response metadata for resource pool subject policies."""
 
 
 class ResourcePoolSubjectPolicyResponseResources(UserScopedResponseResources):
@@ -185,7 +184,7 @@ class ResourcePoolSubjectPolicyResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().reserved
+        return self.get_body().reserved
 
     @property
     def limit(self) -> Dict[str, int]:
@@ -194,7 +193,7 @@ class ResourcePoolSubjectPolicyResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().limit
+        return self.get_body().limit
 
     @property
     def component(self) -> "ComponentResponse":

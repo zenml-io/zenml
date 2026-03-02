@@ -123,16 +123,9 @@ class ResourcePoolSubjectPolicySchema(BaseSchema, table=True):
         Returns:
             The query options.
         """
-        options: List[ExecutableOption] = []
-
-        if include_metadata:
-            options.extend(
-                [
-                    selectinload(
-                        jl_arg(ResourcePoolSubjectPolicySchema.resources)
-                    ),
-                ]
-            )
+        options: List[ExecutableOption] = [
+            selectinload(jl_arg(ResourcePoolSubjectPolicySchema.resources)),
+        ]
 
         if include_resources:
             options.extend(
@@ -204,21 +197,19 @@ class ResourcePoolSubjectPolicySchema(BaseSchema, table=True):
             updated=self.updated,
             user_id=self.user_id,
             priority=self.priority,
+            reserved={
+                resource.key: resource.reserved for resource in self.resources
+            },
+            limit={
+                resource.key: resource.limit
+                for resource in self.resources
+                if resource.limit is not None
+            },
         )
 
         metadata = None
         if include_metadata:
-            metadata = ResourcePoolSubjectPolicyResponseMetadata(
-                reserved={
-                    resource.key: resource.reserved
-                    for resource in self.resources
-                },
-                limit={
-                    resource.key: resource.limit
-                    for resource in self.resources
-                    if resource.limit is not None
-                },
-            )
+            metadata = ResourcePoolSubjectPolicyResponseMetadata()
 
         resources = None
         if include_resources:

@@ -14,27 +14,21 @@
 """Resource Pool schemas."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import UniqueConstraint, desc, exists
-from sqlalchemy.orm import object_session, selectinload
+from sqlalchemy import UniqueConstraint, desc
+from sqlalchemy.orm import load_only, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, and_, col, select
+from sqlmodel import Field, Relationship, col
 
-from zenml.enums import ResourceRequestStatus
 from zenml.models import (
     ResourcePoolRequest,
     ResourcePoolResponse,
     ResourcePoolResponseBody,
     ResourcePoolResponseMetadata,
     ResourcePoolResponseResources,
-    ResourcePoolSubjectPolicyResponse,
     ResourcePoolUpdate,
-)
-from zenml.models.v2.core.resource_pool import (
-    ResourcePoolAllocation,
-    ResourcePoolQueueItem,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -147,34 +141,36 @@ class ResourcePoolAllocationSchema(BaseSchema, table=True):
         nullable=False,
     )
     request: "ResourceRequestSchema" = Relationship()
+    policy: Optional["ResourcePoolSubjectPolicySchema"] = Relationship(
+        sa_relationship_kwargs={
+            "secondary": "resource_request",
+            "primaryjoin": (
+                "ResourcePoolAllocationSchema.request_id == "
+                "ResourceRequestSchema.id"
+            ),
+            "secondaryjoin": (
+                "and_("
+                "ResourcePoolSubjectPolicySchema.pool_id == "
+                "ResourcePoolAllocationSchema.pool_id, "
+                "ResourcePoolSubjectPolicySchema.component_id == "
+                "ResourceRequestSchema.component_id"
+                ")"
+            ),
+            "uselist": False,
+            "viewonly": True,
+        }
+    )
     allocated_at: datetime = Field(default_factory=utc_now)
     released_at: Optional[datetime] = Field(default=None, nullable=True)
 
     @property
-    def priority(self) -> int:
+    def priority(self) -> Optional[int]:
         """Fetch the priority for this allocation.
 
-        Raises:
-            RuntimeError: If no session for the schema exists.
-
         Returns:
-            The priority for this allocation.
+            The matching policy priority, if a policy exists.
         """
-        if session := object_session(self):
-            return session.execute(
-                select(ResourcePoolSubjectPolicySchema.priority)
-                .where(ResourcePoolSubjectPolicySchema.pool_id == self.pool_id)
-                .where(ResourceRequestSchema.id == self.request_id)
-                .where(
-                    ResourcePoolSubjectPolicySchema.component_id
-                    == ResourceRequestSchema.component_id
-                )
-                .limit(1)
-            ).scalar_one()
-        else:
-            raise RuntimeError(
-                "Missing DB session to fetch priority for allocation."
-            )
+        return self.policy.priority if self.policy else None
 
 
 class ResourcePoolSchema(NamedSchema, table=True):
@@ -206,53 +202,20 @@ class ResourcePoolSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship()
+    queue_items: List["ResourcePoolQueueSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": (
+                "ResourcePoolSchema.id == ResourcePoolQueueSchema.pool_id"
+            ),
+            "viewonly": True,
+        }
+    )
     policies: List["ResourcePoolSubjectPolicySchema"] = Relationship(
         sa_relationship_kwargs={
             "order_by": desc(col(ResourcePoolSubjectPolicySchema.priority)),
             "passive_deletes": True,
             "cascade": "all, delete-orphan",
         }
-    )
-
-    # TODO: The order of this might not actually be the same as the order in
-    # which requests will be allocated. To get that, we would have to consider
-    # the free dedicated resources of each policy, which is a query that we only
-    # run as part of the actual allocation process.
-    queue_items: List["ResourcePoolQueueSchema"] = Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": lambda: and_(
-                col(ResourcePoolSchema.id)
-                == col(ResourcePoolQueueSchema.pool_id),
-                exists(
-                    select(1).where(
-                        col(ResourceRequestSchema.id)
-                        == col(ResourcePoolQueueSchema.request_id),
-                        col(ResourceRequestSchema.status)
-                        == ResourceRequestStatus.PENDING.value,
-                    )
-                ),
-            ),
-            "order_by": (
-                desc(col(ResourcePoolQueueSchema.priority)),
-                ResourcePoolQueueSchema.request_created,
-                ResourcePoolQueueSchema.request_id,
-            ),
-            "passive_deletes": True,
-        },
-    )
-    allocations: List["ResourcePoolAllocationSchema"] = Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": lambda: and_(
-                col(ResourcePoolSchema.id)
-                == col(ResourcePoolAllocationSchema.pool_id),
-                col(ResourcePoolAllocationSchema.released_at).is_(None),
-            ),
-            "order_by": (
-                col(ResourcePoolAllocationSchema.allocated_at),
-                ResourcePoolAllocationSchema.request_id,
-            ),
-            "passive_deletes": True,
-        },
     )
 
     @classmethod
@@ -274,24 +237,16 @@ class ResourcePoolSchema(NamedSchema, table=True):
         Returns:
             A list of query options.
         """
-        options = []
-
-        if include_metadata:
-            options.extend(
-                [
-                    selectinload(jl_arg(ResourcePoolSchema.resources)),
-                ]
-            )
+        options = [
+            selectinload(jl_arg(ResourcePoolSchema.resources)),
+            selectinload(jl_arg(ResourcePoolSchema.queue_items)).options(
+                load_only(jl_arg(ResourcePoolQueueSchema.request_id))
+            ),
+        ]
 
         if include_resources:
             options.extend(
                 [
-                    selectinload(
-                        jl_arg(ResourcePoolSchema.queue_items)
-                    ).joinedload(jl_arg(ResourcePoolQueueSchema.request)),
-                    selectinload(
-                        jl_arg(ResourcePoolSchema.allocations)
-                    ).joinedload(jl_arg(ResourcePoolAllocationSchema.request)),
                     selectinload(jl_arg(ResourcePoolSchema.user)),
                 ]
             )
@@ -334,77 +289,6 @@ class ResourcePoolSchema(NamedSchema, table=True):
         self.updated = utc_now()
         return self
 
-    def _get_borrowed_resources_per_allocation(
-        self,
-    ) -> Dict[UUID, Dict[str, int]]:
-        """Compute borrowed resources for each active allocation.
-
-        The computation is done per policy and in allocation order (oldest
-        first): each allocation first consumes dedicated reserved resources of
-        the policy and only the overflow is counted as borrowed.
-
-        Raises:
-            RuntimeError: If no session for the schema exists.
-
-        Returns:
-            Mapping from request ID to borrowed resources for that allocation.
-        """
-        if not (session := object_session(self)):
-            raise RuntimeError(
-                "Missing DB session to compute borrowed resources."
-            )
-
-        policies = session.execute(
-            select(ResourcePoolSubjectPolicySchema)
-            .where(ResourcePoolSubjectPolicySchema.pool_id == self.id)
-            .options(
-                selectinload(jl_arg(ResourcePoolSubjectPolicySchema.resources))
-            )
-        ).scalars()
-
-        policy_id_by_component: Dict[UUID, UUID] = {}
-        reserved_resources_by_policy: Dict[UUID, Dict[str, int]] = {}
-        for policy in policies:
-            policy_id_by_component[policy.component_id] = policy.id
-            reserved_resources_by_policy[policy.id] = {
-                resource.key: resource.reserved
-                for resource in policy.resources
-            }
-
-        current_usage_by_policy: Dict[UUID, Dict[str, int]] = {}
-        borrowed_by_allocation: Dict[UUID, Dict[str, int]] = {}
-
-        for allocation in self.allocations:
-            policy_id = policy_id_by_component.get(
-                allocation.request.component_id
-            )
-
-            if policy_id is None:
-                continue
-
-            reserved_resources = reserved_resources_by_policy[policy_id]
-            policy_usage = current_usage_by_policy.setdefault(policy_id, {})
-
-            borrowed_resources: Dict[str, int] = {}
-            requested_resources = {
-                resource.key: resource.amount
-                for resource in allocation.request.requested_resources
-            }
-            for resource_key, requested_amount in requested_resources.items():
-                used_before = policy_usage.get(resource_key, 0)
-                reserved_amount = reserved_resources.get(resource_key, 0)
-                available_reserved = max(0, reserved_amount - used_before)
-                borrowed_amount = max(0, requested_amount - available_reserved)
-
-                if borrowed_amount:
-                    borrowed_resources[resource_key] = borrowed_amount
-
-                policy_usage[resource_key] = used_before + requested_amount
-
-            borrowed_by_allocation[allocation.id] = borrowed_resources
-
-        return borrowed_by_allocation
-
     def to_model(
         self,
         include_metadata: bool = False,
@@ -425,44 +309,21 @@ class ResourcePoolSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             user_id=self.user_id,
+            queue_length=len(self.queue_items),
+            capacity={r.key: r.total for r in self.resources},
+            occupied_resources={r.key: r.occupied for r in self.resources},
         )
 
         metadata = None
         if include_metadata:
             metadata = ResourcePoolResponseMetadata(
                 description=self.description,
-                capacity={r.key: r.total for r in self.resources},
-                occupied_resources={r.key: r.occupied for r in self.resources},
             )
 
         resources = None
         if include_resources:
-            # TODO: We shouldn't include metadata/resources here.
-            queued_requests = [
-                ResourcePoolQueueItem(
-                    request=i.request.to_model(
-                        include_metadata=True, include_resources=True
-                    ),
-                    priority=i.priority,
-                )
-                for i in self.queue_items
-            ]
-            borrowed_resources = self._get_borrowed_resources_per_allocation()
-            active_requests = [
-                ResourcePoolAllocation(
-                    request=a.request.to_model(
-                        include_metadata=True, include_resources=True
-                    ),
-                    priority=a.priority,
-                    allocated_at=a.allocated_at,
-                    borrowed_resources=borrowed_resources.get(a.id, {}),
-                )
-                for a in self.allocations
-            ]
             resources = ResourcePoolResponseResources(
                 user=self.user.to_model() if self.user else None,
-                queued_requests=queued_requests,
-                active_requests=active_requests,
             )
 
         return ResourcePoolResponse(

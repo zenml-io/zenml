@@ -41,9 +41,6 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
-from zenml.models.v2.core.resource_pool_subject_policy import (
-    ResourcePoolSubjectPolicyResponse,
-)
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.resource_request import ResourceRequestResponse
@@ -58,7 +55,7 @@ class ResourcePoolAllocation(BaseModel):
     request: "ResourceRequestResponse" = Field(
         title="The request that is allocated to the resource pool.",
     )
-    priority: int = Field(
+    priority: Optional[int] = Field(
         title="The priority of the component in the resource pool.",
     )
     allocated_at: datetime = Field(
@@ -134,14 +131,8 @@ class ResourcePoolUpdate(BaseUpdate):
 class ResourcePoolResponseBody(UserScopedResponseBody):
     """Response body for resource pools."""
 
-
-class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
-    """Response metadata for resource pools."""
-
-    description: Optional[str] = Field(
-        default="",
-        title="The description of the resource pool",
-        max_length=STR_FIELD_MAX_LENGTH,
+    queue_length: NonNegativeInt = Field(
+        title="The number of queued requests for the resource pool.",
     )
     capacity: Dict[str, int] = Field(
         title="The capacity of the resource pool.",
@@ -151,15 +142,18 @@ class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
     )
 
 
+class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
+    """Response metadata for resource pools."""
+
+    description: Optional[str] = Field(
+        default="",
+        title="The description of the resource pool",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+
 class ResourcePoolResponseResources(UserScopedResponseResources):
     """Response resources for resource pools."""
-
-    active_requests: List["ResourcePoolAllocation"] = Field(
-        title="The active requests for the resource pool.",
-    )
-    queued_requests: List["ResourcePoolQueueItem"] = Field(
-        title="The queued requests for the resource pool.",
-    )
 
 
 class ResourcePoolResponse(
@@ -201,7 +195,7 @@ class ResourcePoolResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().capacity
+        return self.get_body().capacity
 
     @property
     def occupied_resources(self) -> Dict[str, int]:
@@ -210,25 +204,16 @@ class ResourcePoolResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().occupied_resources
+        return self.get_body().occupied_resources
 
     @property
-    def queued_requests(self) -> List["ResourcePoolQueueItem"]:
-        """The `queued_requests` property.
+    def queue_length(self) -> int:
+        """The `queue_length` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().queued_requests
-
-    @property
-    def active_requests(self) -> List["ResourcePoolAllocation"]:
-        """The `active_requests` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().active_requests
+        return self.get_body().queue_length
 
 
 # ------------------ Filter Model ------------------
