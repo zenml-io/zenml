@@ -70,7 +70,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
-    from zenml.zen_stores.schemas.resource_pool_schemas import (
+    from zenml.zen_stores.schemas.resource_request_schemas import (
         ResourceRequestSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema

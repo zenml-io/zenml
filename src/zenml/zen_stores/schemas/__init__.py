@@ -85,10 +85,12 @@ from zenml.zen_stores.schemas.api_transaction_schemas import (
 )
 from zenml.zen_stores.schemas.resource_pool_schemas import (
     ResourcePoolSchema,
-    ResourceRequestSchema,
     ResourcePoolResourceSchema,
     ResourcePoolQueueSchema,
     ResourcePoolAllocationSchema,
+)
+from zenml.zen_stores.schemas.resource_request_schemas import (
+    ResourceRequestSchema,
     ResourceRequestResourceSchema,
 )
 from zenml.zen_stores.schemas.resource_pool_policy_schemas import (

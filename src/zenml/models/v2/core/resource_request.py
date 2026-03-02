@@ -133,8 +133,9 @@ class ResourceRequestResponseResources(UserScopedResponseResources):
         title="The pipeline run that is requesting the resources.",
         default=None,
     )
-    running_in_pool: Optional["ResourcePoolResponse"] = Field(
-        title="The pool that the resource request is running in.", default=None
+    pool: Optional["ResourcePoolResponse"] = Field(
+        title="The pool that the resource request is/was running in.",
+        default=None,
     )
 
 
@@ -221,13 +222,13 @@ class ResourceRequestResponse(
         return self.get_resources().pipeline_run
 
     @property
-    def running_in_pool(self) -> Optional["ResourcePoolResponse"]:
-        """The `running_in_pool` property.
+    def pool(self) -> Optional["ResourcePoolResponse"]:
+        """The `pool` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_resources().running_in_pool
+        return self.get_resources().pool
 
 
 # ------------------ Filter Model ------------------

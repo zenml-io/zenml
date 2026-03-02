@@ -154,9 +154,6 @@ class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
 class ResourcePoolResponseResources(UserScopedResponseResources):
     """Response resources for resource pools."""
 
-    policies: List["ResourcePoolSubjectPolicyResponse"] = Field(
-        title="The policies attached to the resource pool.",
-    )
     active_requests: List["ResourcePoolAllocation"] = Field(
         title="The active requests for the resource pool.",
     )
@@ -214,15 +211,6 @@ class ResourcePoolResponse(
             the value of the property.
         """
         return self.get_metadata().occupied_resources
-
-    @property
-    def policies(self) -> List["ResourcePoolSubjectPolicyResponse"]:
-        """The `policies` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().policies
 
     @property
     def queued_requests(self) -> List["ResourcePoolQueueItem"]:
