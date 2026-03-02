@@ -391,17 +391,17 @@ class ArtifactLogStore(OtelLogStore):
         if before is not None:
             logger.warning(
                 "Ignoring `before` argument in ArtifactLogStore.fetch(). "
-                "Artifact log pagination is no longer supported."
+                "Artifact log pagination is not supported."
             )
         if after is not None:
             logger.warning(
                 "Ignoring `after` argument in ArtifactLogStore.fetch(). "
-                "Artifact log pagination is no longer supported."
+                "Artifact log pagination is not supported."
             )
         if filter_ is not None:
             logger.warning(
                 "Ignoring `filter_` argument in ArtifactLogStore.fetch(). "
-                "Artifact log filtering moved to the client side."
+                "Artifact log filtering is not supported."
             )
 
         items: List[LogEntry] = []
