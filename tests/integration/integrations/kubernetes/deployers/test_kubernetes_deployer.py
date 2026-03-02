@@ -89,6 +89,8 @@ class TestBuildTemplateContextResources:
         assert context["resources"]["requests"]["memory"] == "400Mi"
         assert context["resources"]["limits"]["cpu"] == "200m"
         assert context["resources"]["limits"]["memory"] == "800Mi"
+        # pod_settings.resources should be synced with context resources
+        assert context["pod_settings"].resources == context["resources"]
 
     def test_pod_settings_resources_overrides_resource_settings(
         self, deployer_instance, mock_deployment
@@ -124,6 +126,8 @@ class TestBuildTemplateContextResources:
         # limits come entirely from pod_settings
         assert context["resources"]["limits"]["cpu"] == "1"
         assert context["resources"]["limits"]["memory"] == "2Gi"
+        # pod_settings.resources should be synced with context resources
+        assert context["pod_settings"].resources == context["resources"]
 
     def test_no_resources_when_nothing_specified(
         self, deployer_instance, mock_deployment
@@ -172,6 +176,10 @@ class TestBuildTemplateContextResources:
         assert context["resources"]["requests"]["cpu"] == "100m"
         assert context["resources"]["requests"]["memory"] == "256Mi"
         assert context["resources"]["limits"]["nvidia.com/gpu"] == "1"
+        # pod_settings should be created with synced resources even when
+        # no pod_settings were originally provided
+        assert context["pod_settings"] is not None
+        assert context["pod_settings"].resources == context["resources"]
 
     def test_pod_settings_limits_only(
         self, deployer_instance, mock_deployment
@@ -204,3 +212,5 @@ class TestBuildTemplateContextResources:
         assert "requests" not in context["resources"]
         assert context["resources"]["limits"]["cpu"] == "200m"
         assert context["resources"]["limits"]["memory"] == "800Mi"
+        # pod_settings.resources should be synced with context resources
+        assert context["pod_settings"].resources == context["resources"]
