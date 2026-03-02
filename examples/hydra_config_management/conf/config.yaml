@@ -23,7 +23,6 @@ data:
 
 # ZenML pipeline configuration
 zenml_config:
-  enable_cache: true
   settings:
     docker:
       requirements: "requirements.txt"
