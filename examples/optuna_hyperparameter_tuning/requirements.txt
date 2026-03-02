@@ -1,0 +1,8 @@
+zenml[server]>=0.93.1
+optuna>=3.0.0
+filelock>=3.0.0
+
+# PyTorch Lightning dependencies
+torch>=2.0.0
+lightning>=2.0.0
+torchvision>=0.15.0

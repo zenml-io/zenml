@@ -1,0 +1,20 @@
+# Config for sweep_pipeline (simple parallel mode).
+# Usage: python run.py simple --config config/simple.yaml
+
+enable_cache: true
+enable_step_logs: true
+enable_artifact_metadata: true
+enable_artifact_visualization: true
+
+parameters:
+  study_name: "fashion_mnist_sweep"
+  n_trials: 2
+  max_iter: 3
+
+settings:
+  docker:
+    requirements: "requirements.txt"
+    python_package_installer: "uv"
+    build_config:
+      build_options:
+        platform: linux/amd64
