@@ -23,6 +23,12 @@ class FashionMNISTClassifier(LightningModule):
     """Simple CNN for FashionMNIST classification."""
 
     def __init__(self, learning_rate: float, hidden_dim: int):
+        """Initialize the classifier with the given hyperparameters.
+
+        Args:
+            learning_rate: Learning rate for the Adam optimizer.
+            hidden_dim: Number of filters in the first conv layer.
+        """
         super().__init__()
         self.save_hyperparameters()
         self.learning_rate = learning_rate
@@ -45,10 +51,10 @@ class FashionMNISTClassifier(LightningModule):
         )
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
-    def forward(self, x):
+    def forward(self, x):  # noqa: D102
         return self.model(x)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx):  # noqa: D102
         x, y = batch
         logits = self(x)
         loss = self.loss_fn(logits, y)
@@ -57,7 +63,7 @@ class FashionMNISTClassifier(LightningModule):
         self.log("train_acc", acc, prog_bar=True)
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx):  # noqa: D102
         x, y = batch
         logits = self(x)
         loss = self.loss_fn(logits, y)
@@ -66,5 +72,5 @@ class FashionMNISTClassifier(LightningModule):
         self.log("val_acc", acc, prog_bar=True)
         return {"val_loss": loss, "val_acc": acc}
 
-    def configure_optimizers(self):
+    def configure_optimizers(self):  # noqa: D102
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
