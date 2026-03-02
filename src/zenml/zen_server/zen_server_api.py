@@ -71,6 +71,9 @@ from zenml.zen_server.routers import (
     pipelines_endpoints,
     plugin_endpoints,
     projects_endpoints,
+    resource_pool_subject_policies_endpoints,
+    resource_pools_endpoints,
+    resource_requests_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
     runs_endpoints,
@@ -100,10 +103,12 @@ from zenml.zen_server.utils import (
     initialize_plugins,
     initialize_rbac,
     initialize_request_manager,
+    initialize_resource_pool_reconciler,
     initialize_snapshot_executor,
     initialize_workload_manager,
     initialize_zen_store,
     server_config,
+    shutdown_resource_pool_reconciler,
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
@@ -164,6 +169,7 @@ async def initialize() -> None:
     # race conditions
     await initialize_request_manager()
     initialize_zen_store()
+    initialize_resource_pool_reconciler()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
     initialize_feature_gate()
@@ -186,6 +192,7 @@ async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
+    shutdown_resource_pool_reconciler()
     snapshot_executor().shutdown(wait=True)
     await cleanup_request_manager()
 
@@ -303,6 +310,9 @@ app.include_router(users_endpoints.current_user_router)
 app.include_router(webhook_endpoints.router)
 app.include_router(projects_endpoints.workspace_router)
 app.include_router(projects_endpoints.router)
+app.include_router(resource_pools_endpoints.router)
+app.include_router(resource_pool_subject_policies_endpoints.router)
+app.include_router(resource_requests_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.

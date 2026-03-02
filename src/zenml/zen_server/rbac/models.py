@@ -73,6 +73,8 @@ class ResourceType(StrEnum):
     SERVICE_CONNECTOR = "service_connector"
     STACK = "stack"
     STACK_COMPONENT = "stack_component"
+    RESOURCE_POOL = "resource_pool"
+    RESOURCE_POOL_SUBJECT_POLICY = "resource_pool_subject_policy"
     TAG = "tag"
     TRIGGER = "trigger"
     TRIGGER_EXECUTION = "trigger_execution"
@@ -92,6 +94,8 @@ class ResourceType(StrEnum):
             self.SERVICE_CONNECTOR,
             self.STACK,
             self.STACK_COMPONENT,
+            self.RESOURCE_POOL,
+            self.RESOURCE_POOL_SUBJECT_POLICY,
             self.TAG,
             self.SERVICE_ACCOUNT,
             self.PROJECT,

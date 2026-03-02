@@ -790,6 +790,30 @@ class StackComponent:
         """Cleans up the component after it has been used."""
         pass
 
+    def get_requested_resources(self, info: "StepRunInfo") -> Dict[str, int]:
+        """Get the resources requested by the component.
+
+        Args:
+            info: Info about the step that will be executed.
+
+        Returns:
+            A dictionary of resources requested by the component.
+        """
+        resource_settings = info.config.resource_settings
+        required_gpu_count = resource_settings.gpu_count or 0
+
+        requested_resources: Dict[str, int] = {}
+        if required_gpu_count > 0:
+            requested_resources["gpu"] = required_gpu_count
+
+        if resource_settings.cpu_count is not None:
+            requested_resources["cpu"] = resource_settings.cpu_count
+
+        if resource_settings.memory is not None:
+            requested_resources["memory"] = resource_settings.get_memory()
+
+        return requested_resources
+
     def __repr__(self) -> str:
         """String representation of the stack component.
 

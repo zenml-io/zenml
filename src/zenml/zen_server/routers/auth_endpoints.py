@@ -623,7 +623,7 @@ def api_token(
 
         project_id = pipeline_run.project_id
 
-        if pipeline_run.status.is_finished:
+        if not pipeline_run.in_progress:
             raise ValueError(
                 f"The execution of pipeline run {pipeline_run_id} has already "
                 "concluded and API tokens can no longer be generated for it "

@@ -33,7 +33,12 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    ResourceRequestStatus,
+    StepRuntime,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
@@ -41,13 +46,14 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineSnapshotResponse,
+    ResourceRequestRequest,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
-from zenml.stack import Stack
+from zenml.stack import Stack, StackComponent
 from zenml.steps import StepHeartBeatTerminationException
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
@@ -55,7 +61,7 @@ from zenml.utils.logging_utils import (
     is_step_logging_enabled,
     setup_logging_context,
 )
-from zenml.utils.time_utils import utc_now
+from zenml.utils.time_utils import exponential_backoff_delays, utc_now
 
 if TYPE_CHECKING:
     from zenml.step_operators import BaseStepOperator
@@ -352,7 +358,11 @@ class StepLauncher:
                             step_run_id=step_run.id
                         )
 
-                        if (
+                        if step_run.status == ExecutionStatus.CANCELLING:
+                            publish_utils.publish_cancelled_step_run(
+                                step_run_id=step_run.id
+                            )
+                        elif (
                             isinstance(e, StepHeartBeatTerminationException)
                             or step_run.status == ExecutionStatus.STOPPING
                         ):
@@ -542,6 +552,10 @@ class StepLauncher:
             stack=self._stack,
             step_operator_name=step_operator_name,
         )
+        self._acquire_resources_if_necessary(
+            step_run_info, component=step_operator
+        )
+
         entrypoint_cfg_class = step_operator.entrypoint_config_class
         entrypoint_command = (
             entrypoint_cfg_class.get_entrypoint_command()
@@ -633,6 +647,10 @@ class StepLauncher:
         Raises:
             RuntimeError: If the step run failed.
         """
+        self._acquire_resources_if_necessary(
+            step_run_info, component=self._stack.orchestrator
+        )
+
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
@@ -681,3 +699,93 @@ class StepLauncher:
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )
+
+    def _acquire_resources_if_necessary(
+        self, step_run_info: StepRunInfo, component: "StackComponent"
+    ) -> None:
+        """Acquires resources if necessary.
+
+        Args:
+            step_run_info: Step run information.
+            component: The component that is requesting the resources.
+
+        Raises:
+            RuntimeError: If the resources could not be acquired.
+        """
+        # TODO: Bool on component that indicates if we should request resources?
+        # Probably don't need this if we request resources on the step run
+        # request instead.
+        requested_resources = component.get_requested_resources(step_run_info)
+        requested_resources["step_run"] = 1
+
+        # TODO: we should probably simply put the resource request in the step
+        # run request, to save some API calls.
+        publish_utils.publish_step_run_status_update(
+            step_run_id=step_run_info.step_run_id,
+            status=ExecutionStatus.QUEUED,
+        )
+        resource_request = Client().zen_store.create_resource_request(
+            ResourceRequestRequest(
+                component_id=component.id,
+                step_run_id=step_run_info.step_run_id,
+                requested_resources=requested_resources,
+            )
+        )
+        for delay in exponential_backoff_delays(
+            initial_delay=1.0,
+            max_delay=20.0,
+            factor=2.0,
+            jitter="equal",
+        ):
+            try:
+                resource_request = Client().zen_store.get_resource_request(
+                    resource_request.id, hydrate=False
+                )
+            except KeyError as e:
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` not found. This "
+                    "is most likely because someone deleted the resource "
+                    "request."
+                ) from e
+
+            if resource_request.status == ResourceRequestStatus.ALLOCATED:
+                logger.info(
+                    "Resource request `%s` for step `%s` was approved.",
+                    resource_request.id,
+                    step_run_info.pipeline_step_name,
+                )
+                # TODO: start date should be set here, not on initial
+                # creation.
+                publish_utils.publish_step_run_status_update(
+                    step_run_id=step_run_info.step_run_id,
+                    status=ExecutionStatus.RUNNING,
+                )
+                return
+            elif resource_request.status == ResourceRequestStatus.REJECTED:
+                reason = resource_request.status_reason or "Unknown reason"
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was rejected: "
+                    f"{reason}"
+                )
+            elif resource_request.status == ResourceRequestStatus.PREEMPTED:
+                reason = resource_request.status_reason or "Unknown reason"
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was preempted: "
+                    f"{reason}"
+                )
+            elif resource_request.status == ResourceRequestStatus.CANCELLED:
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was cancelled."
+                )
+
+            logger.info(
+                "Waiting for resource request `%s` of step `%s` to be "
+                "approved...",
+                resource_request.id,
+                step_run_info.pipeline_step_name,
+            )
+            time.sleep(delay)

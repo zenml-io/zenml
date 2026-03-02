@@ -80,6 +80,7 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.orchestrators.publish_utils import (
+    publish_cancelled_step_run,
     publish_failed_pipeline_run,
     publish_failed_step_run,
     publish_stopped_step_run,
@@ -309,6 +310,10 @@ class DynamicPipelineRunner:
                     # a heartbeat response that the pipeline should be stopped.
                     # We now update this status to STOPPED.
                     step_run = publish_stopped_step_run(step_run.id)
+                elif db_status == ExecutionStatus.CANCELLING:
+                    # Resource preemption sets the status to CANCELLING. We now
+                    # update the status to CANCELLED.
+                    step_run = publish_cancelled_step_run(step_run.id)
                 elif (
                     infra_status
                     in [ExecutionStatus.FAILED, ExecutionStatus.STOPPED]
@@ -870,10 +875,31 @@ class DynamicPipelineRunner:
         return MapResultsFuture(futures=step_futures)
 
     def await_all_step_futures(self) -> None:
-        """Await all step futures."""
+        """Await all scheduled step futures.
+
+        Raises:
+            RuntimeError: If one or more step futures failed while waiting.
+        """
+        failed_steps = []
         for future in self._futures.values():
-            future.wait()
+            try:
+                future.wait()
+            except Exception as e:
+                logger.warning(
+                    "Failed to run step `%s`: %s", future.invocation_id, str(e)
+                )
+                failed_steps.append(future.invocation_id)
+
         self._futures = {}
+
+        if failed_steps:
+            # TODO: This should depend on the execution mode.
+            # We only fail after all futures have been awaited. Otherwise, we
+            # will mark the pipeline run as failed which invalidates the token
+            # and other steps won't be able to report their status back.
+            raise RuntimeError(
+                f"Failed to run step(s): {', '.join(failed_steps)}"
+            )
 
 
 def compile_dynamic_step_invocation(
