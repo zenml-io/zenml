@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+import uuid
 from contextlib import nullcontext
 
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
+from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
 
 try:
     import sqlalchemy  # noqa
@@ -175,10 +177,7 @@ from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
-    ActionFilter,
-    ActionRequest,
-    ActionResponse,
-    ActionUpdate,
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyInternalResponse,
     APIKeyInternalUpdate,
@@ -223,10 +222,6 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
-    EventSourceFilter,
-    EventSourceRequest,
-    EventSourceResponse,
-    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -330,12 +325,8 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
-    TriggerExecutionFilter,
-    TriggerExecutionRequest,
-    TriggerExecutionResponse,
     TriggerFilter,
     TriggerRequest,
-    TriggerResponse,
     TriggerUpdate,
     UserAuthModel,
     UserFilter,
@@ -370,7 +361,6 @@ from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
 from zenml.zen_stores.schemas import (
-    ActionSchema,
     APIKeySchema,
     ApiTransactionResultSchema,
     ApiTransactionSchema,
@@ -381,7 +371,6 @@ from zenml.zen_stores.schemas import (
     CodeRepositorySchema,
     CuratedVisualizationSchema,
     DeploymentSchema,
-    EventSourceSchema,
     FlavorSchema,
     ModelSchema,
     ModelVersionArtifactSchema,
@@ -411,7 +400,8 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
     TagResourceSchema,
     TagSchema,
-    TriggerExecutionSchema,
+    TriggerSchema,
+    TriggerSnapshotSchema,
     UserSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
@@ -419,7 +409,6 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
-from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.zen_stores.schemas.utils import (
     get_resource_type_name,
     jl_arg,
@@ -431,6 +420,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+    from zenml.models.v2.core.triggers import UnScopedTriggerFilter
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -1911,172 +1901,6 @@ class SqlZenStore(BaseZenStore):
             )
 
         self.activate_server(request)
-
-    # -------------------- Actions  --------------------
-
-    def create_action(self, action: ActionRequest) -> ActionResponse:
-        """Create an action.
-
-        Args:
-            action: The action to create.
-
-        Returns:
-            The created action.
-        """
-        with Session(self.engine) as session:
-            self._set_request_user_id(request_model=action, session=session)
-
-            self._verify_name_uniqueness(
-                resource=action,
-                schema=ActionSchema,
-                session=session,
-            )
-
-            # Verify that the given service account exists
-            self._get_account_schema(
-                account_name_or_id=action.service_account_id,
-                session=session,
-                service_account=True,
-            )
-
-            new_action = ActionSchema.from_request(action)
-            session.add(new_action)
-            session.commit()
-            session.refresh(new_action)
-
-            return new_action.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def get_action(
-        self,
-        action_id: UUID,
-        hydrate: bool = True,
-    ) -> ActionResponse:
-        """Get an action by ID.
-
-        Args:
-            action_id: The ID of the action to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The action.
-        """
-        with Session(self.engine) as session:
-            action = self._get_schema_by_id(
-                resource_id=action_id,
-                schema_class=ActionSchema,
-                session=session,
-            )
-
-            return action.to_model(
-                include_metadata=hydrate, include_resources=True
-            )
-
-    def list_actions(
-        self,
-        action_filter_model: ActionFilter,
-        hydrate: bool = False,
-    ) -> Page[ActionResponse]:
-        """List all actions matching the given filter criteria.
-
-        Args:
-            action_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A page of actions matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=action_filter_model,
-                session=session,
-            )
-            query = select(ActionSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=ActionSchema,
-                filter_model=action_filter_model,
-                hydrate=hydrate,
-            )
-
-    def update_action(
-        self,
-        action_id: UUID,
-        action_update: ActionUpdate,
-    ) -> ActionResponse:
-        """Update an existing action.
-
-        Args:
-            action_id: The ID of the action to update.
-            action_update: The update to be applied to the action.
-
-        Returns:
-            The updated action.
-        """
-        with Session(self.engine) as session:
-            action = self._get_schema_by_id(
-                resource_id=action_id,
-                schema_class=ActionSchema,
-                session=session,
-            )
-
-            if action_update.service_account_id:
-                # Verify that the given service account exists
-                self._get_account_schema(
-                    account_name_or_id=action_update.service_account_id,
-                    session=session,
-                    service_account=True,
-                )
-
-            # In case of a renaming update, make sure no action already exists
-            # with that name
-            self._verify_name_uniqueness(
-                resource=action_update,
-                schema=action,
-                session=session,
-            )
-
-            action.update(action_update=action_update)
-            session.add(action)
-            session.commit()
-
-            session.refresh(action)
-
-            return action.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def delete_action(self, action_id: UUID) -> None:
-        """Delete an action.
-
-        Args:
-            action_id: The ID of the action to delete.
-
-        Raises:
-            IllegalOperationError: If the action can't be deleted
-                because it's used by triggers.
-        """
-        with Session(self.engine) as session:
-            action = self._get_schema_by_id(
-                resource_id=action_id,
-                schema_class=ActionSchema,
-                session=session,
-            )
-
-            # Prevent deletion of action if it is used by a trigger
-            if action.triggers:
-                raise IllegalOperationError(
-                    f"Unable to delete action with ID `{action_id}` "
-                    f"as it is used by {len(action.triggers)} triggers."
-                )
-
-            session.delete(action)
-            session.commit()
 
     # ------------------------- API Keys -------------------------
 
@@ -5949,158 +5773,6 @@ class SqlZenStore(BaseZenStore):
             "Running a template is not possible with a local store."
         )
 
-    # -------------------- Event Sources  --------------------
-
-    def create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Create an event_source.
-
-        Args:
-            event_source: The event_source to create.
-
-        Returns:
-            The created event_source.
-        """
-        with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=event_source, session=session
-            )
-
-            self._verify_name_uniqueness(
-                resource=event_source,
-                schema=EventSourceSchema,
-                session=session,
-            )
-
-            new_event_source = EventSourceSchema.from_request(event_source)
-            session.add(new_event_source)
-            session.commit()
-            session.refresh(new_event_source)
-
-            return new_event_source.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def get_event_source(
-        self,
-        event_source_id: UUID,
-        hydrate: bool = True,
-    ) -> EventSourceResponse:
-        """Get an event_source by ID.
-
-        Args:
-            event_source_id: The ID of the event_source to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The event_source.
-        """
-        with Session(self.engine) as session:
-            event_source = self._get_schema_by_id(
-                resource_id=event_source_id,
-                schema_class=EventSourceSchema,
-                session=session,
-            )
-            return event_source.to_model(
-                include_metadata=hydrate, include_resources=True
-            )
-
-    def list_event_sources(
-        self,
-        event_source_filter_model: EventSourceFilter,
-        hydrate: bool = False,
-    ) -> Page[EventSourceResponse]:
-        """List all event_sources matching the given filter criteria.
-
-        Args:
-            event_source_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all event_sources matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=event_source_filter_model,
-                session=session,
-            )
-            query = select(EventSourceSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=EventSourceSchema,
-                filter_model=event_source_filter_model,
-                hydrate=hydrate,
-            )
-
-    def update_event_source(
-        self,
-        event_source_id: UUID,
-        event_source_update: EventSourceUpdate,
-    ) -> EventSourceResponse:
-        """Update an existing event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to update.
-            event_source_update: The update to be applied to the event_source.
-
-        Returns:
-            The updated event_source.
-        """
-        with Session(self.engine) as session:
-            event_source = self._get_schema_by_id(
-                resource_id=event_source_id,
-                schema_class=EventSourceSchema,
-                session=session,
-            )
-
-            self._verify_name_uniqueness(
-                resource=event_source_update,
-                schema=event_source,
-                session=session,
-            )
-
-            event_source.update(update=event_source_update)
-            session.add(event_source)
-            session.commit()
-
-            # Refresh the event_source that was just created
-            session.refresh(event_source)
-            return event_source.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def delete_event_source(self, event_source_id: UUID) -> None:
-        """Delete an event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to delete.
-
-        Raises:
-            IllegalOperationError: If the event source can't be deleted
-                because it's used by triggers.
-        """
-        with Session(self.engine) as session:
-            event_source = self._get_schema_by_id(
-                resource_id=event_source_id,
-                schema_class=EventSourceSchema,
-                session=session,
-            )
-
-            # Prevent deletion of event source if it is used by a trigger
-            if event_source.triggers:
-                raise IllegalOperationError(
-                    f"Unable to delete event_source with ID `{event_source_id}`"
-                    f" as it is used by {len(event_source.triggers)} triggers."
-                )
-
-            session.delete(event_source)
-            session.commit()
-
     # ----------------------------- Pipeline runs -----------------------------
 
     def get_pipeline_run_dag(self, pipeline_run_id: UUID) -> PipelineRunDAG:
@@ -6616,6 +6288,15 @@ class SqlZenStore(BaseZenStore):
             reference_id=pipeline_run.snapshot,
             session=session,
         )
+
+        if pipeline_run.original_run_id:
+            self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=PipelineRunSchema,
+                reference_id=pipeline_run.original_run_id,
+                session=session,
+                reference_type="original run",
+            )
 
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
@@ -7318,6 +6999,300 @@ class SqlZenStore(BaseZenStore):
                         session.add(rm_resource_link)
                         session.commit()
         return None
+
+    # -------------------- Triggers ---------------------
+
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Creates a new trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(request_model=trigger, session=session)
+            self._verify_name_uniqueness(
+                resource=trigger,
+                schema=TriggerSchema,
+                session=session,
+            )
+            new_trigger = TriggerSchema.from_request(trigger_request=trigger)
+            session.add(new_trigger)
+            session.commit()
+            return new_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Retrieves a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            The trigger.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+                query_options=TriggerSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
+            )
+            return trigger.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_triggers_unscoped(
+        self,
+        triggers_filter_model: "UnScopedTriggerFilter",
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List triggers across projects.
+
+        Args:
+            triggers_filter_model: An unscoped trigger filter instance.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TriggerSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerSchema,
+                filter_model=triggers_filter_model,
+                hydrate=hydrate,
+            )
+
+    def list_triggers(
+        self,
+        triggers_filter_model: TriggerFilter,
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List all triggers.
+
+        Args:
+            triggers_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=triggers_filter_model,
+                session=session,
+            )
+            query = select(TriggerSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerSchema,
+                filter_model=triggers_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Updates a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            IllegalOperationError: If archived scheduled is updated.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            existing_trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+
+            if existing_trigger.is_archived:
+                raise IllegalOperationError(
+                    "Archived schedules can not be updated."
+                )
+
+            self._verify_name_uniqueness(
+                resource=trigger_update,
+                schema=existing_trigger,
+                session=session,
+            )
+
+            # Update the schedule
+            existing_trigger = existing_trigger.update(trigger_update)
+            session.add(existing_trigger)
+            session.commit()
+            return existing_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Deletes a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag deciding whether to soft delete the trigger.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the given ID exists
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+
+            if not soft:
+                # Hard delete the schedule
+                session.delete(trigger)
+            else:
+                # Soft deletion - set is_archived
+                trigger.is_archived = True
+                trigger.active = False
+                # Renames to name_(hash) to enable re-using the name.
+                trigger.name = f"{trigger.name}_({str(uuid.uuid4())[:8]})"
+                session.add(trigger)
+
+                # archival does not cascade - need to delete associations
+                session.exec(
+                    delete(TriggerSnapshotSchema).where(
+                        col(TriggerSnapshotSchema.trigger_id) == trigger_id
+                    )
+                )  # type: ignore[call-overload]
+
+            session.commit()
+
+    def attach_trigger_to_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Attaches (links) a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            IllegalOperationError: if the trigger is archived.
+            KeyError: If associated entities do not exist.
+        """
+        with Session(self.engine) as session:
+            snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
+
+            if not snapshot:
+                raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
+
+            if not snapshot.is_runnable:
+                raise IllegalOperationError(
+                    f"Can not attach trigger {trigger_id} to non-runnable snapshot {snapshot_id}"
+                )
+
+            trigger = session.get(TriggerSchema, trigger_id)
+
+            if not trigger:
+                raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.is_archived:
+                raise IllegalOperationError(
+                    f"Can not attach snapshot {snapshot_id} to archived trigger {trigger_id}."
+                )
+
+            new_assoc = TriggerSnapshotSchema(
+                trigger_id=trigger_id,
+                snapshot_id=snapshot_id,
+            )
+
+            session.add(new_assoc)
+            session.commit()
+
+    def detach_trigger_from_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Detaches (unlinks) a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the entities don't exist.
+        """
+        with Session(self.engine) as session:
+            assoc = session.get(
+                TriggerSnapshotSchema, (trigger_id, snapshot_id)
+            )
+
+            if assoc is None:
+                raise KeyError(
+                    f"No snapshot {snapshot_id} association found for trigger {trigger_id}"
+                )
+
+            session.delete(assoc)
+            session.commit()
+
+    def create_trigger_execution(
+        self,
+        trigger_id: UUID,
+        pipeline_run_id: UUID,
+    ) -> None:
+        """Creates a trigger execution object.
+
+        Comment: Useful to associate triggers & runs.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            pipeline_run_id: The ID of the pipeline run.
+
+        Raises:
+            KeyError: if the entities don't exist.
+            IllegalOperationError: if the trigger is archived.
+        """
+        with Session(self.engine) as session:
+            run = session.get(PipelineRunSchema, pipeline_run_id)
+
+            if not run:
+                raise KeyError(
+                    f"Pipeline run {pipeline_run_id} doesn't exist."
+                )
+
+            trigger = session.get(TriggerSchema, trigger_id)
+
+            if not trigger:
+                raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.is_archived:
+                raise IllegalOperationError(
+                    f"Can not create trigger execution for archived trigger {trigger_id}."
+                )
+
+            new_assoc = TriggerExecutionSchema(
+                trigger_id=trigger_id,
+                pipeline_run_id=pipeline_run_id,
+            )
+
+            session.add(new_assoc)
+            session.commit()
 
     # ----------------------------- Schedules -----------------------------
 
@@ -10278,7 +10253,8 @@ class SqlZenStore(BaseZenStore):
 
             # If cached, attach metadata of the original step
             if (
-                step_run.status == ExecutionStatus.CACHED
+                step_run.status
+                in {ExecutionStatus.CACHED, ExecutionStatus.SKIPPED}
                 and step_run.original_step_run_id is not None
             ):
                 original_metadata_links = session.exec(
@@ -10316,7 +10292,10 @@ class SqlZenStore(BaseZenStore):
                     session.commit()
                     session.refresh(step_schema, ["run_metadata"])
 
-            if step_run.status == ExecutionStatus.CACHED:
+            if step_run.status in {
+                ExecutionStatus.CACHED,
+                ExecutionStatus.SKIPPED,
+            }:
                 from zenml.utils.tag_utils import Tag
 
                 cascading_tags = [
@@ -11052,6 +11031,7 @@ class SqlZenStore(BaseZenStore):
                     ),
                     "duration_seconds": duration_seconds,
                     "dynamic": pipeline_run.snapshot.is_dynamic,
+                    "trigger_execution": pipeline_run.trigger is not None,
                     **stack_metadata,
                 }
 
@@ -11077,278 +11057,6 @@ class SqlZenStore(BaseZenStore):
             self._update_onboarding_state(
                 completed_steps=completed_onboarding_steps, session=session
             )
-
-    # --------------------------- Triggers ---------------------------
-
-    @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
-    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
-        """Creates a new trigger.
-
-        Args:
-            trigger: Trigger to be created.
-
-        Returns:
-            The newly created trigger.
-        """
-        with Session(self.engine) as session:
-            self._set_request_user_id(request_model=trigger, session=session)
-
-            # Verify that the trigger name is unique
-            self._verify_name_uniqueness(
-                resource=trigger,
-                schema=TriggerSchema,
-                session=session,
-            )
-
-            # Verify that the given action exists
-            self._get_reference_schema_by_id(
-                resource=trigger,
-                reference_schema=ActionSchema,
-                reference_id=trigger.action_id,
-                session=session,
-            )
-
-            self._get_reference_schema_by_id(
-                resource=trigger,
-                reference_schema=EventSourceSchema,
-                reference_id=trigger.event_source_id,
-                session=session,
-            )
-
-            new_trigger = TriggerSchema.from_request(trigger)
-            session.add(new_trigger)
-            session.commit()
-            session.refresh(new_trigger)
-
-            return new_trigger.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def get_trigger(
-        self, trigger_id: UUID, hydrate: bool = True
-    ) -> TriggerResponse:
-        """Get a trigger by its unique ID.
-
-        Args:
-            trigger_id: The ID of the trigger to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The trigger with the given ID.
-        """
-        with Session(self.engine) as session:
-            trigger = self._get_schema_by_id(
-                resource_id=trigger_id,
-                schema_class=TriggerSchema,
-                session=session,
-            )
-            return trigger.to_model(
-                include_metadata=hydrate, include_resources=True
-            )
-
-    def list_triggers(
-        self,
-        trigger_filter_model: TriggerFilter,
-        hydrate: bool = False,
-    ) -> Page[TriggerResponse]:
-        """List all trigger matching the given filter criteria.
-
-        Args:
-            trigger_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all triggers matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=trigger_filter_model,
-                session=session,
-            )
-            query = select(TriggerSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=TriggerSchema,
-                filter_model=trigger_filter_model,
-                hydrate=hydrate,
-            )
-
-    @track_decorator(AnalyticsEvent.UPDATED_TRIGGER)
-    def update_trigger(
-        self, trigger_id: UUID, trigger_update: TriggerUpdate
-    ) -> TriggerResponse:
-        """Update a trigger.
-
-        Args:
-            trigger_id: The ID of the trigger update.
-            trigger_update: The update request on the trigger.
-
-        Returns:
-            The updated trigger.
-
-        Raises:
-            ValueError: If both a schedule and an event source are provided.
-        """
-        with Session(self.engine) as session:
-            # Check if trigger with the domain key (name, project, owner)
-            # already exists
-            existing_trigger = self._get_schema_by_id(
-                resource_id=trigger_id,
-                schema_class=TriggerSchema,
-                session=session,
-            )
-
-            # Verify that either a schedule or an event source is provided, not
-            # both
-            if existing_trigger.event_source and trigger_update.schedule:
-                raise ValueError(
-                    "Unable to update trigger: A trigger cannot have both a "
-                    "schedule and an event source."
-                )
-
-            # In case of a renaming update, make sure no trigger already exists
-            # with that name
-            self._verify_name_uniqueness(
-                resource=trigger_update,
-                schema=existing_trigger,
-                session=session,
-            )
-
-            existing_trigger.update(
-                trigger_update=trigger_update,
-            )
-
-            session.add(existing_trigger)
-            session.commit()
-            session.refresh(existing_trigger)
-
-            return existing_trigger.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def delete_trigger(self, trigger_id: UUID) -> None:
-        """Delete a trigger.
-
-        Args:
-            trigger_id: The ID of the trigger to delete.
-        """
-        with Session(self.engine) as session:
-            trigger = self._get_schema_by_id(
-                resource_id=trigger_id,
-                schema_class=TriggerSchema,
-                session=session,
-            )
-            session.delete(trigger)
-            session.commit()
-
-    # -------------------- Trigger Executions --------------------
-
-    def create_trigger_execution(
-        self, trigger_execution: TriggerExecutionRequest
-    ) -> TriggerExecutionResponse:
-        """Create a trigger execution.
-
-        Args:
-            trigger_execution: The trigger execution to create.
-
-        Returns:
-            The created trigger execution.
-        """
-        with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=trigger_execution, session=session
-            )
-            self._get_reference_schema_by_id(
-                resource=trigger_execution,
-                reference_schema=TriggerSchema,
-                reference_id=trigger_execution.trigger,
-                session=session,
-            )
-            new_execution = TriggerExecutionSchema.from_request(
-                trigger_execution
-            )
-            session.add(new_execution)
-            session.commit()
-            session.refresh(new_execution)
-
-            return new_execution.to_model(
-                include_metadata=True, include_resources=True
-            )
-
-    def get_trigger_execution(
-        self,
-        trigger_execution_id: UUID,
-        hydrate: bool = True,
-    ) -> TriggerExecutionResponse:
-        """Get an trigger execution by ID.
-
-        Args:
-            trigger_execution_id: The ID of the trigger execution to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The trigger execution.
-        """
-        with Session(self.engine) as session:
-            execution = self._get_schema_by_id(
-                resource_id=trigger_execution_id,
-                schema_class=TriggerExecutionSchema,
-                session=session,
-            )
-            return execution.to_model(
-                include_metadata=hydrate, include_resources=True
-            )
-
-    def list_trigger_executions(
-        self,
-        trigger_execution_filter_model: TriggerExecutionFilter,
-        hydrate: bool = False,
-    ) -> Page[TriggerExecutionResponse]:
-        """List all trigger executions matching the given filter criteria.
-
-        Args:
-            trigger_execution_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all trigger executions matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=trigger_execution_filter_model,
-                session=session,
-            )
-            query = select(TriggerExecutionSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=TriggerExecutionSchema,
-                filter_model=trigger_execution_filter_model,
-                hydrate=hydrate,
-            )
-
-    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
-        """Delete a trigger execution.
-
-        Args:
-            trigger_execution_id: The ID of the trigger execution to delete.
-        """
-        with Session(self.engine) as session:
-            execution = self._get_schema_by_id(
-                resource_id=trigger_execution_id,
-                schema_class=TriggerExecutionSchema,
-                session=session,
-            )
-
-            session.delete(execution)
-            session.commit()
 
     # ----------------------------- Users -----------------------------
 
