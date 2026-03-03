@@ -198,23 +198,25 @@ def skip_steps_and_prune_snapshot(
         if not should_skip:
             continue
 
-        for upstream_step in step.spec.upstream_steps:
-            if upstream_step not in skipped_invocations:
-                if not explicitly_skipped:
-                    logger.debug(
-                        "Not skipping successful step `%s` because upstream "
-                        "step `%s` is not skipped.",
-                        invocation_id,
-                        upstream_step,
-                    )
-                    should_skip = False
-                    break
-                raise RuntimeError(
-                    f"Unable to skip step `{invocation_id}` because it has an "
-                    f"upstream step `{upstream_step}` that is not skipped."
+        unskipped_upstream_steps = (
+            set(step.spec.upstream_steps) - skipped_invocations
+        )
+
+        if unskipped_upstream_steps:
+            if not explicitly_skipped:
+                logger.debug(
+                    "Not skipping successful step `%s` because upstream "
+                    "steps `%s` are not skipped.",
+                    invocation_id,
+                    ", ".join(unskipped_upstream_steps),
                 )
-        if not should_skip:
-            continue
+                continue
+
+            raise RuntimeError(
+                f"Unable to skip step `{invocation_id}` because it has "
+                f"upstream steps `{', '.join(unskipped_upstream_steps)}` that "
+                "are not skipped."
+            )
 
         request = request_factory.create_request(invocation_id)
         try:

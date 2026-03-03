@@ -672,6 +672,7 @@ class PipelineRunResponse(
         """
         return self.get_resources().trigger
 
+    @property
     def original_run(self) -> Optional["PipelineRunResponse"]:
         """The `original_run` property.
 
