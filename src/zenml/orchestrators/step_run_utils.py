@@ -19,7 +19,12 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
-from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
+from zenml.constants import (
+    CODE_HASH_PARAMETER_NAME,
+    ENV_ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH,
+    TEXT_FIELD_MAX_LENGTH,
+    handle_int_env_var,
+)
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
@@ -471,8 +476,9 @@ def fetch_step_runs_by_names(
     chunks = []
     current_chunk = []
     current_length = 0
-    # stay under 6KB for good measure.
-    max_chunk_length = 6000
+    max_chunk_length = handle_int_env_var(
+        ENV_ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH, default=5000
+    )
 
     for step_name in step_run_names:
         current_chunk.append(step_name)
