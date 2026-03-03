@@ -1,7 +1,7 @@
 """Pipeline run replays [bf4203afb657].
 
 Revision ID: bf4203afb657
-Revises: 0.93.3
+Revises: b949c5d1bc0d
 Create Date: 2026-02-02 14:17:42.255690
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "bf4203afb657"
-down_revision = "0.93.3"
+down_revision = "b949c5d1bc0d"
 branch_labels = None
 depends_on = None
 
