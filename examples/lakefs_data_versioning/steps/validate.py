@@ -62,9 +62,6 @@ def validate_data(
             "Ref is already a commit SHA (%s), skipping validation.",
             raw_ref.ref[:12],
         )
-        log_metadata(
-            {"validation_skipped": True, "reused_commit": raw_ref.ref}
-        )
         return raw_ref
 
     logger.info(

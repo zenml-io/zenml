@@ -85,15 +85,6 @@ def train_model(
         "n_test": float(len(X_test)),
     }
     logger.info("Training metrics: %s", metrics)
-
-    # Log metrics and the LakeFS data lineage reference as ZenML metadata
-    log_metadata(
-        {
-            "training_metrics": metrics,
-            "lakefs_commit": validated_ref.ref,
-            "lakefs_repo": validated_ref.repo,
-            "lakefs_data_path": validated_ref.path,
-        }
-    )
+    log_metadata(metrics)
 
     return model, metrics

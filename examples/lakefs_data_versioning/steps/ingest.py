@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 
 
 def _generate_sensor_data(n_rows: int = 10000) -> pd.DataFrame:
-    """Generate synthetic robot sensor data with ~5% bad rows."""
+    """Generate synthetic sensor data with ~5% bad rows."""
     rng = np.random.default_rng(42)
 
     timestamps = pd.date_range("2026-01-01", periods=n_rows, freq="1min")
