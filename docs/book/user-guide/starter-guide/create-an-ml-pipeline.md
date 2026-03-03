@@ -2,6 +2,11 @@
 description: Start with the basics of steps and pipelines.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Create an ML pipeline
 
 In the quest for production-ready ML models, workflows can quickly become complex. Decoupling and standardizing stages such as data ingestion, preprocessing, and model evaluation allows for more manageable, reusable, and scalable processes. ZenML pipelines facilitate this by enabling each stage—represented as **Steps**—to be modularly developed and then integrated smoothly into an end-to-end **Pipeline**.
