@@ -1,3 +1,6 @@
+{{- if and .Values.zenml.ingress.enabled .Values.zenml.gateway.enabled -}}
+{{- fail "Only one of zenml.ingress.enabled and zenml.gateway.enabled can be true" -}}
+{{- end -}}
 {{- if .Values.zenml.ingress.enabled -}}
 {{- $fullName := include "zenml.fullname" . -}}
 {{- $svcPort := .Values.zenml.service.port -}}

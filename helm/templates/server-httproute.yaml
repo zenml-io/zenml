@@ -1,0 +1,32 @@
+{{- if and .Values.zenml.ingress.enabled .Values.zenml.gateway.enabled -}}
+{{- fail "Only one of zenml.ingress.enabled and zenml.gateway.enabled can be true" -}}
+{{- end -}}
+{{- if .Values.zenml.gateway.enabled -}}
+{{- $fullName := include "zenml.fullname" . -}}
+{{- $svcPort := .Values.zenml.service.port -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - name: {{ required "zenml.gateway.gatewayRef.name is required when zenml.gateway.enabled=true" .Values.zenml.gateway.gatewayRef.name | quote }}
+      namespace: {{ required "zenml.gateway.gatewayRef.namespace is required when zenml.gateway.enabled=true" .Values.zenml.gateway.gatewayRef.namespace | quote }}
+      {{- if .Values.zenml.gateway.sectionName }}
+      sectionName: {{ .Values.zenml.gateway.sectionName | quote }}
+      {{- end }}
+  {{- if .Values.zenml.gateway.host }}
+  hostnames:
+    - {{ .Values.zenml.gateway.host | quote }}
+  {{- end }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: {{ .Values.zenml.gateway.path | default "/" | quote }}
+      backendRefs:
+        - name: {{ $fullName }}
+          port: {{ $svcPort }}
+{{- end }}

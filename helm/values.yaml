@@ -1155,6 +1155,15 @@ zenml:
       generateCerts: false
       secretName: zenml-tls-certs
 
+  gateway:
+    enabled: false
+    gatewayRef:
+      name: ""
+      namespace: ""
+    sectionName: ""
+    host: ""
+    path: /
+
   # Configuration for custom CA certificates.
   certificates:
 
