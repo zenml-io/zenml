@@ -1,8 +1,8 @@
 # LakeFS + ZenML: Data Versioning for Large Datasets
 
-When your datasets are too large to flow through ZenML's artifact store (think 50GB to TB+), you need a different approach. This example shows how to keep your data in [LakeFS](https://lakefs.io) and pass only tiny references between pipeline steps.
+ZenML versions your artifacts and tracks lineage. [LakeFS](https://lakefs.io) versions your data with Git-like branching, commits, and rollbacks — on top of your existing object store. They complement each other well: ZenML handles pipeline orchestration, caching, and metadata, while LakeFS handles the data layer at scales where serializing DataFrames through an artifact store stops making sense (50GB+, up to TB).
 
-The scenario: sensor data gets ingested into LakeFS, validated, and used for training. ZenML orchestrates the pipeline and tracks lineage, but the heavy data never touches the artifact store.
+This example shows the pattern: pipeline steps exchange tiny references to data in LakeFS rather than the data itself. You get full pipeline lineage in ZenML, full data versioning in LakeFS, and the artifact store never has to touch the heavy data.
 
 ## Quickstart
 
