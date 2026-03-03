@@ -7,7 +7,7 @@ module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.93.3"
+version = "0.94.0rc0"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
