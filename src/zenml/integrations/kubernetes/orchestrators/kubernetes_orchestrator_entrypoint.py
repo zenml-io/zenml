@@ -202,7 +202,7 @@ def _reconstruct_nodes(
                 node.status = node_status
                 logger.debug(
                     "Existing job for step `%s` status: %s.",
-                    step_name,
+                    step_name_annotation,
                     node_status,
                 )
 
