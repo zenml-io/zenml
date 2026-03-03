@@ -139,6 +139,5 @@ Defaults match the docker-compose setup. Override for your environment:
 
 - [LakeFS Quickstart](https://docs.lakefs.io/latest/quickstart/index.html)
 - [LakeFS S3 Gateway](https://docs.lakefs.io/latest/reference/s3/)
-- [ZenML Artifact Management](https://docs.zenml.io/how-to/data-artifact-management)
-- [ZenML Docker Settings](https://docs.zenml.io/how-to/customize-docker-builds)
-- [ZenML Model Control Plane](https://docs.zenml.io/how-to/model-control-plane)
+- [ZenML Artifact Management](https://docs.zenml.io/concepts/artifacts)
+- [ZenML Docker Settings](https://docs.zenml.io/concepts/containerization)
