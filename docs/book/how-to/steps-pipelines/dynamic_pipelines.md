@@ -18,6 +18,10 @@ Traditional ZenML pipelines require you to define the entire DAG structure at pi
 
 Dynamic pipelines allow you to write pipelines that generate their DAG structure dynamically at runtime, giving you the power of Python's control flow (loops, conditionals) combined with ZenML's orchestration capabilities.
 
+{% hint style="info" %}
+Dynamic pipelines are powerful but easy to get wrong (e.g., `.load()` vs `.chunk()`, mapping vs submit). If you use an AI coding agent, the `zenml-pipeline-authoring` skill can guide implementation step-by-step. See [LLM tooling](../../reference/llms-txt.md).
+{% endhint %}
+
 ## Basic Example
 
 The simplest dynamic pipeline uses regular Python control flow to determine step execution:
