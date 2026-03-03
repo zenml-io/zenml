@@ -14,7 +14,7 @@
 """Pipeline configuration classes."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 from uuid import UUID
 
 from pydantic import SerializeAsAny
@@ -100,6 +100,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
     execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE
+    steps_to_skip: Set[str] = set()
 
     @property
     def docker_settings(self) -> "DockerSettings":

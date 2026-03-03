@@ -146,3 +146,88 @@ def compute_invocation_id(
             return id_
 
     raise RuntimeError("Unable to find step ID")
+
+
+def skip_steps_and_prune_snapshot(
+    snapshot: "PipelineSnapshotResponse",
+    pipeline_run: "PipelineRunResponse",
+) -> bool:
+    """Skip steps and prune the snapshot.
+
+    Args:
+        snapshot: The snapshot to prune.
+        pipeline_run: The pipeline run to skip steps for.
+
+    Raises:
+        RuntimeError: If the pipeline run is not a replayed run.
+        RuntimeError: If a step has an upstream step that is not skipped.
+        RuntimeError: If a step run request cannot be populated.
+
+    Returns:
+        Whether a pipeline run is still required.
+    """
+    from zenml.orchestrators.step_run_utils import StepRunRequestFactory
+
+    if snapshot.is_dynamic:
+        # In dynamic pipelines, the steps will be skipped at runtime.
+        return True
+
+    if not pipeline_run.original_run:
+        raise RuntimeError(
+            "Unable to skip steps because the pipeline run is not a "
+            "replayed run."
+        )
+
+    request_factory = StepRunRequestFactory(
+        snapshot=snapshot,
+        pipeline_run=pipeline_run,
+        stack=Client().active_stack,
+    )
+
+    steps_to_skip = pipeline_run.config.steps_to_skip
+    skipped_invocations = set()
+
+    for invocation_id, step in snapshot.step_configurations.items():
+        if invocation_id not in steps_to_skip:
+            continue
+
+        for upstream_step in step.spec.upstream_steps:
+            if upstream_step not in skipped_invocations:
+                raise RuntimeError(
+                    f"Unable to skip step `{invocation_id}` because it has an "
+                    f"upstream step `{upstream_step}` that is not skipped."
+                )
+
+        request = request_factory.create_request(invocation_id)
+        try:
+            request_factory.populate_request(request)
+        except Exception as e:
+            # We failed to populate the step run request. This might be due
+            # to some input resolution error, or an error importing the step
+            # source (there might be some missing dependencies). We do not want
+            # the orchestrator to spin up an environment for this step, so we
+            # fail early here.
+            raise RuntimeError(
+                "Failed to populate step run request for step "
+                f"`{invocation_id}`: {str(e)}"
+            ) from e
+
+        Client().zen_store.create_run_step(request)
+        skipped_invocations.add(invocation_id)
+        logger.info("Skipping step `%s`.", invocation_id)
+
+    for invocation_id in skipped_invocations:
+        # Remove the skipped step invocations from the snapshot so
+        # the orchestrator does not try to run them
+        snapshot.step_configurations.pop(invocation_id)
+
+    for step in snapshot.step_configurations.values():
+        for invocation_id in skipped_invocations:
+            if invocation_id in step.spec.upstream_steps:
+                step.spec.upstream_steps.remove(invocation_id)
+
+    if len(snapshot.step_configurations) == 0:
+        logger.info("All steps were skipped.")
+        return False
+
+    return True
