@@ -21,7 +21,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import Session, object_session, selectinload
+from sqlalchemy.orm import Session, joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, select
 
@@ -67,7 +67,6 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
-from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -87,6 +86,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+    from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
+
 
 logger = get_logger(__name__)
 
@@ -231,20 +232,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    trigger_execution_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=TriggerExecutionSchema.__tablename__,
-        source_column="trigger_execution_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
 
     stack: Optional["StackSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()
-    trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
     triggered_by: Optional[UUID] = None
     triggered_by_type: Optional[str] = None
 
@@ -271,6 +263,17 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             cascade="delete",
             order_by="CuratedVisualizationSchema.display_order",
         ),
+    )
+
+    # PipelineRun -> Trigger directly (through trigger_execution)
+    trigger: Optional["TriggerSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin="PipelineRunSchema.id == TriggerExecutionSchema.pipeline_run_id",
+            secondary="trigger_execution",
+            secondaryjoin="TriggerExecutionSchema.trigger_id == TriggerSchema.id",
+            uselist=False,  # We expect 1 or 0 triggers exactly.
+            viewonly=True,  # Avoid write ambiguity, write via TriggerExecutionSchema
+        )
     )
 
     # Needed for cascade deletion
@@ -347,6 +350,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
+                    joinedload(jl_arg(PipelineRunSchema.trigger)),
                 ]
             )
 
@@ -403,7 +407,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             status_reason=request.status_reason,
             pipeline_id=pipeline_id,
             snapshot_id=request.snapshot,
-            trigger_execution_id=request.trigger_execution_id,
             triggered_by=triggered_by,
             triggered_by_type=triggered_by_type,
             enable_heartbeat=enable_heartbeat,
@@ -681,11 +684,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 build=build,
                 schedule=schedule,
                 code_reference=code_reference,
-                trigger_execution=(
-                    self.trigger_execution.to_model()
-                    if self.trigger_execution
-                    else None
-                ),
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
@@ -698,6 +696,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     )
                     for visualization in self.visualizations
                 ],
+                trigger=self.trigger.to_model() if self.trigger else None,
             )
 
         return PipelineRunResponse(
