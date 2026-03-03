@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+from contextlib import ExitStack as does_not_raise
 
-from zenml import pipeline
+from zenml import pipeline, step
 
 
 @pipeline(dynamic=True, environment={"TEST_RUNTIME_ENV": "test_value"})
@@ -24,3 +25,19 @@ def pipeline_with_runtime_environment() -> None:
 def test_pipeline_runtime_environment() -> None:
     """Tests that the runtime env is set correctly inside the pipeline function."""
     pipeline_with_runtime_environment()
+
+
+@step
+def step_with_none_input(a: int | None) -> None:
+    pass
+
+
+@pipeline(dynamic=True, enable_cache=False)
+def pipeline_with_none_step_input() -> None:
+    step_with_none_input(a=None)
+
+
+def test_step_with_none_input_works() -> None:
+    """Tests that a step with a None input works."""
+    with does_not_raise():
+        pipeline_with_none_step_input()
