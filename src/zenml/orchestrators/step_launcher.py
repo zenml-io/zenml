@@ -265,6 +265,7 @@ class StepLauncher:
         Raises:
             RunStoppedException: If the pipeline run is stopped by the user.
             BaseException: If the step preparation or execution fails.
+            RuntimeError: If an unexpected step run status is encountered.
 
         Returns:
             The step run response.
@@ -381,7 +382,7 @@ class StepLauncher:
                         )
                     else:
                         logger.info("Step `%s` launched.", self._invocation_id)
-                else:
+                elif step_run.status == ExecutionStatus.CACHED:
                     logger.info(
                         f"Using cached version of step `{self._invocation_id}`."
                     )
@@ -393,6 +394,21 @@ class StepLauncher:
                             artifacts=step_run.outputs,
                             model_version=model_version,
                         )
+                elif step_run.status == ExecutionStatus.SKIPPED:
+                    logger.info("Skipping step `%s`.", self._invocation_id)
+                    if (
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
+                    ):
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=step_run.outputs,
+                            model_version=model_version,
+                        )
+                else:
+                    raise RuntimeError(
+                        f"Unexpected step run status `{step_run.status}` for "
+                        f"step `{self._invocation_id}`."
+                    )
 
         return step_run
 

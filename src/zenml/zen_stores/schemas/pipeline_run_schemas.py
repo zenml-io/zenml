@@ -233,6 +233,18 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         nullable=True,
     )
 
+    original_run_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=__tablename__,
+        source_column="original_run_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    original_run: Optional["PipelineRunSchema"] = Relationship(
+        sa_relationship_kwargs={"remote_side": "PipelineRunSchema.id"}
+    )
+
     stack: Optional["StackSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
@@ -413,6 +425,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             exception_info=request.exception_info.model_dump_json()
             if request.exception_info
             else None,
+            original_run_id=request.original_run_id,
         )
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:
@@ -697,6 +710,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     for visualization in self.visualizations
                 ],
                 trigger=self.trigger.to_model() if self.trigger else None,
+                original_run=self.original_run.to_model()
+                if self.original_run
+                else None,
             )
 
         return PipelineRunResponse(

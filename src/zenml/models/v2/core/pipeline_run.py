@@ -146,6 +146,10 @@ class PipelineRunRequest(ProjectScopedRequest):
         default=None,
         title="The exception information of the pipeline run.",
     )
+    original_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The original run ID for a replayed run.",
+    )
 
     @property
     def is_placeholder_request(self) -> bool:
@@ -327,6 +331,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     trigger: Optional["TRIGGER_RETURN_TYPE_UNION"] = Field(
         default=None,
         title="The trigger that generated this pipeline run.",
+    )
+    original_run: Optional["PipelineRunResponse"] = Field(
+        default=None,
+        title="The original run that was replayed to create this run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -664,6 +672,15 @@ class PipelineRunResponse(
         """
         return self.get_resources().trigger
 
+    @property
+    def original_run(self) -> Optional["PipelineRunResponse"]:
+        """The `original_run` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().original_run
+
 
 # ------------------ Filter Model ------------------
 
@@ -838,12 +855,12 @@ class PipelineRunFilter(
         description="The ID of the deployment that triggered this pipeline run.",
         union_mode="left_to_right",
     )
-    model_config = ConfigDict(protected_namespaces=())
     trigger_id: UUID | str | None = Field(
         default=None,
         description="The ID of the trigger that generated this pipeline run.",
         union_mode="left_to_right",
     )
+    model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
         self,
