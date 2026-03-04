@@ -657,6 +657,10 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+    ]
 
     name: Optional[str] = Field(
         default=None,

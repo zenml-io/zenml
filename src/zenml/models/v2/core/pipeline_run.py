@@ -726,10 +726,10 @@ class PipelineRunFilter(
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *TaggableFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(

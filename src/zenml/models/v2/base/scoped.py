@@ -23,12 +23,12 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
 from pydantic import Field, model_validator
 
+from zenml.enums import GenericFilterOps
 from zenml.logger import get_logger
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
@@ -37,7 +37,12 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    UUIDOrList,
+    UUIDStrOrList,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -184,11 +189,11 @@ class UserScopedFilter(BaseFilter):
         "user",
     ]
 
-    scope_user: Optional[UUID] = Field(
+    scope_user: UUIDOrList = Field(
         default=None,
         description="The user to scope this query to.",
     )
-    user: Optional[Union[UUID, str]] = Field(
+    user: UUIDStrOrList = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
         union_mode="left_to_right",
@@ -372,7 +377,7 @@ class ProjectScopedFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "project",
     ]
-    project: Optional[Union[UUID, str]] = Field(
+    project: UUIDStrOrList = Field(
         default=None,
         description="Name/ID of the project which the search is scoped to. "
         "This field must always be set and is always applied in addition to "
@@ -428,9 +433,6 @@ class ProjectScopedFilter(UserScopedFilter):
 class TaggableFilter(BaseFilter):
     """Model to enable filtering and sorting by tags."""
 
-    tag: Optional[str] = Field(
-        description="Tag to apply to the filter query.", default=None
-    )
     tags: Optional[List[str]] = Field(
         description="Tags to apply to the filter query.", default=None
     )
@@ -440,38 +442,12 @@ class TaggableFilter(BaseFilter):
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
-        "tag",
         "tags",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *BaseFilter.API_MULTI_INPUT_PARAMS,
-        "tags",
-    ]
-
-    @model_validator(mode="after")
-    def add_tag_to_tags(self) -> "TaggableFilter":
-        """Deprecated the tag attribute in favor of the tags attribute.
-
-        Returns:
-            self
-        """
-        if self.tag is not None:
-            logger.warning(
-                "The `tag` attribute is deprecated in favor of the `tags` attribute. "
-                "Please update your code to use the `tags` attribute instead."
-            )
-            if self.tags is not None:
-                self.tags.append(self.tag)
-            else:
-                self.tags = [self.tag]
-
-            self.tag = None
-
-        return self
 
     def apply_filter(
         self,
@@ -491,7 +467,14 @@ class TaggableFilter(BaseFilter):
 
         query = super().apply_filter(query=query, table=table)
 
-        if self.tags:
+        if self.tags and any(
+            self._resolve_operator(tag)[1]
+            not in {
+                GenericFilterOps.IS_EMPTY,
+                GenericFilterOps.IS_NOT_EMPTY,
+            }
+            for tag in self.tags
+        ):
             query = query.join(
                 TagResourceSchema,
                 TagResourceSchema.resource_id == getattr(table, "id"),
@@ -518,6 +501,27 @@ class TaggableFilter(BaseFilter):
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
             for tag in self.tags:
+                _, operator = self._resolve_operator(tag)
+                if operator == GenericFilterOps.IS_EMPTY:
+                    custom_filters.append(
+                        ~exists(
+                            select(TagResourceSchema).where(
+                                TagResourceSchema.resource_id == table.id
+                            )
+                        )
+                    )
+                    continue
+
+                if operator == GenericFilterOps.IS_NOT_EMPTY:
+                    custom_filters.append(
+                        exists(
+                            select(TagResourceSchema).where(
+                                TagResourceSchema.resource_id == table.id
+                            )
+                        )
+                    )
+                    continue
+
                 condition = self.generate_custom_query_conditions_for_column(
                     value=tag, table=TagSchema, column="name"
                 )
@@ -625,10 +629,6 @@ class RunMetadataFilterMixin(BaseFilter):
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "run_metadata",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *BaseFilter.API_MULTI_INPUT_PARAMS,
-        "run_metadata",
-    ]
 
     @model_validator(mode="after")
     def validate_run_metadata_format(self) -> "RunMetadataFilterMixin":
@@ -640,9 +640,13 @@ class RunMetadataFilterMixin(BaseFilter):
            - equals: Exact match
            - notequals: Not equal to
            - contains: String contains value
+           - notcontains: String does not contain value
            - startswith: String starts with value
            - endswith: String ends with value
            - oneof: Value is one of the specified options
+           - notoneof: Value is not one of the specified options
+           - isempty: Value is empty
+           - isnotempty: Value is not empty
            - gte: Greater than or equal to
            - gt: Greater than
            - lte: Less than or equal to
@@ -668,7 +672,8 @@ class RunMetadataFilterMixin(BaseFilter):
                         "Entry must be in format 'key:value' for direct "
                         "equality comparison or 'key:filterop:value' where "
                         "filterop is one of: equals, notequals, "
-                        f"contains, startswith, endswith, oneof, gte, gt, "
+                        f"contains, notcontains, startswith, endswith, "
+                        f"oneof, notoneof, isempty, isnotempty, gte, gt, "
                         f"lte, lt, in."
                     )
         return self

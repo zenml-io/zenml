@@ -64,9 +64,25 @@ logger = get_logger(__name__)
 AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 ONEOF_ERROR = (
-    "When you are using the 'oneof:' filtering make sure that the "
-    "provided value is a json formatted list."
+    "When you are using the 'oneof:'/'notoneof:' filtering make sure that "
+    "the provided value is a json formatted list."
 )
+
+VALUELESS_FILTER_OPS = {
+    GenericFilterOps.IS_EMPTY,
+    GenericFilterOps.IS_NOT_EMPTY,
+}
+
+
+StrOrList = Optional[Union[str, List[str]]]
+IntOrList = Optional[Union[int, List[int]]]
+FloatOrList = Optional[Union[float, List[float]]]
+BoolOrList = Optional[Union[bool, List[bool]]]
+UUIDOrList = Optional[Union[UUID, List[UUID]]]
+DatetimeOrList = Optional[Union[datetime, List[datetime]]]
+
+UUIDStrOrList = Optional[Union[UUID, str, List[Union[UUID, str]]]]
+DatetimeStrOrList = Optional[Union[datetime, str, List[Union[datetime, str]]]]
 
 
 class Filter(BaseModel, ABC):
@@ -150,6 +166,8 @@ class BoolFilter(Filter):
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
+        GenericFilterOps.IS_EMPTY,
+        GenericFilterOps.IS_NOT_EMPTY,
     ]
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
@@ -164,6 +182,12 @@ class BoolFilter(Filter):
         if self.operation == GenericFilterOps.NOT_EQUALS:
             return column != self.value
 
+        if self.operation == GenericFilterOps.IS_EMPTY:
+            return column.is_(None)
+
+        if self.operation == GenericFilterOps.IS_NOT_EMPTY:
+            return column.is_not(None)
+
         return column == self.value
 
 
@@ -177,6 +201,10 @@ class StrFilter(Filter):
         GenericFilterOps.CONTAINS,
         GenericFilterOps.ENDSWITH,
         GenericFilterOps.ONEOF,
+        GenericFilterOps.NOT_ONEOF,
+        GenericFilterOps.NOT_CONTAINS,
+        GenericFilterOps.IS_EMPTY,
+        GenericFilterOps.IS_NOT_EMPTY,
         GenericFilterOps.GT,
         GenericFilterOps.GTE,
         GenericFilterOps.LT,
@@ -193,7 +221,10 @@ class StrFilter(Filter):
         Returns:
             self
         """
-        if self.operation == GenericFilterOps.ONEOF:
+        if self.operation in {
+            GenericFilterOps.ONEOF,
+            GenericFilterOps.NOT_ONEOF,
+        }:
             if not isinstance(self.value, list):
                 raise ValueError(ONEOF_ERROR)
         return self
@@ -240,10 +271,16 @@ class StrFilter(Filter):
         if self.operation == GenericFilterOps.ONEOF:
             assert isinstance(self.value, list)
             return self._handle_oneof(column, is_json_encoded)
+        if self.operation == GenericFilterOps.NOT_ONEOF:
+            assert isinstance(self.value, list)
+            return self._handle_not_oneof(column, is_json_encoded)
 
         # Handle pattern matching operations
         if self.operation == GenericFilterOps.CONTAINS:
             return column.like(f"%{self.value}%")
+
+        if self.operation == GenericFilterOps.NOT_CONTAINS:
+            return self._handle_not_contains(column)
 
         if self.operation == GenericFilterOps.STARTSWITH:
             return self._handle_startswith(column, is_json_encoded)
@@ -253,6 +290,12 @@ class StrFilter(Filter):
 
         if self.operation == GenericFilterOps.NOT_EQUALS:
             return self._handle_not_equals(column, is_json_encoded)
+
+        if self.operation == GenericFilterOps.IS_EMPTY:
+            return self._handle_is_empty(column, is_json_encoded)
+
+        if self.operation == GenericFilterOps.IS_NOT_EMPTY:
+            return self._handle_is_not_empty(column, is_json_encoded)
 
         # Default case (EQUALS)
         return self._handle_equals(column, is_json_encoded)
@@ -322,6 +365,36 @@ class StrFilter(Filter):
                 conditions.append(column == value)
 
         return or_(*conditions)
+
+    def _handle_not_oneof(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the NOT_ONEOF operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        from sqlalchemy import and_
+
+        conditions = []
+
+        assert isinstance(self.value, list)
+
+        for value in self.value:
+            if is_json_encoded:
+                # For JSON encoded columns, add conditions for both raw and JSON-quoted values
+                conditions.append(column != value)
+                conditions.append(column != f'"{value}"')
+            else:
+                conditions.append(column != value)
+
+        return and_(*conditions)
+
+    def _handle_not_contains(self, column: Any) -> Any:
+        """Handle the NOT_CONTAINS operation."""
+        return ~column.like(f"%{self.value}%")
 
     def _handle_startswith(self, column: Any, is_json_encoded: bool) -> Any:
         """Handle the STARTSWITH operation.
@@ -396,6 +469,28 @@ class StrFilter(Filter):
         else:
             return column == self.value
 
+    def _handle_is_empty(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the IS_EMPTY operation."""
+        from sqlalchemy import or_
+
+        if is_json_encoded:
+            return or_(column.is_(None), column == "", column == '""')
+
+        return or_(column.is_(None), column == "")
+
+    def _handle_is_not_empty(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the IS_NOT_EMPTY operation."""
+        from sqlalchemy import and_
+
+        if is_json_encoded:
+            return and_(
+                column.is_not(None),
+                column != "",
+                column != '""',
+            )
+
+        return and_(column.is_not(None), column != "")
+
 
 class UUIDFilter(StrFilter):
     """Filter for all uuid fields which are mostly treated like strings."""
@@ -455,11 +550,15 @@ class UUIDFilter(StrFilter):
 class NumericFilter(Filter):
     """Filter for all numeric fields."""
 
-    value: Union[float, datetime] = Field(union_mode="left_to_right")
+    value: Optional[Union[float, datetime]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
+        GenericFilterOps.IS_EMPTY,
+        GenericFilterOps.IS_NOT_EMPTY,
         GenericFilterOps.GT,
         GenericFilterOps.GTE,
         GenericFilterOps.LT,
@@ -485,19 +584,25 @@ class NumericFilter(Filter):
             return column < self.value
         if self.operation == GenericFilterOps.NOT_EQUALS:
             return column != self.value
+        if self.operation == GenericFilterOps.IS_EMPTY:
+            return column.is_(None)
+        if self.operation == GenericFilterOps.IS_NOT_EMPTY:
+            return column.is_not(None)
         return column == self.value
 
 
 class DatetimeFilter(Filter):
     """Filter for all datetime fields."""
 
-    value: Union[datetime, Tuple[datetime, datetime]] = Field(
-        union_mode="left_to_right"
+    value: Optional[Union[datetime, Tuple[datetime, datetime]]] = Field(
+        default=None, union_mode="left_to_right"
     )
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
+        GenericFilterOps.IS_EMPTY,
+        GenericFilterOps.IS_NOT_EMPTY,
         GenericFilterOps.GT,
         GenericFilterOps.GTE,
         GenericFilterOps.LT,
@@ -518,6 +623,11 @@ class DatetimeFilter(Filter):
             assert isinstance(self.value, tuple)
             lower_bound, upper_bound = self.value
             return column.between(lower_bound, upper_bound)
+
+        if self.operation == GenericFilterOps.IS_EMPTY:
+            return column.is_(None)
+        if self.operation == GenericFilterOps.IS_NOT_EMPTY:
+            return column.is_not(None)
 
         assert isinstance(self.value, datetime)
         if self.operation == GenericFilterOps.GTE:
@@ -565,7 +675,12 @@ class BaseFilter(BaseModel):
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
 
     # List of fields that are wrapped with `fastapi.Query(default)` in API.
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = []
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        "sort_by",
+        "logical_operator",
+        "page",
+        "size",
+    ]
 
     sort_by: str = Field(
         default="created", description="Which column to sort by."
@@ -584,15 +699,15 @@ class BaseFilter(BaseModel):
         le=PAGE_SIZE_MAXIMUM,
         description="Page size",
     )
-    id: Optional[Union[UUID, str]] = Field(
+    id: UUIDStrOrList = Field(
         default=None,
         description="Id for this resource",
         union_mode="left_to_right",
     )
-    created: Optional[Union[datetime, str]] = Field(
+    created: DatetimeStrOrList = Field(
         default=None, description="Created", union_mode="left_to_right"
     )
-    updated: Optional[Union[datetime, str]] = Field(
+    updated: DatetimeStrOrList = Field(
         default=None, description="Updated", union_mode="left_to_right"
     )
 
@@ -776,14 +891,17 @@ class BaseFilter(BaseModel):
             if value is None:
                 continue
 
-            # Determine the operator and filter value
-            value, operator = cls._resolve_operator(value)
+            field_values = value if isinstance(value, list) else [value]
 
-            # Define the filter
-            filter = FilterGenerator(cls).define_filter(
-                column=key, value=value, operator=operator
-            )
-            list_of_filters.append(filter)
+            for single_value in field_values:
+                # Determine the operator and filter value
+                resolved_value, operator = cls._resolve_operator(single_value)
+
+                # Define the filter
+                filter = FilterGenerator(cls).define_filter(
+                    column=key, value=resolved_value, operator=operator
+                )
+                list_of_filters.append(filter)
 
         return list_of_filters
 
@@ -808,6 +926,9 @@ class BaseFilter(BaseModel):
         """
         operator = GenericFilterOps.EQUALS  # Default operator
         if isinstance(value, str):
+            if value in VALUELESS_FILTER_OPS:
+                return None, GenericFilterOps(value)
+
             split_value = value.split(":", 1)
             if (
                 len(split_value) == 2
@@ -815,8 +936,13 @@ class BaseFilter(BaseModel):
             ):
                 value = split_value[1]
                 operator = GenericFilterOps(split_value[0])
+                if operator in VALUELESS_FILTER_OPS:
+                    value = None
 
-            if operator == operator.ONEOF:
+            if operator in {
+                operator.ONEOF,
+                operator.NOT_ONEOF,
+            }:
                 try:
                     value = json.loads(value)
                     if not isinstance(value, list):
@@ -1074,10 +1200,15 @@ class FilterGenerator:
 
         # Create int filters
         if self.is_int_field(column):
+            parsed_value: Optional[int]
+            if operator in VALUELESS_FILTER_OPS:
+                parsed_value = None
+            else:
+                parsed_value = int(value)
             return NumericFilter(
                 operation=GenericFilterOps(operator),
                 column=column,
-                value=int(value),
+                value=parsed_value,
             )
 
         # Create bool filters
@@ -1221,11 +1352,18 @@ class FilterGenerator:
         Raises:
             ValueError: If the value is not a valid datetime.
         """
+        if operator in VALUELESS_FILTER_OPS:
+            return DatetimeFilter(
+                operation=GenericFilterOps(operator),
+                column=column,
+                value=None,
+            )
+
         try:
             filter_value: Union[datetime, Tuple[datetime, datetime]]
             if isinstance(value, datetime):
                 filter_value = value
-            elif "," in value:
+            elif isinstance(value, str) and "," in value:
                 lower_bound, upper_bound = value.split(",", 1)
                 filter_value = (
                     datetime.strptime(lower_bound, FILTERING_DATETIME_FORMAT),
@@ -1281,7 +1419,10 @@ class FilterGenerator:
         Raises:
             ValueError: If the value for a oneof filter is not a list.
         """
-        if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
+        if operator in {
+            GenericFilterOps.ONEOF,
+            GenericFilterOps.NOT_ONEOF,
+        } and not isinstance(value, list):
             raise ValueError(ONEOF_ERROR)
 
         # Generate the filter.
@@ -1310,10 +1451,13 @@ class FilterGenerator:
             ValueError: If the value is not a proper value.
         """
         # For equality checks, ensure that the value is a valid UUID.
-        if operator == GenericFilterOps.ONEOF and not isinstance(value, list):
+        if operator in {
+            GenericFilterOps.ONEOF,
+            GenericFilterOps.NOT_ONEOF,
+        } and not isinstance(value, list):
             raise ValueError(
-                "If you are using `oneof:` as a filtering op, the value needs "
-                "to be a json formatted list string."
+                "If you are using `oneof:` or `notoneof:` as a filtering op, "
+                "the value needs to be a json formatted list string."
             )
 
         # Generate the filter.
@@ -1338,14 +1482,31 @@ class FilterGenerator:
         Returns:
             A Filter object.
         """
-        if GenericFilterOps(operator) != GenericFilterOps.EQUALS:
-            logger.warning(
-                "Boolean filters do not support any"
-                "operation except for equals. Defaulting"
-                "to an `equals` comparison."
+        if operator in VALUELESS_FILTER_OPS:
+            return BoolFilter(
+                operation=GenericFilterOps(operator),
+                column=column,
+                value=None,
             )
+
+        parsed_value: bool
+        if isinstance(value, bool):
+            parsed_value = value
+        elif isinstance(value, str):
+            lowered_value = value.lower()
+            if lowered_value in {"true", "1"}:
+                parsed_value = True
+            elif lowered_value in {"false", "0"}:
+                parsed_value = False
+            else:
+                raise ValueError(
+                    f"Unable to parse boolean filter value '{value}'."
+                )
+        else:
+            parsed_value = bool(value)
+
         return BoolFilter(
-            operation=GenericFilterOps.EQUALS,
+            operation=GenericFilterOps(operator),
             column=column,
-            value=bool(value),
+            value=parsed_value,
         )

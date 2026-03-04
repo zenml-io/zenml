@@ -555,10 +555,10 @@ class ArtifactVersionFilter(
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
         "artifact_id",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *TaggableFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
     ]
 
     artifact: Optional[Union[UUID, str]] = Field(

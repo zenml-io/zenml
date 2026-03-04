@@ -722,10 +722,6 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
-    ]
 
     name: Optional[str] = Field(
         default=None,

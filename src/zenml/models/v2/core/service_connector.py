@@ -880,6 +880,10 @@ class ServiceConnectorFilter(UserScopedFilter):
         "labels_str",
         "labels",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "labels",
+    ]
     name: Optional[str] = Field(
         default=None,
         description="The name to filter by",
