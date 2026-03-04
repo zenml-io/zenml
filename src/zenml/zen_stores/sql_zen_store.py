@@ -7002,6 +7002,7 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Triggers ---------------------
 
+    @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
     def create_trigger(
         self, trigger: TriggerRequest
     ) -> TRIGGER_RETURN_TYPE_UNION:
@@ -7149,6 +7150,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
+    @track_decorator(event=AnalyticsEvent.DELETED_TRIGGER)
     def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
         """Deletes a trigger.
 
