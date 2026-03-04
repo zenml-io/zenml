@@ -1,5 +1,9 @@
 <!-- markdown-link-check-disable -->
 
+> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
+
+---
+
 # 0.94.0
 
 ## What's Changed
@@ -43,52 +47,6 @@
 * @apoorvdarshan made their first contribution in https://github.com/zenml-io/zenml/pull/4496
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.3...0.94.0
-
-
-> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
-
----
-
-# 0.94.0rc0
-
-## What's Changed
-* Add version 0.93.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4504
-* Add 0.93.3 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4505
-* Clarify Snapshots vs Deployments in documentation by @strickvl in https://github.com/zenml-io/zenml/pull/4497
-* Improve dynamic pipeline step monitoring by @schustmi in https://github.com/zenml-io/zenml/pull/4369
-* add ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE support by @avishniakov in https://github.com/zenml-io/zenml/pull/4501
-* Run:AI Integration - Step Operator by @safoinme in https://github.com/zenml-io/zenml/pull/4439
-* Remove Discord notification from release prep and reduce CI runner waste by @strickvl in https://github.com/zenml-io/zenml/pull/4500
-* Add RLM document analysis example with dynamic pipelines by @strickvl in https://github.com/zenml-io/zenml/pull/4491
-* Update skypilot Integrations by @safoinme in https://github.com/zenml-io/zenml/pull/4462
-* Update `.gitignore` to include Codex settings by @strickvl in https://github.com/zenml-io/zenml/pull/4513
-* Fix azure integration dependencies by @schustmi in https://github.com/zenml-io/zenml/pull/4516
-* Run release test pipeline using kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/4517
-* Allow filtering step runs by version by @schustmi in https://github.com/zenml-io/zenml/pull/4518
-* Attach log context to run in dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4519
-* Fix broken docs links found via lychee link checker by @strickvl in https://github.com/zenml-io/zenml/pull/4526
-* Remove wrong error message when running dynamic snapshots by @schustmi in https://github.com/zenml-io/zenml/pull/4533
-* Split step operator submission and monitoring by @schustmi in https://github.com/zenml-io/zenml/pull/4515
-* Suggest installing all stack requirements in import error by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4530
-* Fix handling of variadic keyword args in pipeline function by @schustmi in https://github.com/zenml-io/zenml/pull/4528
-* Update `Run:AI` Step-Operator for new submit logic by @safoinme in https://github.com/zenml-io/zenml/pull/4535
-* Improve k8s client retries by @avishniakov in https://github.com/zenml-io/zenml/pull/4525
-* Preselect organization and workspace upon `zenml login` by @bcdurak in https://github.com/zenml-io/zenml/pull/4531
-* Add `PathMaterializer` documentation to materializers page by @strickvl in https://github.com/zenml-io/zenml/pull/4534
-* Fix broken Evidently and W&B documentation links by @strickvl in https://github.com/zenml-io/zenml/pull/4538
-* Fix logging of existing job status in Kubernetes orchestrator by @kshitijrajsharma in https://github.com/zenml-io/zenml/pull/4549
-* Feature/triggers v2 and native schedules by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4482
-* Misc fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4551
-* Step/Pipeline replays by @schustmi in https://github.com/zenml-io/zenml/pull/4456
-* !fixup: disable flaky tests by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4554
-* Include git submodule files in code archive by @apoorvdarshan in https://github.com/zenml-io/zenml/pull/4496
-* Add docs references for `zenml-scoping` and `zenml-pipeline-authoring` skills by @strickvl in https://github.com/zenml-io/zenml/pull/4539
-
-## New Contributors
-* @kshitijrajsharma made their first contribution in https://github.com/zenml-io/zenml/pull/4549
-* @apoorvdarshan made their first contribution in https://github.com/zenml-io/zenml/pull/4496
-
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.3...0.94.0rc0
 
 # 0.93.3
 
