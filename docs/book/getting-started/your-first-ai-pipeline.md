@@ -247,6 +247,11 @@ Then follow the guide in [`examples/agent_outer_loop`](https://github.com/zenml-
 
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## Common Next Steps
 
 Once you've chosen your path and gotten your first pipeline running:

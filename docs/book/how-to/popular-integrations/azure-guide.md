@@ -3,6 +3,11 @@ description: A simple guide to create an Azure stack to run your ZenML pipelines
 icon: microsoft
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Azure
 
 This page aims to quickly set up a minimal production stack on Azure. With just a few simple steps, you will set up a resource group, a service principal with correct permissions, and the relevant ZenML stack and components.

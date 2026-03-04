@@ -3,6 +3,11 @@ description: Compare ZenML Pro deployment scenarios to find the right fit for yo
 icon: code-merge
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Scenarios
 
 ZenML Pro offers three flexible deployment options to match your organization's security, compliance, and operational needs. This page helps you understand the differences and choose the right scenario for your use case.

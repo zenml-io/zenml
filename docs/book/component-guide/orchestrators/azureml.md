@@ -2,6 +2,11 @@
 description: Orchestrating your pipelines to run on AzureML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # AzureML Orchestrator
 
 [AzureML](https://azure.microsoft.com/en-us/products/machine-learning) is a cloud-based orchestration service provided by Microsoft, that enables data scientists, machine learning engineers, and developers to build, train, deploy, and manage machine learning models. It offers a comprehensive and integrated environment that supports the entire machine learning lifecycle, from data preparation and model development to deployment and monitoring.

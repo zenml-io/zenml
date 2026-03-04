@@ -3,6 +3,11 @@ description: Managing projects in ZenML
 icon: clipboard-list
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Projects
 
 Projects in ZenML Pro provide a logical subdivision within workspaces, allowing you to organize and manage your MLOps resources more effectively. Each project acts as an isolated environment within a workspace, with its own set of pipelines, artifacts, models, and access controls. This isolation is particularly valuable when working with both traditional ML models and AI agent systems, allowing teams to separate different types of experiments and workflows.
