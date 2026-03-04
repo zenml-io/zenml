@@ -445,6 +445,13 @@ class ScheduleTriggerResponseBody(ScheduleTrigger, TriggerResponseBody):
 
     next_occurrence: datetime | None = None
 
+    @model_validator(mode="after")
+    def _next_occurrence_for_inactive(self) -> "ScheduleTriggerResponseBody":
+        if not (self.active and not self.is_archived):
+            self.next_occurrence = None
+
+        return self
+
     def get_extra_fields(self) -> list[str]:
         """Returns the extra fields (e.g. next occurrence).
 
