@@ -1,0 +1,6973 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://sdkdocs.zenml.io/0.94.0/core_code_docs/core-pub_sub.html">
+      
+      
+        <link rel="prev" href="core-pipelines.html">
+      
+      
+        <link rel="next" href="core-secret.html">
+      
+      
+      <link rel="icon" href="../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+    
+    
+      
+        <title>Pub Sub - ZenML SDK Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.8608ea7d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<script>
+  // Load Segment analytics library first
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  // (Removed line) analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  
+  // Bot detection function
+  function isBotTraffic() {
+    const userAgent = navigator.userAgent || '';
+    const userAgentLower = userAgent.toLowerCase();
+
+    function getChromeMajor(ua) {
+      const match = /Chrome\/(\d+)\./.exec(ua);
+      return match ? parseInt(match[1], 10) : null;
+    }
+
+    function guessOsFromUserAgent(uaLower) {
+      if (uaLower.includes('windows nt')) return 'Windows';
+      if (uaLower.includes('android')) return 'Android';
+      if (uaLower.includes('iphone') || uaLower.includes('ipad') || uaLower.includes('ipod')) return 'iOS';
+      if (uaLower.includes('macintosh') || uaLower.includes('mac os x')) return 'macOS';
+      if (uaLower.includes('cros')) return 'Unknown';
+      if (uaLower.includes('linux')) return 'Linux';
+      return 'Unknown';
+    }
+
+    function normalizeUadPlatform(value) {
+      const p = (value || '').toLowerCase();
+      if (p === '') return 'Unknown';
+      if (p.startsWith('win')) return 'Windows';
+      if (p === 'macos' || p.startsWith('mac')) return 'macOS';
+      if (p.startsWith('linux')) return 'Linux';
+      if (p.startsWith('android')) return 'Android';
+      if (p === 'ios') return 'iOS';
+      if (p.includes('cros') || p.includes('chrome os')) return 'Unknown';
+      return 'Unknown';
+    }
+
+    const botSignatures = [
+      'claudebot',
+      'headlesschrome',
+      'phantomjs',
+      'slimerjs',
+      'crawler',
+      'spider',
+      'scraper',
+      'googlebot',
+      'bingbot',
+      'semrushbot',
+      'ahrefsbot',
+      'bot',
+    ];
+
+    for (const signature of botSignatures) {
+      if (userAgentLower.includes(signature)) {
+        return true;
+      }
+    }
+
+    if (navigator.webdriver === true) {
+      return true;
+    }
+
+    const uad = navigator.userAgentData;
+    if (!uad) {
+      return false;
+    }
+
+    const platform = typeof uad.platform === 'string' ? uad.platform : '';
+    const brands = Array.isArray(uad.brands) ? uad.brands : [];
+
+    // Observed spoofed crawlers present a Chrome-like UA but return empty Client Hints fields.
+    if (brands.length === 0 && platform === '') {
+      return true;
+    }
+
+    const normalizedUaPlatform = guessOsFromUserAgent(userAgentLower);
+    const normalizedUadPlatform = normalizeUadPlatform(platform);
+    if (
+      normalizedUaPlatform !== 'Unknown' &&
+      normalizedUadPlatform !== 'Unknown' &&
+      normalizedUaPlatform !== normalizedUadPlatform
+    ) {
+      return true;
+    }
+
+    const notABrandPattern = /^Not.{0,2}A.{0,2}Brand$/i;
+    let hasChromiumBrand = false;
+    let sawBrandBotSignal = false;
+    let sawEmptyExpectedBrandVersion = false;
+    let validBrandCount = 0;
+    let greasedBrandCount = 0;
+
+    for (const entry of brands) {
+      if (!entry || typeof entry.brand !== 'string') {
+        continue;
+      }
+
+      const brand = entry.brand;
+      const brandLower = brand.toLowerCase();
+      validBrandCount += 1;
+
+      if (brand === 'HeadlessChrome' || brandLower.includes('bot')) {
+        sawBrandBotSignal = true;
+      }
+
+      if (/chrom(e|ium)/i.test(brand)) {
+        hasChromiumBrand = true;
+        if (typeof entry.version === 'string' && entry.version.trim() === '') {
+          sawEmptyExpectedBrandVersion = true;
+        }
+      }
+
+      if (notABrandPattern.test(brand)) {
+        greasedBrandCount += 1;
+      }
+    }
+
+    if (sawBrandBotSignal) {
+      return true;
+    }
+
+    // GREASE "Not A Brand" entries are expected in Chromium; it's only suspicious if it's the only brand signal present.
+    if (validBrandCount > 0 && greasedBrandCount === validBrandCount && !hasChromiumBrand) {
+      return true;
+    }
+
+    // Aggressive tier: if the UA claims Chrome but Client Hints omit versions for expected Chromium brands, treat as spoofed.
+    if (getChromeMajor(userAgent) !== null && hasChromiumBrand && sawEmptyExpectedBrandVersion) {
+      return true;
+    }
+
+    return false;
+  }
+  
+  // Only send analytics data if this is NOT bot traffic
+  if (!isBotTraffic()) {
+    analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+    analytics.page();
+  } else {
+    // Optional: Log for debugging (only in non-production environments)
+    if (window.location.hostname === 'localhost' || window.location.hostname.includes('dev')) {
+      console.log('Bot traffic detected, skipping Segment analytics');
+    }
+  }
+  }}();
+</script>
+
+<!-- Plausible and Reo continue unchanged -->
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+<!-- Start of Reo Javascript -->
+<script type="text/javascript">
+  !function(){var e,t,n;e="d696528d7eed7f5",t=function(){Reo.init({clientID:"d696528d7eed7f5"})},(n=document.createElement("script")).src="https://static.reo.dev/"+e+"/reo.js",n.defer=!0,n.onload=t,document.head.appendChild(n)}();
+</script>
+<!-- End of Reo Javascript -->
+
+
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pub-sub" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="ZenML SDK Docs" class="md-header__button md-logo" aria-label="ZenML SDK Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML SDK Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Pub Sub
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="ZenML SDK Docs" class="md-nav__button md-logo" aria-label="ZenML SDK Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ZenML SDK Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ZenML
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CLI docs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Core code docs
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Core code docs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-alerter.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Alerter
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-analytics.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Analytics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-annotators.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Annotators
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-artifact_stores.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Artifact Stores
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-artifacts.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Artifacts
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-client.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Client
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-client_lazy_loader.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Client Lazy Loader
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-code_repositories.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Code Repositories
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-config.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Config
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-console.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Console
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-constants.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Constants
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-container_registries.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Container Registries
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-data_validators.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Validators
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-deployers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deployers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-entrypoints.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Entrypoints
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-enums.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Enums
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-environment.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Environment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-exceptions.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exceptions
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-execution.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Execution
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-experiment_trackers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Experiment Trackers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-feature_stores.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature Stores
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-hooks.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hooks
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-image_builders.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Image Builders
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-io.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Io
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-log_stores.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Log Stores
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-logger.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logger
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-login.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Login
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-materializers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Materializers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-metadata.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Metadata
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-model.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Model
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-model_deployers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Model Deployers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-model_registries.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Model Registries
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-models.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Models
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-orchestrators.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Orchestrators
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-pipelines.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Pub Sub
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="core-pub_sub.html" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Pub Sub
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.pub_sub" class="md-nav__link">
+    <span class="md-ellipsis">
+      pub_sub
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="pub_sub">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modules
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Modules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base" class="md-nav__link">
+    <span class="md-ellipsis">
+      base
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="base">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Classes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.ConsumerBase" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConsumerBase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.ConsumerRuntimeConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConsumerRuntimeConfig
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.CriticalEventHandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      CriticalEventHandler
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.Executor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Executor
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.MessageDecodeError" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageDecodeError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.MessageEncodeError" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageEncodeError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.MessageExecutionError" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageExecutionError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.MessageSubmissionError" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageSubmissionError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.PollingConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      PollingConfig
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.PollingConsumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      PollingConsumer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.ProducerBase" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProducerBase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.ProducerConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProducerConfig
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models" class="md-nav__link">
+    <span class="md-ellipsis">
+      models
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Classes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.CriticalEvent" class="md-nav__link">
+    <span class="md-ellipsis">
+      CriticalEvent
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.CriticalEventType" class="md-nav__link">
+    <span class="md-ellipsis">
+      CriticalEventType
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.MessageEnvelope" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageEnvelope
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.MessagePayload" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessagePayload
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.SnapshotExecutionPayload" class="md-nav__link">
+    <span class="md-ellipsis">
+      SnapshotExecutionPayload
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-secret.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Secret
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-service_connectors.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Service Connectors
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-services.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Services
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-stack.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-stack_deployments.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stack Deployments
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-step_operators.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Step Operators
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-steps.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Steps
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-triggers.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Triggers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-types.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Types
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-utils.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utils
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-zen_server.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Zen Server
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core-zen_stores.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Zen Stores
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Integration code docs
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Integration code docs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-airflow.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Airflow
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-argilla.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Argilla
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-aws.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Aws
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-azure.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-bentoml.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bentoml
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-comet.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Comet
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-constants.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Constants
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-databricks.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Databricks
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-deepchecks.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deepchecks
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-discord.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Discord
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-evidently.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Evidently
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-facets.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Facets
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-feast.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feast
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-gcp.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gcp
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-github.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Github
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-gitlab.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gitlab
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-great_expectations.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Great Expectations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-huggingface.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Huggingface
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-hyperai.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperai
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-integration.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Integration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-jax.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jax
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-kaniko.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kaniko
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-kubeflow.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kubeflow
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-kubernetes.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kubernetes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-label_studio.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Label Studio
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-langchain.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Langchain
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-lightgbm.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lightgbm
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-lightning.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lightning
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-llama_index.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Llama Index
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-mlflow.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mlflow
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-mlx.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mlx
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-modal.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Modal
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-neptune.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Neptune
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-neural_prophet.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Neural Prophet
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-numpy.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Numpy
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-openai.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Openai
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pandas.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pandas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pigeon.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pigeon
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pillow.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pillow
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-polars.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Polars
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-prodigy.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Prodigy
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pycaret.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pycaret
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pytorch.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pytorch
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-pytorch_lightning.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pytorch Lightning
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-registry.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Registry
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-runai.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Runai
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-s3.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-scipy.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Scipy
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-seldon.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Seldon
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-sklearn.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sklearn
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Skypilot
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_aws.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Skypilot Aws
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_azure.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Skypilot Azure
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_gcp.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Skypilot Gcp
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_kubernetes.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Skypilot Kubernetes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-skypilot_lambda.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Skypilot Lambda
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-slack.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Slack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-spark.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spark
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-tekton.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tekton
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-tensorboard.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tensorboard
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-tensorflow.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tensorflow
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-utils.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utils
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-vllm.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Vllm
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-wandb.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Wandb
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-whylogs.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Whylogs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration_code_docs/integrations-xgboost.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Xgboost
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.pub_sub" class="md-nav__link">
+    <span class="md-ellipsis">
+      pub_sub
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="pub_sub">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modules
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Modules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base" class="md-nav__link">
+    <span class="md-ellipsis">
+      base
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="base">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Classes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.ConsumerBase" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConsumerBase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.ConsumerRuntimeConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConsumerRuntimeConfig
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.CriticalEventHandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      CriticalEventHandler
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.Executor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Executor
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.MessageDecodeError" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageDecodeError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.MessageEncodeError" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageEncodeError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.MessageExecutionError" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageExecutionError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.MessageSubmissionError" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageSubmissionError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.PollingConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      PollingConfig
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.PollingConsumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      PollingConsumer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.ProducerBase" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProducerBase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.base.ProducerConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProducerConfig
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models" class="md-nav__link">
+    <span class="md-ellipsis">
+      models
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Classes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.CriticalEvent" class="md-nav__link">
+    <span class="md-ellipsis">
+      CriticalEvent
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.CriticalEventType" class="md-nav__link">
+    <span class="md-ellipsis">
+      CriticalEventType
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.MessageEnvelope" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessageEnvelope
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.MessagePayload" class="md-nav__link">
+    <span class="md-ellipsis">
+      MessagePayload
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.pub_sub.models.SnapshotExecutionPayload" class="md-nav__link">
+    <span class="md-ellipsis">
+      SnapshotExecutionPayload
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="pub-sub">Pub Sub</h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.pub_sub" class="doc doc-heading">
+            <code>zenml.pub_sub</code>
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<h3 id="zenml.pub_sub-modules">Modules</h3>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h4 id="zenml.pub_sub.base" class="doc doc-heading">
+            <code>base</code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+        <p>Base abstractions for the pub/sub layer.</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<h5 id="zenml.pub_sub.base-classes">Classes</h5>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.ConsumerBase" class="doc doc-heading">
+              <code class="highlight language-python"><span class="n">ConsumerBase</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">ConsumerRuntimeConfig</span><span class="p">,</span> <span class="n">executor</span><span class="p">:</span> <span class="n">Executor</span><span class="p">,</span> <span class="n">event_handler</span><span class="p">:</span> <span class="n">CriticalEventHandler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
+
+
+        <p>Async core pipeline shared by polling and push transports.</p>
+<p>The transport decides <em>how</em> raw messages arrive. The base class provides:
+  - decode/preprocess
+  - execute with retries
+  - ack with retries (+ critical event on exhaustion)
+  - invalid/failing handlers</p>
+
+        <p>Consumer base constructor.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>config</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="ConsumerRuntimeConfig (zenml.pub_sub.base.ConsumerRuntimeConfig)" href="#zenml.pub_sub.base.ConsumerRuntimeConfig">ConsumerRuntimeConfig</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The consumer config object.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>executor</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Executor (zenml.pub_sub.base.Executor)" href="#zenml.pub_sub.base.Executor">Executor</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>An executor instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>event_handler</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="CriticalEventHandler (zenml.pub_sub.base.CriticalEventHandler)" href="#zenml.pub_sub.base.CriticalEventHandler">CriticalEventHandler</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A CriticalEventHandler instance (optional).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+                  <details class="mkdocstrings-source">
+                    <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">ConsumerRuntimeConfig</span><span class="p">,</span>
+    <span class="n">executor</span><span class="p">:</span> <span class="n">Executor</span><span class="p">,</span>
+    <span class="n">event_handler</span><span class="p">:</span> <span class="n">CriticalEventHandler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Consumer base constructor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config: The consumer config object.</span>
+<span class="sd">        executor: An executor instance.</span>
+<span class="sd">        event_handler: A CriticalEventHandler instance (optional).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="o">=</span> <span class="n">config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_executor</span> <span class="o">=</span> <span class="n">executor</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_event_handler</span> <span class="o">=</span> <span class="n">event_handler</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+<h7 id="zenml.pub_sub.base.ConsumerBase-attributes">Attributes</h7>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h8 id="zenml.pub_sub.base.ConsumerBase.config" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">config</span><span class="p">:</span> <span class="n">ConsumerRuntimeConfig</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Implements the 'config' property.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="ConsumerRuntimeConfig (zenml.pub_sub.base.ConsumerRuntimeConfig)" href="#zenml.pub_sub.base.ConsumerRuntimeConfig">ConsumerRuntimeConfig</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The consumer config object.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+
+<h7 id="zenml.pub_sub.base.ConsumerBase-functions">Functions</h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ConsumerBase.acknowledge_message" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">acknowledge_message</span><span class="p">(</span><span class="n">raw_message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Acks/Deletes message from the queue.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>raw_message</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The raw broker-specific message.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">acknowledge_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Acks/Deletes message from the queue.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        raw_message: The raw broker-specific message.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ConsumerBase.handle_critical_event" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">handle_critical_event</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">CriticalEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Critical event handler.</p>
+<p>A critical event indicates that the application behavior has degraded.
+For instance, the inability to serialize the message to a broker-compatible format
+is extremely severe as it most probably repeats across messages meaning no messages
+are published for execution at all.</p>
+<p>A complete implementation of a critical event handling process would be the following:</p>
+<ol>
+<li>Log in detailed fashion the event so that it is traceable in the logs.</li>
+<li>Publish the event to an event aggregator service so that it is tracked long-term and
+alerts can be generated based on its frequency and severity.</li>
+<li>Hold the message in a DLQ to enable re-execution when a bug fix is introduced in the code.</li>
+</ol>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>event</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="CriticalEvent (zenml.pub_sub.models.CriticalEvent)" href="#zenml.pub_sub.models.CriticalEvent">CriticalEvent</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A critical event instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_critical_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">CriticalEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Critical event handler.</span>
+
+<span class="sd">    A critical event indicates that the application behavior has degraded.</span>
+<span class="sd">    For instance, the inability to serialize the message to a broker-compatible format</span>
+<span class="sd">    is extremely severe as it most probably repeats across messages meaning no messages</span>
+<span class="sd">    are published for execution at all.</span>
+
+<span class="sd">    A complete implementation of a critical event handling process would be the following:</span>
+
+<span class="sd">    1. Log in detailed fashion the event so that it is traceable in the logs.</span>
+<span class="sd">    2. Publish the event to an event aggregator service so that it is tracked long-term and</span>
+<span class="sd">    alerts can be generated based on its frequency and severity.</span>
+<span class="sd">    3. Hold the message in a DLQ to enable re-execution when a bug fix is introduced in the code.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event: A critical event instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+        <span class="s2">&quot;Critical event </span><span class="si">%s</span><span class="s2"> caused by the following exception:&quot;</span><span class="p">,</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="n">exc_info</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">exception</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_event_handler</span><span class="p">:</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_event_handler</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ConsumerBase.handle_invalid_message" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">handle_invalid_message</span><span class="p">(</span><span class="n">raw_message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Handles message of invalid format (not suitable for execution).</p>
+<p>Messages that are invalid should still be acked to avoid
+looping execution and system poisoning.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>raw_message</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The raw broker-specific message.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_invalid_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles message of invalid format (not suitable for execution).</span>
+
+<span class="sd">    Messages that are invalid should still be acked to avoid</span>
+<span class="sd">    looping execution and system poisoning.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        raw_message: The raw broker-specific message.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ConsumerBase.handle_raw_message" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">handle_raw_message</span><span class="p">(</span><span class="n">raw_message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Handles one message at a time.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>raw_message</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A raw broker-specific message.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_raw_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles one message at a time.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        raw_message: A raw broker-specific message.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_message</span><span class="p">(</span><span class="n">raw_message</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">MessageDecodeError</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ack_with_retries</span><span class="p">(</span><span class="n">raw_message</span><span class="o">=</span><span class="n">raw_message</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_invalid_message</span><span class="p">(</span><span class="n">raw_message</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">late_ack</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_with_retries</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ack_with_retries</span><span class="p">(</span><span class="n">raw_message</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">raw_message</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ack_with_retries</span><span class="p">(</span><span class="n">raw_message</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">raw_message</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_with_retries</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ConsumerBase.preprocess_message" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">preprocess_message</span><span class="p">(</span><span class="n">raw_message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MessageEnvelope</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Decode/Validate broker message and wrap to MessageEnvelope.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>raw_message</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Broker-specific message.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MessageEnvelope (zenml.pub_sub.models.MessageEnvelope)" href="#zenml.pub_sub.models.MessageEnvelope">MessageEnvelope</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A MessageEnvelope object.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">preprocess_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MessageEnvelope</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decode/Validate broker message and wrap to MessageEnvelope.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        raw_message: Broker-specific message.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A MessageEnvelope object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ConsumerBase.process_message" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">process_message</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">MessageEnvelope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Execution of message payload.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>message</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MessageEnvelope (zenml.pub_sub.models.MessageEnvelope)" href="#zenml.pub_sub.models.MessageEnvelope">MessageEnvelope</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A MessageEnvelope object.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">MessageEnvelope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execution of message payload.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message: A MessageEnvelope object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_executor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">payload</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ConsumerBase.run" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Starts the consumer task.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Starts the consumer task.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.ConsumerRuntimeConfig" class="doc doc-heading">
+            <code>ConsumerRuntimeConfig</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="ConfigBase (zenml.utils.env_utils.ConfigBase)" href="core-utils.html#zenml.utils.env_utils.ConfigBase">ConfigBase</a></code></p>
+
+
+
+        <p>Config shared by polling and push consumers.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+<h7 id="zenml.pub_sub.base.ConsumerRuntimeConfig-functions">Functions</h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ConsumerRuntimeConfig.prefixes" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">prefixes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Implementation of the prefixes config method.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A list of prefixes to use for env var name resolution.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prefixes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the prefixes config method.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of prefixes to use for env var name resolution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">ENV_ZENML_CONSUMER_PREFIX</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.CriticalEventHandler" class="doc doc-heading">
+            <code>CriticalEventHandler</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
+
+
+        <p>Abstraction for handling critical events.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+<h7 id="zenml.pub_sub.base.CriticalEventHandler-functions">Functions</h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.CriticalEventHandler.handle" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">handle</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">CriticalEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Handles a critical event.</p>
+<p>Handling of a critical event would be include the following operations:
+- Tracking of the event instance and their evolution
+- Alerting mechanisms based on event monitoring alarms
+- Mitigation actions</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>event</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="CriticalEvent (zenml.pub_sub.models.CriticalEvent)" href="#zenml.pub_sub.models.CriticalEvent">CriticalEvent</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A CriticalEvent instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">CriticalEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles a critical event.</span>
+
+<span class="sd">    Handling of a critical event would be include the following operations:</span>
+<span class="sd">    - Tracking of the event instance and their evolution</span>
+<span class="sd">    - Alerting mechanisms based on event monitoring alarms</span>
+<span class="sd">    - Mitigation actions</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event: A CriticalEvent instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.Executor" class="doc doc-heading">
+            <code>Executor</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
+
+
+        <p>Abstract executor interface.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+<h7 id="zenml.pub_sub.base.Executor-functions">Functions</h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.Executor.execute" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">execute</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n">MessagePayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Executor main method.</p>
+<p>Responsible with executing the payload and adding implementing
+additional layers of error handling and retries:</p>
+<ul>
+<li>Should decide whether to propagate errors to the queue layer.</li>
+<li>Should decide whether retries are applicable.</li>
+</ul>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>payload</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MessagePayload (zenml.pub_sub.models.MessagePayload)" href="#zenml.pub_sub.models.MessagePayload">MessagePayload</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A standard message payload.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">MessagePayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Executor main method.</span>
+
+<span class="sd">    Responsible with executing the payload and adding implementing</span>
+<span class="sd">    additional layers of error handling and retries:</span>
+
+<span class="sd">    - Should decide whether to propagate errors to the queue layer.</span>
+<span class="sd">    - Should decide whether retries are applicable.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        payload: A standard message payload.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.Executor.max_message_capacity" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">max_message_capacity</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Helper utility for variable batch size consumption.</p>
+<p>Helpful when execution needs to be throttled. The executor
+responds with the number of messages it can pickup for execution
+at the moment.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="int">int</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of messages the executor can handle (None if no limit).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">max_message_capacity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper utility for variable batch size consumption.</span>
+
+<span class="sd">    Helpful when execution needs to be throttled. The executor</span>
+<span class="sd">    responds with the number of messages it can pickup for execution</span>
+<span class="sd">    at the moment.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Number of messages the executor can handle (None if no limit).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.Executor.shutdown" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">shutdown</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Graceful executor shutdown (completes work, then exits).</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Graceful executor shutdown (completes work, then exits).&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.MessageDecodeError" class="doc doc-heading">
+            <code>MessageDecodeError</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+
+
+
+        <p>Raised when a raw broker message cannot be decoded/preprocessed.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.MessageEncodeError" class="doc doc-heading">
+            <code>MessageEncodeError</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+
+
+
+        <p>Raised when a payload cannot be encoded into a broker message.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.MessageExecutionError" class="doc doc-heading">
+            <code>MessageExecutionError</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+
+
+
+        <p>Raised when message processing fails after retries.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.MessageSubmissionError" class="doc doc-heading">
+            <code>MessageSubmissionError</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+
+
+
+        <p>Raised when sending a message fails.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.PollingConfig" class="doc doc-heading">
+            <code>PollingConfig</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="ConsumerRuntimeConfig (zenml.pub_sub.base.ConsumerRuntimeConfig)" href="#zenml.pub_sub.base.ConsumerRuntimeConfig">ConsumerRuntimeConfig</a></code></p>
+
+
+
+        <p>Base config class for polling consumers.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+<h7 id="zenml.pub_sub.base.PollingConfig-functions">Functions</h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.PollingConfig.prefixes" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">prefixes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Implementation of the prefixes config method.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A list of prefixes to use for env var name resolution.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prefixes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the prefixes config method.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of prefixes to use for env var name resolution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">ConsumerRuntimeConfig</span><span class="o">.</span><span class="n">prefixes</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span>
+        <span class="n">ENV_ZENML_CONSUMER_POLLING_PREFIX</span>
+    <span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.PollingConsumer" class="doc doc-heading">
+              <code class="highlight language-python"><span class="n">PollingConsumer</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">PollingConfig</span><span class="p">,</span> <span class="n">executor</span><span class="p">:</span> <span class="n">Executor</span><span class="p">,</span> <span class="n">event_handler</span><span class="p">:</span> <span class="n">CriticalEventHandler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="ConsumerBase(config: ConsumerRuntimeConfig, executor: Executor, event_handler: CriticalEventHandler | None = None) (zenml.pub_sub.base.ConsumerBase)" href="#zenml.pub_sub.base.ConsumerBase">ConsumerBase</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
+
+
+
+        <p>Polling transport: the consumer fetches batches periodically.</p>
+
+        <p>Polling consumer constructor.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>config</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="PollingConfig (zenml.pub_sub.base.PollingConfig)" href="#zenml.pub_sub.base.PollingConfig">PollingConfig</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Polling config instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>executor</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Executor (zenml.pub_sub.base.Executor)" href="#zenml.pub_sub.base.Executor">Executor</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Executor instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>event_handler</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="CriticalEventHandler (zenml.pub_sub.base.CriticalEventHandler)" href="#zenml.pub_sub.base.CriticalEventHandler">CriticalEventHandler</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A CriticalEventHandler instance (optional).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+                  <details class="mkdocstrings-source">
+                    <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">PollingConfig</span><span class="p">,</span>
+    <span class="n">executor</span><span class="p">:</span> <span class="n">Executor</span><span class="p">,</span>
+    <span class="n">event_handler</span><span class="p">:</span> <span class="n">CriticalEventHandler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Polling consumer constructor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config: Polling config instance.</span>
+<span class="sd">        executor: Executor instance.</span>
+<span class="sd">        event_handler: A CriticalEventHandler instance (optional).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="n">config</span><span class="p">,</span> <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">,</span> <span class="n">event_handler</span><span class="o">=</span><span class="n">event_handler</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># Jitter is computed once at construction (fixed for this consumer instance).</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_polling_interval</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">interval</span> <span class="o">+</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">config</span><span class="o">.</span><span class="n">jitter</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">jitter</span>
+    <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+<h7 id="zenml.pub_sub.base.PollingConsumer-attributes">Attributes</h7>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h8 id="zenml.pub_sub.base.PollingConsumer.polling_interval" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">polling_interval</span><span class="p">:</span> <span class="nb">float</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Implement the 'polling_interval' property.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The polling interval value.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+
+<h7 id="zenml.pub_sub.base.PollingConsumer-functions">Functions</h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.PollingConsumer.get_messages_batch_size" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">get_messages_batch_size</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Getter for the batch size.</p>
+<p>Enables implementations that adapt batch size per iteration
+based on configuration, throttling or other factors.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The size of the next batch of messages.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">554</span>
+<span class="normal">555</span>
+<span class="normal">556</span>
+<span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span>
+<span class="normal">560</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_messages_batch_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Getter for the batch size.</span>
+
+<span class="sd">    Enables implementations that adapt batch size per iteration</span>
+<span class="sd">    based on configuration, throttling or other factors.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The size of the next batch of messages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.PollingConsumer.poll_once" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">poll_once</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Receive and handle one batch. Receive failures emit read_failed.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">poll_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Receive and handle one batch. Receive failures emit read_failed.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_messages_batch_size</span><span class="p">()</span>
+        <span class="n">raw_messages</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">receive_messages</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_critical_event</span><span class="p">(</span>
+            <span class="n">CriticalEvent</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">CriticalEventType</span><span class="o">.</span><span class="n">READ_FAILED</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Receive failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+                <span class="n">exception</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">for</span> <span class="n">raw</span> <span class="ow">in</span> <span class="n">raw_messages</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_raw_message</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.PollingConsumer.receive_messages" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">receive_messages</span><span class="p">(</span><span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Requests to get a batch of messages from the queue.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of messages to get.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A list of messages (broker-specific payload).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">receive_messages</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Requests to get a batch of messages from the queue.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        batch_size: Number of messages to get.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of messages (broker-specific payload).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.PollingConsumer.run" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Run polling loop until stop() is called.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run polling loop until stop() is called.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">poll_once</span><span class="p">()</span>
+
+                <span class="n">elapsed</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+
+                <span class="k">if</span> <span class="n">elapsed</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_polling_interval</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Elapsed time for polling: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">elapsed</span><span class="p">)</span>
+                <span class="n">remaining</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polling_interval</span> <span class="o">-</span> <span class="n">elapsed</span>
+                <span class="k">if</span> <span class="n">remaining</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">remaining</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Unhandled exception during polling: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">exc</span>
+                <span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.PollingConsumer.stop" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">stop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Signal the run loop to stop.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Signal the run loop to stop.&quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.ProducerBase" class="doc doc-heading">
+              <code class="highlight language-python"><span class="n">ProducerBase</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">ProducerConfig</span><span class="p">,</span> <span class="n">event_handler</span><span class="p">:</span> <span class="n">CriticalEventHandler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
+
+
+        <p>Async producer base.</p>
+
+
+<details class="backends-implement" open>
+  <summary>Backends implement</summary>
+  <p>1) build_message(payload) -&gt; backend-specific message object (Any)
+2) send_message(message) -&gt; submit to broker</p>
+</details>
+
+<details class="base-provides" open>
+  <summary>Base provides</summary>
+  <ul>
+<li>publish(payload): build + send (+ optional retries) and emits CriticalEvent on failure.</li>
+</ul>
+</details>
+        <p>Producer constructor.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>config</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="ProducerConfig (zenml.pub_sub.base.ProducerConfig)" href="#zenml.pub_sub.base.ProducerConfig">ProducerConfig</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The producer config object.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>event_handler</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="CriticalEventHandler (zenml.pub_sub.base.CriticalEventHandler)" href="#zenml.pub_sub.base.CriticalEventHandler">CriticalEventHandler</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A CriticalEventHandler instance (optional).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+                  <details class="mkdocstrings-source">
+                    <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">ProducerConfig</span><span class="p">,</span>
+    <span class="n">event_handler</span><span class="p">:</span> <span class="n">CriticalEventHandler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Producer constructor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config: The producer config object.</span>
+<span class="sd">        event_handler: A CriticalEventHandler instance (optional).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="o">=</span> <span class="n">config</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_event_handler</span> <span class="o">=</span> <span class="n">event_handler</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+<h7 id="zenml.pub_sub.base.ProducerBase-attributes">Attributes</h7>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h8 id="zenml.pub_sub.base.ProducerBase.config" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">config</span><span class="p">:</span> <span class="n">ProducerConfig</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Implements the 'config' property.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="ProducerConfig (zenml.pub_sub.base.ProducerConfig)" href="#zenml.pub_sub.base.ProducerConfig">ProducerConfig</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The producer config object.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+
+<h7 id="zenml.pub_sub.base.ProducerBase-functions">Functions</h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ProducerBase.build_message" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">build_message</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n">MessagePayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Convert the message to a broker-specific payload.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>payload</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MessagePayload (zenml.pub_sub.models.MessagePayload)" href="#zenml.pub_sub.models.MessagePayload">MessagePayload</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A MessagePayload object.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A broker-specific message.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">build_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">MessagePayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the message to a broker-specific payload.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        payload: A MessagePayload object.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A broker-specific message.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ProducerBase.handle_critical_event" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">handle_critical_event</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">CriticalEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Critical event handler.</p>
+<p>A critical event indicates that the application behavior has degraded.
+For instance, the inability to serialize the message to a broker-compatible format
+is extremely severe as it most probably repeats across messages meaning no messages
+are published for execution at all.</p>
+<p>A complete implementation of a critical event handling process would be the following:</p>
+<ol>
+<li>Log in detailed fashion the event so that it is traceable in the logs.</li>
+<li>Publish the event to an event aggregator service so that it is tracked long-term and
+alerts can be generated based on its frequency and severity.</li>
+<li>Hold the message in a DLQ to enable re-execution when a bug fix is introduced in the code.</li>
+</ol>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>event</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="CriticalEvent (zenml.pub_sub.models.CriticalEvent)" href="#zenml.pub_sub.models.CriticalEvent">CriticalEvent</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A critical event instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_critical_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">CriticalEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Critical event handler.</span>
+
+<span class="sd">    A critical event indicates that the application behavior has degraded.</span>
+<span class="sd">    For instance, the inability to serialize the message to a broker-compatible format</span>
+<span class="sd">    is extremely severe as it most probably repeats across messages meaning no messages</span>
+<span class="sd">    are published for execution at all.</span>
+
+<span class="sd">    A complete implementation of a critical event handling process would be the following:</span>
+
+<span class="sd">    1. Log in detailed fashion the event so that it is traceable in the logs.</span>
+<span class="sd">    2. Publish the event to an event aggregator service so that it is tracked long-term and</span>
+<span class="sd">    alerts can be generated based on its frequency and severity.</span>
+<span class="sd">    3. Hold the message in a DLQ to enable re-execution when a bug fix is introduced in the code.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event: A critical event instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+        <span class="s2">&quot;Critical event </span><span class="si">%s</span><span class="s2"> caused by the following exception:&quot;</span><span class="p">,</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="n">exc_info</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">exception</span> <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">exception</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_event_handler</span><span class="p">:</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_event_handler</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ProducerBase.publish" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">publish</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n">MessagePayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Build and send message, emitting CriticalEvent on failure.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>payload</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MessagePayload (zenml.pub_sub.models.MessagePayload)" href="#zenml.pub_sub.models.MessagePayload">MessagePayload</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Application payload.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Message ID generated by the broker.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MessageEncodeError (zenml.pub_sub.base.MessageEncodeError)" href="#zenml.pub_sub.base.MessageEncodeError">MessageEncodeError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If encoding/building fails.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="MessageSubmissionError (zenml.pub_sub.base.MessageSubmissionError)" href="#zenml.pub_sub.base.MessageSubmissionError">MessageSubmissionError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If sending fails after retries.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">MessagePayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build and send message, emitting CriticalEvent on failure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        payload: Application payload.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Message ID generated by the broker.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        MessageEncodeError: If encoding/building fails.</span>
+<span class="sd">        MessageSubmissionError: If sending fails after retries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_message</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_critical_event</span><span class="p">(</span>
+            <span class="n">CriticalEvent</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">CriticalEventType</span><span class="o">.</span><span class="n">ENCODE_FAILED</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Encode failed for payload </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+                <span class="n">exception</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">MessageEncodeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Encode failed for payload </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+    <span class="n">attempts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">send_retries</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">last_exc</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">attempts</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">last_exc</span> <span class="o">=</span> <span class="n">exc</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                <span class="s2">&quot;Attempt </span><span class="si">%s</span><span class="s2"> to send message </span><span class="si">%s</span><span class="s2"> failed&quot;</span><span class="p">,</span>
+                <span class="n">attempt</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_critical_event</span><span class="p">(</span>
+        <span class="n">CriticalEvent</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">CriticalEventType</span><span class="o">.</span><span class="n">SEND_FAILED</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Submission failed for payload </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+            <span class="n">exception</span><span class="o">=</span><span class="n">last_exc</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">raise</span> <span class="n">MessageSubmissionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Send failed for payload </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ProducerBase.send_message" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">send_message</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Sends a message to the broker.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>message</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A broker-specific message.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The message ID generated by the broker.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sends a message to the broker.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message: A broker-specific message.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The message ID generated by the broker.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.base.ProducerConfig" class="doc doc-heading">
+            <code>ProducerConfig</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="ConfigBase (zenml.utils.env_utils.ConfigBase)" href="core-utils.html#zenml.utils.env_utils.ConfigBase">ConfigBase</a></code></p>
+
+
+
+        <p>Config object grouping producer configuration params.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+<h7 id="zenml.pub_sub.base.ProducerConfig-functions">Functions</h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="zenml.pub_sub.base.ProducerConfig.prefixes" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">prefixes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Implementation of the prefixes config method.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A list of prefixes to use for env var name resolution.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/zenml/pub_sub/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prefixes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of the prefixes config method.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of prefixes to use for env var name resolution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">ENV_ZENML_PRODUCER_PREFIX</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h4 id="zenml.pub_sub.models" class="doc doc-heading">
+            <code>models</code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+        <p>Models for the pub/sub layer.</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<h5 id="zenml.pub_sub.models-classes">Classes</h5>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.models.CriticalEvent" class="doc doc-heading">
+            <code>CriticalEvent</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+
+        <p>Class capturing a critical event basic properties.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.models.CriticalEventType" class="doc doc-heading">
+            <code>CriticalEventType</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="StrEnum (zenml.utils.enum_utils.StrEnum)" href="core-utils.html#zenml.utils.enum_utils.StrEnum">StrEnum</a></code></p>
+
+
+
+        <p>Critical event types enum.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.models.MessageEnvelope" class="doc doc-heading">
+            <code>MessageEnvelope</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+
+        <p>Envelope class for consumer operations (raw payload &amp; de-serialized payload).</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+<h7 id="zenml.pub_sub.models.MessageEnvelope-attributes">Attributes</h7>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h8 id="zenml.pub_sub.models.MessageEnvelope.id" class="doc doc-heading">
+            <code class="highlight language-python"><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h8>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Implements the 'id' property.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The ID of the message payload.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.models.MessagePayload" class="doc doc-heading">
+            <code>MessagePayload</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+
+        <p>Class capturing a message payload basic properties.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="zenml.pub_sub.models.SnapshotExecutionPayload" class="doc doc-heading">
+            <code>SnapshotExecutionPayload</code>
+
+
+</h6>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+
+        <p>Payload class for snapshot async execution.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 ZenML GmbH – <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+    
+  
+
+
+
+
+<h4>This website uses cookies</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        </label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  </body>
+</html>
