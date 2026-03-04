@@ -181,7 +181,7 @@ def track_decorator(event: AnalyticsEvent) -> Callable[[F], F]:
                 try:
                     for obj in list(args) + list(kwargs.values()):
                         if isinstance(obj, AnalyticsTrackedModelMixin):
-                            handler.metadata = obj.get_analytics_metadata()
+                            handler.metadata.update(obj.get_analytics_metadata())
                             break
                 except Exception as e:
                     logger.debug(f"Analytics tracking failure for {func}: {e}")
@@ -190,7 +190,7 @@ def track_decorator(event: AnalyticsEvent) -> Callable[[F], F]:
 
                 try:
                     if isinstance(result, AnalyticsTrackedModelMixin):
-                        handler.metadata = result.get_analytics_metadata()
+                        handler.metadata.update(result.get_analytics_metadata())
                 except Exception as e:
                     logger.debug(f"Analytics tracking failure for {func}: {e}")
 
