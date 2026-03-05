@@ -17,8 +17,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.analytics.enums import AnalyticsEvent
-from zenml.analytics.utils import track_handler
 from zenml.constants import (
     API,
     PIPELINE_SNAPSHOTS,
@@ -80,18 +78,10 @@ def create_trigger(
     """
     check_entitlement(feature=SCHEDULE_FEATURE)
 
-    with track_handler(
-        event=AnalyticsEvent.CREATED_TRIGGER
-    ) as analytics_handler:
-        analytics_handler.metadata = {
-            "type": trigger.type.value,
-            "flavor": trigger.flavor.value,
-        }
-
-        return verify_permissions_and_create_entity(
-            request_model=trigger,
-            create_method=zen_store().create_trigger,
-        )
+    return verify_permissions_and_create_entity(
+        request_model=trigger,
+        create_method=zen_store().create_trigger,
+    )
 
 
 @router.get(
@@ -117,8 +107,6 @@ def list_triggers(
     Returns:
         List of trigger objects.
     """
-    check_entitlement(feature=SCHEDULE_FEATURE)
-
     return verify_permissions_and_list_entities(
         filter_model=trigger_filter_model,
         resource_type=ResourceType.TRIGGER,
@@ -147,8 +135,6 @@ def get_trigger(
     Returns:
         A specific trigger object.
     """
-    check_entitlement(feature=SCHEDULE_FEATURE)
-
     return verify_permissions_and_get_entity(
         id=trigger_id,
         get_method=zen_store().get_trigger,
@@ -201,15 +187,12 @@ def delete_trigger(
         trigger_id: ID of the trigger to delete.
         soft: Soft deletion will archive the trigger.
     """
-    check_entitlement(feature=SCHEDULE_FEATURE)
-
-    with track_handler(event=AnalyticsEvent.DELETED_TRIGGER):
-        verify_permissions_and_delete_entity(
-            id=trigger_id,
-            get_method=zen_store().get_trigger,
-            delete_method=zen_store().delete_trigger,
-            soft=soft,
-        )
+    verify_permissions_and_delete_entity(
+        id=trigger_id,
+        get_method=zen_store().get_trigger,
+        delete_method=zen_store().delete_trigger,
+        soft=soft,
+    )
 
 
 @router.put(
@@ -279,8 +262,6 @@ def detach_trigger_from_snapshot(
         model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
         action=Action.READ,
     )
-
-    check_entitlement(feature=SCHEDULE_FEATURE)
 
     zen_store().detach_trigger_from_snapshot(
         trigger_id=trigger_id,

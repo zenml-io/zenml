@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Literal, Optional, Type
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -85,6 +85,17 @@ class TriggerRequest(ProjectScopedRequest, TriggerBase, ABC):
             A dictionary of extra fields (e.g. {"next_occurrence": "..."}
         """
         pass
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Get the analytics metadata for the model.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata["type"] = self.type.value
+        metadata["flavor"] = self.flavor.value
+        return metadata
 
 
 class TriggerUpdate(TriggerBase, BaseUpdate, ABC):
@@ -439,6 +450,13 @@ class ScheduleTriggerResponseBody(ScheduleTrigger, TriggerResponseBody):
     """Class representing a ScheduleTrigger response body."""
 
     next_occurrence: datetime | None = None
+
+    @model_validator(mode="after")
+    def _next_occurrence_for_inactive(self) -> "ScheduleTriggerResponseBody":
+        if not (self.active and not self.is_archived):
+            self.next_occurrence = None
+
+        return self
 
     def get_extra_fields(self) -> list[str]:
         """Returns the extra fields (e.g. next occurrence).

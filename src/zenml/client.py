@@ -4030,7 +4030,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_triggers(
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
-                user=user or self.active_user.id,
+                user=user,
                 id=id,
                 created=created,
                 updated=updated,
