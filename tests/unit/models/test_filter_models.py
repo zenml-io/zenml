@@ -261,14 +261,16 @@ def test_float_filter_model():
     assert model_filter.operation == GenericFilterOps.EQUALS
     assert model_filter.value == "1.3"
     assert model_filter.column == "float_field"
- 
+
 
 def test_float_field_supports_multiple_string_filters():
     """Test that float alias fields can receive multiple operator strings."""
     filter_model = SomeFilterModel(
         float_field=["contains:1", "startswith:1.3"]
     )
-    filters = [f for f in filter_model.list_of_filters if f.column == "float_field"]
+    filters = [
+        f for f in filter_model.list_of_filters if f.column == "float_field"
+    ]
     assert len(filters) == 2
     assert [f.operation for f in filters] == [
         GenericFilterOps.CONTAINS,

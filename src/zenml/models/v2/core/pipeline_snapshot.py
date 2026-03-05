@@ -39,7 +39,6 @@ from zenml.models.v2.base.filter import (
     BoolOrList,
     StrOrList,
     UUIDOrList,
-    UUIDOrList,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
