@@ -220,20 +220,29 @@ class UserScopedFilter(BaseFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_
+        from sqlmodel import and_, or_
 
         from zenml.zen_stores.schemas import UserSchema
 
         if self.user:
-            user_filter = and_(
-                getattr(table, "user_id") == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
+            user_values = (
+                self.user if isinstance(self.user, list) else [self.user]
             )
-            custom_filters.append(user_filter)
+            user_filters = [
+                and_(
+                    getattr(table, "user_id") == UserSchema.id,
+                    self.generate_name_or_id_query_conditions(
+                        value=user_value,
+                        table=UserSchema,
+                        additional_columns=["full_name"],
+                    ),
+                )
+                for user_value in user_values
+            ]
+            if len(user_filters) == 1:
+                custom_filters.append(user_filters[0])
+            else:
+                custom_filters.append(or_(*user_filters))
 
         return custom_filters
 

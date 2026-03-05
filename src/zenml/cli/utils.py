@@ -2926,7 +2926,12 @@ def list_options(
                         continue
                     value = kwargs[field_name]
                     if isinstance(value, tuple):
-                        kwargs[field_name] = list(value) if value else None
+                        if not value:
+                            kwargs[field_name] = None
+                        elif len(value) == 1:
+                            kwargs[field_name] = value[0]
+                        else:
+                            kwargs[field_name] = list(value)
                 return function(*args, **kwargs)
 
             for option in reversed(options):
