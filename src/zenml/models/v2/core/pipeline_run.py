@@ -65,6 +65,9 @@ if TYPE_CHECKING:
         PipelineBuildResponse,
     )
     from zenml.models.v2.core.pipeline_snapshot import PipelineSnapshotResponse
+    from zenml.models.v2.core.run_wait_condition import (
+        RunWaitConditionResponse,
+    )
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
@@ -335,6 +338,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     original_run: Optional["PipelineRunResponse"] = Field(
         default=None,
         title="The original run that was replayed to create this run.",
+    )
+    active_wait_condition: Optional["RunWaitConditionResponse"] = Field(
+        default=None,
+        title="The active open wait condition associated with this run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all

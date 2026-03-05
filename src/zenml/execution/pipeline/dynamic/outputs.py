@@ -557,4 +557,51 @@ class MapResultsFuture(BaseFuture):
         return len(self.futures)
 
 
-AnyStepFuture = Union[ArtifactFuture, StepFuture, MapResultsFuture]
+class RunWaitConditionToken(BaseFuture):
+    """Token representing a wait condition in a dynamic run."""
+
+    def __init__(
+        self,
+        run_wait_condition_id: UUID,
+        wait_condition_key: str,
+        outputs: Optional[Any] = None,
+    ) -> None:
+        """Initialize a wait condition token.
+
+        Args:
+            run_wait_condition_id: The wait condition ID.
+            wait_condition_key: Deterministic wait condition key.
+            outputs: Optional condition result collected at resolution.
+        """
+        self.run_wait_condition_id = run_wait_condition_id
+        self.wait_condition_key = wait_condition_key
+        self._outputs = outputs
+
+    @property
+    def invocation_id(self) -> str:
+        """Synthetic invocation identifier used for DAG control edges."""
+        return f"wait_condition:{self.wait_condition_key}"
+
+    def running(self) -> bool:
+        """Whether the wait condition is still pending.
+
+        Returns:
+            Always False because the token is returned after wait handling.
+        """
+        return False
+
+    def result(self) -> Optional[Any]:
+        """Get the resolved result from the wait condition.
+
+        Returns:
+            The condition result value.
+        """
+        return self._outputs
+
+
+AnyStepFuture = Union[
+    ArtifactFuture,
+    StepFuture,
+    MapResultsFuture,
+    RunWaitConditionToken,
+]

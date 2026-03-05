@@ -103,6 +103,11 @@ from zenml.models import (
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -1666,6 +1671,83 @@ class ZenStoreInterface(ABC):
 
         Returns:
             KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def create_run_wait_condition(
+        self, run_wait_condition: RunWaitConditionRequest
+    ) -> RunWaitConditionResponse:
+        """Create a run wait condition.
+
+        Args:
+            run_wait_condition: The wait condition to create.
+
+        Returns:
+            The created wait condition.
+        """
+
+    @abstractmethod
+    def get_run_wait_condition(
+        self, run_wait_condition_id: UUID, hydrate: bool = True
+    ) -> RunWaitConditionResponse:
+        """Get a run wait condition by ID.
+
+        Args:
+            run_wait_condition_id: The ID of the wait condition.
+            hydrate: Whether to hydrate nested metadata/resources.
+
+        Returns:
+            The run wait condition.
+        """
+
+    @abstractmethod
+    def list_run_wait_conditions(
+        self,
+        run_wait_condition_filter_model: RunWaitConditionFilter,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions matching the filter criteria.
+
+        Args:
+            run_wait_condition_filter_model: Filter and pagination model.
+            hydrate: Whether to hydrate nested metadata/resources.
+
+        Returns:
+            A page of wait conditions.
+        """
+
+    @abstractmethod
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolve_request: RunWaitConditionResolveRequest,
+        resolved_by_user_id: Optional[UUID] = None,
+    ) -> RunWaitConditionResponse:
+        """Resolve a run wait condition.
+
+        Args:
+            run_wait_condition_id: The wait condition ID.
+            resolve_request: Resolution payload.
+            resolved_by_user_id: Optional user ID resolving the condition.
+
+        Returns:
+            The updated wait condition.
+        """
+
+    @abstractmethod
+    def update_run_wait_condition_lease(
+        self,
+        run_wait_condition_id: UUID,
+        lease_update: RunWaitConditionLeaseUpdate,
+    ) -> None:
+        """Update a run wait condition polling lease.
+
+        Args:
+            run_wait_condition_id: The wait condition ID.
+            lease_update: Lease update payload.
+
+        Returns:
+            None.
         """
 
     # -------------------- Run metadata --------------------

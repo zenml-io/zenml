@@ -86,8 +86,10 @@ from zenml.constants import (
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
+    RESOLVE,
     RUN_METADATA,
     RUN_TEMPLATES,
+    RUN_WAIT_CONDITIONS,
     RUNS,
     SCHEDULES,
     SECRETS,
@@ -222,6 +224,11 @@ from zenml.models import (
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -2118,6 +2125,64 @@ class RestZenStore(BaseZenStore):
         self.put(
             path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
             timeout=10,
+        )
+
+    def create_run_wait_condition(
+        self, run_wait_condition: RunWaitConditionRequest
+    ) -> RunWaitConditionResponse:
+        """Create a run wait condition."""
+        response_body = self.post(
+            f"{RUNS}/{run_wait_condition.run_id}{RUN_WAIT_CONDITIONS}",
+            body=run_wait_condition,
+        )
+        return RunWaitConditionResponse.model_validate(response_body)
+
+    def get_run_wait_condition(
+        self, run_wait_condition_id: UUID, hydrate: bool = True
+    ) -> RunWaitConditionResponse:
+        """Get a run wait condition."""
+        return self._get_resource(
+            resource_id=run_wait_condition_id,
+            route=RUN_WAIT_CONDITIONS,
+            response_model=RunWaitConditionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_run_wait_conditions(
+        self,
+        run_wait_condition_filter_model: RunWaitConditionFilter,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions."""
+        return self._list_paginated_resources(
+            route=RUN_WAIT_CONDITIONS,
+            response_model=RunWaitConditionResponse,
+            filter_model=run_wait_condition_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolve_request: RunWaitConditionResolveRequest,
+        resolved_by_user_id: Optional[UUID] = None,
+    ) -> RunWaitConditionResponse:
+        """Resolve a run wait condition."""
+        response_body = self.put(
+            path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}{RESOLVE}",
+            body=resolve_request,
+        )
+        return RunWaitConditionResponse.model_validate(response_body)
+
+    def update_run_wait_condition_lease(
+        self,
+        run_wait_condition_id: UUID,
+        lease_update: RunWaitConditionLeaseUpdate,
+    ) -> None:
+        """Update a run wait condition polling lease."""
+        self.put(
+            path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}",
+            body=lease_update,
         )
 
     # ----------------------------- Run Metadata -----------------------------

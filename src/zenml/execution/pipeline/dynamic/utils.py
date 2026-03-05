@@ -14,17 +14,33 @@
 """Dynamic pipeline execution utilities."""
 
 import time
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+)
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.models import ArtifactVersionResponse, StepRunResponse
+from zenml.models import (
+    ArtifactVersionResponse,
+    RunWaitConditionType,
+    StepRunResponse,
+)
 
 if TYPE_CHECKING:
     from zenml.execution.pipeline.dynamic.outputs import (
+        AnyStepFuture,
         OutputArtifact,
+        RunWaitConditionToken,
         StepRunOutputs,
     )
 
@@ -59,6 +75,48 @@ def unmapped(value: T) -> _Unmapped[T]:
         The wrapped value.
     """
     return _Unmapped(value)
+
+
+def wait(
+    schema: Optional[Type[Any]] = None,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    timeout: int = 600,
+    poll_interval: int = 5,
+    question: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    after: Optional[Sequence["AnyStepFuture"]] = None,
+    key_prefix: Optional[str] = None,
+    key: Optional[str] = None,
+) -> Tuple[Any, "RunWaitConditionToken"]:
+    """Pause dynamic execution on an external wait condition.
+
+    Raises:
+        RuntimeError: If called outside of dynamic pipeline execution.
+
+    Returns:
+        Tuple of resolved value and wait condition token.
+    """
+    from zenml.execution.pipeline.dynamic.run_context import (
+        DynamicPipelineRunContext,
+    )
+
+    context = DynamicPipelineRunContext.get()
+    if not context:
+        raise RuntimeError(
+            "`zenml.wait(...)` can only be used inside dynamic pipelines."
+        )
+
+    return context.runner.wait(
+        schema=schema,
+        type=type,
+        timeout=timeout,
+        poll_interval=poll_interval,
+        question=question,
+        after=after,
+        metadata=metadata,
+        key_prefix=key_prefix,
+        key=key,
+    )
 
 
 def wait_for_step_run_to_finish(step_run_id: UUID) -> "StepRunResponse":

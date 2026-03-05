@@ -150,6 +150,13 @@ from zenml.models import (
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionRequest,
+    RunWaitConditionResolution,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
+    RunWaitConditionStatus,
+    RunWaitConditionType,
     ScheduleFilter,
     ScheduleResponse,
     ScheduleTriggerRequest,
@@ -4529,6 +4536,134 @@ class Client(metaclass=ClientMetaClass):
             project=project,
         )
         self.zen_store.delete_run(run_id=run.id)
+
+    def create_run_wait_condition(
+        self,
+        run_name_or_id: Union[str, UUID],
+        type: RunWaitConditionType,
+        wait_condition_key: str,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        schema: Optional[Dict[str, Any]] = None,
+        upstream_step_names: Optional[List[str]] = None,
+        downstream_step_names: Optional[List[str]] = None,
+        project: Optional[Union[str, UUID]] = None,
+    ) -> RunWaitConditionResponse:
+        """Create a wait condition for a pipeline run.
+
+        Args:
+            run_name_or_id: Name/ID/prefix of the pipeline run.
+            type: The wait condition type.
+            wait_condition_key: Deterministic key for idempotent creation.
+            question: Optional question for external actor input.
+            metadata: Optional additional wait-condition metadata.
+            schema: Optional JSON Schema expected for outputs.
+            upstream_step_names: Optional upstream control edge anchors.
+            downstream_step_names: Optional downstream control edge anchors.
+            project: Optional project name/ID for run lookup.
+
+        Returns:
+            The created wait condition.
+        """
+        run = self.get_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+            project=project,
+            hydrate=False,
+        )
+        return self.zen_store.create_run_wait_condition(
+            RunWaitConditionRequest(
+                project=run.project_id,
+                run_id=run.id,
+                type=type,
+                wait_condition_key=wait_condition_key,
+                question=question,
+                metadata=metadata or {},
+                data_schema=schema,
+                upstream_step_names=upstream_step_names or [],
+                downstream_step_names=downstream_step_names or [],
+            )
+        )
+
+    def list_run_wait_conditions(
+        self,
+        run_name_or_id: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        status: Optional[str] = None,
+        type: Optional[str] = None,
+        hydrate: bool = False,
+        sort_by: str = "desc:created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        **kwargs: Any,
+    ) -> Page[RunWaitConditionResponse]:
+        """List wait conditions for a pipeline run.
+
+        Args:
+            run_name_or_id: Name/ID/prefix of the pipeline run.
+            project: Optional project name/ID for run lookup.
+            status: Optional status filter.
+            type: Optional type filter.
+            hydrate: Whether to hydrate metadata/resources.
+            sort_by: Sort expression.
+            page: Page number.
+            size: Page size.
+            **kwargs: Additional filter fields from `RunWaitConditionFilter`.
+
+        Returns:
+            A page of run wait conditions.
+        """
+        run = self.get_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+            project=project,
+            hydrate=False,
+        )
+        filter_kwargs = dict(kwargs)
+        # These fields are anchored to the resolved run and should never be
+        # overridden by caller-provided kwargs from CLI filter injection.
+        filter_kwargs.pop("run_id", None)
+        filter_kwargs.pop("project", None)
+        return self.zen_store.list_run_wait_conditions(
+            run_wait_condition_filter_model=RunWaitConditionFilter(
+                project=run.project_id,
+                run_id=run.id,
+                status=status,
+                type=type,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                **filter_kwargs,
+            ),
+            hydrate=hydrate,
+        )
+
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        status: RunWaitConditionStatus = RunWaitConditionStatus.RESOLVED,
+        resolution: RunWaitConditionResolution = (
+            RunWaitConditionResolution.CONTINUE
+        ),
+        result: Optional[Any] = None,
+    ) -> RunWaitConditionResponse:
+        """Resolve a wait condition.
+
+        Args:
+            run_wait_condition_id: ID of the wait condition.
+            status: Resolution status.
+            resolution: Resolution semantic.
+            result: Optional resolved result value.
+
+        Returns:
+            The resolved wait condition.
+        """
+        return self.zen_store.resolve_run_wait_condition(
+            run_wait_condition_id=run_wait_condition_id,
+            resolve_request=RunWaitConditionResolveRequest(
+                status=status,
+                resolution=resolution,
+                result=result,
+            ),
+        )
 
     # -------------------------------- Step run --------------------------------
 
