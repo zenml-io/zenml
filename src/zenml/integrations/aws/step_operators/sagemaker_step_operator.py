@@ -25,8 +25,8 @@ from typing import (
 
 import boto3
 from sagemaker.core.helper.session_helper import Session
-from sagemaker.core.shapes import ResourceConfig, StoppingCondition
-from sagemaker.core.training.configs import InputData
+from sagemaker.core.shapes import StoppingCondition
+from sagemaker.core.training.configs import Compute, InputData, SourceCode
 from sagemaker.train.model_trainer import ModelTrainer
 
 from zenml.client import Client
@@ -223,14 +223,9 @@ class SagemakerStepOperator(BaseStepOperator):
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Submits a step run to SageMaker.
+        """Submits a step run to SageMaker."""
+        import shlex
 
-        Args:
-            info: Information about the step run.
-            entrypoint_command: Command that executes the step.
-            environment: Environment variables to set in the step operator
-                environment.
-        """
         if not info.config.resource_settings.empty:
             logger.warning(
                 "Specifying custom step resources is not supported for "
@@ -247,8 +242,7 @@ class SagemakerStepOperator(BaseStepOperator):
         if settings.environment:
             environment.update(settings.environment)
 
-        # Sagemaker does not allow environment variables longer than 512 characters
-        # to be passed to Estimator steps (legacy limitation we preserve).
+        # Preserve legacy env var size splitting behavior
         split_environment_variables(
             env=environment,
             size_limit=SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
@@ -256,43 +250,18 @@ class SagemakerStepOperator(BaseStepOperator):
 
         image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
         environment[_ENTRYPOINT_ENV_VARIABLE] = " ".join(entrypoint_command)
-
-        # Get and default fill SageMaker args (preserve behavior: instance_count=1)
-        estimator_args = settings.estimator_args
-        estimator_args.setdefault(
-            "instance_type", settings.instance_type or "ml.m5.large"
-        )
-
-        # Convert environment to a dict of strings (preserve behavior)
         environment = {key: str(value) for key, value in environment.items()}
 
-        # SageMaker allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
+        # Build deterministic-ish job name (same as before)
         step_name = Client().get_run_step(info.step_run_id).name
         training_job_name = f"{info.pipeline.name}-{step_name}"[:55]
         suffix = random_str(4)
         unique_training_job_name = f"{training_job_name}-{suffix}"
-
-        # Sagemaker doesn't allow any underscores in job/experiment/trial names
         sanitized_training_job_name = unique_training_job_name.replace(
             "_", "-"
         )
 
-        # v3 migration: Estimator is removed.
-        # Use ModelTrainer + structured configs instead.
-        trainer = ModelTrainer(
-            training_image=image_name,
-            role=self.config.role,
-            sagemaker_session=self.sagemaker_session,
-            environment=environment,
-            tags=(
-                [{"Key": k, "Value": v} for k, v in settings.tags.items()]
-                if settings.tags
-                else None
-            ),
-            base_job_name=sanitized_training_job_name,  # keeps naming intent close
-        )
-
-        # Build input_data_config (preserve the “string or dict of channels” behavior)
+        # Inputs: preserve “string or dict-of-channels” behavior
         input_data_config = None
         if isinstance(settings.input_data_s3_uri, str):
             input_data_config = [
@@ -307,74 +276,90 @@ class SagemakerStepOperator(BaseStepOperator):
                 for channel, s3_uri in settings.input_data_s3_uri.items()
             ]
 
-        # Preserve instance_count=1 and instance_type defaulting behavior
-        resource_config = ResourceConfig(
-            instance_type=estimator_args.get("instance_type") or "ml.m5.large",
-            instance_count=1,
-            # volume size naming differs across configs; keep best-effort mapping
-            volume_size_in_gb=(
-                estimator_args.get("volume_size")
-                or estimator_args.get("volume_size_in_gb")
-                or None
-            ),
-        )
-
-        # Preserve max runtime behavior if provided in estimator_args/settings
-        stopping_condition = None
-        max_run = estimator_args.get("max_run") or estimator_args.get(
-            "max_runtime_in_seconds"
-        )
-        if max_run:
-            stopping_condition = StoppingCondition(
-                max_runtime_in_seconds=int(max_run)
-            )
-
-        experiment_config = {}
+        # Experiment config (same behavior)
+        experiment_config = None
         if settings.experiment_name:
             experiment_config = {
                 "ExperimentName": settings.experiment_name,
                 "TrialName": sanitized_training_job_name,
             }
 
-        # Keep existing behavior: we want logs to be captured by ZenML even though
-        # the SageMaker job is launched asynchronously.
+        # Preserve logging behavior
         info.force_write_logs()
 
-        # v3 migration:
-        # - entrypoint_command must be passed at train-time (not in trainer constructor)
-        # - start job async (wait=False) exactly like before
-        train_kwargs = dict(
-            input_data_config=input_data_config,
-            resource_config=resource_config,
-            stopping_condition=stopping_condition,
-            wait=False,
-            logs=False,
-            container_entry_point=entrypoint_command,
-            # Keep args empty: ZenML encodes entrypoint in container_entry_point already
-            container_arguments=[],
-            experiment_config=experiment_config,
+        estimator_args = settings.estimator_args
+        instance_type = (
+            estimator_args.get("instance_type")
+            or settings.instance_type
+            or "ml.m5.large"
         )
 
-        # Different v3 versions have slightly different kwarg names for job naming.
-        # We preserve behavior (explicit job name) with a best-effort adapter.
-        try:
-            trainer.train(
-                training_job_name=sanitized_training_job_name, **train_kwargs
+        compute_kwargs = dict(
+            instance_type=instance_type,
+            instance_count=1,
+        )
+
+        # volume size: only set if present (avoid passing None into strict schemas)
+        volume_size = estimator_args.get("volume_size") or estimator_args.get(
+            "volume_size_in_gb"
+        )
+        if volume_size is not None:
+            compute_kwargs["volume_size_in_gb"] = int(volume_size)
+
+        compute = Compute(**compute_kwargs)
+
+        stopping_condition = None
+        max_run = estimator_args.get("max_run") or estimator_args.get(
+            "max_runtime_in_seconds"
+        )
+        if max_run is not None:
+            stopping_condition = StoppingCondition(
+                max_runtime_in_seconds=int(max_run)
             )
-        except TypeError:
-            try:
-                trainer.train(
-                    job_name=sanitized_training_job_name, **train_kwargs
-                )
-            except TypeError:
-                # Fall back: if API doesn’t support explicit naming, still submit.
-                trainer.train(**train_kwargs)
+
+        # SourceCode.command is a STRING in your build
+        source_code = SourceCode(command=shlex.join(entrypoint_command))
+
+        trainer_kwargs = dict(
+            training_image=image_name,
+            role=self.config.role,
+            sagemaker_session=self.sagemaker_session,
+            environment=environment,
+            tags=(
+                [{"Key": k, "Value": v} for k, v in settings.tags.items()]
+                if settings.tags
+                else None
+            ),
+            # Keep naming intent: base name used by SageMaker when generating job name
+            base_job_name=sanitized_training_job_name,
+            compute=compute,
+            source_code=source_code,
+        )
+        if stopping_condition is not None:
+            trainer_kwargs["stopping_condition"] = stopping_condition
+
+        trainer = ModelTrainer(**trainer_kwargs)
+
+        # ---- v3 migration: keep train() call minimal ----
+        train_kwargs = dict(
+            input_data_config=input_data_config,
+            wait=False,
+            logs=False,
+        )
+        if experiment_config is not None:
+            train_kwargs["experiment_config"] = experiment_config
+
+        # Prefer explicit job name if supported by your ModelTrainer.train()
+        # (If your signature uses training_job_name instead of job_name, swap the key.)
+        train_kwargs["job_name"] = sanitized_training_job_name
+
+        trainer.train(**train_kwargs)
 
         publish_step_run_metadata(
             info.step_run_id,
             {
                 self.id: {
-                    STEP_JOB_NAME_METADATA_KEY: sanitized_training_job_name,
+                    STEP_JOB_NAME_METADATA_KEY: sanitized_training_job_name
                 }
             },
         )
