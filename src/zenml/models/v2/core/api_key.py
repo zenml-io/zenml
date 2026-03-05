@@ -14,7 +14,7 @@
 """Models representing API keys."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Type
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -32,7 +32,14 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    BoolOrList,
+    DatetimeOrList,
+    StrOrList,
+    UUIDOrList,
+)
 from zenml.utils.string_utils import b64_decode, b64_encode
 from zenml.utils.time_utils import utc_now
 
@@ -347,29 +354,29 @@ class APIKeyFilter(BaseFilter):
         "service_account",
     ]
 
-    service_account: Optional[UUID] = Field(
+    service_account: UUIDOrList = Field(
         default=None,
         description="The service account to scope this query to.",
     )
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the API key",
     )
-    description: Optional[str] = Field(
+    description: StrOrList = Field(
         default=None,
         title="Filter by the API key description.",
     )
-    active: Optional[Union[bool, str]] = Field(
+    active: BoolOrList = Field(
         default=None,
         title="Whether the API key is active.",
         union_mode="left_to_right",
     )
-    last_login: Optional[Union[datetime, str]] = Field(
+    last_login: DatetimeOrList = Field(
         default=None,
         title="Time when the API key was last used to log in.",
         union_mode="left_to_right",
     )
-    last_rotated: Optional[Union[datetime, str]] = Field(
+    last_rotated: DatetimeOrList = Field(
         default=None,
         title="Time when the API key was last rotated.",
         union_mode="left_to_right",

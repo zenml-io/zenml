@@ -40,8 +40,8 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
+    StrOrList,
     UUIDOrList,
-    UUIDStrOrList,
 )
 
 if TYPE_CHECKING:
@@ -193,7 +193,7 @@ class UserScopedFilter(BaseFilter):
         default=None,
         description="The user to scope this query to.",
     )
-    user: UUIDStrOrList = Field(
+    user: UUIDOrList = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
         union_mode="left_to_right",
@@ -377,7 +377,7 @@ class ProjectScopedFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "project",
     ]
-    project: UUIDStrOrList = Field(
+    project: UUIDOrList = Field(
         default=None,
         description="Name/ID of the project which the search is scoped to. "
         "This field must always be set and is always applied in addition to "
@@ -433,7 +433,7 @@ class ProjectScopedFilter(UserScopedFilter):
 class TaggableFilter(BaseFilter):
     """Model to enable filtering and sorting by tags."""
 
-    tags: Optional[List[str]] = Field(
+    tags: StrOrList = Field(
         description="Tags to apply to the filter query.", default=None
     )
 
@@ -621,7 +621,7 @@ class TaggableFilter(BaseFilter):
 class RunMetadataFilterMixin(BaseFilter):
     """Model to enable filtering and sorting by run metadata."""
 
-    run_metadata: Optional[List[str]] = Field(
+    run_metadata: StrOrList = Field(
         default=None,
         description="The run_metadata to filter the pipeline runs by.",
     )

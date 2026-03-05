@@ -14,7 +14,7 @@
 """Models representing schedules."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
@@ -23,6 +23,13 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    BoolOrList,
+    DatetimeOrList,
+    FloatOrList,
+    StrOrList,
+    UUIDOrList,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -319,50 +326,50 @@ class ScheduleResponse(
 class ScheduleFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all Users."""
 
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUIDOrList = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",
         union_mode="left_to_right",
     )
-    orchestrator_id: Optional[Union[UUID, str]] = Field(
+    orchestrator_id: UUIDOrList = Field(
         default=None,
         description="Orchestrator that the schedule is attached to.",
         union_mode="left_to_right",
     )
-    active: Optional[bool] = Field(
+    active: BoolOrList = Field(
         default=None,
         description="If the schedule is active",
     )
-    cron_expression: Optional[str] = Field(
+    cron_expression: StrOrList = Field(
         default=None,
         description="The cron expression, describing the schedule",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: DatetimeOrList = Field(
         default=None, description="Start time", union_mode="left_to_right"
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: DatetimeOrList = Field(
         default=None, description="End time", union_mode="left_to_right"
     )
-    interval_second: Optional[Optional[float]] = Field(
+    interval_second: FloatOrList = Field(
         default=None,
         description="The repetition interval in seconds",
     )
-    catchup: Optional[bool] = Field(
+    catchup: BoolOrList = Field(
         default=None,
         description="Whether or not the schedule is set to catchup past missed "
         "events",
     )
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the schedule",
     )
-    run_once_start_time: Optional[Union[datetime, str]] = Field(
+    run_once_start_time: DatetimeOrList = Field(
         default=None,
         description="The time at which the schedule should run once",
         union_mode="left_to_right",
     )
 
-    is_archived: bool = Field(
+    is_archived: BoolOrList = Field(
         default=False,
         description="Whether or not the schedule is archived",
     )

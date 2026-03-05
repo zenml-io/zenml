@@ -23,7 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
-from functools import partial
+from functools import partial, wraps
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -2745,6 +2745,33 @@ def _is_list_field(field_info: Any) -> bool:
     )
 
 
+def _get_click_option_default(default: Any, multiple: bool) -> Any:
+    """Get a Click-compatible option default.
+
+    Click requires defaults for `multiple=True` options to be list-like.
+
+    Args:
+        default: The original field default.
+        multiple: Whether the click option accepts multiple values.
+
+    Returns:
+        A normalized default value compatible with Click.
+    """
+    if not multiple:
+        return default
+
+    if default is None:
+        return ()
+
+    if isinstance(default, Sequence) and not isinstance(default, str):
+        return tuple(default)
+
+    # Scalar defaults are not valid for `multiple=True` options and
+    # accidentally forcing them into a singleton tuple can change filtering
+    # semantics. Use an empty default instead.
+    return ()
+
+
 def _get_response_columns_for_filter(
     filter_model: Type[BaseFilter],
 ) -> List[str]:
@@ -2836,15 +2863,21 @@ def list_options(
     def inner_decorator(func: F) -> F:
         options = []
         data_type_descriptors = set()
+        multi_value_fields: Set[str] = set()
         for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                is_multiple = _is_list_field(v)
+                if is_multiple:
+                    multi_value_fields.add(k)
                 options.append(
                     click.option(
                         f"--{k}",
                         type=str,
-                        default=v.default,
+                        default=_get_click_option_default(
+                            default=v.default, multiple=is_multiple
+                        ),
                         required=False,
-                        multiple=_is_list_field(v),
+                        multiple=is_multiple,
                         help=create_filter_help_text(filter_model, k),
                     )
                 )
@@ -2886,9 +2919,19 @@ def list_options(
         )
 
         def wrapper(function: F) -> F:
+            @wraps(function)
+            def normalized_function(*args: Any, **kwargs: Any) -> Any:
+                for field_name in multi_value_fields:
+                    if field_name not in kwargs:
+                        continue
+                    value = kwargs[field_name]
+                    if isinstance(value, tuple):
+                        kwargs[field_name] = list(value) if value else None
+                return function(*args, **kwargs)
+
             for option in reversed(options):
-                function = option(function)
-            return function
+                normalized_function = option(normalized_function)
+            return cast(F, normalized_function)
 
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "

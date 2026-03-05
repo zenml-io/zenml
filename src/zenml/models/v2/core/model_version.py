@@ -33,6 +33,7 @@ from zenml.enums import ArtifactType, ModelStages
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import IntOrList, StrOrList, UUIDOrList
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -671,11 +672,11 @@ class ModelVersionFilter(
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="The name of the Model Version",
     )
-    number: Optional[int] = Field(
+    number: IntOrList = Field(
         default=None,
         description="The number of the Model Version",
     )
@@ -684,7 +685,7 @@ class ModelVersionFilter(
         default=None,
         union_mode="left_to_right",
     )
-    model: Optional[Union[str, UUID]] = Field(
+    model: UUIDOrList = Field(
         default=None,
         description="The name or ID of the model which the search is scoped "
         "to. This field must always be set and is always applied in addition "

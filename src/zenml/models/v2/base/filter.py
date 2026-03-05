@@ -75,14 +75,11 @@ VALUELESS_FILTER_OPS = {
 
 
 StrOrList = Optional[Union[str, List[str]]]
-IntOrList = Optional[Union[int, List[int]]]
-FloatOrList = Optional[Union[float, List[float]]]
-BoolOrList = Optional[Union[bool, List[bool]]]
-UUIDOrList = Optional[Union[UUID, List[UUID]]]
-DatetimeOrList = Optional[Union[datetime, List[datetime]]]
-
-UUIDStrOrList = Optional[Union[UUID, str, List[Union[UUID, str]]]]
-DatetimeStrOrList = Optional[Union[datetime, str, List[Union[datetime, str]]]]
+IntOrList = Optional[Union[int, str, List[Union[int, str]]]]
+FloatOrList = Optional[Union[float, str, List[Union[float, str]]]]
+BoolOrList = Optional[Union[bool, str, List[Union[bool, str]]]]
+UUIDOrList = Optional[Union[UUID, str, List[Union[UUID, str]]]]
+DatetimeOrList = Optional[Union[datetime, str, List[Union[datetime, str]]]]
 
 
 class Filter(BaseModel, ABC):
@@ -699,15 +696,15 @@ class BaseFilter(BaseModel):
         le=PAGE_SIZE_MAXIMUM,
         description="Page size",
     )
-    id: UUIDStrOrList = Field(
+    id: UUIDOrList = Field(
         default=None,
         description="Id for this resource",
         union_mode="left_to_right",
     )
-    created: DatetimeStrOrList = Field(
+    created: DatetimeOrList = Field(
         default=None, description="Created", union_mode="left_to_right"
     )
-    updated: DatetimeStrOrList = Field(
+    updated: DatetimeOrList = Field(
         default=None, description="Updated", union_mode="left_to_right"
     )
 

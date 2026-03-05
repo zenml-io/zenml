@@ -22,7 +22,6 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -32,6 +31,7 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import BoolOrList, StrOrList, UUIDOrList
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -356,39 +356,39 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the run template.",
     )
-    hidden: Optional[bool] = Field(
+    hidden: BoolOrList = Field(
         default=None,
         description="Whether the run template is hidden.",
     )
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUIDOrList = Field(
         default=None,
         description="Pipeline associated with the template.",
         union_mode="left_to_right",
     )
-    build_id: Optional[Union[UUID, str]] = Field(
+    build_id: UUIDOrList = Field(
         default=None,
         description="Build associated with the template.",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUIDOrList = Field(
         default=None,
         description="Stack associated with the template.",
         union_mode="left_to_right",
     )
-    code_repository_id: Optional[Union[UUID, str]] = Field(
+    code_repository_id: UUIDOrList = Field(
         default=None,
         description="Code repository associated with the template.",
         union_mode="left_to_right",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUIDOrList = Field(
         default=None,
         description="Name/ID of the pipeline associated with the template.",
     )
-    stack: Optional[Union[UUID, str]] = Field(
+    stack: UUIDOrList = Field(
         default=None,
         description="Name/ID of the stack associated with the template.",
     )

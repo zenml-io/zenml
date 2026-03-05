@@ -34,6 +34,13 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, PipelineRunTriggeredByType
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
+from zenml.models.v2.base.filter import (
+    BoolOrList,
+    DatetimeOrList,
+    IntOrList,
+    StrOrList,
+    UUIDOrList,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -732,65 +739,65 @@ class PipelineRunFilter(
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
-    index: Optional[int] = Field(
+    index: IntOrList = Field(
         default=None,
         description="The unique index of the run within the pipeline.",
     )
-    orchestrator_run_id: Optional[str] = Field(
+    orchestrator_run_id: StrOrList = Field(
         default=None,
         description="Name of the Pipeline Run within the orchestrator",
     )
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUIDOrList = Field(
         default=None,
         description="Pipeline associated with the Pipeline Run",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUIDOrList = Field(
         default=None,
         description="Stack used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    schedule_id: Optional[Union[UUID, str]] = Field(
+    schedule_id: UUIDOrList = Field(
         default=None,
         description="Schedule that triggered the Pipeline Run",
         union_mode="left_to_right",
     )
-    build_id: Optional[Union[UUID, str]] = Field(
+    build_id: UUIDOrList = Field(
         default=None,
         description="Build used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    snapshot_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: UUIDOrList = Field(
         default=None,
         description="Snapshot used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    code_repository_id: Optional[Union[UUID, str]] = Field(
+    code_repository_id: UUIDOrList = Field(
         default=None,
         description="Code repository used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    template_id: Optional[Union[UUID, str]] = Field(
+    template_id: UUIDOrList = Field(
         default=None,
         description="DEPRECATED: Template used for the pipeline run.",
         union_mode="left_to_right",
         deprecated=True,
     )
-    source_snapshot_id: Optional[Union[UUID, str]] = Field(
+    source_snapshot_id: UUIDOrList = Field(
         default=None,
         description="Source snapshot used for the pipeline run.",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDOrList = Field(
         default=None,
         description="Model version associated with the pipeline run.",
         union_mode="left_to_right",
     )
-    linked_to_model_version_id: Optional[Union[UUID, str]] = Field(
+    linked_to_model_version_id: UUIDOrList = Field(
         default=None,
         description="Filter by model version linked to the pipeline run. "
         "The difference to `model_version_id` is that this filter will "
@@ -798,64 +805,64 @@ class PipelineRunFilter(
         "version, but also if any step run is linked to the model version.",
         union_mode="left_to_right",
     )
-    status: Optional[str] = Field(
+    status: StrOrList = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
-    in_progress: Optional[bool] = Field(
+    in_progress: BoolOrList = Field(
         default=None,
         description="Whether the pipeline run is in progress.",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: DatetimeOrList = Field(
         default=None,
         description="Start time for this run",
         union_mode="left_to_right",
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: DatetimeOrList = Field(
         default=None,
         description="End time for this run",
         union_mode="left_to_right",
     )
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     #   generic `pipeline` filter below.
-    pipeline_name: Optional[str] = Field(
+    pipeline_name: StrOrList = Field(
         default=None,
         description="Name of the pipeline associated with the run",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUIDOrList = Field(
         default=None,
         description="Name/ID of the pipeline associated with the run.",
     )
-    stack: Optional[Union[UUID, str]] = Field(
+    stack: UUIDOrList = Field(
         default=None,
         description="Name/ID of the stack associated with the run.",
     )
-    code_repository: Optional[Union[UUID, str]] = Field(
+    code_repository: UUIDOrList = Field(
         default=None,
         description="Name/ID of the code repository associated with the run.",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUIDOrList = Field(
         default=None,
         description="Name/ID of the model associated with the run.",
     )
-    stack_component: Optional[Union[UUID, str]] = Field(
+    stack_component: UUIDOrList = Field(
         default=None,
         description="Name/ID of the stack component associated with the run.",
     )
-    templatable: Optional[bool] = Field(
+    templatable: BoolOrList = Field(
         default=None, description="Whether the run is templatable."
     )
-    triggered_by_step_run_id: Optional[Union[UUID, str]] = Field(
+    triggered_by_step_run_id: UUIDOrList = Field(
         default=None,
         description="The ID of the step run that triggered this pipeline run.",
         union_mode="left_to_right",
     )
-    triggered_by_deployment_id: Optional[Union[UUID, str]] = Field(
+    triggered_by_deployment_id: UUIDOrList = Field(
         default=None,
         description="The ID of the deployment that triggered this pipeline run.",
         union_mode="left_to_right",
     )
-    trigger_id: UUID | str | None = Field(
+    trigger_id: UUIDOrList = Field(
         default=None,
         description="The ID of the trigger that generated this pipeline run.",
         union_mode="left_to_right",

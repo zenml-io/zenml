@@ -23,13 +23,18 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.filter import (
+    BoolOrList,
+    IntOrList,
+    StrOrList,
+    UUIDOrList,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -485,43 +490,43 @@ class PipelineBuildFilter(ProjectScopedFilter):
         "container_registry_id",
     ]
 
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUIDOrList = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUIDOrList = Field(
         description="Stack associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    container_registry_id: Optional[Union[UUID, str]] = Field(
+    container_registry_id: UUIDOrList = Field(
         description="Container registry associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    is_local: Optional[bool] = Field(
+    is_local: BoolOrList = Field(
         description="Whether the build images are stored in a container "
         "registry or locally.",
         default=None,
     )
-    contains_code: Optional[bool] = Field(
+    contains_code: BoolOrList = Field(
         description="Whether any image of the build contains user code.",
         default=None,
     )
-    zenml_version: Optional[str] = Field(
+    zenml_version: StrOrList = Field(
         description="The version of ZenML used for this build.", default=None
     )
-    python_version: Optional[str] = Field(
+    python_version: StrOrList = Field(
         description="The Python version used for this build.", default=None
     )
-    checksum: Optional[str] = Field(
+    checksum: StrOrList = Field(
         description="The build checksum.", default=None
     )
-    stack_checksum: Optional[str] = Field(
+    stack_checksum: StrOrList = Field(
         description="The stack checksum.", default=None
     )
-    duration: Optional[Union[int, str]] = Field(
+    duration: IntOrList = Field(
         description="The duration of the build in seconds.", default=None
     )
 

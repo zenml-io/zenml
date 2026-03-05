@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, List, Type, TypeVar
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -26,7 +26,12 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import BaseFilter, StrFilter
+from zenml.models.v2.base.filter import (
+    BaseFilter,
+    StrFilter,
+    StrOrList,
+    UUIDOrList,
+)
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
@@ -127,21 +132,21 @@ class ModelVersionPipelineRunFilter(BaseFilter):
         "id",
     ]
 
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDOrList = Field(
         default=None,
         description="Filter by model version ID",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUIDOrList = Field(
         default=None,
         description="Filter by pipeline run ID",
         union_mode="left_to_right",
     )
-    pipeline_run_name: Optional[str] = Field(
+    pipeline_run_name: StrOrList = Field(
         default=None,
         description="Name of the pipeline run",
     )
-    user: Optional[Union[UUID, str]] = Field(
+    user: UUIDOrList = Field(
         default=None,
         description="Name/ID of the user that created the pipeline run.",
     )

@@ -35,6 +35,12 @@ from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
+from zenml.models.v2.base.filter import (
+    BoolOrList,
+    StrOrList,
+    UUIDOrList,
+    UUIDOrList,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -662,52 +668,52 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the snapshot.",
     )
-    named_only: Optional[bool] = Field(
+    named_only: BoolOrList = Field(
         default=None,
         description="Whether to only return snapshots with a name.",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUIDOrList = Field(
         default=None,
         description="Pipeline associated with the snapshot.",
         union_mode="left_to_right",
     )
-    stack: Optional[Union[UUID, str]] = Field(
+    stack: UUIDOrList = Field(
         default=None,
         description="Stack associated with the snapshot.",
         union_mode="left_to_right",
     )
-    build_id: Optional[Union[UUID, str]] = Field(
+    build_id: UUIDOrList = Field(
         default=None,
         description="Build associated with the snapshot.",
         union_mode="left_to_right",
     )
-    schedule_id: Optional[Union[UUID, str]] = Field(
+    schedule_id: UUIDOrList = Field(
         default=None,
         description="Schedule associated with the snapshot.",
         union_mode="left_to_right",
     )
-    source_snapshot_id: Optional[Union[UUID, str]] = Field(
+    source_snapshot_id: UUIDOrList = Field(
         default=None,
         description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
     )
-    runnable: Optional[bool] = Field(
+    runnable: BoolOrList = Field(
         default=None,
         description="Whether the snapshot is runnable.",
     )
-    deployable: Optional[bool] = Field(
+    deployable: BoolOrList = Field(
         default=None,
         description="Whether the snapshot is deployable.",
     )
-    deployed: Optional[bool] = Field(
+    deployed: BoolOrList = Field(
         default=None,
         description="Whether the snapshot is deployed.",
     )
-    trigger_id: UUID | None = Field(
+    trigger_id: UUIDOrList = Field(
         default=None,
         description="Trigger associated with the snapshot (attached).",
     )
