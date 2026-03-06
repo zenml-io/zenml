@@ -34,6 +34,9 @@ exclude = [
     # MCP endpoint (not a webpage, returns 405 for GET requests)
     "docs\\.zenml\\.io/~gitbook/mcp",
 
+    # Neptune.ai acquired by OpenAI, site returning 403s (shutting down)
+    "neptune\\.ai",
+
     # Segment analytics (intermittent connectivity)
     "segment\\.com",
 ]
