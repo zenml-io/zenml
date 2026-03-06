@@ -5,9 +5,7 @@ description: Logging and visualizing experiments with neptune.ai
 # Neptune
 
 {% hint style="warning" %}
-**Neptune.ai has been acquired by OpenAI** (announced December 2025) and Neptune's standalone services will be discontinued on March 5, 2026. While the ZenML Neptune integration remains functional until that date, we recommend migrating to an alternative experiment tracker such as [MLflow](mlflow.md), [Weights & Biases](wandb.md), or [Comet](comet.md).
-
-If you have existing data in Neptune that you'd like to preserve, the [neptune-exporter](https://github.com/neptune-ai/neptune-exporter) CLI tool can help you migrate your experiment data to ZenML, MLflow, W&B, and other platforms. See the [Neptune transition hub](https://neptune.ai/blog/we-are-joining-openai) for more details about the shutdown timeline and migration options.
+**Neptune.ai has been acquired by OpenAI** (announced December 2025) and Neptune's standalone services are discontinued as of March 5, 2026. While the ZenML Neptune integration remains functional for the time being, it will be removed soon and we recommend migrating to an alternative experiment tracker such as [MLflow](mlflow.md), [Weights & Biases](wandb.md), or [Comet](comet.md).
 {% endhint %}
 
 The Neptune Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Neptune-ZenML integration that uses [neptune.ai](https://neptune.ai/product/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
