@@ -2,6 +2,10 @@
 
 This file provides guidance for AI agents working with ZenML documentation.
 
+## Source of Truth
+
+`docs/book/` is the source of truth for documentation content. Other docs directories (`docs/mkdocs/`, `docs/site/`) contain generated output — do not edit those directly. Changes to docs may also interact with the API docs buildability check in CI (fast CI).
+
 ## GitBook URL Structure
 
 ZenML uses GitBook for documentation. The URL structure does **not** directly mirror the file system structure.

@@ -45,6 +45,15 @@ class EntityFilter(...):
     CLI_EXCLUDE_FIELDS = [..., "internal_field"]
 ```
 
+## Scheduling Command Families
+
+There are now two separate scheduling command families in the CLI:
+
+- `zenml pipeline schedule ...` — Legacy schedule records (CRUD on `ScheduleResponse`)
+- `zenml trigger schedule ...` — Native schedule triggers (new trigger-based architecture)
+
+When modifying scheduling CLI code, be explicit about which stack you are changing. The trigger CLI lives in `cli/trigger.py`, while legacy schedule commands live in `cli/pipeline.py`.
+
 ## Import Considerations
 
 ### Core ZenML Imports
