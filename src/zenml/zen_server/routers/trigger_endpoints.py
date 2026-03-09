@@ -229,6 +229,13 @@ def attach_trigger_to_snapshot(
         project_id=snapshot.project_id,
     )
 
+    if snapshot.pipeline_configuration.model:
+        verify_permission(
+            resource_type=ResourceType.MODEL_VERSION,
+            action=Action.CREATE,
+            project_id=snapshot.project_id,
+        )
+
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     zen_store().attach_trigger_to_snapshot(
