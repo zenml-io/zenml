@@ -20,6 +20,7 @@ from uuid import UUID
 
 from zenml.logger import get_logger
 from zenml.models import ArtifactVersionResponse, StepRunResponse
+from zenml.utils import exception_utils
 
 logger = get_logger(__name__)
 
@@ -182,7 +183,10 @@ class _IsolatedStepFuture(BaseFuture):
         )
 
         if step_run.status.is_failed:
-            raise RuntimeError(f"Step `{self.invocation_id}` failed.")
+            raise exception_utils.reconstruct_exception(
+                exception_info=step_run.exception_info,
+                fallback_message=f"Step `{self.invocation_id}` failed with status `{step_run.status}`.",
+            )
 
         return step_run
 

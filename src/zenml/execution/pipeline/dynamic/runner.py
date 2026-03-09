@@ -582,6 +582,9 @@ class DynamicPipelineRunner:
             group: The group information for this step.
             concurrent: Whether to launch the step concurrently.
 
+        Raises:
+            Exception: If the step failed.
+
         Returns:
             The step run outputs or a future for the step run outputs.
         """
@@ -673,13 +676,15 @@ class DynamicPipelineRunner:
                 # a future in case the step was launched concurrently so the
                 # caller gets the correct object back.
                 if concurrent:
-                    return StepFuture(
+                    future = StepFuture(
                         wrapped=_IsolatedStepFuture(
                             pipeline_run_id=self._run.id,
                             invocation_id=invocation_id,
                         ),
                         output_keys=list(compiled_step.config.outputs),
                     )
+                    self._futures[invocation_id] = future
+                    return future
                 else:
                     return load_step_run_outputs(step_run.id)
 
@@ -694,6 +699,28 @@ class DynamicPipelineRunner:
                 # orchestration environment, so we mark them as failed and
                 # potentially restart them depending on the retry config.
                 step_run = publish_failed_step_run(step_run.id)
+
+            if step_run.status.is_failed:
+                # If the step is running concurrently, we only raise the
+                # exception once the future is awaited.
+                if concurrent:
+                    future = StepFuture(
+                        wrapped=_IsolatedStepFuture(
+                            pipeline_run_id=self._run.id,
+                            invocation_id=invocation_id,
+                        ),
+                        output_keys=list(compiled_step.config.outputs),
+                    )
+                    self._futures[invocation_id] = future
+                    return future
+                else:
+                    raise exception_utils.reconstruct_exception(
+                        exception_info=step_run.exception_info,
+                        fallback_message=(
+                            f"Step `{invocation_id}` failed with status "
+                            f"`{step_run.status}`."
+                        ),
+                    )
 
             remaining_retries = get_remaining_retries(step_run=step_run)
 
