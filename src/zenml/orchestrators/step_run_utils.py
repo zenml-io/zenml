@@ -199,7 +199,7 @@ class StepRunRequestFactory:
             request.dynamic_config
             or self.snapshot.step_configurations[request.name]
         )
-        input_overrides = self._get_input_overrides(request.name)
+        input_overrides = self._get_input_overrides(request.name, step=step)
 
         input_artifacts = input_utils.resolve_step_inputs(
             step=step,
@@ -414,11 +414,15 @@ class StepRunRequestFactory:
 
         return None, None
 
-    def _get_input_overrides(self, invocation_id: str) -> Dict[str, "UUID"]:
+    def _get_input_overrides(
+        self, invocation_id: str, step: Optional["Step"] = None
+    ) -> Dict[str, "UUID"]:
         """Get input overrides for a step.
 
         Args:
             invocation_id: The invocation ID to look up.
+            step: The step configuration. If not provided, no input key
+                validation is performed.
 
         Returns:
             The input overrides for the step.
@@ -428,18 +432,24 @@ class StepRunRequestFactory:
                 invocation_id, {}
             )
         )
-        available_input_keys = self.snapshot.step_configurations[
-            invocation_id
-        ].available_input_keys
-        invalid_keys = overrides.keys() - available_input_keys
-        if invalid_keys:
-            logger.warning(
-                "Ignoring invalid input overrides for step `%s`: %s",
-                invocation_id,
-                invalid_keys,
-            )
 
-        return {key: overrides[key] for key in available_input_keys}
+        if step:
+            available_input_keys = step.available_input_keys
+            invalid_keys = overrides.keys() - available_input_keys
+            if invalid_keys:
+                logger.warning(
+                    "Ignoring invalid input overrides for step `%s`: %s",
+                    invocation_id,
+                    invalid_keys,
+                )
+
+            overrides = {
+                key: value
+                for key, value in overrides.items()
+                if key in available_input_keys
+            }
+
+        return overrides
 
 
 def find_cacheable_invocation_candidates(
