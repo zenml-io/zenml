@@ -36,7 +36,9 @@ from zenml.constants import (
     DEFAULT_STACK_AND_COMPONENT_NAME,
     ENV_ZENML_DEFAULT_PROJECT_NAME,
     ENV_ZENML_SERVER,
+    ENV_ZENML_STORE_NO_RBAC,
     IS_DEBUG_ENV,
+    handle_bool_env_var,
 )
 from zenml.enums import (
     SecretsStoreType,
@@ -155,7 +157,11 @@ class BaseZenStore(
             TypeError: If the store type is unsupported.
         """
         if store_type == StoreType.SQL:
-            if os.environ.get(ENV_ZENML_SERVER):
+            # Use RBAC on the server, avoid RBAC store for workers.
+
+            if handle_bool_env_var(
+                ENV_ZENML_SERVER
+            ) and not handle_bool_env_var(ENV_ZENML_STORE_NO_RBAC, False):
                 from zenml.zen_server.rbac.rbac_sql_zen_store import (
                     RBACSqlZenStore,
                 )
