@@ -646,8 +646,9 @@ class DynamicPipelineRunner:
             group: The group information for this step.
             concurrent: Whether to launch the step concurrently.
 
+        # noqa: DAR401
         Raises:
-            Exception: If the step failed.
+            BaseException: If the step failed.
 
         Returns:
             The step run outputs or a future for the step run outputs.
