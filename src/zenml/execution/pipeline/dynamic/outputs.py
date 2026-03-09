@@ -163,8 +163,10 @@ class _IsolatedStepFuture(BaseFuture):
     def result(self) -> "StepRunResponse":
         """Get the result of the step future.
 
+        # noqa: DAR401
         Raises:
-            RuntimeError: If the step failed.
+            BaseException: Any exception that happened while waiting for the
+                step to finish.
 
         Returns:
             The result of the step future.
@@ -185,7 +187,10 @@ class _IsolatedStepFuture(BaseFuture):
         if step_run.status.is_failed:
             raise exception_utils.reconstruct_exception(
                 exception_info=step_run.exception_info,
-                fallback_message=f"Step `{self.invocation_id}` failed with status `{step_run.status}`.",
+                fallback_message=(
+                    f"Step `{self.invocation_id}` failed with "
+                    f"status `{step_run.status}`.",
+                ),
             )
 
         return step_run
