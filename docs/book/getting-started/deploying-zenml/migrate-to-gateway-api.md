@@ -47,6 +47,7 @@ zenml:
     enabled: false
   gateway:
     enabled: true
+    annotations: {}
     gatewayRef:
       name: zenml-gateway
       namespace: gateway-infra
@@ -74,6 +75,23 @@ Deploy NGINX Gateway Fabric and configure a shared `Gateway` listener; point Zen
 ### GKE Gateway
 
 Create a GKE-managed `Gateway` and map your external DNS hostnames to the provisioned load balancer.
+
+## Custom annotations
+
+You can add custom annotations to the `HTTPRoute` resource:
+
+```yaml
+zenml:
+  gateway:
+    enabled: true
+    annotations:
+      my-annotation: my-value
+    gatewayRef:
+      name: zenml-gateway
+      namespace: gateway-infra
+```
+
+This is useful for attaching Envoy-specific policies, adding metadata for service mesh integration, or custom routing labels.
 
 ## TLS options
 

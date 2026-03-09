@@ -268,6 +268,7 @@ zenml:
     enabled: false
   gateway:
     enabled: true
+    annotations: {}
     gatewayRef:
       name: zenml-gateway
       namespace: gateway-infra
