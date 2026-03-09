@@ -261,6 +261,7 @@ class MyOrchestrator(BaseOrchestrator):
 1. Run `bash scripts/format.sh` before every commit
 2. Run targeted tests to verify changes (see above)
 3. Update documentation for user-facing changes (or ensure that nothing was broken)
+4. IMPORTANT: **Before opening a PR or making a large commit**, always run `/simplify` to review changed code for reuse opportunities, quality issues, and efficiency improvements. Fix any issues it finds before committing.
 
 ### Security Guidelines
 - **NEVER** commit secrets, API keys, tokens, or passwords

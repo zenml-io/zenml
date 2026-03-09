@@ -6,3 +6,4 @@
 !/tests
 !/.trivyignore
 !/trivy-secret.yaml
+!/zenml-cloud-plugins

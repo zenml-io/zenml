@@ -20,6 +20,7 @@ import os
 import sys
 import threading
 import time
+from contextvars import ContextVar
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -55,7 +56,6 @@ from zenml.constants import (
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import ProjectScopedFilter
-from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.cache import MemoryCache
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
@@ -88,9 +88,11 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
-_plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
 _request_manager: Optional[RequestManager] = None
+_auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
+    "auth_context", default=None
+)
 
 
 def zen_store() -> "SqlZenStore":
@@ -106,20 +108,6 @@ def zen_store() -> "SqlZenStore":
     if _zen_store is None:
         raise RuntimeError("ZenML Store not initialized")
     return _zen_store
-
-
-def plugin_flavor_registry() -> PluginFlavorRegistry:
-    """Get the plugin flavor registry.
-
-    Returns:
-        The plugin flavor registry.
-    """
-    global _plugin_flavor_registry
-
-    if _plugin_flavor_registry is None:
-        _plugin_flavor_registry = PluginFlavorRegistry()
-        _plugin_flavor_registry.initialize_plugins()
-    return _plugin_flavor_registry
 
 
 def rbac() -> RBACInterface:
@@ -245,11 +233,6 @@ def initialize_snapshot_executor() -> None:
         max_workers=server_config().max_concurrent_snapshot_runs,
         thread_name_prefix="zenml-snapshot-executor",
     )
-
-
-def initialize_plugins() -> None:
-    """Initialize the event plugins registry."""
-    plugin_flavor_registry().initialize_plugins()
 
 
 def initialize_zen_store() -> None:
@@ -791,12 +774,23 @@ def stop_event_loop_lag_monitor() -> None:
         event_loop_lag_monitor_task = None
 
 
+def set_auth_context(auth_context: "AuthContext") -> None:
+    """Set the authentication context for the current request.
+
+    Args:
+        auth_context: The authentication context.
+    """
+    _auth_context.set(auth_context)
+
+
 def get_auth_context() -> Optional["AuthContext"]:
     """Get the authentication context for the current request.
 
     Returns:
         The authentication context.
     """
+    if auth_context := _auth_context.get():
+        return auth_context
     request_context = request_manager().current_request
     return request_context.auth_context
 

@@ -55,6 +55,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Selector labels for server-only resources
+*/}}
+{{- define "zenml.serverSelectorLabels" -}}
+{{ include "zenml.selectorLabels" . }}
+app.kubernetes.io/component: server
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "zenml.serviceAccountName" -}}
