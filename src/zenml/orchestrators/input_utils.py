@@ -14,6 +14,7 @@
 """Utilities for inputs."""
 
 from typing import TYPE_CHECKING, Dict, List, Optional
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -30,6 +31,7 @@ def resolve_step_inputs(
     step: "Step",
     pipeline_run: "PipelineRunResponse",
     step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
+    input_overrides: Optional[Dict[str, "UUID"]] = None,
 ) -> Dict[str, List["StepRunInputResponse"]]:
     """Resolves inputs for the current step.
 
@@ -39,6 +41,7 @@ def resolve_step_inputs(
         step_runs: A dictionary of already fetched step runs to use for input
             resolution. This will be updated in-place with newly fetched step
             runs.
+        input_overrides: The input overrides for the step.
 
     Raises:
         InputResolutionError: If input resolving failed due to a missing
@@ -189,5 +192,14 @@ def resolve_step_inputs(
             ]
         else:
             step.config.parameters[name] = value_
+
+    if input_overrides:
+        for name, id_ in input_overrides.items():
+            input_artifacts[name] = [
+                StepRunInputResponse(
+                    input_type=StepRunInputArtifactType.OVERWRITE,
+                    **Client().get_artifact_version(id_).model_dump(),
+                )
+            ]
 
     return input_artifacts
