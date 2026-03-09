@@ -18,6 +18,9 @@ from datetime import timedelta
 from typing import Dict, List, Optional, Set, Tuple
 from uuid import uuid4
 
+from zenml.artifacts.external_artifact_config import (
+    ExternalArtifactConfiguration,
+)
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import (
@@ -69,6 +72,24 @@ class StepRunRequestFactory:
             str, Optional["StepRunResponse"]
         ] = {}
 
+    def _get_replay_input_overrides(
+        self, invocation_id: str
+    ) -> Dict[str, "ExternalArtifactConfiguration"]:
+        """Gets replay input overrides for a step.
+
+        Args:
+            invocation_id: The invocation ID to look up.
+
+        Returns:
+            The replay input overrides for the step.
+        """
+        return {
+            input_name: ExternalArtifactConfiguration(id=artifact_version_id)
+            for input_name, artifact_version_id in self.snapshot.pipeline_configuration.step_input_overrides.get(
+                invocation_id, {}
+            ).items()
+        }
+
     def _get_original_step_run(
         self, invocation_id: str
     ) -> Optional["StepRunResponse"]:
@@ -98,6 +119,56 @@ class StepRunRequestFactory:
         self._original_step_run_cache[invocation_id] = original_step_run
         return original_step_run
 
+    def apply_replay_input_overrides(
+        self, invocation_id: str, step: "Step"
+    ) -> "Step":
+        """Applies replay input overrides to a step configuration.
+
+        Args:
+            invocation_id: The invocation ID of the step.
+            step: The step to modify.
+
+        Returns:
+            The updated step.
+        """
+        overrides = self._get_replay_input_overrides(invocation_id)
+        if not overrides:
+            return step
+
+        if not self.pipeline_run.original_run:
+            raise RuntimeError(
+                "Replay step input overrides require an original pipeline run."
+            )
+
+        original_step_run = self._get_original_step_run(invocation_id)
+        if not original_step_run:
+            raise RuntimeError(
+                f"No original step run found for replay override target "
+                f"`{invocation_id}`."
+            )
+
+        invalid_inputs = set(overrides) - (
+            set(original_step_run.inputs)
+            | set(original_step_run.config.parameters)
+        )
+        if invalid_inputs:
+            invalid = ", ".join(sorted(invalid_inputs))
+            raise RuntimeError(
+                f"Unable to override inputs `{invalid}` for step "
+                f"`{invocation_id}` because they were not inputs in "
+                "the original run."
+            )
+
+        step_config = step.config.model_copy(
+            update={
+                "external_input_artifacts": {
+                    **step.config.external_input_artifacts,
+                    **overrides,
+                }
+            }
+        )
+        return step.model_copy(update={"config": step_config})
+
     def should_skip_step(self, invocation_id: str) -> bool:
         """Check whether a step should be skipped.
 
@@ -107,6 +178,12 @@ class StepRunRequestFactory:
         Returns:
             Whether the step should be skipped.
         """
+        # TODO: not sure what the expectation here would be, e.g. when setting
+        # `skip_successful_steps=True`, should we skip the step if there are
+        # input overrides?
+        if self._get_replay_input_overrides(invocation_id):
+            return False
+
         if invocation_id in self.snapshot.pipeline_configuration.steps_to_skip:
             return True
 
@@ -190,6 +267,10 @@ class StepRunRequestFactory:
         step = (
             request.dynamic_config
             or self.snapshot.step_configurations[request.name]
+        )
+        # TODO: this should also remove the original artifacts I think
+        step = self.apply_replay_input_overrides(
+            invocation_id=request.name, step=step
         )
 
         input_artifacts = input_utils.resolve_step_inputs(
