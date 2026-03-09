@@ -7,6 +7,7 @@ import pytest
 
 from zenml.utils.exception_utils import (
     collect_exception_information,
+    reconstruct_exception,
 )
 
 
@@ -105,3 +106,47 @@ def test_regex_pattern_matches_windows_paths_and_special_chars():
         r'  File "C:\Other\path\file.py", line 123, in some_function'
     )
     assert line_pattern_win.search(non_match_line) is None
+
+
+def test_collect_exception_information_includes_source_and_message():
+    """Test that collected exception info includes source and message fields."""
+    try:
+        raise ValueError("failure")
+    except ValueError as exception:
+        info = collect_exception_information(exception)
+
+    assert info.source == "builtins.ValueError"
+    assert info.message == "failure"
+
+
+def test_reconstruct_exception_recreates_exception_type_and_message():
+    """Test reconstruction of an exception from serialized exception info."""
+    try:
+        raise ValueError("failure")
+    except ValueError as exception:
+        info = collect_exception_information(exception)
+
+    reconstructed = reconstruct_exception(
+        exception_info=info,
+        fallback_message="fallback",
+    )
+
+    assert isinstance(reconstructed, ValueError)
+    assert str(reconstructed) == "failure"
+
+
+def test_reconstruct_exception_falls_back_on_invalid_source():
+    """Test fallback behavior if exception source cannot be loaded."""
+    try:
+        raise ValueError("failure")
+    except ValueError as exception:
+        info = collect_exception_information(exception)
+
+    info.source = "does.not.exist.Exception"
+    reconstructed = reconstruct_exception(
+        exception_info=info,
+        fallback_message="fallback",
+    )
+
+    assert isinstance(reconstructed, RuntimeError)
+    assert str(reconstructed) == "failure"

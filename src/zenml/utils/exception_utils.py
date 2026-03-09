@@ -18,16 +18,14 @@ import os
 import re
 import textwrap
 import traceback
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import Any, Callable, Optional, Type
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.models import (
     ExceptionInfo,
 )
-
-if TYPE_CHECKING:
-    pass
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -81,9 +79,70 @@ def collect_exception_information(
     tb_bytes = textwrap.dedent("\n".join(tb)).encode()
     tb_bytes = tb_bytes[:MEDIUMTEXT_MAX_LENGTH]
 
+    source = None
+    try:
+        source = source_utils.resolve(type(exception)).import_path
+    except Exception as e:
+        logger.debug("Failed to resolve exception source: %s", e)
+
+    message = str(exception) if str(exception) else None
+
     return ExceptionInfo(
         # Ignore errors when decoding in case we cut off in the middle of an
         # encoded character.
         traceback=tb_bytes.decode(errors="ignore"),
+        source=source,
+        message=message,
         user_code_line=line_number,
     )
+
+
+def reconstruct_exception(
+    exception_info: Optional[ExceptionInfo], fallback_message: str
+) -> BaseException:
+    """Reconstruct an exception.
+
+    Args:
+        exception_info: Exception information.
+        fallback_message: Message to use if the exception cannot be
+            reconstructed.
+
+    Returns:
+        The reconstructed exception if possible, otherwise a RuntimeError.
+    """
+    if not exception_info:
+        return RuntimeError(fallback_message)
+
+    message = exception_info.message or fallback_message
+    source = exception_info.source
+    if not source:
+        return RuntimeError(message)
+
+    try:
+        exception_class: Type[BaseException] = (
+            source_utils.load_and_validate_class(
+                source=source, expected_class=BaseException
+            )
+        )
+    except Exception as e:
+        logger.warning("Failed to load exception source `%s`: %s", source, e)
+        return RuntimeError(message)
+
+    try:
+        return exception_class(message)
+    except Exception as e:
+        logger.warning(
+            "Failed to instantiate exception `%s` with message `%s`: %s",
+            source,
+            message,
+            e,
+        )
+        try:
+            return exception_class()
+        except Exception as e:
+            logger.warning(
+                "Failed to instantiate exception `%s` without args: %s",
+                source,
+                e,
+            )
+            return RuntimeError(message)

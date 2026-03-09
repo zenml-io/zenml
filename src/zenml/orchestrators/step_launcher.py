@@ -635,7 +635,14 @@ class StepLauncher:
                     step_run=step_run_info.step_run,
                 )
                 if not status.is_successful:
-                    raise RuntimeError(f"Step failed with status `{status}`.")
+                    step_run = Client().get_run_step(step_run_info.step_run_id)
+                    raise exception_utils.reconstruct_exception(
+                        exception_info=step_run.exception_info,
+                        fallback_message=(
+                            f"Step `{step_run_info.pipeline_step_name}` failed "
+                            f"with status `{status}`."
+                        ),
+                    )
 
     def _run_step_with_dynamic_orchestrator(
         self,
@@ -670,7 +677,14 @@ class StepLauncher:
                 step_run_info.step_run
             )
             if not status.is_successful:
-                raise RuntimeError(f"Step failed with status `{status}`.")
+                step_run = Client().get_run_step(step_run_info.step_run_id)
+                raise exception_utils.reconstruct_exception(
+                    exception_info=step_run.exception_info,
+                    fallback_message=(
+                        f"Step `{step_run_info.pipeline_step_name}` failed "
+                        f"with status `{status}`."
+                    ),
+                )
 
     def _run_step_in_current_thread(
         self,
