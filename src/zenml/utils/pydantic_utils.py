@@ -16,7 +16,17 @@
 import inspect
 import json
 from json.decoder import JSONDecodeError
-from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Mapping,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import yaml
 from pydantic import (
@@ -27,6 +37,7 @@ from pydantic import (
     PlainValidator,
     ValidationInfo,
     WrapValidator,
+    create_model,
     validate_call,
 )
 from pydantic._internal import _repr as pydantic_repr
@@ -77,6 +88,40 @@ def update_model(
         values = {**original_dict, **update_dict}
 
     return original.__class__.model_validate(values)
+
+
+def create_parameter_model(
+    model_name: str,
+    parameters: Mapping[str, inspect.Parameter],
+    default_values: Optional[Mapping[str, Any]] = None,
+    config: Optional[ConfigDict] = None,
+) -> Type[BaseModel]:
+    """Creates a Pydantic model from function parameters.
+
+    Args:
+        model_name: Name of the generated model.
+        parameters: Mapping of parameter names to function parameters.
+        default_values: Optional override defaults keyed by parameter name.
+        config: Optional Pydantic config for the generated model.
+
+    Returns:
+        A Pydantic model representing the provided parameters.
+    """
+    fields: Dict[str, Any] = {}
+    default_values = default_values or {}
+
+    for name, parameter in parameters.items():
+        if name in default_values:
+            default_value = default_values[name]
+        elif parameter.default is not inspect.Parameter.empty:
+            default_value = parameter.default
+        else:
+            default_value = ...
+
+        fields[name] = (parameter.annotation, default_value)
+
+    fields["__config__"] = config or ConfigDict(extra="forbid")
+    return create_model(model_name, **fields)
 
 
 class TemplateGenerator:

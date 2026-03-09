@@ -92,3 +92,25 @@ def test_step_spec_invocation_id_equality():
         upstream_steps=[],
         invocation_id="different_name",
     )
+
+
+def test_step_spec_parameter_spec_equality():
+    """Tests the step spec equality operator regarding the parameter spec."""
+    assert StepSpec(
+        source="src",
+        upstream_steps=[],
+        parameter_spec={"type": "object"},
+    ) == StepSpec(
+        source="src",
+        upstream_steps=[],
+        parameter_spec={"type": "object"},
+    )
+    assert StepSpec(
+        source="src",
+        upstream_steps=[],
+        parameter_spec={"type": "object"},
+    ) != StepSpec(
+        source="src",
+        upstream_steps=[],
+        parameter_spec={},
+    )

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import inspect
 from typing import Dict, Optional
 
 from pydantic import BaseModel
@@ -165,3 +166,22 @@ def test_validate_function_args_expands_variadic_keyword_arguments():
 
     validated = pydantic_utils.validate_function_args(f, None, 1, b="2", c=3)
     assert validated == {"a": 1, "b": 2, "c": 3}
+
+
+def test_create_parameter_model_uses_override_defaults():
+    """Tests that parameter model defaults can be overridden."""
+
+    def f(a: int, b: str = "default") -> None:
+        pass
+
+    model = pydantic_utils.create_parameter_model(
+        model_name="TestParameters",
+        parameters=inspect.signature(f).parameters,
+        default_values={"a": 1},
+    )
+    schema = model.model_json_schema()
+
+    assert schema["additionalProperties"] is False
+    assert schema["properties"]["a"]["default"] == 1
+    assert schema["properties"]["b"]["default"] == "default"
+    assert "a" not in schema.get("required", [])

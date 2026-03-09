@@ -78,6 +78,11 @@ def s2(input: int) -> int:
     return input + 1
 
 
+@step
+def step_with_parameters(a: int, b: str = "default") -> None:
+    pass
+
+
 def test_spec_compilation(local_stack):
     """Tests the compilation of the pipeline spec."""
 
@@ -123,6 +128,35 @@ def test_spec_compilation(local_stack):
 
     assert spec == expected_spec
     assert other_spec == expected_spec
+
+
+def test_step_parameter_spec_compilation(local_stack):
+    """Tests that step parameter specs are included in compiled pipeline specs."""
+
+    @pipeline
+    def pipeline_instance():
+        step_with_parameters(a=1)
+
+    pipeline_instance.prepare()
+    spec = (
+        Compiler()
+        .compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+        .pipeline_spec
+    )
+
+    step_spec = next(
+        step_spec
+        for step_spec in spec.steps
+        if step_spec.invocation_id == "step_with_parameters"
+    )
+
+    assert step_spec.parameter_spec["additionalProperties"] is False
+    assert step_spec.parameter_spec["properties"]["a"]["default"] == 1
+    assert step_spec.parameter_spec["properties"]["b"]["default"] == "default"
 
 
 def test_calling_a_pipeline_twice_raises_no_exception(
