@@ -1142,36 +1142,6 @@ class DynamicPipelineRunner:
         self._futures = {}
 
 
-def apply_replay_input_overrides(
-    snapshot: "PipelineSnapshotResponse",
-    invocation_id: str,
-    inputs: Dict[str, Any],
-) -> Dict[str, Any]:
-    """Applies replay input overrides to dynamic step inputs.
-
-    Args:
-        snapshot: The pipeline snapshot being executed.
-        invocation_id: The invocation ID of the dynamic step.
-        inputs: The original step inputs.
-
-    Returns:
-        The step inputs with replay overrides applied.
-    """
-    overrides = snapshot.pipeline_configuration.step_input_overrides.get(
-        invocation_id, {}
-    )
-    if not overrides:
-        return inputs
-
-    overridden_inputs = dict(inputs)
-    for input_name, artifact_version_id in overrides.items():
-        overridden_inputs[input_name] = Client().get_artifact_version(
-            artifact_version_id
-        )
-
-    return overridden_inputs
-
-
 def compile_dynamic_step_invocation(
     snapshot: "PipelineSnapshotResponse",
     pipeline: "DynamicPipeline",
@@ -1221,12 +1191,6 @@ def compile_dynamic_step_invocation(
                 upstream_steps.add(item.invocation_id)
 
     inputs = await_step_inputs(inputs)
-    # TODO: do we need this here? This would affect compilation and already
-    # remove potential links to upstream steps here. Might be better behaviour,
-    # but not consistent with static pipelines.
-    inputs = apply_replay_input_overrides(
-        snapshot=snapshot, invocation_id=invocation_id, inputs=inputs
-    )
 
     for value in inputs.values():
         if isinstance(value, OutputArtifact):
