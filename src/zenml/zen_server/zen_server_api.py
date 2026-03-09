@@ -70,6 +70,7 @@ from zenml.zen_server.routers import (
     projects_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
+    run_wait_conditions_endpoints,
     runs_endpoints,
     schedule_endpoints,
     secrets_endpoints,
@@ -272,6 +273,7 @@ app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(pipeline_snapshot_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
+app.include_router(run_wait_conditions_endpoints.router)
 app.include_router(run_templates_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)

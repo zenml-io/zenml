@@ -27,6 +27,7 @@ class DAGGeneratorHelper:
         """Initialize the DAG generator helper."""
         self.step_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.artifact_nodes: Dict[str, PipelineRunDAG.Node] = {}
+        self.wait_condition_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.triggered_run_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.edges: List[PipelineRunDAG.Edge] = []
 
@@ -76,6 +77,17 @@ class DAGGeneratorHelper:
         # Make sure there is no slashes as we use them as delimiters
         name = name.replace("/", "-")
         return f"run/{name}"
+
+    def get_wait_condition_node_id(self, wait_condition_key: str) -> str:
+        """Get the ID of a wait condition node.
+
+        Args:
+            wait_condition_key: The deterministic wait condition key.
+
+        Returns:
+            The ID of the wait condition node.
+        """
+        return f"wait_condition/{wait_condition_key}"
 
     def add_step_node(
         self,
@@ -163,6 +175,26 @@ class DAGGeneratorHelper:
         )
         return triggered_run_node
 
+    def add_wait_condition_node(
+        self,
+        node_id: str,
+        name: str,
+        id: Optional[UUID] = None,
+        **metadata: Any,
+    ) -> PipelineRunDAG.Node:
+        """Add a wait condition node to the DAG."""
+        wait_condition_node = PipelineRunDAG.Node(
+            type="wait_condition",
+            id=id,
+            node_id=node_id,
+            name=name,
+            metadata=metadata,
+        )
+        self.wait_condition_nodes[wait_condition_node.node_id] = (
+            wait_condition_node
+        )
+        return wait_condition_node
+
     def add_edge(self, source: str, target: str, **metadata: Any) -> None:
         """Add an edge to the DAG.
 
@@ -194,6 +226,13 @@ class DAGGeneratorHelper:
                 return node
         raise KeyError(f"Step node with name {name} not found")
 
+    def get_wait_condition_node_by_key(
+        self, wait_condition_key: str
+    ) -> PipelineRunDAG.Node:
+        """Get a wait condition node by key."""
+        node_id = self.get_wait_condition_node_id(wait_condition_key)
+        return self.wait_condition_nodes[node_id]
+
     def finalize_dag(
         self, pipeline_run_id: UUID, status: ExecutionStatus
     ) -> PipelineRunDAG:
@@ -211,6 +250,7 @@ class DAGGeneratorHelper:
             status=status,
             nodes=list(self.step_nodes.values())
             + list(self.artifact_nodes.values())
+            + list(self.wait_condition_nodes.values())
             + list(self.triggered_run_nodes.values()),
             edges=self.edges,
         )

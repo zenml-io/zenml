@@ -466,6 +466,32 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
+    def restart(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        run: "PipelineRunResponse",
+        stack: "Stack",
+    ) -> None:
+        if not snapshot.is_dynamic:
+            raise RuntimeError("Cannot restart a non-dynamic pipeline.")
+
+        self._prepare_run(snapshot=snapshot)
+
+        base_environment, secrets = get_config_environment_vars(
+            pipeline_run_id=run.id,
+        )
+        base_environment.update(secrets)
+
+        try:
+            _ = self.submit_dynamic_pipeline(
+                snapshot=snapshot,
+                stack=stack,
+                environment=base_environment,
+                placeholder_run=run,
+            )
+        finally:
+            self._cleanup_run()
+
     def run_step(
         self,
         step: "Step",

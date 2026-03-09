@@ -83,6 +83,9 @@ if TYPE_CHECKING:
         ModelVersionSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.run_wait_condition_schemas import (
+        RunWaitConditionSchema,
+    )
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
@@ -194,6 +197,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_relationship_kwargs={
             "cascade": "delete",
             "order_by": "asc(StepRunSchema.start_time)",
+        },
+    )
+    wait_conditions: List["RunWaitConditionSchema"] = Relationship(
+        back_populates="run",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "order_by": "desc(RunWaitConditionSchema.created)",
         },
     )
     model_version: "ModelVersionSchema" = Relationship(
@@ -359,6 +369,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
                     selectinload(jl_arg(PipelineRunSchema.logs)),
+                    selectinload(jl_arg(PipelineRunSchema.wait_conditions)),
                     selectinload(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
@@ -713,6 +724,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 original_run=self.original_run.to_model()
                 if self.original_run
                 else None,
+                active_wait_condition=next(
+                    (
+                        condition.to_model(include_metadata=True)
+                        for condition in self.wait_conditions
+                        if condition.status == "open"
+                    ),
+                    None,
+                ),
             )
 
         return PipelineRunResponse(
