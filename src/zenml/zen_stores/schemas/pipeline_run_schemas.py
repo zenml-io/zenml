@@ -771,6 +771,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
             if run_update.is_finished:
                 self.in_progress = False
+            elif run_update.is_finished is False:
+                self.in_progress = True
             elif self.snapshot and self.snapshot.is_dynamic:
                 # In dynamic pipelines, we can't actually check if the run is
                 # in progress by inspecting the DAG. Only once the orchestration
