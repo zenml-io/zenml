@@ -1246,7 +1246,9 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
 
         Client().zen_store.update_run(
             run_id=run.id,
-            run_update=PipelineRunUpdate(status=ExecutionStatus.RETRYING),
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.RETRYING, is_finished=False
+            ),
         )
 
         with cli_utils.temporary_active_stack(
