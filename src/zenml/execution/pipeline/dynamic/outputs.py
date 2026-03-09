@@ -189,7 +189,7 @@ class _IsolatedStepFuture(BaseFuture):
                 exception_info=step_run.exception_info,
                 fallback_message=(
                     f"Step `{self.invocation_id}` failed with "
-                    f"status `{step_run.status}`.",
+                    f"status `{step_run.status}`."
                 ),
             )
 
