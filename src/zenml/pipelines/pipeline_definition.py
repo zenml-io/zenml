@@ -1845,20 +1845,17 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._parameters = {}
         self._output_artifacts = []
 
-    def _normalize_replay_step_input_overrides(
+    def _prepare_step_input_overrides(
         self,
         step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]],
     ) -> Dict[str, Dict[str, "UUID"]]:
-        """Normalizes replay step input overrides.
+        """Prepares replay step input overrides.
 
         Args:
-            step_input_overrides: User-provided replay step input overrides.
-
-        Raises:
-            TypeError: If the override structure is invalid.
+            step_input_overrides: User-provided step input overrides.
 
         Returns:
-            Artifact version IDs for replay step inputs.
+            Artifact version IDs for step input overrides.
         """
         from zenml import ExternalArtifact
         from zenml.models import ArtifactVersionResponse
@@ -1866,7 +1863,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         if not step_input_overrides:
             return {}
 
-        normalized_overrides: Dict[str, Dict[str, UUID]] = {}
+        processed_overrides: Dict[str, Dict[str, UUID]] = {}
 
         for invocation_id, overrides in step_input_overrides.items():
             invocation_overrides: Dict[str, UUID] = {}
@@ -1886,9 +1883,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
                 invocation_overrides[input_name] = artifact_version_id
 
-            normalized_overrides[invocation_id] = invocation_overrides
+            processed_overrides[invocation_id] = invocation_overrides
 
-        return normalized_overrides
+        return processed_overrides
 
     def replay(
         self,
@@ -1945,26 +1942,26 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
 
         original_run = Client().get_pipeline_run(pipeline_run, hydrate=True)
-        normalized_step_input_overrides = (
-            self._normalize_replay_step_input_overrides(step_input_overrides)
-        )
 
         pipeline_instance = self.copy()
         pipeline_instance._original_run = original_run
 
-        if skip or skip_successful_steps or normalized_step_input_overrides:
-            configuration_update: Dict[str, Any] = {}
-            if skip or skip_successful_steps:
-                configuration_update.update(
-                    {
-                        "skip_successful_steps": skip_successful_steps,
-                        "steps_to_skip": set(skip) if skip else set(),
-                    }
-                )
-            if normalized_step_input_overrides:
-                configuration_update["step_input_overrides"] = (
-                    normalized_step_input_overrides
-                )
+        configuration_update: Dict[str, Any] = {}
+
+        if skip or skip_successful_steps:
+            configuration_update.update(
+                {
+                    "skip_successful_steps": skip_successful_steps,
+                    "steps_to_skip": set(skip) if skip else set(),
+                }
+            )
+
+        if step_input_overrides:
+            configuration_update["step_input_overrides"] = (
+                self._prepare_step_input_overrides(step_input_overrides)
+            )
+
+        if configuration_update:
             pipeline_instance._configuration = (
                 pipeline_instance._configuration.model_copy(
                     update=configuration_update

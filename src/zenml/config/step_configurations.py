@@ -20,6 +20,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -561,6 +562,21 @@ class Step(FrozenBaseModel):
             data["config"] = merged_config_dict
 
         return cls.model_validate(data)
+
+    @property
+    def available_input_keys(self) -> Set[str]:
+        """Available input keys for the step.
+
+        Returns:
+            The available input keys for the step.
+        """
+        return (
+            set(self.spec.inputs_v2)
+            | set(self.config.parameters)
+            | set(self.config.model_artifacts_or_metadata)
+            | set(self.config.external_input_artifacts)
+            | set(self.config.client_lazy_loaders)
+        )
 
 
 def _apply_pipeline_configuration(

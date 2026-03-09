@@ -107,16 +107,18 @@ class StepRunRequestFactory:
         Returns:
             Whether the step should be skipped.
         """
-        # TODO: not sure what the expectation here would be, e.g. when setting
-        # `skip_successful_steps=True`, should we skip the step if there are
-        # input overrides?
-        if self._get_input_overrides(invocation_id):
-            return False
-
         if invocation_id in self.snapshot.pipeline_configuration.steps_to_skip:
             return True
 
         if not self.snapshot.pipeline_configuration.skip_successful_steps:
+            return False
+
+        if self._get_input_overrides(invocation_id):
+            logger.warning(
+                "Step `%s` should be skipped, but there are input overrides "
+                "configured. The step will be executed.",
+                invocation_id,
+            )
             return False
 
         try:
@@ -421,32 +423,23 @@ class StepRunRequestFactory:
         Returns:
             The input overrides for the step.
         """
-        # if not self.pipeline_run.original_run:
-        #     raise RuntimeError(
-        #         "Replay step input overrides require an original pipeline run."
-        #     )
-
-        # original_step_run = self._get_original_step_run(invocation_id)
-        # if not original_step_run:
-        #     raise RuntimeError(
-        #         f"No original step run found for replay override target "
-        #         f"`{invocation_id}`."
-        #     )
-
-        # invalid_inputs = set(overrides) - (
-        #     set(original_step_run.inputs)
-        #     | set(original_step_run.config.parameters)
-        # )
-        # if invalid_inputs:
-        #     invalid = ", ".join(sorted(invalid_inputs))
-        #     raise RuntimeError(
-        #         f"Unable to override inputs `{invalid}` for step "
-        #         f"`{invocation_id}` because they were not inputs in "
-        #         "the original run."
-        #     )
-        return self.snapshot.pipeline_configuration.step_input_overrides.get(
-            invocation_id, {}
+        overrides = (
+            self.snapshot.pipeline_configuration.step_input_overrides.get(
+                invocation_id, {}
+            )
         )
+        available_input_keys = self.snapshot.step_configurations[
+            invocation_id
+        ].available_input_keys
+        invalid_keys = overrides.keys() - available_input_keys
+        if invalid_keys:
+            logger.warning(
+                "Ignoring invalid input overrides for step `%s`: %s",
+                invocation_id,
+                invalid_keys,
+            )
+
+        return {key: overrides[key] for key in available_input_keys}
 
 
 def find_cacheable_invocation_candidates(
