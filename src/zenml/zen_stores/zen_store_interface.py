@@ -108,6 +108,7 @@ from zenml.models import (
     RunWaitConditionRequest,
     RunWaitConditionResolveRequest,
     RunWaitConditionResponse,
+    RunWaitConditionStatus,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -1721,14 +1722,12 @@ class ZenStoreInterface(ABC):
         self,
         run_wait_condition_id: UUID,
         resolve_request: RunWaitConditionResolveRequest,
-        resolved_by_user_id: Optional[UUID] = None,
     ) -> RunWaitConditionResponse:
         """Resolve a run wait condition.
 
         Args:
             run_wait_condition_id: The wait condition ID.
             resolve_request: Resolution payload.
-            resolved_by_user_id: Optional user ID resolving the condition.
 
         Returns:
             The updated wait condition.
@@ -1739,7 +1738,7 @@ class ZenStoreInterface(ABC):
         self,
         run_wait_condition_id: UUID,
         lease_update: RunWaitConditionLeaseUpdate,
-    ) -> None:
+    ) -> RunWaitConditionStatus:
         """Update a run wait condition polling lease.
 
         Args:
@@ -1747,7 +1746,7 @@ class ZenStoreInterface(ABC):
             lease_update: Lease update payload.
 
         Returns:
-            None.
+            The latest persisted wait condition status.
         """
 
     # -------------------- Run metadata --------------------

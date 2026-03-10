@@ -15,7 +15,7 @@
 
 import contextvars
 import threading
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from typing_extensions import Self
 
@@ -54,7 +54,6 @@ class DynamicPipelineRunContext(context_utils.BaseContext):
         self._runner = runner
         self._wait_condition_counter = 0
         self._wait_condition_counter_lock = threading.Lock()
-        self._wait_condition_key_prefix = str(run.id)
 
     @property
     def pipeline(self) -> "DynamicPipeline":
@@ -92,20 +91,16 @@ class DynamicPipelineRunContext(context_utils.BaseContext):
         """
         return self._runner
 
-    def next_wait_condition_key(self, key_prefix: Optional[str] = None) -> str:
-        """Get the next deterministic wait condition key for this run.
-
-        Args:
-            key_prefix: Optional per-call prefix override.
+    def next_wait_condition_name(self) -> str:
+        """Get the next deterministic wait condition name for this run.
 
         Returns:
-            A deterministic wait condition key.
+            A deterministic wait condition name.
         """
-        effective_prefix = key_prefix or self._wait_condition_key_prefix
         with self._wait_condition_counter_lock:
             counter = self._wait_condition_counter
             self._wait_condition_counter += 1
-        return f"{effective_prefix}:{counter}"
+        return f"wait_condition:{counter}"
 
     def __enter__(self) -> Self:
         """Enter the dynamic pipeline run context.

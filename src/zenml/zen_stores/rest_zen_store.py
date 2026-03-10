@@ -229,6 +229,7 @@ from zenml.models import (
     RunWaitConditionRequest,
     RunWaitConditionResolveRequest,
     RunWaitConditionResponse,
+    RunWaitConditionStatus,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -2132,7 +2133,7 @@ class RestZenStore(BaseZenStore):
     ) -> RunWaitConditionResponse:
         """Create a run wait condition."""
         response_body = self.post(
-            f"{RUNS}/{run_wait_condition.run_id}{RUN_WAIT_CONDITIONS}",
+            RUN_WAIT_CONDITIONS,
             body=run_wait_condition,
         )
         return RunWaitConditionResponse.model_validate(response_body)
@@ -2165,7 +2166,6 @@ class RestZenStore(BaseZenStore):
         self,
         run_wait_condition_id: UUID,
         resolve_request: RunWaitConditionResolveRequest,
-        resolved_by_user_id: Optional[UUID] = None,
     ) -> RunWaitConditionResponse:
         """Resolve a run wait condition."""
         response_body = self.put(
@@ -2178,12 +2178,13 @@ class RestZenStore(BaseZenStore):
         self,
         run_wait_condition_id: UUID,
         lease_update: RunWaitConditionLeaseUpdate,
-    ) -> None:
+    ) -> RunWaitConditionStatus:
         """Update a run wait condition polling lease."""
-        self.put(
+        response_body = self.put(
             path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}",
             body=lease_update,
         )
+        return RunWaitConditionStatus(response_body)
 
     # ----------------------------- Run Metadata -----------------------------
 
