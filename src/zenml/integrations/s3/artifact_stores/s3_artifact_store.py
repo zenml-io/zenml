@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the S3 Artifact Store."""
 
-import os
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -62,168 +61,6 @@ def _normalize_s3_path(path: str) -> str:
     return path
 
 
-class _SafeS3WriteFile:
-    """Wraps writable S3 file handles with resilient close semantics.
-
-    The `s3fs` backend may raise a `FileNotFoundError` during close if an
-    internal temporary local file has already been cleaned up. In this case,
-    we treat close as successful only if the remote object exists.
-    """
-
-    def __init__(
-        self,
-        file_handle: Any,
-        filesystem: "ZenMLS3Filesystem",
-        path: PathType,
-    ) -> None:
-        """Initializes a wrapped writable S3 file handle.
-
-        Args:
-            file_handle: The wrapped file handle.
-            filesystem: Filesystem used to verify remote upload success.
-            path: The remote S3 path associated with this file handle.
-        """
-        self._file_handle = file_handle
-        self._filesystem = filesystem
-        self._remote_path = convert_to_str(path)
-        self._normalized_remote_path = _normalize_s3_path(self._remote_path)
-        self._remote_paths = (
-            self._remote_path,
-            self._normalized_remote_path,
-        )
-        self._closed = False
-
-    @property
-    def closed(self) -> bool:
-        """Checks whether this handle is closed.
-
-        Returns:
-            `True` if the wrapped handle is closed, `False` otherwise.
-        """
-        return self._closed or bool(self._file_handle.closed)
-
-    def __enter__(self) -> "_SafeS3WriteFile":
-        """Returns the file handle when entering a context.
-
-        Returns:
-            The wrapped file handle.
-        """
-        return self
-
-    def __exit__(self, *args: Any) -> None:
-        """Closes the wrapped handle when leaving a context.
-
-        Args:
-            *args: Context manager exception info (unused).
-        """
-        self.close()
-
-    def __getattr__(self, name: str) -> Any:
-        """Proxies unknown attributes to the wrapped file handle.
-
-        Args:
-            name: Name of the requested attribute.
-
-        Returns:
-            The proxied attribute.
-        """
-        return getattr(self._file_handle, name)
-
-    def close(self) -> None:
-        """Closes the file handle.
-
-        Raises:
-            FileNotFoundError: If close fails for any reason other than an
-                already-cleaned local temporary file after a successful upload.
-        """
-        if self.closed:
-            return
-
-        try:
-            self._file_handle.close()
-        except FileNotFoundError as error:
-            missing_path = self._extract_missing_path(error)
-            if not self._should_ignore_missing_temp_file(missing_path):
-                raise
-            logger.debug(
-                "Ignoring missing local temporary file `%s` while closing "
-                "S3 upload to `%s`.",
-                missing_path,
-                self._remote_path,
-            )
-            self._closed = True
-        else:
-            self._closed = True
-
-    def _should_ignore_missing_temp_file(
-        self, missing_path: Optional[str]
-    ) -> bool:
-        """Checks if a close-time `FileNotFoundError` can be ignored.
-
-        Args:
-            missing_path: The path reported missing by the error, if any.
-
-        Returns:
-            `True` if the error corresponds to a missing local temporary file
-            after a successful upload, `False` otherwise.
-        """
-        if not missing_path:
-            return False
-
-        if missing_path in self._remote_paths:
-            return False
-
-        if not os.path.isabs(missing_path):
-            return False
-
-        return self._remote_path_exists()
-
-    def _remote_path_exists(self) -> bool:
-        """Checks whether the remote object currently exists.
-
-        Returns:
-            `True` if the remote object exists, `False` otherwise.
-        """
-        try:
-            return bool(
-                self._filesystem.exists(path=self._normalized_remote_path)
-            )
-        except Exception:
-            logger.debug(
-                "Failed to check existence of `%s`, retrying with "
-                "original path.",
-                self._normalized_remote_path,
-                exc_info=True,
-            )
-            try:
-                return bool(self._filesystem.exists(path=self._remote_path))
-            except Exception:
-                logger.debug(
-                    "Failed to check existence of `%s`.",
-                    self._remote_path,
-                    exc_info=True,
-                )
-                return False
-
-    @staticmethod
-    def _extract_missing_path(error: FileNotFoundError) -> Optional[str]:
-        """Extracts the missing path from a `FileNotFoundError`.
-
-        Args:
-            error: The raised error.
-
-        Returns:
-            The missing path if available, otherwise `None`.
-        """
-        if error.filename:
-            return str(error.filename)
-
-        if len(error.args) >= 3 and isinstance(error.args[2], str):
-            return error.args[2]
-
-        return None
-
-
 class ZenMLS3Filesystem(s3fs.S3FileSystem):  # type: ignore[misc]
     """Modified s3fs.S3FileSystem to disable caching.
 
@@ -248,28 +85,6 @@ class ZenMLS3Filesystem(s3fs.S3FileSystem):  # type: ignore[misc]
     """
 
     cachable = False
-
-    def open(self, path: PathType, mode: str = "rb", **kwargs: Any) -> Any:
-        """Opens a file in S3.
-
-        Args:
-            path: Path of the file to open.
-            mode: Mode in which to open the file.
-            **kwargs: Additional keyword arguments passed to `s3fs`.
-
-        Returns:
-            A file-like object.
-        """
-        file_handle = super().open(path=path, mode=mode, **kwargs)
-
-        if any(write_mode in mode for write_mode in ("w", "a", "+")):
-            return _SafeS3WriteFile(
-                file_handle=file_handle,
-                filesystem=self,
-                path=path,
-            )
-
-        return file_handle
 
     async def _close(self) -> None:
         """Close the S3 client."""
