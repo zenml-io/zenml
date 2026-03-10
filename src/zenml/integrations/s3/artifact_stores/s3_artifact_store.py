@@ -98,6 +98,9 @@ class ZenMLS3Filesystem(s3fs.S3FileSystem):  # type: ignore[misc]
 
         Args:
             s3_creator: The aiobotocore async context manager to exit.
+
+        Raises:
+            AssertionError: If the assertion is unrelated to double-close.
         """
         try:
             await s3_creator.__aexit__(None, None, None)
