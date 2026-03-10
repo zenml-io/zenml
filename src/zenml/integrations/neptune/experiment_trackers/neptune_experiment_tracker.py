@@ -55,7 +55,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
             "the time being, it will be removed soon and we recommend migrating "
             "to an alternative experiment tracker such as MLflow, Weights & "
             "Biases, or Comet."
-            )
+        )
         self.run_state: RunProvider = RunProvider()
 
     @property

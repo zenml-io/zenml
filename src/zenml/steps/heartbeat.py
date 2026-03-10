@@ -153,7 +153,7 @@ class StepHeartbeatWorker:
         logger.debug("%s run() loop entered", self.name)
         try:
             while self._running:
-                try: 
+                try:
                     self._heartbeat()
                     self._consecutive_failures = 0
                     # One-shot: signal the main thread and stop the loop.
