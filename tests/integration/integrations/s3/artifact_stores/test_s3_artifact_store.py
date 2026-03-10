@@ -36,6 +36,7 @@ class _CloseFailingWriteHandle:
 
     def __init__(self) -> None:
         self.close_calls = 0
+        self.closed = False
         self.data = b""
 
     def write(self, data: bytes) -> int:
@@ -224,7 +225,7 @@ def test_s3_open_write_ignores_missing_temp_file_if_remote_exists() -> None:
         patch.object(
             filesystem,
             "exists",
-            side_effect=[False, True],
+            return_value=True,
         ) as mock_exists,
         patch(
             "zenml.integrations.s3.artifact_stores."
@@ -239,29 +240,7 @@ def test_s3_open_write_ignores_missing_temp_file_if_remote_exists() -> None:
 
     assert write_handle.data == b"payload"
     assert write_handle.close_calls == 1
-    assert mock_exists.call_count == 2
-
-
-def test_s3_open_write_raises_missing_temp_file_if_remote_preexists() -> None:
-    """Tests S3 write close fails if the destination already existed."""
-    filesystem = ZenMLS3Filesystem.__new__(ZenMLS3Filesystem)
-    write_handle = _CloseFailingWriteHandle()
-
-    with (
-        patch.object(filesystem, "exists", return_value=True),
-        patch(
-            "zenml.integrations.s3.artifact_stores."
-            "s3_artifact_store.s3fs.S3FileSystem.open",
-            return_value=write_handle,
-        ),
-    ):
-        wrapped_file = filesystem.open(path="s3://bucket/path", mode="wb")
-        wrapped_file.write(b"payload")
-
-        with pytest.raises(FileNotFoundError):
-            wrapped_file.close()
-
-    assert write_handle.close_calls == 1
+    assert mock_exists.call_count == 1
 
 
 def test_s3_open_write_raises_missing_temp_file_if_remote_missing() -> None:

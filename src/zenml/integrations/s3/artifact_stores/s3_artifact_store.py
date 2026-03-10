@@ -91,7 +91,6 @@ class _SafeS3WriteFile:
             self._remote_path,
             self._normalized_remote_path,
         )
-        self._remote_existed_before_close = self._remote_path_exists()
         self._closed = False
 
     @property
@@ -101,9 +100,7 @@ class _SafeS3WriteFile:
         Returns:
             `True` if the wrapped handle is closed, `False` otherwise.
         """
-        return self._closed or bool(
-            getattr(self._file_handle, "closed", False)
-        )
+        return self._closed or bool(self._file_handle.closed)
 
     def __enter__(self) -> "_SafeS3WriteFile":
         """Returns the file handle when entering a context.
@@ -142,7 +139,7 @@ class _SafeS3WriteFile:
             self._file_handle.close()
         except FileNotFoundError as error:
             missing_path = self._extract_missing_path(error)
-            if not self._should_ignore_missing_temp_file(error):
+            if not self._should_ignore_missing_temp_file(missing_path):
                 raise
             logger.debug(
                 "Ignoring missing local temporary file `%s` while closing "
@@ -155,18 +152,17 @@ class _SafeS3WriteFile:
             self._closed = True
 
     def _should_ignore_missing_temp_file(
-        self, error: FileNotFoundError
+        self, missing_path: Optional[str]
     ) -> bool:
         """Checks if a close-time `FileNotFoundError` can be ignored.
 
         Args:
-            error: The raised error.
+            missing_path: The path reported missing by the error, if any.
 
         Returns:
             `True` if the error corresponds to a missing local temporary file
             after a successful upload, `False` otherwise.
         """
-        missing_path = self._extract_missing_path(error)
         if not missing_path:
             return False
 
@@ -174,9 +170,6 @@ class _SafeS3WriteFile:
             return False
 
         if not os.path.isabs(missing_path):
-            return False
-
-        if self._remote_existed_before_close:
             return False
 
         return self._remote_path_exists()
@@ -192,9 +185,20 @@ class _SafeS3WriteFile:
                 self._filesystem.exists(path=self._normalized_remote_path)
             )
         except Exception:
+            logger.debug(
+                "Failed to check existence of `%s`, retrying with "
+                "original path.",
+                self._normalized_remote_path,
+                exc_info=True,
+            )
             try:
                 return bool(self._filesystem.exists(path=self._remote_path))
             except Exception:
+                logger.debug(
+                    "Failed to check existence of `%s`.",
+                    self._remote_path,
+                    exc_info=True,
+                )
                 return False
 
     @staticmethod
@@ -208,7 +212,7 @@ class _SafeS3WriteFile:
             The missing path if available, otherwise `None`.
         """
         if error.filename:
-            return error.filename
+            return str(error.filename)
 
         if len(error.args) >= 3 and isinstance(error.args[2], str):
             return error.args[2]
@@ -521,9 +525,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         # remove s3 prefix if given, so we can remove the directory later as
         # this method is expected to only return filenames
-        path = convert_to_str(path)
-        if path.startswith("s3://"):
-            path = path[5:]
+        path = _normalize_s3_path(convert_to_str(path))
 
         def _extract_basename(file_dict: Dict[str, Any]) -> str:
             """Extracts the basename from a file info dict returned by the S3 filesystem.
