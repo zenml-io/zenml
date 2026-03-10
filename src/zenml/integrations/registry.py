@@ -97,12 +97,20 @@ class IntegrationRegistry(object):
                 continue
 
     def activate_integrations(self) -> None:
-        """Activate all installed integrations (best effort).
+        """Best-effort eager activation of installed integrations.
 
-        Attempts to activate each installed integration. If an individual
-        integration fails due to an ImportError or OSError (e.g. missing
-        optional dependencies, binary/DLL load failures), the error is
-        logged and activation continues for the remaining integrations.
+        Attempts to activate each integration that passes the
+        metadata-based installation check. Activation imports the
+        integration's runtime modules (materializers, service connectors,
+        etc.) to trigger eager registration. If an individual activation
+        fails due to a broken or incomplete install (ImportError) or
+        native library load failure (OSError), the error is logged and
+        remaining integrations continue.
+
+        Note: activation failure only skips early registration side
+        effects. Later on-demand imports (e.g. loading stored artifacts
+        or stack components) may still attempt to import the same modules
+        and could fail independently.
         """
         self._initialize()
         for name, integration in self._integrations.items():
@@ -110,14 +118,20 @@ class IntegrationRegistry(object):
                 logger.debug(f"Activating integration `{name}`...")
                 try:
                     integration.activate()
-                # ImportError: missing optional dependencies
-                # OSError: binary/DLL load failures (e.g. torch on Windows)
+                # ImportError: broken/incomplete install or undeclared
+                # transitive dependency despite declared requirements
+                # appearing installed.
+                # OSError: native library or binary/DLL load failure
+                # at import time.
                 except (ImportError, OSError) as e:
                     logger.exception(
                         f"Failed to activate integration `{name}`: "
                         f"{type(e).__name__}: {e}. "
-                        "Continuing without this integration; "
-                        "its features will be unavailable."
+                        "Skipping activation-time registration (e.g. "
+                        "materializers, service connectors). Some "
+                        "features may be missing from auto-discovery, "
+                        "and on-demand imports of this integration "
+                        "may also fail."
                     )
                     continue
                 logger.debug(f"Integration `{name}` is activated.")

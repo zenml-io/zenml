@@ -108,7 +108,7 @@ def test_activate_integrations_continues_after_import_error(caplog):
 
 
 def test_activate_integrations_logs_continuation_message(caplog):
-    """The error log must mention that the system continues without the integration."""
+    """The error log must mention that activation-time registration was skipped."""
     registry = IntegrationRegistry()
     registry._initialized = True
     registry._integrations = {
@@ -119,6 +119,6 @@ def test_activate_integrations_logs_continuation_message(caplog):
         registry.activate_integrations()
 
     assert any(
-        "Continuing without this integration" in record.message
+        "Skipping activation-time registration" in record.message
         for record in caplog.records
     )
