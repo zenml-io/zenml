@@ -55,7 +55,7 @@ class _CloseFailingWriteHandle:
         """Raises a missing temp file error on close."""
         self.close_calls += 1
         raise FileNotFoundError(
-            2, "No such file or directory", "/tmp/tmp-s3-upload"
+            2, "No such file or directory", "/tmp/tmp-s3-upload"  # nosec B108
         )
 
 
