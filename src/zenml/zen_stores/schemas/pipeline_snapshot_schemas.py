@@ -21,7 +21,7 @@ from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, asc, col, desc, select
+from sqlmodel import Field, Relationship, and_, asc, col, desc, or_, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
@@ -268,15 +268,22 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         == col(PipelineRunSchema.snapshot_id),
                     )
                     .where(
-                        # The snapshot for this run used this snapshot as a
-                        # source (e.g. run triggered from the server,
-                        # invocation of a deployment). We currently do not
-                        # include runs created directly from a snapshot (e.g.
-                        # run directly, scheduled runs), as these happen before
-                        # the user officially creates (= assigns a name to) the
-                        # snapshot.
-                        col(PipelineSnapshotSchema.source_snapshot_id)
-                        == self.id,
+                        # We currently do not include runs created directly from an un-named
+                        # snapshot (e.g. run directly, scheduled runs), as these happen before
+                        # the user officially creates (= assigns a name to) the snapshot.
+                        or_(
+                            # The snapshot for this run used this snapshot as a
+                            # source (e.g. run triggered from the server,
+                            # invocation of a deployment).
+                            col(PipelineSnapshotSchema.source_snapshot_id)
+                            == self.id,
+                            # Or the snapshot itself for runs created directly
+                            # from a named snapshot (e.g. triggers).
+                            and_(
+                                col(PipelineSnapshotSchema.name).is_not(None),
+                                col(PipelineSnapshotSchema.id) == self.id,
+                            ),
+                        )
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
