@@ -110,6 +110,7 @@ def test_spec_compilation(local_stack):
                     "source": "tests.unit.pipelines.test_base_pipeline.s1",
                     "upstream_steps": [],
                     "invocation_id": "s1",
+                    "parameter_spec": {},
                 },
                 {
                     "source": "tests.unit.pipelines.test_base_pipeline.s2",
@@ -121,6 +122,7 @@ def test_spec_compilation(local_stack):
                         }
                     },
                     "invocation_id": "s2",
+                    "parameter_spec": {},
                 },
             ],
         }

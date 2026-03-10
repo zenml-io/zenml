@@ -1,19 +1,20 @@
 from types import SimpleNamespace
+from typing import Any, Dict
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.zen_stores.template_utils import generate_config_schema
 
 
-def _create_step(name: str, parameter_spec: dict) -> Step:
-    """Creates a step for template schema tests.
+def _create_step(name: str, parameter_spec: Dict[str, Any]) -> Step:
+    """Create a step.
 
     Args:
         name: The step name.
         parameter_spec: The step parameter schema.
 
     Returns:
-        A test step.
+        A step.
     """
     return Step(
         spec=StepSpec(
@@ -80,8 +81,8 @@ def test_generate_config_schema_reuses_and_renames_step_defs():
         snapshot=snapshot,
         pipeline_configuration=PipelineConfiguration(name="pipeline"),
         step_configurations={
-            "trainer": _create_step(
-                "trainer",
+            "shared_step_0": _create_step(
+                "shared_step_0",
                 {
                     "type": "object",
                     "properties": {"config": {"$ref": "#/$defs/NestedConfig"}},
@@ -89,8 +90,8 @@ def test_generate_config_schema_reuses_and_renames_step_defs():
                     "$defs": {"NestedConfig": shared_definition},
                 },
             ),
-            "evaluator": _create_step(
-                "evaluator",
+            "shared_step_1": _create_step(
+                "shared_step_1",
                 {
                     "type": "object",
                     "properties": {"config": {"$ref": "#/$defs/NestedConfig"}},
@@ -98,8 +99,8 @@ def test_generate_config_schema_reuses_and_renames_step_defs():
                     "$defs": {"NestedConfig": shared_definition},
                 },
             ),
-            "deployer": _create_step(
-                "deployer",
+            "conflicting_step": _create_step(
+                "conflicting_step",
                 {
                     "type": "object",
                     "properties": {"config": {"$ref": "#/$defs/NestedConfig"}},
@@ -112,21 +113,24 @@ def test_generate_config_schema_reuses_and_renames_step_defs():
 
     assert schema["$defs"]["NestedConfig"] == shared_definition
     assert (
-        schema["$defs"]["trainer"]["properties"]["parameters"]["properties"][
-            "config"
-        ]["$ref"]
+        schema["$defs"]["shared_step_0"]["properties"]["parameters"][
+            "properties"
+        ]["config"]["$ref"]
         == "#/$defs/NestedConfig"
     )
     assert (
-        schema["$defs"]["evaluator"]["properties"]["parameters"]["properties"][
-            "config"
-        ]["$ref"]
+        schema["$defs"]["shared_step_1"]["properties"]["parameters"][
+            "properties"
+        ]["config"]["$ref"]
         == "#/$defs/NestedConfig"
     )
-    assert schema["$defs"]["deployer__NestedConfig"] == conflicting_definition
     assert (
-        schema["$defs"]["deployer"]["properties"]["parameters"]["properties"][
-            "config"
-        ]["$ref"]
-        == "#/$defs/deployer__NestedConfig"
+        schema["$defs"]["conflicting_step__NestedConfig"]
+        == conflicting_definition
+    )
+    assert (
+        schema["$defs"]["conflicting_step"]["properties"]["parameters"][
+            "properties"
+        ]["config"]["$ref"]
+        == "#/$defs/conflicting_step__NestedConfig"
     )
