@@ -44,6 +44,15 @@ Before committing documentation changes with absolute URLs:
 2. Look at existing working links in the codebase for the same section
 3. Consult the relevant `toc.md` file to understand the hierarchy
 
-### Link Checker
+### Link Checking
 
-The CI runs an absolute link checker. If you see 404 errors for `docs.zenml.io` URLs, the URL structure likely changed (common after docs reorganizations) and needs updating.
+**CI checks** (`scripts/check_broken_links.py`, `scripts/check_relative_links.py`):
+- Check relative markdown links resolve to existing files
+- Do **not** check images, `.gitbook` paths, HTML `<a href>` links, or external URLs
+
+**Lychee** (`lychee.toml` config at repo root):
+- Comprehensive link checker that covers local files, images, HTML links, and external URLs
+- Run locally: `lychee --no-progress 'docs/book/**/*.md'`
+- Run offline (local links only, fast): `lychee --offline --no-progress 'docs/book/**/*.md'`
+- Known false positives (bot-blocked sites, placeholder URLs) are excluded in `lychee.toml`
+- If you see 404 errors for `docs.zenml.io` URLs, the URL structure likely changed (common after docs reorganizations) and needs updating

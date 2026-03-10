@@ -158,6 +158,7 @@ scratchpad/
 
 # zen
 *.csv
+!tests/integration/examples/neural_prophet/data/SF_PV.csv
 temp/*
 local_test/
 .zen/
@@ -205,10 +206,14 @@ examples/computer_vision/test_runs
 #generated folder by zenml
 zenml_tutorial/
 
-# Claude settings
+# Claude
 **/.claude/settings.local.json
 .claude/*
 !.claude/skills/
+
+# Codex
+.codex/*
+AGENTS.override.md
 
 .local/
 # PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow

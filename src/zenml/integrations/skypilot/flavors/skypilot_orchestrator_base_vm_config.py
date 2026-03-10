@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -67,6 +67,12 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
         disk_size: the size of the OS disk in GiB.
         disk_tier: the disk performance tier to use. If None, defaults to
             ``'medium'``.
+        network_tier: the network performance tier to use where supported by
+            the cloud provider (e.g., ``'standard'`` or ``'best'``).
+        infra: SkyPilot infrastructure selector (e.g., ``"aws/us-east-1"``,
+            ``"gcp/us-central1-a"``, ``"k8s/my-cluster-ctx"``). Mutually
+            exclusive with explicit cloud/region/zone selection.
+        num_nodes: number of nodes for multi-node jobs.
         ports: Ports to expose. Could be an integer, a range, or a list of
             integers and ranges. All ports will be exposed to the public internet.
         labels: Labels to apply to instances as key-value pairs. These are
@@ -84,10 +90,8 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
             many minute of idleness, i.e., no running or pending jobs in the
             cluster's job queue. Idleness gets reset whenever setting-up/
             running/pending jobs are found in the job queue. Setting this
-            flag is equivalent to running
-            ``sky.launch(..., detach_run=True, ...)`` and then
-            ``sky.autostop(idle_minutes=<minutes>)``. If not set, the cluster
-            will not be autostopped.
+            flag schedules an autostop after the launch completes. If not set,
+            the cluster will not be autostopped.
         down: Tear down the cluster after all jobs finish (successfully or
             abnormally). If --idle-minutes-to-autostop is also set, the
             cluster will be torn down after the specified idle time.
@@ -136,6 +140,9 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     disk_tier: Optional[Literal["high", "medium", "low", "ultra", "best"]] = (
         None
     )
+    network_tier: Optional[str] = None
+    infra: Optional[str] = None
+    num_nodes: Optional[int] = None
 
     # Run settings
     cluster_name: Optional[str] = None
@@ -143,7 +150,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     idle_minutes_to_autostop: Optional[int] = 30
     down: bool = True
     stream_logs: bool = True
-    docker_run_args: List[str] = []
+    docker_run_args: List[str] = Field(default_factory=list)
 
     # Additional SkyPilot features
     ports: Union[None, int, str, List[Union[int, str]]] = Field(
@@ -158,9 +165,42 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     envs: Optional[Dict[str, str]] = None
 
     # Future-proofing settings dictionaries
-    task_settings: Dict[str, Any] = {}
-    resources_settings: Dict[str, Any] = {}
-    launch_settings: Dict[str, Any] = {}
+    task_settings: Dict[str, Any] = Field(default_factory=dict)
+    resources_settings: Dict[str, Any] = Field(default_factory=dict)
+    launch_settings: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_infra_configuration(
+        self,
+    ) -> "SkypilotBaseOrchestratorSettings":
+        """Validates settings that are incompatible with infra shortcuts.
+
+        Returns:
+            The validated settings object.
+
+        Raises:
+            ValueError: If unsupported combinations with `infra` are set.
+        """
+        if self.infra is None:
+            return self
+
+        conflicts = []
+        if self.region is not None:
+            conflicts.append("region")
+        if self.zone is not None:
+            conflicts.append("zone")
+        for key in ("cloud", "region", "zone"):
+            if key in self.resources_settings:
+                conflicts.append(f"resources_settings['{key}']")
+
+        if conflicts:
+            raise ValueError(
+                "The `infra` setting cannot be combined with explicit cloud/"
+                "region/zone settings. Remove the following conflicting "
+                f"values: {', '.join(conflicts)}."
+            )
+
+        return self
 
 
 class SkypilotBaseOrchestratorConfig(

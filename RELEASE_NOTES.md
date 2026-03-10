@@ -1,5 +1,87 @@
 <!-- markdown-link-check-disable -->
 
+> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
+
+---
+
+# 0.94.0
+
+## What's Changed
+* Add version 0.93.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4504
+* Add 0.93.3 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4505
+* Clarify Snapshots vs Deployments in documentation by @strickvl in https://github.com/zenml-io/zenml/pull/4497
+* Improve dynamic pipeline step monitoring by @schustmi in https://github.com/zenml-io/zenml/pull/4369
+* add ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE support by @avishniakov in https://github.com/zenml-io/zenml/pull/4501
+* Run:AI Integration - Step Operator by @safoinme in https://github.com/zenml-io/zenml/pull/4439
+* Remove Discord notification from release prep and reduce CI runner waste by @strickvl in https://github.com/zenml-io/zenml/pull/4500
+* Add RLM document analysis example with dynamic pipelines by @strickvl in https://github.com/zenml-io/zenml/pull/4491
+* Update skypilot Integrations by @safoinme in https://github.com/zenml-io/zenml/pull/4462
+* Update `.gitignore` to include Codex settings by @strickvl in https://github.com/zenml-io/zenml/pull/4513
+* Fix azure integration dependencies by @schustmi in https://github.com/zenml-io/zenml/pull/4516
+* Run release test pipeline using kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/4517
+* Allow filtering step runs by version by @schustmi in https://github.com/zenml-io/zenml/pull/4518
+* Attach log context to run in dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4519
+* Fix broken docs links found via lychee link checker by @strickvl in https://github.com/zenml-io/zenml/pull/4526
+* Remove wrong error message when running dynamic snapshots by @schustmi in https://github.com/zenml-io/zenml/pull/4533
+* Split step operator submission and monitoring by @schustmi in https://github.com/zenml-io/zenml/pull/4515
+* Suggest installing all stack requirements in import error by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4530
+* Fix handling of variadic keyword args in pipeline function by @schustmi in https://github.com/zenml-io/zenml/pull/4528
+* Update `Run:AI` Step-Operator for new submit logic by @safoinme in https://github.com/zenml-io/zenml/pull/4535
+* Improve k8s client retries by @avishniakov in https://github.com/zenml-io/zenml/pull/4525
+* Preselect organization and workspace upon `zenml login` by @bcdurak in https://github.com/zenml-io/zenml/pull/4531
+* Add `PathMaterializer` documentation to materializers page by @strickvl in https://github.com/zenml-io/zenml/pull/4534
+* Fix broken Evidently and W&B documentation links by @strickvl in https://github.com/zenml-io/zenml/pull/4538
+* Fix logging of existing job status in Kubernetes orchestrator by @kshitijrajsharma in https://github.com/zenml-io/zenml/pull/4549
+* Feature/triggers v2 and native schedules by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4482
+* Misc fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4551
+* Step/Pipeline replays by @schustmi in https://github.com/zenml-io/zenml/pull/4456
+* !fixup: disable flaky tests by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4554
+* Include git submodule files in code archive by @apoorvdarshan in https://github.com/zenml-io/zenml/pull/4496
+* Add docs references for `zenml-scoping` and `zenml-pipeline-authoring` skills by @strickvl in https://github.com/zenml-io/zenml/pull/4539
+* Prepare release 0.94.0rc0 by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4555
+* Fix for SDK docs release by @bcdurak in https://github.com/zenml-io/zenml/pull/4560
+* Small schedule fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4561
+
+## New Contributors
+* @kshitijrajsharma made their first contribution in https://github.com/zenml-io/zenml/pull/4549
+* @apoorvdarshan made their first contribution in https://github.com/zenml-io/zenml/pull/4496
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.3...0.94.0
+
+# 0.93.3
+
+## What's Changed
+* Add version 0.93.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4444
+* Fix `codeql-action` paths and Dependabot config by @strickvl in https://github.com/zenml-io/zenml/pull/4435
+* Pin qwen-agent<0.0.32 to fix CI import error by @strickvl in https://github.com/zenml-io/zenml/pull/4441
+* Add 0.93.2 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4446
+* Fix data loss in artifact downloads for files larger than 8KB by @anshishrivastava in https://github.com/zenml-io/zenml/pull/4422
+* Rewrite the filtering queries to be more efficient by @stefannica in https://github.com/zenml-io/zenml/pull/4449
+* Add an example of a hierarchical search agent by @htahir1 in https://github.com/zenml-io/zenml/pull/4427
+* Improve API transaction management for better scalability by @stefannica in https://github.com/zenml-io/zenml/pull/4453
+* Add zizmor CI workflow for GitHub Actions security scanning by @strickvl in https://github.com/zenml-io/zenml/pull/4451
+* Add AGENTS.md for database migrations by @strickvl in https://github.com/zenml-io/zenml/pull/4450
+* Updates to the dashboard page by @bcdurak in https://github.com/zenml-io/zenml/pull/4458
+* Add Linux Foundation and CNCF Silver Member logos to README by @strickvl in https://github.com/zenml-io/zenml/pull/4460
+* Fixes around the logging context and more by @bcdurak in https://github.com/zenml-io/zenml/pull/4405
+* Add `--output` flag to stack and component describe commands by @strickvl in https://github.com/zenml-io/zenml/pull/4454
+* Fix the SQL statement used to delete API transactions by @stefannica in https://github.com/zenml-io/zenml/pull/4470
+* Reject cookies of local user accounts when enrolled in ZenML Pro by @stefannica in https://github.com/zenml-io/zenml/pull/4473
+* Self-hosted ZenML Pro documentation update by @stefannica in https://github.com/zenml-io/zenml/pull/4472
+* Fall back to uv pip freeze when pip is missing by @htahir1 in https://github.com/zenml-io/zenml/pull/4484
+* Fix duplicate run status (heartbeat response) by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4489
+* Add `concurrency_policy` and `starting_deadline_seconds` to K8s `CronJob` config by @strickvl in https://github.com/zenml-io/zenml/pull/4483
+* Exclude `grpcio` 1.68.0-1.70.x in GCP integration to fix shutdown warnings by @strickvl in https://github.com/zenml-io/zenml/pull/4464
+* Fix systemic CI flakiness across multiple test clusters by @strickvl in https://github.com/zenml-io/zenml/pull/4471
+* Refresh kubernetes credentials while monitoring jobs by @schustmi in https://github.com/zenml-io/zenml/pull/4493
+* Logging Metadata Fixes & Additions by @bcdurak in https://github.com/zenml-io/zenml/pull/4467
+
+## New Contributors
+* @anshishrivastava made their first contribution in https://github.com/zenml-io/zenml/pull/4422
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.2...0.93.3
+
+
 # 0.93.2
 
 ## What's Changed
@@ -28,10 +110,6 @@
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.1...0.93.2
 
-
-> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
-
----
 
 # 0.93.1
 

@@ -98,7 +98,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def _get_orchestrator_job_state(
-    batch_api: k8s_client.BatchV1Api, namespace: str, job_name: str
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_name: str,
+    api_request_timeout: Optional[float],
 ) -> Tuple[Optional[UUID], Optional[str]]:
     """Get the existing status of the orchestrator job.
 
@@ -106,6 +109,7 @@ def _get_orchestrator_job_state(
         batch_api: The batch api.
         namespace: The namespace.
         job_name: The name of the orchestrator job.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The run id and orchestrator run id.
@@ -117,6 +121,7 @@ def _get_orchestrator_job_state(
         batch_api=batch_api,
         namespace=namespace,
         job_name=job_name,
+        api_request_timeout=api_request_timeout,
     )
 
     if job.metadata and job.metadata.annotations:
@@ -135,6 +140,7 @@ def _reconstruct_nodes(
     pipeline_run: PipelineRunResponse,
     namespace: str,
     batch_api: k8s_client.BatchV1Api,
+    api_request_timeout: Optional[float] = None,
 ) -> List[Node]:
     """Reconstruct the nodes from the pipeline run.
 
@@ -143,6 +149,7 @@ def _reconstruct_nodes(
         pipeline_run: The pipeline run.
         namespace: The namespace.
         batch_api: The batch api.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The reconstructed nodes.
@@ -163,6 +170,7 @@ def _reconstruct_nodes(
         batch_api=batch_api,
         namespace=namespace,
         label_selector=f"run_id={pipeline_run.id}",
+        api_request_timeout=api_request_timeout,
     )
     for job in job_list.items:
         annotations = job.metadata.annotations or {}
@@ -194,7 +202,7 @@ def _reconstruct_nodes(
                 node.status = node_status
                 logger.debug(
                     "Existing job for step `%s` status: %s.",
-                    step_name,
+                    step_name_annotation,
                     node_status,
                 )
 
@@ -248,6 +256,7 @@ def main() -> None:
             core_api=core_api,
             pod_name=orchestrator_pod_name,
             namespace=namespace,
+            api_request_timeout=pipeline_settings.api_request_timeout,
         )
         if not job_name:
             raise RuntimeError(
@@ -258,6 +267,7 @@ def main() -> None:
             batch_api=batch_api,
             namespace=namespace,
             job_name=job_name,
+            api_request_timeout=pipeline_settings.api_request_timeout,
         )
 
         if run_id and orchestrator_run_id:
@@ -268,6 +278,7 @@ def main() -> None:
                 pipeline_run=pipeline_run,
                 namespace=namespace,
                 batch_api=batch_api,
+                api_request_timeout=pipeline_settings.api_request_timeout,
             )
             logger.debug("Reconstructed nodes: %s", nodes)
 
@@ -297,6 +308,7 @@ def main() -> None:
                     RUN_ID_ANNOTATION_KEY: str(pipeline_run.id),
                     ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
                 },
+                api_request_timeout=pipeline_settings.api_request_timeout,
             )
             nodes = [
                 Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
@@ -320,6 +332,7 @@ def main() -> None:
                     core_api=core_api,
                     pod_name=orchestrator_pod_name,
                     namespace=namespace,
+                    api_request_timeout=pipeline_settings.api_request_timeout,
                 )
                 # Make sure None of the owner references are marked as
                 # controllers of the created pod, which messes with the
@@ -567,6 +580,7 @@ def main() -> None:
                 batch_api=batch_api,
                 namespace=namespace,
                 job_manifest=job_manifest,
+                api_request_timeout=settings.api_request_timeout,
             )
 
             try:
@@ -720,6 +734,7 @@ def main() -> None:
                 namespace=namespace,
                 job_name=job_name,
                 fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
+                api_request_timeout=settings.api_request_timeout,
             )
             if status == kube_utils.JobStatus.SUCCEEDED:
                 return NodeStatus.COMPLETED

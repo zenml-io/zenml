@@ -21,25 +21,30 @@ from azure.core.credentials import TokenCredential
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
 
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.enums import StackComponentType
-from zenml.integrations.azure.azureml_utils import create_or_get_compute
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.integrations.azure.azureml_utils import (
+    convert_job_status,
+    create_or_get_compute,
+)
 from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
     AzureMLStepOperatorSettings,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 
 AZUREML_STEP_OPERATOR_DOCKER_IMAGE_KEY = "azureml_step_operator"
+STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 
 class AzureMLStepOperator(BaseStepOperator):
@@ -48,6 +53,8 @@ class AzureMLStepOperator(BaseStepOperator):
     This class defines code that can set up an AzureML environment and run the
     ZenML entrypoint command in it.
     """
+
+    _azureml_client: Optional[MLClient] = None
 
     @property
     def config(self) -> AzureMLStepOperatorConfig:
@@ -159,13 +166,50 @@ class AzureMLStepOperator(BaseStepOperator):
 
         return builds
 
-    def launch(
+    @property
+    def azureml_client(self) -> MLClient:
+        """Returns the AzureML client.
+
+        Returns:
+            The AzureML client.
+        """
+        if self.connector_has_expired():
+            self._azureml_client = None
+
+        if self._azureml_client is None:
+            credentials: TokenCredential
+
+            if connector := self.get_connector():
+                credentials = connector.connect()
+            elif (
+                self.config.tenant_id
+                and self.config.service_principal_id
+                and self.config.service_principal_password
+            ):
+                credentials = ClientSecretCredential(
+                    tenant_id=self.config.tenant_id,
+                    client_id=self.config.service_principal_id,
+                    client_secret=self.config.service_principal_password,
+                )
+            else:
+                credentials = DefaultAzureCredential()
+
+            self._azureml_client = MLClient(
+                credential=credentials,
+                subscription_id=self.config.subscription_id,
+                resource_group_name=self.config.resource_group,
+                workspace_name=self.config.workspace_name,
+            )
+
+        return self._azureml_client
+
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launches a step on AzureML.
+        """Submits a step run to AzureML.
 
         Args:
             info: Information about the step run.
@@ -175,19 +219,11 @@ class AzureMLStepOperator(BaseStepOperator):
         """
         settings = cast(AzureMLStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=AZUREML_STEP_OPERATOR_DOCKER_IMAGE_KEY)
-
-        # Client creation
-        ml_client = MLClient(
-            credential=self._get_credentials(),
-            subscription_id=self.config.subscription_id,
-            resource_group_name=self.config.resource_group,
-            workspace_name=self.config.workspace_name,
-        )
-
         env = Environment(name=f"zenml-{info.run_name}", image=image_name)
 
+        azureml_client = self.azureml_client
         compute_target = create_or_get_compute(
-            ml_client, settings, default_compute_name=f"zenml_{self.id}"
+            azureml_client, settings, default_compute_name=f"zenml_{self.id}"
         )
 
         command_job = command(
@@ -200,7 +236,32 @@ class AzureMLStepOperator(BaseStepOperator):
             shm_size=settings.shm_size,
         )
 
-        job = ml_client.jobs.create_or_update(command_job)
-
+        job = azureml_client.jobs.create_or_update(command_job)
         logger.info(f"AzureML job created with id: {job.id}")
-        ml_client.jobs.stream(info.run_name)
+        publish_step_run_metadata(
+            info.step_run_id,
+            {self.id: {STEP_JOB_NAME_METADATA_KEY: job.name}},
+        )
+        info.step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY] = job.name
+
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Gets the status of a submitted step.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The step status.
+        """
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        job = self.azureml_client.jobs.get(job_name)
+        return convert_job_status(job.status)
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancels a submitted step.
+
+        Args:
+            step_run: The step run.
+        """
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        self.azureml_client.jobs.begin_cancel(job_name)

@@ -40,6 +40,7 @@ from zenml.orchestrators.wheeled_orchestrator import (
 from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorFlavor,
+    LocalOrchestratorConfig,
 )
 from zenml.orchestrators.local_docker.local_docker_orchestrator import (
     LocalDockerOrchestrator,
@@ -54,6 +55,7 @@ __all__ = [
     "WheeledOrchestrator",
     "LocalOrchestrator",
     "LocalOrchestratorFlavor",
+    "LocalOrchestratorConfig",
     "LocalDockerOrchestrator",
     "LocalDockerOrchestratorFlavor",
     "SubmissionResult",

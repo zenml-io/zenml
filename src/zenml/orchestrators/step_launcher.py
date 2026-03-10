@@ -118,6 +118,7 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
+        wait: bool = True,
     ):
         """Initializes the launcher.
 
@@ -125,6 +126,7 @@ class StepLauncher:
             snapshot: The pipeline snapshot.
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
+            wait: Whether to wait for the step to finish.
 
         Raises:
             RuntimeError: If the snapshot has no associated stack.
@@ -132,6 +134,7 @@ class StepLauncher:
         self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
+        self._wait = wait
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -262,6 +265,7 @@ class StepLauncher:
         Raises:
             RunStoppedException: If the pipeline run is stopped by the user.
             BaseException: If the step preparation or execution fails.
+            RuntimeError: If an unexpected step run status is encountered.
 
         Returns:
             The step run response.
@@ -362,15 +366,23 @@ class StepLauncher:
                                 self._invocation_id,
                                 e,
                             )
-                            publish_utils.publish_failed_step_run(step_run.id)
+                            if step_run.status == ExecutionStatus.RUNNING:
+                                # Only update the status if the step runner
+                                # somehow failed to do so.
+                                publish_utils.publish_failed_step_run(
+                                    step_run.id
+                                )
                         raise
 
-                    duration = time.time() - start_time
-                    logger.info(
-                        f"Step `{self._invocation_id}` has finished in "
-                        f"`{string_utils.get_human_readable_time(duration)}`."
-                    )
-                else:
+                    if self._wait:
+                        duration = time.time() - start_time
+                        logger.info(
+                            f"Step `{self._invocation_id}` has finished in "
+                            f"`{string_utils.get_human_readable_time(duration)}`."
+                        )
+                    else:
+                        logger.info("Step `%s` launched.", self._invocation_id)
+                elif step_run.status == ExecutionStatus.CACHED:
                     logger.info(
                         f"Using cached version of step `{self._invocation_id}`."
                     )
@@ -382,6 +394,21 @@ class StepLauncher:
                             artifacts=step_run.outputs,
                             model_version=model_version,
                         )
+                elif step_run.status == ExecutionStatus.SKIPPED:
+                    logger.info("Skipping step `%s`.", self._invocation_id)
+                    if (
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
+                    ):
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=step_run.outputs,
+                            model_version=model_version,
+                        )
+                else:
+                    raise RuntimeError(
+                        f"Unexpected step run status `{step_run.status}` for "
+                        f"step `{self._invocation_id}`."
+                    )
 
         return step_run
 
@@ -432,6 +459,7 @@ class StepLauncher:
         from zenml.deployers.server import runtime
 
         step_run_info = StepRunInfo(
+            step_run=step_run,
             config=self._step.config,
             spec=self._step.spec,
             pipeline=self._snapshot.pipeline_configuration,
@@ -518,6 +546,13 @@ class StepLauncher:
         Args:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
+
+        Raises:
+            RuntimeError: If trying to use a step operator that does not support
+                running asynchronously in a dynamic pipeline.
+            NotImplementedError: If the step operator does not implement the
+                `submit(...)` or `launch(...)` methods.
+            RuntimeError: If the step run failed.
         """
         step_operator = _get_step_operator(
             stack=self._stack,
@@ -551,11 +586,56 @@ class StepLauncher:
             step_operator.name,
             self._invocation_id,
         )
-        step_operator.launch(
-            info=step_run_info,
-            entrypoint_command=entrypoint_command,
-            environment=environment,
-        )
+
+        try:
+            step_operator.submit(
+                info=step_run_info,
+                entrypoint_command=entrypoint_command,
+                environment=environment,
+            )
+        except NotImplementedError:
+            if not self._wait:
+                # We're running in a dynamic pipeline and for the monitoring to
+                # work correctly, we only allow running with step operators that
+                # support running asynchronously.
+                raise RuntimeError(
+                    f"The step operator `{step_operator.name}` does not "
+                    "support running asynchronously and therefore cannot be "
+                    "used in dynamic pipelines. To solve this, please "
+                    "implement the `submit(...)` and `get_status(...)` methods "
+                    "in the step operator class."
+                )
+
+            if hasattr(step_operator, "launch") and callable(
+                step_operator.launch
+            ):
+                # We fallback to the legacy launch method if it is implemented.
+                # The launch method is synchronous and will block until the step
+                # run is finished, so there is no need to wait for it.
+                logger.debug(
+                    "Falling back to the legacy launch method for "
+                    "step operator `%s`.",
+                    step_operator.name,
+                )
+                step_operator.launch(
+                    info=step_run_info,
+                    entrypoint_command=entrypoint_command,
+                    environment=environment,
+                )
+            else:
+                raise NotImplementedError(
+                    f"The step operator `{step_operator.name}` does not "
+                    "implement the `submit(...)` or `launch(...)` methods."
+                )
+        else:
+            # We submitted the step run asynchronously, now we potentially need
+            # to wait for it to finish.
+            if self._wait:
+                status = step_operator.wait(
+                    step_run=step_run_info.step_run,
+                )
+                if not status.is_successful:
+                    raise RuntimeError(f"Step failed with status `{status}`.")
 
     def _run_step_with_dynamic_orchestrator(
         self,
@@ -565,6 +645,9 @@ class StepLauncher:
 
         Args:
             step_run_info: Additional information needed to run the step.
+
+        Raises:
+            RuntimeError: If the step run failed.
         """
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
@@ -578,10 +661,16 @@ class StepLauncher:
                 stack=self._stack,
             )
         )
-        self._stack.orchestrator.run_isolated_step(
+        self._stack.orchestrator.submit_isolated_step(
             step_run_info=step_run_info,
             environment=environment,
         )
+        if self._wait:
+            status = self._stack.orchestrator.wait_for_isolated_step(
+                step_run_info.step_run
+            )
+            if not status.is_successful:
+                raise RuntimeError(f"Step failed with status `{status}`.")
 
     def _run_step_in_current_thread(
         self,
@@ -600,9 +689,7 @@ class StepLauncher:
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
-        runner = StepRunner(
-            step=self._step, stack=self._stack, publish_exception_info=False
-        )
+        runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing steps runs."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -609,6 +609,17 @@ class StepRunResponse(
         return self.get_body().end_time
 
     @property
+    def duration(self) -> Optional[timedelta]:
+        """The `duration` property.
+
+        Returns:
+            The duration of the step run.
+        """
+        if self.end_time is None or self.start_time is None:
+            return None
+        return self.end_time - self.start_time
+
+    @property
     def latest_heartbeat(self) -> Optional[datetime]:
         """The `latest_heartbeat` property.
 
@@ -765,6 +776,11 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     model: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
+    )
+    version: Union[int, str, None] = Field(
+        default=None,
+        description="Version of the step run.",
+        union_mode="left_to_right",
     )
     exclude_retried: Optional[bool] = Field(
         default=None,

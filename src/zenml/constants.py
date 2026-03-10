@@ -128,6 +128,23 @@ def handle_int_env_var(var: str, default: int = 0) -> int:
         return default
 
 
+def handle_float_env_var(var: str, default: float = 0.0) -> float:
+    """Converts normal env var to float.
+
+    Args:
+        var: The environment variable to convert.
+        default: The default value to return if the env var is not set.
+
+    Returns:
+        The converted value.
+    """
+    value = os.getenv(var, "")
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 # Global constants
 APP_NAME = "zenml"
 
@@ -157,6 +174,7 @@ ENV_ZENML_AUTO_OPEN_DASHBOARD = "ZENML_AUTO_OPEN_DASHBOARD"
 ENV_ZENML_DISABLE_DATABASE_MIGRATION = "DISABLE_DATABASE_MIGRATION"
 ENV_ZENML_LOCAL_STORES_PATH = "ZENML_LOCAL_STORES_PATH"
 ENV_ZENML_CONTAINER = "ZENML_CONTAINER"
+ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE = "ZENML_CONTAINER_PYTHON_EXECUTABLE"
 ENV_ZENML_PAGINATION_DEFAULT_LIMIT = "ZENML_PAGINATION_DEFAULT_LIMIT"
 ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING = (
     "ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING"
@@ -200,6 +218,9 @@ ENV_ZENML_DISABLE_PATH_MATERIALIZER = "ZENML_DISABLE_PATH_MATERIALIZER"
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
 ENV_ZENML_SERVER_PRO_PREFIX = "ZENML_SERVER_PRO_"
+ENV_ZENML_PRODUCER_PREFIX = "ZENML_PRODUCER_"
+ENV_ZENML_CONSUMER_PREFIX = "ZENML_CONSUMER_"
+ENV_ZENML_CONSUMER_POLLING_PREFIX = "ZENML_CONSUMER_POLLING_"
 ENV_ZENML_SERVER_DEPLOYMENT_TYPE = f"{ENV_ZENML_SERVER_PREFIX}DEPLOYMENT_TYPE"
 ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
@@ -219,6 +240,17 @@ ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY = (
 
 ENV_ZENML_DEFAULT_OUTPUT = "ZENML_DEFAULT_OUTPUT"
 ENV_ZENML_CLI_COLUMN_WIDTH = "ZENML_CLI_COLUMN_WIDTH"
+
+ENV_ZENML_DYNAMIC_PIPELINE_WORKER_COUNT = "ZENML_DYNAMIC_PIPELINE_WORKER_COUNT"
+ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL = (
+    "ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL"
+)
+ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY = (
+    "ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY"
+)
+ENV_ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH = (
+    "ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH"
+)
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -371,7 +403,6 @@ RUN_TEMPLATE_TRIGGERS_FEATURE_NAME = "template_run"
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
-ACTIONS = "/actions"
 API = "/api"
 API_KEYS = "/api_keys"
 API_KEY_ROTATE = "/rotate"
@@ -396,7 +427,6 @@ DISABLE_HEARTBEAT = "/disable_heartbeat"
 DOWNLOAD_TOKEN = "/download-token"
 EMAIL_ANALYTICS = "/email-opt-in"
 EVENT_FLAVORS = "/event-flavors"
-EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
 HEALTH = "/health"
 READY = "/ready"
@@ -413,7 +443,6 @@ CURATED_VISUALIZATIONS = "/curated_visualizations"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
-PLUGIN_FLAVORS = "/plugin-flavors"
 PROJECTS = "/projects"
 REFRESH = "/refresh"
 RUNS = "/runs"
@@ -450,7 +479,6 @@ STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"
 TRIGGERS = "/triggers"
-TRIGGER_EXECUTIONS = "/trigger_executions"
 ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
 URL = "/url"
@@ -582,3 +610,6 @@ LOGS_OTEL_MAX_EXPORT_BATCH_SIZE = handle_int_env_var(
 LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
     ENV_ZENML_LOGS_OTEL_EXPORT_TIMEOUT_MILLIS, default=15000
 )
+
+# Subscription-based features
+SCHEDULE_FEATURE = "schedule"
