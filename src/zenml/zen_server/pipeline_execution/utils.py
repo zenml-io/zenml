@@ -313,16 +313,18 @@ def run_snapshot(
         "Building runner image %s for dockerfile:\n%s", image_hash, dockerfile
     )
 
+    workload_id = placeholder_run.id if trigger_id else target_snapshot.id
+
     def _task() -> None:
         runner_image = workload_manager().build_and_push_image(
-            workload_id=target_snapshot.id,
+            workload_id=workload_id,
             dockerfile=dockerfile,
             image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
             sync=True,
         )
 
         workload_manager().log(
-            workload_id=target_snapshot.id,
+            workload_id=workload_id,
             message="Starting pipeline run.",
         )
 
@@ -333,7 +335,7 @@ def run_snapshot(
         # could do this same thing with a step operator, but we need some
         # minor changes to the abstract interface to support that.
         workload_manager().run(
-            workload_id=target_snapshot.id,
+            workload_id=workload_id,
             image=runner_image,
             command=command,
             arguments=args,
@@ -342,7 +344,7 @@ def run_snapshot(
             sync=wait_runner_pod,
         )
         workload_manager().log(
-            workload_id=target_snapshot.id,
+            workload_id=workload_id,
             message="Pipeline run started successfully.",
         )
 

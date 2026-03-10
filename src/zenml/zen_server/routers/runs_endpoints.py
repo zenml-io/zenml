@@ -475,14 +475,14 @@ def run_logs(
     if run.snapshot and source == "runner":
         snapshot = run.snapshot
         if (
-            snapshot.template_id or snapshot.source_snapshot_id
+            snapshot.template_id or snapshot.source_snapshot_id or run.trigger
         ) and server_config().workload_manager_enabled:
             from zenml.log_stores.artifact.artifact_log_store import (
                 parse_log_entry,
             )
 
             workload_logs = workload_manager().get_logs(
-                workload_id=snapshot.id
+                workload_id=snapshot.id if not run.trigger else run.id
             )
 
             log_entries = []
