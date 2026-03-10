@@ -34,6 +34,7 @@ from zenml.enums import (
     PipelineRunTriggeredByType,
     StepRunInputArtifactType,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ExceptionInfo,
     StepRunRequest,
@@ -71,6 +72,59 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+
+
+def transition_step_status(
+    current_status: Optional[ExecutionStatus],
+    requested_status: ExecutionStatus,
+    is_retriable: bool = False,
+) -> ExecutionStatus:
+    """Transition a step status.
+
+    Args:
+        current_status: The current step status.
+        requested_status: The requested next step status.
+        is_retriable: Whether the step is configured as retriable.
+
+    Returns:
+        The new step status.
+
+    Raises:
+        IllegalOperationError: If the transition is invalid.
+    """
+    if requested_status in {
+        ExecutionStatus.RETRYING,
+        ExecutionStatus.RETRIED,
+    }:
+        raise IllegalOperationError(
+            f"Execution status `{requested_status}` cannot be set manually."
+        )
+
+    if not current_status:
+        return requested_status
+
+    if current_status.is_finished:
+        raise IllegalOperationError(
+            "The status of finished steps can not be updated."
+        )
+
+    if current_status == ExecutionStatus.STOPPING:
+        if requested_status in {
+            ExecutionStatus.STOPPED,
+            ExecutionStatus.FAILED,
+        }:
+            return ExecutionStatus.STOPPED
+        elif requested_status == ExecutionStatus.STOPPING:
+            return ExecutionStatus.STOPPING
+        else:
+            raise IllegalOperationError(
+                "Stopping steps can only be transitioned to `stopped` or `failed`."
+            )
+
+    if requested_status == ExecutionStatus.FAILED and is_retriable:
+        return ExecutionStatus.RETRYING
+
+    return requested_status
 
 
 class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):

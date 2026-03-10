@@ -19,6 +19,9 @@ from contextlib import nullcontext
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
+from zenml.zen_stores.schemas.pipeline_run_schemas import (
+    transition_pipeline_run_status,
+)
 from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
 
 try:
@@ -409,6 +412,9 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
+from zenml.zen_stores.schemas.step_run_schemas import (
+    transition_step_status,
+)
 from zenml.zen_stores.schemas.utils import (
     get_resource_type_name,
     jl_arg,
@@ -6855,6 +6861,7 @@ class SqlZenStore(BaseZenStore):
             if run_update.status is not None:
                 self._update_pipeline_run_status(
                     pipeline_run_id=run_id,
+                    requested_status=run_update.status,
                     session=session,
                 )
             session.refresh(existing_run)
@@ -10059,14 +10066,6 @@ class SqlZenStore(BaseZenStore):
                 same step.
             IllegalOperationError: if the pipeline run is stopped or stopping.
         """
-        if step_run.status in {
-            ExecutionStatus.RETRIED,
-            ExecutionStatus.RETRYING,
-        }:
-            raise ValueError(
-                "Retrying/retried status can not be set manually."
-            )
-
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
 
@@ -10643,28 +10642,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if (
-                existing_step_run.status == ExecutionStatus.RETRIED.value
-                and step_run_update.status == ExecutionStatus.FAILED
-            ):
-                raise ValueError(
-                    "The status of retried step runs can not be updated."
+            if step_run_update.status is not None:
+                new_status = transition_step_status(
+                    current_status=ExecutionStatus(existing_step_run.status),
+                    requested_status=step_run_update.status,
+                    is_retriable=existing_step_run.is_retriable,
                 )
-
-            if (
-                existing_step_run.is_retriable
-                and step_run_update.status == ExecutionStatus.FAILED
-            ):
-                # This step will be retried by the orchestrator, so we
-                # set its status accordingly.
-                step_run_update.status = ExecutionStatus.RETRYING
-
-            # If the step is stopping and fails, we need to set its status to stopped.
-            if (
-                existing_step_run.status == ExecutionStatus.STOPPING.value
-                and step_run_update.status == ExecutionStatus.FAILED
-            ):
-                step_run_update.status = ExecutionStatus.STOPPED
+                step_run_update.status = new_status
 
             # Update the step
             existing_step_run.update(step_run_update)
@@ -10942,19 +10926,20 @@ class SqlZenStore(BaseZenStore):
 
     def _update_pipeline_run_status(
         self,
-        pipeline_run_id: UUID,
         session: Session,
+        pipeline_run_id: UUID,
+        requested_status: Optional[ExecutionStatus] = None,
     ) -> None:
         """Updates the status of a pipeline run.
 
         Args:
-            pipeline_run_id: The ID of the pipeline run to update.
             session: The database session to use.
+            pipeline_run_id: The ID of the pipeline run to update.
+            requested_status: The optional requested status to set.
         """
         from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
-        # Make sure we start with a fresh transaction before locking the
-        # pipeline run
+        # Make sure we start with a fresh transaction before locking the pipeline run
         session.commit()
         pipeline_run = session.exec(
             select(PipelineRunSchema)
@@ -10969,16 +10954,24 @@ class SqlZenStore(BaseZenStore):
 
         # Snapshots always exists for pipeline runs of newer versions
         assert pipeline_run.snapshot
-        num_steps = pipeline_run.snapshot.step_count
-        is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
-        new_status = get_pipeline_run_status(
+
+        # Determine the status based on the run and step statuses.
+        current_status = get_pipeline_run_status(
             run_status=ExecutionStatus(pipeline_run.status),
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
             ],
-            num_steps=num_steps,
-            is_dynamic_pipeline=is_dynamic_pipeline,
+            num_steps=pipeline_run.snapshot.step_count,
+            is_dynamic_pipeline=pipeline_run.snapshot.is_dynamic,
         )
+
+        if requested_status:
+            new_status = transition_pipeline_run_status(
+                current_status=current_status,
+                requested_status=requested_status,
+            )
+        else:
+            new_status = current_status
 
         if pipeline_run.is_placeholder_run() and not new_status.is_finished:
             # If the pipeline run is a placeholder run (=no step has been started
@@ -10991,19 +10984,17 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return
 
-        run_update = PipelineRunUpdate(status=new_status)
+        pipeline_run.status = new_status.value
         if new_status.is_finished:
-            run_update.end_time = utc_now()
+            pipeline_run.end_time = utc_now()
 
-        pipeline_run.update(run_update)
         session.add(pipeline_run)
         # Commit so that we release the lock on the pipeline run.
         session.commit()
 
         if new_status.is_finished:
-            assert run_update.end_time
             if pipeline_run.start_time:
-                duration_time = run_update.end_time - pipeline_run.start_time
+                duration_time = pipeline_run.end_time - pipeline_run.start_time
                 duration_seconds = duration_time.total_seconds()
                 start_time_str = pipeline_run.start_time.strftime(
                     "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -11026,9 +11017,9 @@ class SqlZenStore(BaseZenStore):
                     "pipeline_run_id": pipeline_run_id,
                     "source_snapshot_id": pipeline_run.snapshot.source_snapshot_id,
                     "status": new_status,
-                    "num_steps": num_steps,
+                    "num_steps": pipeline_run.snapshot.step_count,
                     "start_time": start_time_str,
-                    "end_time": run_update.end_time.strftime(
+                    "end_time": pipeline_run.end_time.strftime(
                         "%Y-%m-%dT%H:%M:%S.%fZ"
                     ),
                     "duration_seconds": duration_seconds,

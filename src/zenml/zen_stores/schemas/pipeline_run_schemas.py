@@ -37,6 +37,7 @@ from zenml.enums import (
     TaggableResourceTypes,
     VisualizationResourceTypes,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineResponse,
@@ -90,6 +91,72 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+
+def transition_pipeline_run_status(
+    current_status: Optional[ExecutionStatus],
+    requested_status: ExecutionStatus,
+) -> ExecutionStatus:
+    """Transition a pipeline run status.
+
+    Args:
+        current_status: The current run status.
+        requested_status: The requested next run status.
+
+    Returns:
+        The new run status.
+
+    Raises:
+        IllegalOperationError: If the transition is invalid.
+    """
+    if requested_status in {
+        ExecutionStatus.CACHED,
+        ExecutionStatus.SKIPPED,
+        ExecutionStatus.RETRYING,
+        ExecutionStatus.RETRIED,
+    }:
+        raise IllegalOperationError(
+            f"Execution status `{requested_status}` is not valid for pipeline runs."
+        )
+
+    if requested_status in {ExecutionStatus.INITIALIZING}:
+        raise IllegalOperationError(
+            f"Execution status `{requested_status}` cannot be set manually."
+        )
+
+    if current_status.is_finished:
+        raise IllegalOperationError(
+            "The status of finished runs can not be updated."
+        )
+
+    if not current_status:
+        return requested_status
+
+    if current_status == ExecutionStatus.STOPPING:
+        if requested_status in {
+            ExecutionStatus.STOPPED,
+            ExecutionStatus.FAILED,
+        }:
+            return ExecutionStatus.STOPPED
+        elif requested_status == ExecutionStatus.STOPPING:
+            return ExecutionStatus.STOPPING
+        else:
+            raise IllegalOperationError(
+                "Stopping steps can only be transitioned to `stopped` or `failed`."
+            )
+
+    if requested_status == ExecutionStatus.PROVISIONING:
+        if current_status != ExecutionStatus.INITIALIZING:
+            logger.warning(
+                "Ignoring update... A run cannot transition to `provisioning` "
+                "from a non-initializing status. Current status: "
+                f"{current_status}, Requested status: {requested_status}"
+            )
+            return current_status
+        else:
+            return requested_status
+
+    return requested_status
 
 
 class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -736,33 +803,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        if run_update.status:
-            if (
-                run_update.status == ExecutionStatus.PROVISIONING
-                and self.status != ExecutionStatus.INITIALIZING.value
-            ):
-                # This run is already past the provisioning status, so we ignore
-                # the update.
-                pass
-            else:
-                self.status = run_update.status.value
+        if run_update.is_finished:
+            self.in_progress = False
+        elif self.snapshot and self.snapshot.is_dynamic:
+            # In dynamic pipelines, we can't actually check if the run is
+            # in progress by inspecting the DAG. Only once the orchestration
+            # container finishes we know for sure.
+            pass
+        else:
+            self.in_progress = self._check_if_run_in_progress()
 
-                if run_update.status_reason:
-                    self.status_reason = run_update.status_reason
-
-            if run_update.is_finished:
-                self.in_progress = False
-            elif self.snapshot and self.snapshot.is_dynamic:
-                # In dynamic pipelines, we can't actually check if the run is
-                # in progress by inspecting the DAG. Only once the orchestration
-                # container finishes we know for sure.
-                pass
-            else:
-                self.in_progress = self._check_if_run_in_progress()
-
-            if not self.in_progress:
-                # Only set the end time if the run is not in progress anymore.
-                self.end_time = run_update.end_time
+        if not self.in_progress:
+            # Only set the end time if the run is not in progress anymore.
+            self.end_time = run_update.end_time
 
         if run_update.orchestrator_run_id:
             if (
