@@ -151,8 +151,6 @@ spec:
               readOnly: true
           {{- end }}
           env:
-            - name: ZENML_SERVER
-              value: "True"
             {{- $envVars := include "zenml.envVariables" . | fromYaml | default dict }}
             {{- range $k, $v := $envVars }}
             - name: {{ $k }}

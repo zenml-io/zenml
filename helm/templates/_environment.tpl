@@ -589,6 +589,7 @@ Base environment variables for ZenML deployments.
 Returns a dictionary with common configuration env vars.
 */}}
 {{- define "zenml.baseEnvVariables" -}}
+ZENML_SERVER: "True"
 NODE_OPTIONS: "--use-openssl-ca"
 {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
 REQUESTS_CA_BUNDLE: "/updated-certs/ca-certificates.crt"
