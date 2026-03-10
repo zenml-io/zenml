@@ -111,7 +111,11 @@ class _SafeS3WriteFile:
         return self
 
     def __exit__(self, *args: Any) -> None:
-        """Closes the wrapped handle when leaving a context."""
+        """Closes the wrapped handle when leaving a context.
+
+        Args:
+            *args: Context manager exception info (unused).
+        """
         self.close()
 
     def __getattr__(self, name: str) -> Any:
