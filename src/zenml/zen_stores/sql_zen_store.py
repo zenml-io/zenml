@@ -10790,7 +10790,7 @@ class SqlZenStore(BaseZenStore):
             The input type of the artifact.
         """
         if input_name in input_overrides:
-            return StepRunInputArtifactType.OVERWRITE
+            return StepRunInputArtifactType.OVERRIDE
         elif input_name in step_spec.inputs_v2:
             return StepRunInputArtifactType.STEP_OUTPUT
         elif input_name in step_config.external_input_artifacts:
