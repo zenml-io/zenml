@@ -197,7 +197,7 @@ def resolve_step_inputs(
         for name, id_ in input_overrides.items():
             input_artifacts[name] = [
                 StepRunInputResponse(
-                    input_type=StepRunInputArtifactType.OVERWRITE,
+                    input_type=StepRunInputArtifactType.OVERRIDE,
                     **Client().get_artifact_version(id_).model_dump(),
                 )
             ]

@@ -40,7 +40,7 @@ class StepRunInputArtifactType(StrEnum):
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
     EXTERNAL = "external"  # loaded via `ExternalArtifact(value=...)`
     LAZY_LOADED = "lazy"  # loaded via various lazy methods
-    OVERWRITE = "overwrite"  # used when overwriting step inputs
+    OVERRIDE = "override"  # used when overriding step inputs
 
 
 class ArtifactSaveType(StrEnum):

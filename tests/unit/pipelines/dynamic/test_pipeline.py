@@ -58,8 +58,8 @@ def replay_pipeline(expected_consumer_input: int) -> None:
     consumer(producer(), expected_input=expected_consumer_input)
 
 
-def test_replay_skips_first_step_and_overwrites_second_step_input():
-    """Tests that replaying a pipeline and overwriting step inputs works."""
+def test_replay_skips_first_step_and_overrides_second_step_input():
+    """Tests that replaying a pipeline and overriding step inputs works."""
     original_run = replay_pipeline(expected_consumer_input=1)
 
     replay_pipeline.replay(
