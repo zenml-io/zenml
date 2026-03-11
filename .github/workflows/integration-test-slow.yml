@@ -15,6 +15,16 @@ on:
         description: The test environment
         type: string
         required: true
+      test_scope:
+        description: Pytest scope under tests/ to execute
+        type: string
+        required: false
+        default: integration
+      skip_coverage_xml:
+        description: Skip coverage combine/report/xml in CI
+        type: string
+        required: false
+        default: 'false'
       enable_tmate:
         description: Enable tmate session for debugging
         type: string
@@ -65,6 +75,18 @@ on:
           - docker-server-airflow-orchestrator-mariadb
         required: false
         default: default
+      test_scope:
+        description: Pytest scope under tests/ to execute
+        type: choice
+        options: [integration, integration/functional]
+        required: false
+        default: integration
+      skip_coverage_xml:
+        description: Skip coverage combine/report/xml in CI
+        type: choice
+        options: ['false', 'true']
+        required: false
+        default: 'false'
       enable_tmate:
         description: Enable tmate session for debugging
         type: choice
@@ -254,9 +276,11 @@ jobs:
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Integration Tests - Slow CI
         run: |
-          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT}
+          bash scripts/test-coverage-xml.sh "${INPUTS_TEST_SCOPE}" "${INPUTS_TEST_ENVIRONMENT}"
         env:
+          INPUTS_TEST_SCOPE: ${{ inputs.test_scope }}
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          CI_SKIP_COVERAGE_XML: ${{ inputs.skip_coverage_xml }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@a283f9441d2d96eb62436dc46d7014f5d357ac22  # v3.17

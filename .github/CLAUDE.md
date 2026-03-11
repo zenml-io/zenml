@@ -8,7 +8,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 | Category | Workflows | Purpose |
 |----------|-----------|---------|
-| **CI/Testing** | ci-fast.yml, ci-slow.yml | Primary PR testing (two-tier approach) |
+| **CI/Testing** | ci-fast.yml, ci-slow.yml, pilot-ci.yml | Primary PR testing (two-tier + pilot) |
 | **Reusable Tests** | unit-test.yml, linting.yml, integration-test-*.yml | Called by CI and release workflows |
 | **Release** | release.yml, publish_*.yml | PyPI, Docker, Helm publishing |
 | **Security** | codeql.yml, trivy-*.yml | Vulnerability scanning |
@@ -17,7 +17,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 ### Entry Points vs Reusable Workflows
 
-**Entry points** (triggered externally): ci-fast.yml, ci-slow.yml, release.yml, nightly_build.yml
+**Entry points** (triggered externally): ci-fast.yml, ci-slow.yml, pilot-ci.yml, release.yml, nightly_build.yml
 
 **Reusable workflows** (called via `workflow_call`): unit-test.yml, linting.yml, integration-test-*.yml, publish_*.yml
 
@@ -30,11 +30,19 @@ All reusable workflows use `secrets: inherit` for centralized secret management.
 Runs automatically on all PRs and pushes to main:
 - Docstring linting (darglint)
 - Spellcheck
-- SQLite migration testing
+- SQLite migration testing (path-gated, fail-closed fallback)
 - Linting (ubuntu, Python 3.11)
 - Unit tests (ubuntu, Python 3.11)
-- Integration tests (2 environments, 6 shards each)
+- Integration tests (default environment always; docker-server environment path-gated; default scope is selectively routed via `.github/ci/selective-testing-map.json`; 2 shards with concurrency caps)
 - Template example updates (PRs only)
+
+### pilot-ci.yml (Label-gated, Replacement-Mode Pilot)
+
+Runs only when the `pilot-ci` label is present on a PR. It replaces the heaviest `ci-fast` sections for that run by executing:
+- selective SQLite migration testing (path-gated)
+- selective integration environments (default always, docker-server env gated)
+
+When `pilot-ci` is enabled, `ci-fast` skips migration and integration-heavy jobs to avoid additive runner load.
 
 ### ci-slow.yml (Full Matrix, Requires Label)
 
@@ -46,6 +54,16 @@ Gated by `run-slow-ci` label (checked dynamically):
 - Base package functionality tests
 
 **Label mechanism**: Maintainers add `run-slow-ci` label and rerun workflow to trigger full CI without code changes.
+
+`ci-fast` also supports optional override labels for selective gating:
+- `pilot-ci`: enable replacement-mode pilot workflow and skip heavy migration/integration jobs in `ci-fast`.
+- `force-migrations`: force the migration job to run on PRs.
+- `force-server-env`: force the docker-server integration environment on PRs.
+- `force-full-integration`: force default environment tests to run the full `tests/integration` scope.
+
+As with `run-slow-ci`, these labels are evaluated dynamically when the workflow runs. Add the label and rerun the workflow (or push a new commit) to apply it.
+For true replacement-mode behavior, apply the `pilot-ci` label before rerunning checks; adding it mid-run can temporarily create additive load until older runs are canceled.
+Selective path/category mapping is defined in `.github/ci/selective-testing-map.json` and is shared by both `ci-fast` and `pilot-ci` classifiers.
 
 ## Release Process
 
@@ -126,11 +144,19 @@ env:
 All CI workflows use:
 ```yaml
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 ```
 
 This cancels previous runs when new commits are pushed to the same branch.
+The PR-number-based group key ensures stable grouping across force-pushes
+(avoids zombie runs caused by `github.ref` instability for PR events).
+
+### Selective Testing Phase 0 Guardrails
+
+- `.test_durations` is advisory metadata. CI must not assume it is always present.
+- `scripts/test-coverage-xml.sh` now falls back to `duration_based_chunks` splitting when `.test_durations` is missing or empty.
+- Initial CI capacity SLOs and baseline capture guidance live in `.github/ci/selective-testing-phase0-baseline.md`.
 
 ### Path Filtering
 

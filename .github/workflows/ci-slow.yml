@@ -22,9 +22,19 @@ on:
       - .github/workflows/claude.yml
       - .claude/**
 concurrency:
-  # New commit on branch cancels running workflows of the same branch
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # New commit on branch cancels running workflows of the same branch.
+  # Use PR number when available for stable grouping across force-pushes;
+  # fall back to ref for push/dispatch events.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref
+    }}
   cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+env:
+  CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS: ${{ vars.CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS || 'false' }}
+  CI_SLOW_OPTIMIZED_SKIP_COVERAGE_XML: ${{ vars.CI_SLOW_OPTIMIZED_SKIP_COVERAGE_XML || 'false' }}
 jobs:
   run-slow-ci-label-is-set:
     runs-on: ubuntu-latest
@@ -51,12 +61,201 @@ jobs:
         run: |
           echo "Please add the 'run-slow-ci' label to this PR before merging."
           exit 1
+  classify-changes:
+    runs-on: ubuntu-latest
+    needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
+    outputs:
+      needs_migrations: ${{ steps.classify.outputs.needs_migrations }}
+      needs_server_env: ${{ steps.classify.outputs.needs_server_env }}
+      force_migrations: ${{ steps.classify.outputs.force_migrations }}
+      force_server_env: ${{ steps.classify.outputs.force_server_env }}
+      default_test_scope: ${{ steps.classify.outputs.default_test_scope }}
+      ci_slow_profile: ${{ steps.classify.outputs.ci_slow_profile }}
+    steps:
+      - name: Classify changed files for ci-slow jobs
+        id: classify
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const failClosed = {
+              needsMigrations: "true",
+              needsServerEnv: "true",
+              forceMigrations: "false",
+              forceServerEnv: "false",
+              defaultTestScope: "integration",
+              ciSlowProfile: "full",
+            };
+            const setOutputs = (outputs) => {
+              core.setOutput("needs_migrations", outputs.needsMigrations);
+              core.setOutput("needs_server_env", outputs.needsServerEnv);
+              core.setOutput("force_migrations", outputs.forceMigrations);
+              core.setOutput("force_server_env", outputs.forceServerEnv);
+              core.setOutput("default_test_scope", outputs.defaultTestScope);
+              core.setOutput("ci_slow_profile", outputs.ciSlowProfile);
+            };
+            if (context.eventName !== "pull_request") {
+              setOutputs(failClosed);
+              return;
+            }
+            try {
+              const prNumber = context.payload.pull_request.number;
+              const mapPath = ".github/ci/selective-testing-map.json";
+              const [changedFiles, labels] = await Promise.all([
+                github.paginate(github.rest.pulls.listFiles, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  per_page: 100,
+                }),
+                github.rest.issues.listLabelsOnIssue({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                }),
+              ]);
+              const refsToTry = [
+                context.payload.pull_request.base.ref,
+                context.payload.pull_request.head.sha,
+              ];
+              let mapResponse;
+              let mapLoadError;
+              for (const ref of refsToTry) {
+                if (!ref) {
+                  continue;
+                }
+                try {
+                  mapResponse = await github.rest.repos.getContent({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    path: mapPath,
+                    ref,
+                  });
+                  break;
+                } catch (error) {
+                  mapLoadError = error;
+                }
+              }
+              if (!mapResponse) {
+                throw mapLoadError || new Error("Selective testing map could not be loaded.");
+              }
+              if (Array.isArray(mapResponse.data) || !mapResponse.data.content) {
+                throw new Error("Selective testing map could not be loaded as a file.");
+              }
+              const mapping = JSON.parse(
+                Buffer.from(mapResponse.data.content, mapResponse.data.encoding).toString("utf8")
+              );
+              const ensureArray = (value, name) => {
+                if (!Array.isArray(value) || value.length === 0) {
+                  throw new Error(`Mapping key '${name}' must be a non-empty array.`);
+                }
+                return value;
+              };
+              if (
+                typeof mapping.default_test_scope !== "string" ||
+                typeof mapping.full_test_scope !== "string" ||
+                !mapping.default_test_scope ||
+                !mapping.full_test_scope
+              ) {
+                throw new Error(
+                  "Mapping keys 'default_test_scope' and 'full_test_scope' must be non-empty strings."
+                );
+              }
+              const allowedScopes = new Set([
+                "integration",
+                "integration/functional",
+              ]);
+              if (
+                !allowedScopes.has(mapping.default_test_scope) ||
+                !allowedScopes.has(mapping.full_test_scope)
+              ) {
+                throw new Error(
+                  "Mapping scopes must be one of: integration, integration/functional."
+                );
+              }
+              if (
+                mapping.force_labels !== undefined &&
+                (typeof mapping.force_labels !== "object" ||
+                  mapping.force_labels === null ||
+                  Array.isArray(mapping.force_labels))
+              ) {
+                throw new Error("Mapping key 'force_labels' must be an object when set.");
+              }
+              const toMatchers = (patterns) =>
+                patterns.map((pattern) => new RegExp(pattern));
+              const matchesAny = (matchers, path) =>
+                matchers.some((matcher) => matcher.test(path));
+              const migrationMatchers = toMatchers(
+                ensureArray(mapping.migration_matchers, "migration_matchers")
+              );
+              const serverEnvMatchers = toMatchers(
+                ensureArray(mapping.server_env_matchers, "server_env_matchers")
+              );
+              const fullScopeMatchers = toMatchers(
+                ensureArray(mapping.full_scope_matchers, "full_scope_matchers")
+              );
+              const defaultForceLabels = {
+                migrations: "force-migrations",
+                server_env: "force-server-env",
+                full_scope: "force-full-integration",
+                slow_full: "run-slow-ci-full",
+              };
+              const forceLabels = {
+                ...defaultForceLabels,
+                ...(mapping.force_labels || {}),
+              };
+              for (const [labelKey, labelName] of Object.entries(forceLabels)) {
+                if (typeof labelName !== "string" || !labelName) {
+                  throw new Error(
+                    `Force label '${labelKey}' must map to a non-empty string.`
+                  );
+                }
+              }
+              const labelNames = labels.data.map((label) => label.name);
+              const hasLabel = (labelName) =>
+                Boolean(labelName) && labelNames.includes(labelName);
+              const filePaths = changedFiles.map((file) => file.filename);
+              const mappingFileChanged = filePaths.includes(mapPath);
+              const needsMigrations =
+                mappingFileChanged ||
+                filePaths.some((path) => matchesAny(migrationMatchers, path));
+              const needsServerEnv =
+                mappingFileChanged ||
+                filePaths.some((path) => matchesAny(serverEnvMatchers, path));
+              const needsFullScope =
+                mappingFileChanged ||
+                filePaths.some((path) => matchesAny(fullScopeMatchers, path));
+              const forceFullScope = hasLabel(forceLabels.full_scope);
+              const forceSlowFull = hasLabel(forceLabels.slow_full);
+              const defaultTestScope =
+                forceFullScope || needsFullScope
+                  ? mapping.full_test_scope
+                  : mapping.default_test_scope;
+              const ciSlowProfile =
+                forceSlowFull || forceFullScope || needsMigrations || needsServerEnv || needsFullScope
+                  ? "full"
+                  : "optimized";
+              setOutputs({
+                needsMigrations: needsMigrations ? "true" : "false",
+                needsServerEnv: needsServerEnv ? "true" : "false",
+                forceMigrations: hasLabel(forceLabels.migrations) ? "true" : "false",
+                forceServerEnv: hasLabel(forceLabels.server_env) ? "true" : "false",
+                defaultTestScope,
+                ciSlowProfile,
+              });
+            } catch (error) {
+              core.warning(
+                `Failed to classify changed files for ci-slow. Falling back to broad coverage. ${error}`
+              );
+              setOutputs(failClosed);
+            }
   mysql-db-migration-testing-full:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
+      RUN_FULL_MIGRATION: ${{ needs.classify-changes.result != 'success' || needs.classify-changes.outputs.needs_migrations == 'true' || needs.classify-changes.outputs.force_migrations == 'true' || needs.classify-changes.outputs.ci_slow_profile == 'full' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -73,10 +272,18 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
         if: github.event.pull_request.head.repo.fork == false
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mysql full
+        run: |
+          migration_type="bounded"
+          if [[ "$RUN_FULL_MIGRATION" == "true" ]]; then
+            migration_type="full"
+          fi
+          bash scripts/test-migrations.sh mysql "$migration_type"
   mysql-db-migration-testing-random:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false && (needs.classify-changes.result
+      != 'success' || needs.classify-changes.outputs.needs_migrations == 'true' ||
+      needs.classify-changes.outputs.force_migrations == 'true' || needs.classify-changes.outputs.ci_slow_profile
+      == 'full')
+    needs: [run-slow-ci-label-is-set, classify-changes]
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -98,11 +305,12 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mysql random
   sqlite-db-migration-testing-full:
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
+      RUN_FULL_MIGRATION: ${{ needs.classify-changes.result != 'success' || needs.classify-changes.outputs.needs_migrations == 'true' || needs.classify-changes.outputs.force_migrations == 'true' || needs.classify-changes.outputs.ci_slow_profile == 'full' }}
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout code
@@ -114,13 +322,19 @@ jobs:
         with:
           python-version: '3.10'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh sqlite full
+        run: |
+          migration_type="bounded"
+          if [[ "$RUN_FULL_MIGRATION" == "true" ]]; then
+            migration_type="full"
+          fi
+          bash scripts/test-migrations.sh sqlite "$migration_type"
   mariadb-db-migration-testing:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
+      RUN_FULL_MIGRATION: ${{ needs.classify-changes.result != 'success' || needs.classify-changes.outputs.needs_migrations == 'true' || needs.classify-changes.outputs.force_migrations == 'true' || needs.classify-changes.outputs.ci_slow_profile == 'full' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -137,10 +351,15 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
         if: github.event.pull_request.head.repo.fork == false
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mariadb full
+        run: |
+          migration_type="bounded"
+          if [[ "$RUN_FULL_MIGRATION" == "true" ]]; then
+            migration_type="full"
+          fi
+          bash scripts/test-migrations.sh mariadb "$migration_type"
   small-checks:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -184,92 +403,97 @@ jobs:
       - name: Install latest dashboard (test gitignore)
         run: bash scripts/install-dashboard.sh
   ubuntu-linting:
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.11", "3.12"]' || '["3.10", "3.12", "3.13"]') }}
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS == 'true' && 'no' || 'yes' }}
     secrets: inherit
   ubuntu-unit-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: [run-slow-ci-label-is-set, classify-changes, ubuntu-linting]
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.11", "3.12"]' || '["3.10", "3.12", "3.13"]') }}
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS == 'true' && 'no' || 'yes' }}
     secrets: inherit
   windows-linting:
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.10"]' || '["3.10", "3.11", "3.12", "3.13"]') }}
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS == 'true' && 'no' || 'yes' }}
     secrets: inherit
   windows-unit-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, windows-linting]
+    needs: [run-slow-ci-label-is-set, classify-changes, windows-linting]
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.10"]' || '["3.10", "3.11", "3.12", "3.13"]') }}
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS == 'true' && 'no' || 'yes' }}
     secrets: inherit
   macos-linting:
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.11"]' || '["3.10", "3.11", "3.12", "3.13"]') }}
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS == 'true' && 'no' || 'yes' }}
     secrets: inherit
   macos-unit-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, macos-linting]
+    needs: [run-slow-ci-label-is-set, classify-changes, macos-linting]
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.11"]' || '["3.10", "3.11", "3.12", "3.13"]') }}
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
-      install_integrations: 'yes'
+      install_integrations: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_INTEGRATIONS == 'true' && 'no' || 'yes' }}
       reruns: 1
     secrets: inherit
   windows-integration-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, windows-unit-test]
+    needs: [run-slow-ci-label-is-set, classify-changes, windows-unit-test]
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.10"]' || '["3.10", "3.11", "3.12", "3.13"]') }}
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -277,14 +501,16 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      test_scope: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && (needs.classify-changes.outputs.default_test_scope || 'integration') || 'integration' }}
+      skip_coverage_xml: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_COVERAGE_XML == 'true' && 'true' || 'false' }}
     secrets: inherit
   macos-integration-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, macos-unit-test]
+    needs: [run-slow-ci-label-is-set, classify-changes, macos-unit-test]
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.11"]' || '["3.10", "3.11", "3.12", "3.13"]') }}
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -292,18 +518,17 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      test_scope: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && (needs.classify-changes.outputs.default_test_scope || 'integration') || 'integration' }}
+      skip_coverage_xml: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_COVERAGE_XML == 'true' && 'true' || 'false' }}
     secrets: inherit
   ubuntu-latest-integration-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-unit-test]
+    needs: [run-slow-ci-label-is-set, classify-changes, ubuntu-unit-test]
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
-        test_environment:
-          - default
-          - docker-server-docker-orchestrator-mysql
-          - docker-server-docker-orchestrator-mariadb
+        python-version: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["3.11", "3.12"]' || '["3.10", "3.12", "3.13"]') }}
+        test_environment: ${{ fromJSON(needs.classify-changes.outputs.ci_slow_profile == 'optimized' && '["default"]' || '["default", "docker-server-docker-orchestrator-mysql", "docker-server-docker-orchestrator-mariadb"]') }}
         exclude:
           # docker is time-consuming to run, so we only run it on 3.11
           - test_environment: docker-server-docker-orchestrator-mysql
@@ -324,14 +549,16 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      test_scope: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && (needs.classify-changes.outputs.default_test_scope || 'integration') || 'integration' }}
+      skip_coverage_xml: ${{ needs.classify-changes.outputs.ci_slow_profile == 'optimized' && env.CI_SLOW_OPTIMIZED_SKIP_COVERAGE_XML == 'true' && 'true' || 'false' }}
     secrets: inherit
   vscode-tutorial-pipelines-test:
     if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     uses: ./.github/workflows/vscode-tutorial-pipelines-test.yml
     secrets: inherit
   ubuntu-base-package-functionality:
-    needs: run-slow-ci-label-is-set
+    needs: [run-slow-ci-label-is-set, classify-changes]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
