@@ -29,6 +29,7 @@ from typing import (
     Dict,
     List,
     Literal,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
@@ -144,6 +145,13 @@ class PipelinePausedError(Exception):
 
 class PipelineAbortedError(Exception):
     """Raised when a wait condition is resolved with abort."""
+
+
+class WaitConditionState(NamedTuple):
+    """State tuple for wait-condition handling."""
+
+    is_terminal: bool
+    value: Any
 
 
 class DynamicPipelineRunner:
@@ -1031,11 +1039,11 @@ class DynamicPipelineRunner:
                 else None,
             )
         )
-        result = self._handle_wait_condition_state(
+        state = self._handle_wait_condition_state(
             condition=condition, schema=schema
         )
-        if result is not None:
-            return result
+        if state.is_terminal:
+            return state.value
 
         logger.info(
             "Waiting on wait condition `%s` (type=%s, timeout=%ss, poll=%ss).",
@@ -1060,11 +1068,11 @@ class DynamicPipelineRunner:
                     condition = Client().zen_store.get_run_wait_condition(
                         condition.id, hydrate=True
                     )
-                result = self._handle_wait_condition_state(
+                state = self._handle_wait_condition_state(
                     condition=condition, schema=schema
                 )
-                if result is not None:
-                    return result
+                if state.is_terminal:
+                    return state.value
                 time.sleep(poll_interval)
         except KeyboardInterrupt:
             try:
@@ -1094,11 +1102,11 @@ class DynamicPipelineRunner:
             condition = Client().zen_store.get_run_wait_condition(
                 condition.id, hydrate=True
             )
-        result = self._handle_wait_condition_state(
+        state = self._handle_wait_condition_state(
             condition=condition, schema=schema
         )
-        if result is not None:
-            return result
+        if state.is_terminal:
+            return state.value
 
         self._run = Client().zen_store.update_run(
             run_id=self._run.id,
@@ -1112,8 +1120,8 @@ class DynamicPipelineRunner:
     def _handle_wait_condition_state(
         condition: "RunWaitConditionResponse",
         schema: Optional[Any] = None,
-    ) -> Optional[Any]:
-        """Handle non-pending wait conditions.
+    ) -> WaitConditionState:
+        """Handle wait conditions.
 
         Args:
             condition: The latest wait condition state.
@@ -1123,11 +1131,10 @@ class DynamicPipelineRunner:
             PipelineAbortedError: If the condition was resolved with abort.
 
         Returns:
-            The resolved value when execution can continue, `None` when the
-                condition is still pending.
+            State indicating whether the condition is terminal and its value.
         """
         if condition.status == RunWaitConditionStatus.PENDING:
-            return None
+            return WaitConditionState(is_terminal=False, value=None)
 
         if condition.resolution == RunWaitConditionResolution.ABORT:
             raise PipelineAbortedError(
@@ -1135,9 +1142,12 @@ class DynamicPipelineRunner:
             )
 
         if schema is None:
-            return condition.result
+            return WaitConditionState(is_terminal=True, value=condition.result)
 
-        return TypeAdapter(schema).validate_python(condition.result)
+        return WaitConditionState(
+            is_terminal=True,
+            value=TypeAdapter(schema).validate_python(condition.result),
+        )
 
     def await_all_step_futures(self) -> None:
         """Await all step futures."""
