@@ -291,6 +291,20 @@ class BaseOrchestrator(StackComponent, ABC):
         # in the orchestrator environment
         base_environment.update(secrets)
 
+        if placeholder_run and placeholder_run.original_run:
+            from zenml.execution.pipeline.utils import (
+                skip_steps_and_prune_snapshot,
+            )
+
+            run_required = skip_steps_and_prune_snapshot(
+                snapshot=snapshot,
+                pipeline_run=placeholder_run,
+            )
+
+            if not run_required:
+                self._cleanup_run()
+                return
+
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
         )
@@ -532,11 +546,16 @@ class BaseOrchestrator(StackComponent, ABC):
             f"the {self.__class__.__name__} orchestrator."
         )
 
-    def wait_for_isolated_step(self, step_run: "StepRunResponse") -> None:
+    def wait_for_isolated_step(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
         """Wait for an isolated step run to complete.
 
         Args:
             step_run: The step run.
+
+        Returns:
+            The final status of the isolated step run.
         """
         sleep_interval = 1
         max_sleep_interval = 16
@@ -556,8 +575,8 @@ class BaseOrchestrator(StackComponent, ABC):
                     Client().get_run_step(step_run.id, hydrate=False).status
                 )
 
-            if status.is_finished:
-                return
+            if status.is_finished or status == ExecutionStatus.RETRYING:
+                return status
 
             logger.debug(
                 "Waiting for isolated step with ID %s to finish (current "

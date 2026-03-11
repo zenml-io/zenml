@@ -26,7 +26,7 @@ class EvidentlyColumnMapping(BaseModel):
 
     This class is a 1-to-1 serializable analogue of Evidently's
     ColumnMapping data type that can be used as a step configuration field
-    (see https://docs.evidentlyai.com/user-guide/input-data/column-mapping).
+    (see https://docs.evidentlyai.com/docs/library/data_definition).
 
     Attributes:
         target: target column

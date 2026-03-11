@@ -54,7 +54,6 @@ from zenml.utils.tag_utils import Tag
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
     from zenml.models.v2.core.curated_visualization import (
@@ -69,6 +68,7 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
+    from zenml.models.v2.core.triggers import TRIGGER_RETURN_TYPE_UNION
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -130,10 +130,6 @@ class PipelineRunRequest(ProjectScopedRequest):
             "(OS, Python version, etc.)."
         ),
     )
-    trigger_execution_id: Optional[UUID] = Field(
-        default=None,
-        title="ID of the trigger execution that triggered this run.",
-    )
     trigger_info: Optional[PipelineRunTriggerInfo] = Field(
         default=None,
         title="Trigger information for the pipeline run.",
@@ -149,6 +145,10 @@ class PipelineRunRequest(ProjectScopedRequest):
     exception_info: Optional[ExceptionInfo] = Field(
         default=None,
         title="The exception information of the pipeline run.",
+    )
+    original_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The original run ID for a replayed run.",
     )
 
     @property
@@ -316,9 +316,6 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     code_reference: Optional["CodeReferenceResponse"] = Field(
         default=None, title="The code reference that was used for this run."
     )
-    trigger_execution: Optional["TriggerExecutionResponse"] = Field(
-        default=None, title="The trigger execution that triggered this run."
-    )
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
@@ -330,6 +327,14 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     visualizations: List["CuratedVisualizationResponse"] = Field(
         default=[],
         title="Curated visualizations associated with the pipeline run.",
+    )
+    trigger: Optional["TRIGGER_RETURN_TYPE_UNION"] = Field(
+        default=None,
+        title="The trigger that generated this pipeline run.",
+    )
+    original_run: Optional["PipelineRunResponse"] = Field(
+        default=None,
+        title="The original run that was replayed to create this run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -623,15 +628,6 @@ class PipelineRunResponse(
         return self.get_resources().schedule
 
     @property
-    def trigger_execution(self) -> Optional["TriggerExecutionResponse"]:
-        """The `trigger_execution` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().trigger_execution
-
-    @property
     def code_reference(self) -> Optional["CodeReferenceResponse"]:
         """The `schedule` property.
 
@@ -666,6 +662,24 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().log_collection
+
+    @property
+    def trigger(self) -> Optional["TRIGGER_RETURN_TYPE_UNION"]:
+        """The `trigger` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().trigger
+
+    @property
+    def original_run(self) -> Optional["PipelineRunResponse"]:
+        """The `original_run` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().original_run
 
 
 # ------------------ Filter Model ------------------
@@ -705,6 +719,7 @@ class PipelineRunFilter(
         "triggered_by_step_run_id",
         "triggered_by_deployment_id",
         "linked_to_model_version_id",
+        "trigger_id",
     ]
     CLI_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -840,6 +855,11 @@ class PipelineRunFilter(
         description="The ID of the deployment that triggered this pipeline run.",
         union_mode="left_to_right",
     )
+    trigger_id: UUID | str | None = Field(
+        default=None,
+        description="The ID of the trigger that generated this pipeline run.",
+        union_mode="left_to_right",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -874,6 +894,7 @@ class PipelineRunFilter(
             StackCompositionSchema,
             StackSchema,
             StepRunSchema,
+            TriggerExecutionSchema,
         )
 
         if self.code_repository_id:
@@ -1066,6 +1087,15 @@ class PipelineRunFilter(
                 ),
             )
             custom_filters.append(linked_to_model_version_filter)
+
+        if self.trigger_id:
+            custom_filters.append(
+                and_(
+                    PipelineRunSchema.id
+                    == TriggerExecutionSchema.pipeline_run_id,
+                    TriggerExecutionSchema.trigger_id == self.trigger_id,
+                )
+            )
 
         return custom_filters
 

@@ -5,3 +5,4 @@ structure:
 
 redirects:
   tutorials/organizing-pipelines-and-models: tutorial/organizing-pipelines-and-models.md
+  examples/floracasts: starter-guide/README.md
