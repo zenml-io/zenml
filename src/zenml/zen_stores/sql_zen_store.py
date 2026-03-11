@@ -10955,23 +10955,26 @@ class SqlZenStore(BaseZenStore):
         # Snapshots always exists for pipeline runs of newer versions
         assert pipeline_run.snapshot
 
+        if requested_status:
+            new_status = transition_pipeline_run_status(
+                current_status=pipeline_run.status,
+                requested_status=requested_status,
+            )
+
         # Determine the status based on the run and step statuses.
-        current_status = get_pipeline_run_status(
-            run_status=ExecutionStatus(pipeline_run.status),
+        requested_status = get_pipeline_run_status(
+            run_status=requested_status or pipeline_run.status,
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
             ],
             num_steps=pipeline_run.snapshot.step_count,
             is_dynamic_pipeline=pipeline_run.snapshot.is_dynamic,
         )
-
-        if requested_status:
-            new_status = transition_pipeline_run_status(
-                current_status=current_status,
-                requested_status=requested_status,
-            )
-        else:
-            new_status = current_status
+        
+        new_status = transition_pipeline_run_status(
+            current_status=pipeline_run.status,
+            requested_status=requested_status,
+        )
 
         if pipeline_run.is_placeholder_run() and not new_status.is_finished:
             # If the pipeline run is a placeholder run (=no step has been started
