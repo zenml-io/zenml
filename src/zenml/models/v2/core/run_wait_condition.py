@@ -283,12 +283,14 @@ class RunWaitConditionFilter(ProjectScopedFilter):
     FILTER_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "resolved_by",
+        "pipeline_run",
     ]
     CLI_EXCLUDE_FIELDS = [*ProjectScopedFilter.CLI_EXCLUDE_FIELDS]
 
-    run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run: Optional[Union[UUID, str]] = Field(
         default=None,
-        title="Filter by pipeline run ID.",
+        title="Filter by pipeline run ID/name.",
+        union_mode="left_to_right",
     )
     type: Optional[str] = Field(
         default=None, title="Filter by condition type."
@@ -328,7 +330,11 @@ class RunWaitConditionFilter(ProjectScopedFilter):
 
         from sqlmodel import and_
 
-        from zenml.zen_stores.schemas import RunWaitConditionSchema, UserSchema
+        from zenml.zen_stores.schemas import (
+            PipelineRunSchema,
+            RunWaitConditionSchema,
+            UserSchema,
+        )
 
         if self.resolved_by:
             resolved_by_filter = and_(
@@ -340,5 +346,15 @@ class RunWaitConditionFilter(ProjectScopedFilter):
                 ),
             )
             custom_filters.append(resolved_by_filter)
+
+        if self.pipeline_run:
+            pipeline_run_filter = and_(
+                RunWaitConditionSchema.run_id == PipelineRunSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.pipeline_run,
+                    table=PipelineRunSchema,
+                ),
+            )
+            custom_filters.append(pipeline_run_filter)
 
         return custom_filters
