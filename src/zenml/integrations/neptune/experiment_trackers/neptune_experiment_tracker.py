@@ -26,12 +26,15 @@ from zenml.integrations.neptune.flavors import (
     NeptuneExperimentTrackerConfig,
     NeptuneExperimentTrackerSettings,
 )
+from zenml.logger import get_logger
 from zenml.metadata.metadata_types import Uri
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
     from zenml.metadata.metadata_types import MetadataType
+
+logger = get_logger(__name__)
 
 
 class NeptuneExperimentTracker(BaseExperimentTracker):
@@ -45,6 +48,14 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
+        logger.warning(
+            "Neptune.ai has been acquired by OpenAI (announced December 2025) "
+            "and Neptune's standalone services are discontinued as of March 5, "
+            "2026. While the ZenML Neptune integration remains functional for "
+            "the time being, it will be removed soon and we recommend migrating "
+            "to an alternative experiment tracker such as MLflow, Weights & "
+            "Biases, or Comet."
+        )
         self.run_state: RunProvider = RunProvider()
 
     @property

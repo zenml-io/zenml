@@ -14,6 +14,7 @@
 """ZenML Step HeartBeat functionality."""
 
 import _thread
+import contextvars
 import logging
 import threading
 import time
@@ -119,8 +120,13 @@ class StepHeartbeatWorker:
 
         self._running = True
         self._terminated = False
+
+        # TODO: There is one more occurence of this. Fix that as well.
+        active_context = contextvars.copy_context()
         self._thread = threading.Thread(
-            target=self._run, name=self.name, daemon=True
+            target=lambda: active_context.run(self._run),
+            name=self.name,
+            daemon=True,
         )
         self._thread.start()
         logger.debug(
