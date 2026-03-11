@@ -869,7 +869,6 @@ def list_run_wait_conditions(
     """List run wait conditions.
 
     Args:
-        run_name_or_id: Optional run name or ID filter.
         columns: Columns to display.
         output_format: Format for output.
         **kwargs: Additional wait condition filters.
