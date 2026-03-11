@@ -80,24 +80,24 @@ def update_model(
     return original.__class__.model_validate(values)
 
 
-def get_json_schema_for_type(value_type: Type[Any]) -> Dict[str, Any]:
+def get_json_schema_for_type(value: Any) -> Dict[str, Any]:
     """Get a JSON schema for a Python type using Pydantic.
 
     Args:
-        value_type: Type to convert into JSON schema.
+        value: Value for which to get the JSON schema.
 
     Returns:
-        JSON schema dictionary for the input type.
+        JSON schema dictionary.
 
     Raises:
-        ValueError: If the input type is not supported by Pydantic schema
+        ValueError: If the input value is not supported by Pydantic schema
             generation.
     """
     try:
-        return TypeAdapter(value_type).json_schema()
+        return TypeAdapter(value).json_schema()
     except Exception as e:
         raise ValueError(
-            f"Unsupported type `{value_type}`. Only JSON-serializable "
+            f"Unsupported type `{value}`. Only JSON-serializable "
             "types are supported. See the above pydantic error for more "
             "details."
         ) from e
