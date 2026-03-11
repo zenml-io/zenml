@@ -23,6 +23,7 @@ from zenml.constants import (
     DISABLE_HEARTBEAT,
     LOGS,
     LOGS_MAX_ENTRIES_PER_REQUEST,
+    LOGS_RUNNER_SOURCE,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -472,7 +473,7 @@ def run_logs(
     )
 
     # Handle runner logs from workload manager
-    if run.snapshot and source == "runner":
+    if run.snapshot and source == LOGS_RUNNER_SOURCE:
         snapshot = run.snapshot
         if (
             snapshot.template_id or snapshot.source_snapshot_id or run.trigger

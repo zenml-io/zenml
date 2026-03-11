@@ -23,6 +23,7 @@ from uuid import UUID
 
 from packaging import version
 
+from zenml import LogsRequest
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.config.base_settings import BaseSettings
@@ -37,6 +38,7 @@ from zenml.constants import (
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
     ENV_ZENML_RUNNER_PARENT_IMAGE,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
+    LOGS_RUNNER_SOURCE,
     RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
     handle_bool_env_var,
     handle_int_env_var,
@@ -70,6 +72,9 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 )
 from zenml.zen_server.pipeline_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
+)
+from zenml.zen_server.pipeline_execution.workload_manager_interface import (
+    WorkloadType,
 )
 from zenml.zen_server.utils import (
     get_auth_context,
@@ -243,7 +248,9 @@ def run_snapshot(
         )
 
     placeholder_run = create_placeholder_run(
-        snapshot=target_snapshot, trigger_info=trigger_info
+        snapshot=target_snapshot,
+        trigger_info=trigger_info,
+        logs=LogsRequest(source=LOGS_RUNNER_SOURCE),
     )
 
     if trigger_id:
@@ -314,10 +321,12 @@ def run_snapshot(
     )
 
     workload_id = placeholder_run.id if trigger_id else target_snapshot.id
+    workload_type = WorkloadType.RUN if trigger_id else WorkloadType.SNAPSHOT
 
     def _task() -> None:
         runner_image = workload_manager().build_and_push_image(
             workload_id=workload_id,
+            workload_type=workload_type,
             dockerfile=dockerfile,
             image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
             sync=True,
