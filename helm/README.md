@@ -92,6 +92,26 @@ You can add additional exclusions using the `additionalNoProxy` list. The NO_PRO
 - IPv6 addresses (e.g., "::1")
 - IPv6 ranges in CIDR notation (e.g., "fe80::/10")
 
+### Database Persistence
+
+When using database persistence with a local SQLite database, the chart automatically configures the necessary permissions. The `podSecurityContext.fsGroup` is set to 1000 by default to ensure the ZenML container (running as UID 1000) can write to the persistent volume.
+
+Example configuration:
+
+```yaml
+zenml:
+  database:
+    persistence:
+      enabled: true
+      size: "10Gi"
+      # storageClassName: ""  # Optional: use default storage class if not specified
+
+# podSecurityContext.fsGroup is set to 1000 by default
+# This ensures the container can write to the persistent volume
+```
+
+If you override `podSecurityContext`, ensure that `fsGroup: 1000` is set when using persistent volumes, otherwise the container will not be able to write to the mounted volume and will crash.
+
 ## Telemetry
 
 The ZenML server collects anonymous usage data to help us improve the product. You can opt out by setting `zenml.analyticsOptIn` to false.
