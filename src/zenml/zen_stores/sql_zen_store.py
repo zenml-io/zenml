@@ -7157,6 +7157,8 @@ class SqlZenStore(BaseZenStore):
             return
 
         run = self.get_run(run_id=run_id, hydrate=False)
+        if not run.snapshot.runnable:
+            return
 
         from zenml.zen_server.pipeline_execution.utils import resume_run
 
