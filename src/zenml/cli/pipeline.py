@@ -1176,6 +1176,9 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
 
     Args:
         run_name_or_id: The name or ID of the pipeline run to retry.
+
+    Raises:
+        RuntimeError: If retrying the run fails.
     """
     try:
         client = Client()

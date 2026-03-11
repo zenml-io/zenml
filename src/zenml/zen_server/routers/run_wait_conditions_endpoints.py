@@ -67,7 +67,14 @@ def create_run_wait_condition(
     run_wait_condition: RunWaitConditionRequest,
     _: AuthContext = Security(authorize),
 ) -> RunWaitConditionResponse:
-    """Create a wait condition for a run."""
+    """Create a wait condition for a run.
+
+    Args:
+        run_wait_condition: Wait condition creation payload.
+
+    Returns:
+        The created wait condition.
+    """
     run = zen_store().get_run(run_wait_condition.run, hydrate=False)
     return verify_permissions_and_create_entity(
         request_model=run_wait_condition,
@@ -88,7 +95,16 @@ def list_wait_conditions(
     hydrate: bool = False,
     auth_context: AuthContext = Security(authorize),
 ) -> Page[RunWaitConditionResponse]:
-    """List wait conditions across runs."""
+    """List wait conditions across runs.
+
+    Args:
+        run_wait_condition_filter_model: Filter model.
+        hydrate: Whether to hydrate metadata/resources.
+        auth_context: Request auth context.
+
+    Returns:
+        A page of wait conditions.
+    """
     set_filter_project_scope(run_wait_condition_filter_model)
     assert isinstance(run_wait_condition_filter_model.project, UUID)
 
@@ -118,7 +134,15 @@ def get_run_wait_condition(
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> RunWaitConditionResponse:
-    """Get a wait condition by ID."""
+    """Get a wait condition by ID.
+
+    Args:
+        run_wait_condition_id: Wait condition ID.
+        hydrate: Whether to hydrate metadata/resources.
+
+    Returns:
+        The requested wait condition.
+    """
     condition = zen_store().get_run_wait_condition(
         run_wait_condition_id=run_wait_condition_id, hydrate=hydrate
     )
@@ -136,7 +160,15 @@ def update_run_wait_condition_lease(
     lease_update: RunWaitConditionLeaseUpdate,
     _: AuthContext = Security(authorize),
 ) -> RunWaitConditionStatus:
-    """Update a wait condition polling lease."""
+    """Update a wait condition polling lease.
+
+    Args:
+        run_wait_condition_id: Wait condition ID.
+        lease_update: Lease refresh payload.
+
+    Returns:
+        The current wait condition status after attempting the lease update.
+    """
     condition = zen_store().get_run_wait_condition(
         run_wait_condition_id=run_wait_condition_id,
         hydrate=False,
@@ -158,7 +190,15 @@ def resolve_run_wait_condition(
     resolve_request: RunWaitConditionResolveRequest,
     _: AuthContext = Security(authorize),
 ) -> RunWaitConditionResponse:
-    """Resolve a run wait condition."""
+    """Resolve a run wait condition.
+
+    Args:
+        run_wait_condition_id: Wait condition ID.
+        resolve_request: Resolution payload.
+
+    Returns:
+        The resolved wait condition.
+    """
     condition = zen_store().get_run_wait_condition(
         run_wait_condition_id=run_wait_condition_id,
         hydrate=False,

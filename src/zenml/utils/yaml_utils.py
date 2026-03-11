@@ -179,6 +179,8 @@ def validate_json_schema_value(
             `jsonschema` dependency is not installed.
 
     Raises:
+        ImportError: If the `jsonschema` dependency is missing and strict mode
+            is enabled.
         ValueError: If the value does not match the schema.
 
     Returns:

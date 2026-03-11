@@ -182,7 +182,17 @@ class DAGGeneratorHelper:
         id: Optional[UUID] = None,
         **metadata: Any,
     ) -> PipelineRunDAG.Node:
-        """Add a wait condition node to the DAG."""
+        """Add a wait condition node to the DAG.
+
+        Args:
+            node_id: The DAG node ID.
+            name: The wait condition display name.
+            id: The wait condition ID.
+            **metadata: Additional node metadata.
+
+        Returns:
+            The added wait condition node.
+        """
         wait_condition_node = PipelineRunDAG.Node(
             type="wait_condition",
             id=id,

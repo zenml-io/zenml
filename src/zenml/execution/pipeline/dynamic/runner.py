@@ -957,7 +957,18 @@ class DynamicPipelineRunner:
         name: Optional[str] = None,
         after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
     ) -> T:
-        """Create and poll a run wait condition."""
+        """Create and poll a run wait condition.
+
+        Args:
+            schema: Expected output type for the resolved result.
+            type: Wait condition type.
+            timeout: Maximum time in seconds to poll before pausing.
+            poll_interval: Poll interval in seconds.
+            question: Optional question shown to external actors.
+            metadata: Optional metadata attached to the condition.
+            name: Optional deterministic wait condition name.
+            after: Optional upstream futures that must finish before waiting.
+        """
 
     @overload
     def wait(
@@ -971,7 +982,19 @@ class DynamicPipelineRunner:
         name: Optional[str] = None,
         after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
     ) -> Any:
-        """Create and poll a run wait condition."""
+        """Create and poll a run wait condition.
+
+        Args:
+            schema: Optional expected output type for the resolved result.
+            type: Wait condition type.
+            timeout: Maximum time in seconds to poll before pausing.
+            poll_interval: Poll interval in seconds.
+            question: Optional question shown to external actors.
+            metadata: Optional metadata attached to the condition.
+            name: Optional deterministic wait condition name.
+            after: Optional upstream futures that must finish before waiting.
+
+        """
 
     def wait(
         self,
@@ -986,9 +1009,20 @@ class DynamicPipelineRunner:
     ) -> Any:
         """Create and poll a run wait condition.
 
+        Args:
+            schema: Optional expected output type for the resolved result.
+            type: Wait condition type.
+            timeout: Maximum time in seconds to poll before pausing.
+            poll_interval: Poll interval in seconds.
+            question: Optional question shown to external actors.
+            metadata: Optional metadata attached to the condition.
+            name: Optional deterministic wait condition name.
+            after: Optional upstream futures that must finish before waiting.
+
         Raises:
             RuntimeError: If called outside the dynamic pipeline function.
             PipelinePausedError: If the wait timed out and the run was paused.
+            KeyboardInterrupt: If interrupted while waiting.
 
         Returns:
             The resolved wait condition value.

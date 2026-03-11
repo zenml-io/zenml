@@ -126,7 +126,16 @@ class RunWaitConditionSchema(BaseSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
-        """Get query options for converting schema rows to models."""
+        """Get query options for converting schema rows to models.
+
+        Args:
+            include_metadata: Whether metadata will be included in responses.
+            include_resources: Whether resources will be included in responses.
+            **kwargs: Additional unused keyword arguments.
+
+        Returns:
+            SQLAlchemy query options.
+        """
         options: List[ExecutableOption] = [joinedload(jl_arg(cls.run))]
         if include_resources:
             options.append(joinedload(jl_arg(cls.resolved_by_user)))
@@ -136,7 +145,14 @@ class RunWaitConditionSchema(BaseSchema, table=True):
     def from_request(
         cls, request: RunWaitConditionRequest
     ) -> "RunWaitConditionSchema":
-        """Create a schema object from a wait condition create request."""
+        """Create a schema object from a wait condition create request.
+
+        Args:
+            request: Wait condition creation request.
+
+        Returns:
+            The persisted wait condition schema object.
+        """
         return cls(
             run_id=request.run,
             project_id=request.project,
@@ -158,7 +174,16 @@ class RunWaitConditionSchema(BaseSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> RunWaitConditionResponse:
-        """Convert the schema row to a response model."""
+        """Convert the schema row to a response model.
+
+        Args:
+            include_metadata: Whether metadata should be included.
+            include_resources: Whether resources should be included.
+            **kwargs: Additional unused keyword arguments.
+
+        Returns:
+            The wait condition response model.
+        """
         metadata_json: Dict[str, Any] = {}
         if self.metadata_json:
             metadata_json = json.loads(self.metadata_json)

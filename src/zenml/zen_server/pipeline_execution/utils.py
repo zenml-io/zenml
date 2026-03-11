@@ -93,6 +93,12 @@ def resume_run(run: PipelineRunResponse) -> None:
 
     Args:
         run: The pipeline run that should be resumed.
+
+    Raises:
+        RuntimeError: If the server URL is not configured.
+        ValueError: If the snapshot is not runnable from the server.
+        MaxConcurrentTasksError: If workload submission exceeds concurrency
+            limits.
     """
     auth_context = get_auth_context()
     assert auth_context

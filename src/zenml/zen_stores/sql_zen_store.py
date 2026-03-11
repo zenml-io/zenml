@@ -6941,7 +6941,19 @@ class SqlZenStore(BaseZenStore):
     def create_run_wait_condition(
         self, run_wait_condition: RunWaitConditionRequest
     ) -> RunWaitConditionResponse:
-        """Create a run wait condition."""
+        """Create a run wait condition.
+
+        Args:
+            run_wait_condition: Wait condition creation payload.
+
+        Raises:
+            IllegalOperationError: If the owning run is not dynamic.
+            EntityExistsError: If a non-idempotent duplicate name exists.
+            IntegrityError: If wait condition persistence fails.
+
+        Returns:
+            The created or idempotently reused wait condition.
+        """
         with Session(self.engine) as session:
             run_schema = self._get_reference_schema_by_id(
                 resource=run_wait_condition,
@@ -6990,7 +7002,15 @@ class SqlZenStore(BaseZenStore):
     def get_run_wait_condition(
         self, run_wait_condition_id: UUID, hydrate: bool = True
     ) -> RunWaitConditionResponse:
-        """Get a run wait condition."""
+        """Get a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            hydrate: Whether metadata/resources should be hydrated.
+
+        Returns:
+            The requested wait condition.
+        """
         with Session(self.engine) as session:
             schema = self._get_schema_by_id(
                 resource_id=run_wait_condition_id,
@@ -7011,7 +7031,15 @@ class SqlZenStore(BaseZenStore):
         run_wait_condition_filter_model: RunWaitConditionFilter,
         hydrate: bool = False,
     ) -> Page[RunWaitConditionResponse]:
-        """List run wait conditions."""
+        """List run wait conditions.
+
+        Args:
+            run_wait_condition_filter_model: Wait condition filter model.
+            hydrate: Whether metadata/resources should be hydrated.
+
+        Returns:
+            A page of wait conditions.
+        """
         with Session(self.engine) as session:
             self._set_filter_project_id(
                 filter_model=run_wait_condition_filter_model,
@@ -7031,7 +7059,18 @@ class SqlZenStore(BaseZenStore):
         run_wait_condition_id: UUID,
         resolve_request: RunWaitConditionResolveRequest,
     ) -> RunWaitConditionResponse:
-        """Resolve a run wait condition."""
+        """Resolve a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            resolve_request: Resolution payload.
+
+        Raises:
+            IllegalOperationError: If the wait condition transition is invalid.
+
+        Returns:
+            The resolved wait condition.
+        """
         with Session(self.engine) as session:
             self._set_request_user_id(
                 request_model=resolve_request, session=session
@@ -7148,7 +7187,11 @@ class SqlZenStore(BaseZenStore):
             )
 
     def _resume_run_if_possible(self, run_id: UUID) -> None:
-        """Resume a run if possible."""
+        """Resume a run if possible.
+
+        Args:
+            run_id: Pipeline run ID.
+        """
         if not handle_bool_env_var(ENV_ZENML_SERVER):
             return
 
@@ -7173,7 +7216,11 @@ class SqlZenStore(BaseZenStore):
         resume_run(run=run)
 
     def _stop_run_if_no_active_lease(self, run_id: UUID) -> None:
-        """Set a run to stopped when no active poller lease exists."""
+        """Set a run to stopped when no active poller lease exists.
+
+        Args:
+            run_id: Pipeline run ID.
+        """
         if self._has_active_wait_condition_lease(run_id=run_id):
             # TODO: Add a reconciler that revisits terminal wait conditions once
             # active leases expire. Without it, resolving a condition while a
@@ -7201,7 +7248,14 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def _has_active_wait_condition_lease(self, run_id: UUID) -> bool:
-        """Check whether a run has an active wait-condition poller lease."""
+        """Check whether a run has an active wait-condition poller lease.
+
+        Args:
+            run_id: Pipeline run ID.
+
+        Returns:
+            Whether an active pending wait-condition lease exists for the run.
+        """
         with Session(self.engine) as session:
             now = utc_now()
             return (
@@ -7221,7 +7275,14 @@ class SqlZenStore(BaseZenStore):
             )
 
     def _has_pending_wait_conditions(self, run_id: UUID) -> bool:
-        """Check whether a run still has pending wait conditions."""
+        """Check whether a run still has pending wait conditions.
+
+        Args:
+            run_id: Pipeline run ID.
+
+        Returns:
+            Whether the run has pending wait conditions.
+        """
         with Session(self.engine) as session:
             return (
                 session.exec(
@@ -7239,7 +7300,15 @@ class SqlZenStore(BaseZenStore):
         existing_schema: "RunWaitConditionSchema",
         request: RunWaitConditionRequest,
     ) -> bool:
-        """Check whether a duplicate wait-condition create is idempotent."""
+        """Check whether a duplicate wait-condition create is idempotent.
+
+        Args:
+            existing_schema: Existing wait condition schema row.
+            request: Incoming wait condition create request.
+
+        Returns:
+            Whether the request exactly matches the existing condition.
+        """
         return (
             existing_schema.run_id == request.run
             and existing_schema.type == request.type.value
@@ -7270,8 +7339,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Validated result payload.
 
-        Raises:
-            ValueError: If the payload does not match expected schema.
         """
         if resolution != RunWaitConditionResolution.CONTINUE:
             return result
@@ -7294,7 +7361,15 @@ class SqlZenStore(BaseZenStore):
         run_wait_condition_id: UUID,
         lease_update: RunWaitConditionLeaseUpdate,
     ) -> RunWaitConditionStatus:
-        """Update a run wait condition polling lease."""
+        """Update a run wait condition polling lease.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            lease_update: Lease refresh payload.
+
+        Returns:
+            The current wait condition status.
+        """
         with Session(self.engine) as session:
             schema = self._get_schema_by_id(
                 resource_id=run_wait_condition_id,

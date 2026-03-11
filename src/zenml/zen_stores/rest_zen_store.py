@@ -2131,7 +2131,14 @@ class RestZenStore(BaseZenStore):
     def create_run_wait_condition(
         self, run_wait_condition: RunWaitConditionRequest
     ) -> RunWaitConditionResponse:
-        """Create a run wait condition."""
+        """Create a run wait condition.
+
+        Args:
+            run_wait_condition: Wait condition creation payload.
+
+        Returns:
+            The created wait condition.
+        """
         response_body = self.post(
             RUN_WAIT_CONDITIONS,
             body=run_wait_condition,
@@ -2141,7 +2148,15 @@ class RestZenStore(BaseZenStore):
     def get_run_wait_condition(
         self, run_wait_condition_id: UUID, hydrate: bool = True
     ) -> RunWaitConditionResponse:
-        """Get a run wait condition."""
+        """Get a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            hydrate: Whether to hydrate metadata/resources.
+
+        Returns:
+            The requested wait condition.
+        """
         return self._get_resource(
             resource_id=run_wait_condition_id,
             route=RUN_WAIT_CONDITIONS,
@@ -2154,7 +2169,15 @@ class RestZenStore(BaseZenStore):
         run_wait_condition_filter_model: RunWaitConditionFilter,
         hydrate: bool = False,
     ) -> Page[RunWaitConditionResponse]:
-        """List run wait conditions."""
+        """List run wait conditions.
+
+        Args:
+            run_wait_condition_filter_model: Wait condition filter model.
+            hydrate: Whether to hydrate metadata/resources.
+
+        Returns:
+            A page of wait conditions.
+        """
         return self._list_paginated_resources(
             route=RUN_WAIT_CONDITIONS,
             response_model=RunWaitConditionResponse,
@@ -2167,7 +2190,15 @@ class RestZenStore(BaseZenStore):
         run_wait_condition_id: UUID,
         resolve_request: RunWaitConditionResolveRequest,
     ) -> RunWaitConditionResponse:
-        """Resolve a run wait condition."""
+        """Resolve a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            resolve_request: Resolution payload.
+
+        Returns:
+            The resolved wait condition.
+        """
         response_body = self.put(
             path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}{RESOLVE}",
             body=resolve_request,
@@ -2179,7 +2210,15 @@ class RestZenStore(BaseZenStore):
         run_wait_condition_id: UUID,
         lease_update: RunWaitConditionLeaseUpdate,
     ) -> RunWaitConditionStatus:
-        """Update a run wait condition polling lease."""
+        """Update a run wait condition polling lease.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            lease_update: Lease refresh payload.
+
+        Returns:
+            The current wait condition status after attempting the lease update.
+        """
         response_body = self.put(
             path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}",
             body=lease_update,
