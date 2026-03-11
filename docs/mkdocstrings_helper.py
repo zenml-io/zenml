@@ -87,7 +87,17 @@ def create_entity_docs(
     for item in sources_path.iterdir():
         if item.name not in ignored_modules:
             is_python_file = item.is_file() and item.name.endswith(".py")
-            is_non_empty_dir = item.is_dir() and any(item.iterdir())
+            # Only consider directories that are valid Python packages
+            # with actual content beyond __init__.py
+            is_non_empty_dir = (
+                item.is_dir()
+                and (item / "__init__.py").exists()
+                and any(
+                    p
+                    for p in item.rglob("*.py")
+                    if p.name != "__init__.py"
+                )
+            )
 
             if is_python_file or is_non_empty_dir:
                 item_name = generate_title(item.stem)
