@@ -7045,6 +7045,11 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
             source_status = schema.status
+            now = utc_now()
+            active_lease_exists = bool(
+                schema.poller_lease_expires_at
+                and schema.poller_lease_expires_at > now
+            )
             self._validate_wait_condition_status_transition(
                 source_status=source_status,
                 target_status=RunWaitConditionStatus.RESOLVED,
@@ -7055,7 +7060,6 @@ class SqlZenStore(BaseZenStore):
                 result=resolve_request.result,
             )
 
-            now = utc_now()
             stmt = (
                 update(RunWaitConditionSchema)
                 .where(
@@ -7096,7 +7100,10 @@ class SqlZenStore(BaseZenStore):
                 include_resources=True,
             )
 
-        if resolved_model.status == RunWaitConditionStatus.RESOLVED:
+        if (
+            resolved_model.status == RunWaitConditionStatus.RESOLVED
+            and not active_lease_exists
+        ):
             if (
                 resolved_model.resolution
                 == RunWaitConditionResolution.CONTINUE
