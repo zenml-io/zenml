@@ -142,7 +142,7 @@ def transition_pipeline_run_status(
             return ExecutionStatus.STOPPING
         else:
             raise IllegalOperationError(
-                "Stopping steps can only be transitioned to `stopped` or `failed`."
+                "Stopping runs can only be transitioned to `stopped` or `failed`."
             )
 
     if requested_status == ExecutionStatus.PROVISIONING:
