@@ -1362,6 +1362,13 @@ def list_pipeline_snapshots(
         output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter pipeline snapshots.
     """
+    # The helper returns default values for all filter fields even if not
+    # explicitly provided by the user. But we only want to show named snapshots
+    # by default in the CLI, so we need to explicitly set it to True in this
+    # case.
+    if kwargs.get("named_only") is None:
+        kwargs["named_only"] = True
+
     client = Client()
     try:
         with console.status("Listing pipeline snapshots...\n"):
