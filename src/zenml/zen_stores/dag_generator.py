@@ -78,16 +78,16 @@ class DAGGeneratorHelper:
         name = name.replace("/", "-")
         return f"run/{name}"
 
-    def get_wait_condition_node_id(self, wait_condition_key: str) -> str:
+    def get_wait_condition_node_id(self, wait_condition_name: str) -> str:
         """Get the ID of a wait condition node.
 
         Args:
-            wait_condition_key: The deterministic wait condition key.
+            wait_condition_name: The wait condition name.
 
         Returns:
             The ID of the wait condition node.
         """
-        return f"wait_condition/{wait_condition_key}"
+        return f"wait_condition/{wait_condition_name}"
 
     def add_step_node(
         self,
@@ -225,13 +225,6 @@ class DAGGeneratorHelper:
             if node.name == name:
                 return node
         raise KeyError(f"Step node with name {name} not found")
-
-    def get_wait_condition_node_by_key(
-        self, wait_condition_key: str
-    ) -> PipelineRunDAG.Node:
-        """Get a wait condition node by key."""
-        node_id = self.get_wait_condition_node_id(wait_condition_key)
-        return self.wait_condition_nodes[node_id]
 
     def finalize_dag(
         self, pipeline_run_id: UUID, status: ExecutionStatus

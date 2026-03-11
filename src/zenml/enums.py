@@ -161,8 +161,6 @@ class RunWaitConditionType(StrEnum):
     """Supported wait condition types."""
 
     EXTERNAL_ACTOR_INPUT = "external_actor_input"
-    # TIME_DELAY = "time_delay"
-    # RUN_DEPENDENCY = "run_dependency"
 
 
 class RunWaitConditionStatus(StrEnum):
@@ -170,7 +168,6 @@ class RunWaitConditionStatus(StrEnum):
 
     PENDING = "pending"
     RESOLVED = "resolved"
-    CANCELLED = "cancelled"
 
 
 class RunWaitConditionResolution(StrEnum):

@@ -856,10 +856,9 @@ def run_wait_conditions() -> None:
     RunWaitConditionFilter,
     default_columns=[
         "id",
-        "run_id",
+        "name",
         "type",
         "status",
-        "wait_condition_key",
         "created",
     ],
 )
@@ -898,62 +897,49 @@ def list_run_wait_conditions(
 @run_wait_conditions.command("resolve")
 @click.argument("wait_condition_id", type=str, required=True)
 @click.option(
-    "--status",
-    type=click.Choice([s.value for s in RunWaitConditionStatus]),
-    default=RunWaitConditionStatus.RESOLVED.value,
-    show_default=True,
-    help="Target status for the wait condition.",
-)
-@click.option(
     "--resolution",
     type=click.Choice([r.value for r in RunWaitConditionResolution]),
     required=True,
-    help="Resolution semantic.",
+    help="Condition resolution.",
 )
 @click.option(
-    "--result-json",
+    "--result",
     type=str,
     required=False,
-    help="Optional JSON value for condition result.",
+    help="Optional JSON result for the condition.",
 )
 def resolve_wait_condition(
     wait_condition_id: str,
-    status: str,
     resolution: str,
-    result_json: Optional[str] = None,
+    result: Optional[str] = None,
 ) -> None:
     """Resolve a run wait condition.
 
     Args:
         wait_condition_id: The wait condition ID.
-        status: The target wait condition status.
         resolution: Resolution semantic value.
-        result_json: Optional JSON value with result.
+        result: Optional JSON value with result.
     """
-    result: Optional[Any] = None
-    if result_json:
+    result_value: Optional[Any] = None
+    if result:
         try:
-            result = json.loads(result_json)
+            result_value = json.loads(result)
         except json.JSONDecodeError as e:
-            cli_utils.error(f"Invalid JSON for `--result-json`: {e}")
-            return
+            cli_utils.error(f"Invalid JSON for `--result`: {e}")
 
     try:
         condition_id = UUID(wait_condition_id)
     except ValueError:
         cli_utils.error(f"Invalid wait condition ID: `{wait_condition_id}`.")
-        return
 
     try:
         Client().resolve_run_wait_condition(
             run_wait_condition_id=condition_id,
-            status=RunWaitConditionStatus(status),
             resolution=RunWaitConditionResolution(resolution),
-            result=result,
+            result=result_value,
         )
     except KeyError as err:
         cli_utils.exception(err)
-        return
 
     cli_utils.declare(f"Resolved run wait condition `{wait_condition_id}`.")
 
@@ -967,20 +953,11 @@ def resolve_wait_condition(
     required=False,
     help="Optional run name/ID to scope the review to a single run.",
 )
-@click.option(
-    "--once",
-    is_flag=True,
-    default=False,
-    help="Review and handle at most one wait condition.",
-)
-def review_wait_conditions(
-    run_name_or_id: Optional[str] = None, once: bool = False
-) -> None:
-    """Interactively review and resolve open wait conditions.
+def review_wait_conditions(run_name_or_id: Optional[str] = None) -> None:
+    """Interactively review and resolve pending wait conditions.
 
     Args:
         run_name_or_id: Optional run name or ID to narrow the review scope.
-        once: If set, handle at most one wait condition.
     """
     client = Client()
     run_id: Optional[UUID] = None
@@ -1014,31 +991,20 @@ def review_wait_conditions(
     if not conditions:
         if run_name_or_id:
             cli_utils.declare(
-                f"No open run wait conditions found for run `{run_name_or_id}`."
+                f"No pending wait conditions found for run `{run_name_or_id}`."
             )
         else:
-            cli_utils.declare("No open run wait conditions found.")
+            cli_utils.declare("No pending wait conditions found.")
         return
 
-    run_name_cache: Dict[UUID, str] = {}
     processed = 0
     for idx, condition in enumerate(conditions, start=1):
-        if once and processed >= 1:
-            break
-
-        if condition.run_id not in run_name_cache:
-            run_name_cache[condition.run_id] = client.get_pipeline_run(
-                name_id_or_prefix=condition.run_id, hydrate=False
-            ).name
-        run_name = run_name_cache[condition.run_id]
+        run_name = condition.run.name
+        run_id = condition.run.id
 
         click.echo("")
-        click.echo(
-            f"[{idx}/{len(conditions)}] Run `{run_name}` ({condition.run_id})"
-        )
-        click.echo(
-            f"Condition `{condition.id}` key={condition.wait_condition_key}"
-        )
+        click.echo(f"[{idx}/{len(conditions)}] Run `{run_name}` ({run_id})")
+        click.echo(f"Condition `{condition.id}` name={condition.name}")
         click.echo(
             f"Type: {condition.type.value} | Status: {condition.status}"
         )
@@ -1092,7 +1058,6 @@ def review_wait_conditions(
         try:
             client.resolve_run_wait_condition(
                 run_wait_condition_id=condition.id,
-                status=RunWaitConditionStatus.RESOLVED,
                 resolution=(
                     RunWaitConditionResolution.CONTINUE
                     if action == "c"
@@ -1189,7 +1154,7 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
         )
         if wait_conditions.items:
             cli_utils.error(
-                f"There are open wait conditions for run `{run.name}`. "
+                f"There are pending wait conditions for run `{run.name}`. "
                 "Please resolve them before resuming the run."
             )
 
@@ -1251,10 +1216,30 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
             ),
         )
 
-        with cli_utils.temporary_active_stack(
-            stack_name_or_id=snapshot.stack.id
-        ) as stack:
-            stack.orchestrator.restart(snapshot=snapshot, run=run, stack=stack)
+        try:
+            with cli_utils.temporary_active_stack(
+                stack_name_or_id=snapshot.stack.id
+            ) as stack:
+                stack.orchestrator.restart(
+                    snapshot=snapshot, run=run, stack=stack
+                )
+        except Exception as e:
+            try:
+                client.zen_store.update_run(
+                    run_id=run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.FAILED,
+                        is_finished=True,
+                        status_reason="Retry submission failed.",
+                    ),
+                )
+            except Exception as rollback_error:
+                raise RuntimeError(
+                    "Retry submission failed and the run status could not be "
+                    f"rolled back: {rollback_error}"
+                ) from e
+
+            raise
     except Exception as e:
         cli_utils.error(f"Failed to retry pipeline run: {e}")
 

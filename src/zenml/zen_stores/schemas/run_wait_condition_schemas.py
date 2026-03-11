@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, Index, UniqueConstraint
+from sqlalchemy import TEXT, CheckConstraint, Column, Index, UniqueConstraint
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
@@ -49,30 +49,18 @@ class RunWaitConditionSchema(BaseSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "run_id",
-            "wait_condition_key",
-            name="unique_wait_condition_key_per_run",
+            "name",
+            name="unique_wait_condition_name_per_run",
+        ),
+        CheckConstraint(
+            "(status != 'resolved') OR (resolution IS NOT NULL)",
+            name="ck_run_wait_condition_resolved_requires_resolution",
         ),
         Index(
-            "ix_run_wait_condition_run_status_created",
+            "ix_run_wait_condition_run_status_lease",
             "run_id",
-            "status",
-            "created",
-        ),
-        Index(
-            "ix_run_wait_condition_status_lease",
             "status",
             "poller_lease_expires_at",
-        ),
-        Index(
-            "ix_run_wait_condition_run_type_status",
-            "run_id",
-            "type",
-            "status",
-        ),
-        Index(
-            "ix_run_wait_condition_status_updated",
-            "status",
-            "updated",
         ),
         Index(
             "ix_run_wait_condition_project_created",
@@ -107,7 +95,7 @@ class RunWaitConditionSchema(BaseSchema, table=True):
     )
     type: str = Field(nullable=False)
     status: str = Field(nullable=False)
-    wait_condition_key: str = Field(nullable=False)
+    name: str = Field(nullable=False)
     question: Optional[str] = Field(default=None, nullable=True)
     metadata_json: str = Field(
         sa_column=Column(TEXT, nullable=False),
@@ -124,15 +112,6 @@ class RunWaitConditionSchema(BaseSchema, table=True):
         nullable=True, default=None
     )
     resolved_at: Optional[datetime] = Field(nullable=True, default=None)
-    upstream_step_names_json: str = Field(
-        sa_column=Column(TEXT, nullable=False),
-        default="[]",
-    )
-    downstream_step_names_json: str = Field(
-        sa_column=Column(TEXT, nullable=False),
-        default="[]",
-    )
-
     run: "PipelineRunSchema" = Relationship(back_populates="wait_conditions")
     resolved_by_user: Optional["UserSchema"] = Relationship(
         sa_relationship_kwargs={
@@ -159,8 +138,9 @@ class RunWaitConditionSchema(BaseSchema, table=True):
     ) -> "RunWaitConditionSchema":
         """Create a schema object from a wait condition create request."""
         return cls(
-            run_id=request.run_id,
+            run_id=request.run,
             project_id=request.project,
+            name=request.name,
             type=request.type.value,
             status=RunWaitConditionStatus.PENDING.value,
             question=request.question,
@@ -169,11 +149,6 @@ class RunWaitConditionSchema(BaseSchema, table=True):
                 json.dumps(request.data_schema)
                 if request.data_schema is not None
                 else None
-            ),
-            wait_condition_key=request.wait_condition_key,
-            upstream_step_names_json=json.dumps(request.upstream_step_names),
-            downstream_step_names_json=json.dumps(
-                request.downstream_step_names
             ),
         )
 
@@ -201,10 +176,8 @@ class RunWaitConditionSchema(BaseSchema, table=True):
             project_id=self.run.project_id,
             created=self.created,
             updated=self.updated,
-            run_id=self.run_id,
             type=RunWaitConditionType(self.type),
             status=RunWaitConditionStatus(self.status),
-            wait_condition_key=self.wait_condition_key,
             last_polled_at=self.last_polled_at,
             poller_instance_id=self.poller_instance_id,
             poller_lease_expires_at=self.poller_lease_expires_at,
@@ -220,10 +193,6 @@ class RunWaitConditionSchema(BaseSchema, table=True):
                 data_schema=data_schema,
                 resolution=self.resolution,
                 result=result,
-                upstream_step_names=json.loads(self.upstream_step_names_json),
-                downstream_step_names=json.loads(
-                    self.downstream_step_names_json
-                ),
             )
 
         resources = None
@@ -236,6 +205,7 @@ class RunWaitConditionSchema(BaseSchema, table=True):
 
         return RunWaitConditionResponse(
             id=self.id,
+            name=self.name,
             body=body,
             metadata=metadata,
             resources=resources,

@@ -178,6 +178,9 @@ def validate_json_schema_value(
         fail_if_library_missing: If `True`, raise an error when the optional
             `jsonschema` dependency is not installed.
 
+    Raises:
+        ValueError: If the value does not match the schema.
+
     Returns:
         The validated value.
     """
@@ -189,7 +192,13 @@ def validate_json_schema_value(
 
         return value
 
-    jsonschema.validate(instance=value, schema=schema)
+    try:
+        jsonschema.validate(instance=value, schema=schema)
+    except jsonschema.ValidationError as e:
+        raise ValueError(
+            f"Value {value} does not match expected schema."
+        ) from e
+
     return value
 
 

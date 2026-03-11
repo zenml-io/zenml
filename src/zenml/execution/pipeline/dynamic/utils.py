@@ -21,7 +21,6 @@ from typing import (
     Generic,
     Optional,
     Sequence,
-    Tuple,
     Type,
     TypeVar,
 )
@@ -40,7 +39,6 @@ if TYPE_CHECKING:
     from zenml.execution.pipeline.dynamic.outputs import (
         AnyStepFuture,
         OutputArtifact,
-        RunWaitConditionToken,
         StepRunOutputs,
     )
 
@@ -85,16 +83,15 @@ def wait(
     question: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
     after: Optional[Sequence["AnyStepFuture"]] = None,
-    key_prefix: Optional[str] = None,
-    key: Optional[str] = None,
-) -> Tuple[Any, "RunWaitConditionToken"]:
+    name: Optional[str] = None,
+) -> Any:
     """Pause dynamic execution on an external wait condition.
 
     Raises:
         RuntimeError: If called outside of dynamic pipeline execution.
 
     Returns:
-        Tuple of resolved value and wait condition token.
+        The resolved wait condition value.
     """
     from zenml.execution.pipeline.dynamic.run_context import (
         DynamicPipelineRunContext,
@@ -114,8 +111,7 @@ def wait(
         question=question,
         after=after,
         metadata=metadata,
-        key_prefix=key_prefix,
-        key=key,
+        name=name,
     )
 
 

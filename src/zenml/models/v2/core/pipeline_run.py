@@ -341,7 +341,7 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     )
     active_wait_condition: Optional["RunWaitConditionResponse"] = Field(
         default=None,
-        title="The active open wait condition associated with this run.",
+        title="The active pending wait condition associated with this run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all

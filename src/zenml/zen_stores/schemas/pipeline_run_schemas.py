@@ -34,9 +34,11 @@ from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
     PipelineRunTriggeredByType,
+    RunWaitConditionStatus,
     TaggableResourceTypes,
     VisualizationResourceTypes,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineResponse,
@@ -726,9 +728,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 else None,
                 active_wait_condition=next(
                     (
-                        condition.to_model(include_metadata=True)
+                        condition.to_model()
                         for condition in self.wait_conditions
-                        if condition.status == "open"
+                        if condition.status
+                        == RunWaitConditionStatus.PENDING.value
                     ),
                     None,
                 ),
@@ -751,11 +754,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             ValueError: When trying to update the orchestrator run ID of a
                 run that already has a different one.
+            IllegalOperationError: When trying to retry a pipeline run that is
+                not in a failed state.
 
         Returns:
             The updated `PipelineRunSchema`.
         """
         if run_update.status:
+            previous_status = self.status
             if (
                 run_update.status == ExecutionStatus.PROVISIONING
                 and self.status != ExecutionStatus.INITIALIZING.value
@@ -769,9 +775,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if run_update.status_reason:
                     self.status_reason = run_update.status_reason
 
+            # TODO: Now that we never compute the run status from step statuses
+            # in dynamic pipelines, can we remove this field from the update
+            # model and simply make it depend on the run status?
             if run_update.is_finished:
                 self.in_progress = False
-            elif run_update.is_finished is False:
+            elif (
+                run_update.is_finished is False
+                and run_update.status == ExecutionStatus.RETRYING
+            ):
+                if previous_status != ExecutionStatus.FAILED.value:
+                    raise IllegalOperationError(
+                        "Cannot retry a pipeline run that is not failed."
+                    )
                 self.in_progress = True
             elif self.snapshot and self.snapshot.is_dynamic:
                 # In dynamic pipelines, we can't actually check if the run is

@@ -14,7 +14,7 @@
 """Models representing pipeline run wait conditions."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -25,7 +25,6 @@ from zenml.enums import (
     RunWaitConditionType,
 )
 from zenml.models.v2.base.base import (
-    BaseRequest,
     BaseUpdate,
 )
 from zenml.models.v2.base.scoped import (
@@ -35,22 +34,22 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    UserScopedRequest,
 )
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.models import PipelineRunResponse
+    from zenml.models.v2.base.filter import AnySchema
 
 
 class RunWaitConditionRequest(ProjectScopedRequest):
     """Request model for creating wait conditions."""
 
-    run_id: UUID = Field(
-        title="The pipeline run ID this condition belongs to."
-    )
+    run: UUID = Field(title="The pipeline run ID this condition belongs to.")
+    name: str = Field(title="The name of the wait condition.")
     type: RunWaitConditionType = Field(title="The wait condition type.")
-    wait_condition_key: str = Field(
-        title="Deterministic key identifying this condition within a run."
-    )
     question: Optional[str] = Field(
         default=None,
         title="Optional question shown to external actors.",
@@ -63,23 +62,11 @@ class RunWaitConditionRequest(ProjectScopedRequest):
         default=None,
         title="Optional JSON Schema describing the expected output value.",
     )
-    upstream_step_names: List[str] = Field(
-        default_factory=list,
-        title="Upstream step names used for DAG control-edge rendering.",
-    )
-    downstream_step_names: List[str] = Field(
-        default_factory=list,
-        title="Downstream step names used for DAG control-edge rendering.",
-    )
 
 
-class RunWaitConditionResolveRequest(BaseRequest):
+class RunWaitConditionResolveRequest(UserScopedRequest):
     """Request model for resolving wait conditions."""
 
-    status: RunWaitConditionStatus = Field(
-        default=RunWaitConditionStatus.RESOLVED,
-        title="Target status for the condition resolution.",
-    )
     resolution: RunWaitConditionResolution = Field(
         title="Resolution semantic for the waiting branch.",
     )
@@ -99,13 +86,9 @@ class RunWaitConditionLeaseUpdate(BaseUpdate):
 class RunWaitConditionResponseBody(ProjectScopedResponseBody):
     """Body model for wait condition responses."""
 
-    run_id: UUID = Field(title="The owning pipeline run ID.")
     type: RunWaitConditionType = Field(title="The wait condition type.")
     status: RunWaitConditionStatus = Field(
         title="The current condition status."
-    )
-    wait_condition_key: str = Field(
-        title="Deterministic key identifying this condition within a run."
     )
     last_polled_at: Optional[datetime] = Field(
         default=None, title="Last lease/poll refresh timestamp."
@@ -145,21 +128,13 @@ class RunWaitConditionResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="Optional resolved result value.",
     )
-    upstream_step_names: List[str] = Field(
-        default_factory=list,
-        title="Upstream step anchors for the DAG control node.",
-    )
-    downstream_step_names: List[str] = Field(
-        default_factory=list,
-        title="Downstream step anchors for the DAG control node.",
-    )
 
 
 class RunWaitConditionResponseResources(ProjectScopedResponseResources):
     """Resource model for wait condition responses."""
 
-    run: Optional["PipelineRunResponse"] = Field(
-        default=None, title="Pipeline run associated with this wait condition."
+    run: "PipelineRunResponse" = Field(
+        title="Pipeline run associated with this wait condition."
     )
 
 
@@ -172,14 +147,7 @@ class RunWaitConditionResponse(
 ):
     """Response model for run wait conditions."""
 
-    @property
-    def run_id(self) -> UUID:
-        """The `run_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().run_id
+    name: str = Field(title="The name of the wait condition.")
 
     @property
     def type(self) -> RunWaitConditionType:
@@ -198,15 +166,6 @@ class RunWaitConditionResponse(
             the value of the property.
         """
         return self.get_body().status
-
-    @property
-    def wait_condition_key(self) -> str:
-        """The `wait_condition_key` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().wait_condition_key
 
     @property
     def last_polled_at(self) -> Optional[datetime]:
@@ -299,25 +258,7 @@ class RunWaitConditionResponse(
         return self.get_metadata().result
 
     @property
-    def upstream_step_names(self) -> List[str]:
-        """The `upstream_step_names` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().upstream_step_names
-
-    @property
-    def downstream_step_names(self) -> List[str]:
-        """The `downstream_step_names` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().downstream_step_names
-
-    @property
-    def run(self) -> Optional["PipelineRunResponse"]:
+    def run(self) -> "PipelineRunResponse":
         """The `run` property.
 
         Returns:
@@ -329,7 +270,10 @@ class RunWaitConditionResponse(
 class RunWaitConditionFilter(ProjectScopedFilter):
     """Filter model for wait conditions."""
 
-    FILTER_EXCLUDE_FIELDS = [*ProjectScopedFilter.FILTER_EXCLUDE_FIELDS]
+    FILTER_EXCLUDE_FIELDS = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "resolved_by",
+    ]
     CLI_EXCLUDE_FIELDS = [*ProjectScopedFilter.CLI_EXCLUDE_FIELDS]
 
     run_id: Optional[Union[UUID, str]] = Field(
@@ -342,6 +286,49 @@ class RunWaitConditionFilter(ProjectScopedFilter):
     status: Optional[str] = Field(
         default=None, title="Filter by condition status."
     )
-    wait_condition_key: Optional[str] = Field(
-        default=None, title="Filter by deterministic wait condition key."
+    name: Optional[str] = Field(
+        default=None, title="Filter by wait condition name."
     )
+    resolved_by: Optional[Union[UUID, str]] = Field(
+        default=None,
+        title="Filter by the name or ID of the user that resolved the condition.",
+        union_mode="left_to_right",
+    )
+    resolved_at: Optional[Union[datetime, str]] = Field(
+        default=None,
+        title="Filter by the timestamp when the condition was resolved.",
+    )
+    resolution: Optional[str] = Field(
+        default=None,
+        title="Filter by condition resolution.",
+    )
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters(table)
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import RunWaitConditionSchema, UserSchema
+
+        if self.resolved_by:
+            resolved_by_filter = and_(
+                RunWaitConditionSchema.resolved_by_user_id == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.resolved_by,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
+                ),
+            )
+            custom_filters.append(resolved_by_filter)
+
+        return custom_filters
