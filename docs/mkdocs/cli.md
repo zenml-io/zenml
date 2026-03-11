@@ -1,10 +1,7 @@
-# Cli
+# CLI
 
 ::: zenml.cli
-    handler: python
-    selection:
-      members: 
-        - "__init__.py"  
-    rendering:
+    options:
       show_root_heading: true
       show_source: true
+      members: true

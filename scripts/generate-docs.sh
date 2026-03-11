@@ -56,15 +56,6 @@ if [ -z "$SKIP_INSTALL" ]; then
   uv pip install --system "Jinja2==3.0.3"
 fi
 
-################################# Initialize DB and delete unnecessary alembic files ###################################
-
-# env.py leads to errors in the build as run_migrations() gets executed
-# the migration versions are not necessary parts of the api docs
-rm -rf src/zenml/zen_stores/migrations/env.py
-rm -rf src/zenml/zen_stores/migrations/versions
-rm -rf src/zenml/zen_stores/migrations/script.py.mako
-
-
 ########################################## Generate Structure of API docs ##############################################
 python3 docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
 

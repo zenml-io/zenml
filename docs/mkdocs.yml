@@ -10,7 +10,7 @@ theme:
   custom_dir: mkdocs/overrides
 
 repo_url: https://github.com/zenml-io/zenml
-edit_uri: https://github.com/zenml-io/zenml/docs/
+edit_uri: ""  # Disabled — SDK docs are auto-generated, not editable on GitHub
 
 plugins:
   - search
@@ -34,6 +34,7 @@ plugins:
               - "!^_"  # Exclude private members (starting with _)
               - "^__init__$"  # But include __init__ methods
               - "^__new__$"   # And __new__ methods
+              - "!^migrations$"  # Exclude alembic migrations (env.py has import side-effects)
             # Rendering options
             show_source: true
             show_root_heading: true

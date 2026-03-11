@@ -20,7 +20,26 @@ jobs:
         id: get_version
         run: |
           BRANCH="${GITHUB_REF_NAME}"
-          echo ::set-output name=VERSION::${BRANCH#release/}
+          VERSION="${BRANCH#release/}"
+
+          # Validate version looks like a semver (e.g. 0.71.0, 0.71.0rc1, 0.3.7.1rc0)
+          if ! echo "$VERSION" | grep -qE '^[0-9]+(\.[0-9]+){2,3}([a-zA-Z][a-zA-Z0-9]*)?$'; then
+            echo "::error::Invalid version '$VERSION' extracted from branch '$BRANCH'. Expected semver like 0.71.0"
+            exit 1
+          fi
+
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          # Only tag as "latest" if this is the highest release version.
+          # This prevents backports to older release branches from stealing
+          # the latest alias on sdkdocs.zenml.io.
+          LATEST_TAG=$(git tag --list '[0-9]*' --sort=-version:refname | head -n1)
+          if [ "$(printf '%s\n%s' "$VERSION" "$LATEST_TAG" | sort -V | tail -n1)" = "$VERSION" ]; then
+            echo "IS_LATEST=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "IS_LATEST=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping latest alias: $VERSION is older than $LATEST_TAG"
+          fi
       - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8  # v4.0.1
         with:
           node-version: '14'
@@ -36,6 +55,11 @@ jobs:
           git config --global user.email 'codemonkey@zenml.io'
       - name: Runs docs generation
         run: |-
-          bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${STEPS_GET_VERSION_OUTPUTS_VERSION}
+          LATEST_FLAG=""
+          if [ "$IS_LATEST" = "true" ]; then
+            LATEST_FLAG="--latest"
+          fi
+          bash scripts/generate-docs.sh -s src/zenml/ --push $LATEST_FLAG -v "$VERSION"
         env:
-          STEPS_GET_VERSION_OUTPUTS_VERSION: ${{ steps.get_version.outputs.VERSION }}
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+          IS_LATEST: ${{ steps.get_version.outputs.IS_LATEST }}

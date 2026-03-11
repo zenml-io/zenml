@@ -19,6 +19,7 @@ no store is configured, to get the SQLAlchemy engine and the context to run
 migrations.
 """
 
+import os
 from typing import cast
 
 from alembic import context
@@ -47,4 +48,7 @@ def run_migrations() -> None:
     a.run_migrations(fn=None)
 
 
-run_migrations()
+# DISABLE_DATABASE_MIGRATION is set by scripts/generate-docs.sh to prevent
+# this call when mkdocstrings imports the module during SDK docs builds.
+if not os.environ.get("DISABLE_DATABASE_MIGRATION"):
+    run_migrations()
