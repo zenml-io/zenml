@@ -149,65 +149,13 @@ spec:
               readOnly: true
           {{- end }}
           env:
-          {{- if or $.Values.zenml.certificates.customCAs $.Values.zenml.certificates.secretRefs }}
-            - name: REQUESTS_CA_BUNDLE
-              value: /updated-certs/ca-certificates.crt
-            - name: SSL_CERT_FILE
-              value: /updated-certs/ca-certificates.crt
-          {{- end }}
-            - name: NODE_OPTIONS
-              value: --use-openssl-ca
-            {{- if $.Values.zenml.debug }}
-            - name: ZENML_LOGGING_VERBOSITY
-              value: "DEBUG"
-            {{- end }}
-            {{- if $.Values.zenml.analyticsOptIn }}
-            - name: ZENML_ANALYTICS_OPT_IN
-              value: "True"
-            {{- else if not $.Values.zenml.analyticsOptIn }}
-            - name: ZENML_ANALYTICS_OPT_IN
-              value: "False"
-            {{- end }}
-            - name: ZENML_DEFAULT_PROJECT_NAME
-              value: {{ $.Values.zenml.defaultProject | quote }}
-            {{- if $.Values.zenml.enableImplicitAuthMethods }}
-            - name: ZENML_ENABLE_IMPLICIT_AUTH_METHODS
-              value: "True"
-            {{- end }}
-            {{- if $.Values.zenml.database.url }}
             - name: DISABLE_DATABASE_MIGRATION
               value: "True"
-            {{- end }}
-
-            {{- range $k, $v := include "zenml.storeEnvVariables" $ | fromYaml }}
+            {{- $envVars := include "zenml.envVariables" $ | fromYaml | default dict }}
+            {{- $envVars = merge ($worker.environment | default dict) $envVars }}
+            {{- range $k, $v := $envVars }}
             - name: {{ $k }}
               value: {{ $v | quote }}
-            {{- end }}
-            {{- range $k, $v := include "zenml.serverEnvVariables" $ | fromYaml }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
-            {{- range $k, $v := include "zenml.secretsStoreEnvVariables" $ | fromYaml }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
-            {{- range $k, $v := include "zenml.backupSecretsStoreEnvVariables" $ | fromYaml }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
-            {{- if $.Values.zenml.proxy.enabled }}
-            - name: HTTP_PROXY
-              value: {{ $.Values.zenml.proxy.httpProxy | quote }}
-            - name: HTTPS_PROXY
-              value: {{ $.Values.zenml.proxy.httpsProxy | quote }}
-            - name: NO_PROXY
-              value: {{ include "zenml.noProxyList" $ | quote }}
-            - name: http_proxy
-              value: {{ $.Values.zenml.proxy.httpProxy | quote }}
-            - name: https_proxy
-              value: {{ $.Values.zenml.proxy.httpsProxy | quote }}
-            - name: no_proxy
-              value: {{ include "zenml.noProxyList" $ | quote }}
             {{- end }}
             {{- if and $.Values.zenml.database.url $.Values.zenml.database.passwordSecretRef }}
             - name: ZENML_STORE_PASSWORD
@@ -215,18 +163,6 @@ spec:
                 secretKeyRef:
                   name: {{ $.Values.zenml.database.passwordSecretRef.name }}
                   key: {{ $.Values.zenml.database.passwordSecretRef.key }}
-            {{- end }}
-            {{- if $.Values.zenml.environment }}
-            {{- range $key, $value := $.Values.zenml.environment }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-            {{- end }}
-            {{- if $worker.environment }}
-            {{- range $key, $value := $worker.environment }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
             {{- end }}
           envFrom:
           - secretRef:
