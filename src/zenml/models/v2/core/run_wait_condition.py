@@ -149,6 +149,16 @@ class RunWaitConditionResponse(
 
     name: str = Field(title="The name of the wait condition.")
 
+    def get_hydrated_version(self) -> "RunWaitConditionResponse":
+        """Get the hydrated version of this wait condition.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
+        from zenml.client import Client
+
+        return Client().zen_store.get_run_wait_condition(self.id, hydrate=True)
+
     @property
     def type(self) -> RunWaitConditionType:
         """The `type` property.
