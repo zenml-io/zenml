@@ -4549,8 +4549,9 @@ class Client(metaclass=ClientMetaClass):
         resolved_by: Optional[Union[UUID, str]] = None,
         resolved_at: Optional[Union[datetime, str]] = None,
         resolution: Optional[str] = None,
-        run_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_run: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
         status: Optional[str] = None,
         type: Optional[str] = None,
         hydrate: bool = False,
@@ -4569,8 +4570,9 @@ class Client(metaclass=ClientMetaClass):
             resolved_by: Optional resolver name/ID filter.
             resolved_at: Optional resolution timestamp filter.
             resolution: Optional resolution filter.
-            run_name_or_id: Optional name/ID/prefix of the pipeline run.
+            pipeline_run: Optional pipeline run name/ID filter.
             project: Optional project name/ID for run lookup or filtering.
+            user: Optional user name/ID for resolver lookup or filtering.
             status: Optional status filter.
             type: Optional type filter.
             hydrate: Whether to hydrate metadata/resources.
@@ -4584,6 +4586,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             logical_operator=logical_operator,
             project=project or self.active_project.id,
+            user=user,
             status=status,
             type=type,
             id=id,
@@ -4593,14 +4596,8 @@ class Client(metaclass=ClientMetaClass):
             resolved_by=resolved_by,
             resolved_at=resolved_at,
             resolution=resolution,
+            pipeline_run=pipeline_run,
         )
-        if run_name_or_id is not None:
-            run = self.get_pipeline_run(
-                name_id_or_prefix=run_name_or_id,
-                project=project,
-                hydrate=False,
-            )
-            filter_model.run_id = run.id
 
         return self.zen_store.list_run_wait_conditions(
             run_wait_condition_filter_model=filter_model,

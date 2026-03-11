@@ -851,7 +851,6 @@ def run_wait_conditions() -> None:
 
 
 @run_wait_conditions.command("list")
-@click.argument("run_name_or_id", type=str, required=True)
 @list_options(
     RunWaitConditionFilter,
     default_columns=[
@@ -863,34 +862,30 @@ def run_wait_conditions() -> None:
     ],
 )
 def list_run_wait_conditions(
-    run_name_or_id: str,
     columns: str,
     output_format: OutputFormat,
     **kwargs: Any,
 ) -> None:
-    """List wait conditions for a run.
+    """List run wait conditions.
 
     Args:
-        run_name_or_id: The run name or ID.
+        run_name_or_id: Optional run name or ID filter.
         columns: Columns to display.
         output_format: Format for output.
         **kwargs: Additional wait condition filters.
     """
     client = Client()
     try:
-        with console.status("Listing run wait conditions...\n"):
-            conditions = client.list_run_wait_conditions(
-                run_name_or_id=run_name_or_id, **kwargs
-            )
+        with console.status("Listing wait conditions...\n"):
+            conditions = client.list_run_wait_conditions(**kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-        return
 
     cli_utils.print_page(
         conditions,
         columns,
         output_format,
-        empty_message="No run wait conditions found for this run.",
+        empty_message="No wait conditions found.",
     )
 
 
@@ -972,15 +967,13 @@ def review_wait_conditions(run_name_or_id: Optional[str] = None) -> None:
     page = 1
     size = 100
     while True:
-        page_result = client.zen_store.list_run_wait_conditions(
-            run_wait_condition_filter_model=RunWaitConditionFilter(
-                project=client.active_project.id,
-                run_id=run_id,
-                status=RunWaitConditionStatus.PENDING.value,
-                sort_by="asc:created",
-                page=page,
-                size=size,
-            ),
+        page_result = client.list_run_wait_conditions(
+            project=client.active_project.id,
+            pipeline_run=run_id,
+            status=RunWaitConditionStatus.PENDING.value,
+            sort_by="asc:created",
+            page=page,
+            size=size,
             hydrate=True,
         )
         conditions.extend(page_result.items)
@@ -1149,7 +1142,7 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
             )
 
         wait_conditions = client.list_run_wait_conditions(
-            run_name_or_id=run.id,
+            pipeline_run=run.id,
             status=RunWaitConditionStatus.PENDING.value,
         )
         if wait_conditions.items:

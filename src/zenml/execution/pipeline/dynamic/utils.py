@@ -23,6 +23,7 @@ from typing import (
     Sequence,
     Type,
     TypeVar,
+    overload,
 )
 from uuid import UUID
 
@@ -75,8 +76,36 @@ def unmapped(value: T) -> _Unmapped[T]:
     return _Unmapped(value)
 
 
+@overload
 def wait(
-    schema: Optional[Type[Any]] = None,
+    schema: Type[T],
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    timeout: int = 600,
+    poll_interval: int = 5,
+    question: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    after: Optional[Sequence["AnyStepFuture"]] = None,
+    name: Optional[str] = None,
+) -> T:
+    """Pause dynamic execution on an external wait condition."""
+
+
+@overload
+def wait(
+    schema: object = None,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    timeout: int = 600,
+    poll_interval: int = 5,
+    question: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    after: Optional[Sequence["AnyStepFuture"]] = None,
+    name: Optional[str] = None,
+) -> Any:
+    """Pause dynamic execution on an external wait condition."""
+
+
+def wait(
+    schema: Optional[Any] = None,
     type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
     timeout: int = 600,
     poll_interval: int = 5,

@@ -34,6 +34,7 @@ from typing import (
     Set,
     Tuple,
     Type,
+    TypeVar,
     Union,
     overload,
 )
@@ -124,6 +125,8 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+T = TypeVar("T")
 
 _WAIT_SUPPORTED_PRIMITIVE_TYPES: Tuple[Type[Any], ...] = (
     int,
@@ -934,9 +937,37 @@ class DynamicPipelineRunner:
 
         return MapResultsFuture(futures=step_futures)
 
+    @overload
     def wait(
         self,
-        schema: Optional[Type[Any]] = None,
+        schema: Type[T],
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    ) -> T:
+        """Create and poll a run wait condition."""
+
+    @overload
+    def wait(
+        self,
+        schema: object = None,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    ) -> Any:
+        """Create and poll a run wait condition."""
+
+    def wait(
+        self,
+        schema: Optional[Any] = None,
         type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
         timeout: int = 600,
         poll_interval: int = 5,
@@ -1080,7 +1111,7 @@ class DynamicPipelineRunner:
     @staticmethod
     def _handle_wait_condition_state(
         condition: "RunWaitConditionResponse",
-        schema: Optional[Type[Any]] = None,
+        schema: Optional[Any] = None,
     ) -> Optional[Any]:
         """Handle non-pending wait conditions.
 
