@@ -1161,10 +1161,30 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
                 "Unable to resume run because the stack is missing."
             )
 
+        client.zen_store.update_run(
+            run_id=run.id,
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.RESUMING, is_finished=False
+            ),
+        )
+
         with cli_utils.temporary_active_stack(
             stack_name_or_id=snapshot.stack.id
         ) as stack:
-            stack.orchestrator.restart(snapshot=snapshot, run=run, stack=stack)
+            try:
+                stack.orchestrator.restart_run(
+                    snapshot=snapshot, run=run, stack=stack
+                )
+            except Exception:
+                client.zen_store.update_run(
+                    run_id=run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.PAUSED,
+                        is_finished=False,
+                        status_reason="Resume submission failed.",
+                    ),
+                )
+                raise
     except Exception as e:
         cli_utils.error(f"Failed to resume pipeline run: {e}")
 
@@ -1207,7 +1227,7 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
         Client().zen_store.update_run(
             run_id=run.id,
             run_update=PipelineRunUpdate(
-                status=ExecutionStatus.RETRYING, is_finished=False
+                status=ExecutionStatus.RESUMING, is_finished=False
             ),
         )
 
@@ -1215,7 +1235,7 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
             with cli_utils.temporary_active_stack(
                 stack_name_or_id=snapshot.stack.id
             ) as stack:
-                stack.orchestrator.restart(
+                stack.orchestrator.restart_run(
                     snapshot=snapshot, run=run, stack=stack
                 )
         except Exception as e:

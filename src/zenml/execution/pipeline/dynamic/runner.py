@@ -505,14 +505,17 @@ class DynamicPipelineRunner:
             if self._run.status.is_finished:
                 logger.info("Run `%s` is already finished.", str(self._run.id))
                 return
-            elif self._run.status == ExecutionStatus.PAUSED:
+            elif self._run.status in {
+                ExecutionStatus.RESUMING,
+                ExecutionStatus.PAUSED,
+            }:
                 self._run = Client().zen_store.update_run(
                     run_id=self._run.id,
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.RUNNING,
                     ),
                 )
-                logger.info("Resuming paused run `%s`.", str(self._run.id))
+                logger.info("Resuming run `%s`.", str(self._run.id))
             elif self._run.status == ExecutionStatus.RETRYING:
                 self._run = Client().zen_store.update_run(
                     run_id=self._run.id,

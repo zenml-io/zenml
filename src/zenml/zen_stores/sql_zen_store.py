@@ -6814,6 +6814,16 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            # TODO: make the status transition early on, fail the update early
+            # if someone else transitioned it before us.
+            if run_update.status is not None:
+                session.exec(
+                    select(PipelineRunSchema.id)
+                    .with_for_update()
+                    .where(PipelineRunSchema.id == run_id)
+                ).one()
+                session.refresh(existing_run)
+
             if run_update.orchestrator_run_id:
                 if not existing_run.is_placeholder_run():
                     raise IllegalOperationError(
@@ -7211,9 +7221,9 @@ class SqlZenStore(BaseZenStore):
             # Can't run this snapshot from the server
             return
 
-        from zenml.zen_server.pipeline_execution.utils import resume_run
+        from zenml.zen_server.pipeline_execution.utils import restart_run
 
-        resume_run(run=run)
+        restart_run(run=run)
 
     def _stop_run_if_no_active_lease(self, run_id: UUID) -> None:
         """Set a run to stopped when no active poller lease exists.

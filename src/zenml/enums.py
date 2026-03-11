@@ -94,6 +94,7 @@ class ExecutionStatus(StrEnum):
     RETRYING = "retrying"
     RETRIED = "retried"
     PAUSED = "paused"
+    RESUMING = "resuming"
     STOPPED = "stopped"
     STOPPING = "stopping"
 

@@ -234,6 +234,9 @@ def get_pipeline_run_status(
     Returns:
         The run status.
     """
+    if is_dynamic_pipeline:
+        return run_status
+
     # STOPPING state
     if run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):

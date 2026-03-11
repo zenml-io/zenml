@@ -755,7 +755,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ValueError: When trying to update the orchestrator run ID of a
                 run that already has a different one.
             IllegalOperationError: When trying to retry a pipeline run that is
-                not in a failed state.
+                not in a failed state or restart a run that is neither failed
+                nor paused.
 
         Returns:
             The updated `PipelineRunSchema`.
@@ -780,15 +781,26 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             # model and simply make it depend on the run status?
             if run_update.is_finished:
                 self.in_progress = False
-            elif (
-                run_update.is_finished is False
-                and run_update.status == ExecutionStatus.RETRYING
-            ):
-                if previous_status != ExecutionStatus.FAILED.value:
+            elif run_update.is_finished is False and run_update.status in {
+                ExecutionStatus.RETRYING,
+                ExecutionStatus.RESUMING,
+            }:
+                if run_update.status == ExecutionStatus.RETRYING:
+                    if previous_status != ExecutionStatus.FAILED.value:
+                        raise IllegalOperationError(
+                            "Cannot retry a pipeline run that is not failed."
+                        )
+                elif previous_status not in {
+                    ExecutionStatus.FAILED.value,
+                    ExecutionStatus.PAUSED.value,
+                }:
                     raise IllegalOperationError(
-                        "Cannot retry a pipeline run that is not failed."
+                        "Cannot restart a pipeline run that is neither failed "
+                        "nor paused."
                     )
+                self.status_reason = None
                 self.in_progress = True
+                self.end_time = None
             elif self.snapshot and self.snapshot.is_dynamic:
                 # In dynamic pipelines, we can't actually check if the run is
                 # in progress by inspecting the DAG. Only once the orchestration

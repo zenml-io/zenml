@@ -466,11 +466,12 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
-    def restart(
+    def restart_run(
         self,
         snapshot: "PipelineSnapshotResponse",
         run: "PipelineRunResponse",
         stack: "Stack",
+        force_async: bool = False,
     ) -> None:
         if not snapshot.is_dynamic:
             raise RuntimeError("Cannot restart a non-dynamic pipeline.")
@@ -483,12 +484,20 @@ class BaseOrchestrator(StackComponent, ABC):
         base_environment.update(secrets)
 
         try:
-            _ = self.submit_dynamic_pipeline(
+            submission_result = self.submit_dynamic_pipeline(
                 snapshot=snapshot,
                 stack=stack,
                 environment=base_environment,
                 placeholder_run=run,
             )
+
+            if submission_result:
+                if submission_result.metadata:
+                    # TODO: Do we somehow prefix the metadata here
+                    pass
+
+                if submission_result.wait_for_completion and not force_async:
+                    submission_result.wait_for_completion()
         finally:
             self._cleanup_run()
 
