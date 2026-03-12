@@ -6814,15 +6814,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # TODO: make the status transition early on, fail the update early
-            # if someone else transitioned it before us.
             if run_update.status is not None:
-                session.exec(
-                    select(PipelineRunSchema.id)
-                    .with_for_update()
-                    .where(PipelineRunSchema.id == run_id)
-                ).one()
-                session.refresh(existing_run)
+                self._update_pipeline_run_status(
+                    pipeline_run_id=run_id,
+                    session=session,
+                    requested_status=run_update.status,
+                    status_reason=run_update.status_reason,
+                )
 
             if run_update.orchestrator_run_id:
                 if not existing_run.is_placeholder_run():
@@ -6879,11 +6877,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if run_update.status is not None:
-                self._update_pipeline_run_status(
-                    pipeline_run_id=run_id,
-                    session=session,
-                )
             session.refresh(existing_run)
 
             return existing_run.to_model(
@@ -7148,6 +7141,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True,
                 include_resources=True,
             )
+            # TODO: remove run status reason here probably.
 
         if (
             resolved_model.status == RunWaitConditionStatus.RESOLVED
@@ -11443,6 +11437,8 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run_id: UUID,
         session: Session,
+        requested_status: Optional[ExecutionStatus] = None,
+        status_reason: Optional[str] = None,
     ) -> None:
         """Updates the status of a pipeline run.
 
@@ -11450,7 +11446,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_run_id: The ID of the pipeline run to update.
             session: The database session to use.
         """
-        from zenml.orchestrators.publish_utils import get_pipeline_run_status
+        # from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
@@ -11460,49 +11456,54 @@ class SqlZenStore(BaseZenStore):
             .with_for_update()
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
-        step_run_statuses = session.exec(
-            select(StepRunSchema.status)
-            .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
-            .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
-        ).all()
+        # step_run_statuses = session.exec(
+        #     select(StepRunSchema.status)
+        #     .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
+        #     .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
+        # ).all()
 
-        # Snapshots always exists for pipeline runs of newer versions
-        assert pipeline_run.snapshot
-        num_steps = pipeline_run.snapshot.step_count
-        is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
-        new_status = get_pipeline_run_status(
-            run_status=ExecutionStatus(pipeline_run.status),
-            step_statuses=[
-                ExecutionStatus(status) for status in step_run_statuses
-            ],
-            num_steps=num_steps,
-            is_dynamic_pipeline=is_dynamic_pipeline,
+        # # Snapshots always exists for pipeline runs of newer versions
+        # assert pipeline_run.snapshot
+        # num_steps = pipeline_run.snapshot.step_count
+        # is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
+        # new_status = get_pipeline_run_status(
+        #     run_status=ExecutionStatus(pipeline_run.status),
+        #     step_statuses=[
+        #         ExecutionStatus(status) for status in step_run_statuses
+        #     ],
+        #     num_steps=num_steps,
+        #     is_dynamic_pipeline=is_dynamic_pipeline,
+        # )
+
+        # if pipeline_run.is_placeholder_run() and not new_status.is_finished:
+        #     # If the pipeline run is a placeholder run (=no step has been started
+        #     # for the run yet), this means the orchestrator hasn't started
+        #     # running yet, and this method is most likely being called as
+        #     # part of the creation of some cached steps. In this case, we don't
+        #     # update the status unless the run is finished.
+
+        #     # Commit so that we release the lock on the pipeline run.
+        #     session.commit()
+        #     return
+
+        pipeline_run.update_status(
+            requested_status=requested_status, status_reason=status_reason
         )
-
-        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
-            # If the pipeline run is a placeholder run (=no step has been started
-            # for the run yet), this means the orchestrator hasn't started
-            # running yet, and this method is most likely being called as
-            # part of the creation of some cached steps. In this case, we don't
-            # update the status unless the run is finished.
-
-            # Commit so that we release the lock on the pipeline run.
-            session.commit()
-            return
-
-        run_update = PipelineRunUpdate(status=new_status)
-        if new_status.is_finished:
-            run_update.end_time = utc_now()
-
-        pipeline_run.update(run_update)
         session.add(pipeline_run)
-        # Commit so that we release the lock on the pipeline run.
         session.commit()
 
-        if new_status.is_finished:
-            assert run_update.end_time
+        # run_update = PipelineRunUpdate(status=new_status)
+        # if new_status.is_finished:
+        #     run_update.end_time = utc_now()
+
+        # pipeline_run.update(run_update)
+        # Commit so that we release the lock on the pipeline run.
+
+        new_status = ExecutionStatus(pipeline_run.status)
+
+        if new_status.is_finished and pipeline_run.end_time:
             if pipeline_run.start_time:
-                duration_time = run_update.end_time - pipeline_run.start_time
+                duration_time = pipeline_run.end_time - pipeline_run.start_time
                 duration_seconds = duration_time.total_seconds()
                 start_time_str = pipeline_run.start_time.strftime(
                     "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -11511,6 +11512,7 @@ class SqlZenStore(BaseZenStore):
                 start_time_str = None
                 duration_seconds = None
 
+            assert pipeline_run.snapshot
             stack = pipeline_run.snapshot.stack
             assert stack
             stack_metadata = {
@@ -11525,9 +11527,9 @@ class SqlZenStore(BaseZenStore):
                     "pipeline_run_id": pipeline_run_id,
                     "source_snapshot_id": pipeline_run.snapshot.source_snapshot_id,
                     "status": new_status,
-                    "num_steps": num_steps,
+                    "num_steps": pipeline_run.snapshot.step_count,
                     "start_time": start_time_str,
-                    "end_time": run_update.end_time.strftime(
+                    "end_time": pipeline_run.end_time.strftime(
                         "%Y-%m-%dT%H:%M:%S.%fZ"
                     ),
                     "duration_seconds": duration_seconds,
