@@ -67,7 +67,7 @@ class PydanticMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        return {"schema": data.schema()}
+        return {"schema": data.model_json_schema()}
 
     def compute_content_hash(self, data: BaseModel) -> Optional[str]:
         """Compute the content hash of the given data.
