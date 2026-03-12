@@ -168,8 +168,6 @@ def run_snapshot(
         trigger_id: The trigger ID that generated the snapshot run (optional).
 
     Raises:
-        ValueError: If the snapshot can not be run.
-        RuntimeError: If the server URL is not set in the server configuration.
         MaxConcurrentTasksError: If the maximum number of concurrent run
             snapshot tasks is reached.
 
@@ -303,6 +301,7 @@ def restart_run(run: PipelineRunResponse) -> None:
     Raises:
         MaxConcurrentTasksError: If workload submission exceeds concurrency
             limits.
+        Exception: If the restart submission fails.
     """
     auth_context = get_auth_context()
     assert auth_context
