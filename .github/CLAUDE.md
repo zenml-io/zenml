@@ -34,7 +34,8 @@ Runs automatically on all PRs and pushes to main:
 - Linting (ubuntu, Python 3.11)
 - Unit tests (ubuntu, Python 3.11)
 - Integration tests (2 environments, 6 shards each)
-- Template example updates (PRs only)
+- API docs buildability test
+- Template example updates (PRs only, same-repo only)
 
 ### ci-slow.yml (Full Matrix, Requires Label)
 

@@ -10,7 +10,7 @@ Models live under: src/zenml/models
 
 - Layered model hierarchy: Requests, Updates, and typed Responses using a tripartite structure (Body, Metadata, Resources).
 - Layered filter hierarchy: typed filter operations, scoping, sorting, pagination.
-- Scoping variants: global (base), user-scoped, workspace-scoped.
+- Scoping variants: global (base), user-scoped, project-scoped.
 - Strong typing and generics for response composition.
 - Keep domain models and ORM schemas strictly in sync (names and types).
 
@@ -18,23 +18,23 @@ Models live under: src/zenml/models
 
 Model base:
 - BaseZenModel: common root (analytics tracking, YAML serialization).
-- BaseRequest → {Entity}Request (UserScopedRequest, WorkspaceScopedRequest as needed).
+- BaseRequest → {Entity}Request (UserScopedRequest, ProjectScopedRequest as needed).
 - BaseUpdate → {Entity}Update (omit if entity is immutable).
 - BaseResponse[Body, Metadata, Resources]
   - BaseResponseBody → BaseDatedResponseBody
-    - UserScopedResponseBody, WorkspaceScopedResponseBody
+    - UserScopedResponseBody, ProjectScopedResponseBody
   - BaseResponseMetadata
-    - UserScopedResponseMetadata, WorkspaceScopedResponseMetadata
+    - UserScopedResponseMetadata, ProjectScopedResponseMetadata
   - BaseResponseResources
-    - UserScopedResponseResources, WorkspaceScopedResponseResources
+    - UserScopedResponseResources, ProjectScopedResponseResources
   - BaseIdentifiedResponse[DatedBody, Metadata, Resources]
     - UserScopedResponse[…]
-      - WorkspaceScopedResponse[…]
+      - ProjectScopedResponse[…]
 
 Filter base:
 - BaseFilter: core filtering, sorting, pagination.
 - Filter (ABC) specializations: BoolFilter, StrFilter → UUIDFilter, NumericFilter, DatetimeFilter.
-- UserScopedFilter → WorkspaceScopedFilter.
+- UserScopedFilter → ProjectScopedFilter.
 - TaggableFilter for entities that support tagging.
 - FilterGenerator: creates appropriate filter instances.
 
@@ -78,8 +78,8 @@ Key methods:
 
 ## Scoping
 
-- UserScoped*: associates entities with a user (base for workspace scope).
-- WorkspaceScoped*: associates entities with both a user and a workspace.
+- UserScoped*: associates entities with a user (base for project scope).
+- ProjectScoped*: associates entities with both a user and a project.
 
 For each scope, define matching types:
 - *ScopedRequest, *ScopedResponseBody, *ScopedResponseMetadata, *ScopedResponseResources, *ScopedFilter
@@ -88,7 +88,7 @@ Select the narrowest scope that matches ownership semantics.
 
 ## Filtering
 
-- Use BaseFilter / UserScopedFilter / WorkspaceScopedFilter (+ TaggableFilter if needed).
+- Use BaseFilter / UserScopedFilter / ProjectScopedFilter (+ TaggableFilter if needed).
 - Provide:
   - Declared filter fields with type-appropriate filters.
   - Supported sorts and any exclusions.
@@ -112,20 +112,20 @@ Select the narrowest scope that matches ownership semantics.
 ## Minimal New Entity Skeleton
 
 ```python
-class NewEntityRequest(WorkspaceScopedRequest):
+class NewEntityRequest(ProjectScopedRequest):
     # Required creation fields and validation
 
-class NewEntityResponseBody(WorkspaceScopedResponseBody):
+class NewEntityResponseBody(ProjectScopedResponseBody):
     # Core attributes
 
-class NewEntityResponseMetadata(WorkspaceScopedResponseMetadata):
+class NewEntityResponseMetadata(ProjectScopedResponseMetadata):
     # Optional relationships / metadata
 
-class NewEntityResponseResources(WorkspaceScopedResponseResources):
+class NewEntityResponseResources(ProjectScopedResponseResources):
     # Optional computed / dynamic data
 
 class NewEntityResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         NewEntityResponseBody,
         NewEntityResponseMetadata,
         NewEntityResponseResources,
@@ -134,14 +134,14 @@ class NewEntityResponse(
     # Optional: hydration overrides, convenience accessors
     # def get_hydrated_version(self) -> "NewEntityResponse": ...
 
-class NewEntityFilter(WorkspaceScopedFilter):
+class NewEntityFilter(ProjectScopedFilter):
     # Filter fields, supported operations, sorting options
 ```
 
 ## Implementation Checklist
 
 - Scope
-  - Choose global vs user vs workspace; select matching *Scoped base classes.
+  - Choose global vs user vs project; select matching *Scoped base classes.
 - Classes
   - Implement Request, ResponseBody, ResponseMetadata, ResponseResources, Response, Filter.
 - Fields
@@ -173,6 +173,8 @@ TypeError: list_pipeline_runs() got an unexpected keyword argument 'new_field'
 ```
 
 This error only occurs at runtime when the CLI option is used—there's no mypy or test coverage to catch it.
+
+**Note:** Relationship-backed filter fields (e.g., `trigger_id` on pipeline runs) may also require custom ORM join logic in the store layer, not just client signature updates.
 
 ### Three-Location Update Checklist
 
