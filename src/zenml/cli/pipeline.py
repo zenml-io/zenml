@@ -982,7 +982,10 @@ def resolve_wait_condition(
     except KeyError as err:
         cli_utils.exception(err)
 
-    cli_utils.declare(f"Resolved run wait condition `{wait_condition_id}`.")
+    cli_utils.declare(
+        f"Resolved wait condition `{wait_condition_id}` with resolution "
+        f"`{resolution_enum.value}`."
+    )
 
 
 def _interactive_resolve_wait_conditions(
@@ -1116,8 +1119,8 @@ def _interactive_resolve_wait_conditions(
                 result=result,
             )
             cli_utils.declare(
-                f"Resolved wait condition `{condition.id}` with "
-                f"`{RunWaitConditionStatus.RESOLVED.value}`."
+                f"Resolved wait condition `{condition.id}` with resolution "
+                f"`{resolution.value}`."
             )
         except Exception as e:
             click.echo(f"Failed to resolve wait condition: {e}", err=True)

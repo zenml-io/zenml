@@ -573,11 +573,11 @@ class DynamicPipelineRunner:
                     self.await_all_step_futures()
                 except PipelinePausedError:
                     logger.info("Pausing pipeline run `%s`.", self._run.id)
-                except PipelineAbortedError as e:
+                except PipelineAbortedError:
                     publish_pipeline_run_status_update(
                         pipeline_run_id=self._run.id,
                         status=ExecutionStatus.STOPPED,
-                        status_reason=str(e),
+                        status_reason="Wait condition was aborted.",
                     )
                     logger.info(
                         "Pipeline run `%s` stopped due to wait condition abort.",
@@ -1150,7 +1150,10 @@ class DynamicPipelineRunner:
 
         self._run = Client().zen_store.update_run(
             run_id=self._run.id,
-            run_update=PipelineRunUpdate(status=ExecutionStatus.PAUSED),
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.PAUSED,
+                status_reason="Wait condition polling timed out.",
+            ),
         )
         raise PipelinePausedError(
             f"Wait condition `{condition.name}` polling timed out."

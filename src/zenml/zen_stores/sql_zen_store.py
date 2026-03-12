@@ -7251,9 +7251,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 .values(
                     status=ExecutionStatus.STOPPED.value,
-                    status_reason=(
-                        "Run stopped because a wait condition was aborted."
-                    ),
+                    status_reason=("Wait condition was aborted."),
                     updated=utc_now(),
                 )
             )
