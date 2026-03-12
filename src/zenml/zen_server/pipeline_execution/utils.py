@@ -314,11 +314,12 @@ def restart_run(run: PipelineRunResponse) -> None:
             run_update=PipelineRunUpdate(
                 status=ExecutionStatus.RESUMING,
                 is_finished=False,
+                status_reason="Automatically resuming run from server.",
             ),
         )
     except IllegalOperationError:
         logger.info(
-            "Skipping restart of run `%s` because it is already restarting.",
+            "Skipping restart of run `%s` because it is already resuming.",
             run.id,
         )
         return

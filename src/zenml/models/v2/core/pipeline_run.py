@@ -688,6 +688,15 @@ class PipelineRunResponse(
         """
         return self.get_resources().original_run
 
+    @property
+    def active_wait_condition(self) -> Optional["RunWaitConditionResponse"]:
+        """The `active_wait_condition` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().active_wait_condition
+
 
 # ------------------ Filter Model ------------------
 

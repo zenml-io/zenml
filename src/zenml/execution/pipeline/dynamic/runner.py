@@ -508,6 +508,7 @@ class DynamicPipelineRunner:
             elif self._run.status in {
                 ExecutionStatus.RESUMING,
                 ExecutionStatus.PAUSED,
+                ExecutionStatus.RETRYING,
             }:
                 self._run = Client().zen_store.update_run(
                     run_id=self._run.id,
@@ -516,16 +517,21 @@ class DynamicPipelineRunner:
                     ),
                 )
                 logger.info("Resuming run `%s`.", str(self._run.id))
-            elif self._run.status == ExecutionStatus.RETRYING:
+            elif self._run.status == ExecutionStatus.RUNNING:
+                logger.info("Continuing existing run `%s`.", str(self._run.id))
+            elif self._run.status in {
+                ExecutionStatus.INITIALIZING,
+                ExecutionStatus.PROVISIONING,
+            }:
+                # Set the run status to running already, in case no steps start
+                # immediately which would otherwise cause the run to be stuck in
+                # some init state.
                 self._run = Client().zen_store.update_run(
                     run_id=self._run.id,
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.RUNNING,
                     ),
                 )
-                logger.info("Retrying run `%s`.", str(self._run.id))
-            elif self._run.status == ExecutionStatus.RUNNING:
-                logger.info("Continuing existing run `%s`.", str(self._run.id))
 
             assert self._snapshot.stack
 
@@ -566,10 +572,7 @@ class DynamicPipelineRunner:
                     # them and raise any exceptions that occurred.
                     self.await_all_step_futures()
                 except PipelinePausedError:
-                    logger.info(
-                        "Pipeline run `%s` moved to paused state.",
-                        self._run.id,
-                    )
+                    logger.info("Pausing pipeline run `%s`.", self._run.id)
                 except PipelineAbortedError as e:
                     publish_pipeline_run_status_update(
                         pipeline_run_id=self._run.id,

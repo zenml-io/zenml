@@ -473,6 +473,17 @@ class BaseOrchestrator(StackComponent, ABC):
         stack: "Stack",
         force_async: bool = False,
     ) -> None:
+        """Restart an existing dynamic pipeline run.
+
+        Args:
+            snapshot: Snapshot backing the run.
+            run: Existing pipeline run to restart.
+            stack: Stack used for the restart.
+            force_async: Whether to skip waiting for submission completion.
+
+        Raises:
+            RuntimeError: If the snapshot does not represent a dynamic pipeline.
+        """
         if not snapshot.is_dynamic:
             raise RuntimeError("Cannot restart a non-dynamic pipeline.")
 

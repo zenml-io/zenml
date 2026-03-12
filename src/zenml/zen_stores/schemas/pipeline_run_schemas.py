@@ -775,22 +775,20 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
                 if run_update.status_reason:
                     self.status_reason = run_update.status_reason
+                elif previous_status != run_update.status:
+                    # TODO: Keep for some transitions, e.g. stopping -> stopped
+                    self.status_reason = None
 
             # TODO: Now that we never compute the run status from step statuses
             # in dynamic pipelines, can we remove this field from the update
             # model and simply make it depend on the run status?
             if run_update.is_finished:
                 self.in_progress = False
-            elif run_update.is_finished is False and run_update.status in {
-                ExecutionStatus.RETRYING,
-                ExecutionStatus.RESUMING,
-            }:
-                if run_update.status == ExecutionStatus.RETRYING:
-                    if previous_status != ExecutionStatus.FAILED.value:
-                        raise IllegalOperationError(
-                            "Cannot retry a pipeline run that is not failed."
-                        )
-                elif previous_status not in {
+            elif (
+                run_update.is_finished is False
+                and run_update.status == ExecutionStatus.RESUMING
+            ):
+                if previous_status not in {
                     ExecutionStatus.FAILED.value,
                     ExecutionStatus.PAUSED.value,
                 }:
@@ -798,7 +796,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         "Cannot restart a pipeline run that is neither failed "
                         "nor paused."
                     )
-                self.status_reason = None
                 self.in_progress = True
                 self.end_time = None
             elif self.snapshot and self.snapshot.is_dynamic:
