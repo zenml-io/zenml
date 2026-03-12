@@ -13,9 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Artifact Store."""
 
-import copy
-import datetime
-import weakref
 from typing import (
     Any,
     Callable,
@@ -80,56 +77,6 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
                     f"Expected a google.cloud.storage.Client while trying to "
                     f"use the linked connector, but got {type(client)}."
                 )
-            credentials = copy.deepcopy(client._credentials)
-            if isinstance(credentials, gcp_credentials.Credentials):
-                artifact_store_ref = weakref.ref(self)
-
-                def _refresh_handler(
-                    _request: Any, scopes: Iterable[str]
-                ) -> Tuple[str, datetime.datetime]:
-                    artifact_store = artifact_store_ref()
-                    if artifact_store is None:
-                        raise RuntimeError(
-                            "Unable to refresh GCP OAuth2 credentials because "
-                            "the artifact store instance is no longer available."
-                        )
-
-                    refreshed_connector = artifact_store.get_connector()
-                    if refreshed_connector is None:
-                        raise RuntimeError(
-                            "Unable to refresh GCP OAuth2 credentials because "
-                            "no service connector is linked to the artifact store."
-                        )
-
-                    refreshed_client = refreshed_connector.connect()
-                    if not isinstance(refreshed_client, storage.Client):
-                        raise RuntimeError(
-                            f"Expected a google.cloud.storage.Client while trying "
-                            f"to refresh credentials using the linked connector, "
-                            f"but got {type(refreshed_client)}."
-                        )
-
-                    refreshed_credentials = refreshed_client._credentials
-                    assert isinstance(
-                        refreshed_credentials, gcp_credentials.Credentials
-                    )
-                    refreshed_expiry = refreshed_credentials.expiry
-                    if (
-                        refreshed_expiry
-                        and refreshed_expiry.tzinfo is not None
-                    ):
-                        refreshed_expiry = refreshed_expiry.astimezone(
-                            datetime.timezone.utc
-                        ).replace(tzinfo=None)
-
-                    return (
-                        refreshed_credentials.token,
-                        refreshed_expiry,
-                    )
-
-                credentials.refresh_handler = _refresh_handler
-
-            return credentials
 
         secret = self.get_typed_authentication_secret(
             expected_schema_type=GCPSecretSchema

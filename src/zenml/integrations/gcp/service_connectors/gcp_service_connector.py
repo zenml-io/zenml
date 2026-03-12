@@ -28,7 +28,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import google.api_core.exceptions
 import google.auth
@@ -1570,6 +1570,58 @@ class GCPServiceConnector(ServiceConnector):
             resource_type=resource_type,
             resource_id=resource_id,
         )
+
+        def _refresh_handler(
+            _request: Any, scopes: Iterable[str]
+        ) -> Tuple[str, datetime.datetime]:
+
+            from zenml.client import Client
+
+            if scopes != self._get_scopes(
+                resource_type=self.resource_type,
+                resource_id=self.resource_id,
+            ):
+                raise RuntimeError(
+                    f"The scopes for the connector with ID {self.id} do not "
+                    f"match the scopes requested by the refresh handler."
+                )
+
+            client = Client()
+            try:
+                assert self.id is not None
+                connector = client.get_service_connector_client(
+                    name_id_or_prefix=self.id,
+                    resource_type=self.resource_type,
+                    resource_id=resource_id,
+                )
+            except (KeyError, ValueError, AuthorizationException) as e:
+                raise RuntimeError(
+                    f"The connector with ID {self.id} could not be used to "
+                    f"refresh credentials. Please verify that the connector "
+                    f"exists and is accessible: {e}."
+                )
+
+            assert isinstance(connector, GCPServiceConnector)
+
+            credentials, expires_at = connector.get_session(
+                self.auth_method,
+                resource_type=self.resource_type,
+                resource_id=self.resource_id,
+            )
+
+            # The refresh handler is only set for OAuth 2.0 temporary credentials
+            assert expires_at is not None
+
+            return (
+                credentials.token,
+                expires_at,
+            )
+
+        if self.auth_method == GCPAuthenticationMethods.OAUTH2_TOKEN:
+            # Configuring a refresh handler here ensures that the credentials
+            # are automatically refreshed when they expire without any
+            # intervention from the code that uses them.
+            credentials.refresh_handler = _refresh_handler
 
         if resource_type == GCS_RESOURCE_TYPE:
             # Validate that the resource ID is a valid GCS bucket name
