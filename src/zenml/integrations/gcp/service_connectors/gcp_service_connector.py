@@ -1574,8 +1574,13 @@ class GCPServiceConnector(ServiceConnector):
         def _refresh_handler(
             _request: Any, scopes: Iterable[str]
         ) -> Tuple[str, datetime.datetime]:
-
             from zenml.client import Client
+
+            logger.debug(
+                f"Refreshing GCP credentials for connector with ID {self.id} "
+                f"resource type {self.resource_type} and resource ID "
+                f"{resource_id} with scopes {scopes}."
+            )
 
             if scopes != self._get_scopes(
                 resource_type=self.resource_type,
@@ -1612,9 +1617,12 @@ class GCPServiceConnector(ServiceConnector):
             # The refresh handler is only set for OAuth 2.0 temporary credentials
             assert expires_at is not None
 
+            # Google's OAuth2 library expects a naive UTC datetime
+            expires_at_naive = expires_at.replace(tzinfo=None)
+
             return (
                 credentials.token,
-                expires_at,
+                expires_at_naive,
             )
 
         if self.auth_method == GCPAuthenticationMethods.OAUTH2_TOKEN:
