@@ -37,6 +37,13 @@ from zenml.enums import (
 )
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    BoolOrList,
+    DatetimeOrList,
+    IntOrList,
+    StrOrList,
+    UUIDOrList,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -722,76 +729,72 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
-    ]
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the step run",
     )
-    code_hash: Optional[str] = Field(
+    code_hash: StrOrList = Field(
         default=None,
         description="Code hash for this step run",
     )
-    cache_key: Optional[str] = Field(
+    cache_key: StrOrList = Field(
         default=None,
         description="Cache key for this step run",
     )
-    status: Optional[str] = Field(
+    status: StrOrList = Field(
         default=None,
         description="Status of the Step Run",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: DatetimeOrList = Field(
         default=None,
         description="Start time for this run",
         union_mode="left_to_right",
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: DatetimeOrList = Field(
         default=None,
         description="End time for this run",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUIDOrList = Field(
         default=None,
         description="Pipeline run of this step run",
         union_mode="left_to_right",
     )
-    snapshot_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: UUIDOrList = Field(
         default=None,
         description="Snapshot of this step run",
         union_mode="left_to_right",
     )
-    original_step_run_id: Optional[Union[UUID, str]] = Field(
+    original_step_run_id: UUIDOrList = Field(
         default=None,
         description="Original id for this step run",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDOrList = Field(
         default=None,
         description="Model version associated with the step run.",
         union_mode="left_to_right",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUIDOrList = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    version: Union[int, str, None] = Field(
+    version: IntOrList = Field(
         default=None,
         description="Version of the step run.",
         union_mode="left_to_right",
     )
-    exclude_retried: Optional[bool] = Field(
+    exclude_retried: BoolOrList = Field(
         default=None,
         description="Whether to exclude retried step runs.",
     )
-    cache_expires_at: Optional[Union[datetime, str]] = Field(
+    cache_expires_at: DatetimeOrList = Field(
         default=None,
         description="Cache expiration time of the step run.",
         union_mode="left_to_right",
     )
-    cache_expired: Optional[bool] = Field(
+    cache_expired: BoolOrList = Field(
         default=None,
         description="Whether the cache expiration time of the step run has "
         "passed.",

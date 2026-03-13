@@ -447,9 +447,10 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
             raise HTTPException(422, detail=detail)
 
     params = {v.name: v for v in inspect.signature(cls).parameters.values()}
-    query_params = getattr(cls, "API_MULTI_INPUT_PARAMS", [])
-    for qp in query_params:
-        if qp in params:
+    single_input_params = getattr(cls, "API_SINGLE_INPUT_PARAMS", [])
+
+    for qp in params.keys():
+        if qp not in single_input_params:
             params[qp] = inspect.Parameter(
                 name=params[qp].name,
                 default=Query(params[qp].default),

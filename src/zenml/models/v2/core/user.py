@@ -23,7 +23,6 @@ from typing import (
     List,
     Optional,
     Type,
-    Union,
 )
 from uuid import UUID
 
@@ -38,7 +37,13 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    BoolOrList,
+    StrOrList,
+    UUIDOrList,
+)
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
@@ -472,29 +477,29 @@ class UserResponse(
 class UserFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the user",
     )
-    full_name: Optional[str] = Field(
+    full_name: StrOrList = Field(
         default=None,
         description="Full Name of the user",
     )
-    email: Optional[str] = Field(
+    email: StrOrList = Field(
         default=None,
         description="Email of the user",
     )
-    active: Optional[Union[bool, str]] = Field(
+    active: BoolOrList = Field(
         default=None,
         description="Whether the user is active",
         union_mode="left_to_right",
     )
-    email_opted_in: Optional[Union[bool, str]] = Field(
+    email_opted_in: BoolOrList = Field(
         default=None,
         description="Whether the user has opted in to emails",
         union_mode="left_to_right",
     )
-    external_user_id: Optional[Union[UUID, str]] = Field(
+    external_user_id: UUIDOrList = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",

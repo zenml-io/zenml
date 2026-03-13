@@ -29,6 +29,7 @@ from pydantic_core import CoreSchema, core_schema
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import StrOrList
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -880,30 +881,34 @@ class ServiceConnectorFilter(UserScopedFilter):
         "labels_str",
         "labels",
     ]
-    name: Optional[str] = Field(
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "labels",
+    ]
+    name: StrOrList = Field(
         default=None,
         description="The name to filter by",
     )
-    connector_type: Optional[str] = Field(
+    connector_type: StrOrList = Field(
         default=None,
         description="The type of service connector to filter by",
     )
-    auth_method: Optional[str] = Field(
+    auth_method: StrOrList = Field(
         default=None,
         title="Filter by the authentication method configured for the "
         "connector",
     )
-    resource_type: Optional[str] = Field(
+    resource_type: StrOrList = Field(
         default=None,
         title="Filter by the type of resource that the connector can be used "
         "to access",
     )
-    resource_id: Optional[str] = Field(
+    resource_id: StrOrList = Field(
         default=None,
         title="Filter by the ID of the resource instance that the connector "
         "is configured to access",
     )
-    labels_str: Optional[str] = Field(
+    labels_str: StrOrList = Field(
         default=None,
         title="Filter by one or more labels. This field can be either a JSON "
         "formatted dictionary of label names and values, where the values are "

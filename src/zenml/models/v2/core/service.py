@@ -22,7 +22,6 @@ from typing import (
     List,
     Optional,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -31,6 +30,7 @@ from pydantic import ConfigDict, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ServiceState
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import BoolOrList, StrOrList, UUIDOrList
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -405,16 +405,16 @@ class ServiceResponse(
 class ServiceFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of services."""
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the service. Use this to filter services by "
         "their name.",
     )
-    type: Optional[str] = Field(
+    type: StrOrList = Field(
         default=None,
         description="Type of the service. Filter services by their type.",
     )
-    flavor: Optional[str] = Field(
+    flavor: StrOrList = Field(
         default=None,
         description="Flavor of the service. Use this to filter services by "
         "their flavor.",
@@ -424,23 +424,23 @@ class ServiceFilter(ProjectScopedFilter):
         description="Config of the service. Use this to filter services by "
         "their config.",
     )
-    pipeline_name: Optional[str] = Field(
+    pipeline_name: StrOrList = Field(
         default=None,
         description="Pipeline name responsible for deploying the service",
     )
-    pipeline_step_name: Optional[str] = Field(
+    pipeline_step_name: StrOrList = Field(
         default=None,
         description="Pipeline step name responsible for deploying the service",
     )
-    running: Optional[bool] = Field(
+    running: BoolOrList = Field(
         default=None, description="Whether the service is running"
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDOrList = Field(
         default=None,
         description="By the model version this service is attached to.",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUIDOrList = Field(
         default=None,
         description="By the pipeline run this service is attached to.",
         union_mode="left_to_right",

@@ -20,6 +20,7 @@ from pydantic import Field
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import StrOrList
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -184,7 +185,7 @@ class CodeRepositoryResponse(
 class CodeRepositoryFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all code repositories."""
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         description="Name of the code repository.",
         default=None,
     )

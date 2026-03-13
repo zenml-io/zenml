@@ -32,6 +32,7 @@ from zenml.constants import (
     TEXT_FIELD_MAX_LENGTH,
 )
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import StrOrList
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -353,7 +354,7 @@ class ModelResponse(
 class ModelFilter(ProjectScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of all models."""
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the Model",
     )
@@ -370,6 +371,10 @@ class ModelFilter(ProjectScopedFilter, TaggableFilter):
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+    ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
     def apply_sorting(

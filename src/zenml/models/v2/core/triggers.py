@@ -22,7 +22,13 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerRunConcurrency, TriggerType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    BoolOrList,
+    DatetimeOrList,
+    StrOrList,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -148,15 +154,15 @@ class TriggerResponseResources(ProjectScopedResponseResources):
 class UnScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
 
-    name: str | None = Field(
+    name: StrOrList = Field(
         default=None,
         description="The name of the trigger.",
     )
-    active: bool | None = Field(
+    active: BoolOrList = Field(
         default=None,
         description="Whether the trigger should be active.",
     )
-    is_archived: bool = Field(
+    is_archived: BoolOrList = Field(
         default=False,
         description="Whether the trigger should be archived.",
     )
@@ -170,7 +176,7 @@ class UnScopedTriggerFilter(BaseFilter):
         description="The trigger type.",
         union_mode="left_to_right",
     )
-    next_occurrence: datetime | str | None = Field(
+    next_occurrence: DatetimeOrList = Field(
         default=None,
         description="The next occurrence of the trigger (applicable only for schedules).",
         union_mode="left_to_right",
@@ -194,11 +200,11 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "type",
     ]
 
-    pipeline_id: str | None = Field(
+    pipeline_id: StrOrList = Field(
         default=None,
         description="Filter triggers by pipeline ID (triggers that are attached to this pipeline's snapshots)",
     )
-    snapshot_id: str | None = Field(
+    snapshot_id: StrOrList = Field(
         default=None,
         description="Filter triggers by snapshot ID (triggers that are attached to this snapshot)",
     )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing service accounts."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Type
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -27,7 +27,13 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    BoolOrList,
+    StrOrList,
+    UUIDOrList,
+)
 
 if TYPE_CHECKING:
     from zenml.models.v2.base.filter import AnySchema
@@ -271,20 +277,20 @@ class ServiceAccountResponse(
 class ServiceAccountFilter(BaseFilter):
     """Model to enable advanced filtering of service accounts."""
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the user",
     )
-    description: Optional[str] = Field(
+    description: StrOrList = Field(
         default=None,
         title="Filter by the service account description.",
     )
-    active: Optional[Union[bool, str]] = Field(
+    active: BoolOrList = Field(
         default=None,
         description="Whether the user is active",
         union_mode="left_to_right",
     )
-    external_user_id: Optional[Union[UUID, str]] = Field(
+    external_user_id: UUIDOrList = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",

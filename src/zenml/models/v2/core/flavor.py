@@ -20,6 +20,7 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import StrOrList
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -411,19 +412,19 @@ class FlavorResponse(
 class FlavorFilter(UserScopedFilter):
     """Model to enable advanced stack component flavor filtering."""
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the flavor",
     )
-    display_name: Optional[str] = Field(
+    display_name: StrOrList = Field(
         default=None,
         description="Display name of the flavor",
     )
-    type: Optional[str] = Field(
+    type: StrOrList = Field(
         default=None,
         description="Stack Component Type of the stack flavor",
     )
-    integration: Optional[str] = Field(
+    integration: StrOrList = Field(
         default=None,
         description="Integration associated with the flavor",
     )

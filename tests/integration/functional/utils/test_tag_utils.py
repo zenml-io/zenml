@@ -123,13 +123,39 @@ def test_tag_utils(clean_client):
     assert len(runs.items) == 0
 
     remove_tags(
-        tags=["cascade_tag", "exclusive_tag"],
+        tags=["cascade_tag", "exclusive_tag", "normal_tag", "axl"],
         run=second_run.id,
     )
     run = clean_client.get_pipeline_run(second_run.id)
     second_run_tags = [t.name for t in run.tags]
     assert "cascade_tag" not in second_run_tags
     assert "exclusive_tag" not in second_run_tags
+
+    runs_with_tags = clean_client.list_pipeline_runs(tags=["isnotempty"])
+    runs_without_tags = clean_client.list_pipeline_runs(tags=["isempty"])
+    runs_not_contains_exclusive = clean_client.list_pipeline_runs(
+        tags=["notcontains:exclusive"]
+    )
+
+    run_ids_with_tags = {run.id for run in runs_with_tags.items}
+    run_ids_without_tags = {run.id for run in runs_without_tags.items}
+    run_ids_not_contains_exclusive = {
+        run.id for run in runs_not_contains_exclusive.items
+    }
+
+    assert first_run.id in run_ids_with_tags
+    assert second_run.id not in run_ids_with_tags
+    assert second_run.id in run_ids_without_tags
+    assert first_run.id not in run_ids_without_tags
+    assert first_run.id in run_ids_not_contains_exclusive
+
+    add_tags(tags=["standalone_only_tag"], run=second_run.id)
+    runs_not_one_of = clean_client.list_pipeline_runs(
+        tags=['notoneof:["normal_tag","cascade_tag","exclusive_tag","axl"]']
+    )
+    run_ids_not_one_of = {run.id for run in runs_not_one_of.items}
+    assert second_run.id in run_ids_not_one_of
+    assert first_run.id not in run_ids_not_one_of
 
     pipeline_model = clean_client.get_pipeline(first_run.pipeline.id)
     with pytest.raises(ValueError):

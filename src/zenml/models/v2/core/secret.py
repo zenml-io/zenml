@@ -27,7 +27,7 @@ from pydantic import Field, SecretStr
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery
+from zenml.models.v2.base.filter import AnyQuery, BoolOrList, StrOrList
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -263,11 +263,11 @@ class SecretFilter(UserScopedFilter):
         "values",
     ]
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the secret",
     )
-    private: Optional[bool] = Field(
+    private: BoolOrList = Field(
         default=None,
         description="Whether to filter secrets by private status",
     )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and artifacts."""
 
-from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, List, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -26,7 +26,13 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import BaseFilter, StrFilter
+from zenml.models.v2.base.filter import (
+    BaseFilter,
+    BoolOrList,
+    StrFilter,
+    StrOrList,
+    UUIDOrList,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -136,25 +142,25 @@ class ModelVersionArtifactFilter(BaseFilter):
         "id",
     ]
 
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDOrList = Field(
         default=None,
         description="Filter by model version ID",
         union_mode="left_to_right",
     )
-    artifact_version_id: Optional[Union[UUID, str]] = Field(
+    artifact_version_id: UUIDOrList = Field(
         default=None,
         description="Filter by artifact ID",
         union_mode="left_to_right",
     )
-    artifact_name: Optional[str] = Field(
+    artifact_name: StrOrList = Field(
         default=None,
         description="Name of the artifact",
     )
-    only_data_artifacts: Optional[bool] = False
-    only_model_artifacts: Optional[bool] = False
-    only_deployment_artifacts: Optional[bool] = False
-    has_custom_name: Optional[bool] = None
-    user: Optional[Union[UUID, str]] = Field(
+    only_data_artifacts: BoolOrList = False
+    only_model_artifacts: BoolOrList = False
+    only_deployment_artifacts: BoolOrList = False
+    has_custom_name: BoolOrList = None
+    user: UUIDOrList = Field(
         default=None,
         description="Name/ID of the user that created the artifact.",
     )

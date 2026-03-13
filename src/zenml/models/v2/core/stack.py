@@ -32,6 +32,7 @@ from pydantic import Field, field_validator, model_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import StrOrList, UUIDOrList
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -430,19 +431,19 @@ class StackFilter(UserScopedFilter):
         "component",
     ]
 
-    name: Optional[str] = Field(
+    name: StrOrList = Field(
         default=None,
         description="Name of the stack",
     )
-    description: Optional[str] = Field(
+    description: StrOrList = Field(
         default=None, description="Description of the stack"
     )
-    component_id: Optional[Union[UUID, str]] = Field(
+    component_id: UUIDOrList = Field(
         default=None,
         description="Component in the stack",
         union_mode="left_to_right",
     )
-    component: Optional[Union[UUID, str]] = Field(
+    component: UUIDOrList = Field(
         default=None, description="Name/ID of a component in the stack."
     )
 

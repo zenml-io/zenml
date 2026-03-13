@@ -40,7 +40,13 @@ from zenml.enums import ArtifactSaveType, ArtifactType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import FilterGenerator
+from zenml.models.v2.base.filter import (
+    BoolOrList,
+    FilterGenerator,
+    IntOrList,
+    StrOrList,
+    UUIDOrList,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -555,13 +561,13 @@ class ArtifactVersionFilter(
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
         "artifact_id",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *TaggableFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
     ]
 
-    artifact: Optional[Union[UUID, str]] = Field(
+    artifact: UUIDOrList = Field(
         default=None,
         description="The name or ID of the artifact which the search is scoped "
         "to. This field must always be set and is always applied in addition "
@@ -569,60 +575,60 @@ class ArtifactVersionFilter(
         "logical_operator field.",
         union_mode="left_to_right",
     )
-    artifact_id: Optional[Union[UUID, str]] = Field(
+    artifact_id: UUIDOrList = Field(
         default=None,
         description="[Deprecated] Use 'artifact' instead. ID of the artifact to which this version belongs.",
         union_mode="left_to_right",
     )
-    version: Optional[str] = Field(
+    version: StrOrList = Field(
         default=None,
         description="Version of the artifact",
     )
-    version_number: Optional[Union[int, str]] = Field(
+    version_number: IntOrList = Field(
         default=None,
         description="Version of the artifact if it is an integer",
         union_mode="left_to_right",
     )
-    uri: Optional[str] = Field(
+    uri: StrOrList = Field(
         default=None,
         description="Uri of the artifact",
     )
-    materializer: Optional[str] = Field(
+    materializer: StrOrList = Field(
         default=None,
         description="Materializer used to produce the artifact",
     )
-    type: Optional[str] = Field(
+    type: StrOrList = Field(
         default=None,
         description="Type of the artifact",
     )
-    data_type: Optional[str] = Field(
+    data_type: StrOrList = Field(
         default=None,
         description="Datatype of the artifact",
     )
-    artifact_store_id: Optional[Union[UUID, str]] = Field(
+    artifact_store_id: UUIDOrList = Field(
         default=None,
         description="Artifact store for this artifact",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDOrList = Field(
         default=None,
         description="ID of the model version that is associated with this "
         "artifact version.",
         union_mode="left_to_right",
     )
-    only_unused: Optional[bool] = Field(
+    only_unused: BoolOrList = Field(
         default=False, description="Filter only for unused artifacts"
     )
-    has_custom_name: Optional[bool] = Field(
+    has_custom_name: BoolOrList = Field(
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUIDOrList = Field(
         default=None,
         description="Name/ID of the model that is associated with this "
         "artifact version.",
     )
-    pipeline_run: Optional[Union[UUID, str]] = Field(
+    pipeline_run: UUIDOrList = Field(
         default=None,
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
