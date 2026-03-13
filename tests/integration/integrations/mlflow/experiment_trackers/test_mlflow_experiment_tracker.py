@@ -249,6 +249,51 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
     assert os.environ[DATABRICKS_HOST] == "https://databricks.com"
 
 
+def test_mlflow_experiment_tracker_clears_preexisting_env_vars(
+    local_stack: Stack,
+) -> None:
+    """Tests that configure_mlflow clears pre-existing MLflow env vars.
+
+    Orchestrators like AzureML inject MLFLOW_* env vars (e.g.
+    MLFLOW_TRACKING_TOKEN, MLFLOW_RUN_ID) that can conflict with
+    ZenML's own credentials. configure_mlflow should clear these
+    before setting its own values.
+    """
+    # Simulate orchestrator-injected env vars
+    os.environ["MLFLOW_TRACKING_TOKEN"] = "azure-injected-token"
+    os.environ["MLFLOW_RUN_ID"] = "stale-run-id"
+    os.environ["MLFLOW_EXPERIMENT_ID"] = "stale-experiment-id"
+
+    local_stack._experiment_tracker = MLFlowExperimentTracker(
+        name="",
+        id=uuid4(),
+        config=MLFlowExperimentTrackerConfig(
+            tracking_uri="http://localhost:5000",
+            tracking_username="john_doe",
+            tracking_password="password",
+        ),
+        flavor="mlflow",
+        type=StackComponentType.EXPERIMENT_TRACKER,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    local_stack._experiment_tracker.configure_mlflow()
+
+    # ZenML's own credentials should be set
+    assert os.environ[MLFLOW_TRACKING_USERNAME] == "john_doe"
+    assert os.environ[MLFLOW_TRACKING_PASSWORD] == "password"
+
+    # The conflicting orchestrator-injected token should be cleared
+    # (ZenML didn't configure a token, so it shouldn't be present)
+    assert "MLFLOW_TRACKING_TOKEN" not in os.environ
+
+    # Stale run/experiment IDs should be cleared
+    assert "MLFLOW_RUN_ID" not in os.environ
+    assert "MLFLOW_EXPERIMENT_ID" not in os.environ
+
+
 @patch("mlflow.start_run")
 @patch("mlflow.get_run")
 @patch("mlflow.get_experiment_by_name")
