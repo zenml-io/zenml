@@ -28,6 +28,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    get_type_hints,
 )
 from uuid import UUID
 
@@ -104,6 +105,32 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
     )
 
 
+def get_resolved_type_hints(func: Callable[..., Any]) -> Dict[str, Any]:
+    """Return resolved type hints for a callable, handling deferred annotations.
+
+    When a module uses ``from __future__ import annotations`` (PEP 563),
+    all annotations are stored as strings instead of actual type objects.
+    ``inspect.signature`` preserves these strings, which causes failures
+    later when ZenML tries to look up materializers by type.
+
+    This helper calls :func:`typing.get_type_hints` with
+    ``include_extras=True`` so that ``Annotated`` metadata is preserved.
+    On failure (e.g. unresolvable forward references) it returns an empty
+    dict, allowing the caller to fall back to the original behaviour.
+
+    Args:
+        func: The callable whose type hints should be resolved.
+
+    Returns:
+        A mapping of parameter name to resolved type (plus ``'return'`` for
+        the return annotation).  Empty if resolution fails.
+    """
+    try:
+        return get_type_hints(inspect.unwrap(func), include_extras=True)
+    except Exception:
+        return {}
+
+
 def parse_return_type_annotations(
     func: Callable[..., Any],
     enforce_type_annotations: bool = False,
@@ -127,6 +154,13 @@ def parse_return_type_annotations(
     signature = inspect.signature(func, follow_wrapped=True)
     return_annotation = signature.return_annotation
     output_name: Optional[str]
+
+    # When a module uses `from __future__ import annotations` (PEP 563),
+    # all annotations become strings.  Resolve them to real types so that
+    # materializer look-ups work correctly.
+    if isinstance(return_annotation, str):
+        resolved_hints = get_resolved_type_hints(func)
+        return_annotation = resolved_hints.get("return", return_annotation)
 
     # Return type annotated as `None`
     if return_annotation is None:

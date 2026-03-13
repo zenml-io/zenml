@@ -76,12 +76,13 @@ class MaterializerRegistry:
         """
         if isinstance(key, str):
             raise RuntimeError(
-                "String type annotations (e.g. `def my_step() -> "
-                "'np.ndarray`) are not supported yet for step outputs. Please "
-                "change to actual type annotations (e.g. `def my_step() -> "
-                "np.ndarray`) and remove any "
-                "`from __future__ import annotations` in modules where "
-                "your steps are defined."
+                f"Could not resolve the string type annotation '{key}' to an "
+                "actual type. This can happen when a forward reference cannot "
+                "be evaluated (e.g. due to a circular import or a type that "
+                "is only imported inside an ``if TYPE_CHECKING`` block). "
+                "Please ensure that all types used in step output annotations "
+                "are importable at runtime, or replace the string annotation "
+                "with the actual type object."
             )
 
         for class_ in key.__mro__:

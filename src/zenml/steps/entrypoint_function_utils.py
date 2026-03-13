@@ -36,6 +36,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.lazy_load import LazyRunMetadataResponse
 from zenml.steps.utils import (
     OutputSignature,
+    get_resolved_type_hints,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -247,6 +248,10 @@ def validate_entrypoint_function(
         signature=signature, reserved_arguments=reserved_arguments
     )
 
+    # Resolve string annotations produced by `from __future__ import
+    # annotations` (PEP 563) so that type-based look-ups work correctly.
+    resolved_hints = get_resolved_type_hints(func)
+
     inputs = {}
 
     signature_parameters = list(signature.parameters.items())
@@ -258,6 +263,12 @@ def validate_entrypoint_function(
             )
 
         annotation = parameter.annotation
+
+        # Replace string annotations with resolved types when available.
+        if isinstance(annotation, str) and key in resolved_hints:
+            annotation = resolved_hints[key]
+            parameter = parameter.replace(annotation=annotation)
+
         if annotation is parameter.empty:
             if ENFORCE_TYPE_ANNOTATIONS:
                 raise RuntimeError(

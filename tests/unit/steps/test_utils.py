@@ -326,3 +326,47 @@ def func_with_duplicate_output_name() -> Tuple[
 def test_invalid_step_output_annotations(func, exception):
     with pytest.raises(exception):
         parse_return_type_annotations(func, {})
+
+
+# ---------------------------------------------------------------------------
+# Tests for string annotation resolution (from __future__ import annotations)
+# ---------------------------------------------------------------------------
+
+
+def func_with_string_return_annotation() -> "int":
+    return 1
+
+
+def func_with_string_tuple_return_annotation() -> "Tuple[int, str]":
+    return 1, "a"
+
+
+def test_string_return_annotation_is_resolved():
+    """parse_return_type_annotations should resolve plain string annotations.
+
+    String annotations arise when ``from __future__ import annotations`` is
+    active (PEP 563) or when the annotation is written as an explicit string
+    literal.  Without resolution the materializer look-up would fail with an
+    AttributeError on '__mro__'.
+    """
+    output_signatures = parse_return_type_annotations(
+        func_with_string_return_annotation
+    )
+    assert output_signatures["output"].resolved_annotation is int
+
+
+def test_get_resolved_type_hints_returns_empty_on_failure():
+    """get_resolved_type_hints must not propagate exceptions."""
+    from zenml.steps.utils import get_resolved_type_hints
+
+    class _Unresolvable:
+        """A callable whose annotations cannot be resolved."""
+        __annotations__ = {"return": "NonExistentType123"}
+        __globals__ = {}
+
+        def __call__(self) -> None:  # noqa: D401
+            pass
+
+    # Should return empty dict rather than raising
+    result = get_resolved_type_hints(_Unresolvable())
+    assert isinstance(result, dict)
