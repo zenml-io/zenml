@@ -164,6 +164,13 @@ spec:
                   name: {{ $.Values.zenml.database.passwordSecretRef.name }}
                   key: {{ $.Values.zenml.database.passwordSecretRef.key }}
             {{- end }}
+            {{- range $.Values.zenml.environmentSecretKeyRefs }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .secretKey }}
+            {{- end }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" $ }}
