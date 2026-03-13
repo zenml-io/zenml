@@ -101,7 +101,7 @@ def _get_orchestrator_job_state(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
     job_name: str,
-    api_request_timeout: Optional[float],
+    api_request_timeout: Optional[int],
 ) -> Tuple[Optional[UUID], Optional[str]]:
     """Get the existing status of the orchestrator job.
 
@@ -140,7 +140,7 @@ def _reconstruct_nodes(
     pipeline_run: PipelineRunResponse,
     namespace: str,
     batch_api: k8s_client.BatchV1Api,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> List[Node]:
     """Reconstruct the nodes from the pipeline run.
 

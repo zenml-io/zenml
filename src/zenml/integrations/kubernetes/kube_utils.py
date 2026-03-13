@@ -221,7 +221,7 @@ def get_pod(
     core_api: k8s_client.CoreV1Api,
     pod_name: str,
     namespace: str,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> Optional[k8s_client.V1Pod]:
     """Get a pod from Kubernetes metadata API.
 
@@ -256,7 +256,7 @@ def wait_pod(
     timeout_sec: int = 0,
     exponential_backoff: bool = False,
     stream_logs: bool = False,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1Pod:
     """Wait for a pod to meet an exit condition.
 
@@ -520,7 +520,7 @@ def create_and_wait_for_pod_to_start(
     startup_failure_delay: float,
     startup_failure_backoff: float,
     startup_timeout: float,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Create a pod and wait for it to reach a desired state.
 
@@ -619,7 +619,7 @@ def get_pod_owner_references(
     core_api: k8s_client.CoreV1Api,
     pod_name: str,
     namespace: str,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> List[k8s_client.V1OwnerReference]:
     """Get owner references for a pod.
 
@@ -653,7 +653,7 @@ def retry_on_api_exception(
     delay: float = 1,
     backoff: float = 1,
     fail_on_status_codes: Tuple[int, ...] = (404,),
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> Callable[..., R]:
     """Retry a function on API exceptions.
 
@@ -706,7 +706,7 @@ def create_job(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
     job_manifest: k8s_client.V1Job,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Create a Kubernetes job.
 
@@ -729,7 +729,7 @@ def get_job(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
     job_name: str,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1Job:
     """Get a job by name.
 
@@ -751,7 +751,7 @@ def list_jobs(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
     label_selector: Optional[str] = None,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1JobList:
     """List jobs in a namespace.
 
@@ -777,7 +777,7 @@ def update_job(
     namespace: str,
     job_name: str,
     annotations: Dict[str, str],
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1Job:
     """Update a job.
 
@@ -869,7 +869,7 @@ def wait_for_job_to_finish(
     fail_on_container_waiting_reasons: Optional[List[str]] = None,
     stream_logs: bool = True,
     container_name: Optional[str] = None,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Wait for a job to finish.
 
@@ -1017,7 +1017,7 @@ def check_job_status(
     job_name: str,
     fail_on_container_waiting_reasons: Optional[List[str]] = None,
     container_name: Optional[str] = None,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> Tuple[JobStatus, Optional[str]]:
     """Check the status of a job.
 
@@ -1114,7 +1114,7 @@ def create_config_map(
     namespace: str,
     name: str,
     data: Dict[str, str],
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Create a Kubernetes config map.
 
@@ -1139,7 +1139,7 @@ def update_config_map(
     namespace: str,
     name: str,
     data: Dict[str, str],
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Update a Kubernetes config map.
 
@@ -1164,7 +1164,7 @@ def get_config_map(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     name: str,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1ConfigMap:
     """Get a Kubernetes config map.
 
@@ -1190,7 +1190,7 @@ def delete_config_map(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     name: str,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Delete a Kubernetes config map.
 
@@ -1213,7 +1213,7 @@ def get_parent_job_name(
     core_api: k8s_client.CoreV1Api,
     pod_name: str,
     namespace: str,
-    api_request_timeout: Optional[float] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> Optional[str]:
     """Get the name of the job that created a pod.
 
