@@ -87,7 +87,17 @@ def create_entity_docs(
     for item in sources_path.iterdir():
         if item.name not in ignored_modules:
             is_python_file = item.is_file() and item.name.endswith(".py")
-            is_non_empty_dir = item.is_dir() and any(item.iterdir())
+            # Only consider directories that are valid Python packages
+            # with actual content beyond __init__.py
+            is_non_empty_dir = (
+                item.is_dir()
+                and (item / "__init__.py").exists()
+                and any(
+                    p
+                    for p in item.rglob("*.py")
+                    if p.name != "__init__.py"
+                )
+            )
 
             if is_python_file or is_non_empty_dir:
                 item_name = generate_title(item.stem)
@@ -199,12 +209,7 @@ def generate_docs(
         md_prefix="core",
     )
 
-    # Fix links in index file to point to index.md instead of just the directory
-    fixed_index_contents = []
-    for line in index_file_contents:
-        fixed_index_contents.append(line)
-
-    index_file_str = "\n".join(sorted(fixed_index_contents))
+    index_file_str = "\n".join(sorted(index_file_contents))
     to_md_file(
         index_file_str,
         "index.md",
@@ -244,10 +249,11 @@ if __name__ == "__main__":
     # Optional argument
     parser.add_argument(
         "--ignored_modules",
-        type=List[str],
+        nargs="*",
+        type=str,
         default=["VERSION", "README.md", "__init__.py", "__pycache__"],
         help="Top level entities that should not end up in "
-        "the sdk docs (e.g. README.md, __init__",
+        "the sdk docs (e.g. README.md, __init__)",
     )
 
     # Switch

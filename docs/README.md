@@ -27,25 +27,12 @@ To build them locally follow these steps:
 pip3 install -e ".[server,dev]"
 pip3 install "Jinja2==3.0.3"
 ```
-* Modify `docs/mkdocs.yml` as follows:
-```yaml
-watch:
-  - ../src/zenml
-```
-```yaml
-watch:
-  - src/zenml
-```
-* Run `python3 docs/mkdocstrings_helper.py`
-* Run:
+* Run the serve script from the repository root:
 ```bash
-rm -rf src/zenml/zen_stores/migrations/env.py
-rm -rf src/zenml/zen_stores/migrations/versions
-rm -rf src/zenml/zen_stores/migrations/script.py.mako
+bash scripts/serve_api_docs.sh
 ```
-* Run `mkdocs serve -f docs/mkdocs.yml -a localhost:<PORT>` from the repository root - 
-running it from elsewhere can lead to unexpected errors. This script will compose the docs hierarchy
-and serve it (http://127.0.0.1:<PORT>/).
+This generates the docs structure and serves it locally. Alternatively, to build
+manually, see `scripts/generate-docs.sh` for the full sequence of steps.
 
 ## Link Checker Tool
 
