@@ -7188,6 +7188,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: Pipeline run ID.
+
+        Raises:
+            IllegalOperationError: If not running in a server.
         """
         if not handle_bool_env_var(ENV_ZENML_SERVER):
             raise IllegalOperationError(
