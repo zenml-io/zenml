@@ -674,6 +674,15 @@ class StepRunResponse(
         return self.get_metadata().parent_step_ids
 
     @property
+    def exception_info(self) -> Optional[ExceptionInfo]:
+        """The `exception_info` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().exception_info
+
+    @property
     def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 

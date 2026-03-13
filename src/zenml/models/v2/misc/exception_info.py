@@ -26,6 +26,14 @@ class ExceptionInfo(BaseModel):
     traceback: str = Field(
         title="The traceback of the exception.",
     )
+    source: Optional[str] = Field(
+        default=None,
+        title="The source path of the exception class.",
+    )
+    message: Optional[str] = Field(
+        default=None,
+        title="The exception message.",
+    )
     user_code_line: Optional[int] = Field(
         default=None,
         title="The line number of the user code that raised the exception.",
