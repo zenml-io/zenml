@@ -615,3 +615,5 @@ LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
 
 # Subscription-based features
 SCHEDULE_FEATURE = "schedule"
+
+LOGS_RUNNER_SOURCE = "runner"

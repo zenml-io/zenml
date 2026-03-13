@@ -23,6 +23,7 @@ from uuid import UUID
 
 from packaging import version
 
+from zenml import LogsRequest
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.config.base_settings import BaseSettings
@@ -37,6 +38,7 @@ from zenml.constants import (
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
     ENV_ZENML_RUNNER_PARENT_IMAGE,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
+    LOGS_RUNNER_SOURCE,
     RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
     handle_bool_env_var,
     handle_int_env_var,
@@ -71,6 +73,9 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 )
 from zenml.zen_server.pipeline_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
+)
+from zenml.zen_server.pipeline_execution.workload_manager_interface import (
+    WorkloadType,
 )
 from zenml.zen_server.utils import (
     get_auth_context,
@@ -201,7 +206,9 @@ def run_snapshot(
         )
 
     placeholder_run = create_placeholder_run(
-        snapshot=target_snapshot, trigger_info=trigger_info
+        snapshot=target_snapshot,
+        trigger_info=trigger_info,
+        logs=LogsRequest(source=LOGS_RUNNER_SOURCE),
     )
 
     if trigger_id:
@@ -231,6 +238,9 @@ def run_snapshot(
         stack=stack, build=build, zenml_version=zenml_version
     )
 
+    workload_id = placeholder_run.id if trigger_id else target_snapshot.id
+    workload_type = WorkloadType.RUN if trigger_id else WorkloadType.SNAPSHOT
+
     def _task() -> None:
         with track_handler(
             event=AnalyticsEvent.RUN_PIPELINE
@@ -248,7 +258,8 @@ def run_snapshot(
 
             try:
                 _build_and_run(
-                    workload_id=target_snapshot.id,
+                    workload_id=workload_id,
+                    workload_type=workload_type,
                     command=command,
                     arguments=args,
                     environment=environment,
@@ -347,6 +358,7 @@ def restart_run(run: PipelineRunResponse) -> None:
         def _task() -> None:
             _build_and_run(
                 workload_id=snapshot.id,
+                workload_type=WorkloadType.RUN,
                 command=command,
                 arguments=args,
                 environment=environment,
@@ -864,6 +876,7 @@ def build_runner_dockerfile(
 
 def _build_and_run(
     workload_id: UUID,
+    workload_type: WorkloadType,
     command: List[str],
     arguments: List[str],
     environment: Dict[str, str],
@@ -875,6 +888,7 @@ def _build_and_run(
 
     Args:
         workload_id: Workload ID.
+        workload_type: Workload type.
         command: Entrypoint command.
         arguments: Entrypoint arguments.
         environment: Workload environment variables.
@@ -893,6 +907,7 @@ def _build_and_run(
     # stack to get the orchestrator to run pipelines.
     runner_image = workload_manager().build_and_push_image(
         workload_id=workload_id,
+        workload_type=workload_type,
         dockerfile=dockerfile,
         image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
         sync=True,
