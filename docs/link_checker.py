@@ -984,9 +984,7 @@ def main():
     no_head_domains = DEFAULT_NO_HEAD_DOMAINS.union(
         set(args.no_head_domain or [])
     )
-    skip_domains = DEFAULT_SKIP_DOMAINS.union(
-        set(args.skip_domain or [])
-    )
+    skip_domains = DEFAULT_SKIP_DOMAINS.union(set(args.skip_domain or []))
 
     if args.replace_links:
         # Replace links mode
