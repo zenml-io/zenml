@@ -279,3 +279,108 @@ def test_vertex_orchestrator_configure_container_resources(
         return True
 
     assert assert_dict_is_subset(expected_resources, job_spec["resources"])
+
+
+def test_vertex_orchestrator_stop_run_graceful(mocker) -> None:
+    """Tests that graceful stop returns early without cancelling."""
+    orchestrator = _get_vertex_orchestrator(
+        location="europe-west4",
+        pipeline_root="gs://my-bucket/pipeline",
+    )
+
+    mock_run = mocker.MagicMock()
+    mock_run.run_metadata = {"orchestrator_run_id": "test-run-id"}
+    mock_run.orchestrator_run_id = "test-run-id"
+
+    mock_auth = mocker.patch.object(
+        orchestrator, "_get_authentication", return_value=("creds", "project")
+    )
+
+    orchestrator._stop_run(mock_run, graceful=True)
+
+    mock_auth.assert_not_called()
+
+
+def test_vertex_orchestrator_stop_run_forceful_static(mocker) -> None:
+    """Tests that forceful stop cancels a static PipelineJob."""
+    from google.cloud import aiplatform
+
+    orchestrator = _get_vertex_orchestrator(
+        location="europe-west4",
+        pipeline_root="gs://my-bucket/pipeline",
+    )
+
+    mock_run = mocker.MagicMock()
+    mock_run.run_metadata = {"orchestrator_run_id": "test-run-id"}
+    mock_run.orchestrator_run_id = "test-run-id"
+    mock_run.snapshot.is_dynamic = False
+
+    mocker.patch.object(
+        orchestrator, "_get_authentication", return_value=("creds", "project")
+    )
+
+    mock_job = mocker.MagicMock()
+    mock_get = mocker.patch.object(
+        aiplatform.PipelineJob, "get", return_value=mock_job
+    )
+
+    orchestrator._stop_run(mock_run, graceful=False)
+
+    mock_get.assert_called_once_with(
+        "test-run-id",
+        project="project",
+        location="europe-west4",
+        credentials="creds",
+    )
+    mock_job.cancel.assert_called_once()
+
+
+def test_vertex_orchestrator_stop_run_forceful_dynamic(mocker) -> None:
+    """Tests that forceful stop cancels a dynamic CustomJob."""
+    from google.cloud import aiplatform
+
+    orchestrator = _get_vertex_orchestrator(
+        location="europe-west4",
+        pipeline_root="gs://my-bucket/pipeline",
+    )
+
+    mock_run = mocker.MagicMock()
+    mock_run.run_metadata = {"orchestrator_run_id": "test-run-id"}
+    mock_run.orchestrator_run_id = "test-run-id"
+    mock_run.snapshot.is_dynamic = True
+
+    mocker.patch.object(
+        orchestrator, "_get_authentication", return_value=("creds", "project")
+    )
+
+    mock_job = mocker.MagicMock()
+    mock_get = mocker.patch.object(
+        aiplatform.CustomJob, "get", return_value=mock_job
+    )
+
+    orchestrator._stop_run(mock_run, graceful=False)
+
+    mock_get.assert_called_once_with(
+        "test-run-id",
+        project="project",
+        location="europe-west4",
+        credentials="creds",
+    )
+    mock_job.cancel.assert_called_once()
+
+
+def test_vertex_orchestrator_stop_run_missing_run_id(mocker) -> None:
+    """Tests that stop raises ValueError when run ID is missing."""
+    orchestrator = _get_vertex_orchestrator(
+        location="europe-west4",
+        pipeline_root="gs://my-bucket/pipeline",
+    )
+
+    mock_run = mocker.MagicMock()
+    mock_run.run_metadata = {}
+    mock_run.orchestrator_run_id = None
+
+    with pytest.raises(
+        ValueError, match="Cannot find the orchestrator run ID"
+    ):
+        orchestrator._stop_run(mock_run, graceful=False)
