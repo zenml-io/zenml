@@ -78,6 +78,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 R = TypeVar("R")
+_LATEST_EVENT_RESOURCE_VERSION: Optional[str] = None
+_SEEN_WARNING_EVENT_RESOURCE_VERSIONS_BY_POD: Dict[Tuple[str, str], str] = {}
 
 
 # This is to fix a bug in the kubernetes client which has some wrong
@@ -1032,7 +1034,7 @@ def check_job_status(
         api_request_timeout: The request timeout in seconds.
 
     Returns:
-        The status of the job and an error message if the job failed.
+        The status of the job and an optional error/warning message.
     """
     job: k8s_client.V1Job = retry_on_api_exception(
         batch_api.read_namespaced_job, api_request_timeout=api_request_timeout
@@ -1074,7 +1076,8 @@ def check_job_status(
 
                 return JobStatus.FAILED, error_message
 
-    if fail_on_container_waiting_reasons:
+    pending_pods: List[k8s_client.V1Pod] = []
+    try:
         pod_list: k8s_client.V1PodList = retry_on_api_exception(
             core_api.list_namespaced_pod,
             api_request_timeout=api_request_timeout,
@@ -1083,7 +1086,12 @@ def check_job_status(
             label_selector=f"job-name={job_name}",
             field_selector="status.phase=Pending",
         )
-        for pod in pod_list.items:
+        pending_pods = pod_list.items
+    except Exception:
+        pending_pods = []
+
+    if fail_on_container_waiting_reasons:
+        for pod in pending_pods:
             container_state = get_container_status(
                 pod, container_name or "main"
             )
@@ -1106,7 +1114,90 @@ def check_job_status(
                 )
                 return JobStatus.FAILED, error_message
 
-    return JobStatus.RUNNING, None
+    message = None
+    for pod in pending_pods:
+        if pod.metadata and pod.metadata.name:
+            if warning_message := _get_latest_warning_event_message(
+                core_api=core_api,
+                namespace=namespace,
+                pod_name=pod.metadata.name,
+                api_request_timeout=api_request_timeout,
+            ):
+                message = (
+                    f"Warning for pod {pod.metadata.name}: {warning_message}"
+                )
+                break
+
+    return JobStatus.RUNNING, message
+
+
+def _get_latest_warning_event_message(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    pod_name: str,
+    api_request_timeout: Optional[float] = None,
+) -> Optional[str]:
+    """Get the latest warning event message for a pod.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        namespace: Kubernetes namespace.
+        pod_name: Name of the pod.
+        api_request_timeout: The request timeout in seconds.
+
+    Returns:
+        The event message if a warning event exists.
+    """
+    try:
+        events = retry_on_api_exception(
+            core_api.list_namespaced_event,
+            api_request_timeout=api_request_timeout,
+        )(
+            namespace=namespace,
+            field_selector=(
+                "involvedObject.kind=Pod,"
+                f"involvedObject.name={pod_name},"
+                "type=Warning,"
+            ),
+        ).items
+    except Exception:
+        return None
+
+    if not events:
+        return None
+
+    latest_event = sorted(
+        events,
+        key=lambda event: (
+            event.event_time
+            or event.last_timestamp
+            or event.first_timestamp
+            or utc_now()
+        ),
+    )[-1]
+    message = latest_event.message
+    if not message:
+        return None
+
+    resource_version = (
+        latest_event.metadata.resource_version
+        if latest_event.metadata
+        else None
+    )
+    if (
+        resource_version
+        and resource_version
+        == _SEEN_WARNING_EVENT_RESOURCE_VERSIONS_BY_POD.get(
+            (namespace, pod_name)
+        )
+    ):
+        return None
+
+    _SEEN_WARNING_EVENT_RESOURCE_VERSIONS_BY_POD[(namespace, pod_name)] = (
+        resource_version
+    )
+
+    return message
 
 
 def create_config_map(

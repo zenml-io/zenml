@@ -728,7 +728,7 @@ def main() -> None:
             settings = KubernetesOrchestratorSettings.model_validate(
                 settings.model_dump() if settings else {}
             )
-            status, error_message = kube_utils.check_job_status(
+            status, message = kube_utils.check_job_status(
                 batch_api=batch_api,
                 core_api=core_api,
                 namespace=namespace,
@@ -742,21 +742,29 @@ def main() -> None:
                 logger.error(
                     "Job for step `%s` failed: %s",
                     step_name,
-                    error_message,
+                    message,
                 )
                 _maybe_publish_failed_step_run(step_name)
                 return NodeStatus.FAILED
-            elif (
-                snapshot.pipeline_configuration.enable_heartbeat
-                and is_node_heartbeat_unhealthy(node)
-            ):
-                logger.error(
-                    "Heartbeat for step `%s` indicates unhealthy status.",
-                    step_name,
-                )
-                stop_step(node=node)
-                return NodeStatus.FAILED
             else:
+                if message:
+                    logger.warning(
+                        "Job for step `%s`: %s",
+                        step_name,
+                        message,
+                    )
+
+                if (
+                    snapshot.pipeline_configuration.enable_heartbeat
+                    and is_node_heartbeat_unhealthy(node)
+                ):
+                    logger.error(
+                        "Heartbeat for step `%s` indicates unhealthy status.",
+                        step_name,
+                    )
+                    stop_step(node=node)
+                    return NodeStatus.FAILED
+
                 return NodeStatus.RUNNING
 
         def should_interrupt_execution() -> Optional[InterruptMode]:
