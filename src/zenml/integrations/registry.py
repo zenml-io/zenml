@@ -97,12 +97,43 @@ class IntegrationRegistry(object):
                 continue
 
     def activate_integrations(self) -> None:
-        """Method to activate the integrations with are registered in the registry."""
+        """Best-effort eager activation of installed integrations.
+
+        Attempts to activate each integration that passes the
+        metadata-based installation check. Activation imports the
+        integration's runtime modules (materializers, service connectors,
+        etc.) to trigger eager registration. If an individual activation
+        fails due to a broken or incomplete install (ImportError) or
+        native library load failure (OSError), the error is logged and
+        remaining integrations continue.
+
+        Note: activation failure only skips early registration side
+        effects. Later on-demand imports (e.g. loading stored artifacts
+        or stack components) may still attempt to import the same modules
+        and could fail independently.
+        """
         self._initialize()
         for name, integration in self._integrations.items():
             if integration.check_installation():
                 logger.debug(f"Activating integration `{name}`...")
-                integration.activate()
+                try:
+                    integration.activate()
+                # ImportError: broken/incomplete install or undeclared
+                # transitive dependency despite declared requirements
+                # appearing installed.
+                # OSError: native library or binary/DLL load failure
+                # at import time.
+                except (ImportError, OSError) as e:
+                    logger.exception(
+                        f"Failed to activate integration `{name}`: "
+                        f"{type(e).__name__}: {e}. "
+                        "Skipping activation-time registration (e.g. "
+                        "materializers, service connectors). Some "
+                        "features may be missing from auto-discovery, "
+                        "and on-demand imports of this integration "
+                        "may also fail."
+                    )
+                    continue
                 logger.debug(f"Integration `{name}` is activated.")
             else:
                 logger.debug(f"Integration `{name}` could not be activated.")

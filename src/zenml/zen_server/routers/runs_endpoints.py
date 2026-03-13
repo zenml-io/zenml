@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     DISABLE_HEARTBEAT,
     LOGS,
+    LOGS_RUNNER_SOURCE,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -115,6 +116,15 @@ def get_or_create_pipeline_run(
     if project_name_or_id:
         project = zen_store().get_project(project_name_or_id)
         pipeline_run.project = project.id
+
+    if pipeline_run.original_run_id:
+        # Verify that the user has permissions to read the original run.
+        # so they cannot gain unauthorized access to some step configurations
+        # of the original run.
+        original_run = zen_store().get_run(
+            pipeline_run.original_run_id, hydrate=False
+        )
+        verify_permission_for_model(model=original_run, action=Action.READ)
 
     return verify_permissions_and_get_or_create_entity(
         request_model=pipeline_run,
@@ -462,19 +472,19 @@ def run_logs(
     )
 
     # Handle runner logs from workload manager
-    if run.snapshot and source == "runner":
+    if run.snapshot and source == LOGS_RUNNER_SOURCE:
         WORKLOAD_LOGS_MAX_ENTRIES = 50000
-
+        
         snapshot = run.snapshot
         if (
-            snapshot.template_id or snapshot.source_snapshot_id
+            snapshot.template_id or snapshot.source_snapshot_id or run.trigger
         ) and server_config().workload_manager_enabled:
             from zenml.log_stores.artifact.artifact_log_store import (
                 parse_log_entry,
             )
 
             workload_logs = workload_manager().get_logs(
-                workload_id=snapshot.id
+                workload_id=snapshot.id if not run.trigger else run.id
             )
 
             log_entries = []
