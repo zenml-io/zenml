@@ -323,7 +323,7 @@ def resume_run(run: PipelineRunResponse) -> None:
         )
 
     snapshot = run.snapshot
-    if not run.snapshot or not run.snapshot.runnable:
+    if not snapshot or not snapshot.runnable:
         raise IllegalOperationError(
             "Cannot resume a run that is not based on a runnable snapshot."
         )

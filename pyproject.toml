@@ -170,6 +170,7 @@ dev = [
     "types-termcolor>=1.1.2",
     "types-psutil>=5.8.13",
     "types-passlib>=1.7.7",
+    "types-jsonschema>=4.26.0",
 ]
 
 [tool.pytest.ini_options]

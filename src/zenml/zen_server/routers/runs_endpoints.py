@@ -480,7 +480,7 @@ def run_logs(
         # with version >0.94.0. For legacy runs, we didn't specify that
         # explicitly and instead rely on source snapshot or trigger existence.
         runner_logs_response = search_logs_by_source(
-            run.log_collection, source
+            run.log_collection or [], source
         )
         is_legacy_run_with_runner_logs = (
             snapshot.template_id or snapshot.source_snapshot_id or run.trigger
