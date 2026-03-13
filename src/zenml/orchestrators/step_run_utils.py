@@ -18,6 +18,8 @@ from datetime import timedelta
 from typing import Dict, List, Optional, Set, Tuple
 from uuid import uuid4
 
+import requests
+
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import (
@@ -594,6 +596,43 @@ def fetch_step_runs_by_names(
     Returns:
         A dictionary of step runs by name.
     """
+
+    def _fetch_chunk_with_retry(
+        chunk: List[str],
+    ) -> Dict[str, "StepRunResponse"]:
+        try:
+            return {
+                run_step.name: run_step
+                for run_step in pagination_utils.depaginate(
+                    Client().list_run_steps,
+                    pipeline_run_id=pipeline_run.id,
+                    project=pipeline_run.project_id,
+                    name="oneof:" + json.dumps(chunk),
+                )
+            }
+        except requests.exceptions.HTTPError as e:
+            if not (e.response and e.response.status_code == 414):
+                raise
+
+            if len(chunk) <= 100:
+                raise RuntimeError(
+                    "Failed to fetch step run because the request URI is too "
+                    "large even for a single step name."
+                ) from e
+
+            midpoint = len(chunk) // 2
+            logger.debug(
+                "Failed fetching %d step runs with HTTP 414. Reducing chunk "
+                "size and retrying.",
+                len(chunk),
+            )
+
+            left_step_runs = _fetch_chunk_with_retry(chunk=chunk[:midpoint])
+            right_step_runs = _fetch_chunk_with_retry(chunk=chunk[midpoint:])
+
+            left_step_runs.update(right_step_runs)
+            return left_step_runs
+
     step_runs = {}
 
     chunks = []
@@ -616,15 +655,6 @@ def fetch_step_runs_by_names(
         chunks.append(current_chunk)
 
     for chunk in chunks:
-        step_runs.update(
-            {
-                run_step.name: run_step
-                for run_step in pagination_utils.depaginate(
-                    Client().list_run_steps,
-                    pipeline_run_id=pipeline_run.id,
-                    project=pipeline_run.project_id,
-                    name="oneof:" + json.dumps(chunk),
-                )
-            }
-        )
+        step_runs.update(_fetch_chunk_with_retry(chunk=chunk))
+
     return step_runs
