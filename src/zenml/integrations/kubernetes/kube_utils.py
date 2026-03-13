@@ -676,7 +676,7 @@ def retry_on_api_exception(
         while retries <= max_retries:
             try:
                 if api_request_timeout and "_request_timeout" not in kwargs:
-                    kwargs["_request_timeout"] = api_request_timeout
+                    kwargs["_request_timeout"] = int(api_request_timeout)
                 return func(*args, **kwargs)
             except (ApiException, ReadTimeoutError) as e:
                 if (
