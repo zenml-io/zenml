@@ -7170,6 +7170,7 @@ class SqlZenStore(BaseZenStore):
                         self._update_pipeline_run_status(
                             pipeline_run_id=resolved_model.run.id,
                             session=session,
+                            requested_status=ExecutionStatus.PAUSED,
                             status_reason="Waiting for manual resume.",
                         )
             elif resolved_model.resolution == RunWaitConditionResolution.ABORT:
@@ -7196,6 +7197,8 @@ class SqlZenStore(BaseZenStore):
         run = self.get_run(run_id)
         from zenml.zen_server.pipeline_execution.utils import resume_run
 
+        # TODO: If run fails in the async part of this, it gets stuck in
+        # resuming
         resume_run(run=run)
 
     def _has_active_wait_condition_lease(self, run_id: UUID) -> bool:

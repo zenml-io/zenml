@@ -1202,7 +1202,7 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
                 "Cannot resume a run that has an active wait condition. "
                 "Please resolve it before resuming the run:\n"
                 "`zenml pipeline runs wait-conditions resolve "
-                f"--run-name-or-id {run.id} --interactive`"
+                f"--run {run.id} --interactive`"
             )
 
         snapshot = run.snapshot
@@ -1223,23 +1223,22 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
                 status_reason="Manual resume requested by user.",
             ),
         )
-
-        with cli_utils.temporary_active_stack(
-            stack_name_or_id=snapshot.stack.id
-        ) as stack:
-            try:
+        try:
+            with cli_utils.temporary_active_stack(
+                stack_name_or_id=snapshot.stack.id
+            ) as stack:
                 stack.orchestrator.restart_run(
                     snapshot=snapshot, run=run, stack=stack
                 )
-            except Exception:
-                client.zen_store.update_run(
-                    run_id=run.id,
-                    run_update=PipelineRunUpdate(
-                        status=ExecutionStatus.PAUSED,
-                        status_reason="Resume submission failed.",
-                    ),
-                )
-                raise
+        except Exception:
+            client.zen_store.update_run(
+                run_id=run.id,
+                run_update=PipelineRunUpdate(
+                    status=ExecutionStatus.PAUSED,
+                    status_reason="Resume submission failed.",
+                ),
+            )
+            raise
     except Exception as e:
         cli_utils.error(f"Failed to resume pipeline run: {e}")
 

@@ -322,11 +322,6 @@ def resume_run(run: PipelineRunResponse) -> None:
             "Resuming runs is only possible when the workload manager is enabled."
         )
 
-    auth_context = get_auth_context()
-    assert auth_context
-
-    # TOOD: Probably should add the empty runner log source here?
-
     snapshot = run.snapshot
     if not run.snapshot or not run.snapshot.runnable:
         raise IllegalOperationError(
@@ -336,6 +331,22 @@ def resume_run(run: PipelineRunResponse) -> None:
         raise IllegalOperationError(
             "Cannot resume a run of a static pipeline."
         )
+
+    has_runner_logs = any(
+        log.source == LOGS_RUNNER_SOURCE for log in run.log_collection or []
+    )
+    if not has_runner_logs:
+        # TODO: How should we handle multiple resumes here? Currently, the logs
+        # simply get appended.
+        zen_store().update_run(
+            run.id,
+            PipelineRunUpdate(
+                add_logs=[LogsRequest(source=LOGS_RUNNER_SOURCE)]
+            ),
+        )
+
+    auth_context = get_auth_context()
+    assert auth_context
 
     build, stack, zenml_version = validate_snapshot_for_server_execution(
         snapshot=snapshot
@@ -359,7 +370,7 @@ def resume_run(run: PipelineRunResponse) -> None:
 
     def _task() -> None:
         _build_and_run(
-            workload_id=snapshot.id,
+            workload_id=run.id,
             workload_type=WorkloadType.RUN,
             command=command,
             arguments=args,

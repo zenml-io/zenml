@@ -426,7 +426,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             orchestrator_environment=orchestrator_environment,
             start_time=request.start_time,
             end_time=request.end_time,
-            # TODO: only allow initializing/running status in request
             status=request.status.value,
             index=index,
             in_progress=not request.status.is_finished,
