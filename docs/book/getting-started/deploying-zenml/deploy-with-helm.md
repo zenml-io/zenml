@@ -280,6 +280,31 @@ zenml:
 
 This method requires you to configure a DNS service like AWS Route 53 or Google Cloud DNS to map a different hostname to the Ingress controller. For example, you can map the hostname `zenml.<subdomain>` to the Ingress controller's IP address or hostname. Then, simply use the new hostname to expose ZenML at the root URL path.
 
+### Gateway API configuration
+
+ZenML also supports Kubernetes Gateway API through `HTTPRoute` resources. This is useful when your platform team manages shared Gateway infrastructure and your application chart only needs to attach routes.
+
+Use the following values pattern:
+
+```yaml
+zenml:
+  ingress:
+    enabled: false
+  gateway:
+    enabled: true
+    annotations: {}
+    gatewayRef:
+      name: zenml-gateway
+      namespace: gateway-infra
+    sectionName: https-backend
+    host: zenml.example.com
+    path: /
+```
+
+> **Important:** `zenml.ingress.enabled` and `zenml.gateway.enabled` are mutually exclusive.
+
+For a full migration flow (prerequisites, rollout strategy, TLS options, DNS cutover, and rollback), see [Migrate to Gateway API](migrate-to-gateway-api.md).
+
 ### Secret Store configuration
 
 Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
@@ -740,6 +765,7 @@ By default, the following hostnames/domains are excluded from proxying:
 - `.svc` and `.svc.cluster.local` (Kubernetes service DNS domains)
 - The hostname from `zenml.serverURL` if configured
 - The ingress hostname (`zenml.ingress.host`) if configured
+- The gateway hostname (`zenml.gateway.host`) if configured
 - Internal service names used for communication between components
 
 You can add additional exclusions using the `additionalNoProxy` list. The NO_PROXY environment variable accepts:

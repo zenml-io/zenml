@@ -1159,6 +1159,28 @@ zenml:
       generateCerts: false
       secretName: zenml-tls-certs
 
+  # Gateway API (gateway.networking.k8s.io/v1) as an alternative to Ingress.
+  # Only one of ingress.enabled and gateway.enabled can be true.
+  #
+  # NOTE on TLS: Unlike Ingress, TLS termination in Gateway API is configured
+  # on the Gateway resource's listeners, not on the HTTPRoute. To enable HTTPS:
+  #   1. Configure an HTTPS listener on your Gateway with a certificateRef
+  #   2. Set sectionName below to the name of that HTTPS listener (e.g. "https")
+  # This chart only creates the HTTPRoute; the Gateway resource (and its TLS
+  # config) must be managed separately.
+  gateway:
+    enabled: false
+    annotations: {}
+    gatewayRef:
+      name: ""
+      namespace: ""
+    # Name of the Gateway listener to attach to. Set this to your HTTPS
+    # listener name (e.g. "https") for TLS termination. If empty, the route
+    # attaches to all compatible listeners on the referenced Gateway.
+    sectionName: ""
+    host: ""
+    path: /
+
   # Configuration for custom CA certificates.
   certificates:
 
