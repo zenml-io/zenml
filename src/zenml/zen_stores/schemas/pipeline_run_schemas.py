@@ -860,7 +860,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         else:
             # For static pipelines we compute the run status based on the step
             # statuses.
-            new_status = _get_static_pipeline_run_status(
+            new_status = _compute_static_pipeline_run_status(
                 run_status=requested_status or current_status,
                 step_statuses=self._get_step_run_statuses(),
                 num_steps=self.snapshot.step_count,
@@ -1120,12 +1120,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         return False
 
 
-def _get_static_pipeline_run_status(
+def _compute_static_pipeline_run_status(
     run_status: ExecutionStatus,
     step_statuses: List[ExecutionStatus],
     num_steps: int,
 ) -> ExecutionStatus:
-    """Get the status of a static pipeline run.
+    """Compute the status of a static pipeline run.
 
     Args:
         run_status: The status of the run.

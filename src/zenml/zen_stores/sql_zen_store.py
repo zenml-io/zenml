@@ -7102,10 +7102,6 @@ class SqlZenStore(BaseZenStore):
                 schema.poller_lease_expires_at
                 and schema.poller_lease_expires_at > now
             )
-            self._validate_wait_condition_status_transition(
-                source_status=source_status,
-                target_status=RunWaitConditionStatus.RESOLVED,
-            )
             validated_result = self._validate_wait_condition_result(
                 wait_condition=schema,
                 resolution=resolve_request.resolution,
@@ -7165,39 +7161,6 @@ class SqlZenStore(BaseZenStore):
                 self._stop_run_if_no_active_lease(run_id=resolved_model.run.id)
 
         return resolved_model
-
-    @staticmethod
-    def _validate_wait_condition_status_transition(
-        source_status: str, target_status: RunWaitConditionStatus
-    ) -> None:
-        """Validate wait condition state transitions.
-
-        Args:
-            source_status: Current persisted condition status.
-            target_status: Desired target status for the transition.
-
-        Raises:
-            IllegalOperationError: If the transition is not allowed.
-        """
-        try:
-            source = RunWaitConditionStatus(source_status)
-        except ValueError:
-            raise IllegalOperationError(
-                f"Unknown run wait condition status `{source_status}`."
-            )
-
-        allowed_transitions = {
-            RunWaitConditionStatus.PENDING: {
-                RunWaitConditionStatus.RESOLVED,
-            },
-            RunWaitConditionStatus.RESOLVED: set(),
-        }
-
-        if target_status not in allowed_transitions[source]:
-            raise IllegalOperationError(
-                "Illegal run wait condition status transition from "
-                f"`{source.value}` to `{target_status.value}`."
-            )
 
     def _resume_run_if_possible(self, run_id: UUID) -> None:
         """Resume a run if possible.
