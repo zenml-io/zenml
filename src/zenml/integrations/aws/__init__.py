@@ -42,7 +42,7 @@ class AWSIntegration(Integration):
 
     NAME = AWS
     REQUIREMENTS = [
-        "sagemaker>=2.237.3,<3.0.0",
+        "sagemaker>=3.0.0,<4.0.0",
         "kubernetes",
         "aws-profile-manager",
         # Sagemaker doesn't install this, but crashes without it

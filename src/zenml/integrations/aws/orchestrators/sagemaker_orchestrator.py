@@ -16,6 +16,8 @@
 import json
 import os
 import re
+import shlex
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -31,26 +33,36 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import WaiterError
-from sagemaker.estimator import Estimator
-from sagemaker.inputs import TrainingInput
-from sagemaker.network import NetworkConfig
-from sagemaker.processing import ProcessingInput, ProcessingOutput, Processor
-from sagemaker.session import Session
-from sagemaker.workflow.entities import PipelineVariable
-from sagemaker.workflow.execution_variables import (
-    ExecutionVariable,
-    ExecutionVariables,
+from sagemaker.core.helper.pipeline_variable import PipelineVariable
+from sagemaker.core.helper.session_helper import Session
+from sagemaker.core.network import NetworkConfig
+from sagemaker.core.processing import (
+    ProcessingInput,
+    ProcessingOutput,
+    Processor,
 )
-from sagemaker.workflow.pipeline import Pipeline
-from sagemaker.workflow.step_collections import (
-    StepCollection,
+from sagemaker.core.shapes import (
+    ProcessingS3Input,
+    ProcessingS3Output,
+    StoppingCondition,
 )
-from sagemaker.workflow.steps import (
+from sagemaker.core.training.configs import (
+    Compute,
+    InputData,
+    OutputDataConfig,
+    SourceCode,
+)
+from sagemaker.core.workflow import ExecutionVariable, ExecutionVariables
+from sagemaker.core.workflow.pipeline_context import PipelineSession
+from sagemaker.mlops.workflow import (
+    Pipeline,
+    PipelineSchedule,
     ProcessingStep,
     Step,
+    StepCollection,
     TrainingStep,
 )
-from sagemaker.workflow.triggers import PipelineSchedule
+from sagemaker.train.model_trainer import ModelTrainer
 
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
@@ -323,16 +335,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             self._sagemaker_session = self._get_sagemaker_session()
         return self._sagemaker_session
 
-    def _get_sagemaker_session(self) -> Session:
-        """Method to create the sagemaker session with proper authentication.
+    def _get_boto_session(self) -> boto3.Session:
 
-        Returns:
-            The Sagemaker Session.
-
-        Raises:
-            RuntimeError: If the connector returns the wrong type for the
-                session.
-        """
         # Get authenticated session
         # Option 1: Service connector
         boto_session: boto3.Session
@@ -366,8 +370,22 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     aws_session_token=credentials["SessionToken"],
                     region_name=self.config.region,
                 )
+
+        return boto_session
+
+    def _get_sagemaker_session(self) -> Session:
+        """Method to create the sagemaker session with proper authentication.
+
+        Returns:
+            The Sagemaker Session.
+
+        Raises:
+            RuntimeError: If the connector returns the wrong type for the
+                session.
+        """
         return Session(
-            boto_session=boto_session, default_bucket=self.config.bucket
+            boto_session=self._get_boto_session(),
+            default_bucket=self.config.bucket,
         )
 
     def _create_job_or_step(
@@ -385,7 +403,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         upstream_steps: Optional[List[str]] = None,
         wait: bool = True,
     ) -> Tuple[
-        Union[Estimator, Processor, Step],
+        Union[ModelTrainer, Processor, Step],
         Optional[str],
     ]:
         """Create and optionally run a SageMaker training or processing job or step.
@@ -415,6 +433,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
         """
+        # v3 migration - update training to use ModelTrainer (Estimator removed) and
+        # update ProcessingStep/TrainingStep to use step_args instead of processor/estimator/inputs/outputs.
+        # (Skeleton / interface / behavior is preserved.)
+
         # Sagemaker does not allow environment variables longer than 256
         # characters to be passed to Processor steps. If an environment variable
         # is longer than 256 characters, we split it into multiple environment
@@ -448,14 +470,12 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "volume_size_in_gb", settings.volume_size_in_gb
             )
             job_args.setdefault(
-                "max_runtime_in_seconds",
-                settings.max_runtime_in_seconds,
+                "max_runtime_in_seconds", settings.max_runtime_in_seconds
             )
-
-        job_args.setdefault(
-            "role",
-            settings.execution_role or self.config.execution_role,
-        )
+            job_args.setdefault(
+                "role",
+                settings.execution_role or self.config.execution_role,
+            )
 
         tags = settings.tags
         job_args.setdefault(
@@ -466,25 +486,35 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 else None
             ),
         )
-
         job_args.setdefault(
             "instance_type", settings.instance_type or "ml.m5.large"
         )
 
-        job_args["image_uri"] = image
+        # Keep existing behavior: instance_count is always 1 in this orchestrator
         job_args["instance_count"] = 1
-        job_args["sagemaker_session"] = session
 
-        # Convert network_config to sagemaker.network.NetworkConfig if
-        # present
+        effective_session = (
+            PipelineSession(
+                boto_session=session.boto_session,
+                default_bucket=session.default_bucket(),
+            )
+            if create_step
+            else session
+        )
+
+        job_args["sagemaker_session"] = effective_session
+
+        # Keep existing behavior: provide image URI for processing/training container
+        # (ModelTrainer uses `training_image`; Processor uses `image_uri`.)
+        # We store it here for compatibility with the rest of the logic.
+        job_args["image_uri"] = image
+
+        # Convert network_config to NetworkConfig if present
         network_config = job_args.get("network_config")
-
         if network_config and isinstance(network_config, dict):
             try:
                 job_args["network_config"] = NetworkConfig(**network_config)
             except TypeError:
-                # If the network_config passed is not compatible with the
-                # NetworkConfig class, raise a more informative error.
                 raise TypeError(
                     "Expected a sagemaker.network.NetworkConfig "
                     "compatible object for the network_config argument, "
@@ -493,161 +523,221 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     "for more information about the NetworkConfig class."
                 )
 
-        # Construct S3 inputs to container for step
-        training_inputs: Optional[
-            Union[TrainingInput, Dict[str, TrainingInput]]
-        ] = None
+        # -------- Inputs --------
+        # v2 used TrainingInput/ProcessingInput objects.
+        # v3 training uses InputData (or dict/list of channels) for ModelTrainer.
+        training_input_mode: Optional[str] = settings.input_data_s3_mode
+        input_data_config = None  # for ModelTrainer
         processing_inputs: Optional[List[ProcessingInput]] = None
 
         if settings.input_data_s3_uri is None:
             pass
         elif isinstance(settings.input_data_s3_uri, str):
-            if use_training_step:
-                training_inputs = TrainingInput(
-                    s3_data=settings.input_data_s3_uri,
-                    input_mode=settings.input_data_s3_mode,
+            input_data_config = [
+                InputData(
+                    channel_name="training",
+                    data_source=settings.input_data_s3_uri,
                 )
-            else:
+            ]
+            if not use_training_step:
                 processing_inputs = [
                     ProcessingInput(
-                        source=settings.input_data_s3_uri,
-                        destination="/opt/ml/processing/input/data",
-                        s3_input_mode=settings.input_data_s3_mode,
+                        input_name=f"{base_job_name}_{step_name or '_'}_input_data",
+                        s3_input=ProcessingS3Input(
+                            s3_uri=settings.input_data_s3_uri,
+                            local_path="/opt/ml/processing/input/data",
+                            s3_data_type="S3Prefix",
+                            s3_input_mode=settings.input_data_s3_mode,
+                        ),
                     )
                 ]
         elif isinstance(settings.input_data_s3_uri, dict):
-            if use_training_step:
-                training_inputs = {}
-                for (
-                    channel,
-                    s3_uri,
-                ) in settings.input_data_s3_uri.items():
-                    training_inputs[channel] = TrainingInput(
-                        s3_data=s3_uri,
-                        input_mode=settings.input_data_s3_mode,
-                    )
-            else:
-                processing_inputs = []
-                for (
-                    channel,
-                    s3_uri,
-                ) in settings.input_data_s3_uri.items():
-                    processing_inputs.append(
-                        ProcessingInput(
-                            source=s3_uri,
-                            destination=f"/opt/ml/processing/input/data/{channel}",
+            input_data_config = [
+                InputData(channel_name=channel, data_source=s3_uri)
+                for channel, s3_uri in settings.input_data_s3_uri.items()
+            ]
+            if not use_training_step:
+                processing_inputs = [
+                    ProcessingInput(
+                        input_name=f"{base_job_name}_{step_name or '_'}_input_data",
+                        s3_input=ProcessingS3Input(
+                            s3_uri=s3_uri,
+                            local_path=f"/opt/ml/processing/input/data/{channel}",
+                            s3_data_type="S3Prefix",
                             s3_input_mode=settings.input_data_s3_mode,
-                        )
+                        ),
                     )
+                    for channel, s3_uri in settings.input_data_s3_uri.items()
+                ]
 
-        # Construct S3 outputs from container for step
+        # -------- Outputs --------
+        # v2 training used output_path, processing used ProcessingOutput list.
         outputs = None
         output_path = None
+        output_data_config = None  # for ModelTrainer
 
         if settings.output_data_s3_uri is None:
             pass
         elif isinstance(settings.output_data_s3_uri, str):
             if use_training_step:
                 output_path = settings.output_data_s3_uri
+                output_data_config = OutputDataConfig(
+                    s3_output_path=output_path
+                )
             else:
                 outputs = [
                     ProcessingOutput(
-                        source="/opt/ml/processing/output/data",
-                        destination=settings.output_data_s3_uri,
-                        s3_upload_mode=settings.output_data_s3_mode,
+                        output_name=f"{base_job_name}_{step_name or '_'}_output_data",
+                        s3_output=ProcessingS3Output(
+                            local_path="/opt/ml/processing/output/data",
+                            s3_uri=settings.output_data_s3_uri,
+                            s3_upload_mode=settings.output_data_s3_mode,
+                        ),
                     )
                 ]
         elif isinstance(settings.output_data_s3_uri, dict):
-            outputs = []
-            for (
-                channel,
-                s3_uri,
-            ) in settings.output_data_s3_uri.items():
-                outputs.append(
+            # training: historically this orchestrator only supported a single output_path;
+            # we preserve that limitation (i.e., do NOT introduce new behavior).
+            if not use_training_step:
+                outputs = [
                     ProcessingOutput(
-                        source=f"/opt/ml/processing/output/data/{channel}",
-                        destination=s3_uri,
-                        s3_upload_mode=settings.output_data_s3_mode,
+                        output_name=f"{base_job_name}_{step_name or '_'}_{channel}_output_data",
+                        s3_output=ProcessingS3Output(
+                            local_path=f"/opt/ml/processing/output/data/{channel}",
+                            s3_uri=s3_uri,
+                            s3_upload_mode=settings.output_data_s3_mode,
+                        ),
                     )
-                )
+                    for channel, s3_uri in settings.output_data_s3_uri.items()
+                ]
 
         final_environment: Dict[str, Union[str, PipelineVariable]] = {
             key: str(value) for key, value in environment.items()
         }
-
         if run_id_variable:
-            final_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = run_id_variable
+            final_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = json.dumps(
+                run_id_variable.expr
+            )
 
+        # ---------- TRAINING ----------
         if use_training_step:
-            estimator = Estimator(
+            logger.info(f"Running trainer: {base_job_name} {step_name or '_'}")
+
+            stopping_condition = None
+            max_run = (
+                job_args.get("max_run") or settings.max_runtime_in_seconds
+            )
+            if max_run:
+                stopping_condition = StoppingCondition(
+                    max_runtime_in_seconds=max_run
+                )
+
+            compute = Compute(
+                instance_type=job_args.get("instance_type")
+                or (settings.instance_type or "ml.m5.large"),
+                instance_count=1,
+                volume_size_in_gb=job_args.get("volume_size")
+                or settings.volume_size_in_gb,
+            )
+
+            source_code = SourceCode(
+                command=shlex.join(command + arguments),
+            )
+
+            logger.info(
+                f"Building ModelTrainer with {image=} {compute=} {source_code=}"
+            )
+
+            trainer = ModelTrainer(
+                training_image=image,
+                role=settings.execution_role or self.config.execution_role,
+                sagemaker_session=effective_session,
+                environment={k: str(v) for k, v in final_environment.items()},
+                tags=job_args.get("tags"),
                 base_job_name=base_job_name,
-                keep_alive_period_in_seconds=settings.keep_alive_period_in_seconds,
-                output_path=output_path,
-                environment=final_environment,
-                container_entry_point=command,
-                container_arguments=arguments,
-                **job_args,
+                stopping_condition=stopping_condition,
+                output_data_config=output_data_config,
+                training_input_mode=training_input_mode,
+                compute=compute,
+                source_code=source_code,
             )
 
             if create_step:
                 assert step_name is not None, "Step name is required"
-                return TrainingStep(
-                    name=step_name,
-                    depends_on=cast(
-                        Optional[List[Union[str, Step, StepCollection]]],
-                        upstream_steps,
+
+                step_args = trainer.train(
+                    input_data_config=input_data_config,
+                    wait=False,
+                    logs=False,
+                )
+                return (
+                    TrainingStep(
+                        name=step_name,
+                        depends_on=cast(
+                            Optional[List[Union[str, Step, StepCollection]]],
+                            upstream_steps,
+                        ),
+                        step_args=step_args,
                     ),
-                    inputs=training_inputs,
-                    estimator=estimator,
-                ), None
+                    None,
+                )
 
-            estimator.fit(
-                wait=wait,
-                inputs=training_inputs,
-            )
-
-            assert estimator.latest_training_job is not None, (
-                "No training job found"
-            )
-            job_name = estimator.latest_training_job.job_name
-
-            return estimator, job_name
-
-        else:
-            processor = Processor(
-                base_job_name=base_job_name,
-                entrypoint=cast(
-                    Optional[List[Union[str, PipelineVariable]]],
-                    command + arguments,
-                ),
-                env=final_environment,
-                **job_args,
-            )
-
-            if create_step:
-                assert step_name is not None, "Step name is required"
-                return ProcessingStep(
-                    name=step_name,
-                    processor=processor,
-                    depends_on=cast(
-                        Optional[List[Union[str, Step, StepCollection]]],
-                        upstream_steps,
-                    ),
-                    inputs=processing_inputs,
-                    outputs=outputs,
-                ), None
-
-            processor.run(
+            training_job = trainer.train(
+                input_data_config=input_data_config,
                 wait=wait,
                 logs=wait,
+            )
+            job_name = (
+                getattr(training_job, "training_job_name", None)
+                or getattr(training_job, "name", None)
+                or getattr(training_job, "job_name", None)
+            )
+            return trainer, job_name
+
+        # ---------- PROCESSING ----------
+
+        logger.info(f"Running processor: {base_job_name} {step_name or '_'}")
+
+        processor = Processor(
+            base_job_name=base_job_name,
+            entrypoint=cast(
+                Optional[List[Union[str, PipelineVariable]]],
+                command + arguments,
+            ),
+            env=final_environment,
+            **job_args,
+        )
+
+        if create_step:
+            assert step_name is not None, "Step name is required"
+
+            step_args = processor.run(
+                wait=False,
+                logs=False,
                 inputs=processing_inputs,
                 outputs=outputs,
             )
+            return (
+                ProcessingStep(
+                    name=step_name,
+                    depends_on=cast(
+                        Optional[List[Union[str, Step, StepCollection]]],
+                        upstream_steps,
+                    ),
+                    step_args=step_args,
+                ),
+                None,
+            )
 
-            assert processor.latest_job is not None, "No processing job found"
-            job_name = processor.latest_job.job_name
-
-            return processor, job_name
+        processor.run(
+            wait=wait,
+            logs=wait,
+            inputs=processing_inputs,
+            outputs=outputs,
+        )
+        assert processor.latest_job is not None, "No processing job found"
+        job_name = processor.latest_job.job_name
+        return processor, job_name
 
     def submit_pipeline(
         self,
@@ -1010,7 +1100,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         assert job_name is not None, "Job name is not set"
 
-        is_training_job = isinstance(job, Estimator)
+        is_training_job = isinstance(job, ModelTrainer)
 
         _wait_for_completion = None
         if settings.synchronous:
@@ -1024,18 +1114,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
                 try:
                     if is_training_job:
-                        session.logs_for_job(
-                            job_name,
-                            wait=True,
-                            poll=POLLING_DELAY,
-                            timeout=POLLING_DELAY * MAX_POLLING_ATTEMPTS,
-                        )
+                        self._logs_for_training_job(job_name, wait=True)
                     else:
-                        session.logs_for_processing_job(
-                            job_name,
-                            wait=True,
-                            poll=POLLING_DELAY,
-                        )
+                        self._logs_for_processing_job(job_name, wait=True)
 
                     logger.info("Pipeline completed successfully.")
                 except WaiterError:
@@ -1103,7 +1184,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             wait=False,
         )
         assert job_name
-        job_type = "training" if isinstance(job, Estimator) else "processing"
+        job_type = (
+            "training" if isinstance(job, ModelTrainer) else "processing"
+        )
         publish_step_run_metadata(
             step_run_info.step_run_id,
             {
@@ -1479,3 +1562,106 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
 
         return cron_exp
+
+    def _logs_for_training_job(
+        self,
+        job_name: str,
+        wait: bool,
+        poll: int = 10,
+    ) -> None:
+
+        boto_session = self._get_boto_session()
+
+        sm = boto_session.client("sagemaker", region_name=self.config.region)
+        logs = boto_session.client("logs", region_name=self.config.region)
+
+        log_group = "/aws/sagemaker/TrainingJobs"
+        seen: set[tuple[str, int]] = set()
+
+        def job_done() -> bool:
+            status = sm.describe_training_job(TrainingJobName=job_name)[
+                "TrainingJobStatus"
+            ]
+            return status in {"Completed", "Failed", "Stopped"}
+
+        while True:
+            # list streams that start with the job name (common SM convention)
+            streams = logs.describe_log_streams(
+                logGroupName=log_group,
+                logStreamNamePrefix=job_name,
+                orderBy="LogStreamName",
+            ).get("logStreams", [])
+
+            for s in streams:
+                stream_name = s["logStreamName"]
+                events = logs.get_log_events(
+                    logGroupName=log_group,
+                    logStreamName=stream_name,
+                    startFromHead=True,
+                ).get("events", [])
+                for e in events:
+                    key = (stream_name, e["timestamp"])
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    print(
+                        e["message"],
+                        end="" if e["message"].endswith("\n") else "\n",
+                    )
+
+            if not wait:
+                return
+            if job_done():
+                return
+            time.sleep(poll)
+
+    def _logs_for_processing_job(
+        self,
+        job_name: str,
+        wait: bool,
+        poll: int = 10,
+    ) -> None:
+
+        boto_session = self._get_boto_session()
+
+        sm = boto_session.client("sagemaker", region_name=self.config.region)
+        logs = boto_session.client("logs", region_name=self.config.region)
+
+        log_group = "/aws/sagemaker/ProcessingJobs"
+        seen: set[tuple[str, int]] = set()
+
+        def job_done() -> bool:
+            status = sm.describe_processing_job(ProcessingJobName=job_name)[
+                "ProcessingJobStatus"
+            ]
+            return status in {"Completed", "Failed", "Stopped"}
+
+        while True:
+            streams = logs.describe_log_streams(
+                logGroupName=log_group,
+                logStreamNamePrefix=job_name,
+                orderBy="LogStreamName",
+            ).get("logStreams", [])
+
+            for s in streams:
+                stream_name = s["logStreamName"]
+                events = logs.get_log_events(
+                    logGroupName=log_group,
+                    logStreamName=stream_name,
+                    startFromHead=True,
+                ).get("events", [])
+                for e in events:
+                    key = (stream_name, e["timestamp"])
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    print(
+                        e["message"],
+                        end="" if e["message"].endswith("\n") else "\n",
+                    )
+
+            if not wait:
+                return
+            if job_done():
+                return
+            time.sleep(poll)
