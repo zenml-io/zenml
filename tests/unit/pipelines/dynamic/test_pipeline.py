@@ -41,3 +41,30 @@ def test_step_with_none_input_works() -> None:
     """Tests that a step with a None input works."""
     with does_not_raise():
         pipeline_with_none_step_input()
+
+
+@step
+def producer() -> int:
+    return 1
+
+
+@step
+def consumer(input_: int, expected_input: int) -> None:
+    assert input_ == expected_input
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline(expected_consumer_input: int) -> None:
+    consumer(producer(), expected_input=expected_consumer_input)
+
+
+def test_replay_skips_first_step_and_overrides_second_step_input():
+    """Tests that replaying a pipeline and overriding step inputs works."""
+    original_run = replay_pipeline(expected_consumer_input=1)
+
+    replay_pipeline.replay(
+        pipeline_run=original_run.id,
+        input_overrides={"expected_consumer_input": 42},
+        skip={"producer"},
+        step_input_overrides={"consumer": {"input_": 42}},
+    )

@@ -10363,10 +10363,16 @@ class SqlZenStore(BaseZenStore):
                         # This is a non-cached step run, which means all input
                         # artifacts we receive at creation time are inputs that
                         # are defined in the step config.
+                        input_overrides = set(
+                            run.get_pipeline_configuration().step_input_overrides.get(
+                                step_run.name, {}
+                            )
+                        )
                         input_type = self._get_step_run_input_type_from_config(
                             input_name=input_name,
                             step_config=step_config.config,
                             step_spec=step_config.spec,
+                            input_overrides=input_overrides,
                         )
 
                         if input_type == StepRunInputArtifactType.STEP_OUTPUT:
@@ -10770,6 +10776,7 @@ class SqlZenStore(BaseZenStore):
         input_name: str,
         step_config: StepConfiguration,
         step_spec: StepSpec,
+        input_overrides: Set[str],
     ) -> StepRunInputArtifactType:
         """Get the input type of an artifact.
 
@@ -10777,13 +10784,16 @@ class SqlZenStore(BaseZenStore):
             input_name: The name of the input artifact.
             step_config: The step config.
             step_spec: The step spec.
+            input_overrides: The input overrides.
 
         Returns:
             The input type of the artifact.
         """
-        if input_name in step_spec.inputs_v2:
+        if input_name in input_overrides:
+            return StepRunInputArtifactType.OVERRIDE
+        elif input_name in step_spec.inputs_v2:
             return StepRunInputArtifactType.STEP_OUTPUT
-        if input_name in step_config.external_input_artifacts:
+        elif input_name in step_config.external_input_artifacts:
             return StepRunInputArtifactType.EXTERNAL
         elif (
             input_name in step_config.model_artifacts_or_metadata
