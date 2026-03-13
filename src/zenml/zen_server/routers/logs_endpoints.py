@@ -13,21 +13,31 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for logs."""
 
+from datetime import datetime
+from typing import Optional, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Query, Security
 
-from zenml.constants import (
-    API,
-    LOGS,
-    VERSION_1,
-)
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.constants import API, LOGS, LOGS_RUNNER_SOURCE, VERSION_1
+from zenml.enums import StackComponentType
 from zenml.exceptions import IllegalOperationError
-from zenml.models import LogsRequest, LogsResponse, LogsUpdate
+from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
+from zenml.log_stores.base_log_store import BaseLogStore
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsRequest,
+    LogsResponse,
+    LogsUpdate,
+)
+from zenml.stack import StackComponent
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
+    verify_permissions_and_get_entity,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action
@@ -38,6 +48,7 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    get_workload_logs,
     zen_store,
 )
 
@@ -46,6 +57,47 @@ router = APIRouter(
     tags=["logs"],
     responses={401: error_response, 403: error_response},
 )
+
+
+def get_logs_entries_filter(
+    search: Optional[str] = Query(
+        default=None,
+        description="Search query to match against log entry content.",
+    ),
+    level: Optional[str] = Query(
+        default=None,
+        description=(
+            "Minimum log level filter. Accepts level name (e.g. `INFO`) "
+            "or numeric value (e.g. `20`)."
+        ),
+    ),
+    since: Optional[datetime] = Query(
+        default=None,
+        description="Lower timestamp bound (inclusive).",
+    ),
+    until: Optional[datetime] = Query(
+        default=None,
+        description="Upper timestamp bound (inclusive).",
+    ),
+) -> LogsEntriesFilter:
+    """Build a logs entries filter from query parameters.
+
+    Args:
+        search: Search query to match against log entry content.
+        level: Minimum log level filter. Accepts level name
+            (e.g. `INFO`) or numeric value (e.g. `20`).
+        since: Lower timestamp bound (inclusive).
+        until: Upper timestamp bound (inclusive).
+
+    Returns:
+        The logs entries filter.
+    """
+    return LogsEntriesFilter(
+        search=search,
+        level=level,
+        since=since,
+        until=until,
+    )
 
 
 @router.post(
@@ -204,3 +256,133 @@ def update_logs(
         get_method=zen_store().get_logs,
         update_method=zen_store().update_logs,
     )
+
+
+@router.get(
+    "/{logs_id}/entries",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def get_logs_entries(
+    logs_id: UUID,
+    filter_: LogsEntriesFilter = Depends(get_logs_entries_filter),
+    limit: int = Query(
+        default=None,
+        description="Maximum number of entries to return.",
+    ),
+    before: Optional[str] = Query(
+        default=None,
+        description="Opaque cursor token to fetch older entries.",
+    ),
+    after: Optional[str] = Query(
+        default=None,
+        description="Opaque cursor token to fetch newer entries.",
+    ),
+    _: AuthContext = Security(authorize),
+) -> LogsEntriesResponse:
+    """Get log entries for a logs response.
+
+    Args:
+        logs_id: ID of the logs response to get the log entries for.
+        filter_: Filters for the log entries retrieval.
+        limit: Maximum number of entries to return.
+        before: Cursor token to fetch older entries.
+        after: Cursor token to fetch newer entries.
+
+    Returns:
+        The log entries for the logs entity.
+
+    Raises:
+        IllegalOperationError: If the logs are not associated with a
+            pipeline run or step run before fetching.
+        ValueError: If `limit` is not positive or if both `before` and `after` are set.
+        NotImplementedError: If the log store could not be instantiated.
+    """
+    if limit is not None and limit <= 0:
+        raise ValueError("`limit` must be positive.")
+
+    if before is not None and after is not None:
+        raise ValueError("Only one of `before` or `after` can be set.")
+
+    store = zen_store()
+
+    logs = store.get_logs(logs_id)
+
+    if logs.pipeline_run_id:
+        run = verify_permissions_and_get_entity(
+            id=logs.pipeline_run_id,
+            get_method=store.get_run,
+            hydrate=True,
+        )
+    elif logs.step_run_id:
+        step = store.get_run_step(logs.step_run_id)
+        run = verify_permissions_and_get_entity(
+            id=step.pipeline_run_id,
+            get_method=store.get_run,
+            hydrate=True,
+        )
+    else:
+        raise IllegalOperationError(
+            "Logs must be associated with a pipeline run or step run "
+            "before fetching."
+        )
+
+    logs = verify_permissions_and_get_entity(
+        id=logs_id, get_method=store.get_logs
+    )
+
+    # Handle runner logs from workload manager
+    if run.snapshot and logs.source == LOGS_RUNNER_SOURCE:
+        return get_workload_logs(run)
+
+    log_store: Optional[BaseLogStore] = None
+    if logs.log_store_id:
+        log_store_model = verify_permissions_and_get_entity(
+            id=logs.log_store_id,
+            get_method=store.get_stack_component,
+        )
+
+        if log_store_model.type != StackComponentType.LOG_STORE:
+            raise IllegalOperationError(
+                f"Stack component '{logs.log_store_id}' is not a log store."
+            )
+
+        try:
+            log_store = cast(
+                BaseLogStore, StackComponent.from_model(log_store_model)
+            )
+        except ImportError as e:
+            raise NotImplementedError(
+                f"Log store '{log_store_model.name}' could not be instantiated."
+            ) from e
+    elif logs.artifact_store_id:
+        artifact_store_model = verify_permissions_and_get_entity(
+            id=logs.artifact_store_id,
+            get_method=store.get_stack_component,
+        )
+        if artifact_store_model.type != StackComponentType.ARTIFACT_STORE:
+            raise IllegalOperationError(
+                f"Stack component '{logs.artifact_store_id}' is not an artifact store."
+            )
+        artifact_store = cast(
+            BaseArtifactStore,
+            StackComponent.from_model(artifact_store_model),
+        )
+        log_store = ArtifactLogStore.from_artifact_store(
+            artifact_store=artifact_store
+        )
+    else:
+        raise IllegalOperationError(
+            "Logs response does not have a log store or artifact store."
+        )
+
+    try:
+        return log_store.fetch(
+            logs_model=logs,
+            limit=limit,
+            before=before,
+            after=after,
+            filter_=filter_,
+        )
+    finally:
+        log_store.cleanup()

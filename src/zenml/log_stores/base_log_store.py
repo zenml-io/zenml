@@ -16,13 +16,15 @@
 import logging
 import threading
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import LogsResponse
+from zenml.models.v2.misc.log_models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+)
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-from zenml.utils.logging_utils import LogEntry
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -192,24 +194,22 @@ class BaseLogStore(StackComponent, ABC):
     def fetch(
         self,
         logs_model: LogsResponse,
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[LogEntry]:
-        """Fetch logs from the log store.
-
-        This method is called from the server to retrieve logs for display
-        on the dashboard or via API. The implementation should not require
-        any integration-specific SDKs that aren't available on the server.
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch log entries.
 
         Args:
             logs_model: The logs model containing metadata about the logs.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+            before: Cursor token pointing to older entries.
+            after: Cursor token pointing to newer entries.
+            filter_: Filters that must be applied during retrieval.
 
         Returns:
-            List of log entries matching the query.
+            A response containing log entries and pagination tokens.
         """
 
 

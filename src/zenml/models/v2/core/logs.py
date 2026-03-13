@@ -42,14 +42,6 @@ class LogsRequest(ProjectScopedRequest):
         default=None,
         title="The URI of the logs file (for artifact store logs)",
     )
-
-    # TODO: This is being added for backwards compatibility with clients <0.84.0.
-    # We can remove this with the upcoming breaking changes.
-    project: Optional[UUID] = Field(  # type: ignore[assignment]
-        default=None,
-        title="The project to which this resource belongs.",
-    )
-
     # TODO: Remove default value when not supporting clients <0.84.0 anymore
     source: str = Field(default="", title="The source of the logs file")
     artifact_store_id: Optional[UUID] = Field(
@@ -175,11 +167,6 @@ class LogsResponseBody(ProjectScopedResponseBody):
         title="The source of the logs file",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-
-
-class LogsResponseMetadata(ProjectScopedResponseMetadata):
-    """Response metadata for logs."""
-
     step_run_id: Optional[UUID] = Field(
         title="Step ID to associate the logs with.",
         default=None,
@@ -198,6 +185,10 @@ class LogsResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="The log store ID that collected these logs",
     )
+
+
+class LogsResponseMetadata(ProjectScopedResponseMetadata):
+    """Response metadata for logs."""
 
 
 class LogsResponseResources(ProjectScopedResponseResources):
@@ -247,7 +238,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().step_run_id
+        return self.get_body().step_run_id
 
     @property
     def pipeline_run_id(self) -> Optional[UUID]:
@@ -256,7 +247,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().pipeline_run_id
+        return self.get_body().pipeline_run_id
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:
@@ -265,7 +256,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().artifact_store_id
+        return self.get_body().artifact_store_id
 
     @property
     def log_store_id(self) -> Optional[UUID]:
@@ -274,7 +265,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().log_store_id
+        return self.get_body().log_store_id
 
 
 # ------------------ Filter Model ------------------

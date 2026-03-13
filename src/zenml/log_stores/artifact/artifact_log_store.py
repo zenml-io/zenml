@@ -15,23 +15,24 @@
 
 import os
 import re
-from datetime import datetime
 from typing import (
     Any,
     Dict,
     Generator,
     List,
     Optional,
+    Sequence,
     Type,
     cast,
 )
 from uuid import UUID
 
 from opentelemetry.sdk._logs.export import LogExporter
+from pydantic import Field
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import LoggingLevels, StackComponentType
-from zenml.exceptions import DoesNotExistException
 from zenml.log_stores import BaseLogStore
 from zenml.log_stores.base_log_store import BaseLogStoreOrigin
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
@@ -41,8 +42,12 @@ from zenml.log_stores.otel.otel_log_store import (
 )
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
+from zenml.models.v2.misc.log_models import (
+    LogEntry,
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+)
 from zenml.utils.io_utils import sanitize_remote_path
-from zenml.utils.logging_utils import LogEntry
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -51,6 +56,79 @@ logger = get_logger(__name__)
 
 LOGS_EXTENSION = ".log"
 END_OF_STREAM_MESSAGE = "END_OF_STREAM"
+CHUNK_SIZE = 1024 * 1024 * 5  # 5MB
+
+
+def _get_logs_file_paths(
+    artifact_store: "BaseArtifactStore", logs_uri: str
+) -> List[str]:
+    """Get the paths of the log files in the artifact store.
+
+    Args:
+        artifact_store: The artifact store.
+        logs_uri: The URI of the log file or directory.
+
+    Returns:
+        A list of paths of the log files in the artifact store.
+    """
+    if not artifact_store.exists(logs_uri):
+        return []
+
+    if not artifact_store.isdir(logs_uri):
+        return [logs_uri]
+
+    files = artifact_store.listdir(logs_uri)
+    files.sort()
+    return [os.path.join(logs_uri, str(f)) for f in files]
+
+
+def iterate_backward_lines(
+    artifact_store: "BaseArtifactStore",
+    paths: Sequence[str],
+) -> Generator[str, None, None]:
+    """Iterate log lines backward (newest to oldest).
+
+    Args:
+        artifact_store: The artifact store.
+        paths: The paths of the log files.
+
+    Yields:
+        Log lines ordered from newest to oldest.
+    """
+    for path in reversed(paths):
+        with artifact_store.open(path, "rb") as f:
+            f.seek(0, 2)
+            file_size = int(f.tell())
+            pos = file_size
+
+            buffer = b""
+            buffer_start = pos
+
+            while True:
+                nl = buffer.rfind(b"\n")
+                if nl != -1:
+                    raw = buffer[nl + 1 :]
+                    buffer = buffer[:nl]
+
+                    raw = raw.rstrip(b"\r")
+                    if raw:
+                        line = raw.decode("utf-8", errors="replace")
+                        yield line
+                    continue
+
+                if buffer_start == 0:
+                    raw = buffer.rstrip(b"\r")
+                    if raw:
+                        line = raw.decode("utf-8", errors="replace")
+                        yield line
+                    break
+
+                read_start = max(0, buffer_start - CHUNK_SIZE)
+                read_len = buffer_start - read_start
+                f.seek(read_start, 0)
+                chunk = f.read(read_len)
+                buffer = chunk + buffer
+                buffer_start = read_start
 
 
 def prepare_logs_uri(
@@ -86,79 +164,6 @@ def remove_ansi_escape_codes(text: str) -> str:
         the version of the input string where the escape codes are removed.
     """
     return ansi_escape.sub("", text)
-
-
-def fetch_log_records(
-    artifact_store: "BaseArtifactStore",
-    logs_uri: str,
-    limit: int,
-) -> List[LogEntry]:
-    """Fetches log entries.
-
-    Args:
-        artifact_store: The artifact store.
-        logs_uri: The URI of the artifact (file or directory).
-        limit: Maximum number of log entries to return.
-
-    Returns:
-        List of log entries.
-    """
-    log_entries = []
-
-    for line in _stream_logs_line_by_line(artifact_store, logs_uri):
-        if log_entry := parse_log_entry(line):
-            log_entries.append(log_entry)
-
-        if len(log_entries) >= limit:
-            break
-
-    return log_entries
-
-
-def _stream_logs_line_by_line(
-    artifact_store: "BaseArtifactStore",
-    logs_uri: str,
-) -> Generator[str, None, None]:
-    """Stream logs line by line without loading the entire file into memory.
-
-    This generator yields log lines one by one, handling both single files
-    and directories with multiple log files.
-
-    Args:
-        artifact_store: The artifact store.
-        logs_uri: The URI of the log file or directory.
-
-    Yields:
-        Individual log lines as strings.
-
-    Raises:
-        DoesNotExistException: If the artifact does not exist in the artifact store.
-    """
-    if not artifact_store.exists(logs_uri):
-        return
-
-    if not artifact_store.isdir(logs_uri):
-        # Single file case
-        with artifact_store.open(logs_uri, "r") as file:
-            for line in file:
-                yield line.rstrip("\n\r")
-    else:
-        # Directory case - may contain multiple log files
-        files = artifact_store.listdir(logs_uri)
-        if not files:
-            raise DoesNotExistException(
-                f"Folder '{logs_uri}' is empty in artifact store "
-                f"'{artifact_store.name}'."
-            )
-
-        # Sort files to read them in order
-        files.sort()
-
-        for file in files:
-            file_path = os.path.join(logs_uri, str(file))
-            with artifact_store.open(file_path, "r") as f:
-                for line in f:
-                    yield line.rstrip("\n\r")
 
 
 def parse_log_entry(log_line: str) -> Optional[LogEntry]:
@@ -206,6 +211,11 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
 
 class ArtifactLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the artifact log store."""
+
+    default_query_size: int = Field(
+        default=LOGS_MAX_ENTRIES_PER_REQUEST,
+        description="Maximum number of log entries to fetch with one request.",
+    )
 
 
 class ArtifactLogStoreOrigin(OtelLogStoreOrigin):
@@ -326,33 +336,44 @@ class ArtifactLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List["LogEntry"]:
-        """Fetch logs from the artifact store.
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional["LogsEntriesFilter"] = None,
+    ) -> "LogsEntriesResponse":
+        """Fetch log entries from the artifact store.
 
         Args:
             logs_model: The logs model containing uri and artifact_store_id.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
-            limit: Maximum number of log entries to return.
+            limit: Maximum number of log entries to return, capped at
+                `LOGS_MAX_ENTRIES_PER_REQUEST`.
+            before: Unused pagination cursor for artifact log stores.
+            after: Unused pagination cursor for artifact log stores.
+            filter_: Unused server-side filter for artifact log stores.
 
         Returns:
-            List of log entries from the artifact store.
+            A response containing log entries without pagination tokens.
 
         Raises:
-            ValueError: If logs_model.uri is not provided.
+            ValueError: If the logs model is invalid or the limit is not
+                positive.
         """
+        if limit is None:
+            effective_limit = LOGS_MAX_ENTRIES_PER_REQUEST
+        else:
+            if limit <= 0:
+                raise ValueError("`limit` must be positive.")
+            effective_limit = min(limit, LOGS_MAX_ENTRIES_PER_REQUEST)
+
         if not logs_model.uri:
             raise ValueError(
-                "logs_model.uri is required for ArtifactLogStore.fetch()"
+                "logs_model.uri is required for ArtifactLogStore.fetch_entries()"
             )
 
         if not logs_model.artifact_store_id:
             raise ValueError(
-                "logs_model.artifact_store_id is required "
-                "for ArtifactLogStore.fetch()"
+                "logs_model.artifact_store_id is required for "
+                "ArtifactLogStore.fetch_entries()"
             )
 
         if logs_model.artifact_store_id != self._artifact_store.id:
@@ -361,19 +382,39 @@ class ArtifactLogStore(OtelLogStore):
                 "id of the log store."
             )
 
-        if start_time or end_time:
+        paths = _get_logs_file_paths(
+            artifact_store=self._artifact_store, logs_uri=logs_model.uri
+        )
+        if not paths:
+            return LogsEntriesResponse(items=[], before=None, after=None)
+
+        if before is not None:
             logger.warning(
-                "start_time and end_time are not supported for "
-                "ArtifactLogStore.fetch(). Both parameters will be ignored."
+                "Ignoring `before` argument in ArtifactLogStore.fetch(). "
+                "Artifact log pagination is not supported."
+            )
+        if after is not None:
+            logger.warning(
+                "Ignoring `after` argument in ArtifactLogStore.fetch(). "
+                "Artifact log pagination is not supported."
+            )
+        if filter_ is not None:
+            logger.warning(
+                "Ignoring `filter_` argument in ArtifactLogStore.fetch(). "
+                "Artifact log filtering is not supported."
             )
 
-        log_entries = fetch_log_records(
-            artifact_store=self._artifact_store,
-            logs_uri=logs_model.uri,
-            limit=limit,
-        )
+        items: List[LogEntry] = []
+        for line in iterate_backward_lines(self._artifact_store, paths):
+            entry = parse_log_entry(line)
+            if entry is None:
+                continue
 
-        return log_entries
+            items.append(entry)
+            if len(items) >= effective_limit:
+                break
+
+        return LogsEntriesResponse(items=items, before=None, after=None)
 
     def cleanup(self) -> None:
         """Cleanup the artifact log store.

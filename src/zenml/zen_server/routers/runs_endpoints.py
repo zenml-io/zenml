@@ -22,7 +22,6 @@ from zenml.constants import (
     API,
     DISABLE_HEARTBEAT,
     LOGS,
-    LOGS_MAX_ENTRIES_PER_REQUEST,
     LOGS_RUNNER_SOURCE,
     PIPELINE_CONFIGURATION,
     REFRESH,
@@ -35,6 +34,7 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
+    LogEntry,
     Page,
     PipelineRunDAG,
     PipelineRunFilter,
@@ -46,7 +46,6 @@ from zenml.models import (
 )
 from zenml.utils import run_utils
 from zenml.utils.logging_utils import (
-    LogEntry,
     fetch_logs,
     search_logs_by_source,
 )
@@ -70,9 +69,8 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    get_workload_logs,
     make_dependable,
-    server_config,
-    workload_manager,
     zen_store,
 )
 
@@ -474,35 +472,11 @@ def run_logs(
 
     # Handle runner logs from workload manager
     if run.snapshot and source == LOGS_RUNNER_SOURCE:
-        snapshot = run.snapshot
-        if (
-            snapshot.template_id or snapshot.source_snapshot_id or run.trigger
-        ) and server_config().workload_manager_enabled:
-            from zenml.log_stores.artifact.artifact_log_store import (
-                parse_log_entry,
-            )
-
-            workload_logs = workload_manager().get_logs(
-                workload_id=snapshot.id if not run.trigger else run.id
-            )
-
-            log_entries = []
-            for line in workload_logs.split("\n"):
-                if log_record := parse_log_entry(line):
-                    log_entries.append(log_record)
-
-                if len(log_entries) >= LOGS_MAX_ENTRIES_PER_REQUEST:
-                    break
-
-            return log_entries
+        return get_workload_logs(run).items
 
     if run.log_collection:
         if logs_response := search_logs_by_source(run.log_collection, source):
-            return fetch_logs(
-                logs=logs_response,
-                zen_store=store,
-                limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-            )
+            return fetch_logs(logs=logs_response, zen_store=store).items
 
     raise KeyError(f"No logs found for source '{source}' in run {run_id}")
 

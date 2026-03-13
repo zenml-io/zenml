@@ -32,6 +32,21 @@ RUN set -ex && \
   rm -rf /var/lib/apt/lists/* \
   && pip install --upgrade pip setuptools
 
+# Install mydumper from official APT repository (Debian Bookworm)
+# Reference: https://mydumper.github.io/mydumper/docs/html/installing.html
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends wget gnupg ca-certificates && \
+  mkdir -p /etc/apt/keyrings && \
+  wget -qO- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1D357EA7D10C9320371BDD0279EA15C0E82E34BA&exact=on' \
+      > /etc/apt/keyrings/mydumper.asc && \
+  echo 'deb [signed-by=/etc/apt/keyrings/mydumper.asc] https://mydumper.github.io/mydumper/repo/apt/debian bookworm main' \
+      > /etc/apt/sources.list.d/mydumper.list && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends mydumper && \
+  apt-get autoremove -y && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
+
 # Create the user and group which will be used to run the ZenML server.
 RUN groupadd --gid $USER_GID $USERNAME && \
   useradd --uid $USER_UID --gid $USER_GID -m $USERNAME && \

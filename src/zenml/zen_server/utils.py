@@ -55,6 +55,7 @@ from zenml.constants import (
 )
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
+from zenml.models import LogsEntriesResponse, PipelineRunResponse
 from zenml.models.v2.base.scoped import ProjectScopedFilter
 from zenml.zen_server.cache import MemoryCache
 from zenml.zen_server.exceptions import http_exception_from_error
@@ -204,6 +205,41 @@ def initialize_workload_manager() -> None:
             logger.warning("Unable to load workload manager source.")
         else:
             _workload_manager = workload_manager_class()
+
+
+def get_workload_logs(run: PipelineRunResponse) -> LogsEntriesResponse:
+    """Get workload logs for a pipeline run.
+
+    Args:
+        run: The pipeline run to get the workload logs for.
+
+    Returns:
+        The workload logs for the pipeline run.
+    """
+    WORKLOAD_LOGS_MAX_ENTRIES = 50000
+
+    snapshot = run.snapshot
+
+    if (
+        snapshot.template_id or snapshot.source_snapshot_id or run.trigger
+    ) and server_config().workload_manager_enabled:
+        from zenml.log_stores.artifact.artifact_log_store import (
+            parse_log_entry,
+        )
+
+        workload_logs = workload_manager().get_logs(
+            workload_id=snapshot.id if not run.trigger else run.id
+        )
+
+        log_entries = []
+        for line in workload_logs.split("\n"):
+            if log_record := parse_log_entry(line):
+                log_entries.append(log_record)
+
+            if len(log_entries) >= WORKLOAD_LOGS_MAX_ENTRIES:
+                break
+
+        return LogsEntriesResponse(items=log_entries)
 
 
 def snapshot_executor() -> "BoundedThreadPoolExecutor":

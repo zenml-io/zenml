@@ -88,6 +88,7 @@ ZenML provides several log store flavors out of the box:
 | [ArtifactLogStore](artifact.md)    | `artifact` | _built-in_  | Default log store that writes logs to your artifact store. Zero configuration required.        |
 | [OtelLogStore](otel.md)            | `otel`     | _built-in_  | Generic OpenTelemetry log store for any OTEL-compatible backend. Does not support log fetching.|
 | [DatadogLogStore](datadog.md)      | `datadog`  | _built-in_  | Exports logs to Datadog's log management platform with full fetch support.                     |
+| [LokiLogStore](loki.md)            | `loki`     | _built-in_  | Exports logs to Grafana Loki with full fetch support.          |
 | [Custom Implementation](custom.md) | _custom_   |             | Extend the log store abstraction and provide your own implementation.                          |
 
 If you would like to see the available flavors of log stores, you can use the command:
