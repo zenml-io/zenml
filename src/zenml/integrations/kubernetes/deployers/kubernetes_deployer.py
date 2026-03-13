@@ -428,6 +428,20 @@ class KubernetesDeployer(ContainerizedDeployer):
         if resource_limits:
             resources["limits"] = resource_limits
 
+        # Merge pod_settings.resources into the resources dict.
+        # pod_settings.resources uses the native Kubernetes format
+        # (e.g. {"requests": {"cpu": "100m"}, "limits": {"cpu": "200m"}})
+        # and takes precedence over pipeline-level ResourceSettings, which
+        # only supports requests (not limits).
+        if settings.pod_settings and settings.pod_settings.resources:
+            ps_resources = settings.pod_settings.resources
+            for key in ("requests", "limits"):
+                if key in ps_resources:
+                    if key in resources:
+                        resources[key].update(ps_resources[key])
+                    else:
+                        resources[key] = dict(ps_resources[key])
+
         secret_env_list = []
         for key in secret_env_vars.keys():
             secret_env_list.append(
@@ -453,6 +467,19 @@ class KubernetesDeployer(ContainerizedDeployer):
             pod_settings_for_template = KubernetesPodSettings(
                 env=secret_env_list
             )
+
+        # Sync pod_settings_for_template.resources with the final merged
+        # resources so custom templates see a consistent view from either
+        # context variable.
+        if resources:
+            if pod_settings_for_template is not None:
+                pod_settings_for_template = pod_settings_for_template.model_copy(
+                    update={"resources": resources}
+                )
+            else:
+                pod_settings_for_template = KubernetesPodSettings(
+                    resources=resources
+                )
 
         command = settings.command
         if not command:
