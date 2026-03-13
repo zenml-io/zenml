@@ -1,0 +1,21 @@
+services:
+  lakefs:
+    image: treeverse/lakefs:latest
+    ports:
+      - "8000:8000"
+    environment:
+      LAKEFS_DATABASE_TYPE: local
+      LAKEFS_BLOCKSTORE_TYPE: local
+      LAKEFS_BLOCKSTORE_LOCAL_PATH: /tmp/lakefs/block
+      LAKEFS_DATABASE_LOCAL_PATH: /tmp/lakefs/metadata
+      LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some-random-secret-key
+      LAKEFS_INSTALLATION_USER_NAME: admin
+      LAKEFS_INSTALLATION_ACCESS_KEY_ID: AKIAIOSFOLAKEFS
+      LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      LAKEFS_STATS_ENABLED: "false"
+    entrypoint: ["/app/lakefs", "run"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/_health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
