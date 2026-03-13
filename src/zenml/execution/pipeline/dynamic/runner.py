@@ -955,7 +955,7 @@ class DynamicPipelineRunner:
     def wait(
         self,
         schema: Type[T],
-        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
         timeout: int = 600,
         poll_interval: int = 5,
         question: Optional[str] = None,
@@ -980,7 +980,7 @@ class DynamicPipelineRunner:
     def wait(
         self,
         schema: object = None,
-        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
         timeout: int = 600,
         poll_interval: int = 5,
         question: Optional[str] = None,
@@ -1005,7 +1005,7 @@ class DynamicPipelineRunner:
     def wait(
         self,
         schema: Optional[Any] = None,
-        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
         timeout: int = 600,
         poll_interval: int = 5,
         question: Optional[str] = None,

@@ -79,7 +79,7 @@ def unmapped(value: T) -> _Unmapped[T]:
 @overload
 def wait(
     schema: Type[T],
-    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
     timeout: int = 600,
     poll_interval: int = 5,
     question: Optional[str] = None,
@@ -105,7 +105,7 @@ def wait(
 @overload
 def wait(
     schema: object = None,
-    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
     timeout: int = 600,
     poll_interval: int = 5,
     question: Optional[str] = None,
@@ -130,7 +130,7 @@ def wait(
 
 def wait(
     schema: Optional[Any] = None,
-    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
     timeout: int = 600,
     poll_interval: int = 5,
     question: Optional[str] = None,
