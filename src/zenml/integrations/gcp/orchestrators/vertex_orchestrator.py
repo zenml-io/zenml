@@ -842,6 +842,56 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
         client.cancel_custom_job(name=job_name)
 
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = False
+    ) -> None:
+        """Stops a pipeline run on Vertex AI.
+
+        Args:
+            run: The pipeline run to stop.
+            graceful: If True, does nothing (lets the pipeline finish
+                naturally). If False, cancels the Vertex AI job.
+
+        Raises:
+            ValueError: If the orchestrator run ID cannot be found.
+        """
+        if graceful:
+            logger.info(
+                "Graceful stop requested - letting the Vertex AI pipeline "
+                "finish naturally."
+            )
+            return
+
+        if METADATA_ORCHESTRATOR_RUN_ID in run.run_metadata:
+            run_id = run.run_metadata[METADATA_ORCHESTRATOR_RUN_ID]
+        elif run.orchestrator_run_id is not None:
+            run_id = run.orchestrator_run_id
+        else:
+            raise ValueError(
+                "Cannot find the orchestrator run ID to stop the pipeline."
+            )
+
+        credentials, project_id = self._get_authentication()
+
+        if run.snapshot and run.snapshot.is_dynamic:
+            job = aiplatform.CustomJob.get(
+                run_id,
+                project=project_id,
+                location=self.config.location,
+                credentials=credentials,
+            )
+        else:
+            job = aiplatform.PipelineJob.get(
+                run_id,
+                project=project_id,
+                location=self.config.location,
+                credentials=credentials,
+            )
+
+        logger.info("Cancelling Vertex AI job '%s'...", run_id)
+        job.cancel()
+        logger.info("Successfully requested cancellation of job '%s'.", run_id)
+
     def _upload_and_run_pipeline(
         self,
         pipeline_name: str,
