@@ -1152,7 +1152,7 @@ class DynamicPipelineRunner:
             run_id=self._run.id,
             run_update=PipelineRunUpdate(
                 status=ExecutionStatus.PAUSED,
-                status_reason="Waiting for input.",
+                status_reason="Wait condition polling timed out.",
             ),
         )
         raise PipelinePausedError(

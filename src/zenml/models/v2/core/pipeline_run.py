@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -166,6 +166,18 @@ class PipelineRunRequest(ProjectScopedRequest):
             ExecutionStatus.PROVISIONING,
         }
 
+    @model_validator(mode="after")
+    def _validate_status(self) -> "PipelineRunRequest":
+        if self.status not in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.RUNNING,
+        }:
+            raise ValueError(
+                "Run must be started in the initializing or running state."
+            )
+
+        return self
+
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -180,11 +192,6 @@ class PipelineRunUpdate(BaseUpdate):
         default=None,
         title="The reason for the status of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
-    )
-    end_time: Optional[datetime] = None
-    is_finished: Optional[bool] = Field(
-        default=None,
-        title="Whether the pipeline run is finished.",
     )
     orchestrator_run_id: Optional[str] = None
     exception_info: Optional[ExceptionInfo] = Field(

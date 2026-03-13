@@ -64,7 +64,6 @@ from zenml.pipelines.run_utils import (
 )
 from zenml.stack.flavor import Flavor
 from zenml.utils import pydantic_utils, requirements_utils, settings_utils
-from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
@@ -273,7 +272,6 @@ def run_snapshot(
                         run_update=PipelineRunUpdate(
                             status=ExecutionStatus.FAILED,
                             status_reason="Failed to start run.",
-                            end_time=utc_now(),
                         ),
                     )
                     raise
@@ -312,7 +310,6 @@ def restart_run(run: PipelineRunResponse) -> None:
             run_id=run.id,
             run_update=PipelineRunUpdate(
                 status=ExecutionStatus.RESUMING,
-                is_finished=False,
                 status_reason="Automatically resuming run from server.",
             ),
         )
@@ -376,7 +373,6 @@ def restart_run(run: PipelineRunResponse) -> None:
             run_id=run.id,
             run_update=PipelineRunUpdate(
                 status=previous_status,
-                is_finished=previous_status.is_finished,
                 status_reason="Restart submission failed.",
             ),
         )

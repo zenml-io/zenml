@@ -7141,7 +7141,6 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True,
                 include_resources=True,
             )
-            # TODO: remove run status reason here probably.
 
         if (
             resolved_model.status == RunWaitConditionStatus.RESOLVED
@@ -11445,9 +11444,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             pipeline_run_id: The ID of the pipeline run to update.
             session: The database session to use.
+            requested_status: The requested status of the pipeline run.
+            status_reason: The reason for the status of the pipeline run.
         """
-        # from zenml.orchestrators.publish_utils import get_pipeline_run_status
-
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
@@ -11456,48 +11455,16 @@ class SqlZenStore(BaseZenStore):
             .with_for_update()
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
-        # step_run_statuses = session.exec(
-        #     select(StepRunSchema.status)
-        #     .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
-        #     .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
-        # ).all()
-
-        # # Snapshots always exists for pipeline runs of newer versions
-        # assert pipeline_run.snapshot
-        # num_steps = pipeline_run.snapshot.step_count
-        # is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
-        # new_status = get_pipeline_run_status(
-        #     run_status=ExecutionStatus(pipeline_run.status),
-        #     step_statuses=[
-        #         ExecutionStatus(status) for status in step_run_statuses
-        #     ],
-        #     num_steps=num_steps,
-        #     is_dynamic_pipeline=is_dynamic_pipeline,
-        # )
-
-        # if pipeline_run.is_placeholder_run() and not new_status.is_finished:
-        #     # If the pipeline run is a placeholder run (=no step has been started
-        #     # for the run yet), this means the orchestrator hasn't started
-        #     # running yet, and this method is most likely being called as
-        #     # part of the creation of some cached steps. In this case, we don't
-        #     # update the status unless the run is finished.
-
-        #     # Commit so that we release the lock on the pipeline run.
-        #     session.commit()
-        #     return
-
-        pipeline_run.update_status(
+        did_update = pipeline_run.update_status(
             requested_status=requested_status, status_reason=status_reason
         )
+        if not did_update:
+            # Commit to release the lock on the pipeline run.
+            session.commit()
+            return
+
         session.add(pipeline_run)
         session.commit()
-
-        # run_update = PipelineRunUpdate(status=new_status)
-        # if new_status.is_finished:
-        #     run_update.end_time = utc_now()
-
-        # pipeline_run.update(run_update)
-        # Commit so that we release the lock on the pipeline run.
 
         new_status = ExecutionStatus(pipeline_run.status)
 

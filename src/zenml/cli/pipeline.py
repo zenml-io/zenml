@@ -1220,7 +1220,6 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
             run_id=run.id,
             run_update=PipelineRunUpdate(
                 status=ExecutionStatus.RESUMING,
-                is_finished=False,
                 status_reason="Manual resume requested by user.",
             ),
         )
@@ -1237,7 +1236,6 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
                     run_id=run.id,
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.PAUSED,
-                        is_finished=False,
                         status_reason="Resume submission failed.",
                     ),
                 )
@@ -1282,7 +1280,6 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
             run_id=run.id,
             run_update=PipelineRunUpdate(
                 status=ExecutionStatus.RESUMING,
-                is_finished=False,
                 status_reason="Manual retry requested by user.",
             ),
         )
@@ -1300,7 +1297,6 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
                     run_id=run.id,
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.FAILED,
-                        is_finished=True,
                         status_reason="Retry submission failed.",
                     ),
                 )

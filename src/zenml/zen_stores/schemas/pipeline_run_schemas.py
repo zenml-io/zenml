@@ -781,62 +781,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             ValueError: When trying to update the orchestrator run ID of a
                 run that already has a different one.
-            IllegalOperationError: When trying to retry a pipeline run that is
-                not in a failed state or restart a run that is neither failed
-                nor paused.
 
         Returns:
             The updated `PipelineRunSchema`.
         """
-        # if run_update.status:
-        #     previous_status = self.status
-        #     if (
-        #         run_update.status == ExecutionStatus.PROVISIONING
-        #         and self.status != ExecutionStatus.INITIALIZING.value
-        #     ):
-        #         # This run is already past the provisioning status, so we ignore
-        #         # the update.
-        #         pass
-        #     else:
-        #         self.status = run_update.status.value
-
-        #         if run_update.status_reason:
-        #             self.status_reason = run_update.status_reason
-        #         elif previous_status != run_update.status:
-        #             # TODO: Keep for some transitions, e.g. stopping -> stopped
-        #             self.status_reason = None
-
-        #     # TODO: Now that we never compute the run status from step statuses
-        #     # in dynamic pipelines, can we remove this field from the update
-        #     # model and simply make it depend on the run status?
-        #     if run_update.is_finished:
-        #         self.in_progress = False
-        #     elif (
-        #         run_update.is_finished is False
-        #         and run_update.status == ExecutionStatus.RESUMING
-        #     ):
-        #         if previous_status not in {
-        #             ExecutionStatus.FAILED.value,
-        #             ExecutionStatus.PAUSED.value,
-        #         }:
-        #             raise IllegalOperationError(
-        #                 "Cannot restart a pipeline run that is neither failed "
-        #                 "nor paused."
-        #             )
-        #         self.in_progress = True
-        #         self.end_time = None
-        #     elif self.snapshot and self.snapshot.is_dynamic:
-        #         # In dynamic pipelines, we can't actually check if the run is
-        #         # in progress by inspecting the DAG. Only once the orchestration
-        #         # container finishes we know for sure.
-        #         pass
-        #     else:
-        #         self.in_progress = self._check_if_run_in_progress()
-
-        #     if not self.in_progress:
-        #         # Only set the end time if the run is not in progress anymore.
-        #         self.end_time = run_update.end_time
-
         if run_update.orchestrator_run_id:
             if (
                 self.orchestrator_run_id
@@ -859,15 +807,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self,
         requested_status: Optional[ExecutionStatus],
         status_reason: Optional[str] = None,
-    ) -> "PipelineRunSchema":
+    ) -> bool:
         """Update the status of the pipeline run.
 
         Args:
             requested_status: The requested status of the pipeline run.
             status_reason: The reason for the status of the pipeline run.
 
+        Raises:
+            IllegalOperationError: If the requested status transition is
+                invalid.
+
         Returns:
-            The updated schema.
+            Whether the status was updated.
         """
         if requested_status in {
             ExecutionStatus.CACHED,
@@ -901,10 +853,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if is_dynamic_pipeline:
             # In dynamic pipelines, the run status is only updated on manual
             # status updates and does not depend on step statuses.
-            if not requested_status:
-                return self
+            if requested_status is None and status_reason is None:
+                return False
 
-            new_status = requested_status
+            new_status = requested_status or current_status
         else:
             # For static pipelines we compute the run status based on the step
             # statuses.
@@ -921,7 +873,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             # Ignore transitions to provisioning from non-initializing states.
             # This could happen if the orchestrator starts running the pipeline
             # before the client environment can update the status to provisioning.
-            return self
+            return False
 
         if current_status.is_finished:
             if (
@@ -943,7 +895,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             self.in_progress = self._check_if_run_in_progress()
 
         now = utc_now()
-        if not self.in_progress:
+        if not self.in_progress and self.end_time is None:
             self.end_time = now
         elif new_status == ExecutionStatus.RESUMING:
             self.end_time = None
@@ -961,7 +913,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             self.status_reason = None
 
         self.updated = now
-        return self
+        return True
 
     def update_placeholder(
         self, request: "PipelineRunRequest"
@@ -1090,7 +1042,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                             StepRunSchema.id,
                             StepRunSchema.name,
                             StepRunSchema.status,
-                        ).where(StepRunSchema.pipeline_run_id == self.id)
+                        )
+                        .where(StepRunSchema.pipeline_run_id == self.id)
+                        .where(
+                            StepRunSchema.status
+                            != ExecutionStatus.RETRIED.value
+                        )
                     ).all()
 
                     if self.snapshot and self.snapshot.pipeline_spec:
@@ -1174,6 +1131,9 @@ def _get_static_pipeline_run_status(
         run_status: The status of the run.
         step_statuses: The statuses of the steps in the pipeline run.
         num_steps: The number of steps in the pipeline run.
+
+    Returns:
+        The status of the pipeline run.
     """
     if run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):
@@ -1200,6 +1160,10 @@ def _get_static_pipeline_run_status(
             ExecutionStatus.INITIALIZING,
             ExecutionStatus.PROVISIONING,
         }:
+            # The run is still in the initializing or provisioning state but not
+            # all steps finished. This is the case for client-side
+            # caching/skipping of steps, in which case we do not want to update
+            # the run status yet.
             return run_status
         else:
             return ExecutionStatus.RUNNING
