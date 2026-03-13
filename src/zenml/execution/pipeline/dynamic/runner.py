@@ -503,6 +503,8 @@ class DynamicPipelineRunner:
 
         with logs_context:
             if self._run.status.is_finished:
+                # TODO: if a run fails and the kubernetes job retries, it will
+                # not try re-running here. Might be intended?
                 logger.info("Run `%s` is already finished.", str(self._run.id))
                 return
             elif self._run.status in {
@@ -540,6 +542,8 @@ class DynamicPipelineRunner:
                 env_utils.temporary_runtime_environment(
                     self._snapshot.pipeline_configuration, self._snapshot.stack
                 ),
+                # TODO: if the pipeline fails during import, mark the run as
+                # failed?
                 DynamicPipelineRunContext(
                     pipeline=self.pipeline,
                     run=self._run,
@@ -611,6 +615,7 @@ class DynamicPipelineRunner:
                     self._maybe_stop_isolated_steps()
                     self._executor.shutdown(wait=True, cancel_futures=True)
                     monitoring_thread.join()
+
                 refreshed_run = Client().zen_store.get_run(
                     self._run.id, hydrate=False
                 )
