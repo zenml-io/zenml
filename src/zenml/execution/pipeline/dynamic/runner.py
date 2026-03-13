@@ -95,7 +95,6 @@ from zenml.models import (
 from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
     publish_failed_step_run,
-    publish_pipeline_run_status_update,
     publish_stopped_step_run,
     publish_successful_pipeline_run,
 )
@@ -578,11 +577,6 @@ class DynamicPipelineRunner:
                 except PipelinePausedError:
                     logger.info("Pausing pipeline run `%s`.", self._run.id)
                 except PipelineAbortedError:
-                    publish_pipeline_run_status_update(
-                        pipeline_run_id=self._run.id,
-                        status=ExecutionStatus.STOPPED,
-                        status_reason="Wait condition was aborted.",
-                    )
                     logger.info(
                         "Pipeline run `%s` stopped due to wait condition abort.",
                         self._run.id,
@@ -616,11 +610,10 @@ class DynamicPipelineRunner:
                     self._executor.shutdown(wait=True, cancel_futures=True)
                     monitoring_thread.join()
 
-                refreshed_run = Client().zen_store.get_run(
+                self._run = Client().zen_store.get_run(
                     self._run.id, hydrate=False
                 )
-                self._run = refreshed_run
-                if refreshed_run.status == ExecutionStatus.RUNNING:
+                if self._run.status == ExecutionStatus.RUNNING:
                     publish_successful_pipeline_run(self._run.id)
                     logger.info("Pipeline completed successfully.")
 
@@ -967,19 +960,7 @@ class DynamicPipelineRunner:
         metadata: Optional[Dict[str, Any]] = None,
         name: Optional[str] = None,
         after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
-    ) -> T:
-        """Create and poll a run wait condition.
-
-        Args:
-            schema: Expected output type for the resolved result.
-            type: Wait condition type.
-            timeout: Maximum time in seconds to poll before pausing.
-            poll_interval: Poll interval in seconds.
-            question: Optional question shown to external actors.
-            metadata: Optional metadata attached to the condition.
-            name: Optional deterministic wait condition name.
-            after: Optional upstream futures that must finish before waiting.
-        """
+    ) -> T: ...
 
     @overload
     def wait(
@@ -992,20 +973,7 @@ class DynamicPipelineRunner:
         metadata: Optional[Dict[str, Any]] = None,
         name: Optional[str] = None,
         after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
-    ) -> Any:
-        """Create and poll a run wait condition.
-
-        Args:
-            schema: Optional expected output type for the resolved result.
-            type: Wait condition type.
-            timeout: Maximum time in seconds to poll before pausing.
-            poll_interval: Poll interval in seconds.
-            question: Optional question shown to external actors.
-            metadata: Optional metadata attached to the condition.
-            name: Optional deterministic wait condition name.
-            after: Optional upstream futures that must finish before waiting.
-
-        """
+    ) -> Any: ...
 
     def wait(
         self,
@@ -1157,7 +1125,7 @@ class DynamicPipelineRunner:
             run_id=self._run.id,
             run_update=PipelineRunUpdate(
                 status=ExecutionStatus.PAUSED,
-                status_reason="Wait condition polling timed out.",
+                status_reason="Waiting for input.",
             ),
         )
         raise PipelinePausedError(

@@ -7128,11 +7128,9 @@ class SqlZenStore(BaseZenStore):
                 )
             )
             result = session.execute(stmt)
-            rowcount = getattr(result, "rowcount", None)
-            if rowcount == 0:
+            if result.rowcount == 0:  # type: ignore[attr-defined]
                 raise IllegalOperationError(
-                    "Run wait condition can only be resolved from `pending` "
-                    "state."
+                    "Wait condition is not in pending state."
                 )
             session.commit()
             updated_schema = self._get_schema_by_id(
@@ -7148,17 +7146,39 @@ class SqlZenStore(BaseZenStore):
                 include_resources=True,
             )
 
-        if (
-            resolved_model.status == RunWaitConditionStatus.RESOLVED
-            and not active_lease_exists
-        ):
             if (
                 resolved_model.resolution
                 == RunWaitConditionResolution.CONTINUE
             ):
-                self._resume_run_if_possible(run_id=resolved_model.run.id)
+                if (
+                    not active_lease_exists
+                    and not self._has_pending_wait_conditions(
+                        run_id=resolved_model.run.id
+                    )
+                ):
+                    try:
+                        self._update_pipeline_run_status(
+                            pipeline_run_id=resolved_model.run.id,
+                            session=session,
+                            requested_status=ExecutionStatus.RESUMING,
+                            status_reason="Automatically resuming run from server.",
+                        )
+                        self._resume_run_if_possible(
+                            run_id=resolved_model.run.id
+                        )
+                    except Exception:
+                        self._update_pipeline_run_status(
+                            pipeline_run_id=resolved_model.run.id,
+                            session=session,
+                            status_reason="Waiting for manual resume.",
+                        )
             elif resolved_model.resolution == RunWaitConditionResolution.ABORT:
-                self._stop_run_if_no_active_lease(run_id=resolved_model.run.id)
+                self._update_pipeline_run_status(
+                    pipeline_run_id=resolved_model.run.id,
+                    session=session,
+                    requested_status=ExecutionStatus.STOPPED,
+                    status_reason="Wait condition was aborted.",
+                )
 
         return resolved_model
 
@@ -7169,60 +7189,14 @@ class SqlZenStore(BaseZenStore):
             run_id: Pipeline run ID.
         """
         if not handle_bool_env_var(ENV_ZENML_SERVER):
-            return
-
-        from zenml.zen_server.utils import server_config
-
-        if not server_config().workload_manager_enabled:
-            return
-
-        if self._has_pending_wait_conditions(run_id=run_id):
-            # TODO: Add a reconciler that revisits runs after pending wait
-            # conditions resolve. Without it, runs that are ready to continue
-            # still rely on the active poller to finish cleanly.
-            return
-
-        run = self.get_run(run_id=run_id, hydrate=False)
-        if not run.snapshot or not run.snapshot.runnable:
-            # Can't run this snapshot from the server
-            return
-
-        from zenml.zen_server.pipeline_execution.utils import restart_run
-
-        restart_run(run=run)
-
-    def _stop_run_if_no_active_lease(self, run_id: UUID) -> None:
-        """Set a run to stopped when no active poller lease exists.
-
-        Args:
-            run_id: Pipeline run ID.
-        """
-        if self._has_active_wait_condition_lease(run_id=run_id):
-            # TODO: Add a reconciler that revisits terminal wait conditions once
-            # active leases expire. Without it, resolving a condition while a
-            # poller is alive still relies on that poller to finish cleanly.
-            return
-
-        with Session(self.engine) as session:
-            stmt = (
-                update(PipelineRunSchema)
-                .where(
-                    col(PipelineRunSchema.id) == run_id,
-                    col(PipelineRunSchema.status).in_(
-                        [
-                            ExecutionStatus.RUNNING.value,
-                            ExecutionStatus.PAUSED.value,
-                        ]
-                    ),
-                )
-                .values(
-                    status=ExecutionStatus.STOPPED.value,
-                    status_reason=("Wait condition was aborted."),
-                    updated=utc_now(),
-                )
+            raise IllegalOperationError(
+                "Resuming runs is only possible when running in a server"
             )
-            session.execute(stmt)
-            session.commit()
+
+        run = self.get_run(run_id)
+        from zenml.zen_server.pipeline_execution.utils import resume_run
+
+        resume_run(run=run)
 
     def _has_active_wait_condition_lease(self, run_id: UUID) -> bool:
         """Check whether a run has an active wait-condition poller lease.
@@ -7375,8 +7349,7 @@ class SqlZenStore(BaseZenStore):
                 .values(**values)
             )
             result = session.execute(stmt)
-            rowcount = getattr(result, "rowcount", None)
-            if rowcount == 0:
+            if result.rowcount == 0:  # type: ignore[attr-defined]
                 refreshed_schema = self._get_schema_by_id(
                     resource_id=run_wait_condition_id,
                     schema_class=RunWaitConditionSchema,

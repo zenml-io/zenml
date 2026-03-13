@@ -86,20 +86,7 @@ def wait(
     metadata: Optional[Dict[str, Any]] = None,
     after: Optional[Sequence["AnyStepFuture"]] = None,
     name: Optional[str] = None,
-) -> T:
-    """Pause dynamic execution on an external wait condition.
-
-    Args:
-        schema: Expected output type for the resolved result.
-        type: Wait condition type.
-        timeout: Maximum time in seconds to poll before pausing.
-        poll_interval: Poll interval in seconds.
-        question: Optional question shown to external actors.
-        metadata: Optional metadata attached to the condition.
-        after: Optional upstream futures that must finish before waiting.
-        name: Optional deterministic wait condition name.
-
-    """
+) -> T: ...
 
 
 @overload
@@ -112,20 +99,7 @@ def wait(
     metadata: Optional[Dict[str, Any]] = None,
     after: Optional[Sequence["AnyStepFuture"]] = None,
     name: Optional[str] = None,
-) -> Any:
-    """Pause dynamic execution on an external wait condition.
-
-    Args:
-        schema: Optional expected output type for the resolved result.
-        type: Wait condition type.
-        timeout: Maximum time in seconds to poll before pausing.
-        poll_interval: Poll interval in seconds.
-        question: Optional question shown to external actors.
-        metadata: Optional metadata attached to the condition.
-        after: Optional upstream futures that must finish before waiting.
-        name: Optional deterministic wait condition name.
-
-    """
+) -> Any: ...
 
 
 def wait(

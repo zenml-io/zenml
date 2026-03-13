@@ -301,94 +301,87 @@ def run_snapshot(
     return placeholder_run
 
 
-def restart_run(run: PipelineRunResponse) -> None:
-    """Restart a run from the server.
+def resume_run(run: PipelineRunResponse) -> None:
+    """Resume a run from the server.
 
     Args:
-        run: The pipeline run that should be restarted.
+        run: The pipeline run that should be resumed
 
     Raises:
         MaxConcurrentTasksError: If workload submission exceeds concurrency
             limits.
-        Exception: If the restart submission fails.
+        IllegalOperationError: If the run is not resuming.
     """
+    if run.status != ExecutionStatus.RESUMING:
+        raise IllegalOperationError(
+            "Cannot restart a run that is not resuming."
+        )
+
+    if not server_config().workload_manager_enabled:
+        raise IllegalOperationError(
+            "Resuming runs is only possible when the workload manager is enabled."
+        )
+
     auth_context = get_auth_context()
     assert auth_context
-    previous_status = run.status
 
+    # TOOD: Probably should add the empty runner log source here?
+
+    snapshot = run.snapshot
+    if not run.snapshot or not run.snapshot.runnable:
+        raise IllegalOperationError(
+            "Cannot resume a run that is not based on a runnable snapshot."
+        )
+    if not snapshot.is_dynamic:
+        raise IllegalOperationError(
+            "Cannot resume a run of a static pipeline."
+        )
+
+    build, stack, zenml_version = validate_snapshot_for_server_execution(
+        snapshot=snapshot
+    )
+    environment = build_runner_environment(
+        snapshot=snapshot,
+        stack=stack,
+        run_id=run.id,
+        auth_context=auth_context,
+        zenml_version=zenml_version,
+    )
+    command = RunnerEntrypointConfiguration.get_entrypoint_command()
+    args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
+        snapshot_id=snapshot.id,
+        run_id=run.id,
+        resume=True,
+    )
+    dockerfile = build_runner_dockerfile(
+        stack=stack, build=build, zenml_version=zenml_version
+    )
+
+    def _task() -> None:
+        _build_and_run(
+            workload_id=snapshot.id,
+            workload_type=WorkloadType.RUN,
+            command=command,
+            arguments=args,
+            environment=environment,
+            dockerfile=dockerfile,
+            wait_for_completion=False,
+        )
+
+    # TODO: Do we actually want to check/report usage of this feature here?
+    # I assume yes, because it's equivalent to a snapshot run, but is
+    # automatically triggered when answering a wait condition.
+    check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
     try:
-        run = zen_store().update_run(
-            run_id=run.id,
-            run_update=PipelineRunUpdate(
-                status=ExecutionStatus.RESUMING,
-                status_reason="Automatically resuming run from server.",
-            ),
+        snapshot_executor().submit(_task)
+        report_usage(
+            feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
+            resource_id=run.id,
         )
-    except IllegalOperationError:
-        logger.info(
-            "Skipping restart of run `%s` because it is already resuming.",
-            run.id,
-        )
-        return
-
-    try:
-        snapshot = run.snapshot
-        assert snapshot
-        assert snapshot.is_dynamic
-        build, stack, zenml_version = validate_snapshot_for_server_execution(
-            snapshot=snapshot
-        )
-        environment = build_runner_environment(
-            snapshot=snapshot,
-            stack=stack,
-            run_id=run.id,
-            auth_context=auth_context,
-            zenml_version=zenml_version,
-        )
-        command = RunnerEntrypointConfiguration.get_entrypoint_command()
-        args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
-            snapshot_id=snapshot.id,
-            run_id=run.id,
-            resume=True,
-        )
-        dockerfile = build_runner_dockerfile(
-            stack=stack, build=build, zenml_version=zenml_version
-        )
-
-        def _task() -> None:
-            _build_and_run(
-                workload_id=snapshot.id,
-                workload_type=WorkloadType.RUN,
-                command=command,
-                arguments=args,
-                environment=environment,
-                dockerfile=dockerfile,
-                wait_for_completion=False,
-            )
-
-        # TODO: Do we actually want to check/report usage of this feature here?
-        # I assume yes, because it's equivalent to a snapshot run, but is
-        # automatically triggered when answering a wait condition.
-        check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
-        try:
-            snapshot_executor().submit(_task)
-            report_usage(
-                feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
-                resource_id=run.id,
-            )
-        except MaxConcurrentTasksError:
-            raise MaxConcurrentTasksError(
-                "Maximum number of concurrent snapshot tasks reached."
-            ) from None
-    except Exception:
-        zen_store().update_run(
-            run_id=run.id,
-            run_update=PipelineRunUpdate(
-                status=previous_status,
-                status_reason="Restart submission failed.",
-            ),
-        )
-        raise
+    except MaxConcurrentTasksError:
+        raise MaxConcurrentTasksError(
+            "Maximum number of concurrent snapshot tasks reached."
+        ) from None
 
 
 def ensure_async_orchestrator(
