@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -65,6 +65,9 @@ if TYPE_CHECKING:
         PipelineBuildResponse,
     )
     from zenml.models.v2.core.pipeline_snapshot import PipelineSnapshotResponse
+    from zenml.models.v2.core.run_wait_condition import (
+        RunWaitConditionResponse,
+    )
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
@@ -163,6 +166,18 @@ class PipelineRunRequest(ProjectScopedRequest):
             ExecutionStatus.PROVISIONING,
         }
 
+    @model_validator(mode="after")
+    def _validate_status(self) -> "PipelineRunRequest":
+        if self.status not in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.RUNNING,
+        }:
+            raise ValueError(
+                "Run must be started in the initializing or running state."
+            )
+
+        return self
+
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -177,11 +192,6 @@ class PipelineRunUpdate(BaseUpdate):
         default=None,
         title="The reason for the status of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
-    )
-    end_time: Optional[datetime] = None
-    is_finished: Optional[bool] = Field(
-        default=None,
-        title="Whether the pipeline run is finished.",
     )
     orchestrator_run_id: Optional[str] = None
     exception_info: Optional[ExceptionInfo] = Field(
@@ -335,6 +345,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     original_run: Optional["PipelineRunResponse"] = Field(
         default=None,
         title="The original run that was replayed to create this run.",
+    )
+    active_wait_condition: Optional["RunWaitConditionResponse"] = Field(
+        default=None,
+        title="The active pending wait condition associated with this run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -680,6 +694,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().original_run
+
+    @property
+    def active_wait_condition(self) -> Optional["RunWaitConditionResponse"]:
+        """The `active_wait_condition` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().active_wait_condition
 
 
 # ------------------ Filter Model ------------------

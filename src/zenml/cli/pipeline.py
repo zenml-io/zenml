@@ -16,6 +16,7 @@
 import json
 import os
 from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
 import click
 
@@ -25,14 +26,18 @@ from zenml.cli.utils import OutputFormat, fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.deployers.base_deployer import BaseDeployer
-from zenml.enums import CliCategories
+from zenml.enums import CliCategories, ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildBase,
     PipelineBuildFilter,
     PipelineFilter,
     PipelineRunFilter,
+    PipelineRunUpdate,
     PipelineSnapshotFilter,
+    RunWaitConditionFilter,
+    RunWaitConditionResolution,
+    RunWaitConditionStatus,
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
@@ -840,6 +845,287 @@ def list_pipeline_runs(
     )
 
 
+@runs.group(name="wait-conditions")
+def run_wait_conditions() -> None:
+    """Commands for run wait conditions."""
+
+
+@run_wait_conditions.command("list")
+@list_options(
+    RunWaitConditionFilter,
+    default_columns=[
+        "id",
+        "name",
+        "type",
+        "status",
+        "created",
+    ],
+)
+def list_run_wait_conditions(
+    columns: str,
+    output_format: OutputFormat,
+    **kwargs: Any,
+) -> None:
+    """List run wait conditions.
+
+    Args:
+        columns: Columns to display.
+        output_format: Format for output.
+        **kwargs: Additional wait condition filters.
+    """
+    client = Client()
+    try:
+        with console.status("Listing wait conditions...\n"):
+            conditions = client.list_run_wait_conditions(**kwargs)
+    except KeyError as err:
+        cli_utils.exception(err)
+
+    cli_utils.print_page(
+        conditions,
+        columns,
+        output_format,
+        empty_message="No wait conditions found.",
+    )
+
+
+@run_wait_conditions.command("resolve")
+@click.argument("wait_condition_id", type=str, required=False)
+@click.option(
+    "--resolution",
+    type=click.Choice([r.value for r in RunWaitConditionResolution]),
+    required=False,
+    help="Condition resolution.",
+)
+@click.option(
+    "--result",
+    type=str,
+    required=False,
+    help="Optional JSON result for the condition.",
+)
+@click.option(
+    "--interactive",
+    "-i",
+    is_flag=True,
+    default=False,
+    help="Interactively review and resolve pending wait conditions.",
+)
+@click.option(
+    "--run",
+    "-r",
+    "run_name_or_id",
+    type=str,
+    required=False,
+    help="Optional run name/ID to scope interactive resolution.",
+)
+def resolve_wait_condition(
+    wait_condition_id: Optional[str] = None,
+    resolution: Optional[str] = None,
+    result: Optional[str] = None,
+    interactive: bool = False,
+    run_name_or_id: Optional[str] = None,
+) -> None:
+    """Resolve run wait conditions.
+
+    Args:
+        wait_condition_id: Optional wait condition ID to resolve or review.
+        resolution: Optional resolution semantic value.
+        result: Optional JSON value with result.
+        interactive: Whether to interactively review pending wait conditions.
+        run_name_or_id: Optional run name or ID to scope interactive resolution.
+    """
+    if interactive:
+        if resolution is not None or result is not None:
+            cli_utils.error(
+                "`--interactive` cannot be used with `--resolution` or "
+                "`--result`."
+            )
+        _interactive_resolve_wait_conditions(
+            wait_condition_id=wait_condition_id,
+            run_name_or_id=run_name_or_id,
+        )
+        return
+
+    if wait_condition_id is None:
+        cli_utils.error(
+            "Argument `WAIT_CONDITION_ID` is required in non-interactive mode."
+        )
+    if resolution is None:
+        cli_utils.error(
+            "Option `--resolution` is required in non-interactive mode."
+        )
+
+    resolution_enum = RunWaitConditionResolution(resolution)
+    if (
+        resolution_enum == RunWaitConditionResolution.ABORT
+        and result is not None
+    ):
+        cli_utils.error("`--result` cannot be used with `--resolution abort`.")
+
+    result_value: Optional[Any] = None
+    if result:
+        try:
+            result_value = json.loads(result)
+        except json.JSONDecodeError as e:
+            cli_utils.error(f"Invalid JSON for `--result`: {e}")
+
+    try:
+        condition_id = UUID(wait_condition_id)
+    except ValueError:
+        cli_utils.error(f"Invalid wait condition ID: `{wait_condition_id}`.")
+
+    try:
+        Client().resolve_run_wait_condition(
+            run_wait_condition_id=condition_id,
+            resolution=resolution_enum,
+            result=result_value,
+        )
+    except KeyError as err:
+        cli_utils.exception(err)
+
+    cli_utils.declare(
+        f"Resolved wait condition `{wait_condition_id}` with resolution "
+        f"`{resolution_enum.value}`."
+    )
+
+
+def _interactive_resolve_wait_conditions(
+    wait_condition_id: Optional[str] = None,
+    run_name_or_id: Optional[str] = None,
+) -> None:
+    """Interactively resolve pending wait conditions.
+
+    Args:
+        wait_condition_id: Optional wait condition ID to review.
+        run_name_or_id: Optional run name or ID to narrow the resolution scope.
+    """
+    client = Client()
+    conditions: List[Any] = []
+    if wait_condition_id is not None:
+        try:
+            condition = client.zen_store.get_run_wait_condition(
+                UUID(wait_condition_id), hydrate=True
+            )
+        except ValueError:
+            cli_utils.error(
+                f"Invalid wait condition ID: `{wait_condition_id}`."
+            )
+        if condition.status != RunWaitConditionStatus.PENDING:
+            cli_utils.error(
+                f"Wait condition `{wait_condition_id}` is currently "
+                f"`{condition.status.value}`, not `pending`."
+            )
+        conditions = [condition]
+    else:
+        page = 1
+        size = 100
+        while True:
+            page_result = client.list_run_wait_conditions(
+                project=client.active_project.id,
+                pipeline_run=run_name_or_id,
+                status=RunWaitConditionStatus.PENDING.value,
+                sort_by="asc:created",
+                page=page,
+                size=size,
+                hydrate=True,
+            )
+            conditions.extend(page_result.items)
+            if page >= page_result.total_pages:
+                break
+            page += 1
+
+    if not conditions:
+        if wait_condition_id:
+            cli_utils.declare(
+                f"No pending wait condition found for `{wait_condition_id}`."
+            )
+        elif run_name_or_id:
+            cli_utils.declare(
+                f"No pending wait conditions found for run `{run_name_or_id}`."
+            )
+        else:
+            cli_utils.declare("No pending wait conditions found.")
+        return
+
+    for idx, condition in enumerate(conditions, start=1):
+        run_name = condition.run.name
+        run_id = condition.run.id
+
+        click.echo("")
+        click.echo(f"[{idx}/{len(conditions)}] Run `{run_name}` ({run_id})")
+        click.echo(f"Condition `{condition.id}` name={condition.name}")
+        click.echo(
+            f"Type: {condition.type.value} | Status: {condition.status}"
+        )
+
+        if condition.question:
+            click.echo("\nQuestion:")
+            click.echo(condition.question)
+
+        expected_schema = condition.data_schema
+        if expected_schema is not None:
+            click.echo("\nExpected JSON schema:")
+            click.echo(json.dumps(expected_schema, indent=2, sort_keys=True))
+
+        while True:
+            action = (
+                click.prompt(
+                    "\nAction [c=continue, a=abort, s=skip, q=quit]",
+                    type=str,
+                    default="c",
+                )
+                .strip()
+                .lower()
+            )
+            if action in {"c", "a", "s", "q"}:
+                break
+            click.echo("invalid action", err=True)
+
+        if action == "q":
+            break
+        if action == "s":
+            continue
+
+        resolution = (
+            RunWaitConditionResolution.CONTINUE
+            if action == "c"
+            else RunWaitConditionResolution.ABORT
+        )
+
+        result: Optional[Any] = None
+        if (
+            resolution == RunWaitConditionResolution.CONTINUE
+            and expected_schema is not None
+        ):
+            while True:
+                raw_value = click.prompt(
+                    "JSON value for `result` (empty for null)",
+                    type=str,
+                    default="",
+                    show_default=False,
+                )
+                if raw_value == "":
+                    result = None
+                    break
+                try:
+                    result = json.loads(raw_value)
+                    break
+                except json.JSONDecodeError as e:
+                    click.echo(f"Invalid JSON value: {e}", err=True)
+
+        try:
+            client.resolve_run_wait_condition(
+                run_wait_condition_id=condition.id,
+                resolution=resolution,
+                result=result,
+            )
+            cli_utils.declare(
+                f"Resolved wait condition `{condition.id}` with resolution "
+                f"`{resolution.value}`."
+            )
+        except Exception as e:
+            click.echo(f"Failed to resolve wait condition: {e}", err=True)
+
+
 @runs.command("stop")
 @click.argument("run_name_or_id", type=str, required=True)
 @click.option(
@@ -891,6 +1177,137 @@ def stop_pipeline_run(
         )
     except Exception as e:
         cli_utils.error(f"Failed to stop pipeline run: {e}")
+
+
+@runs.command("resume")
+@click.argument("run_name_or_id", type=str, required=True)
+def resume_pipeline_run(run_name_or_id: str) -> None:
+    """Resume a pipeline run.
+
+    Args:
+        run_name_or_id: The name or ID of the pipeline run to resume.
+    """
+    try:
+        client = Client()
+        run = client.get_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+            hydrate=True,
+        )
+
+        if run.status != ExecutionStatus.PAUSED:
+            cli_utils.error("Cannot resume a run that is not paused.")
+
+        if run.active_wait_condition:
+            cli_utils.error(
+                "Cannot resume a run that has an active wait condition. "
+                "Please resolve it before resuming the run:\n"
+                "`zenml pipeline runs wait-conditions resolve "
+                f"--run {run.id} --interactive`"
+            )
+
+        snapshot = run.snapshot
+        if snapshot is None:
+            cli_utils.error(
+                "Unable to resume run because the snapshot is missing."
+            )
+
+        if not snapshot.stack:
+            cli_utils.error(
+                "Unable to resume run because the stack is missing."
+            )
+
+        client.zen_store.update_run(
+            run_id=run.id,
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.RESUMING,
+                status_reason="Manual resume requested by user.",
+            ),
+        )
+        try:
+            with cli_utils.temporary_active_stack(
+                stack_name_or_id=snapshot.stack.id
+            ) as stack:
+                stack.orchestrator.restart_run(
+                    snapshot=snapshot, run=run, stack=stack
+                )
+        except Exception:
+            client.zen_store.update_run(
+                run_id=run.id,
+                run_update=PipelineRunUpdate(
+                    status=ExecutionStatus.PAUSED,
+                    status_reason="Resume submission failed.",
+                ),
+            )
+            raise
+    except Exception as e:
+        cli_utils.error(f"Failed to resume pipeline run: {e}")
+
+
+@runs.command("retry")
+@click.argument("run_name_or_id", type=str, required=True)
+def retry_pipeline_run(run_name_or_id: str) -> None:
+    """Retry a pipeline run by restarting its orchestrator run.
+
+    Args:
+        run_name_or_id: The name or ID of the pipeline run to retry.
+
+    Raises:
+        RuntimeError: If retrying the run fails.
+    """
+    try:
+        client = Client()
+        run = client.get_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+            hydrate=True,
+        )
+
+        if run.status != ExecutionStatus.FAILED:
+            cli_utils.error("Cannot retry a run that is not failed.")
+
+        snapshot = run.snapshot
+        if snapshot is None:
+            cli_utils.error(
+                "Unable to retry run because the snapshot is missing."
+            )
+
+        if not snapshot.stack:
+            cli_utils.error(
+                "Unable to retry run because the stack is missing."
+            )
+
+        client.zen_store.update_run(
+            run_id=run.id,
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.RESUMING,
+                status_reason="Manual retry requested by user.",
+            ),
+        )
+
+        try:
+            with cli_utils.temporary_active_stack(
+                stack_name_or_id=snapshot.stack.id
+            ) as stack:
+                stack.orchestrator.restart_run(
+                    snapshot=snapshot, run=run, stack=stack
+                )
+        except Exception as e:
+            try:
+                client.zen_store.update_run(
+                    run_id=run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.FAILED,
+                        status_reason="Retry submission failed.",
+                    ),
+                )
+            except Exception as rollback_error:
+                raise RuntimeError(
+                    "Retry submission failed and the run status could not be "
+                    f"rolled back: {rollback_error}"
+                ) from e
+
+            raise
+    except Exception as e:
+        cli_utils.error(f"Failed to retry pipeline run: {e}")
 
 
 @runs.command("delete")

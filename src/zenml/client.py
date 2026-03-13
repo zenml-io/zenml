@@ -150,6 +150,10 @@ from zenml.models import (
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionResolution,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     ScheduleFilter,
     ScheduleResponse,
     ScheduleTriggerRequest,
@@ -4529,6 +4533,102 @@ class Client(metaclass=ClientMetaClass):
             project=project,
         )
         self.zen_store.delete_run(run_id=run.id)
+
+    # ----------------------------- Run wait conditions ------------------------
+
+    def list_run_wait_conditions(
+        self,
+        sort_by: str = "desc:created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        resolved_by: Optional[Union[UUID, str]] = None,
+        resolved_at: Optional[Union[datetime, str]] = None,
+        resolution: Optional[str] = None,
+        pipeline_run: Optional[Union[str, UUID]] = None,
+        project: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
+        status: Optional[str] = None,
+        type: Optional[str] = None,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions.
+
+        Args:
+            sort_by: Sort expression.
+            page: Page number.
+            size: Page size.
+            logical_operator: Logical operator for combining filters.
+            id: Optional wait condition ID filter.
+            created: Optional creation timestamp filter.
+            updated: Optional update timestamp filter.
+            name: Optional wait condition name filter.
+            resolved_by: Optional resolver name/ID filter.
+            resolved_at: Optional resolution timestamp filter.
+            resolution: Optional resolution filter.
+            pipeline_run: Optional pipeline run name/ID filter.
+            project: Optional project name/ID for run lookup or filtering.
+            user: Optional user name/ID for resolver lookup or filtering.
+            status: Optional status filter.
+            type: Optional type filter.
+            hydrate: Whether to hydrate metadata/resources.
+
+        Returns:
+            A page of run wait conditions.
+        """
+        filter_model = RunWaitConditionFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            project=project or self.active_project.id,
+            user=user,
+            status=status,
+            type=type,
+            id=id,
+            name=name,
+            created=created,
+            updated=updated,
+            resolved_by=resolved_by,
+            resolved_at=resolved_at,
+            resolution=resolution,
+            pipeline_run=pipeline_run,
+        )
+
+        return self.zen_store.list_run_wait_conditions(
+            run_wait_condition_filter_model=filter_model,
+            hydrate=hydrate,
+        )
+
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolution: RunWaitConditionResolution = (
+            RunWaitConditionResolution.CONTINUE
+        ),
+        result: Optional[Any] = None,
+    ) -> RunWaitConditionResponse:
+        """Resolve a wait condition.
+
+        Args:
+            run_wait_condition_id: ID of the wait condition.
+            resolution: Resolution semantic.
+            result: Optional resolved result value.
+
+        Returns:
+            The resolved wait condition.
+        """
+        return self.zen_store.resolve_run_wait_condition(
+            run_wait_condition_id=run_wait_condition_id,
+            resolve_request=RunWaitConditionResolveRequest(
+                resolution=resolution,
+                result=result,
+            ),
+        )
 
     # -------------------------------- Step run --------------------------------
 

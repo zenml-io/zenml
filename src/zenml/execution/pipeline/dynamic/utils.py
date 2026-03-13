@@ -14,16 +14,31 @@
 """Dynamic pipeline execution utilities."""
 
 import time
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    overload,
+)
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.models import ArtifactVersionResponse, StepRunResponse
+from zenml.models import (
+    ArtifactVersionResponse,
+    RunWaitConditionType,
+    StepRunResponse,
+)
 
 if TYPE_CHECKING:
     from zenml.execution.pipeline.dynamic.outputs import (
+        AnyStepFuture,
         OutputArtifact,
         StepRunOutputs,
     )
@@ -59,6 +74,82 @@ def unmapped(value: T) -> _Unmapped[T]:
         The wrapped value.
     """
     return _Unmapped(value)
+
+
+@overload
+def wait(
+    schema: Type[T],
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+    timeout: int = 600,
+    poll_interval: int = 5,
+    question: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    after: Optional[Sequence["AnyStepFuture"]] = None,
+    name: Optional[str] = None,
+) -> T: ...
+
+
+@overload
+def wait(
+    schema: object = None,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+    timeout: int = 600,
+    poll_interval: int = 5,
+    question: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    after: Optional[Sequence["AnyStepFuture"]] = None,
+    name: Optional[str] = None,
+) -> Any: ...
+
+
+def wait(
+    schema: Optional[Any] = None,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+    timeout: int = 600,
+    poll_interval: int = 5,
+    question: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    after: Optional[Sequence["AnyStepFuture"]] = None,
+    name: Optional[str] = None,
+) -> Any:
+    """Pause dynamic execution on an external wait condition.
+
+    Args:
+        schema: Optional expected output type for the resolved result.
+        type: Wait condition type.
+        timeout: Maximum time in seconds to poll before pausing.
+        poll_interval: Poll interval in seconds.
+        question: Optional question shown to external actors.
+        metadata: Optional metadata attached to the condition.
+        after: Optional upstream futures that must finish before waiting.
+        name: Optional deterministic wait condition name.
+
+    Raises:
+        RuntimeError: If called outside of dynamic pipeline execution.
+
+    Returns:
+        The resolved wait condition value.
+    """
+    from zenml.execution.pipeline.dynamic.run_context import (
+        DynamicPipelineRunContext,
+    )
+
+    context = DynamicPipelineRunContext.get()
+    if not context:
+        raise RuntimeError(
+            "`zenml.wait(...)` can only be used inside dynamic pipelines."
+        )
+
+    return context.runner.wait(
+        schema=schema,
+        type=type,
+        timeout=timeout,
+        poll_interval=poll_interval,
+        question=question,
+        after=after,
+        metadata=metadata,
+        name=name,
+    )
 
 
 def wait_for_step_run_to_finish(step_run_id: UUID) -> "StepRunResponse":

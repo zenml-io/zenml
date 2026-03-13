@@ -93,6 +93,8 @@ class ExecutionStatus(StrEnum):
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    PAUSED = "paused"
+    RESUMING = "resuming"
     STOPPED = "stopped"
     STOPPING = "stopping"
 
@@ -153,6 +155,26 @@ class ExecutionMode(StrEnum):
     FAIL_FAST = "fail_fast"
     STOP_ON_FAILURE = "stop_on_failure"
     CONTINUE_ON_FAILURE = "continue_on_failure"
+
+
+class RunWaitConditionType(StrEnum):
+    """Supported wait condition types."""
+
+    EXTERNAL_INPUT = "external_input"
+
+
+class RunWaitConditionStatus(StrEnum):
+    """Lifecycle states for a wait condition."""
+
+    PENDING = "pending"
+    RESOLVED = "resolved"
+
+
+class RunWaitConditionResolution(StrEnum):
+    """Resolution outcomes for resolved wait conditions."""
+
+    CONTINUE = "continue"
+    ABORT = "abort"
 
 
 class StackComponentType(StrEnum):

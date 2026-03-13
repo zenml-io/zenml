@@ -466,6 +466,52 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
+    def restart_run(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        run: "PipelineRunResponse",
+        stack: "Stack",
+        force_async: bool = False,
+    ) -> None:
+        """Restart an existing dynamic pipeline run.
+
+        Args:
+            snapshot: Snapshot backing the run.
+            run: Existing pipeline run to restart.
+            stack: Stack used for the restart.
+            force_async: Whether to skip waiting for submission completion.
+
+        Raises:
+            RuntimeError: If the snapshot does not represent a dynamic pipeline.
+        """
+        if not snapshot.is_dynamic:
+            raise RuntimeError("Cannot restart a non-dynamic pipeline.")
+
+        self._prepare_run(snapshot=snapshot)
+
+        base_environment, secrets = get_config_environment_vars(
+            pipeline_run_id=run.id,
+        )
+        base_environment.update(secrets)
+
+        try:
+            submission_result = self.submit_dynamic_pipeline(
+                snapshot=snapshot,
+                stack=stack,
+                environment=base_environment,
+                placeholder_run=run,
+            )
+
+            if submission_result:
+                if submission_result.metadata:
+                    # TODO: Do we somehow prefix the metadata here
+                    pass
+
+                if submission_result.wait_for_completion and not force_async:
+                    submission_result.wait_for_completion()
+        finally:
+            self._cleanup_run()
+
     def run_step(
         self,
         step: "Step",

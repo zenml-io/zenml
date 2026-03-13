@@ -18,7 +18,7 @@ import os
 import sys
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from packaging import version
@@ -44,11 +44,12 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import MaxConcurrentTasksError
+from zenml.exceptions import IllegalOperationError, MaxConcurrentTasksError
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
     FlavorFilter,
+    PipelineBuildResponse,
     PipelineRunResponse,
     PipelineRunTriggerInfo,
     PipelineRunUpdate,
@@ -65,9 +66,9 @@ from zenml.pipelines.run_utils import (
 )
 from zenml.stack.flavor import Flavor
 from zenml.utils import pydantic_utils, requirements_utils, settings_utils
-from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
     report_usage,
 )
 from zenml.zen_server.pipeline_execution.runner_entrypoint_configuration import (
@@ -156,7 +157,7 @@ def run_snapshot(
     wait_runner_pod: bool = True,
     trigger_id: UUID | None = None,
 ) -> PipelineRunResponse:
-    """Run a pipeline from a snapshot.
+    """Run a snapshot from the server.
 
     Args:
         snapshot: The snapshot to run.
@@ -171,8 +172,6 @@ def run_snapshot(
         trigger_id: The trigger ID that generated the snapshot run (optional).
 
     Raises:
-        ValueError: If the snapshot can not be run.
-        RuntimeError: If the server URL is not set in the server configuration.
         MaxConcurrentTasksError: If the maximum number of concurrent run
             snapshot tasks is reached.
 
@@ -182,43 +181,10 @@ def run_snapshot(
     if not implicit_auth_context:
         set_auth_context(auth_context)
     logger.info("Current auth context: %s", get_auth_context())
-
-    if not snapshot.runnable:
-        if stack := snapshot.stack:
-            validate_stack_is_runnable_from_server(
-                zen_store=zen_store(), stack=stack
-            )
-        if not snapshot.build:
-            raise ValueError(
-                "This snapshot can not be run via the server because it does "
-                "not have an associated build. This is probably because the "
-                "build has been deleted."
-            )
-
-        raise ValueError("This snapshot can not be run via the server.")
-
-    # Guaranteed by the `runnable` check above
-    build = snapshot.build
-    assert build
-    stack = build.stack
-    assert stack
-
-    if build.stack_checksum and build.stack_checksum != compute_stack_checksum(
-        stack=stack
-    ):
-        raise ValueError(
-            f"The stack {stack.name} has been updated since it was used for "
-            "the snapshot. This means the Docker "
-            "images associated with this template most likely do not contain "
-            "the necessary requirements. Please create a new snapshot with "
-            "the updated stack."
-        )
-
-    validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
-    if request.run_configuration:
-        validate_run_config_is_runnable_from_server(
-            request.run_configuration, is_dynamic=snapshot.is_dynamic
-        )
+    build, stack, zenml_version = validate_snapshot_for_server_execution(
+        snapshot=snapshot,
+        run_configuration=request.run_configuration,
+    )
 
     snapshot_request = snapshot_request_from_source_snapshot(
         source_snapshot=snapshot,
@@ -232,14 +198,6 @@ def run_snapshot(
         target_snapshot = zen_store().create_snapshot(snapshot_request)
     else:
         target_snapshot = snapshot
-
-    server_url = server_config().server_url
-    if not server_url:
-        raise RuntimeError(
-            "The server URL is not set in the server configuration."
-        )
-    assert build.zenml_version
-    zenml_version = build.zenml_version
 
     trigger_info = None
     if request.step_run:
@@ -264,100 +222,26 @@ def run_snapshot(
         resource_id=placeholder_run.id,
     )
 
-    # We create an API token scoped to the pipeline run that never expires
-    api_token = generate_access_token(
-        user_id=auth_context.user.id,
-        pipeline_run_id=placeholder_run.id,
-        # Keep the original API key or device scopes, if any
-        api_key=auth_context.api_key,
-        device=auth_context.device,
-        # Never expire the token
-        expires_in=0,
-    ).access_token
-
-    environment = {
-        ENV_ZENML_ACTIVE_PROJECT_ID: str(target_snapshot.project_id),
-        ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
-        "ZENML_VERSION": zenml_version,
-        "ZENML_STORE_URL": server_url,
-        "ZENML_STORE_TYPE": StoreType.REST.value,
-        "ZENML_STORE_API_TOKEN": api_token,
-        "ZENML_STORE_VERIFY_SSL": "True",
-    }
-
+    environment = build_runner_environment(
+        snapshot=target_snapshot,
+        stack=stack,
+        run_id=placeholder_run.id,
+        auth_context=auth_context,
+        zenml_version=zenml_version,
+    )
     command = RunnerEntrypointConfiguration.get_entrypoint_command()
     args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
         snapshot_id=target_snapshot.id,
-        placeholder_run_id=placeholder_run.id,
+        run_id=placeholder_run.id,
     )
-
-    if build.python_version:
-        version_info = version.parse(build.python_version)
-        python_version = f"{version_info.major}.{version_info.minor}"
-    else:
-        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
-
-    (
-        pypi_requirements,
-        apt_packages,
-    ) = requirements_utils.get_requirements_for_stack(
-        stack=stack, python_version=python_version
-    )
-
-    dockerfile = generate_dockerfile(
-        pypi_requirements=pypi_requirements,
-        apt_packages=apt_packages,
-        zenml_version=zenml_version,
-        python_version=python_version,
-    )
-
-    # Building a docker image with requirements and apt packages from the
-    # stack only (no code). Ideally, only orchestrator requirements should
-    # be added to the docker image, but we have to instantiate the entire
-    # stack to get the orchestrator to run pipelines.
-    image_hash = generate_image_hash(dockerfile=dockerfile)
-    logger.info(
-        "Building runner image %s for dockerfile:\n%s", image_hash, dockerfile
+    dockerfile = build_runner_dockerfile(
+        stack=stack, build=build, zenml_version=zenml_version
     )
 
     workload_id = placeholder_run.id if trigger_id else target_snapshot.id
     workload_type = WorkloadType.RUN if trigger_id else WorkloadType.SNAPSHOT
 
     def _task() -> None:
-        runner_image = workload_manager().build_and_push_image(
-            workload_id=workload_id,
-            workload_type=workload_type,
-            dockerfile=dockerfile,
-            image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
-            sync=True,
-        )
-
-        workload_manager().log(
-            workload_id=workload_id,
-            message="Starting pipeline run.",
-        )
-
-        runner_timeout = handle_int_env_var(
-            ENV_ZENML_RUNNER_POD_TIMEOUT, default=180
-        )
-
-        # could do this same thing with a step operator, but we need some
-        # minor changes to the abstract interface to support that.
-        workload_manager().run(
-            workload_id=workload_id,
-            image=runner_image,
-            command=command,
-            arguments=args,
-            environment=environment,
-            timeout_in_seconds=runner_timeout,
-            sync=wait_runner_pod,
-        )
-        workload_manager().log(
-            workload_id=workload_id,
-            message="Pipeline run started successfully.",
-        )
-
-    def _task_with_analytics_and_error_handling() -> None:
         with track_handler(
             event=AnalyticsEvent.RUN_PIPELINE
         ) as analytics_handler:
@@ -373,7 +257,16 @@ def run_snapshot(
             )
 
             try:
-                _task()
+                _build_and_run(
+                    workload_id=workload_id,
+                    workload_type=workload_type,
+                    command=command,
+                    arguments=args,
+                    environment=environment,
+                    dockerfile=dockerfile,
+                    wait_for_completion=wait_runner_pod,
+                    success_message="Pipeline run started successfully.",
+                )
             except Exception:
                 logger.exception(
                     "Failed to run snapshot %s, run ID: %s",
@@ -390,16 +283,15 @@ def run_snapshot(
                         run_update=PipelineRunUpdate(
                             status=ExecutionStatus.FAILED,
                             status_reason="Failed to start run.",
-                            end_time=utc_now(),
                         ),
                     )
                     raise
 
     if sync:
-        _task_with_analytics_and_error_handling()
+        _task()
     else:
         try:
-            snapshot_executor().submit(_task_with_analytics_and_error_handling)
+            snapshot_executor().submit(_task)
         except MaxConcurrentTasksError:
             zen_store().delete_run(run_id=placeholder_run.id)
             raise MaxConcurrentTasksError(
@@ -407,6 +299,100 @@ def run_snapshot(
             ) from None
 
     return placeholder_run
+
+
+def resume_run(run: PipelineRunResponse) -> None:
+    """Resume a run from the server.
+
+    Args:
+        run: The pipeline run that should be resumed
+
+    Raises:
+        MaxConcurrentTasksError: If workload submission exceeds concurrency
+            limits.
+        IllegalOperationError: If the run is not resuming.
+    """
+    if run.status != ExecutionStatus.RESUMING:
+        raise IllegalOperationError(
+            "Cannot restart a run that is not resuming."
+        )
+
+    if not server_config().workload_manager_enabled:
+        raise IllegalOperationError(
+            "Resuming runs is only possible when the workload manager is enabled."
+        )
+
+    snapshot = run.snapshot
+    if not snapshot or not snapshot.runnable:
+        raise IllegalOperationError(
+            "Cannot resume a run that is not based on a runnable snapshot."
+        )
+    if not snapshot.is_dynamic:
+        raise IllegalOperationError(
+            "Cannot resume a run of a static pipeline."
+        )
+
+    has_runner_logs = any(
+        log.source == LOGS_RUNNER_SOURCE for log in run.log_collection or []
+    )
+    if not has_runner_logs:
+        # TODO: How should we handle multiple resumes here? Currently, the logs
+        # simply get appended.
+        zen_store().update_run(
+            run.id,
+            PipelineRunUpdate(
+                add_logs=[LogsRequest(source=LOGS_RUNNER_SOURCE)]
+            ),
+        )
+
+    auth_context = get_auth_context()
+    assert auth_context
+
+    build, stack, zenml_version = validate_snapshot_for_server_execution(
+        snapshot=snapshot
+    )
+    environment = build_runner_environment(
+        snapshot=snapshot,
+        stack=stack,
+        run_id=run.id,
+        auth_context=auth_context,
+        zenml_version=zenml_version,
+    )
+    command = RunnerEntrypointConfiguration.get_entrypoint_command()
+    args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
+        snapshot_id=snapshot.id,
+        run_id=run.id,
+        resume=True,
+    )
+    dockerfile = build_runner_dockerfile(
+        stack=stack, build=build, zenml_version=zenml_version
+    )
+
+    def _task() -> None:
+        _build_and_run(
+            workload_id=run.id,
+            workload_type=WorkloadType.RUN,
+            command=command,
+            arguments=args,
+            environment=environment,
+            dockerfile=dockerfile,
+            wait_for_completion=False,
+        )
+
+    # TODO: Do we actually want to check/report usage of this feature here?
+    # I assume yes, because it's equivalent to a snapshot run, but is
+    # automatically triggered when answering a wait condition.
+    check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
+    try:
+        snapshot_executor().submit(_task)
+        report_usage(
+            feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
+            resource_id=run.id,
+        )
+    except MaxConcurrentTasksError:
+        raise MaxConcurrentTasksError(
+            "Maximum number of concurrent snapshot tasks reached."
+        ) from None
 
 
 def ensure_async_orchestrator(
@@ -748,3 +734,211 @@ def convert_component_shortcut_settings_keys(
                 )
 
             settings[key] = component_settings
+
+
+def validate_snapshot_for_server_execution(
+    snapshot: PipelineSnapshotResponse,
+    run_configuration: Optional[PipelineRunConfiguration] = None,
+) -> Tuple[PipelineBuildResponse, StackResponse, str]:
+    """Validate that a snapshot can be executed from the server.
+
+    Args:
+        snapshot: Snapshot to validate.
+        run_configuration: Optional run configuration to validate as well.
+
+    Raises:
+        ValueError: If the snapshot or run configuration is not runnable from
+            the server.
+
+    Returns:
+        The snapshot build, stack, and ZenML version.
+    """
+    if not snapshot.runnable:
+        if stack := snapshot.stack:
+            validate_stack_is_runnable_from_server(
+                zen_store=zen_store(), stack=stack
+            )
+        if not snapshot.build:
+            raise ValueError(
+                "This snapshot can not be run via the server because it does "
+                "not have an associated build. This is probably because the "
+                "build has been deleted."
+            )
+
+        raise ValueError("This snapshot can not be run via the server.")
+
+    build = snapshot.build
+    assert build
+    stack = build.stack
+    assert stack
+
+    if build.stack_checksum and build.stack_checksum != compute_stack_checksum(
+        stack=stack
+    ):
+        raise ValueError(
+            f"The stack {stack.name} has been updated since it was used for "
+            "the snapshot. This means the Docker "
+            "images associated with this template most likely do not contain "
+            "the necessary requirements. Please create a new snapshot with "
+            "the updated stack."
+        )
+
+    validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
+    if run_configuration:
+        validate_run_config_is_runnable_from_server(
+            run_configuration, is_dynamic=snapshot.is_dynamic
+        )
+
+    assert build.zenml_version
+    return build, stack, build.zenml_version
+
+
+def build_runner_environment(
+    snapshot: PipelineSnapshotResponse,
+    stack: StackResponse,
+    run_id: UUID,
+    auth_context: AuthContext,
+    zenml_version: str,
+) -> Dict[str, str]:
+    """Build environment variables for a runner workload.
+
+    Args:
+        snapshot: Snapshot to execute.
+        stack: Stack to use for the run.
+        run_id: Pipeline run ID scoped into the API token.
+        auth_context: Authentication context.
+        zenml_version: ZenML version to use.
+
+    Raises:
+        RuntimeError: If the server URL is not configured.
+
+    Returns:
+        Runner workload environment variables.
+    """
+    server_url = server_config().server_url
+    if not server_url:
+        raise RuntimeError(
+            "The server URL is not set in the server configuration."
+        )
+
+    # We create an API token scoped to the pipeline run that never expires.
+    api_token = generate_access_token(
+        user_id=auth_context.user.id,
+        pipeline_run_id=run_id,
+        # Keep the original API key or device scopes, if any.
+        api_key=auth_context.api_key,
+        device=auth_context.device,
+        # Never expire the token.
+        expires_in=0,
+    ).access_token
+
+    return {
+        ENV_ZENML_ACTIVE_PROJECT_ID: str(snapshot.project_id),
+        ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
+        "ZENML_VERSION": zenml_version,
+        "ZENML_STORE_URL": server_url,
+        "ZENML_STORE_TYPE": StoreType.REST.value,
+        "ZENML_STORE_API_TOKEN": api_token,
+        "ZENML_STORE_VERIFY_SSL": "True",
+    }
+
+
+def build_runner_dockerfile(
+    stack: StackResponse,
+    build: PipelineBuildResponse,
+    zenml_version: str,
+) -> str:
+    """Build the runner Dockerfile.
+
+    Args:
+        stack: Stack to use.
+        build: Snapshot build metadata.
+        zenml_version: ZenML version to use.
+
+    Returns:
+        Dockerfile content for the runner workload.
+    """
+    if build.python_version:
+        version_info = version.parse(build.python_version)
+        python_version = f"{version_info.major}.{version_info.minor}"
+    else:
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+    pypi_requirements, apt_packages = (
+        requirements_utils.get_requirements_for_stack(
+            stack=stack, python_version=python_version
+        )
+    )
+
+    return generate_dockerfile(
+        pypi_requirements=pypi_requirements,
+        apt_packages=apt_packages,
+        zenml_version=zenml_version,
+        python_version=python_version,
+    )
+
+
+def _build_and_run(
+    workload_id: UUID,
+    workload_type: WorkloadType,
+    command: List[str],
+    arguments: List[str],
+    environment: Dict[str, str],
+    dockerfile: str,
+    wait_for_completion: bool,
+    success_message: str | None = None,
+) -> None:
+    """Build and run a runner workload.
+
+    Args:
+        workload_id: Workload ID.
+        workload_type: Workload type.
+        command: Entrypoint command.
+        arguments: Entrypoint arguments.
+        environment: Workload environment variables.
+        dockerfile: Dockerfile for the runner image.
+        wait_for_completion: Whether to wait for the runner workload.
+        success_message: Optional message logged after a successful start.
+    """
+    image_hash = generate_image_hash(dockerfile=dockerfile)
+    logger.info(
+        "Building runner image %s for dockerfile:\n%s", image_hash, dockerfile
+    )
+
+    # Building a Docker image with requirements and apt packages from the
+    # stack only (no code). Ideally, only orchestrator requirements should
+    # be added to the Docker image, but we have to instantiate the entire
+    # stack to get the orchestrator to run pipelines.
+    runner_image = workload_manager().build_and_push_image(
+        workload_id=workload_id,
+        workload_type=workload_type,
+        dockerfile=dockerfile,
+        image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
+        sync=True,
+    )
+
+    workload_manager().log(
+        workload_id=workload_id,
+        message="Starting pipeline run.",
+    )
+
+    runner_timeout = handle_int_env_var(
+        ENV_ZENML_RUNNER_POD_TIMEOUT, default=180
+    )
+
+    # Could do this same thing with a step operator, but we need some
+    # minor changes to the abstract interface to support that.
+    workload_manager().run(
+        workload_id=workload_id,
+        image=runner_image,
+        command=command,
+        arguments=arguments,
+        environment=environment,
+        timeout_in_seconds=runner_timeout,
+        sync=wait_for_completion,
+    )
+    if success_message:
+        workload_manager().log(
+            workload_id=workload_id,
+            message=success_message,
+        )

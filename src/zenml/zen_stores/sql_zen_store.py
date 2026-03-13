@@ -156,6 +156,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    RunWaitConditionResolution,
     SecretResourceTypes,
     SecretsStoreType,
     StackComponentType,
@@ -279,6 +280,12 @@ from zenml.models import (
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
+    RunWaitConditionStatus,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -340,7 +347,7 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
-from zenml.utils import source_utils, tag_utils, uuid_utils
+from zenml.utils import source_utils, tag_utils, uuid_utils, yaml_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -386,6 +393,7 @@ from zenml.zen_stores.schemas import (
     RunMetadataResourceSchema,
     RunMetadataSchema,
     RunTemplateSchema,
+    RunWaitConditionSchema,
     ScheduleSchema,
     SecretResourceSchema,
     SecretSchema,
@@ -5810,6 +5818,7 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.dynamic_config)),
+                    selectinload(jl_arg(PipelineRunSchema.wait_conditions)),
                     selectinload(jl_arg(PipelineRunSchema.step_runs))
                     .selectinload(jl_arg(StepRunSchema.triggered_runs))
                     .load_only(
@@ -5824,6 +5833,24 @@ class SqlZenStore(BaseZenStore):
             )
             assert run.snapshot is not None
             snapshot = run.snapshot
+            for condition in run.wait_conditions:
+                node_metadata: Dict[str, Any] = {
+                    "status": condition.status,
+                    "type": condition.type,
+                    "created_at": condition.created.isoformat(),
+                }
+                if condition.resolution:
+                    node_metadata["resolution"] = condition.resolution
+                if condition.question:
+                    node_metadata["question"] = condition.question
+
+                helper.add_wait_condition_node(
+                    node_id=helper.get_wait_condition_node_id(condition.name),
+                    id=condition.id,
+                    name=condition.name,
+                    **node_metadata,
+                )
+
             step_runs = {
                 step.name: step
                 for step in run.step_runs
@@ -6797,6 +6824,14 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if run_update.status is not None:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=run_id,
+                    session=session,
+                    requested_status=run_update.status,
+                    status_reason=run_update.status_reason,
+                )
+
             if run_update.orchestrator_run_id:
                 if not existing_run.is_placeholder_run():
                     raise IllegalOperationError(
@@ -6852,11 +6887,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if run_update.status is not None:
-                self._update_pipeline_run_status(
-                    pipeline_run_id=run_id,
-                    session=session,
-                )
             session.refresh(existing_run)
 
             return existing_run.to_model(
@@ -6920,6 +6950,393 @@ class SqlZenStore(BaseZenStore):
 
             session.execute(stmt)
             session.commit()
+
+    def create_run_wait_condition(
+        self, run_wait_condition: RunWaitConditionRequest
+    ) -> RunWaitConditionResponse:
+        """Create a run wait condition.
+
+        Args:
+            run_wait_condition: Wait condition creation payload.
+
+        Raises:
+            IllegalOperationError: If the owning run is not dynamic.
+            EntityExistsError: If a non-idempotent duplicate name exists.
+            IntegrityError: If wait condition persistence fails.
+
+        Returns:
+            The created or idempotently reused wait condition.
+        """
+        with Session(self.engine) as session:
+            run_schema = self._get_reference_schema_by_id(
+                resource=run_wait_condition,
+                reference_schema=PipelineRunSchema,
+                reference_id=run_wait_condition.run,
+                session=session,
+            )
+            if not run_schema.snapshot or not run_schema.snapshot.is_dynamic:
+                raise IllegalOperationError(
+                    "Wait conditions are only supported for dynamic pipelines."
+                )
+
+            schema = RunWaitConditionSchema.from_request(run_wait_condition)
+            session.add(schema)
+            try:
+                session.commit()
+            except IntegrityError as e:
+                session.rollback()
+                existing_schema = session.exec(
+                    select(RunWaitConditionSchema).where(
+                        col(RunWaitConditionSchema.run_id)
+                        == run_wait_condition.run,
+                        col(RunWaitConditionSchema.name)
+                        == run_wait_condition.name,
+                    )
+                ).one_or_none()
+                if existing_schema is None:
+                    raise
+                if not self._is_idempotent_wait_condition_create(
+                    existing_schema=existing_schema,
+                    request=run_wait_condition,
+                ):
+                    raise EntityExistsError(
+                        "A run wait condition with this name already exists for "
+                        "the run, but with different configuration."
+                    ) from e
+                schema = existing_schema
+            else:
+                session.refresh(schema)
+
+            return schema.to_model(
+                include_metadata=True,
+                include_resources=True,
+            )
+
+    def get_run_wait_condition(
+        self, run_wait_condition_id: UUID, hydrate: bool = True
+    ) -> RunWaitConditionResponse:
+        """Get a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            hydrate: Whether metadata/resources should be hydrated.
+
+        Returns:
+            The requested wait condition.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=run_wait_condition_id,
+                schema_class=RunWaitConditionSchema,
+                session=session,
+                query_options=RunWaitConditionSchema.get_query_options(
+                    include_metadata=hydrate,
+                    include_resources=True,
+                ),
+            )
+            return schema.to_model(
+                include_metadata=hydrate,
+                include_resources=True,
+            )
+
+    def list_run_wait_conditions(
+        self,
+        run_wait_condition_filter_model: RunWaitConditionFilter,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions.
+
+        Args:
+            run_wait_condition_filter_model: Wait condition filter model.
+            hydrate: Whether metadata/resources should be hydrated.
+
+        Returns:
+            A page of wait conditions.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=run_wait_condition_filter_model,
+                session=session,
+            )
+            query = select(RunWaitConditionSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunWaitConditionSchema,
+                filter_model=run_wait_condition_filter_model,
+                hydrate=hydrate,
+            )
+
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolve_request: RunWaitConditionResolveRequest,
+    ) -> RunWaitConditionResponse:
+        """Resolve a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            resolve_request: Resolution payload.
+
+        Raises:
+            IllegalOperationError: If the wait condition transition is invalid.
+
+        Returns:
+            The resolved wait condition.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=resolve_request, session=session
+            )
+            schema = self._get_schema_by_id(
+                resource_id=run_wait_condition_id,
+                schema_class=RunWaitConditionSchema,
+                session=session,
+                query_options=RunWaitConditionSchema.get_query_options(
+                    include_metadata=True, include_resources=True
+                ),
+            )
+            source_status = schema.status
+            now = utc_now()
+            active_lease_exists = bool(
+                schema.poller_lease_expires_at
+                and schema.poller_lease_expires_at > now
+            )
+            validated_result = self._validate_wait_condition_result(
+                wait_condition=schema,
+                resolution=resolve_request.resolution,
+                result=resolve_request.result,
+            )
+
+            stmt = (
+                update(RunWaitConditionSchema)
+                .where(
+                    col(RunWaitConditionSchema.id) == run_wait_condition_id,
+                    col(RunWaitConditionSchema.status) == source_status,
+                )
+                .values(
+                    status=RunWaitConditionStatus.RESOLVED.value,
+                    resolution=resolve_request.resolution.value,
+                    result_json=(
+                        json.dumps(validated_result)
+                        if validated_result is not None
+                        else None
+                    ),
+                    resolved_at=now,
+                    resolved_by_user_id=resolve_request.user,
+                    updated=now,
+                )
+            )
+            result = session.execute(stmt)
+            if result.rowcount == 0:  # type: ignore[attr-defined]
+                raise IllegalOperationError(
+                    "Wait condition is not in pending state."
+                )
+            session.commit()
+            updated_schema = self._get_schema_by_id(
+                resource_id=run_wait_condition_id,
+                schema_class=RunWaitConditionSchema,
+                session=session,
+                query_options=RunWaitConditionSchema.get_query_options(
+                    include_metadata=True, include_resources=True
+                ),
+            )
+            resolved_model = updated_schema.to_model(
+                include_metadata=True,
+                include_resources=True,
+            )
+
+            if (
+                resolved_model.resolution
+                == RunWaitConditionResolution.CONTINUE
+            ):
+                if (
+                    not active_lease_exists
+                    and not self._has_pending_wait_conditions(
+                        run_id=resolved_model.run.id
+                    )
+                ):
+                    try:
+                        self._update_pipeline_run_status(
+                            pipeline_run_id=resolved_model.run.id,
+                            session=session,
+                            requested_status=ExecutionStatus.RESUMING,
+                            status_reason="Automatically resuming run from server.",
+                        )
+                        self._resume_run_if_possible(
+                            run_id=resolved_model.run.id
+                        )
+                    except Exception:
+                        self._update_pipeline_run_status(
+                            pipeline_run_id=resolved_model.run.id,
+                            session=session,
+                            requested_status=ExecutionStatus.PAUSED,
+                            status_reason="Waiting for manual resume.",
+                        )
+            elif resolved_model.resolution == RunWaitConditionResolution.ABORT:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=resolved_model.run.id,
+                    session=session,
+                    requested_status=ExecutionStatus.STOPPED,
+                    status_reason="Wait condition was aborted.",
+                )
+
+        return resolved_model
+
+    def _resume_run_if_possible(self, run_id: UUID) -> None:
+        """Resume a run if possible.
+
+        Args:
+            run_id: Pipeline run ID.
+
+        Raises:
+            IllegalOperationError: If not running in a server.
+        """
+        if not handle_bool_env_var(ENV_ZENML_SERVER):
+            raise IllegalOperationError(
+                "Resuming runs is only possible when running in a server"
+            )
+
+        run = self.get_run(run_id)
+        from zenml.zen_server.pipeline_execution.utils import resume_run
+
+        # TODO: If run fails in the async part of this, it gets stuck in
+        # resuming
+        resume_run(run=run)
+
+    def _has_pending_wait_conditions(self, run_id: UUID) -> bool:
+        """Check whether a run still has pending wait conditions.
+
+        Args:
+            run_id: Pipeline run ID.
+
+        Returns:
+            Whether the run has pending wait conditions.
+        """
+        with Session(self.engine) as session:
+            return (
+                session.exec(
+                    select(RunWaitConditionSchema.id).where(
+                        col(RunWaitConditionSchema.run_id) == run_id,
+                        col(RunWaitConditionSchema.status)
+                        == RunWaitConditionStatus.PENDING.value,
+                    )
+                ).first()
+                is not None
+            )
+
+    @staticmethod
+    def _is_idempotent_wait_condition_create(
+        existing_schema: "RunWaitConditionSchema",
+        request: RunWaitConditionRequest,
+    ) -> bool:
+        """Check whether a duplicate wait-condition create is idempotent.
+
+        Args:
+            existing_schema: Existing wait condition schema row.
+            request: Incoming wait condition create request.
+
+        Returns:
+            Whether the request exactly matches the existing condition.
+        """
+        return (
+            existing_schema.run_id == request.run
+            and existing_schema.type == request.type.value
+            and existing_schema.name == request.name
+            and existing_schema.question == request.question
+            and json.loads(existing_schema.metadata_json) == request.metadata
+            and (
+                json.loads(existing_schema.data_schema_json)
+                if existing_schema.data_schema_json
+                else None
+            )
+            == request.data_schema
+        )
+
+    @staticmethod
+    def _validate_wait_condition_result(
+        wait_condition: "RunWaitConditionSchema",
+        resolution: RunWaitConditionResolution,
+        result: Optional[Any],
+    ) -> Optional[Any]:
+        """Validate wait-condition result against optional expected schema.
+
+        Args:
+            wait_condition: Wait condition schema.
+            resolution: Resolution semantic for resolved conditions.
+            result: Optional result payload supplied during resolution.
+
+        Returns:
+            Validated result payload.
+
+        """
+        if resolution != RunWaitConditionResolution.CONTINUE:
+            return result
+
+        schema = None
+        if wait_condition.data_schema_json:
+            schema = json.loads(wait_condition.data_schema_json)
+        if not schema:
+            return result
+
+        validated_value = yaml_utils.validate_json_schema_value(
+            value=result,
+            schema=schema,
+            fail_if_library_missing=False,
+        )
+        return validated_value
+
+    def update_run_wait_condition_lease(
+        self,
+        run_wait_condition_id: UUID,
+        lease_update: RunWaitConditionLeaseUpdate,
+    ) -> RunWaitConditionStatus:
+        """Update a run wait condition polling lease.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            lease_update: Lease refresh payload.
+
+        Returns:
+            The current wait condition status.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=run_wait_condition_id,
+                schema_class=RunWaitConditionSchema,
+                session=session,
+            )
+            if schema.status != RunWaitConditionStatus.PENDING.value:
+                return RunWaitConditionStatus(schema.status)
+
+            now = utc_now()
+            values: Dict[str, Any] = {
+                "last_polled_at": now,
+                "poller_instance_id": lease_update.poller_instance_id,
+                "poller_lease_expires_at": (
+                    lease_update.poller_lease_expires_at
+                ),
+                "updated": now,
+            }
+            stmt = (
+                update(RunWaitConditionSchema)
+                .where(
+                    col(RunWaitConditionSchema.id) == run_wait_condition_id,
+                    col(RunWaitConditionSchema.status)
+                    == RunWaitConditionStatus.PENDING.value,
+                )
+                .values(**values)
+            )
+            result = session.execute(stmt)
+            if result.rowcount == 0:  # type: ignore[attr-defined]
+                refreshed_schema = self._get_schema_by_id(
+                    resource_id=run_wait_condition_id,
+                    schema_class=RunWaitConditionSchema,
+                    session=session,
+                )
+                return RunWaitConditionStatus(refreshed_schema.status)
+            session.commit()
+            return RunWaitConditionStatus.PENDING
 
     # ----------------------------- Run Metadata -----------------------------
 
@@ -10944,15 +11361,17 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run_id: UUID,
         session: Session,
+        requested_status: Optional[ExecutionStatus] = None,
+        status_reason: Optional[str] = None,
     ) -> None:
         """Updates the status of a pipeline run.
 
         Args:
             pipeline_run_id: The ID of the pipeline run to update.
             session: The database session to use.
+            requested_status: The requested status of the pipeline run.
+            status_reason: The reason for the status of the pipeline run.
         """
-        from zenml.orchestrators.publish_utils import get_pipeline_run_status
-
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
@@ -10961,49 +11380,22 @@ class SqlZenStore(BaseZenStore):
             .with_for_update()
             .where(PipelineRunSchema.id == pipeline_run_id)
         ).one()
-        step_run_statuses = session.exec(
-            select(StepRunSchema.status)
-            .where(StepRunSchema.pipeline_run_id == pipeline_run_id)
-            .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
-        ).all()
-
-        # Snapshots always exists for pipeline runs of newer versions
-        assert pipeline_run.snapshot
-        num_steps = pipeline_run.snapshot.step_count
-        is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
-        new_status = get_pipeline_run_status(
-            run_status=ExecutionStatus(pipeline_run.status),
-            step_statuses=[
-                ExecutionStatus(status) for status in step_run_statuses
-            ],
-            num_steps=num_steps,
-            is_dynamic_pipeline=is_dynamic_pipeline,
+        did_update = pipeline_run.update_status(
+            requested_status=requested_status, status_reason=status_reason
         )
-
-        if pipeline_run.is_placeholder_run() and not new_status.is_finished:
-            # If the pipeline run is a placeholder run (=no step has been started
-            # for the run yet), this means the orchestrator hasn't started
-            # running yet, and this method is most likely being called as
-            # part of the creation of some cached steps. In this case, we don't
-            # update the status unless the run is finished.
-
-            # Commit so that we release the lock on the pipeline run.
+        if not did_update:
+            # Commit to release the lock on the pipeline run.
             session.commit()
             return
 
-        run_update = PipelineRunUpdate(status=new_status)
-        if new_status.is_finished:
-            run_update.end_time = utc_now()
-
-        pipeline_run.update(run_update)
         session.add(pipeline_run)
-        # Commit so that we release the lock on the pipeline run.
         session.commit()
 
-        if new_status.is_finished:
-            assert run_update.end_time
+        new_status = ExecutionStatus(pipeline_run.status)
+
+        if new_status.is_finished and pipeline_run.end_time:
             if pipeline_run.start_time:
-                duration_time = run_update.end_time - pipeline_run.start_time
+                duration_time = pipeline_run.end_time - pipeline_run.start_time
                 duration_seconds = duration_time.total_seconds()
                 start_time_str = pipeline_run.start_time.strftime(
                     "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -11012,6 +11404,7 @@ class SqlZenStore(BaseZenStore):
                 start_time_str = None
                 duration_seconds = None
 
+            assert pipeline_run.snapshot
             stack = pipeline_run.snapshot.stack
             assert stack
             stack_metadata = {
@@ -11026,9 +11419,9 @@ class SqlZenStore(BaseZenStore):
                     "pipeline_run_id": pipeline_run_id,
                     "source_snapshot_id": pipeline_run.snapshot.source_snapshot_id,
                     "status": new_status,
-                    "num_steps": num_steps,
+                    "num_steps": pipeline_run.snapshot.step_count,
                     "start_time": start_time_str,
-                    "end_time": run_update.end_time.strftime(
+                    "end_time": pipeline_run.end_time.strftime(
                         "%Y-%m-%dT%H:%M:%S.%fZ"
                     ),
                     "duration_seconds": duration_seconds,

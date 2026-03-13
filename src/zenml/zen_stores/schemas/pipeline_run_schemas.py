@@ -23,7 +23,7 @@ from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import Session, joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import TEXT, Column, Field, Relationship, select
+from sqlmodel import TEXT, Column, Field, Relationship, col, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
@@ -34,9 +34,11 @@ from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
     PipelineRunTriggeredByType,
+    RunWaitConditionStatus,
     TaggableResourceTypes,
     VisualizationResourceTypes,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineResponse,
@@ -83,6 +85,9 @@ if TYPE_CHECKING:
         ModelVersionSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.run_wait_condition_schemas import (
+        RunWaitConditionSchema,
+    )
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
@@ -194,6 +199,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_relationship_kwargs={
             "cascade": "delete",
             "order_by": "asc(StepRunSchema.start_time)",
+        },
+    )
+    wait_conditions: List["RunWaitConditionSchema"] = Relationship(
+        back_populates="run",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "order_by": "desc(RunWaitConditionSchema.created)",
         },
     )
     model_version: "ModelVersionSchema" = Relationship(
@@ -359,6 +371,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
                     selectinload(jl_arg(PipelineRunSchema.logs)),
+                    selectinload(jl_arg(PipelineRunSchema.wait_conditions)),
                     selectinload(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
@@ -499,6 +512,32 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             return steps
         else:
             raise RuntimeError("Pipeline run has no snapshot.")
+
+    def _get_step_run_statuses(self) -> List[ExecutionStatus]:
+        """Get the statuses of the steps in the pipeline run.
+
+        Raises:
+            RuntimeError: If the pipeline run has no session.
+
+        Returns:
+            The statuses of the steps in the pipeline run.
+        """
+        from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+
+        if session := object_session(self):
+            step_run_statuses = session.execute(
+                select(StepRunSchema.status)
+                .where(StepRunSchema.pipeline_run_id == self.id)
+                .where(
+                    col(StepRunSchema.status) != ExecutionStatus.RETRIED.value
+                )
+            ).scalars()
+
+            return [ExecutionStatus(status) for status in step_run_statuses]
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch step run statuses."
+            )
 
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
@@ -713,6 +752,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 original_run=self.original_run.to_model()
                 if self.original_run
                 else None,
+                active_wait_condition=next(
+                    (
+                        condition.to_model()
+                        for condition in self.wait_conditions
+                        if condition.status
+                        == RunWaitConditionStatus.PENDING.value
+                    ),
+                    None,
+                ),
             )
 
         return PipelineRunResponse(
@@ -736,34 +784,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        if run_update.status:
-            if (
-                run_update.status == ExecutionStatus.PROVISIONING
-                and self.status != ExecutionStatus.INITIALIZING.value
-            ):
-                # This run is already past the provisioning status, so we ignore
-                # the update.
-                pass
-            else:
-                self.status = run_update.status.value
-
-                if run_update.status_reason:
-                    self.status_reason = run_update.status_reason
-
-            if run_update.is_finished:
-                self.in_progress = False
-            elif self.snapshot and self.snapshot.is_dynamic:
-                # In dynamic pipelines, we can't actually check if the run is
-                # in progress by inspecting the DAG. Only once the orchestration
-                # container finishes we know for sure.
-                pass
-            else:
-                self.in_progress = self._check_if_run_in_progress()
-
-            if not self.in_progress:
-                # Only set the end time if the run is not in progress anymore.
-                self.end_time = run_update.end_time
-
         if run_update.orchestrator_run_id:
             if (
                 self.orchestrator_run_id
@@ -781,6 +801,118 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         self.updated = utc_now()
         return self
+
+    def update_status(
+        self,
+        requested_status: Optional[ExecutionStatus],
+        status_reason: Optional[str] = None,
+    ) -> bool:
+        """Update the status of the pipeline run.
+
+        Args:
+            requested_status: The requested status of the pipeline run.
+            status_reason: The reason for the status of the pipeline run.
+
+        Raises:
+            IllegalOperationError: If the requested status transition is
+                invalid.
+
+        Returns:
+            Whether the status was updated.
+        """
+        if requested_status in {
+            ExecutionStatus.CACHED,
+            ExecutionStatus.SKIPPED,
+            ExecutionStatus.RETRYING,
+            ExecutionStatus.RETRIED,
+        }:
+            raise IllegalOperationError(
+                f"Execution status `{requested_status}` is not valid for "
+                "pipeline runs."
+            )
+
+        current_status = ExecutionStatus(self.status)
+
+        if (
+            requested_status == ExecutionStatus.RESUMING
+            and current_status
+            not in {
+                ExecutionStatus.PAUSED,
+                ExecutionStatus.FAILED,
+            }
+        ):
+            raise IllegalOperationError(
+                "Only failed or paused runs can be resumed."
+            )
+
+        # Snapshot always exists for pipeline runs of newer versions
+        assert self.snapshot
+        is_dynamic_pipeline = self.snapshot.is_dynamic
+
+        if is_dynamic_pipeline:
+            # In dynamic pipelines, the run status is only updated on manual
+            # status updates and does not depend on step statuses.
+            if requested_status is None and status_reason is None:
+                return False
+
+            new_status = requested_status or current_status
+        else:
+            # For static pipelines we compute the run status based on the step
+            # statuses.
+            new_status = _compute_static_pipeline_run_status(
+                run_status=requested_status or current_status,
+                step_statuses=self._get_step_run_statuses(),
+                num_steps=self.snapshot.step_count,
+            )
+
+        if (
+            new_status == ExecutionStatus.PROVISIONING
+            and current_status != ExecutionStatus.INITIALIZING
+        ):
+            # Ignore transitions to provisioning from non-initializing states.
+            # This could happen if the orchestrator starts running the pipeline
+            # before the client environment can update the status to provisioning.
+            return False
+
+        if current_status.is_finished:
+            if (
+                current_status == ExecutionStatus.FAILED
+                and new_status == ExecutionStatus.RESUMING
+            ):
+                # Allow failed -> resuming transition for retries.
+                pass
+            elif current_status != new_status:
+                raise IllegalOperationError(
+                    "Cannot update the status of a finished run."
+                )
+
+        self.status = new_status.value
+
+        if is_dynamic_pipeline:
+            self.in_progress = not new_status.is_finished
+        else:
+            self.in_progress = self._check_if_run_in_progress()
+
+        now = utc_now()
+        if not self.in_progress and self.end_time is None:
+            self.end_time = now
+        elif new_status == ExecutionStatus.RESUMING:
+            self.end_time = None
+
+        if status_reason:
+            self.status_reason = status_reason
+        elif (
+            current_status == ExecutionStatus.STOPPING
+            and new_status == ExecutionStatus.STOPPED
+        ):
+            # Don't clear status reason for stopping -> stopped transition
+            pass
+        elif current_status != new_status:
+            # Clear status reason when the status changes.
+            self.status_reason = None
+
+        self.updated = now
+        return True
 
     def update_placeholder(
         self, request: "PipelineRunRequest"
@@ -909,7 +1041,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                             StepRunSchema.id,
                             StepRunSchema.name,
                             StepRunSchema.status,
-                        ).where(StepRunSchema.pipeline_run_id == self.id)
+                        )
+                        .where(StepRunSchema.pipeline_run_id == self.id)
+                        .where(
+                            StepRunSchema.status
+                            != ExecutionStatus.RETRIED.value
+                        )
                     ).all()
 
                     if self.snapshot and self.snapshot.pipeline_spec:
@@ -980,3 +1117,54 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     )
 
         return False
+
+
+def _compute_static_pipeline_run_status(
+    run_status: ExecutionStatus,
+    step_statuses: List[ExecutionStatus],
+    num_steps: int,
+) -> ExecutionStatus:
+    """Compute the status of a static pipeline run.
+
+    Args:
+        run_status: The status of the run.
+        step_statuses: The statuses of the steps in the pipeline run.
+        num_steps: The number of steps in the pipeline run.
+
+    Returns:
+        The status of the pipeline run.
+    """
+    if run_status == ExecutionStatus.STOPPING:
+        if all(status.is_finished for status in step_statuses):
+            return ExecutionStatus.STOPPED
+        else:
+            return ExecutionStatus.STOPPING
+    elif (
+        run_status == ExecutionStatus.FAILED
+        or ExecutionStatus.FAILED in step_statuses
+    ):
+        return ExecutionStatus.FAILED
+    elif ExecutionStatus.STOPPED in step_statuses:
+        if all(status.is_finished for status in step_statuses):
+            return ExecutionStatus.STOPPED
+        else:
+            return ExecutionStatus.STOPPING
+    elif (
+        ExecutionStatus.RUNNING in step_statuses
+        or ExecutionStatus.RETRYING in step_statuses
+    ):
+        return ExecutionStatus.RUNNING
+    elif len(step_statuses) < num_steps:
+        if run_status in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.PROVISIONING,
+        }:
+            # The run is still in the initializing or provisioning state but not
+            # all steps finished. This is the case for client-side
+            # caching/skipping of steps, in which case we do not want to update
+            # the run status yet.
+            return run_status
+        else:
+            return ExecutionStatus.RUNNING
+    else:
+        return ExecutionStatus.COMPLETED

@@ -165,6 +165,45 @@ def read_json(file_path: str) -> Any:
         raise FileNotFoundError(f"{file_path} does not exist.")
 
 
+def validate_json_schema_value(
+    value: Any,
+    schema: Dict[str, Any],
+    fail_if_library_missing: bool = False,
+) -> Any:
+    """Validate a JSON-serializable value against a JSON Schema.
+
+    Args:
+        value: Value to validate.
+        schema: JSON Schema used for validation.
+        fail_if_library_missing: If `True`, raise an error when the optional
+            `jsonschema` dependency is not installed.
+
+    Raises:
+        ImportError: If the `jsonschema` dependency is missing and strict mode
+            is enabled.
+        ValueError: If the value does not match the schema.
+
+    Returns:
+        The validated value.
+    """
+    try:
+        import jsonschema
+    except ImportError:
+        if fail_if_library_missing:
+            raise
+
+        return value
+
+    try:
+        jsonschema.validate(instance=value, schema=schema)
+    except jsonschema.ValidationError as e:
+        raise ValueError(
+            f"Value {value} does not match expected schema."
+        ) from e
+
+    return value
+
+
 class UUIDEncoder(json.JSONEncoder):
     """JSON encoder for UUID objects."""
 

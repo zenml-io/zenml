@@ -17,12 +17,15 @@ from typing import Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.constants import is_true_string_value
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.execution.pipeline.utils import submit_pipeline
 
 PLACEHOLDER_RUN_ID_OPTION = "placeholder_run_id"
+RUN_ID_OPTION = "run_id"
+RESUME_OPTION = "resume"
 
 
 class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -33,11 +36,12 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         """Gets all options required for running with this configuration.
 
         Returns:
-            The superclass options as well as an option for the name of the
-            step to run.
+            The superclass options as well as options for the run ID and
+            whether the run should be resumed.
         """
         return super().get_entrypoint_options() | {
-            PLACEHOLDER_RUN_ID_OPTION: True
+            RUN_ID_OPTION: True,
+            RESUME_OPTION: False,
         }
 
     @classmethod
@@ -48,34 +52,47 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            **kwargs: Kwargs, must include the placeholder run id.
+            **kwargs: Kwargs, must include the run ID. The optional `resume`
+                flag enables the resume path.
 
         Returns:
-            The superclass arguments as well as arguments for the placeholder
-            run id.
+            The superclass arguments as well as arguments for the run ID and
+            optional resume flag.
         """
-        return super().get_entrypoint_arguments(**kwargs) + [
+        arguments = super().get_entrypoint_arguments(**kwargs) + [
+            f"--{RUN_ID_OPTION}",
+            str(kwargs[RUN_ID_OPTION]),
             f"--{PLACEHOLDER_RUN_ID_OPTION}",
-            str(kwargs[PLACEHOLDER_RUN_ID_OPTION]),
+            str(kwargs[RUN_ID_OPTION]),
         ]
+        if RESUME_OPTION in kwargs:
+            arguments.extend(
+                [f"--{RESUME_OPTION}", str(kwargs[RESUME_OPTION])]
+            )
+        return arguments
 
     def run(self) -> None:
         """Run the entrypoint configuration.
 
-        This method runs the pipeline defined by the snapshot given as input
-        to the entrypoint configuration.
+        This method runs or resumes the pipeline defined by the configured
+        snapshot.
         """
         snapshot = self.snapshot
-        placeholder_run_id = UUID(
-            self.entrypoint_args[PLACEHOLDER_RUN_ID_OPTION]
+        run = Client().get_pipeline_run(
+            UUID(self.entrypoint_args[RUN_ID_OPTION])
         )
-        placeholder_run = Client().get_pipeline_run(placeholder_run_id)
 
         stack = Client().active_stack
         assert snapshot.stack and stack.id == snapshot.stack.id
 
-        submit_pipeline(
-            snapshot=snapshot,
-            stack=stack,
-            placeholder_run=placeholder_run,
-        )
+        resume = is_true_string_value(self.entrypoint_args.get(RESUME_OPTION))
+        if resume:
+            stack.orchestrator.restart_run(
+                snapshot=snapshot, run=run, stack=stack, force_async=True
+            )
+        else:
+            submit_pipeline(
+                snapshot=snapshot,
+                stack=stack,
+                placeholder_run=run,
+            )

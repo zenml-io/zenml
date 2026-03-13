@@ -20,6 +20,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
+from datetime import timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -28,14 +29,19 @@ from typing import (
     Dict,
     List,
     Literal,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
     Tuple,
+    Type,
+    TypeVar,
     Union,
     overload,
 )
 from uuid import uuid4
+
+from pydantic import TypeAdapter
 
 from zenml import ExternalArtifact
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
@@ -77,6 +83,13 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotResponse,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolution,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
+    RunWaitConditionStatus,
+    RunWaitConditionType,
     StepRunResponse,
 )
 from zenml.orchestrators.publish_utils import (
@@ -95,6 +108,7 @@ from zenml.utils import (
     context_utils,
     env_utils,
     exception_utils,
+    pydantic_utils,
     source_utils,
     string_utils,
 )
@@ -111,6 +125,32 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+T = TypeVar("T")
+
+_WAIT_SUPPORTED_PRIMITIVE_TYPES: Tuple[Type[Any], ...] = (
+    int,
+    str,
+    float,
+    bool,
+    list,
+    dict,
+)
+
+
+class PipelinePausedError(Exception):
+    """Raised when a dynamic pipeline is paused by a wait condition timeout."""
+
+
+class PipelineAbortedError(Exception):
+    """Raised when a wait condition is resolved with abort."""
+
+
+class WaitConditionState(NamedTuple):
+    """State tuple for wait-condition handling."""
+
+    is_terminal: bool
+    value: Any
 
 
 class DynamicPipelineRunner:
@@ -462,10 +502,37 @@ class DynamicPipelineRunner:
 
         with logs_context:
             if self._run.status.is_finished:
+                # TODO: if a run fails and the kubernetes job retries, it will
+                # not try re-running here. Might be intended?
                 logger.info("Run `%s` is already finished.", str(self._run.id))
                 return
-            if self._run.status == ExecutionStatus.RUNNING:
+            elif self._run.status in {
+                ExecutionStatus.RESUMING,
+                ExecutionStatus.PAUSED,
+                ExecutionStatus.RETRYING,
+            }:
+                self._run = Client().zen_store.update_run(
+                    run_id=self._run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.RUNNING,
+                    ),
+                )
+                logger.info("Resuming run `%s`.", str(self._run.id))
+            elif self._run.status == ExecutionStatus.RUNNING:
                 logger.info("Continuing existing run `%s`.", str(self._run.id))
+            elif self._run.status in {
+                ExecutionStatus.INITIALIZING,
+                ExecutionStatus.PROVISIONING,
+            }:
+                # Set the run status to running already, in case no steps start
+                # immediately which would otherwise cause the run to be stuck in
+                # some init state.
+                self._run = Client().zen_store.update_run(
+                    run_id=self._run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.RUNNING,
+                    ),
+                )
 
             assert self._snapshot.stack
 
@@ -474,6 +541,8 @@ class DynamicPipelineRunner:
                 env_utils.temporary_runtime_environment(
                     self._snapshot.pipeline_configuration, self._snapshot.stack
                 ),
+                # TODO: if the pipeline fails during import, mark the run as
+                # failed?
                 DynamicPipelineRunContext(
                     pipeline=self.pipeline,
                     run=self._run,
@@ -505,6 +574,13 @@ class DynamicPipelineRunner:
                     # steps might still be running. We now wait for all of
                     # them and raise any exceptions that occurred.
                     self.await_all_step_futures()
+                except PipelinePausedError:
+                    logger.info("Pausing pipeline run `%s`.", self._run.id)
+                except PipelineAbortedError:
+                    logger.info(
+                        "Pipeline run `%s` stopped due to wait condition abort.",
+                        self._run.id,
+                    )
                 except Exception as e:
                     exception_info = (
                         exception_utils.collect_exception_information(
@@ -534,8 +610,12 @@ class DynamicPipelineRunner:
                     self._executor.shutdown(wait=True, cancel_futures=True)
                     monitoring_thread.join()
 
-                publish_successful_pipeline_run(self._run.id)
-                logger.info("Pipeline completed successfully.")
+                self._run = Client().zen_store.get_run(
+                    self._run.id, hydrate=False
+                )
+                if self._run.status == ExecutionStatus.RUNNING:
+                    publish_successful_pipeline_run(self._run.id)
+                    logger.info("Pipeline completed successfully.")
 
     @overload
     def launch_step(
@@ -868,6 +948,222 @@ class DynamicPipelineRunner:
         ]
 
         return MapResultsFuture(futures=step_futures)
+
+    @overload
+    def wait(
+        self,
+        schema: Type[T],
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    ) -> T: ...
+
+    @overload
+    def wait(
+        self,
+        schema: object = None,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    ) -> Any: ...
+
+    def wait(
+        self,
+        schema: Optional[Any] = None,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    ) -> Any:
+        """Create and poll a run wait condition.
+
+        Args:
+            schema: Optional expected output type for the resolved result.
+            type: Wait condition type.
+            timeout: Maximum time in seconds to poll before pausing.
+            poll_interval: Poll interval in seconds.
+            question: Optional question shown to external actors.
+            metadata: Optional metadata attached to the condition.
+            name: Optional deterministic wait condition name.
+            after: Optional upstream futures that must finish before waiting.
+
+        Raises:
+            RuntimeError: If called outside the dynamic pipeline function.
+            PipelinePausedError: If the wait timed out and the run was paused.
+            KeyboardInterrupt: If interrupted while waiting.
+
+        Returns:
+            The resolved wait condition value.
+        """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+        from zenml.steps.step_context import StepContext
+        from zenml.utils.time_utils import utc_now
+
+        context = DynamicPipelineRunContext.get()
+        if not context:
+            raise RuntimeError(
+                "`zenml.wait(...)` can only be used inside dynamic pipelines."
+            )
+
+        if StepContext.is_active():
+            raise RuntimeError(
+                "`zenml.wait(...)` cannot be called inside a step function. "
+                "Use it only in the pipeline function."
+            )
+
+        wait_condition_name = name or context.next_wait_condition_name()
+
+        if isinstance(after, BaseStepFuture):
+            after.result()
+        elif isinstance(after, MapResultsFuture):
+            for future in after:
+                future.result()
+        elif isinstance(after, Sequence):
+            for item in after:
+                if isinstance(item, BaseStepFuture):
+                    item.result()
+                elif isinstance(item, MapResultsFuture):
+                    for future in item:
+                        future.result()
+
+        condition = Client().zen_store.create_run_wait_condition(
+            RunWaitConditionRequest(
+                project=self._run.project_id,
+                run=self._run.id,
+                name=wait_condition_name,
+                type=type,
+                question=question,
+                metadata=metadata or {},
+                data_schema=pydantic_utils.get_json_schema_for_type(schema)
+                if schema
+                else None,
+            )
+        )
+        state = self._handle_wait_condition_state(
+            condition=condition, schema=schema
+        )
+        if state.is_terminal:
+            return state.value
+
+        logger.info(
+            "Waiting on wait condition `%s` (type=%s, timeout=%ss, poll=%ss).",
+            wait_condition_name,
+            type.value,
+            timeout,
+            poll_interval,
+        )
+        deadline = time.time() + timeout
+        try:
+            while time.time() < deadline:
+                lease_now = utc_now()
+                status = Client().zen_store.update_run_wait_condition_lease(
+                    run_wait_condition_id=condition.id,
+                    lease_update=RunWaitConditionLeaseUpdate(
+                        poller_instance_id=self._orchestrator_run_id,
+                        poller_lease_expires_at=lease_now
+                        + timedelta(seconds=max(15, poll_interval * 2)),
+                    ),
+                )
+                if status != RunWaitConditionStatus.PENDING:
+                    condition = Client().zen_store.get_run_wait_condition(
+                        condition.id, hydrate=True
+                    )
+                state = self._handle_wait_condition_state(
+                    condition=condition, schema=schema
+                )
+                if state.is_terminal:
+                    return state.value
+                time.sleep(poll_interval)
+        except KeyboardInterrupt:
+            try:
+                Client().zen_store.resolve_run_wait_condition(
+                    run_wait_condition_id=condition.id,
+                    resolve_request=RunWaitConditionResolveRequest(
+                        resolution=RunWaitConditionResolution.ABORT,
+                    ),
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to abort wait condition `%s` after keyboard "
+                    "interrupt: %s",
+                    condition.id,
+                    e,
+                )
+            raise
+
+        status = Client().zen_store.update_run_wait_condition_lease(
+            run_wait_condition_id=condition.id,
+            lease_update=RunWaitConditionLeaseUpdate(
+                poller_instance_id=self._orchestrator_run_id,
+                poller_lease_expires_at=utc_now(),
+            ),
+        )
+        if status != RunWaitConditionStatus.PENDING:
+            condition = Client().zen_store.get_run_wait_condition(
+                condition.id, hydrate=True
+            )
+        state = self._handle_wait_condition_state(
+            condition=condition, schema=schema
+        )
+        if state.is_terminal:
+            return state.value
+
+        self._run = Client().zen_store.update_run(
+            run_id=self._run.id,
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.PAUSED,
+                status_reason="Waiting for input.",
+            ),
+        )
+        raise PipelinePausedError(
+            f"Wait condition `{condition.name}` polling timed out."
+        )
+
+    @staticmethod
+    def _handle_wait_condition_state(
+        condition: "RunWaitConditionResponse",
+        schema: Optional[Any] = None,
+    ) -> WaitConditionState:
+        """Handle wait conditions.
+
+        Args:
+            condition: The latest wait condition state.
+            schema: Optional schema used to parse the resolved result.
+
+        Raises:
+            PipelineAbortedError: If the condition was resolved with abort.
+
+        Returns:
+            State indicating whether the condition is terminal and its value.
+        """
+        if condition.status == RunWaitConditionStatus.PENDING:
+            return WaitConditionState(is_terminal=False, value=None)
+
+        if condition.resolution == RunWaitConditionResolution.ABORT:
+            raise PipelineAbortedError(
+                f"Wait condition `{condition.name}` resolved with abort."
+            )
+
+        if schema is None:
+            return WaitConditionState(is_terminal=True, value=condition.result)
+
+        return WaitConditionState(
+            is_terminal=True,
+            value=TypeAdapter(schema).validate_python(condition.result),
+        )
 
     def await_all_step_futures(self) -> None:
         """Await all step futures."""

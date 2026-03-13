@@ -475,15 +475,36 @@ def run_logs(
     # Handle runner logs from workload manager
     if run.snapshot and source == LOGS_RUNNER_SOURCE:
         snapshot = run.snapshot
-        if (
+
+        # The runner source is explicitly added to the log collection for runs
+        # with version >0.94.0. For legacy runs, we didn't specify that
+        # explicitly and instead rely on source snapshot or trigger existence.
+        runner_logs_response = search_logs_by_source(
+            run.log_collection or [], source
+        )
+        is_legacy_run_with_runner_logs = (
             snapshot.template_id or snapshot.source_snapshot_id or run.trigger
+        )
+
+        if (
+            runner_logs_response or is_legacy_run_with_runner_logs
         ) and server_config().workload_manager_enabled:
             from zenml.log_stores.artifact.artifact_log_store import (
                 parse_log_entry,
             )
 
+            if run.trigger:
+                # Trigger invocation
+                workload_id = run.id
+            elif run.source_snapshot:
+                # Manual snapshot run
+                workload_id = snapshot.id
+            else:
+                # Resume/Retry run from server
+                workload_id = run.id
+
             workload_logs = workload_manager().get_logs(
-                workload_id=snapshot.id if not run.trigger else run.id
+                workload_id=workload_id
             )
 
             log_entries = []
