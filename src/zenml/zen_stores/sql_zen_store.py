@@ -5834,13 +5834,23 @@ class SqlZenStore(BaseZenStore):
             assert run.snapshot is not None
             snapshot = run.snapshot
             for condition in run.wait_conditions:
+                metadata: Dict[str, Any] = {
+                    "status": condition.status,
+                    "type": condition.type,
+                    "created_at": condition.created.isoformat(),
+                }
+                if condition.resolution:
+                    metadata["resolution"] = condition.resolution
+                if condition.question:
+                    metadata["question"] = condition.question
+
                 helper.add_wait_condition_node(
                     node_id=helper.get_wait_condition_node_id(condition.name),
                     id=condition.id,
                     name=condition.name,
-                    status=condition.status,
-                    type=condition.type,
+                    **metadata,
                 )
+
             step_runs = {
                 step.name: step
                 for step in run.step_runs
