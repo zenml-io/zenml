@@ -1,0 +1,11 @@
+zenml[server]>=0.93.1
+filelock>=3.0.0
+
+# Hydra configuration management
+hydra-core>=1.3.0
+omegaconf>=2.3.0
+
+# PyTorch Lightning dependencies
+torch>=2.0.0
+lightning>=2.0.0
+torchvision>=0.15.0
