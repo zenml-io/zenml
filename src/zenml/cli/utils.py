@@ -2838,11 +2838,16 @@ def list_options(
         data_type_descriptors = set()
         for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                default_value = v.default
+
+                if k == "sort_by" and default_value == "created":
+                    default_value = "desc:created"
+
                 options.append(
                     click.option(
                         f"--{k}",
                         type=str,
-                        default=v.default,
+                        default=default_value,
                         required=False,
                         multiple=_is_list_field(v),
                         help=create_filter_help_text(filter_model, k),
