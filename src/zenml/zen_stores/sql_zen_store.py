@@ -7201,33 +7201,6 @@ class SqlZenStore(BaseZenStore):
         # resuming
         resume_run(run=run)
 
-    def _has_active_wait_condition_lease(self, run_id: UUID) -> bool:
-        """Check whether a run has an active wait-condition poller lease.
-
-        Args:
-            run_id: Pipeline run ID.
-
-        Returns:
-            Whether an active pending wait-condition lease exists for the run.
-        """
-        with Session(self.engine) as session:
-            now = utc_now()
-            return (
-                session.exec(
-                    select(RunWaitConditionSchema.id).where(
-                        col(RunWaitConditionSchema.run_id) == run_id,
-                        col(RunWaitConditionSchema.status)
-                        == RunWaitConditionStatus.PENDING.value,
-                        col(
-                            RunWaitConditionSchema.poller_lease_expires_at
-                        ).is_not(None),
-                        col(RunWaitConditionSchema.poller_lease_expires_at)
-                        > now,
-                    )
-                ).first()
-                is not None
-            )
-
     def _has_pending_wait_conditions(self, run_id: UUID) -> bool:
         """Check whether a run still has pending wait conditions.
 

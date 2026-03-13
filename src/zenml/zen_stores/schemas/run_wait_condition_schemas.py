@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, CheckConstraint, Column, Index, UniqueConstraint
+from sqlalchemy import TEXT, CheckConstraint, Column, UniqueConstraint
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
@@ -34,7 +34,10 @@ from zenml.models import (
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
@@ -56,16 +59,13 @@ class RunWaitConditionSchema(BaseSchema, table=True):
             "(status != 'resolved') OR (resolution IS NOT NULL)",
             name="ck_run_wait_condition_resolved_requires_resolution",
         ),
-        Index(
-            "ix_run_wait_condition_run_status_lease",
-            "run_id",
-            "status",
-            "poller_lease_expires_at",
+        build_index(
+            table_name=__tablename__,
+            column_names=["run_id", "status"],
         ),
-        Index(
-            "ix_run_wait_condition_project_created",
-            "project_id",
-            "created",
+        build_index(
+            table_name=__tablename__,
+            column_names=["project_id", "created"],
         ),
     )
 
