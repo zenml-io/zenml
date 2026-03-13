@@ -20,15 +20,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Security
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.constants import API, LOGS, VERSION_1
+from zenml.constants import API, LOGS, LOGS_RUNNER_SOURCE, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
 from zenml.log_stores.base_log_store import BaseLogStore
-from zenml.models import LogsRequest, LogsResponse, LogsUpdate
-from zenml.models.v2.misc.log_models import (
+from zenml.models import (
     LogsEntriesFilter,
     LogsEntriesResponse,
+    LogsRequest,
+    LogsResponse,
+    LogsUpdate,
 )
 from zenml.stack import StackComponent
 from zenml.zen_server.auth import AuthContext, authorize
@@ -44,7 +46,11 @@ from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
     verify_permission_for_model,
 )
-from zenml.zen_server.utils import async_fastapi_endpoint_wrapper, zen_store
+from zenml.zen_server.utils import (
+    async_fastapi_endpoint_wrapper,
+    get_workload_logs,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + LOGS,
@@ -303,15 +309,17 @@ def get_logs_entries(
     logs = store.get_logs(logs_id)
 
     if logs.pipeline_run_id:
-        verify_permission_for_model(
-            model=store.get_run(logs.pipeline_run_id),
-            action=Action.READ,
+        run = verify_permissions_and_get_entity(
+            id=logs.pipeline_run_id,
+            get_method=store.get_run,
+            hydrate=True,
         )
     elif logs.step_run_id:
         step = store.get_run_step(logs.step_run_id)
-        verify_permission_for_model(
-            model=store.get_run(step.pipeline_run_id),
-            action=Action.READ,
+        run = verify_permissions_and_get_entity(
+            id=step.pipeline_run_id,
+            get_method=store.get_run,
+            hydrate=True,
         )
     else:
         raise IllegalOperationError(
@@ -323,8 +331,11 @@ def get_logs_entries(
         id=logs_id, get_method=store.get_logs
     )
 
-    log_store: Optional[BaseLogStore] = None
+    # Handle runner logs from workload manager
+    if run.snapshot and logs.source == LOGS_RUNNER_SOURCE:
+        return get_workload_logs(run)
 
+    log_store: Optional[BaseLogStore] = None
     if logs.log_store_id:
         log_store_model = verify_permissions_and_get_entity(
             id=logs.log_store_id,

@@ -69,9 +69,8 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    get_workload_logs,
     make_dependable,
-    server_config,
-    workload_manager,
     zen_store,
 )
 
@@ -473,29 +472,7 @@ def run_logs(
 
     # Handle runner logs from workload manager
     if run.snapshot and source == LOGS_RUNNER_SOURCE:
-        WORKLOAD_LOGS_MAX_ENTRIES = 50000
-        
-        snapshot = run.snapshot
-        if (
-            snapshot.template_id or snapshot.source_snapshot_id or run.trigger
-        ) and server_config().workload_manager_enabled:
-            from zenml.log_stores.artifact.artifact_log_store import (
-                parse_log_entry,
-            )
-
-            workload_logs = workload_manager().get_logs(
-                workload_id=snapshot.id if not run.trigger else run.id
-            )
-
-            log_entries = []
-            for line in workload_logs.split("\n"):
-                if log_record := parse_log_entry(line):
-                    log_entries.append(log_record)
-
-                if len(log_entries) >= WORKLOAD_LOGS_MAX_ENTRIES:
-                    break
-
-            return log_entries
+        return get_workload_logs(run).items
 
     if run.log_collection:
         if logs_response := search_logs_by_source(run.log_collection, source):
