@@ -41,6 +41,7 @@ from pydantic import (
     validate_call,
 )
 from pydantic._internal import _repr as pydantic_repr
+from pydantic.fields import FieldInfo
 from pydantic.v1.utils import sequence_like
 
 from zenml.logger import get_logger
@@ -111,6 +112,7 @@ def create_parameter_model(
     default_values = default_values or {}
 
     for name, parameter in parameters.items():
+        field_name = name
         if name in default_values:
             default_value = default_values[name]
         elif parameter.default is not inspect.Parameter.empty:
@@ -118,9 +120,28 @@ def create_parameter_model(
         else:
             default_value = ...
 
-        fields[name] = (parameter.annotation, default_value)
+        if name.startswith("_"):
+            # Pydantic treats field names starting with an underscore as
+            # private attributes, so we use a sanitized field name with an
+            # alias.
+            field_name = name.lstrip("_")
+            while field_name in fields:
+                field_name = field_name + "_"
 
-    fields["__config__"] = config or ConfigDict(extra="forbid")
+            default_value = FieldInfo(
+                default=default_value,
+                validation_alias=name,
+                serialization_alias=name,
+            )
+
+        fields[field_name] = (parameter.annotation, default_value)
+
+    model_config = ConfigDict(extra="forbid")
+    if config:
+        model_config.update(config)
+    model_config["serialize_by_alias"] = True
+
+    fields["__config__"] = model_config
     return create_model(model_name, **fields)
 
 

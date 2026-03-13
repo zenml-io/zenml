@@ -185,3 +185,20 @@ def test_create_parameter_model_uses_override_defaults():
     assert schema["properties"]["a"]["default"] == 1
     assert schema["properties"]["b"]["default"] == "default"
     assert "a" not in schema.get("required", [])
+
+
+def test_create_parameter_model_uses_aliases_for_private_parameter_names():
+    """Tests that underscored parameter names remain valid model fields."""
+
+    def f(_a: int) -> None:
+        pass
+
+    model = pydantic_utils.create_parameter_model(
+        model_name="TestParameters",
+        parameters=inspect.signature(f).parameters,
+    )
+    validated = model.model_validate({"_a": "1"})
+    schema = model.model_json_schema()
+
+    assert validated.model_dump() == {"_a": 1}
+    assert "_a" in schema["properties"]
