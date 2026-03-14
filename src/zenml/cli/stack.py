@@ -31,7 +31,6 @@ from uuid import UUID
 import click
 from rich.console import Console
 from rich.markdown import Markdown
-from rich.prompt import Confirm
 from rich.style import Style
 from rich.syntax import Syntax
 
@@ -366,7 +365,7 @@ def register_stack(
             pass
 
         if service_connector_response:
-            use_auto_configure = Confirm.ask(
+            use_auto_configure = cli_utils.confirmation(
                 f"[bold]{provider.upper()} cloud service connector[/bold] "
                 "has detected connection credentials in your environment.\n"
                 "Would you like to use these credentials or create a new "
@@ -1343,7 +1342,15 @@ def _import_stack_component(
             return component.id
         else:
             display_name = _component_display_name(component_type)
-            name = click.prompt(
+            if cli_utils.is_machine_mode():
+                cli_utils.error(
+                    f"A component of type '{display_name}' with the name "
+                    f"'{name}' already exists but is configured differently. "
+                    "Please rerun the import with a different target name.",
+                    error_type="MachineModePromptError",
+                )
+
+            name = cli_utils.prompt(
                 f"A component of type '{display_name}' with the name "
                 f"'{name}' already exists, "
                 f"but is configured differently. "
@@ -1425,7 +1432,14 @@ def import_stack(
     # ask user for a new stack_name if current one already exists
     client = Client()
     if client.list_stacks(name=stack_name):
-        stack_name = click.prompt(
+        if cli_utils.is_machine_mode():
+            cli_utils.error(
+                f"Stack `{stack_name}` already exists. Please rerun the "
+                "import with a different stack name.",
+                error_type="MachineModePromptError",
+            )
+
+        stack_name = cli_utils.prompt(
             f"Stack `{stack_name}` already exists. Please choose a different "
             f"name",
             type=str,
@@ -1509,6 +1523,14 @@ def register_secrets(
                           If empty, the active stack will be used.
     """
     from zenml.stack.stack import Stack
+
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode blocks interactive secret registration. Please "
+            "register or update the required secrets explicitly before using "
+            "this command.",
+            error_type="MachineModePromptError",
+        )
 
     client = Client()
 
@@ -1929,6 +1951,13 @@ def _get_service_connector_info(
     """
     from rich.prompt import Prompt
 
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode blocks the interactive cloud stack wizard. Please "
+            "provide connector and component configuration explicitly.",
+            error_type="MachineModePromptError",
+        )
+
     if cloud_provider not in {"aws", "gcp", "azure"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
@@ -2014,6 +2043,13 @@ def _get_stack_component_info(
         ValueError: If the component type is not supported.
     """
     from rich.prompt import Prompt
+
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode blocks the interactive cloud stack wizard. Please "
+            "provide connector and component configuration explicitly.",
+            error_type="MachineModePromptError",
+        )
 
     if cloud_provider not in {"aws", "azure", "gcp"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")

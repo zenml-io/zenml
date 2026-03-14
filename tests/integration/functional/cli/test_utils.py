@@ -11,19 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import io
+import json
 from unittest.mock import patch
 
 import pytest
+import yaml
 from click import ClickException
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.utils import requires_mac_env_var_warning
+from zenml.constants import (
+    ENV_ZENML_CLI_MACHINE_MODE,
+    ENV_ZENML_DEFAULT_OUTPUT,
+)
 
 
 def test_error_raises_exception():
     """Tests that the error method raises an exception."""
-    with pytest.raises(Exception):
-        cli_utils.error()
+    with pytest.raises(ClickException):
+        cli_utils.error("boom")
 
 
 def test_file_expansion_works(tmp_path):
@@ -98,6 +105,80 @@ def test_validate_keys():
     with pytest.raises(ClickException):
         cli_utils.validate_keys("")
     assert cli_utils.validate_keys("abcd") is None
+
+
+@pytest.mark.parametrize(
+    "output_format,loader",
+    [("json", json.loads), ("yaml", yaml.safe_load)],
+)
+def test_prepare_output_filters_columns_for_structured_formats(
+    output_format, loader
+):
+    """Tests column filtering for JSON and YAML output."""
+    rendered = cli_utils.prepare_output(
+        data=[{"id": "1", "name": "aria", "status": "active"}],
+        output_format=output_format,
+        columns="name,status",
+    )
+
+    payload = loader(rendered)
+    assert payload == {"items": [{"name": "aria", "status": "active"}]}
+
+
+def test_get_default_output_format_prefers_machine_mode(monkeypatch):
+    """Tests that machine mode overrides the default output env var."""
+    monkeypatch.setenv(ENV_ZENML_DEFAULT_OUTPUT, "yaml")
+    monkeypatch.setenv(ENV_ZENML_CLI_MACHINE_MODE, "true")
+
+    assert cli_utils.is_machine_mode() is True
+    assert cli_utils.get_default_output_format() == "json"
+
+
+def test_confirmation_auto_yes_in_machine_mode(monkeypatch):
+    """Tests that machine mode auto-confirms prompts."""
+    monkeypatch.setenv(ENV_ZENML_CLI_MACHINE_MODE, "true")
+
+    with patch("zenml.cli.utils.RichConfirm.ask") as confirm:
+        assert cli_utils.confirmation("Delete?") is True
+
+    confirm.assert_not_called()
+
+
+def test_prompt_fails_in_machine_mode(monkeypatch):
+    """Tests that prompt helper fails fast in machine mode."""
+    monkeypatch.setenv(ENV_ZENML_CLI_MACHINE_MODE, "true")
+
+    with pytest.raises(ClickException):
+        cli_utils.prompt("Provide a value")
+
+
+def test_error_outputs_structured_json_in_machine_mode(monkeypatch):
+    """Tests structured machine-readable error output."""
+    monkeypatch.setenv(ENV_ZENML_CLI_MACHINE_MODE, "true")
+
+    with pytest.raises(ClickException) as exc_info:
+        cli_utils.error("boom", error_type="ExampleError", exit_code=7)
+
+    output = io.StringIO()
+    exc_info.value.show(file=output)
+    assert json.loads(output.getvalue()) == {
+        "error": "boom",
+        "type": "ExampleError",
+        "exit_code": 7,
+    }
+
+
+def test_multi_choice_prompt_fails_in_machine_mode(monkeypatch):
+    """Tests that multi-choice prompts are blocked in machine mode."""
+    monkeypatch.setenv(ENV_ZENML_CLI_MACHINE_MODE, "true")
+
+    with pytest.raises(ClickException):
+        cli_utils.multi_choice_prompt(
+            object_type="stack",
+            choices=[["a"]],
+            headers=["name"],
+            prompt_text="Pick one",
+        )
 
 
 @pytest.mark.parametrize(

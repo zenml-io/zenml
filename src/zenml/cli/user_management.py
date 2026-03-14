@@ -165,14 +165,21 @@ def create_user(
         is_admin: Whether the user should be an admin.
     """
     client = Client()
-    if not password:
+    if password is None:
+        if cli_utils.is_machine_mode():
+            cli_utils.error(
+                "Machine mode blocks interactive password prompts. Please "
+                "rerun with `--password`. If you want activation-token "
+                "semantics on a REST store, pass an empty string explicitly.",
+                error_type="MachineModePromptError",
+            )
         if client.zen_store.type != StoreType.REST:
-            password = click.prompt(
+            password = cli_utils.prompt(
                 f"Password for user {user_name}",
                 hide_input=True,
             )
         else:
-            password = click.prompt(
+            password = cli_utils.prompt(
                 f"Password for user {user_name}. Leave empty to generate an "
                 f"activation token",
                 default="",
@@ -354,17 +361,26 @@ def change_user_password(
             "Please consider using the prompt option."
         )
 
+    if cli_utils.is_machine_mode() and (
+        old_password is None or password is None
+    ):
+        cli_utils.error(
+            "Machine mode blocks interactive password prompts. Please rerun "
+            "with both `--old-password` and `--password`.",
+            error_type="MachineModePromptError",
+        )
+
     if old_password is None:
-        old_password = click.prompt(
+        old_password = cli_utils.prompt(
             f"Current password for user {active_user.name}",
             hide_input=True,
         )
     if password is None:
-        password = click.prompt(
+        password = cli_utils.prompt(
             f"New password for user {active_user.name}",
             hide_input=True,
         )
-        password_again = click.prompt(
+        password_again = cli_utils.prompt(
             f"Please re-enter the new password for user {active_user.name}",
             hide_input=True,
         )

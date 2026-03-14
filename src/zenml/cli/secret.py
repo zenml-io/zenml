@@ -26,6 +26,7 @@ from zenml.cli.utils import (
     declare,
     error,
     expand_argument_value_from_file,
+    is_machine_mode,
     list_options,
     parse_name_and_extra_arguments,
     pretty_print_secret,
@@ -111,6 +112,13 @@ def create_secret(
     try:
         client = Client()
         if interactive:
+            if is_machine_mode():
+                error(
+                    "Machine mode blocks interactive secret creation. Please "
+                    "rerun without `--interactive` and provide secret values "
+                    "with `--values` or `--key=value` arguments.",
+                    error_type="MachineModePromptError",
+                )
             if parsed_args:
                 error(
                     "Cannot pass secret fields as arguments when using "
@@ -337,6 +345,13 @@ def update_secret(
         error("The word 'name' cannot be used as a key for a secret.")
 
     if interactive:
+        if is_machine_mode():
+            error(
+                "Machine mode blocks interactive secret updates. Please rerun "
+                "without `--interactive` and provide secret values with "
+                "`--values` or `--key=value` arguments.",
+                error_type="MachineModePromptError",
+            )
         if parsed_args:
             error(
                 "Cannot pass secret fields as arguments when using "

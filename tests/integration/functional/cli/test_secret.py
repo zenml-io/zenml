@@ -13,11 +13,15 @@
 #  permissions and limitations under the License.
 """Tests for the Secret Store CLI."""
 
+import json
 import os
 
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.utils import cleanup_secrets
+from tests.integration.functional.cli.utils import (
+    capture_clean_stdout,
+    cleanup_secrets,
+)
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -83,43 +87,26 @@ def test_create_secret_with_values():
 
 def test_list_secret_works():
     """Test that the secret list command works."""
-    import io
-
-    import zenml_cli
-
-    # Save original _original_stdout for cleanup
-    original_stdout = zenml_cli._original_stdout
-
-    runner = CliRunner(mix_stderr=False)
-    try:
-        with cleanup_secrets() as secret_name:
-            # Capture clean_output writes by replacing _original_stdout
-            # with a StringIO buffer before each CLI invocation
-            buffer1 = io.StringIO()
-            zenml_cli._original_stdout = buffer1
-
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        with capture_clean_stdout() as buffer1:
             result1 = runner.invoke(secret_list_command)
             output1 = buffer1.getvalue() + result1.output
 
-            assert result1.exit_code == 0
-            assert secret_name not in output1
+        assert result1.exit_code == 0
+        assert secret_name not in output1
 
-            runner.invoke(
-                secret_create_command,
-                [secret_name, "--test_value=aria", "--test_value2=axl"],
-            )
+        runner.invoke(
+            secret_create_command,
+            [secret_name, "--test_value=aria", "--test_value2=axl"],
+        )
 
-            buffer2 = io.StringIO()
-            zenml_cli._original_stdout = buffer2
-
+        with capture_clean_stdout() as buffer2:
             result2 = runner.invoke(secret_list_command)
             output2 = buffer2.getvalue() + result2.output
 
-            assert result2.exit_code == 0
-            assert secret_name in output2
-    finally:
-        # Restore original state
-        zenml_cli._original_stdout = original_stdout
+        assert result2.exit_code == 0
+        assert secret_name in output2
 
 
 def test_get_secret_works():
@@ -236,6 +223,23 @@ def test_get_private_secret():
         assert "Could not find a secret" in result3.output
 
 
+def test_get_secret_outputs_json_error_in_machine_mode():
+    """Test structured JSON errors for missing secrets in machine mode."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        result = runner.invoke(
+            secret_get_command,
+            [secret_name],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+    assert result.exit_code != 0
+    payload = json.loads(result.output.strip())
+    assert "Could not find a secret" in payload["error"]
+    assert payload["type"] == "error"
+    assert payload["exit_code"] == 1
+
+
 def _check_deleting_nonexistent_secret_fails(runner, secret_name):
     """Helper method to check that deleting a nonexistent secret fails."""
     result1 = runner.invoke(
@@ -265,6 +269,27 @@ def test_delete_secret_works():
         assert "deleted" in result2.output
 
         _check_deleting_nonexistent_secret_fails(runner, secret_name)
+
+
+def test_delete_secret_auto_confirms_in_machine_mode():
+    """Test that machine mode auto-confirms secret deletion."""
+    runner = CliRunner()
+    client = Client()
+    with cleanup_secrets() as secret_name:
+        runner.invoke(
+            secret_create_command,
+            [secret_name, "--test_value=aria", "--test_value2=axl"],
+        )
+
+        result = runner.invoke(
+            secret_delete_command,
+            [secret_name],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+        assert result.exit_code == 0
+        assert "deleted" in result.output
+        assert not client.list_secrets(name=secret_name).items
 
 
 def test_rename_secret_works():

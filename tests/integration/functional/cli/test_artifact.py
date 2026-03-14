@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Test zenml artifact CLI commands."""
 
+import json
+
 from click.testing import CliRunner
 
+from tests.integration.functional.cli.utils import capture_clean_stdout
 from zenml.cli.cli import cli
 
 
@@ -137,6 +140,33 @@ def test_artifact_version_update(clean_client_with_run):
     existing_tags = [t.name for t in artifact_version_response.tags]
     assert tags[0] not in existing_tags
     assert tags[1] in existing_tags
+
+
+def test_artifact_version_describe_json_output(clean_client_with_run):
+    """Test JSON output for artifact version describe."""
+    runner = CliRunner()
+    describe_command = (
+        cli.commands["artifact"].commands["version"].commands["describe"]
+    )
+    artifact_version = clean_client_with_run.list_artifact_versions()[0]
+
+    with capture_clean_stdout() as output:
+        result = runner.invoke(
+            describe_command,
+            [
+                artifact_version.artifact.name,
+                "-v",
+                artifact_version.version,
+                "--output",
+                "json",
+            ],
+        )
+
+    assert result.exit_code == 0
+    payload = json.loads(output.getvalue())
+    assert payload["id"] == str(artifact_version.id)
+    assert payload["version"] == artifact_version.version
+    assert payload["artifact"] == artifact_version.artifact.name
 
 
 def test_artifact_prune(clean_client_with_run):

@@ -141,6 +141,28 @@ export ZENML_DEFAULT_OUTPUT=json
 
 Choose from `table` (default), `json`, `yaml`, `csv`, or `tsv`. This applies to commands like `zenml stack list`, `zenml pipeline list`, etc.
 
+### Machine mode for automation
+
+Enable machine-friendly CLI behavior for agentic tools, CI jobs, and scripts:
+
+```bash
+export ZENML_CLI_MACHINE_MODE=true
+```
+
+When machine mode is enabled, ZenML CLI behavior changes in a few important ways:
+
+- commands that support `--output` default to `json` when that flag is omitted
+- confirmation prompts are auto-accepted
+- interactive prompts fail immediately instead of blocking
+- errors raised through ZenML's CLI error helpers are written to `stderr` as JSON objects
+
+Output precedence works like this:
+
+1. an explicit `--output` flag wins
+2. `ZENML_CLI_MACHINE_MODE=true` defaults to `json`
+3. `ZENML_DEFAULT_OUTPUT` is used when machine mode is off
+4. otherwise the CLI falls back to `table`
+
 ### Terminal width override
 
 Override the automatic terminal width detection for table rendering:

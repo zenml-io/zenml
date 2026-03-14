@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
+
 from click.testing import CliRunner
 
 from tests.integration.functional.cli.utils import (
@@ -47,6 +49,21 @@ def test_create_user_that_exists_fails() -> None:
         [u.name, "--password=thesupercat"],
     )
     assert result.exit_code == 1
+
+
+def test_create_user_fails_fast_in_machine_mode_without_password() -> None:
+    """Test that machine mode blocks interactive password prompts."""
+    runner = CliRunner()
+    result = runner.invoke(
+        user_create_command,
+        [sample_name()],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert result.exit_code != 0
+    payload = json.loads(result.output.strip())
+    assert payload["type"] == "MachineModePromptError"
+    assert "--password" in payload["error"]
 
 
 def test_update_user_with_new_name_succeeds() -> None:
