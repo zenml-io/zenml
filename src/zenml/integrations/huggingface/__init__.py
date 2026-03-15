@@ -21,6 +21,7 @@ from zenml.stack import Flavor
 
 HUGGINGFACE_MODEL_DEPLOYER_FLAVOR = "huggingface"
 HUGGINGFACE_DEPLOYER_FLAVOR = "huggingface"
+HUGGINGFACE_JOBS_STEP_OPERATOR_FLAVOR = "huggingface-jobs"
 HUGGINGFACE_SERVICE_ARTIFACT = "hf_deployment_service"
 
 
@@ -73,9 +74,14 @@ class HuggingfaceIntegration(Integration):
         """
         from zenml.integrations.huggingface.flavors import (
             HuggingFaceDeployerFlavor,
+            HuggingFaceJobsStepOperatorFlavor,
             HuggingFaceModelDeployerFlavor,
         )
 
-        return [HuggingFaceDeployerFlavor, HuggingFaceModelDeployerFlavor]
+        return [
+            HuggingFaceDeployerFlavor,
+            HuggingFaceJobsStepOperatorFlavor,
+            HuggingFaceModelDeployerFlavor,
+        ]
 
 

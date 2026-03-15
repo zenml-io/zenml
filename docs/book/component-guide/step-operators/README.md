@@ -22,6 +22,7 @@ Step operators to execute steps on one of the big cloud providers are provided b
 | Step Operator                      | Flavor       | Integration  | Dynamic Pipelines | Notes                                                                    |
 | ---------------------------------- | ------------ | ------------ | ----------------- | ------------------------------------------------------------------------ |
 | [AzureML](azureml.md)              | `azureml`    | `azure`      | ✅                 | Uses AzureML to execute steps                                            |
+| [Hugging Face Jobs](huggingface-jobs.md) | `huggingface-jobs` | `huggingface` | ✅          | Uses Hugging Face Jobs to execute steps                                  |
 | [Kubernetes](kubernetes.md)        | `kubernetes` | `kubernetes` | ✅                 | Uses Kubernetes Pods to execute steps                                    |
 | [Modal](modal.md)                  | `modal`      | `modal`      | ✅                 | Uses Modal to execute steps                                              |
 | [SageMaker](sagemaker.md)          | `sagemaker`  | `aws`        | ✅                 | Uses SageMaker to execute steps                                          |
