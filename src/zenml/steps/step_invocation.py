@@ -115,7 +115,7 @@ class StepInvocation:
                     id=artifact.id
                 )
             else:
-                if artifact.value is not None:
+                if artifact.id is None:
                     artifact.upload_by_value()
                 external_artifacts[key] = artifact.config
 

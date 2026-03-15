@@ -78,6 +78,10 @@ def agent_evaluation_pipeline(query: str = "What is machine learning?") -> str:
     return evaluation_result
 ```
 
+{% hint style="info" %}
+If you use an AI coding agent, ZenML Agent Skills can help you scope a pipeline architecture (`zenml-scoping`) and then implement steps and pipelines correctly (`zenml-pipeline-authoring`). See [LLM tooling](../reference/llms-txt.md).
+{% endhint %}
+
 Executing the Pipeline is as easy as calling the function that you decorated with the `@pipeline` decorator.
 
 ```python

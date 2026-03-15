@@ -23,6 +23,7 @@ from uuid import UUID
 
 from packaging import version
 
+from zenml import LogsRequest
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.config.base_settings import BaseSettings
@@ -37,6 +38,7 @@ from zenml.constants import (
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
     ENV_ZENML_RUNNER_PARENT_IMAGE,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
+    LOGS_RUNNER_SOURCE,
     RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
     handle_bool_env_var,
     handle_int_env_var,
@@ -71,8 +73,13 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 from zenml.zen_server.pipeline_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
+from zenml.zen_server.pipeline_execution.workload_manager_interface import (
+    WorkloadType,
+)
 from zenml.zen_server.utils import (
+    get_auth_context,
     server_config,
+    set_auth_context,
     snapshot_executor,
     workload_manager,
     zen_store,
@@ -144,6 +151,10 @@ def run_snapshot(
     request: PipelineSnapshotRunRequest,
     sync: bool = False,
     template_id: Optional[UUID] = None,
+    create_new_snapshot: bool = True,
+    implicit_auth_context: bool = True,
+    wait_runner_pod: bool = True,
+    trigger_id: UUID | None = None,
 ) -> PipelineRunResponse:
     """Run a pipeline from a snapshot.
 
@@ -154,6 +165,10 @@ def run_snapshot(
         sync: Whether to run the snapshot synchronously.
         template_id: The ID of the template from which to create the snapshot
             request.
+        create_new_snapshot: Whether to create a new, copy snapshot.
+        implicit_auth_context: Whether to use implicit auth context or create an explicit new one.
+        wait_runner_pod: Whether to wait for runner pod completion.
+        trigger_id: The trigger ID that generated the snapshot run (optional).
 
     Raises:
         ValueError: If the snapshot can not be run.
@@ -164,6 +179,10 @@ def run_snapshot(
     Returns:
         ID of the new pipeline run.
     """
+    if not implicit_auth_context:
+        set_auth_context(auth_context)
+    logger.info("Current auth context: %s", get_auth_context())
+
     if not snapshot.runnable:
         if stack := snapshot.stack:
             validate_stack_is_runnable_from_server(
@@ -209,7 +228,10 @@ def run_snapshot(
 
     ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
 
-    new_snapshot = zen_store().create_snapshot(snapshot_request)
+    if create_new_snapshot:
+        target_snapshot = zen_store().create_snapshot(snapshot_request)
+    else:
+        target_snapshot = snapshot
 
     server_url = server_config().server_url
     if not server_url:
@@ -226,8 +248,16 @@ def run_snapshot(
         )
 
     placeholder_run = create_placeholder_run(
-        snapshot=new_snapshot, trigger_info=trigger_info
+        snapshot=target_snapshot,
+        trigger_info=trigger_info,
+        logs=LogsRequest(source=LOGS_RUNNER_SOURCE),
     )
+
+    if trigger_id:
+        zen_store().create_trigger_execution(
+            trigger_id=trigger_id,
+            pipeline_run_id=placeholder_run.id,
+        )
 
     report_usage(
         feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
@@ -246,7 +276,7 @@ def run_snapshot(
     ).access_token
 
     environment = {
-        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_snapshot.project_id),
+        ENV_ZENML_ACTIVE_PROJECT_ID: str(target_snapshot.project_id),
         ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
         "ZENML_VERSION": zenml_version,
         "ZENML_STORE_URL": server_url,
@@ -257,7 +287,7 @@ def run_snapshot(
 
     command = RunnerEntrypointConfiguration.get_entrypoint_command()
     args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
-        snapshot_id=new_snapshot.id,
+        snapshot_id=target_snapshot.id,
         placeholder_run_id=placeholder_run.id,
     )
 
@@ -290,16 +320,20 @@ def run_snapshot(
         "Building runner image %s for dockerfile:\n%s", image_hash, dockerfile
     )
 
+    workload_id = placeholder_run.id if trigger_id else target_snapshot.id
+    workload_type = WorkloadType.RUN if trigger_id else WorkloadType.SNAPSHOT
+
     def _task() -> None:
         runner_image = workload_manager().build_and_push_image(
-            workload_id=new_snapshot.id,
+            workload_id=workload_id,
+            workload_type=workload_type,
             dockerfile=dockerfile,
             image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
             sync=True,
         )
 
         workload_manager().log(
-            workload_id=new_snapshot.id,
+            workload_id=workload_id,
             message="Starting pipeline run.",
         )
 
@@ -310,16 +344,16 @@ def run_snapshot(
         # could do this same thing with a step operator, but we need some
         # minor changes to the abstract interface to support that.
         workload_manager().run(
-            workload_id=new_snapshot.id,
+            workload_id=workload_id,
             image=runner_image,
             command=command,
             arguments=args,
             environment=environment,
             timeout_in_seconds=runner_timeout,
-            sync=True,
+            sync=wait_runner_pod,
         )
         workload_manager().log(
-            workload_id=new_snapshot.id,
+            workload_id=workload_id,
             message="Pipeline run started successfully.",
         )
 
@@ -328,10 +362,14 @@ def run_snapshot(
             event=AnalyticsEvent.RUN_PIPELINE
         ) as analytics_handler:
             analytics_handler.metadata = get_pipeline_run_analytics_metadata(
-                snapshot=new_snapshot,
+                snapshot=target_snapshot,
                 stack=stack,
                 source_snapshot_id=snapshot.id,
                 run_id=placeholder_run.id,
+            )
+
+            analytics_handler.metadata["trigger_execution"] = (
+                True if trigger_id else False
             )
 
             try:

@@ -16,6 +16,7 @@
 import contextlib
 import os
 import re
+from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -28,6 +29,9 @@ from typing import (
     Union,
     cast,
 )
+
+from pydantic import BaseModel
+from typing_extensions import Self
 
 from zenml.client import Client
 from zenml.logger import get_logger
@@ -317,3 +321,89 @@ def temporary_runtime_environment(
 
     with temporary_environment(env):
         yield
+
+
+class ConfigBase(BaseModel, ABC):
+    """Base class for configuration objects. Useful for config inheritance."""
+
+    @staticmethod
+    @abstractmethod
+    def prefixes() -> list[str]:
+        """Prefixes to use for env var name resolution.
+
+        Returns:
+            A list of prefixes to use for env var name resolution.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def get_env_vars(cls) -> dict[str, str]:
+        """Method resolving the class variables from the environment.
+
+        Notes:
+        - Beware of variable name conflicts when composing configs via
+        inheritance. For instance, if you have DB and Cache env vars with a
+        different prefix (e.g. {ZENML_REDIS_}CONN_URL, {ZENML_DB_}CONN_URL) this
+        may lead to a conflict in naming when combining the 2 individual config
+        objects (We get 2 variables named conn_url).
+        - To avoid generating ambiguous configs the function detects duplicates and fails eagerly.
+        You can avoid such behaviors by using more generic prefixes and more precise
+        variable names (e.g. prefix = ZENML_, variable = db_conn_url) or by controlling
+        inheritance (try not to combine too many config classes, especially with common variable names).
+        - Why not use pydantic_settings.BaseSettings? Because - while neat - it doesn't provide the
+        ability to compose config objects with different prefixes via inheritance.
+
+        Returns:
+            A dictionary of config variables.
+
+        Raises:
+            RuntimeError: If config has conflicting variable names.
+        """
+        sorted_prefixes = sorted(
+            set(cls.prefixes()), key=lambda p: (-len(p), p)
+        )
+        logger.info("Config resolving prefixes: %s", sorted_prefixes)
+
+        env_vars: dict[str, str] = os.environ.copy()
+        parameters: dict[str, str] = {}
+        sources: dict[str, str] = {}  # variable_name -> env key
+
+        for prefix in sorted_prefixes:
+            found_keys: set[str] = set()
+
+            for key, value in env_vars.items():
+                if not key.startswith(prefix):
+                    continue
+
+                found_keys.add(key)
+                variable_name = key.removeprefix(prefix).lower()
+
+                if variable_name in parameters:
+                    raise RuntimeError(
+                        f"Environment variable extraction failed for {cls.__name__}. "
+                        f"Variable '{variable_name}' is not uniquely defined; it maps to both "
+                        f"{sources[variable_name]!r} and {key!r}."
+                    )
+
+                parameters[variable_name] = value
+                sources[variable_name] = key
+
+            env_vars = {
+                k: v for k, v in env_vars.items() if k not in found_keys
+            }
+
+        return parameters
+
+    @classmethod
+    def load_from_env(cls) -> Self:
+        """Resolve the environment and instantiate a new instance of the class.
+
+        Returns:
+            An instance of the class.
+        """
+        env_vars = cls.get_env_vars()
+        logger.info(
+            "Config identified the following variables: %s",
+            list(env_vars.keys()),
+        )
+        return cls(**env_vars)
