@@ -152,11 +152,10 @@ def _resolve_token(config: HuggingFaceJobsStepOperatorConfig) -> str:
 
     import os
 
-    env_token = os.environ.get("HF_TOKEN") or os.environ.get(
-        "HUGGING_FACE_HUB_TOKEN"
-    )
-    if env_token:
-        return env_token
+    for key in _HF_TOKEN_ENV_KEYS:
+        env_token = os.environ.get(key)
+        if env_token:
+            return env_token
 
     try:
         from huggingface_hub import HfFolder
@@ -582,16 +581,20 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
 
                 if self.config.stream_logs:
                     try:
-                        logs = list(
+                        count = 0
+                        for count, line in enumerate(
                             fetch_job_logs(
                                 job_id=job_id,
                                 namespace=namespace,
                                 token=token,
-                            )
-                        )
-                        for line in logs[log_offset:]:
-                            logger.info("[HF Job] %s", line.rstrip())
-                        log_offset = len(logs)
+                            ),
+                            start=1,
+                        ):
+                            if count > log_offset:
+                                logger.info(
+                                    "[HF Job] %s", line.rstrip()
+                                )
+                        log_offset = count
                     except Exception:
                         logger.debug(
                             "Failed to fetch job logs (job may still "
@@ -614,13 +617,10 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                     message = (
                         job_info.status.message or "No error message provided."
                     )
-                    stage_str = (
-                        stage.value if hasattr(stage, "value") else stage
-                    )
                     logger.error(
                         "HuggingFace Job %s ended with stage=%s. Message: %s",
                         job_id,
-                        stage_str,
+                        stage.value,
                         message,
                     )
                     return ExecutionStatus.FAILED
@@ -628,7 +628,7 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                 logger.debug(
                     "HuggingFace Job %s stage: %s. Polling again in %ss.",
                     job_id,
-                    stage.value if hasattr(stage, "value") else stage,
+                    stage.value,
                     self.config.poll_interval_seconds,
                 )
                 time.sleep(self.config.poll_interval_seconds)
@@ -664,6 +664,9 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
         self.submit(info, entrypoint_command, environment)
         status = self.wait(info.step_run)
         if not status.is_successful:
+            # Cancel is needed here: wait() may return FAILED because
+            # polling hit max consecutive errors, meaning the job could
+            # still be running on HF infrastructure.
             try:
                 self.cancel(info.step_run)
             except Exception:
