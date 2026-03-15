@@ -55,6 +55,7 @@
   * [Kubernetes](step-operators/kubernetes.md)
   * [Run:AI](step-operators/runai.md)
   * [Modal](step-operators/modal.md)
+  * [SSH](step-operators/ssh.md)
   * [Spark](step-operators/spark-kubernetes.md)
   * [Develop a Custom Step Operator](step-operators/custom.md)
 * [Experiment Trackers](experiment-trackers/README.md)

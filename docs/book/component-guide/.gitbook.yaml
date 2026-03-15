@@ -83,4 +83,5 @@ redirects:
   step-operators/modal: step-operators/modal.md
   step-operators/sagemaker: step-operators/sagemaker.md
   step-operators/spark-kubernetes: step-operators/spark-kubernetes.md
+  step-operators/ssh: step-operators/ssh.md
   step-operators/vertex: step-operators/vertex.md
