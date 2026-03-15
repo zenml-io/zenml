@@ -20,6 +20,7 @@ ZenML's registry even when paramiko is not installed.
 """
 
 import io
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -127,14 +128,9 @@ class SSHClient:
         # Host key policy
         if self.config.verify_host_key:
             client.set_missing_host_key_policy(paramiko.RejectPolicy())
-            known_hosts = (
-                self.config.known_hosts_path
-                if self.config.known_hosts_path
-                else None
-            )
             try:
-                if known_hosts:
-                    client.load_host_keys(known_hosts)
+                if self.config.known_hosts_path:
+                    client.load_host_keys(self.config.known_hosts_path)
                 else:
                     client.load_system_host_keys()
             except FileNotFoundError:
@@ -147,11 +143,7 @@ class SSHClient:
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         # Load the private key
-        passphrase = (
-            self.config.ssh_key_passphrase
-            if self.config.ssh_key_passphrase
-            else None
-        )
+        passphrase = self.config.ssh_key_passphrase
         pkey: Optional[paramiko.PKey] = None
         if self.config.ssh_key_path:
             try:
@@ -227,7 +219,7 @@ class SSHClient:
                 if isinstance(self._client, paramiko.SSHClient):
                     self._client.close()
             except Exception:
-                pass
+                logger.debug("Error closing SSH connection", exc_info=True)
             finally:
                 self._client = None
 
@@ -330,13 +322,13 @@ class SSHClient:
             if channel.recv_ready():
                 data = channel.recv(buf_size).decode("utf-8", errors="replace")
                 stdout_chunks.append(data)
-                # Stream each line to the logger
                 for line in data.splitlines():
                     if line.strip():
                         logger.info("[remote] %s", line.rstrip())
-
-            if channel.exit_status_ready() and not channel.recv_ready():
-                break
+            else:
+                if channel.exit_status_ready():
+                    break
+                time.sleep(0.1)
 
         exit_code = channel.recv_exit_status()
         channel.close()
@@ -393,15 +385,3 @@ class SSHClient:
             ) from e
         finally:
             sftp.close()
-
-    def file_exists(self, remote_path: str) -> bool:
-        """Check if a file exists on the remote host.
-
-        Args:
-            remote_path: Absolute path on the remote host.
-
-        Returns:
-            True if the file exists, False otherwise.
-        """
-        result = self.exec(f"test -f {remote_path}")
-        return result.exit_code == 0
