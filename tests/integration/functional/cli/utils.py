@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import io
 from contextlib import contextmanager
 from typing import Generator, Optional, Tuple
 
+import zenml_cli
 from tests.harness.harness import TestHarness
 from zenml.cli import cli
 from zenml.cli.utils import (
@@ -151,6 +153,22 @@ def test_temporarily_setting_the_active_stack(clean_project):
         assert clean_project.active_stack_model == new_stack
 
     assert clean_project.active_stack_model == initial_stack
+
+
+@contextmanager
+def capture_clean_stdout() -> Generator[io.StringIO, None, None]:
+    """Capture writes sent through the CLI clean-output channel.
+
+    Yields:
+        A buffer containing anything written via `zenml_cli.clean_output`.
+    """
+    original_stdout = zenml_cli._original_stdout
+    buffer = io.StringIO()
+    zenml_cli._original_stdout = buffer
+    try:
+        yield buffer
+    finally:
+        zenml_cli._original_stdout = original_stdout
 
 
 @contextmanager

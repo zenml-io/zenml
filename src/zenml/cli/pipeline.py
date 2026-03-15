@@ -26,6 +26,7 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.deployers.base_deployer import BaseDeployer
 from zenml.enums import CliCategories
+from zenml.execution.pipeline.utils import prevent_pipeline_execution
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildBase,
@@ -70,6 +71,48 @@ def _import_pipeline(source: str) -> Pipeline:
         )
 
     return pipeline_instance
+
+
+def _resolve_pipeline_build_reference(
+    build_path_or_id: Optional[str],
+    *,
+    validate_remote_build: bool = False,
+) -> tuple[Union[str, PipelineBuildBase, None], Optional[Dict[str, Any]]]:
+    """Resolve a build reference from CLI input.
+
+    Args:
+        build_path_or_id: Build identifier or local YAML path.
+        validate_remote_build: Whether to validate that a referenced remote
+            build exists.
+
+    Returns:
+        The build object/reference to pass to `with_options(...)` and a
+        preview-safe metadata dictionary.
+    """
+    if not build_path_or_id:
+        return None, None
+
+    if uuid_utils.is_valid_uuid(build_path_or_id):
+        if validate_remote_build:
+            try:
+                Client().get_build(build_path_or_id, hydrate=False)
+            except KeyError as e:
+                cli_utils.exception(e)
+
+        return build_path_or_id, {"kind": "id", "id": build_path_or_id}
+
+    if os.path.exists(build_path_or_id):
+        build = PipelineBuildBase.from_yaml(build_path_or_id)
+        return build, {
+            "kind": "file",
+            "path": build_path_or_id,
+            "is_local": build.is_local,
+        }
+
+    cli_utils.error(
+        f"The specified build {build_path_or_id} is not a valid UUID or file "
+        "path."
+    )
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -251,12 +294,14 @@ def build_pipeline(
     required=False,
     help="Prevent automatic build reusing.",
 )
+@cli_utils.dry_run_option
 def run_pipeline(
     source: str,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
     build_path_or_id: Optional[str] = None,
     prevent_build_reuse: bool = False,
+    dry_run: bool = False,
 ) -> None:
     """Run a pipeline.
 
@@ -269,6 +314,7 @@ def run_pipeline(
             run.
         prevent_build_reuse: If True, prevents automatic reusing of previous
             builds.
+        dry_run: Whether to validate and preview the run without executing it.
     """
     if not Client().root:
         cli_utils.warning(
@@ -279,20 +325,64 @@ def run_pipeline(
             "your source code root."
         )
 
+    build, build_preview = _resolve_pipeline_build_reference(
+        build_path_or_id,
+        validate_remote_build=dry_run,
+    )
+
+    if dry_run:
+        client = Client()
+        try:
+            stack_model = (
+                client.get_stack(stack_name_or_id)
+                if stack_name_or_id
+                else client.active_stack_model
+            )
+        except KeyError as e:
+            cli_utils.exception(e)
+
+        pipeline_instance = _import_pipeline(source=source)
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path,
+            build=build,
+            prevent_build_reuse=prevent_build_reuse,
+        )
+        with prevent_pipeline_execution():
+            pipeline_instance()
+
+        cli_utils.handle_dry_run_output(
+            action="pipeline.run",
+            summary=f"Pipeline `{pipeline_instance.name}` would be prepared for execution.",
+            target={
+                "resource": "pipeline",
+                "name": pipeline_instance.name,
+                "source": source,
+            },
+            validated_input={
+                "source": source,
+                "config_path": config_path,
+                "stack": {
+                    "name": stack_model.name,
+                    "id": str(stack_model.id),
+                },
+                "build": build_preview,
+                "prevent_build_reuse": prevent_build_reuse,
+            },
+            details={
+                "prepared": pipeline_instance.is_prepared,
+                "step_invocations": list(pipeline_instance.invocations.keys()),
+                "execution_prevented": True,
+            },
+            warnings=[
+                "Dry-run validated pipeline import, configuration, and "
+                "preparation. Stack activation, snapshot creation, and "
+                "submission were intentionally skipped."
+            ],
+        )
+        return
+
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = _import_pipeline(source=source)
-
-        build: Union[str, PipelineBuildBase, None] = None
-        if build_path_or_id:
-            if uuid_utils.is_valid_uuid(build_path_or_id):
-                build = build_path_or_id
-            elif os.path.exists(build_path_or_id):
-                build = PipelineBuildBase.from_yaml(build_path_or_id)
-            else:
-                cli_utils.error(
-                    f"The specified build {build_path_or_id} is not a valid UUID "
-                    "or file path."
-                )
 
         pipeline_instance = pipeline_instance.with_options(
             config_path=config_path,

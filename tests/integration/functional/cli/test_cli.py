@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 
 import importlib
+import json
 import os
 
 import click
 import pytest
 from click.testing import CliRunner
 
+from tests.integration.functional.cli.utils import capture_clean_stdout
 from zenml.cli.cli import ZenMLCLI, cli
 from zenml.cli.formatter import ZenFormatter
 from zenml.enums import StoreType
@@ -36,10 +38,27 @@ def test_cli_command_defines_a_cli_group() -> None:
 
 
 def test_cli(runner):
-    """Check that basic cli call works."""
+    """Check that invoking the CLI without arguments shows help."""
     result = runner.invoke(cli)
-    assert not result.exception
+    assert "Usage: cli [OPTIONS] COMMAND [ARGS]..." in result.output
+    assert result.exit_code == 2
+
+
+def test_machine_mode_defaults_list_output_to_json(clean_project):
+    """Tests runtime output default resolution for machine mode."""
+    runner = CliRunner()
+    list_command = cli.commands["stack"].commands["list"]
+
+    with capture_clean_stdout() as output:
+        result = runner.invoke(
+            list_command,
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
     assert result.exit_code == 0
+    payload = json.loads(output.getvalue())
+    assert "items" in payload
+    assert payload["items"]
 
 
 def test_ZenMLCLI_formatter():

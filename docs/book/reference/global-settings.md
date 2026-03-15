@@ -48,7 +48,7 @@ Using the default local database.
 ```
 
 {% hint style="info" %}
-The output can be customized with an `--output` (json, yaml, csv, tsv, table) option and a `--columns` selection. See [environment variables](environment-variables.md#cli-output-formatting) for more details.
+The output can be customized with an `--output` (json, yaml, csv, tsv, table) option and a `--columns` selection. For automation and coding agents, you can also enable `ZENML_CLI_MACHINE_MODE=true` to default commands that support `--output` to JSON, auto-accept confirmations, and fail fast on interactive prompts. See [environment variables](environment-variables.md#cli-output-formatting) for more details.
 {% endhint %}
 
 The following is an example of the layout of the global config directory immediately after initialization:

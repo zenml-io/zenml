@@ -69,7 +69,7 @@ def prompt_connector_name(
         if connector:
             title += " or press Enter to keep the current name"
 
-        name = click.prompt(
+        name = cli_utils.prompt(
             title,
             type=str,
             default=default_name,
@@ -117,7 +117,7 @@ def prompt_resource_type(available_resource_types: List[str]) -> Optional[str]:
     else:
         # Ask the user to select a resource type
         while True:
-            resource_type = click.prompt(
+            resource_type = cli_utils.prompt(
                 "Please select a resource type or leave it empty to create "
                 "a connector that can be used to access any of the "
                 "supported resource types "
@@ -163,7 +163,7 @@ def prompt_resource_id(
         )
         while True:
             # Ask the user to enter an optional resource ID
-            resource_id = click.prompt(
+            resource_id = cli_utils.prompt(
                 prompt,
                 default="",
                 type=str,
@@ -189,7 +189,7 @@ def prompt_resource_id(
             "empty to create a multi-instance connector that can "
             f"be used to access any {resource_name}"
         )
-        resource_id = click.prompt(
+        resource_id = cli_utils.prompt(
             prompt,
             default="",
             type=str,
@@ -233,7 +233,7 @@ def prompt_expiration_time(
         default_str = ""
 
     while True:
-        expiration_seconds = click.prompt(
+        expiration_seconds = cli_utils.prompt(
             "The authentication method involves generating "
             "temporary credentials. Please enter the time that "
             "the credentials should be valid for, in seconds "
@@ -257,7 +257,7 @@ def prompt_expiration_time(
             )
             continue
 
-        confirm = click.confirm(
+        confirm = cli_utils.confirmation(
             f"Credentials will be valid for "
             f"{seconds_to_human_readable(expiration_seconds)}. Keep this "
             "value?",
@@ -281,7 +281,7 @@ def prompt_expires_at(
         The expiration time provided by the user.
     """
     if default is None:
-        confirm = click.confirm(
+        confirm = cli_utils.confirmation(
             "Are the credentials you configured temporary? If so, you'll be asked "
             "to provide an expiration time in the next step.",
             default=False,
@@ -300,7 +300,7 @@ def prompt_expires_at(
                 f"{seconds_to_human_readable(seconds)}]"
             )
 
-        expires_at = click.prompt(
+        expires_at = cli_utils.prompt(
             "Please enter the exact UTC date and time when the credentials "
             f"will expire e.g. '2023-12-31 23:59:59'{default_str}",
             type=click.DateTime(),
@@ -321,7 +321,7 @@ def prompt_expires_at(
             (expires_at - utc_now(tz_aware=expires_at)).total_seconds()
         )
 
-        confirm = click.confirm(
+        confirm = cli_utils.confirmation(
             f"Credentials will be valid until {str(expires_at)} UTC (i.e. "
             f"in {seconds_to_human_readable(seconds)}. Keep this value?",
             default=True,
@@ -573,6 +573,14 @@ def register_service_connector(
     parsed_labels = cast(Dict[str, str], cli_utils.get_parsed_labels(labels))
 
     if interactive:
+        if cli_utils.is_machine_mode():
+            cli_utils.error(
+                "Machine mode blocks interactive service connector setup. "
+                "Please rerun without `--interactive` and provide the "
+                "required values explicitly.",
+                error_type="MachineModePromptError",
+            )
+
         # Get the list of available service connector types
         connector_types = client.list_service_connector_types(
             connector_type=connector_type,
@@ -595,7 +603,7 @@ def register_service_connector(
         name = prompt_connector_name(name)
 
         # Ask for a description
-        description = click.prompt(
+        description = cli_utils.prompt(
             "Please enter a description for the service connector",
             type=str,
             default="",
@@ -623,7 +631,7 @@ def register_service_connector(
             console.print(Markdown(f"{message}---"), justify="left", width=80)
 
         # Ask the user to select a service connector type
-        connector_type = click.prompt(
+        connector_type = cli_utils.prompt(
             "Please select a service connector type",
             type=click.Choice(list(available_types.keys())),
             default=connector_type,
@@ -661,7 +669,7 @@ def register_service_connector(
             connector_type_spec.supports_auto_configuration
             and connector_type_spec.local
         ):
-            auto_configure = click.confirm(
+            auto_configure = cli_utils.confirmation(
                 "Would you like to attempt auto-configuration to extract the "
                 "authentication configuration from your local environment ?",
                 default=False,
@@ -705,7 +713,7 @@ def register_service_connector(
                     f"Auto-configuration was not successful: {e} "
                 )
                 # Ask the user whether to continue with manual configuration
-                manual = click.confirm(
+                manual = cli_utils.confirmation(
                     "Would you like to continue with manual configuration ?",
                     default=True,
                 )
@@ -752,7 +760,7 @@ def register_service_connector(
                 )
 
                 # Ask the user whether to continue with the autoconfiguration
-                choice = click.prompt(
+                choice = cli_utils.prompt(
                     "Would you like to continue with the auto-discovered "
                     "configuration or switch to manual ?",
                     type=click.Choice(["auto", "manual"]),
@@ -796,7 +804,7 @@ def register_service_connector(
             if len(auth_methods) == 1:
                 # Default to the first auth method if only one method is
                 # available
-                confirm = click.confirm(
+                confirm = cli_utils.confirmation(
                     "Only one authentication method is available for this "
                     f"connector ({auth_methods[0]}). Would you like to use it?",
                     default=True,
@@ -807,7 +815,7 @@ def register_service_connector(
                 auth_method = auth_methods[0]
             else:
                 # Ask the user to select an authentication method
-                auth_method = click.prompt(
+                auth_method = cli_utils.prompt(
                     "Please select an authentication method",
                     type=click.Choice(auth_methods),
                     default=auth_method,
@@ -1431,6 +1439,14 @@ def update_service_connector(
         cli_utils.exception(e)
 
     if interactive:
+        if cli_utils.is_machine_mode():
+            cli_utils.error(
+                "Machine mode blocks interactive service connector updates. "
+                "Please rerun without `--interactive` and provide the "
+                "required values explicitly.",
+                error_type="MachineModePromptError",
+            )
+
         # Fetch the connector type specification if not already embedded
         # into the connector model
         if isinstance(connector.connector_type, str):
@@ -1451,14 +1467,14 @@ def update_service_connector(
         name = prompt_connector_name(connector.name, connector=connector.id)
 
         # Ask for a new description, if needed
-        description = click.prompt(
+        description = cli_utils.prompt(
             "Updated service connector description",
             type=str,
             default=connector.description,
         )
 
         # Ask for a new authentication method
-        auth_method = click.prompt(
+        auth_method = cli_utils.prompt(
             "If you would like to update the authentication method, please "
             "select a new one from the following options, otherwise press "
             "enter to keep the existing one. Please note that changing "
@@ -1480,7 +1496,7 @@ def update_service_connector(
         if auth_method != connector.auth_method:
             confirm = True
         else:
-            confirm = click.confirm(
+            confirm = cli_utils.confirmation(
                 "Would you like to update the authentication configuration?",
                 default=False,
             )
@@ -1536,7 +1552,7 @@ def update_service_connector(
                     f"{resource_type} resource type. "
                     "Would you like to change that?"
                 )
-            confirm = click.confirm(title, default=False)
+            confirm = cli_utils.confirmation(title, default=False)
 
             if confirm:
                 # Prompt for a new resource type, if needed

@@ -1042,13 +1042,16 @@ def prompt_select_resource_id(
             f"selected connector:\n{resource_ids_list}\n"
         )
         # User needs to select a resource ID from the list
-        if not interactive:
+        if not interactive or cli_utils.is_machine_mode():
             cli_utils.error(
                 f"{msg}Please use the `--resource-id` command line "  # nosec
                 f"argument to select a {resource_name} resource from the "
-                "list."
+                "list.",
+                error_type="MachineModePromptError"
+                if cli_utils.is_machine_mode()
+                else "error",
             )
-        resource_id = click.prompt(
+        resource_id = cli_utils.prompt(
             f"{msg}Please select the {resource_name} that you want to use",
             type=click.Choice(resource_ids),
             show_choices=False,
@@ -1083,7 +1086,7 @@ def prompt_select_resource(
     cli_utils.print_service_connector_resource_table(resource_list)
 
     if len(resource_list) == 1:
-        connect = click.confirm(
+        connect = cli_utils.confirmation(
             "Would you like to use this connector?",
             default=True,
         )
@@ -1093,7 +1096,7 @@ def prompt_select_resource(
     else:
         # Prompt the user to select a connector by its name or ID
         while True:
-            connector_id = click.prompt(
+            connector_id = cli_utils.prompt(
                 "Please enter the name or ID of the connector you want to use",
                 type=click.Choice(
                     [

@@ -88,6 +88,13 @@ def _display_login_menu() -> LoginMethod:
     Returns:
         The selected login method enum value.
     """
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode blocks the interactive login menu. Please rerun "
+            "`zenml login` with explicit non-interactive arguments.",
+            error_type="MachineModePromptError",
+        )
+
     title_text = Text("ZenML Login", style="bold cyan")
 
     options_text = Text()
@@ -930,10 +937,16 @@ def login(
     api_key_value: Optional[str] = None
     if api_key:
         # Read the API key from the user
-        api_key_value = click.prompt(
+        api_key_value = cli_utils.prompt(
             "Please enter the API key for the ZenML server",
             type=str,
             hide_input=True,
+            machine_message=(
+                "Machine mode blocks interactive API key prompts. Please "
+                "authenticate non-interactively, for example by providing "
+                "credentials through environment variables or command-line "
+                "arguments."
+            ),
         )
         if api_key_value and api_key_value.startswith(
             ZENML_PRO_API_KEY_PREFIX

@@ -13,11 +13,16 @@
 #  permissions and limitations under the License.
 """Tests for the Secret Store CLI."""
 
+import json
 import os
 
+import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.utils import cleanup_secrets
+from tests.integration.functional.cli.utils import (
+    capture_clean_stdout,
+    cleanup_secrets,
+)
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -81,45 +86,84 @@ def test_create_secret_with_values():
         assert created_secret.values["test_value"].get_secret_value() == "aria"
 
 
+def test_create_secret_dry_run_outputs_preview_and_does_not_create():
+    """Tests secret create dry-run output and no-op behavior."""
+    runner = CliRunner()
+    with cleanup_secrets("dry-run-preview") as secret_name:
+        with capture_clean_stdout() as buffer:
+            result = runner.invoke(
+                secret_create_command,
+                [
+                    secret_name,
+                    "--username=dry-run-user",
+                    "--password=dry-run-password",
+                    "--dry-run",
+                ],
+                env={"ZENML_CLI_MACHINE_MODE": "true"},
+            )
+
+        assert result.exit_code == 0
+        payload = json.loads(buffer.getvalue())
+        assert payload["dry_run"] is True
+        assert payload["action"] == "secret.create"
+        assert payload["target"]["name"] == secret_name
+        assert payload["validated_input"]["value_keys"] == [
+            "username",
+            "password",
+        ]
+        assert payload["details"]["values_redacted"] == {
+            "username": "***",
+            "password": "***",
+        }
+        assert "dry-run-user" not in buffer.getvalue()
+        assert "dry-run-password" not in buffer.getvalue()
+
+        with pytest.raises(KeyError):
+            Client().get_secret(
+                secret_name,
+                allow_partial_name_match=False,
+                allow_partial_id_match=False,
+            )
+
+
+def test_create_secret_dry_run_blocks_interactive():
+    """Tests that dry-run rejects interactive secret creation."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        result = runner.invoke(
+            secret_create_command,
+            [secret_name, "--interactive", "--dry-run"],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+    assert result.exit_code != 0
+    payload = json.loads(result.output.strip())
+    assert payload["type"] == "DryRunPromptError"
+    assert "Dry-run cannot prompt" in payload["error"]
+
+
 def test_list_secret_works():
     """Test that the secret list command works."""
-    import io
-
-    import zenml_cli
-
-    # Save original _original_stdout for cleanup
-    original_stdout = zenml_cli._original_stdout
-
-    runner = CliRunner(mix_stderr=False)
-    try:
-        with cleanup_secrets() as secret_name:
-            # Capture clean_output writes by replacing _original_stdout
-            # with a StringIO buffer before each CLI invocation
-            buffer1 = io.StringIO()
-            zenml_cli._original_stdout = buffer1
-
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        with capture_clean_stdout() as buffer1:
             result1 = runner.invoke(secret_list_command)
             output1 = buffer1.getvalue() + result1.output
 
-            assert result1.exit_code == 0
-            assert secret_name not in output1
+        assert result1.exit_code == 0
+        assert secret_name not in output1
 
-            runner.invoke(
-                secret_create_command,
-                [secret_name, "--test_value=aria", "--test_value2=axl"],
-            )
+        runner.invoke(
+            secret_create_command,
+            [secret_name, "--test_value=aria", "--test_value2=axl"],
+        )
 
-            buffer2 = io.StringIO()
-            zenml_cli._original_stdout = buffer2
-
+        with capture_clean_stdout() as buffer2:
             result2 = runner.invoke(secret_list_command)
             output2 = buffer2.getvalue() + result2.output
 
-            assert result2.exit_code == 0
-            assert secret_name in output2
-    finally:
-        # Restore original state
-        zenml_cli._original_stdout = original_stdout
+        assert result2.exit_code == 0
+        assert secret_name in output2
 
 
 def test_get_secret_works():
@@ -236,6 +280,69 @@ def test_get_private_secret():
         assert "Could not find a secret" in result3.output
 
 
+def test_get_secret_outputs_json_error_in_machine_mode():
+    """Test structured JSON errors for missing secrets in machine mode."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        result = runner.invoke(
+            secret_get_command,
+            [secret_name],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+    assert result.exit_code != 0
+    payload = json.loads(result.output.strip())
+    assert "Could not find a secret" in payload["error"]
+    assert payload["type"] == "error"
+    assert payload["exit_code"] == 1
+
+
+def test_update_secret_dry_run_outputs_preview_and_does_not_update():
+    """Tests secret update dry-run output and no-op behavior."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        create_result = runner.invoke(
+            secret_create_command,
+            [
+                secret_name,
+                "--username=aria",
+                "--legacy=old-value",
+                "--private",
+            ],
+        )
+        assert create_result.exit_code == 0
+
+        with capture_clean_stdout() as buffer:
+            result = runner.invoke(
+                secret_update_command,
+                [
+                    secret_name,
+                    "--token=new-token",
+                    "--remove-keys",
+                    "legacy",
+                    "--dry-run",
+                ],
+                env={"ZENML_CLI_MACHINE_MODE": "true"},
+            )
+
+        assert result.exit_code == 0
+        payload = json.loads(buffer.getvalue())
+        assert payload["dry_run"] is True
+        assert payload["action"] == "secret.update"
+        assert payload["target"]["name"] == secret_name
+        assert payload["validated_input"]["add_or_update_keys"] == ["token"]
+        assert payload["validated_input"]["remove_keys"] == ["legacy"]
+        assert payload["details"]["existing_private"] is True
+        assert payload["details"]["values_redacted"] == {"token": "***"}
+        assert "new-token" not in buffer.getvalue()
+
+        secret = Client().get_secret(secret_name)
+        assert secret.private is True
+        assert secret.values["username"].get_secret_value() == "aria"
+        assert secret.values["legacy"].get_secret_value() == "old-value"
+        assert "token" not in secret.values
+
+
 def _check_deleting_nonexistent_secret_fails(runner, secret_name):
     """Helper method to check that deleting a nonexistent secret fails."""
     result1 = runner.invoke(
@@ -265,6 +372,27 @@ def test_delete_secret_works():
         assert "deleted" in result2.output
 
         _check_deleting_nonexistent_secret_fails(runner, secret_name)
+
+
+def test_delete_secret_auto_confirms_in_machine_mode():
+    """Test that machine mode auto-confirms secret deletion."""
+    runner = CliRunner()
+    client = Client()
+    with cleanup_secrets() as secret_name:
+        runner.invoke(
+            secret_create_command,
+            [secret_name, "--test_value=aria", "--test_value2=axl"],
+        )
+
+        result = runner.invoke(
+            secret_delete_command,
+            [secret_name],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+        assert result.exit_code == 0
+        assert "deleted" in result.output
+        assert not client.list_secrets(name=secret_name).items
 
 
 def test_rename_secret_works():
