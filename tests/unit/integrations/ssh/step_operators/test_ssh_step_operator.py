@@ -68,9 +68,27 @@ def _make_mock_ssh(
         ssh_instance.read_text = MagicMock(return_value="")
 
     ssh_instance.put_text = MagicMock()
-    ssh_instance.file_exists = MagicMock(return_value=True)
 
     return ssh_instance
+
+
+def _make_operator() -> SSHStepOperator:
+    """Build an SSHStepOperator with minimal mocked config."""
+    operator = SSHStepOperator.__new__(SSHStepOperator)
+    config = MagicMock()
+    config.hostname = "test-host"
+    config.port = 22
+    config.username = "testuser"
+    config.ssh_key_path = "/fake/key"
+    config.ssh_private_key = None
+    config.ssh_key_passphrase = None
+    config.verify_host_key = False
+    config.known_hosts_path = None
+    config.connection_timeout = 10.0
+    config.keepalive_interval = 30
+    config.docker_binary = "docker"
+    operator._config = config
+    return operator
 
 
 # --- _map_state_to_status ---
@@ -114,26 +132,8 @@ class TestMapStateToStatus:
 class TestGetStatus:
     """Test get_status() with mocked SSH connections."""
 
-    def _make_operator(self) -> SSHStepOperator:
-        """Build an SSHStepOperator with minimal config."""
-        operator = SSHStepOperator.__new__(SSHStepOperator)
-        config = MagicMock()
-        config.hostname = "test-host"
-        config.port = 22
-        config.username = "testuser"
-        config.ssh_key_path = "/fake/key"
-        config.ssh_private_key = None
-        config.ssh_key_passphrase = None
-        config.verify_host_key = False
-        config.known_hosts_path = None
-        config.connection_timeout = 10.0
-        config.keepalive_interval = 30
-        config.docker_binary = "docker"
-        operator._config = config
-        return operator
-
     def test_reads_completed_from_status_file(self) -> None:
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_STATUS_FILE_METADATA_KEY: "/tmp/status.json",
@@ -153,7 +153,7 @@ class TestGetStatus:
         assert result == ExecutionStatus.COMPLETED
 
     def test_reads_failed_from_status_file(self) -> None:
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_STATUS_FILE_METADATA_KEY: "/tmp/status.json",
@@ -173,7 +173,7 @@ class TestGetStatus:
         assert result == ExecutionStatus.FAILED
 
     def test_reads_running_from_status_file(self) -> None:
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_STATUS_FILE_METADATA_KEY: "/tmp/status.json",
@@ -193,7 +193,7 @@ class TestGetStatus:
         assert result == ExecutionStatus.RUNNING
 
     def test_stopped_maps_to_failed(self) -> None:
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_STATUS_FILE_METADATA_KEY: "/tmp/status.json",
@@ -214,7 +214,7 @@ class TestGetStatus:
 
     def test_fallback_to_docker_inspect_running(self) -> None:
         """When status file is missing, fall back to docker inspect."""
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_STATUS_FILE_METADATA_KEY: "/tmp/status.json",
@@ -238,7 +238,7 @@ class TestGetStatus:
         assert result == ExecutionStatus.RUNNING
 
     def test_fallback_to_docker_inspect_exited_success(self) -> None:
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_STATUS_FILE_METADATA_KEY: "/tmp/status.json",
@@ -270,7 +270,7 @@ class TestGetStatus:
 
     def test_both_fail_returns_failed(self) -> None:
         """When both status file and docker inspect fail, return FAILED."""
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_STATUS_FILE_METADATA_KEY: "/tmp/status.json",
@@ -300,25 +300,8 @@ class TestGetStatus:
 
 
 class TestCancel:
-    def _make_operator(self) -> SSHStepOperator:
-        operator = SSHStepOperator.__new__(SSHStepOperator)
-        config = MagicMock()
-        config.hostname = "test-host"
-        config.port = 22
-        config.username = "testuser"
-        config.ssh_key_path = "/fake/key"
-        config.ssh_private_key = None
-        config.ssh_key_passphrase = None
-        config.verify_host_key = False
-        config.known_hosts_path = None
-        config.connection_timeout = 10.0
-        config.keepalive_interval = 30
-        config.docker_binary = "docker"
-        operator._config = config
-        return operator
-
     def test_cancel_writes_marker_and_stops(self) -> None:
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_CONTAINER_NAME_METADATA_KEY: "zenml-step-cancel",
@@ -343,7 +326,7 @@ class TestCancel:
 
     def test_cancel_suppresses_errors(self) -> None:
         """Cancel is best-effort — exceptions should not propagate."""
-        operator = self._make_operator()
+        operator = _make_operator()
         step_run = _make_step_run(
             {
                 SSH_CONTAINER_NAME_METADATA_KEY: "zenml-step-err",

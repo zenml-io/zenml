@@ -73,6 +73,44 @@ def build_docker_gpus_flag(gpu_indices: Sequence[int]) -> str:
     return f'"device={device_list}"'
 
 
+def _build_gpu_locking_lines(
+    gpu_indices: Optional[Sequence[int]],
+    gpu_lock_dir: str,
+    use_gpu_locks: bool,
+) -> List[str]:
+    """Build bash lines that acquire per-GPU flock locks.
+
+    Locks are acquired in index order (deadlock avoidance via resource
+    ordering).  File descriptors start at 200 to avoid clashing with
+    stdin/stdout/stderr.
+
+    Args:
+        gpu_indices: Normalized GPU indices, or None for CPU-only.
+        gpu_lock_dir: Directory where per-GPU lock files are created.
+        use_gpu_locks: Whether to actually acquire locks.
+
+    Returns:
+        List of bash script lines (may be empty if no locking is needed).
+    """
+    if not gpu_indices or not use_gpu_locks:
+        return []
+
+    # Sort for deadlock-free lock acquisition order.
+    gpu_indices = sorted(set(gpu_indices))
+
+    lock_dir_q = shlex.quote(gpu_lock_dir)
+    lines: List[str] = [f"mkdir -p {lock_dir_q}", ""]
+
+    for fd_offset, gpu_idx in enumerate(gpu_indices):
+        fd = 200 + fd_offset
+        lock_path_q = shlex.quote(f"{gpu_lock_dir}/gpu-{gpu_idx}.lock")
+        lines.append(f"exec {fd}>{lock_path_q}")
+        lines.append(f"flock {fd}")
+    lines.append("")
+
+    return lines
+
+
 def serialize_env_for_docker_env_file(env: Mapping[str, str]) -> str:
     """Serialize environment variables into Docker --env-file format.
 
@@ -150,31 +188,9 @@ def build_remote_wrapper_script(
     parts.append(f"trap 'rm -f {shlex.quote(env_file_path)} \"$0\"' EXIT")
     parts.append("")
 
-    # GPU locking section
-    # Sort GPU indices to ensure deadlock-free lock acquisition order,
-    # even if the caller forgot to normalize.
-    if gpu_indices is not None:
-        gpu_indices = sorted(set(gpu_indices))
-
-    needs_locks = (
-        gpu_indices is not None and len(gpu_indices) > 0 and use_gpu_locks
+    parts.extend(
+        _build_gpu_locking_lines(gpu_indices, gpu_lock_dir, use_gpu_locks)
     )
-    if needs_locks:
-        assert gpu_indices is not None  # for type narrowing
-        lock_dir_q = shlex.quote(gpu_lock_dir)
-        parts.append(f"mkdir -p {lock_dir_q}")
-        parts.append("")
-
-        # Open one FD per GPU lock file and acquire each lock.
-        # FDs start at 200 to avoid clashing with stdin/stdout/stderr
-        # and any other FDs the shell may have open.
-        for fd_offset, gpu_idx in enumerate(gpu_indices):
-            fd = 200 + fd_offset
-            lock_path = f"{gpu_lock_dir}/gpu-{gpu_idx}.lock"
-            lock_path_q = shlex.quote(lock_path)
-            parts.append(f"exec {fd}>{lock_path_q}")
-            parts.append(f"flock {fd}")
-        parts.append("")
 
     # Build the docker run command
     docker_cmd_parts: List[str] = [
@@ -290,24 +306,9 @@ def build_remote_supervisor_script(
     parts.append(f"{docker_q} pull {shlex.quote(image)}")
     parts.append("")
 
-    # GPU locking (same pattern as build_remote_wrapper_script).
-    if gpu_indices is not None:
-        gpu_indices = sorted(set(gpu_indices))
-
-    needs_locks = (
-        gpu_indices is not None and len(gpu_indices) > 0 and use_gpu_locks
+    parts.extend(
+        _build_gpu_locking_lines(gpu_indices, gpu_lock_dir, use_gpu_locks)
     )
-    if needs_locks:
-        assert gpu_indices is not None
-        lock_dir_q = shlex.quote(gpu_lock_dir)
-        parts.append(f"mkdir -p {lock_dir_q}")
-        parts.append("")
-        for fd_offset, gpu_idx in enumerate(gpu_indices):
-            fd = 200 + fd_offset
-            lock_path = f"{gpu_lock_dir}/gpu-{gpu_idx}.lock"
-            parts.append(f"exec {fd}>{shlex.quote(lock_path)}")
-            parts.append(f"flock {fd}")
-        parts.append("")
 
     # Build docker run command (detached, no --rm).
     docker_cmd_parts: List[str] = [
