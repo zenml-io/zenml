@@ -3043,6 +3043,23 @@ def list_options(
     return inner_decorator
 
 
+def dry_run_option(func: F) -> F:
+    """Add a shared dry-run option to a CLI command.
+
+    Args:
+        func: The command function.
+
+    Returns:
+        The decorated function.
+    """
+    return click.option(
+        "--dry-run",
+        is_flag=True,
+        default=False,
+        help="Validate inputs and show what would happen without making changes.",
+    )(func)
+
+
 @contextlib.contextmanager
 def temporary_active_stack(
     stack_name_or_id: Union["UUID", str, None] = None,
@@ -3812,6 +3829,41 @@ def handle_output_single(
         except (IOError, OSError) as err:
             logger.warning("Failed to write clean output: %s", err)
             print(cli_output)
+
+
+def handle_dry_run_output(
+    *,
+    action: str,
+    summary: str,
+    target: Dict[str, Any],
+    validated_input: Dict[str, Any],
+    details: Optional[Dict[str, Any]] = None,
+    warnings: Optional[List[str]] = None,
+) -> None:
+    """Emit a consistent dry-run payload.
+
+    Args:
+        action: Canonical action name for the previewed command.
+        summary: Human-readable summary of what would happen.
+        target: Target resource metadata.
+        validated_input: Parsed and validated command input.
+        details: Optional additional dry-run details.
+        warnings: Optional dry-run warnings.
+    """
+    payload = {
+        "dry_run": True,
+        "status": "validated",
+        "action": action,
+        "summary": summary,
+        "target": target,
+        "validated_input": validated_input,
+        "details": details or {},
+        "warnings": warnings or [],
+    }
+    handle_output_single(
+        data=payload,
+        output_format=get_default_output_format(),
+    )
 
 
 def _get_terminal_width() -> Optional[int]:

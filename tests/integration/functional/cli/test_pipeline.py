@@ -13,16 +13,19 @@
 #  permissions and limitations under the License.
 """Test zenml pipeline CLI commands."""
 
+import json
 from uuid import uuid4
 
 import pytest
 from click.testing import CliRunner
 
+from tests.integration.functional.cli.utils import capture_clean_stdout
 from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.enums import StackComponentType
 from zenml.models import (
     PipelineBuildBase,
     PipelineBuildRequest,
@@ -176,6 +179,70 @@ def test_pipeline_registration_with_repo(clean_client: "Client"):
     result = runner.invoke(register_command, [pipeline_instance_source])
     assert result.exit_code == 0
     assert clean_client.list_pipelines(name="pipeline_instance").total == 1
+
+
+def test_pipeline_run_dry_run_outputs_preview_and_does_not_create_run(
+    clean_client: "Client",
+):
+    """Tests pipeline run dry-run output and no-op behavior."""
+    active_stack = clean_client.active_stack_model
+    active_stack_id = active_stack.id
+    existing_runs = clean_client.list_pipeline_runs().total
+
+    other_stack = clean_client.create_stack(
+        name="other-stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: active_stack.components[
+                StackComponentType.ARTIFACT_STORE
+            ][0].name,
+            StackComponentType.ORCHESTRATOR: active_stack.components[
+                StackComponentType.ORCHESTRATOR
+            ][0].name,
+        },
+    )
+
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+    with capture_clean_stdout() as buffer:
+        result = runner.invoke(
+            run_command,
+            [
+                pipeline_instance_source,
+                "--stack",
+                other_stack.name,
+                "--dry-run",
+            ],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+    assert result.exit_code == 0
+    payload = json.loads(buffer.getvalue())
+    assert payload["dry_run"] is True
+    assert payload["action"] == "pipeline.run"
+    assert payload["target"]["name"] == "pipeline_instance"
+    assert payload["validated_input"]["stack"]["name"] == other_stack.name
+    assert payload["details"]["prepared"] is True
+    assert payload["details"]["execution_prevented"] is True
+    assert payload["details"]["step_invocations"] == ["s"]
+    assert clean_client.list_pipeline_runs().total == existing_runs
+    assert clean_client.active_stack_model.id == active_stack_id
+
+
+def test_pipeline_run_dry_run_with_invalid_build_id_fails(
+    clean_client: "Client",
+):
+    """Tests that pipeline dry-run validates remote build IDs."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+    result = runner.invoke(
+        run_command,
+        [pipeline_instance_source, "--build", str(uuid4()), "--dry-run"],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert result.exit_code != 0
+    payload = json.loads(result.output.strip().splitlines()[-1])
+    assert "No pipeline build with this ID found" in payload["error"]
 
 
 def test_pipeline_build_without_repo(clean_client):

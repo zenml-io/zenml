@@ -181,6 +181,35 @@ def test_multi_choice_prompt_fails_in_machine_mode(monkeypatch):
         )
 
 
+def test_handle_dry_run_output_uses_machine_mode_json(monkeypatch):
+    """Tests the shared dry-run payload helper."""
+    monkeypatch.setenv(ENV_ZENML_CLI_MACHINE_MODE, "true")
+
+    with patch("zenml.cli.utils.handle_output_single") as handle_output_single:
+        cli_utils.handle_dry_run_output(
+            action="stack.register",
+            summary="Stack `aria` would be registered.",
+            target={"resource": "stack", "name": "aria"},
+            validated_input={"name": "aria"},
+            details={"would_activate": False},
+            warnings=["preview warning"],
+        )
+
+    handle_output_single.assert_called_once_with(
+        data={
+            "dry_run": True,
+            "status": "validated",
+            "action": "stack.register",
+            "summary": "Stack `aria` would be registered.",
+            "target": {"resource": "stack", "name": "aria"},
+            "validated_input": {"name": "aria"},
+            "details": {"would_activate": False},
+            "warnings": ["preview warning"],
+        },
+        output_format="json",
+    )
+
+
 @pytest.mark.parametrize(
     "mac_version, env_var, expected_output",
     [

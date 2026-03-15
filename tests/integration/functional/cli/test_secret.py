@@ -16,6 +16,7 @@
 import json
 import os
 
+import pytest
 from click.testing import CliRunner
 
 from tests.integration.functional.cli.utils import (
@@ -83,6 +84,62 @@ def test_create_secret_with_values():
         created_secret = client.get_secret(secret_name)
         assert created_secret is not None
         assert created_secret.values["test_value"].get_secret_value() == "aria"
+
+
+def test_create_secret_dry_run_outputs_preview_and_does_not_create():
+    """Tests secret create dry-run output and no-op behavior."""
+    runner = CliRunner()
+    with cleanup_secrets("dry-run-preview") as secret_name:
+        with capture_clean_stdout() as buffer:
+            result = runner.invoke(
+                secret_create_command,
+                [
+                    secret_name,
+                    "--username=dry-run-user",
+                    "--password=dry-run-password",
+                    "--dry-run",
+                ],
+                env={"ZENML_CLI_MACHINE_MODE": "true"},
+            )
+
+        assert result.exit_code == 0
+        payload = json.loads(buffer.getvalue())
+        assert payload["dry_run"] is True
+        assert payload["action"] == "secret.create"
+        assert payload["target"]["name"] == secret_name
+        assert payload["validated_input"]["value_keys"] == [
+            "username",
+            "password",
+        ]
+        assert payload["details"]["values_redacted"] == {
+            "username": "***",
+            "password": "***",
+        }
+        assert "dry-run-user" not in buffer.getvalue()
+        assert "dry-run-password" not in buffer.getvalue()
+
+        with pytest.raises(KeyError):
+            Client().get_secret(
+                secret_name,
+                allow_partial_name_match=False,
+                allow_partial_id_match=False,
+            )
+
+
+def test_create_secret_dry_run_blocks_interactive():
+    """Tests that dry-run rejects interactive secret creation."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        result = runner.invoke(
+            secret_create_command,
+            [secret_name, "--interactive", "--dry-run"],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+    assert result.exit_code != 0
+    payload = json.loads(result.output.strip())
+    assert payload["type"] == "DryRunPromptError"
+    assert "Dry-run cannot prompt" in payload["error"]
 
 
 def test_list_secret_works():
@@ -238,6 +295,52 @@ def test_get_secret_outputs_json_error_in_machine_mode():
     assert "Could not find a secret" in payload["error"]
     assert payload["type"] == "error"
     assert payload["exit_code"] == 1
+
+
+def test_update_secret_dry_run_outputs_preview_and_does_not_update():
+    """Tests secret update dry-run output and no-op behavior."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        create_result = runner.invoke(
+            secret_create_command,
+            [
+                secret_name,
+                "--username=aria",
+                "--legacy=old-value",
+                "--private",
+            ],
+        )
+        assert create_result.exit_code == 0
+
+        with capture_clean_stdout() as buffer:
+            result = runner.invoke(
+                secret_update_command,
+                [
+                    secret_name,
+                    "--token=new-token",
+                    "--remove-keys",
+                    "legacy",
+                    "--dry-run",
+                ],
+                env={"ZENML_CLI_MACHINE_MODE": "true"},
+            )
+
+        assert result.exit_code == 0
+        payload = json.loads(buffer.getvalue())
+        assert payload["dry_run"] is True
+        assert payload["action"] == "secret.update"
+        assert payload["target"]["name"] == secret_name
+        assert payload["validated_input"]["add_or_update_keys"] == ["token"]
+        assert payload["validated_input"]["remove_keys"] == ["legacy"]
+        assert payload["details"]["existing_private"] is True
+        assert payload["details"]["values_redacted"] == {"token": "***"}
+        assert "new-token" not in buffer.getvalue()
+
+        secret = Client().get_secret(secret_name)
+        assert secret.private is True
+        assert secret.values["username"].get_secret_value() == "aria"
+        assert secret.values["legacy"].get_secret_value() == "old-value"
+        assert "token" not in secret.values
 
 
 def _check_deleting_nonexistent_secret_fails(runner, secret_name):
