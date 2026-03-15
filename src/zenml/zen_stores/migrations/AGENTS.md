@@ -57,6 +57,20 @@ This tells you:
 
 ---
 
+## Common Migration Patterns
+
+### Association Tables
+When introducing many-to-many relationships (e.g., trigger-snapshot associations), create a new table with composite primary keys referencing both sides. See `3855b5d051cd_add_v2_of_trigger_schemas.py` for a reference.
+
+### Self-Referential Foreign Keys
+For lineage tracking (e.g., `pipeline_run.original_run_id` → `pipeline_run.id`), add the FK column as nullable pointing back to the same table. See `bf4203afb657_pipeline_run_replays.py` for a reference.
+
+### Denormalized Filter Columns
+When storing polymorphic config as JSON but needing fast filtering, flatten hot filter fields into indexed columns (e.g., `trigger.next_occurrence`). Add indexes in the same migration.
+
+### Coordinated Updates
+Migration work often requires synchronized updates across: schemas, domain models, store methods, and client/CLI surfaces. Plan for all layers when designing schema changes.
+
 ## Related Resources
 
 - **ORM schema patterns:** See `schemas/AGENTS.md` for SQLModel conventions and FK definition patterns

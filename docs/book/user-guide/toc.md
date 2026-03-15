@@ -52,6 +52,7 @@
 * [Trigger pipelines from external systems](tutorial/trigger-pipelines-from-external-systems.md)
 * [Hyper-parameter tuning](tutorial/hyper-parameter-tuning.md)
 * [Inspecting past pipeline runs](tutorial/fetching-pipelines.md)
+* [Replaying runs and steps](tutorial/replaying-runs-steps.md)
 * [Train with GPUs](tutorial/distributed-training.md)
 * [Running notebooks remotely](tutorial/run-remote-notebooks.md)
 * [Managing machine learning datasets](tutorial/datasets.md)
