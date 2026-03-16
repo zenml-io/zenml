@@ -138,16 +138,16 @@ _WAIT_SUPPORTED_PRIMITIVE_TYPES: Tuple[Type[Any], ...] = (
 )
 
 
-class PipelinePausedError(Exception):
-    """Raised when a dynamic pipeline is paused by a wait condition timeout."""
+class _WaitConditionPollTimeout(Exception):
+    """Raised when a wait condition polling times out."""
 
 
-class PipelineAbortedError(Exception):
-    """Raised when a wait condition is resolved with abort."""
+class _WaitConditionAborted(Exception):
+    """Raised when a wait condition is aborted."""
 
 
-class WaitConditionState(NamedTuple):
-    """State tuple for wait-condition handling."""
+class _WaitConditionState(NamedTuple):
+    """State tuple for wait condition handling."""
 
     is_terminal: bool
     value: Any
@@ -570,11 +570,12 @@ class DynamicPipelineRunner:
                     # steps might still be running. We now wait for all of
                     # them and raise any exceptions that occurred.
                     self.await_all_step_futures()
-                except PipelinePausedError:
+                except _WaitConditionPollTimeout:
                     logger.info("Pausing pipeline run `%s`.", self._run.id)
-                except PipelineAbortedError:
+                except _WaitConditionAborted:
                     logger.info(
-                        "Pipeline run `%s` stopped due to wait condition abort.",
+                        "Stopping pipeline run `%s` because a wait condition "
+                        "was aborted.",
                         self._run.id,
                     )
                 except Exception as e:
@@ -1152,7 +1153,7 @@ class DynamicPipelineRunner:
                 status_reason="Waiting for input.",
             ),
         )
-        raise PipelinePausedError(
+        raise _WaitConditionPollTimeout(
             f"Wait condition `{condition.name}` polling timed out."
         )
 
@@ -1160,7 +1161,7 @@ class DynamicPipelineRunner:
     def _handle_wait_condition_state(
         condition: "RunWaitConditionResponse",
         schema: Optional[Any] = None,
-    ) -> WaitConditionState:
+    ) -> _WaitConditionState:
         """Handle wait conditions.
 
         Args:
@@ -1174,17 +1175,17 @@ class DynamicPipelineRunner:
             State indicating whether the condition is terminal and its value.
         """
         if condition.status == RunWaitConditionStatus.PENDING:
-            return WaitConditionState(is_terminal=False, value=None)
+            return _WaitConditionState(is_terminal=False, value=None)
 
         if condition.resolution == RunWaitConditionResolution.ABORT:
-            raise PipelineAbortedError(
+            raise _WaitConditionAborted(
                 f"Wait condition `{condition.name}` resolved with abort."
             )
 
         if schema is None:
-            return WaitConditionState(is_terminal=True, value=condition.result)
+            return _WaitConditionState(is_terminal=True, value=condition.result)
 
-        return WaitConditionState(
+        return _WaitConditionState(
             is_terminal=True,
             value=TypeAdapter(schema).validate_python(condition.result),
         )
