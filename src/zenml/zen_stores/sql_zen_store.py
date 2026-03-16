@@ -6968,6 +6968,11 @@ class SqlZenStore(BaseZenStore):
             The created or idempotently reused wait condition.
         """
         with Session(self.engine) as session:
+            session.exec(
+                select(PipelineRunSchema.id)
+                .with_for_update()
+                .where(PipelineRunSchema.id == run_wait_condition.run)
+            ).one()
             run_schema = self._get_reference_schema_by_id(
                 resource=run_wait_condition,
                 reference_schema=PipelineRunSchema,
@@ -6977,6 +6982,17 @@ class SqlZenStore(BaseZenStore):
             if not run_schema.snapshot or not run_schema.snapshot.is_dynamic:
                 raise IllegalOperationError(
                     "Wait conditions are only supported for dynamic pipelines."
+                )
+
+            existing_pending_schema = self._get_pending_wait_condition_schema(
+                run_id=run_wait_condition.run,
+                session=session,
+            )
+            if existing_pending_schema is not None:
+                raise IllegalOperationError(
+                    "Only one pending wait condition is allowed per run. "
+                    "Resolve the existing pending wait condition before "
+                    "creating a new one."
                 )
 
             schema = RunWaitConditionSchema.from_request(run_wait_condition)
@@ -7204,6 +7220,28 @@ class SqlZenStore(BaseZenStore):
         # resuming
         resume_run(run=run)
 
+    @staticmethod
+    def _get_pending_wait_condition_schema(
+        run_id: UUID,
+        session: Session,
+    ) -> Optional["RunWaitConditionSchema"]:
+        """Get the pending wait condition for a run, if one exists.
+
+        Args:
+            run_id: Pipeline run ID.
+            session: Database session.
+
+        Returns:
+            The pending wait condition schema for the run, if one exists.
+        """
+        return session.exec(
+            select(RunWaitConditionSchema).where(
+                col(RunWaitConditionSchema.run_id) == run_id,
+                col(RunWaitConditionSchema.status)
+                == RunWaitConditionStatus.PENDING.value,
+            )
+        ).one_or_none()
+
     def _has_pending_wait_conditions(self, run_id: UUID) -> bool:
         """Check whether a run still has pending wait conditions.
 
@@ -7215,13 +7253,10 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             return (
-                session.exec(
-                    select(RunWaitConditionSchema.id).where(
-                        col(RunWaitConditionSchema.run_id) == run_id,
-                        col(RunWaitConditionSchema.status)
-                        == RunWaitConditionStatus.PENDING.value,
-                    )
-                ).first()
+                self._get_pending_wait_condition_schema(
+                    run_id=run_id,
+                    session=session,
+                )
                 is not None
             )
 
