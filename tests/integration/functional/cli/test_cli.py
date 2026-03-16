@@ -41,7 +41,8 @@ def test_cli(runner):
     """Check that invoking the CLI without arguments shows help."""
     result = runner.invoke(cli)
     assert "Usage: cli [OPTIONS] COMMAND [ARGS]..." in result.output
-    assert result.exit_code == 2
+    # Click 8.1 exits with 0, Click 8.2+ exits with 2 for no-args help
+    assert result.exit_code in (0, 2)
 
 
 def test_machine_mode_defaults_list_output_to_json(clean_project):
