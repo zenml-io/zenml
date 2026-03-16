@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from pydantic import (
     Field,
@@ -27,6 +27,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
@@ -35,6 +36,8 @@ if TYPE_CHECKING:
     from zenml.integrations.kubernetes.orchestrators import (
         KubernetesOrchestrator,
     )
+
+logger = get_logger(__name__)
 
 
 class KubernetesOrchestratorSettings(BaseSettings):
@@ -178,7 +181,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=30,
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
     )
-    api_request_timeout: Optional[float] = Field(
+    api_request_timeout: Optional[int] = Field(
         default=None,
         description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
     )
@@ -276,6 +279,37 @@ class KubernetesOrchestratorSettings(BaseSettings):
             return serialization_utils.serialize_kubernetes_model(value)
         else:
             return value
+
+    @field_validator("api_request_timeout", mode="before")
+    @classmethod
+    def api_request_timeout_validator(cls, value: Any) -> Union[int, None]:
+        """Validates API request timeout.
+
+        Args:
+            value: The API request timeout value.
+
+        Returns:
+            The validated value in integer format.
+
+        Raises:
+            TypeError: If the value is not an integer or float or None.
+        """
+        if not (value is None or isinstance(value, (int, float))):
+            raise TypeError(
+                f"Expected `api_request_timeout` to be an int or float, got {type(value)}."
+            )
+        if value is not None and value <= 0:
+            logger.warning(
+                "Non-positive value for `api_request_timeout` ignored."
+            )
+            return None
+        if isinstance(value, float):
+            logger.warning(
+                f"Converted `api_request_timeout` from float to int: {value} -> {int(value)}. "
+                "Consider updating Step Operator settings."
+            )
+            return int(value)
+        return value
 
 
 class KubernetesOrchestratorConfig(
