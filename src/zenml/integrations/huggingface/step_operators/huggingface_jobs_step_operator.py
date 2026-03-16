@@ -119,7 +119,7 @@ def _check_hf_jobs_availability() -> None:
                     f"{_HF_JOBS_MIN_VERSION}'`"
                 )
         except (ValueError, TypeError):
-            pass  # unparseable version — fall through to capability check
+            pass  # unparsable version — fall through to capability check
 
     # Final capability check: the Jobs API symbols must be importable.
     try:
