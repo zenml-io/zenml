@@ -24,6 +24,7 @@ from zenml.enums import (
     RunWaitConditionStatus,
     RunWaitConditionType,
 )
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import (
     BaseUpdate,
 )
@@ -54,13 +55,13 @@ class RunWaitConditionRequest(ProjectScopedRequest):
         default=None,
         title="Optional question shown to external actors.",
     )
-    metadata: Dict[str, Any] = Field(
-        default_factory=dict,
-        title="Optional additional context for the wait condition.",
-    )
     data_schema: Optional[Dict[str, Any]] = Field(
         default=None,
         title="Optional JSON Schema describing the expected output value.",
+    )
+    metadata: Dict[str, MetadataType] = Field(
+        default={},
+        title="Metadata of the wait condition.",
     )
 
 
@@ -113,9 +114,8 @@ class RunWaitConditionResponseMetadata(ProjectScopedResponseMetadata):
     question: Optional[str] = Field(
         default=None, title="User-facing question text."
     )
-    metadata: Dict[str, Any] = Field(
-        default_factory=dict,
-        title="Optional additional wait-condition context.",
+    run_metadata: Dict[str, MetadataType] = Field(
+        default={}, title="Metadata of the wait condition."
     )
     data_schema: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -232,13 +232,13 @@ class RunWaitConditionResponse(
         return self.get_metadata().question
 
     @property
-    def wait_metadata(self) -> Dict[str, Any]:
-        """The `wait_metadata` property.
+    def run_metadata(self) -> Dict[str, MetadataType]:
+        """The `run_metadata` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().metadata
+        return self.get_metadata().run_metadata
 
     @property
     def data_schema(self) -> Optional[Dict[str, Any]]:

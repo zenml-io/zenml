@@ -38,7 +38,6 @@ def upgrade() -> None:
         sa.Column(
             "question", sqlmodel.sql.sqltypes.AutoString(), nullable=True
         ),
-        sa.Column("metadata_json", sa.TEXT(), nullable=False),
         sa.Column("data_schema_json", sa.TEXT(), nullable=True),
         sa.Column(
             "resolution", sqlmodel.sql.sqltypes.AutoString(), nullable=True

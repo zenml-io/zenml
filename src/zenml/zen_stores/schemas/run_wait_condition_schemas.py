@@ -38,14 +38,14 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
 )
-from zenml.zen_stores.schemas.utils import jl_arg
+from zenml.zen_stores.schemas.utils import RunMetadataInterface, jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
-class RunWaitConditionSchema(BaseSchema, table=True):
+class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
     """SQLModel schema for persisted run wait conditions."""
 
     __tablename__ = "run_wait_condition"
@@ -97,10 +97,6 @@ class RunWaitConditionSchema(BaseSchema, table=True):
     status: str = Field(nullable=False)
     name: str = Field(nullable=False)
     question: Optional[str] = Field(default=None, nullable=True)
-    metadata_json: str = Field(
-        sa_column=Column(TEXT, nullable=False),
-        default="{}",
-    )
     data_schema_json: Optional[str] = Field(
         default=None, sa_column=Column(TEXT, nullable=True)
     )
@@ -160,7 +156,6 @@ class RunWaitConditionSchema(BaseSchema, table=True):
             type=request.type.value,
             status=RunWaitConditionStatus.PENDING.value,
             question=request.question,
-            metadata_json=json.dumps(request.metadata),
             data_schema_json=(
                 json.dumps(request.data_schema)
                 if request.data_schema is not None
@@ -184,10 +179,6 @@ class RunWaitConditionSchema(BaseSchema, table=True):
         Returns:
             The wait condition response model.
         """
-        metadata_json: Dict[str, Any] = {}
-        if self.metadata_json:
-            metadata_json = json.loads(self.metadata_json)
-
         data_schema: Optional[Dict[str, Any]] = None
         if self.data_schema_json:
             data_schema = json.loads(self.data_schema_json)
@@ -214,7 +205,7 @@ class RunWaitConditionSchema(BaseSchema, table=True):
         if include_metadata:
             metadata = RunWaitConditionResponseMetadata(
                 question=self.question,
-                metadata=metadata_json,
+                run_metadata=self.fetch_metadata(),
                 data_schema=data_schema,
                 resolution=self.resolution,
                 result=result,

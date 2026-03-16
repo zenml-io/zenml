@@ -7023,6 +7023,42 @@ class SqlZenStore(BaseZenStore):
             else:
                 session.refresh(schema)
 
+            if run_wait_condition.metadata:
+                values: Dict[str, "MetadataType"] = {}
+                types: Dict[str, "MetadataTypeEnum"] = {}
+                for key, value in run_wait_condition.metadata.items():
+                    if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+                        logger.warning(
+                            f"Metadata value for key '{key}' is too large to be "
+                            "stored in the database. Skipping."
+                        )
+                        continue
+                    try:
+                        metadata_type = get_metadata_type(value)
+                    except ValueError as e:
+                        logger.warning(
+                            f"Metadata value for key '{key}' is not of a "
+                            f"supported type. Skipping. Full error: {e}"
+                        )
+                        continue
+                    values[key] = value
+                    types[key] = metadata_type
+                self.create_run_metadata(
+                    RunMetadataRequest(
+                        project=run_wait_condition.project,
+                        resources=[
+                            RunMetadataResource(
+                                id=schema.id,
+                                type=MetadataResourceTypes.WAIT_CONDITION,
+                            )
+                        ],
+                        values=values,
+                        types=types,
+                    )
+                )
+
+                session.refresh(schema)
+
             return schema.to_model(
                 include_metadata=True,
                 include_resources=True,
@@ -7279,7 +7315,6 @@ class SqlZenStore(BaseZenStore):
             and existing_schema.type == request.type.value
             and existing_schema.name == request.name
             and existing_schema.question == request.question
-            and json.loads(existing_schema.metadata_json) == request.metadata
             and (
                 json.loads(existing_schema.data_schema_json)
                 if existing_schema.data_schema_json
