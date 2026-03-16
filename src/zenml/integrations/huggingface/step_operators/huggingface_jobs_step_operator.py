@@ -591,9 +591,7 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
                             start=1,
                         ):
                             if count > log_offset:
-                                logger.info(
-                                    "[HF Job] %s", line.rstrip()
-                                )
+                                logger.info("[HF Job] %s", line.rstrip())
                         log_offset = count
                     except Exception:
                         logger.debug(
