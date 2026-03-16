@@ -7463,6 +7463,8 @@ class SqlZenStore(BaseZenStore):
                     reference_schema = ModelVersionSchema
                 elif resource.type == MetadataResourceTypes.SCHEDULE:
                     reference_schema = ScheduleSchema
+                elif resource.type == MetadataResourceTypes.WAIT_CONDITION:
+                    reference_schema = RunWaitConditionSchema
                 else:
                     raise RuntimeError(
                         f"Unknown resource type: {resource.type}"
