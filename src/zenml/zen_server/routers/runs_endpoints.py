@@ -471,7 +471,7 @@ def run_logs(
     )
 
     # Handle runner logs from workload manager
-    if run.snapshot and source == LOGS_RUNNER_SOURCE:
+    if source == LOGS_RUNNER_SOURCE:
         return get_workload_logs(run).items
 
     if run.log_collection:

@@ -215,31 +215,35 @@ def get_workload_logs(run: PipelineRunResponse) -> LogsEntriesResponse:
 
     Returns:
         The workload logs for the pipeline run.
+
+    Raises:
+        IllegalOperationError: If no snapshot is found for the run.
     """
-    WORKLOAD_LOGS_MAX_ENTRIES = 50000
+    if snapshot := run.snapshot:
+        WORKLOAD_LOGS_MAX_ENTRIES = 50000
 
-    snapshot = run.snapshot
+        if (
+            snapshot.template_id or snapshot.source_snapshot_id or run.trigger
+        ) and server_config().workload_manager_enabled:
+            from zenml.log_stores.artifact.artifact_log_store import (
+                parse_log_entry,
+            )
 
-    if (
-        snapshot.template_id or snapshot.source_snapshot_id or run.trigger
-    ) and server_config().workload_manager_enabled:
-        from zenml.log_stores.artifact.artifact_log_store import (
-            parse_log_entry,
-        )
+            workload_logs = workload_manager().get_logs(
+                workload_id=snapshot.id if not run.trigger else run.id
+            )
 
-        workload_logs = workload_manager().get_logs(
-            workload_id=snapshot.id if not run.trigger else run.id
-        )
+            log_entries = []
+            for line in workload_logs.split("\n"):
+                if log_record := parse_log_entry(line):
+                    log_entries.append(log_record)
 
-        log_entries = []
-        for line in workload_logs.split("\n"):
-            if log_record := parse_log_entry(line):
-                log_entries.append(log_record)
+                if len(log_entries) >= WORKLOAD_LOGS_MAX_ENTRIES:
+                    break
 
-            if len(log_entries) >= WORKLOAD_LOGS_MAX_ENTRIES:
-                break
+            return LogsEntriesResponse(items=log_entries)
 
-        return LogsEntriesResponse(items=log_entries)
+    raise IllegalOperationError(f"No workload logs found for run {run.id}")
 
 
 def snapshot_executor() -> "BoundedThreadPoolExecutor":

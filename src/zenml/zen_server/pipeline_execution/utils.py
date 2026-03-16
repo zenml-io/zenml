@@ -250,7 +250,10 @@ def run_snapshot(
     placeholder_run = create_placeholder_run(
         snapshot=target_snapshot,
         trigger_info=trigger_info,
-        logs=LogsRequest(source=LOGS_RUNNER_SOURCE),
+        logs=LogsRequest(
+            source=LOGS_RUNNER_SOURCE,
+            project=target_snapshot.project_id,
+        ),
     )
 
     if trigger_id:

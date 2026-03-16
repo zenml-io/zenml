@@ -224,19 +224,19 @@ class DatadogLogStore(OtelLogStore):
             if entry:
                 log_entries.append(entry)
 
-        if after is not None:
+        if after is None:
             log_entries.reverse()
 
         before_token: Optional[str] = None
         after_token: Optional[str] = None
 
         if log_entries:
-            oldest_timestamp = _to_unix_ns(log_entries[0].timestamp)
-            newest_timestamp = _to_unix_ns(log_entries[-1].timestamp)
-
-            if oldest_timestamp is not None:
+            if log_entries[0].timestamp is not None:
+                oldest_timestamp = _to_unix_ns(log_entries[0].timestamp)
                 after_token = self.encode_cursor(oldest_timestamp)
-            if newest_timestamp is not None:
+
+            if log_entries[-1].timestamp is not None:
+                newest_timestamp = _to_unix_ns(log_entries[-1].timestamp)
                 before_token = self.encode_cursor(newest_timestamp)
 
         return LogsEntriesResponse(

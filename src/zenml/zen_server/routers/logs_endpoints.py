@@ -332,7 +332,7 @@ def get_logs_entries(
     )
 
     # Handle runner logs from workload manager
-    if run.snapshot and logs.source == LOGS_RUNNER_SOURCE:
+    if logs.source == LOGS_RUNNER_SOURCE:
         return get_workload_logs(run)
 
     log_store: Optional[BaseLogStore] = None
