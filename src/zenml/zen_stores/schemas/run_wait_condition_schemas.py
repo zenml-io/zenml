@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, CheckConstraint, Column, Index, UniqueConstraint
+from sqlalchemy import TEXT, CheckConstraint, Column, UniqueConstraint
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
@@ -34,7 +34,10 @@ from zenml.models import (
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
@@ -56,16 +59,13 @@ class RunWaitConditionSchema(BaseSchema, table=True):
             "(status != 'resolved') OR (resolution IS NOT NULL)",
             name="ck_run_wait_condition_resolved_requires_resolution",
         ),
-        Index(
-            "ix_run_wait_condition_run_status_lease",
-            "run_id",
-            "status",
-            "poller_lease_expires_at",
+        build_index(
+            table_name=__tablename__,
+            column_names=["run_id", "status"],
         ),
-        Index(
-            "ix_run_wait_condition_project_created",
-            "project_id",
-            "created",
+        build_index(
+            table_name=__tablename__,
+            column_names=["project_id", "created"],
         ),
     )
 
@@ -126,7 +126,16 @@ class RunWaitConditionSchema(BaseSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
-        """Get query options for converting schema rows to models."""
+        """Get query options for converting schema rows to models.
+
+        Args:
+            include_metadata: Whether metadata will be included in responses.
+            include_resources: Whether resources will be included in responses.
+            **kwargs: Additional unused keyword arguments.
+
+        Returns:
+            SQLAlchemy query options.
+        """
         options: List[ExecutableOption] = [joinedload(jl_arg(cls.run))]
         if include_resources:
             options.append(joinedload(jl_arg(cls.resolved_by_user)))
@@ -136,7 +145,14 @@ class RunWaitConditionSchema(BaseSchema, table=True):
     def from_request(
         cls, request: RunWaitConditionRequest
     ) -> "RunWaitConditionSchema":
-        """Create a schema object from a wait condition create request."""
+        """Create a schema object from a wait condition create request.
+
+        Args:
+            request: Wait condition creation request.
+
+        Returns:
+            The persisted wait condition schema object.
+        """
         return cls(
             run_id=request.run,
             project_id=request.project,
@@ -158,7 +174,16 @@ class RunWaitConditionSchema(BaseSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> RunWaitConditionResponse:
-        """Convert the schema row to a response model."""
+        """Convert the schema row to a response model.
+
+        Args:
+            include_metadata: Whether metadata should be included.
+            include_resources: Whether resources should be included.
+            **kwargs: Additional unused keyword arguments.
+
+        Returns:
+            The wait condition response model.
+        """
         metadata_json: Dict[str, Any] = {}
         if self.metadata_json:
             metadata_json = json.loads(self.metadata_json)

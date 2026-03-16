@@ -79,34 +79,32 @@ def unmapped(value: T) -> _Unmapped[T]:
 @overload
 def wait(
     schema: Type[T],
-    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
     timeout: int = 600,
     poll_interval: int = 5,
     question: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
     after: Optional[Sequence["AnyStepFuture"]] = None,
     name: Optional[str] = None,
-) -> T:
-    """Pause dynamic execution on an external wait condition."""
+) -> T: ...
 
 
 @overload
 def wait(
     schema: object = None,
-    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
     timeout: int = 600,
     poll_interval: int = 5,
     question: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
     after: Optional[Sequence["AnyStepFuture"]] = None,
     name: Optional[str] = None,
-) -> Any:
-    """Pause dynamic execution on an external wait condition."""
+) -> Any: ...
 
 
 def wait(
     schema: Optional[Any] = None,
-    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+    type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
     timeout: int = 600,
     poll_interval: int = 5,
     question: Optional[str] = None,
@@ -115,6 +113,16 @@ def wait(
     name: Optional[str] = None,
 ) -> Any:
     """Pause dynamic execution on an external wait condition.
+
+    Args:
+        schema: Optional expected output type for the resolved result.
+        type: Wait condition type.
+        timeout: Maximum time in seconds to poll before pausing.
+        poll_interval: Poll interval in seconds.
+        question: Optional question shown to external actors.
+        metadata: Optional metadata attached to the condition.
+        after: Optional upstream futures that must finish before waiting.
+        name: Optional deterministic wait condition name.
 
     Raises:
         RuntimeError: If called outside of dynamic pipeline execution.

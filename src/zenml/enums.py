@@ -95,6 +95,7 @@ class ExecutionStatus(StrEnum):
     RETRYING = "retrying"
     RETRIED = "retried"
     PAUSED = "paused"
+    RESUMING = "resuming"
     STOPPED = "stopped"
     STOPPING = "stopping"
 
@@ -160,7 +161,7 @@ class ExecutionMode(StrEnum):
 class RunWaitConditionType(StrEnum):
     """Supported wait condition types."""
 
-    EXTERNAL_ACTOR_INPUT = "external_actor_input"
+    EXTERNAL_INPUT = "external_input"
 
 
 class RunWaitConditionStatus(StrEnum):

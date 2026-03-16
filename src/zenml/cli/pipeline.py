@@ -889,11 +889,11 @@ def list_run_wait_conditions(
 
 
 @run_wait_conditions.command("resolve")
-@click.argument("wait_condition_id", type=str, required=True)
+@click.argument("wait_condition_id", type=str, required=False)
 @click.option(
     "--resolution",
     type=click.Choice([r.value for r in RunWaitConditionResolution]),
-    required=True,
+    required=False,
     help="Condition resolution.",
 )
 @click.option(
@@ -902,18 +902,65 @@ def list_run_wait_conditions(
     required=False,
     help="Optional JSON result for the condition.",
 )
+@click.option(
+    "--interactive",
+    "-i",
+    is_flag=True,
+    default=False,
+    help="Interactively review and resolve pending wait conditions.",
+)
+@click.option(
+    "--run",
+    "-r",
+    "run_name_or_id",
+    type=str,
+    required=False,
+    help="Optional run name/ID to scope interactive resolution.",
+)
 def resolve_wait_condition(
-    wait_condition_id: str,
-    resolution: str,
+    wait_condition_id: Optional[str] = None,
+    resolution: Optional[str] = None,
     result: Optional[str] = None,
+    interactive: bool = False,
+    run_name_or_id: Optional[str] = None,
 ) -> None:
-    """Resolve a run wait condition.
+    """Resolve run wait conditions.
 
     Args:
-        wait_condition_id: The wait condition ID.
-        resolution: Resolution semantic value.
+        wait_condition_id: Optional wait condition ID to resolve or review.
+        resolution: Optional resolution semantic value.
         result: Optional JSON value with result.
+        interactive: Whether to interactively review pending wait conditions.
+        run_name_or_id: Optional run name or ID to scope interactive resolution.
     """
+    if interactive:
+        if resolution is not None or result is not None:
+            cli_utils.error(
+                "`--interactive` cannot be used with `--resolution` or "
+                "`--result`."
+            )
+        _interactive_resolve_wait_conditions(
+            wait_condition_id=wait_condition_id,
+            run_name_or_id=run_name_or_id,
+        )
+        return
+
+    if wait_condition_id is None:
+        cli_utils.error(
+            "Argument `WAIT_CONDITION_ID` is required in non-interactive mode."
+        )
+    if resolution is None:
+        cli_utils.error(
+            "Option `--resolution` is required in non-interactive mode."
+        )
+
+    resolution_enum = RunWaitConditionResolution(resolution)
+    if (
+        resolution_enum == RunWaitConditionResolution.ABORT
+        and result is not None
+    ):
+        cli_utils.error("`--result` cannot be used with `--resolution abort`.")
+
     result_value: Optional[Any] = None
     if result:
         try:
@@ -929,59 +976,69 @@ def resolve_wait_condition(
     try:
         Client().resolve_run_wait_condition(
             run_wait_condition_id=condition_id,
-            resolution=RunWaitConditionResolution(resolution),
+            resolution=resolution_enum,
             result=result_value,
         )
     except KeyError as err:
         cli_utils.exception(err)
 
-    cli_utils.declare(f"Resolved run wait condition `{wait_condition_id}`.")
+    cli_utils.declare(
+        f"Resolved wait condition `{wait_condition_id}` with resolution "
+        f"`{resolution_enum.value}`."
+    )
 
 
-@run_wait_conditions.command("review")
-@click.option(
-    "--run",
-    "-r",
-    "run_name_or_id",
-    type=str,
-    required=False,
-    help="Optional run name/ID to scope the review to a single run.",
-)
-def review_wait_conditions(run_name_or_id: Optional[str] = None) -> None:
-    """Interactively review and resolve pending wait conditions.
+def _interactive_resolve_wait_conditions(
+    wait_condition_id: Optional[str] = None,
+    run_name_or_id: Optional[str] = None,
+) -> None:
+    """Interactively resolve pending wait conditions.
 
     Args:
-        run_name_or_id: Optional run name or ID to narrow the review scope.
+        wait_condition_id: Optional wait condition ID to review.
+        run_name_or_id: Optional run name or ID to narrow the resolution scope.
     """
     client = Client()
-    run_id: Optional[UUID] = None
-    if run_name_or_id:
-        run = client.get_pipeline_run(
-            name_id_or_prefix=run_name_or_id,
-            hydrate=False,
-        )
-        run_id = run.id
-
     conditions: List[Any] = []
-    page = 1
-    size = 100
-    while True:
-        page_result = client.list_run_wait_conditions(
-            project=client.active_project.id,
-            pipeline_run=run_id,
-            status=RunWaitConditionStatus.PENDING.value,
-            sort_by="asc:created",
-            page=page,
-            size=size,
-            hydrate=True,
-        )
-        conditions.extend(page_result.items)
-        if page >= page_result.total_pages:
-            break
-        page += 1
+    if wait_condition_id is not None:
+        try:
+            condition = client.zen_store.get_run_wait_condition(
+                UUID(wait_condition_id), hydrate=True
+            )
+        except ValueError:
+            cli_utils.error(
+                f"Invalid wait condition ID: `{wait_condition_id}`."
+            )
+        if condition.status != RunWaitConditionStatus.PENDING:
+            cli_utils.error(
+                f"Wait condition `{wait_condition_id}` is currently "
+                f"`{condition.status.value}`, not `pending`."
+            )
+        conditions = [condition]
+    else:
+        page = 1
+        size = 100
+        while True:
+            page_result = client.list_run_wait_conditions(
+                project=client.active_project.id,
+                pipeline_run=run_name_or_id,
+                status=RunWaitConditionStatus.PENDING.value,
+                sort_by="asc:created",
+                page=page,
+                size=size,
+                hydrate=True,
+            )
+            conditions.extend(page_result.items)
+            if page >= page_result.total_pages:
+                break
+            page += 1
 
     if not conditions:
-        if run_name_or_id:
+        if wait_condition_id:
+            cli_utils.declare(
+                f"No pending wait condition found for `{wait_condition_id}`."
+            )
+        elif run_name_or_id:
             cli_utils.declare(
                 f"No pending wait conditions found for run `{run_name_or_id}`."
             )
@@ -989,7 +1046,6 @@ def review_wait_conditions(run_name_or_id: Optional[str] = None) -> None:
             cli_utils.declare("No pending wait conditions found.")
         return
 
-    processed = 0
     for idx, condition in enumerate(conditions, start=1):
         run_name = condition.run.name
         run_id = condition.run.id
@@ -1029,8 +1085,17 @@ def review_wait_conditions(run_name_or_id: Optional[str] = None) -> None:
         if action == "s":
             continue
 
+        resolution = (
+            RunWaitConditionResolution.CONTINUE
+            if action == "c"
+            else RunWaitConditionResolution.ABORT
+        )
+
         result: Optional[Any] = None
-        if expected_schema is not None:
+        if (
+            resolution == RunWaitConditionResolution.CONTINUE
+            and expected_schema is not None
+        ):
             while True:
                 raw_value = click.prompt(
                     "JSON value for `result` (empty for null)",
@@ -1050,17 +1115,12 @@ def review_wait_conditions(run_name_or_id: Optional[str] = None) -> None:
         try:
             client.resolve_run_wait_condition(
                 run_wait_condition_id=condition.id,
-                resolution=(
-                    RunWaitConditionResolution.CONTINUE
-                    if action == "c"
-                    else RunWaitConditionResolution.ABORT
-                ),
+                resolution=resolution,
                 result=result,
             )
-            processed += 1
             cli_utils.declare(
-                f"Resolved wait condition `{condition.id}` with "
-                f"`{RunWaitConditionStatus.RESOLVED.value}`."
+                f"Resolved wait condition `{condition.id}` with resolution "
+                f"`{resolution.value}`."
             )
         except Exception as e:
             click.echo(f"Failed to resolve wait condition: {e}", err=True)
@@ -1135,19 +1195,14 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
         )
 
         if run.status != ExecutionStatus.PAUSED:
-            cli_utils.error(
-                "Only paused runs can be resumed. "
-                f"Run `{run.name}` is currently `{run.status.value}`."
-            )
+            cli_utils.error("Cannot resume a run that is not paused.")
 
-        wait_conditions = client.list_run_wait_conditions(
-            pipeline_run=run.id,
-            status=RunWaitConditionStatus.PENDING.value,
-        )
-        if wait_conditions.items:
+        if run.active_wait_condition:
             cli_utils.error(
-                f"There are pending wait conditions for run `{run.name}`. "
-                "Please resolve them before resuming the run."
+                "Cannot resume a run that has an active wait condition. "
+                "Please resolve it before resuming the run:\n"
+                "`zenml pipeline runs wait-conditions resolve "
+                f"--run {run.id} --interactive`"
             )
 
         snapshot = run.snapshot
@@ -1161,10 +1216,29 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
                 "Unable to resume run because the stack is missing."
             )
 
-        with cli_utils.temporary_active_stack(
-            stack_name_or_id=snapshot.stack.id
-        ) as stack:
-            stack.orchestrator.restart(snapshot=snapshot, run=run, stack=stack)
+        client.zen_store.update_run(
+            run_id=run.id,
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.RESUMING,
+                status_reason="Manual resume requested by user.",
+            ),
+        )
+        try:
+            with cli_utils.temporary_active_stack(
+                stack_name_or_id=snapshot.stack.id
+            ) as stack:
+                stack.orchestrator.restart_run(
+                    snapshot=snapshot, run=run, stack=stack
+                )
+        except Exception:
+            client.zen_store.update_run(
+                run_id=run.id,
+                run_update=PipelineRunUpdate(
+                    status=ExecutionStatus.PAUSED,
+                    status_reason="Manual resume failed.",
+                ),
+            )
+            raise
     except Exception as e:
         cli_utils.error(f"Failed to resume pipeline run: {e}")
 
@@ -1176,6 +1250,9 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
 
     Args:
         run_name_or_id: The name or ID of the pipeline run to retry.
+
+    Raises:
+        RuntimeError: If retrying the run fails.
     """
     try:
         client = Client()
@@ -1185,10 +1262,7 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
         )
 
         if run.status != ExecutionStatus.FAILED:
-            cli_utils.error(
-                "Only failed runs can be retried. "
-                f"Run `{run.name}` is currently `{run.status.value}`."
-            )
+            cli_utils.error("Cannot retry a run that is not failed.")
 
         snapshot = run.snapshot
         if snapshot is None:
@@ -1201,10 +1275,11 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
                 "Unable to retry run because the stack is missing."
             )
 
-        Client().zen_store.update_run(
+        client.zen_store.update_run(
             run_id=run.id,
             run_update=PipelineRunUpdate(
-                status=ExecutionStatus.RETRYING, is_finished=False
+                status=ExecutionStatus.RESUMING,
+                status_reason="Manual retry requested by user.",
             ),
         )
 
@@ -1212,7 +1287,7 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
             with cli_utils.temporary_active_stack(
                 stack_name_or_id=snapshot.stack.id
             ) as stack:
-                stack.orchestrator.restart(
+                stack.orchestrator.restart_run(
                     snapshot=snapshot, run=run, stack=stack
                 )
         except Exception as e:
@@ -1221,7 +1296,6 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
                     run_id=run.id,
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.FAILED,
-                        is_finished=True,
                         status_reason="Retry submission failed.",
                     ),
                 )
@@ -1705,6 +1779,13 @@ def list_pipeline_snapshots(
         output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter pipeline snapshots.
     """
+    # The helper returns default values for all filter fields even if not
+    # explicitly provided by the user. But we only want to show named snapshots
+    # by default in the CLI, so we need to explicitly set it to True in this
+    # case.
+    if kwargs.get("named_only") is None:
+        kwargs["named_only"] = True
+
     client = Client()
     try:
         with console.status("Listing pipeline snapshots...\n"):

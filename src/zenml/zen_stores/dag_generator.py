@@ -78,16 +78,18 @@ class DAGGeneratorHelper:
         name = name.replace("/", "-")
         return f"run/{name}"
 
-    def get_wait_condition_node_id(self, wait_condition_name: str) -> str:
+    def get_wait_condition_node_id(self, name: str) -> str:
         """Get the ID of a wait condition node.
 
         Args:
-            wait_condition_name: The wait condition name.
+            name: The wait condition name.
 
         Returns:
             The ID of the wait condition node.
         """
-        return f"wait_condition/{wait_condition_name}"
+        # Make sure there is no slashes as we use them as delimiters
+        name = name.replace("/", "-")
+        return f"wait_condition/{name}"
 
     def add_step_node(
         self,
@@ -182,7 +184,17 @@ class DAGGeneratorHelper:
         id: Optional[UUID] = None,
         **metadata: Any,
     ) -> PipelineRunDAG.Node:
-        """Add a wait condition node to the DAG."""
+        """Add a wait condition node to the DAG.
+
+        Args:
+            node_id: The DAG node ID.
+            name: The wait condition display name.
+            id: The wait condition ID.
+            **metadata: Additional node metadata.
+
+        Returns:
+            The added wait condition node.
+        """
         wait_condition_node = PipelineRunDAG.Node(
             type="wait_condition",
             id=id,

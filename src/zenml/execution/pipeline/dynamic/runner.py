@@ -95,7 +95,6 @@ from zenml.models import (
 from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
     publish_failed_step_run,
-    publish_pipeline_run_status_update,
     publish_stopped_step_run,
     publish_successful_pipeline_run,
 )
@@ -503,26 +502,37 @@ class DynamicPipelineRunner:
 
         with logs_context:
             if self._run.status.is_finished:
+                # TODO: if a run fails and the kubernetes job retries, it will
+                # not try re-running here. Might be intended?
                 logger.info("Run `%s` is already finished.", str(self._run.id))
                 return
-            elif self._run.status == ExecutionStatus.PAUSED:
+            elif self._run.status in {
+                ExecutionStatus.RESUMING,
+                ExecutionStatus.PAUSED,
+                ExecutionStatus.RETRYING,
+            }:
                 self._run = Client().zen_store.update_run(
                     run_id=self._run.id,
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.RUNNING,
                     ),
                 )
-                logger.info("Resuming paused run `%s`.", str(self._run.id))
-            elif self._run.status == ExecutionStatus.RETRYING:
-                self._run = Client().zen_store.update_run(
-                    run_id=self._run.id,
-                    run_update=PipelineRunUpdate(
-                        status=ExecutionStatus.RUNNING,
-                    ),
-                )
-                logger.info("Retrying run `%s`.", str(self._run.id))
+                logger.info("Resuming run `%s`.", str(self._run.id))
             elif self._run.status == ExecutionStatus.RUNNING:
                 logger.info("Continuing existing run `%s`.", str(self._run.id))
+            elif self._run.status in {
+                ExecutionStatus.INITIALIZING,
+                ExecutionStatus.PROVISIONING,
+            }:
+                # Set the run status to running already, in case no steps start
+                # immediately which would otherwise cause the run to be stuck in
+                # some init state.
+                self._run = Client().zen_store.update_run(
+                    run_id=self._run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.RUNNING,
+                    ),
+                )
 
             assert self._snapshot.stack
 
@@ -531,6 +541,8 @@ class DynamicPipelineRunner:
                 env_utils.temporary_runtime_environment(
                     self._snapshot.pipeline_configuration, self._snapshot.stack
                 ),
+                # TODO: if the pipeline fails during import, mark the run as
+                # failed?
                 DynamicPipelineRunContext(
                     pipeline=self.pipeline,
                     run=self._run,
@@ -563,16 +575,8 @@ class DynamicPipelineRunner:
                     # them and raise any exceptions that occurred.
                     self.await_all_step_futures()
                 except PipelinePausedError:
-                    logger.info(
-                        "Pipeline run `%s` moved to paused state.",
-                        self._run.id,
-                    )
-                except PipelineAbortedError as e:
-                    publish_pipeline_run_status_update(
-                        pipeline_run_id=self._run.id,
-                        status=ExecutionStatus.STOPPED,
-                        status_reason=str(e),
-                    )
+                    logger.info("Pausing pipeline run `%s`.", self._run.id)
+                except PipelineAbortedError:
                     logger.info(
                         "Pipeline run `%s` stopped due to wait condition abort.",
                         self._run.id,
@@ -605,11 +609,11 @@ class DynamicPipelineRunner:
                     self._maybe_stop_isolated_steps()
                     self._executor.shutdown(wait=True, cancel_futures=True)
                     monitoring_thread.join()
-                refreshed_run = Client().zen_store.get_run(
+
+                self._run = Client().zen_store.get_run(
                     self._run.id, hydrate=False
                 )
-                self._run = refreshed_run
-                if refreshed_run.status == ExecutionStatus.RUNNING:
+                if self._run.status == ExecutionStatus.RUNNING:
                     publish_successful_pipeline_run(self._run.id)
                     logger.info("Pipeline completed successfully.")
 
@@ -977,34 +981,32 @@ class DynamicPipelineRunner:
     def wait(
         self,
         schema: Type[T],
-        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
         timeout: int = 600,
         poll_interval: int = 5,
         question: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         name: Optional[str] = None,
         after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
-    ) -> T:
-        """Create and poll a run wait condition."""
+    ) -> T: ...
 
     @overload
     def wait(
         self,
         schema: object = None,
-        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
         timeout: int = 600,
         poll_interval: int = 5,
         question: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         name: Optional[str] = None,
         after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
-    ) -> Any:
-        """Create and poll a run wait condition."""
+    ) -> Any: ...
 
     def wait(
         self,
         schema: Optional[Any] = None,
-        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_ACTOR_INPUT,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
         timeout: int = 600,
         poll_interval: int = 5,
         question: Optional[str] = None,
@@ -1014,9 +1016,20 @@ class DynamicPipelineRunner:
     ) -> Any:
         """Create and poll a run wait condition.
 
+        Args:
+            schema: Optional expected output type for the resolved result.
+            type: Wait condition type.
+            timeout: Maximum time in seconds to poll before pausing.
+            poll_interval: Poll interval in seconds.
+            question: Optional question shown to external actors.
+            metadata: Optional metadata attached to the condition.
+            name: Optional deterministic wait condition name.
+            after: Optional upstream futures that must finish before waiting.
+
         Raises:
             RuntimeError: If called outside the dynamic pipeline function.
             PipelinePausedError: If the wait timed out and the run was paused.
+            KeyboardInterrupt: If interrupted while waiting.
 
         Returns:
             The resolved wait condition value.
@@ -1138,7 +1151,10 @@ class DynamicPipelineRunner:
 
         self._run = Client().zen_store.update_run(
             run_id=self._run.id,
-            run_update=PipelineRunUpdate(status=ExecutionStatus.PAUSED),
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.PAUSED,
+                status_reason="Waiting for input.",
+            ),
         )
         raise PipelinePausedError(
             f"Wait condition `{condition.name}` polling timed out."

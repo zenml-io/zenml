@@ -1567,6 +1567,37 @@ To avoid this consider setting step parameters only in one place (config or code
 
         return params
 
+    def _compute_parameter_schema(self) -> Optional[Dict[str, Any]]:
+        """Computes a JSON schema for the configured step parameters.
+
+        Returns:
+            The JSON schema for the configured step parameters.
+        """
+        parameter_names = set(self.configuration.parameters)
+        if not parameter_names:
+            return {}
+
+        parameter_inputs = {
+            name: parameter
+            for name, parameter in self.entrypoint_definition.inputs.items()
+            if name in parameter_names
+        }
+
+        try:
+            parameter_model = pydantic_utils.create_parameter_model(
+                model_name=f"{self.name.title().replace('_', '')}Parameters",
+                parameters=parameter_inputs,
+                default_values=self.configuration.parameters,
+            )
+            return parameter_model.model_json_schema()
+        except Exception as e:
+            logger.debug(
+                "Failed to generate the parameter schema for step `%s`: %s.",
+                self.name,
+                e,
+            )
+            return None
+
     def replay(
         self,
         pipeline: Union[UUID, str, None] = None,

@@ -566,8 +566,4 @@ class MapResultsFuture(BaseFuture):
         return len(self.futures)
 
 
-AnyStepFuture = Union[
-    ArtifactFuture,
-    StepFuture,
-    MapResultsFuture,
-]
+AnyStepFuture = Union[ArtifactFuture, StepFuture, MapResultsFuture]
