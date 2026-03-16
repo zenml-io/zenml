@@ -427,6 +427,8 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 )
 
 if TYPE_CHECKING:
+    from concurrent.futures import Future
+
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.models.v2.core.triggers import UnScopedTriggerFilter
 
@@ -7026,6 +7028,42 @@ class SqlZenStore(BaseZenStore):
             else:
                 session.refresh(schema)
 
+            if run_wait_condition.metadata:
+                values: Dict[str, "MetadataType"] = {}
+                types: Dict[str, "MetadataTypeEnum"] = {}
+                for key, value in run_wait_condition.metadata.items():
+                    if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+                        logger.warning(
+                            f"Metadata value for key '{key}' is too large to be "
+                            "stored in the database. Skipping."
+                        )
+                        continue
+                    try:
+                        metadata_type = get_metadata_type(value)
+                    except ValueError as e:
+                        logger.warning(
+                            f"Metadata value for key '{key}' is not of a "
+                            f"supported type. Skipping. Full error: {e}"
+                        )
+                        continue
+                    values[key] = value
+                    types[key] = metadata_type
+                self.create_run_metadata(
+                    RunMetadataRequest(
+                        project=run_wait_condition.project,
+                        resources=[
+                            RunMetadataResource(
+                                id=schema.id,
+                                type=MetadataResourceTypes.WAIT_CONDITION,
+                            )
+                        ],
+                        values=values,
+                        types=types,
+                    )
+                )
+
+                session.refresh(schema)
+
             return schema.to_model(
                 include_metadata=True,
                 include_resources=True,
@@ -7219,9 +7257,21 @@ class SqlZenStore(BaseZenStore):
         run = self.get_run(run_id)
         from zenml.zen_server.pipeline_execution.utils import resume_run
 
-        # TODO: If run fails in the async part of this, it gets stuck in
-        # resuming
-        resume_run(run=run)
+        future = resume_run(run=run)
+
+        def _reset_status_if_failed(future: "Future[None]") -> None:
+            if future.exception() is None and not future.cancelled():
+                return
+
+            with Session(self.engine) as session:
+                self._update_pipeline_run_status(
+                    run_id,
+                    session=session,
+                    requested_status=ExecutionStatus.PAUSED,
+                    status_reason="Waiting for manual resume.",
+                )
+
+        future.add_done_callback(_reset_status_if_failed)
 
     @staticmethod
     def _get_pending_wait_condition_schema(
@@ -7282,7 +7332,6 @@ class SqlZenStore(BaseZenStore):
             and existing_schema.type == request.type.value
             and existing_schema.name == request.name
             and existing_schema.question == request.question
-            and json.loads(existing_schema.metadata_json) == request.metadata
             and (
                 json.loads(existing_schema.data_schema_json)
                 if existing_schema.data_schema_json

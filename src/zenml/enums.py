@@ -449,6 +449,7 @@ class MetadataResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
     SCHEDULE = "schedule"
+    WAIT_CONDITION = "wait_condition"
 
 
 class VisualizationResourceTypes(StrEnum):

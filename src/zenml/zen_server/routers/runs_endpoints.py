@@ -497,7 +497,9 @@ def run_logs(
                 # Trigger invocation
                 workload_id = run.id
             elif run.source_snapshot:
-                # Manual snapshot run
+                # Manual snapshot run. When we resume a run that was initially
+                # triggered by a snapshot, we'll only show the runner logs
+                # of the initial snapshot run.
                 workload_id = snapshot.id
             else:
                 # Resume/Retry run from server
