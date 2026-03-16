@@ -198,7 +198,7 @@ def validate_json_schema_value(
         jsonschema.validate(instance=value, schema=schema)
     except jsonschema.ValidationError as e:
         raise ValueError(
-            f"Value {value} does not match expected schema."
+            f"Value `{value}` does not match expected schema."
         ) from e
 
     return value
