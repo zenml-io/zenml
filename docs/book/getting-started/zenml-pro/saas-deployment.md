@@ -29,8 +29,8 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
 | Pro Control Plane | ZenML Infrastructure | Handles authentication, RBAC, and workspace management |
 | Metadata Store | ZenML Infrastructure | Stores pipeline runs, model metadata, and tracking information |
 | Secrets Store | ZenML Infrastructure (default) | Stores credentials for accessing your infrastructure |
-| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
-| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
+| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Executes pipeline steps and training jobs |
+| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Stores datasets, models, and pipeline artifacts |
 
 ## Key Benefits
 

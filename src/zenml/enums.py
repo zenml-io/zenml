@@ -40,6 +40,7 @@ class StepRunInputArtifactType(StrEnum):
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
     EXTERNAL = "external"  # loaded via `ExternalArtifact(value=...)`
     LAZY_LOADED = "lazy"  # loaded via various lazy methods
+    OVERRIDE = "override"  # used when overriding step inputs
 
 
 class ArtifactSaveType(StrEnum):
@@ -559,6 +560,13 @@ class StepRuntime(StrEnum):
 
     INLINE = "inline"
     ISOLATED = "isolated"
+
+
+class StepType(StrEnum):
+    """All supported step types."""
+
+    TOOL_CALL = "tool_call"
+    LLM_CALL = "llm_call"
 
 
 class GroupType(StrEnum):

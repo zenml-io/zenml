@@ -581,3 +581,66 @@ Returns:
 ZENML_BACKUP_SECRETS_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
 {{- end }}
+
+
+{{/*
+Base environment variables for ZenML deployments.
+
+Returns a dictionary with common configuration env vars.
+*/}}
+{{- define "zenml.baseEnvVariables" -}}
+ZENML_SERVER: "True"
+NODE_OPTIONS: "--use-openssl-ca"
+{{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+REQUESTS_CA_BUNDLE: "/updated-certs/ca-certificates.crt"
+SSL_CERT_FILE: "/updated-certs/ca-certificates.crt"
+{{- end }}
+{{- if .Values.zenml.debug }}
+ZENML_LOGGING_VERBOSITY: "DEBUG"
+{{- end }}
+{{- if .Values.zenml.analyticsOptIn }}
+ZENML_ANALYTICS_OPT_IN: "True"
+{{- else }}
+ZENML_ANALYTICS_OPT_IN: "False"
+{{- end }}
+ZENML_DEFAULT_PROJECT_NAME: {{ .Values.zenml.defaultProject | quote }}
+{{- if .Values.zenml.enableImplicitAuthMethods }}
+ZENML_ENABLE_IMPLICIT_AUTH_METHODS: "True"
+{{- end }}
+{{- if .Values.zenml.proxy.enabled }}
+HTTP_PROXY: {{ .Values.zenml.proxy.httpProxy | quote }}
+HTTPS_PROXY: {{ .Values.zenml.proxy.httpsProxy | quote }}
+NO_PROXY: {{ include "zenml.noProxyList" . | quote }}
+http_proxy: {{ .Values.zenml.proxy.httpProxy | quote }}
+https_proxy: {{ .Values.zenml.proxy.httpsProxy | quote }}
+no_proxy: {{ include "zenml.noProxyList" . | quote }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+Complete environment variables for ZenML server and worker deployments.
+
+This template constructs a dictionary of all non-secret environment variables
+needed for ZenML deployments. It merges (in order of increasing precedence):
+1. Base configuration (zenml.baseEnvVariables)
+2. Store configuration (zenml.storeEnvVariables)
+3. Server configuration (zenml.serverEnvVariables)
+4. Secrets store configuration (zenml.secretsStoreEnvVariables)
+5. Backup secrets store configuration (zenml.backupSecretsStoreEnvVariables)
+6. User-provided environment variables (.Values.zenml.environment)
+
+Args:
+  .: The root context containing .Values
+Returns:
+  A dictionary of environment variables ready to be converted to name/value pairs.
+*/}}
+{{- define "zenml.envVariables" -}}
+{{- $envVars := include "zenml.baseEnvVariables" . | fromYaml | default dict }}
+{{- $envVars = merge (include "zenml.storeEnvVariables" . | fromYaml | default dict) $envVars }}
+{{- $envVars = merge (include "zenml.serverEnvVariables" . | fromYaml | default dict) $envVars }}
+{{- $envVars = merge (include "zenml.secretsStoreEnvVariables" . | fromYaml | default dict) $envVars }}
+{{- $envVars = merge (include "zenml.backupSecretsStoreEnvVariables" . | fromYaml | default dict) $envVars }}
+{{- $envVars = merge (.Values.zenml.environment | default dict) $envVars }}
+{{ $envVars | toYaml }}
+{{- end }}
