@@ -37,6 +37,34 @@ from zenml.utils.logging_utils import severity_number_threshold
 logger = get_logger(__name__)
 
 
+def _to_unix_ns(dt: datetime) -> int:
+    """Convert a datetime to a Unix timestamp in nanoseconds.
+
+    Args:
+        dt: The datetime.
+
+    Returns:
+        The Unix timestamp in nanoseconds.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return int(dt.timestamp() * 1_000_000_000)
+
+
+def _from_unix_ns(ns: int) -> datetime:
+    """Convert a Unix timestamp in nanoseconds to a datetime.
+
+    Args:
+        ns: The Unix timestamp in nanoseconds.
+
+    Returns:
+        The datetime.
+    """
+    return datetime.fromtimestamp(ns / 1_000_000_000, tz=timezone.utc)
+
+
 class DatadogLogStore(OtelLogStore):
     """Log store that exports logs to Datadog.
 
@@ -136,20 +164,23 @@ class DatadogLogStore(OtelLogStore):
 
         query = self.build_query(logs_model=logs_model, filter_=filter_)
 
-        cursor: Optional[str] = None
-
-        since_ns = logs_model.created
-        until_ns = datetime.now(timezone.utc)
+        since = logs_model.created
+        until = datetime.now(timezone.utc)
 
         if filter_ and filter_.since:
-            since_ns = filter_.since
+            since = filter_.since
         if filter_ and filter_.until:
-            until_ns = filter_.until
+            until = filter_.until
+
+        since_ns = _to_unix_ns(since)
+        until_ns = _to_unix_ns(until)
 
         if after is not None:
-            since_ns = self._decode_cursor(after)
+            after_cursor = self.decode_cursor(after)
+            since_ns = max(since_ns, after_cursor + 1)
         elif before is not None:
-            until_ns = self._decode_cursor(before)
+            before_cursor = self.decode_cursor(before)
+            until_ns = min(until_ns, before_cursor - 1)
 
         api_endpoint = (
             f"https://api.{self.config.site}/api/v2/logs/events/search"
@@ -161,17 +192,14 @@ class DatadogLogStore(OtelLogStore):
         body: Dict[str, Any] = {
             "filter": {
                 "query": query,
-                "from": since_ns.isoformat(),
-                "to": until_ns.isoformat(),
+                "from": _from_unix_ns(since_ns).isoformat(),
+                "to": _from_unix_ns(until_ns).isoformat(),
             },
             "page": {
                 "limit": limit,
             },
             "sort": "timestamp" if after else "-timestamp",
         }
-
-        if cursor:
-            body["page"]["cursor"] = cursor
 
         response = requests.post(
             api_endpoint,
@@ -181,11 +209,10 @@ class DatadogLogStore(OtelLogStore):
         )
 
         if response.status_code != 200:
-            logger.error(
-                f"Failed to fetch logs from Datadog: "
-                f"{response.status_code} - {response.text[:200]}"
+            raise Exception(
+                f"Failed to fetch logs from Datadog: {response.status_code} - "
+                f"{response.text[:200]}"
             )
-            raise Exception("")
 
         data = response.json()
         logs = data.get("data", [])
@@ -197,17 +224,20 @@ class DatadogLogStore(OtelLogStore):
             if entry:
                 log_entries.append(entry)
 
+        if after is not None:
+            log_entries.reverse()
+
         before_token: Optional[str] = None
         after_token: Optional[str] = None
 
         if log_entries:
-            oldest_timestamp = log_entries[0].timestamp
-            newest_timestamp = log_entries[-1].timestamp
+            oldest_timestamp = _to_unix_ns(log_entries[0].timestamp)
+            newest_timestamp = _to_unix_ns(log_entries[-1].timestamp)
 
             if oldest_timestamp is not None:
-                before_token = self._encode_cursor(oldest_timestamp)
+                after_token = self.encode_cursor(oldest_timestamp)
             if newest_timestamp is not None:
-                after_token = self._encode_cursor(newest_timestamp)
+                before_token = self.encode_cursor(newest_timestamp)
 
         return LogsEntriesResponse(
             items=log_entries,
@@ -216,40 +246,32 @@ class DatadogLogStore(OtelLogStore):
         )
 
     @classmethod
-    def _encode_cursor(cls, pos: datetime) -> str:
-        """Encode a cursor token into a base64 URL-safe string.
+    def encode_cursor(cls, ts_ns: int) -> str:
+        """Encode a cursor timestamp into a base64 URL-safe string.
 
         Args:
-            pos: The cursor position.
+            ts_ns: The timestamp in nanoseconds.
 
         Returns:
             The encoded cursor.
         """
-        if pos.tzinfo is None:
-            pos = pos.replace(tzinfo=timezone.utc)
-        else:
-            pos = pos.astimezone(timezone.utc)
-
-        payload = {"ts": pos.isoformat()}
+        payload = {"ts_ns": int(ts_ns)}
         data = json.dumps(payload, sort_keys=True).encode("utf-8")
         return base64.urlsafe_b64encode(data).decode("ascii")
 
     @classmethod
-    def _decode_cursor(cls, token: str) -> datetime:
-        """Decode a cursor token into a dictionary.
+    def decode_cursor(cls, token: str) -> int:
+        """Decode a base64 URL-safe string into a cursor timestamp.
 
         Args:
-            token: The cursor token.
+            token: The base64 URL-safe string.
 
         Returns:
             The decoded cursor.
         """
         raw = base64.urlsafe_b64decode(token.encode("ascii"))
         decoded = json.loads(raw.decode("utf-8"))
-        timestamp = decoded["ts"]
-        if isinstance(timestamp, str):
-            timestamp = timestamp.replace("Z", "+00:00")
-        return datetime.fromisoformat(timestamp)
+        return int(decoded.get("ts_ns"))
 
     def build_query(
         self,
@@ -281,7 +303,8 @@ class DatadogLogStore(OtelLogStore):
 
         return " ".join(query_parts)
 
-    def _parse_log_entry(self, log: Dict[str, Any]) -> Optional[LogEntry]:
+    @staticmethod
+    def _parse_log_entry(log: Dict[str, Any]) -> Optional[LogEntry]:
         """Parse a single log entry from Datadog's API response.
 
         Args:

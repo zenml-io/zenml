@@ -172,7 +172,7 @@ class LokiLogStore(OtelLogStore):
             until_ns = min(until_ns, before_cursor - 1)
 
         if since_ns > until_ns:
-            return LogsEntriesResponse(items=[], before=None, after=after)
+            return LogsEntriesResponse(items=[], before=None, after=None)
 
         raw_lines = self.query_range(
             query=query,
