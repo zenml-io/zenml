@@ -382,16 +382,8 @@ def resume_run(run: PipelineRunResponse) -> Future[None]:
             wait_for_completion=True,
         )
 
-    # TODO: Do we actually want to check/report usage of this feature here?
-    # I assume yes, because it's equivalent to a snapshot run, but is
-    # automatically triggered when answering a wait condition.
-    check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
     try:
         future = snapshot_executor().submit(_task)
-        report_usage(
-            feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
-            resource_id=run.id,
-        )
     except MaxConcurrentTasksError:
         raise MaxConcurrentTasksError(
             "Maximum number of concurrent snapshot tasks reached."
