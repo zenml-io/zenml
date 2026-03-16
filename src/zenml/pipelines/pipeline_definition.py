@@ -1791,25 +1791,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             entrypoint_definition = validate_entrypoint_function(
                 self.entrypoint
             )
-
-            defaults: Dict[str, Any] = self._parameters
-            model_args: Dict[str, Any] = {}
-            for name, param in entrypoint_definition.inputs.items():
-                if name in defaults:
-                    default_value = defaults[name]
-                elif param.default is not inspect.Parameter.empty:
-                    default_value = param.default
-                else:
-                    default_value = ...
-
-                model_args[name] = (param.annotation, default_value)
-
-            model_args["__config__"] = ConfigDict(extra="forbid")
-            params_model: Type[BaseModel] = create_model(
-                "PipelineInput",
-                **model_args,
+            return pydantic_utils.create_parameter_model(
+                model_name="PipelineInput",
+                parameters=entrypoint_definition.inputs,
+                default_values=self._parameters,
+                config=ConfigDict(extra="forbid"),
             )
-            return params_model
         except Exception as e:
             logger.debug(
                 f"Failed to generate the input parameters model for pipeline "
