@@ -301,7 +301,7 @@ def run_snapshot(
     return placeholder_run
 
 
-def resume_run(run: PipelineRunResponse) -> None:
+def resume_run(run: PipelineRunResponse) -> Future[None]:
     """Resume a run from the server.
 
     Args:
@@ -311,6 +311,9 @@ def resume_run(run: PipelineRunResponse) -> None:
         MaxConcurrentTasksError: If workload submission exceeds concurrency
             limits.
         IllegalOperationError: If the run is not resuming.
+
+    Returns:
+        A future that resolves when the run is resumed.
     """
     if run.status != ExecutionStatus.RESUMING:
         raise IllegalOperationError(
@@ -336,8 +339,8 @@ def resume_run(run: PipelineRunResponse) -> None:
         log.source == LOGS_RUNNER_SOURCE for log in run.log_collection or []
     )
     if not has_runner_logs:
-        # TODO: How should we handle multiple resumes here? Currently, the logs
-        # simply get appended.
+        # TODO: When the same run gets resumed multiple times, or a snapshot
+        # run gets resumed, the logs get appended to the file.
         zen_store().update_run(
             run.id,
             PipelineRunUpdate(
@@ -376,7 +379,7 @@ def resume_run(run: PipelineRunResponse) -> None:
             arguments=args,
             environment=environment,
             dockerfile=dockerfile,
-            wait_for_completion=False,
+            wait_for_completion=True,
         )
 
     # TODO: Do we actually want to check/report usage of this feature here?
@@ -384,7 +387,7 @@ def resume_run(run: PipelineRunResponse) -> None:
     # automatically triggered when answering a wait condition.
     check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
     try:
-        snapshot_executor().submit(_task)
+        future =snapshot_executor().submit(_task)
         report_usage(
             feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
             resource_id=run.id,
@@ -393,6 +396,8 @@ def resume_run(run: PipelineRunResponse) -> None:
         raise MaxConcurrentTasksError(
             "Maximum number of concurrent snapshot tasks reached."
         ) from None
+
+    return future
 
 
 def ensure_async_orchestrator(

@@ -1183,7 +1183,9 @@ class DynamicPipelineRunner:
             )
 
         if schema is None:
-            return _WaitConditionState(is_terminal=True, value=condition.result)
+            return _WaitConditionState(
+                is_terminal=True, value=condition.result
+            )
 
         return _WaitConditionState(
             is_terminal=True,

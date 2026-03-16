@@ -427,6 +427,8 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 )
 
 if TYPE_CHECKING:
+    from concurrent.futures import Future
+
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.models.v2.core.triggers import UnScopedTriggerFilter
 
@@ -7252,9 +7254,21 @@ class SqlZenStore(BaseZenStore):
         run = self.get_run(run_id)
         from zenml.zen_server.pipeline_execution.utils import resume_run
 
-        # TODO: If run fails in the async part of this, it gets stuck in
-        # resuming
-        resume_run(run=run)
+        future = resume_run(run=run)
+
+        def _reset_status_if_failed(future: "Future[None]") -> None:
+            if future.exception() is None and not future.cancelled():
+                return
+
+            with Session(self.engine) as session:
+                self._update_pipeline_run_status(
+                    run_id,
+                    session=session,
+                    requested_status=ExecutionStatus.PAUSED,
+                    status_reason="Waiting for manual resume.",
+                )
+
+        future.add_done_callback(_reset_status_if_failed)
 
     @staticmethod
     def _get_pending_wait_condition_schema(
