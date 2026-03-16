@@ -32,7 +32,6 @@ from zenml.models.v2.misc.log_models import (
     LogsEntriesFilter,
     LogsEntriesResponse,
 )
-from zenml.utils.logging_utils import severity_number_threshold
 
 logger = get_logger(__name__)
 
@@ -63,6 +62,33 @@ def _from_unix_ns(ns: int) -> datetime:
         The datetime.
     """
     return datetime.fromtimestamp(ns / 1_000_000_000, tz=timezone.utc)
+
+
+def _allowed_datadog_statuses(level: LoggingLevels) -> List[str]:
+    """Map a minimum ZenML log level to Datadog status values.
+
+    Datadog stores this integration's log level as `status` text instead of
+    a numeric OTEL severity field, so level-based filtering needs to query the
+    corresponding status labels.
+
+    Args:
+        level: The minimum ZenML log level.
+
+    Returns:
+        Allowed Datadog status values that satisfy the threshold.
+    """
+    if level in (LoggingLevels.NOTSET, LoggingLevels.DEBUG):
+        return ["debug", "info", "warn", "warning", "error", "critical"]
+    if level == LoggingLevels.INFO:
+        return ["info", "warn", "warning", "error", "critical"]
+    if level in (LoggingLevels.WARN, LoggingLevels.WARNING):
+        return ["warn", "warning", "error", "critical"]
+    if level == LoggingLevels.ERROR:
+        return ["error", "critical"]
+    if level == LoggingLevels.CRITICAL:
+        return ["critical"]
+
+    return ["info", "warn", "warning", "error", "critical"]
 
 
 class DatadogLogStore(OtelLogStore):
@@ -293,13 +319,15 @@ class DatadogLogStore(OtelLogStore):
         ]
 
         if filter_ and filter_.level:
-            threshold = severity_number_threshold(filter_.level)
-            query_parts.append(f"@severity_number:>={threshold}")
+            statuses = _allowed_datadog_statuses(filter_.level)
+            query_parts.append(
+                "("
+                + " OR ".join(f"status:{status}" for status in statuses)
+                + ")"
+            )
 
         if filter_ and filter_.search:
-            # Best-effort translation; we still post-filter to match
-            # substring semantics.
-            query_parts.append(filter_.search)
+            query_parts.append(f"*{filter_.search}*")
 
         return " ".join(query_parts)
 
