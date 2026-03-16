@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, cast
 import requests
 
 from zenml.enums import LoggingLevels
+from zenml.exceptions import IllegalOperationError
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
 from zenml.log_stores.datadog.datadog_log_exporter import DatadogLogExporter
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
@@ -114,8 +115,16 @@ class DatadogLogStore(OtelLogStore):
         Raises:
             ValueError: If `limit` is not positive or if both `before` and
                 `after` are set.
+            IllegalOperationError: If the log store ID does not match the logs model.
             Exception: If the request to Datadog's API fails.
         """
+        if self.id != logs_model.log_store_id:
+            raise IllegalOperationError(
+                f"The log store that you are trying to use {self.name} "
+                "does not match the log store ID in the logs model. Please "
+                "make sure to use the correct log store."
+            )
+
         if limit is None:
             limit = self.config.default_query_size
         else:

@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 import requests
 
 from zenml.enums import LoggingLevels
+from zenml.exceptions import IllegalOperationError
 from zenml.log_stores.loki.loki_flavor import LokiLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
@@ -126,7 +127,15 @@ class LokiLogStore(OtelLogStore):
         Raises:
             ValueError: If `limit` is not positive or if both `before`
                 and `after` are set.
+            IllegalOperationError: If the log store ID does not match the logs model.
         """
+        if self.id != logs_model.log_store_id:
+            raise IllegalOperationError(
+                f"The log store that you are trying to use {self.name} "
+                "does not match the log store ID in the logs model. Please "
+                "make sure to use the correct log store."
+            )
+
         if limit is None:
             limit = self.config.default_query_size
         else:
@@ -176,14 +185,14 @@ class LokiLogStore(OtelLogStore):
             return LogsEntriesResponse(
                 items=[],
                 before=None,
-                after=after if after is not None else None,
+                after=None,
             )
+
         entries = self.translate(raw_lines)
+        entries.sort(key=lambda x: x[0])
 
         before_token = self.encode_cursor(entries[0][0])
         after_token = self.encode_cursor(entries[-1][0])
-
-        entries.sort(key=lambda x: x[0])
 
         return LogsEntriesResponse(
             items=[e[1] for e in entries],
@@ -238,14 +247,14 @@ class LokiLogStore(OtelLogStore):
         """
         entries = []
         for line in raw_lines:
+            # Get the timestamp and message from the values
             values = line["values"][0]
-            stream = line["stream"]
 
+            timestamp = _from_unix_ns(int(values[0]))
             message = str(values[1])
 
-            ts_ns = int(line.get("ts_ns", values[0]))
-            timestamp = _from_unix_ns(ts_ns)
-
+            # Get the severity from the stream
+            stream = line["stream"]
             severity_raw = stream.get("severity_text", "info").upper()
             severity = str(severity_raw or "info").upper()
             log_severity = (
@@ -253,9 +262,12 @@ class LokiLogStore(OtelLogStore):
                 if severity in LoggingLevels.__members__
                 else LoggingLevels.INFO
             )
+
             entries.append(
                 (
-                    ts_ns,
+                    # We need the original timestamp here to be able to
+                    # encode cursors.
+                    values[0],
                     LogEntry(
                         message=message,
                         level=log_severity,

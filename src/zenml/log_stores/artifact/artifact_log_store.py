@@ -414,6 +414,8 @@ class ArtifactLogStore(OtelLogStore):
             if len(items) >= effective_limit:
                 break
 
+        items.reverse()
+
         return LogsEntriesResponse(items=items, before=None, after=None)
 
     def cleanup(self) -> None:
