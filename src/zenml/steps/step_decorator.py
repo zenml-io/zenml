@@ -29,7 +29,7 @@ from typing import (
 )
 from uuid import UUID
 
-from zenml.enums import StepRuntime
+from zenml.enums import StepRuntime, StepType
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -65,6 +65,7 @@ def step(_func: "F") -> "BaseStep": ...
 def step(
     *,
     name: Optional[str] = None,
+    step_type: Optional[StepType] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
@@ -92,6 +93,7 @@ def step(
     _func: Optional["F"] = None,
     *,
     name: Optional[str] = None,
+    step_type: Optional[StepType] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
@@ -119,6 +121,7 @@ def step(
         _func: The decorated function.
         name: The name of the step. If left empty, the name of the decorated
             function will be used as a fallback.
+        step_type: The type of this step.
         enable_cache: Specify whether caching is enabled for this step. If no
             value is passed, caching is enabled by default.
         enable_artifact_metadata: Specify whether metadata is enabled for this
@@ -176,6 +179,7 @@ def step(
 
         step_instance = class_(
             name=name or func.__name__,
+            step_type=step_type,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,

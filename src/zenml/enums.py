@@ -584,6 +584,13 @@ class StepRuntime(StrEnum):
     ISOLATED = "isolated"
 
 
+class StepType(StrEnum):
+    """All supported step types."""
+
+    TOOL_CALL = "tool_call"
+    LLM_CALL = "llm_call"
+
+
 class GroupType(StrEnum):
     """Enum representing different types of group."""
 
