@@ -472,9 +472,6 @@ class HuggingFaceJobsStepOperator(BaseStepOperator):
 
         Returns:
             The current execution status.
-
-        Raises:
-            RuntimeError: If the job identity metadata is missing.
         """
         _check_hf_jobs_availability()
 
