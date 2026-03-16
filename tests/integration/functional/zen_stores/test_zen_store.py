@@ -5687,16 +5687,69 @@ class TestRunMetadata:
         (ExecutionStatus.FAILED, ExecutionStatus.FAILED),
     ],
 )
-def test_updating_the_pipeline_run_status(step_status, expected_run_status):
+def test_updating_the_pipeline_run_status(
+    step_status, expected_run_status, clean_client
+):
     """Tests updating the status of a pipeline run."""
-    run_context = PipelineRunContext(1)
-    with run_context:
-        Client().zen_store.update_run_step(
-            step_run_id=run_context.steps[-1].id,
-            step_run_update=StepRunUpdate(status=step_status),
+    project_id = clean_client.active_project.id
+    pipeline_model = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("pipeline"),
+            project=project_id,
         )
-        run_status = Client().get_pipeline_run(run_context.runs[-1].id).status
-        assert run_status == expected_run_status
+    )
+    step_name = sample_name("step")
+    snapshot = clean_client.zen_store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=project_id,
+            run_name_template=sample_name("run"),
+            pipeline_configuration=PipelineConfiguration(
+                name=sample_name("pipeline-config")
+            ),
+            pipeline=pipeline_model.id,
+            stack=clean_client.active_stack.id,
+            client_version="0.1.0",
+            server_version="0.1.0",
+            step_configurations={
+                step_name: Step(
+                    spec=StepSpec(
+                        source=Source(
+                            module="some.step", type=SourceType.INTERNAL
+                        ),
+                        upstream_steps=[],
+                    ),
+                    config=StepConfiguration(name=step_name),
+                )
+            },
+            is_dynamic=False,
+        )
+    )
+
+    pipeline_run, _ = clean_client.zen_store.get_or_create_run(
+        PipelineRunRequest(
+            project=project_id,
+            id=uuid4(),
+            name=sample_name("run"),
+            snapshot=snapshot.id,
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+    step_run = clean_client.zen_store.create_run_step(
+        StepRunRequest(
+            project=project_id,
+            name=step_name,
+            status=ExecutionStatus.RUNNING,
+            pipeline_run_id=pipeline_run.id,
+            start_time=datetime.now(),
+        )
+    )
+
+    clean_client.zen_store.update_run_step(
+        step_run_id=step_run.id,
+        step_run_update=StepRunUpdate(status=step_status),
+    )
+    run_status = clean_client.get_pipeline_run(pipeline_run.id).status
+    assert run_status == expected_run_status
 
 
 @step
