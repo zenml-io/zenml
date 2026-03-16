@@ -47,7 +47,7 @@ from zenml.constants import (
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     handle_bool_env_var,
 )
-from zenml.enums import GroupType, StepRuntime
+from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.exceptions import SourceValidationException, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -117,6 +117,7 @@ class BaseStep:
     def __init__(
         self,
         name: Optional[str] = None,
+        step_type: Optional[StepType] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -145,6 +146,7 @@ class BaseStep:
 
         Args:
             name: The name of the step.
+            step_type: The type of the step.
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
@@ -225,7 +227,9 @@ class BaseStep:
                 },
             )
 
-        self._configuration = PartialStepConfiguration(name=name)
+        self._configuration = PartialStepConfiguration(
+            name=name, step_type=step_type
+        )
         self._dynamic_configuration: Optional["StepConfigurationUpdate"] = None
         self._capture_dynamic_configuration = True
 

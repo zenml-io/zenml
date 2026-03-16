@@ -44,7 +44,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source, SourceWithValidator
-from zenml.enums import GroupType, StepRuntime
+from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
@@ -281,6 +281,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
+    step_type: Optional[StepType] = None
     # TODO: maybe move to spec?
     template: Optional[str] = None
     parameters: Dict[str, Any] = {}
