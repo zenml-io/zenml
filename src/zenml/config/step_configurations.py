@@ -418,6 +418,7 @@ class StepSpec(FrozenBaseModel):
     inputs: Dict[str, Union[List[InputSpec], InputSpec]] = {}
     invocation_id: str
     enable_heartbeat: bool = False
+    parameter_spec: Optional[Dict[str, Any]] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -470,6 +471,9 @@ class StepSpec(FrozenBaseModel):
                 return False
 
             if self.inputs_v2 != other.inputs_v2:
+                return False
+
+            if self.parameter_spec != other.parameter_spec:
                 return False
 
             if self.invocation_id != other.invocation_id:

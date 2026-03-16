@@ -479,12 +479,14 @@ class Compiler:
             ]
             for key, artifact_list in invocation.input_artifacts.items()
         }
+
         return StepSpec(
             source=invocation.step.resolve(),
             upstream_steps=sorted(invocation.upstream_steps),
             inputs=inputs,
             invocation_id=invocation.id,
             enable_heartbeat=enable_heartbeat,
+            parameter_spec=invocation.step._compute_parameter_schema(),
         )
 
     @staticmethod
