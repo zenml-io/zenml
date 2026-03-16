@@ -128,15 +128,6 @@ logger = get_logger(__name__)
 
 T = TypeVar("T")
 
-_WAIT_SUPPORTED_PRIMITIVE_TYPES: Tuple[Type[Any], ...] = (
-    int,
-    str,
-    float,
-    bool,
-    list,
-    dict,
-)
-
 
 class _WaitConditionPollTimeout(Exception):
     """Raised when a wait condition polling times out."""
