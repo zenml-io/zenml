@@ -23,6 +23,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
+from zenml.enums import MetadataResourceTypes
 from zenml.models import (
     RunWaitConditionRequest,
     RunWaitConditionResponse,
@@ -42,6 +43,7 @@ from zenml.zen_stores.schemas.utils import RunMetadataInterface, jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
@@ -113,6 +115,14 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
         sa_relationship_kwargs={
             "foreign_keys": "RunWaitConditionSchema.resolved_by_user_id",
         }
+    )
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            secondary="run_metadata_resource",
+            primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.WAIT_CONDITION.value}', foreign(RunMetadataResourceSchema.resource_id)==RunWaitConditionSchema.id)",
+            secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            overlaps="run_metadata",
+        ),
     )
 
     @classmethod

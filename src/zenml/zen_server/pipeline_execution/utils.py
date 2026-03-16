@@ -387,7 +387,7 @@ def resume_run(run: PipelineRunResponse) -> Future[None]:
     # automatically triggered when answering a wait condition.
     check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
     try:
-        future =snapshot_executor().submit(_task)
+        future = snapshot_executor().submit(_task)
         report_usage(
             feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
             resource_id=run.id,
