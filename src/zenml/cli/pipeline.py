@@ -1235,7 +1235,7 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
                 run_id=run.id,
                 run_update=PipelineRunUpdate(
                     status=ExecutionStatus.PAUSED,
-                    status_reason="Resume submission failed.",
+                    status_reason="Manual resume failed.",
                 ),
             )
             raise
