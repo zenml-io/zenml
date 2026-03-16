@@ -404,6 +404,9 @@ class StepLauncher:
                             artifacts=step_run.outputs,
                             model_version=model_version,
                         )
+                elif step_run.status == ExecutionStatus.FAILED:
+                    # No need to link anything for a failed step run.
+                    pass
                 else:
                     raise RuntimeError(
                         f"Unexpected step run status `{step_run.status}` for "
