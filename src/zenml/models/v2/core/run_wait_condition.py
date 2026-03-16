@@ -20,6 +20,7 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.enums import (
+    RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
     RunWaitConditionType,
@@ -80,8 +81,9 @@ class RunWaitConditionResolveRequest(UserScopedRequest):
 class RunWaitConditionLeaseUpdate(BaseUpdate):
     """Lease update model for wait conditions."""
 
-    poller_instance_id: str = Field()
-    poller_lease_expires_at: datetime = Field()
+    poller_instance_id: str
+    poller_lease_expires_at: datetime
+    mode: RunWaitConditionLeaseMode = RunWaitConditionLeaseMode.REFRESH
 
 
 class RunWaitConditionResponseBody(ProjectScopedResponseBody):

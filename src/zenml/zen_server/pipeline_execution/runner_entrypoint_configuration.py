@@ -87,7 +87,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
 
         resume = is_true_string_value(self.entrypoint_args.get(RESUME_OPTION))
         if resume:
-            stack.orchestrator.restart_run(
+            stack.orchestrator.resume_run(
                 snapshot=snapshot, run=run, stack=stack, force_async=True
             )
         else:

@@ -177,6 +177,19 @@ class RunWaitConditionResolution(StrEnum):
     ABORT = "abort"
 
 
+class RunWaitConditionLeaseMode(StrEnum):
+    """Supported lease update modes for wait-condition polling."""
+
+    REFRESH = "refresh"
+    # Finalize the lease and release it. If the wait condition has been resolved
+    # in the meantime, the poller is responsible for continuing the run.
+    FINALIZE = "finalize"
+    # The poller instance is no longer able to continue the run (due to an
+    # error, etc.). If the wait condition has been resolved in the meantime,
+    # the server should try resuming the run.
+    ABANDON = "abandon"
+
+
 class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 

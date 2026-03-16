@@ -44,6 +44,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
 )
 from zenml.enums import (
+    RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
     RunWaitConditionType,
@@ -749,6 +750,7 @@ __all__ = [
     "RunTemplateResponseResources",
     "RunTemplateFilter",
     "RunWaitConditionFilter",
+    "RunWaitConditionLeaseMode",
     "RunWaitConditionRequest",
     "RunWaitConditionResolution",
     "RunWaitConditionResolveRequest",

@@ -83,6 +83,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotResponse,
+    RunWaitConditionLeaseMode,
     RunWaitConditionLeaseUpdate,
     RunWaitConditionRequest,
     RunWaitConditionResolution,
@@ -1016,7 +1017,7 @@ class DynamicPipelineRunner:
 
         Raises:
             RuntimeError: If called outside the dynamic pipeline function.
-            PipelinePausedError: If the wait timed out and the run was paused.
+            _WaitConditionPollTimeout: If the wait condition polling timed out.
             KeyboardInterrupt: If interrupted while waiting.
 
         Returns:
@@ -1083,7 +1084,9 @@ class DynamicPipelineRunner:
         )
         deadline = time.time() + timeout
         try:
-            while time.time() < deadline:
+            # We keep polling until the deadline is reached and all ongoing
+            # steps have finished.
+            while time.time() < deadline or self.has_in_progress_steps():
                 lease_now = utc_now()
                 status = Client().zen_store.update_run_wait_condition_lease(
                     run_wait_condition_id=condition.id,
@@ -1103,6 +1106,8 @@ class DynamicPipelineRunner:
                 if state.is_terminal:
                     return state.value
                 time.sleep(poll_interval)
+        except _WaitConditionAborted:
+            raise
         except KeyboardInterrupt:
             try:
                 Client().zen_store.resolve_run_wait_condition(
@@ -1119,12 +1124,31 @@ class DynamicPipelineRunner:
                     e,
                 )
             raise
+        except BaseException:
+            try:
+                Client().zen_store.update_run_wait_condition_lease(
+                    run_wait_condition_id=condition.id,
+                    lease_update=RunWaitConditionLeaseUpdate(
+                        poller_instance_id=self._orchestrator_run_id,
+                        poller_lease_expires_at=utc_now(),
+                        mode=RunWaitConditionLeaseMode.ABANDON,
+                    ),
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to abandon wait condition `%s` after wait loop "
+                    "failure: %s",
+                    condition.id,
+                    e,
+                )
+            raise
 
         status = Client().zen_store.update_run_wait_condition_lease(
             run_wait_condition_id=condition.id,
             lease_update=RunWaitConditionLeaseUpdate(
                 poller_instance_id=self._orchestrator_run_id,
                 poller_lease_expires_at=utc_now(),
+                mode=RunWaitConditionLeaseMode.FINALIZE,
             ),
         )
         if status != RunWaitConditionStatus.PENDING:
@@ -1137,13 +1161,6 @@ class DynamicPipelineRunner:
         if state.is_terminal:
             return state.value
 
-        self._run = Client().zen_store.update_run(
-            run_id=self._run.id,
-            run_update=PipelineRunUpdate(
-                status=ExecutionStatus.PAUSED,
-                status_reason="Waiting for input.",
-            ),
-        )
         raise _WaitConditionPollTimeout(
             f"Wait condition `{condition.name}` polling timed out."
         )
@@ -1160,7 +1177,7 @@ class DynamicPipelineRunner:
             schema: Optional schema used to parse the resolved result.
 
         Raises:
-            PipelineAbortedError: If the condition was resolved with abort.
+            _WaitConditionAborted: If the condition was resolved with abort.
 
         Returns:
             State indicating whether the condition is terminal and its value.
@@ -1188,6 +1205,14 @@ class DynamicPipelineRunner:
         for future in self._futures.values():
             future.wait()
         self._futures = {}
+
+    def has_in_progress_steps(self) -> bool:
+        """Check if there are any in-progress steps.
+
+        Returns:
+            True if there are any in-progress steps, False otherwise.
+        """
+        return any(future.running() for future in self._futures.values())
 
 
 def compile_dynamic_step_invocation(

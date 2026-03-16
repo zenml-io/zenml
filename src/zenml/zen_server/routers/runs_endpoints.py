@@ -499,7 +499,9 @@ def run_logs(
             elif run.source_snapshot:
                 # Manual snapshot run. When we resume a run that was initially
                 # triggered by a snapshot, we'll only show the runner logs
-                # of the initial snapshot run.
+                # of the initial snapshot run. Not sure how to adjust this in
+                # the future, maybe multiple runner log sources, that point to
+                # specific workload IDs?
                 workload_id = snapshot.id
             else:
                 # Resume/Retry run from server
