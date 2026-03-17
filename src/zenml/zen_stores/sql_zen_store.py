@@ -10983,7 +10983,7 @@ class SqlZenStore(BaseZenStore):
             num_steps=pipeline_run.snapshot.step_count,
             is_dynamic_pipeline=pipeline_run.snapshot.is_dynamic,
         )
-        
+
         new_status = transition_pipeline_run_status(
             current_status=pipeline_run.status,
             requested_status=requested_status,

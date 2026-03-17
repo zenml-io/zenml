@@ -26,7 +26,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -172,29 +172,6 @@ class StepRunRequest(ProjectScopedRequest):
     )
 
     model_config = ConfigDict(protected_namespaces=())
-
-    @field_validator("status")
-    def validate_status(cls, value: ExecutionStatus) -> ExecutionStatus:
-        """Validate the status of the step run.
-
-        Args:
-            value: The status to validate.
-
-        Returns:
-            The validated status.
-
-        Raises:
-            ValueError: If the status is not valid.
-        """
-        if value in {
-            ExecutionStatus.RETRYING,
-            ExecutionStatus.RETRIED,
-        }:
-            raise ValueError(
-                f"Execution status `{value}` cannot be set "
-                "through the request."
-            )
-        return value
 
 
 # ------------------ Update Model ------------------
