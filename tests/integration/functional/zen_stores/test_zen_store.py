@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from string import ascii_lowercase
 from threading import Thread
 from typing import Dict, List, Optional, Tuple, Union
-from unittest.mock import ANY, patch
+from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
