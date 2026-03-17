@@ -7196,22 +7196,19 @@ class SqlZenStore(BaseZenStore):
                 include_resources=True,
             )
 
-            if (
-                resolved_model.resolution
-                == RunWaitConditionResolution.CONTINUE
-            ):
-                # There is a possibility that the instance holding the lease
-                # crashes before it can release the lease, in which case the
-                # run will be stuck in a paused state. Some reconciliation loop
-                # that tries to resume paused runs without pending wait
-                # conditions would solve this, but we don't implement this for
-                # now.
-                if not active_lease_exists:
-                    self._attempt_resume_run_from_server(
-                        run_id=resolved_model.run.id,
-                        session=session,
-                    )
-            elif resolved_model.resolution == RunWaitConditionResolution.ABORT:
+        if resolved_model.resolution == RunWaitConditionResolution.CONTINUE:
+            # There is a possibility that the instance holding the lease
+            # crashes before it can release the lease, in which case the
+            # run will be stuck in a paused state. Some reconciliation loop
+            # that tries to resume paused runs without pending wait
+            # conditions would solve this, but we don't implement this for
+            # now.
+            if not active_lease_exists:
+                self._attempt_resume_run_from_server(
+                    run_id=resolved_model.run.id,
+                )
+        elif resolved_model.resolution == RunWaitConditionResolution.ABORT:
+            with Session(self.engine) as session:
                 self._update_pipeline_run_status(
                     pipeline_run_id=resolved_model.run.id,
                     session=session,
@@ -7266,104 +7263,93 @@ class SqlZenStore(BaseZenStore):
                 schema.poller_lease_expires_at = now
 
                 if current_status == RunWaitConditionStatus.PENDING:
-                    _, run_schema = self._update_pipeline_run_status_no_commit(
+                    self._update_pipeline_run_status_no_commit(
                         pipeline_run_id=schema.run_id,
                         session=session,
                         requested_status=ExecutionStatus.PAUSED,
                         status_reason="Waiting for input.",
                     )
-                    session.add(run_schema)
 
             session.add(schema)
             session.commit()
 
-            if (
-                lease_update.mode == RunWaitConditionLeaseMode.ABANDON
-                and schema.resolution
-                == RunWaitConditionResolution.CONTINUE.value
-            ):
-                # The poller abandons the lease, and won't continue the run
-                # even if the condition has been resolved. So we try to resume
-                # the run from the server.
+        if (
+            lease_update.mode == RunWaitConditionLeaseMode.ABANDON
+            and schema.resolution == RunWaitConditionResolution.CONTINUE.value
+        ):
+            # The poller abandons the lease, and won't continue the run
+            # even if the condition has been resolved. So we try to resume
+            # the run from the server.
 
-                # First, move the run to paused so resuming works
-                # (running -> resuming status transition is not allowed)
+            # First, move the run to paused so resuming works
+            # (running -> resuming status transition is not allowed)
+            with Session(self.engine) as session:
                 self._update_pipeline_run_status_no_commit(
                     pipeline_run_id=schema.run_id,
                     session=session,
                     requested_status=ExecutionStatus.PAUSED,
                 )
-                # Then, attempt to resume the run from the server.
-                # TODO: There is a race condition because the runner will
-                # publish a failed run status at some point.
-                self._attempt_resume_run_from_server(
-                    run_id=schema.run_id,
-                    session=session,
-                )
+                session.commit()
+            # Then, attempt to resume the run from the server.
+            # TODO: There is a race condition because the runner will
+            # publish a failed run status at some point.
+            self._attempt_resume_run_from_server(run_id=schema.run_id)
 
         return current_status
 
     def _attempt_resume_run_from_server(
         self,
         run_id: UUID,
-        session: Session,
     ) -> None:
         """Attempt to resume a run from the server.
 
         Args:
             run_id: Pipeline run ID.
-            session: Database session used for status updates.
         """
-        # TODO: this can be improved by not keeping this session open while
-        # attempting to resume the run.
         try:
-            self._update_pipeline_run_status(
-                pipeline_run_id=run_id,
-                session=session,
-                requested_status=ExecutionStatus.RESUMING,
-                status_reason="Automatically resuming run from server.",
-            )
-            self._resume_run_if_possible(run_id=run_id)
-        except Exception:
-            self._update_pipeline_run_status(
-                pipeline_run_id=run_id,
-                session=session,
-                requested_status=ExecutionStatus.PAUSED,
-                status_reason="Waiting for manual resume.",
-            )
-
-    def _resume_run_if_possible(self, run_id: UUID) -> None:
-        """Resume a run if possible.
-
-        Args:
-            run_id: Pipeline run ID.
-
-        Raises:
-            IllegalOperationError: If not running in a server.
-        """
-        if not handle_bool_env_var(ENV_ZENML_SERVER):
-            raise IllegalOperationError(
-                "Resuming runs is only possible when running in a server"
-            )
-
-        run = self.get_run(run_id)
-        from zenml.zen_server.pipeline_execution.utils import resume_run
-
-        future = resume_run(run=run)
-
-        def _reset_status_if_failed(future: "Future[None]") -> None:
-            if future.exception() is None and not future.cancelled():
-                return
-
+            if not handle_bool_env_var(ENV_ZENML_SERVER):
+                raise IllegalOperationError(
+                    "Resuming runs is only possible when running in a server"
+                )
             with Session(self.engine) as session:
-                self._update_pipeline_run_status(
-                    run_id,
+                self._update_pipeline_run_status_no_commit(
+                    pipeline_run_id=run_id,
+                    session=session,
+                    requested_status=ExecutionStatus.RESUMING,
+                    status_reason="Automatically resuming run from server.",
+                )
+                session.commit()
+
+            from zenml.zen_server.pipeline_execution.utils import resume_run
+
+            run = self.get_run(run_id)
+
+            future = resume_run(run=run)
+
+            def _reset_status_if_failed(future: "Future[None]") -> None:
+                if future.exception() is None and not future.cancelled():
+                    return
+
+                with Session(self.engine) as session:
+                    self._update_pipeline_run_status_no_commit(
+                        run_id,
+                        session=session,
+                        requested_status=ExecutionStatus.PAUSED,
+                        status_reason="Waiting for manual resume.",
+                    )
+                    session.commit()
+
+            future.add_done_callback(_reset_status_if_failed)
+
+        except Exception:
+            with Session(self.engine) as session:
+                self._update_pipeline_run_status_no_commit(
+                    pipeline_run_id=run_id,
                     session=session,
                     requested_status=ExecutionStatus.PAUSED,
                     status_reason="Waiting for manual resume.",
                 )
-
-        future.add_done_callback(_reset_status_if_failed)
+                session.commit()
 
     @staticmethod
     def _get_pending_wait_condition_schema(
@@ -11489,6 +11475,7 @@ class SqlZenStore(BaseZenStore):
         did_update = pipeline_run.update_status(
             requested_status=requested_status, status_reason=status_reason
         )
+        session.add(pipeline_run)
         return did_update, pipeline_run
 
     def _update_pipeline_run_status(
@@ -11515,13 +11502,11 @@ class SqlZenStore(BaseZenStore):
             requested_status=requested_status,
             status_reason=status_reason,
         )
-        if not did_update:
-            # Commit to release the lock on the pipeline run.
-            session.commit()
-            return
 
-        session.add(pipeline_run)
+        # Commit to release the lock on the pipeline run.
         session.commit()
+        if not did_update:
+            return
 
         new_status = ExecutionStatus(pipeline_run.status)
 
