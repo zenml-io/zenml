@@ -10966,7 +10966,8 @@ class SqlZenStore(BaseZenStore):
         """
         from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
-        # Make sure we start with a fresh transaction before locking the pipeline run
+        # Make sure we start with a fresh transaction before locking the 
+        # pipeline run
         session.commit()
         pipeline_run = session.exec(
             select(PipelineRunSchema)
@@ -10981,7 +10982,6 @@ class SqlZenStore(BaseZenStore):
 
         # Snapshots always exists for pipeline runs of newer versions
         assert pipeline_run.snapshot
-
         num_steps = pipeline_run.snapshot.step_count
         is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
         new_status = get_pipeline_run_status(
@@ -11005,7 +11005,6 @@ class SqlZenStore(BaseZenStore):
             return
 
         run_update = PipelineRunUpdate(status=new_status)
-        pipeline_run.status = new_status.value
         if new_status.is_finished:
             run_update.end_time = utc_now()
 
