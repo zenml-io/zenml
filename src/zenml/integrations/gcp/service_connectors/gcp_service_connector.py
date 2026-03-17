@@ -28,13 +28,14 @@ import re
 import shutil
 import subprocess
 import tempfile
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import google.api_core.exceptions
 import google.auth
 import google.auth.exceptions
 import requests
 from google.auth import aws as gcp_aws
+from google.auth import credentials as gcp_credentials
 from google.auth import external_account as gcp_external_account
 from google.auth import (
     impersonated_credentials as gcp_impersonated_credentials,
@@ -46,7 +47,7 @@ from google.auth._default import (
 from google.auth.transport.requests import Request
 from google.cloud import artifactregistry_v1, container_v1, storage
 from google.cloud.location import locations_pb2
-from google.oauth2 import credentials as gcp_credentials
+from google.oauth2 import credentials as gcp_oauth2_credentials
 from google.oauth2 import service_account as gcp_service_account
 from pydantic import Field, field_validator, model_validator
 
@@ -1200,7 +1201,7 @@ class GCPServiceConnector(ServiceConnector):
         elif auth_method == GCPAuthenticationMethods.OAUTH2_TOKEN:
             assert isinstance(cfg, GCPOAuth2TokenConfig)
 
-            credentials = gcp_credentials.Credentials(
+            credentials = gcp_oauth2_credentials.Credentials(
                 token=cfg.token.get_secret_value(),
                 # Currently GCP expects the expiry to be a timezone-naive
                 # UTC datetime.
@@ -1215,11 +1216,9 @@ class GCPServiceConnector(ServiceConnector):
         else:
             if auth_method == GCPAuthenticationMethods.USER_ACCOUNT:
                 assert isinstance(cfg, GCPUserAccountConfig)
-                credentials = (
-                    gcp_credentials.Credentials.from_authorized_user_info(
-                        json.loads(cfg.user_account_json.get_secret_value()),
-                        scopes=scopes,
-                    )
+                credentials = gcp_oauth2_credentials.Credentials.from_authorized_user_info(
+                    json.loads(cfg.user_account_json.get_secret_value()),
+                    scopes=scopes,
                 )
             elif auth_method == GCPAuthenticationMethods.EXTERNAL_ACCOUNT:
                 self._check_implicit_auth_method_allowed()
@@ -1571,6 +1570,74 @@ class GCPServiceConnector(ServiceConnector):
             resource_id=resource_id,
         )
 
+        def _refresh_handler(
+            _request: Any, scopes: Iterable[str]
+        ) -> Tuple[str, datetime.datetime]:
+            from zenml.client import Client
+
+            logger.debug(
+                f"Refreshing GCP credentials for connector with ID {self.id} "
+                f"resource type {self.resource_type} and resource ID "
+                f"{resource_id} with scopes {scopes}."
+            )
+
+            if scopes != self._get_scopes(
+                resource_type=self.resource_type,
+                resource_id=self.resource_id,
+            ):
+                raise RuntimeError(
+                    f"The scopes for the connector with ID {self.id} do not "
+                    f"match the scopes requested by the refresh handler."
+                )
+
+            client = Client()
+            try:
+                assert self.id is not None
+                connector = client.get_service_connector_client(
+                    name_id_or_prefix=self.id,
+                    resource_type=self.resource_type,
+                    resource_id=resource_id,
+                )
+            except (KeyError, ValueError, AuthorizationException) as e:
+                raise RuntimeError(
+                    f"The connector with ID {self.id} could not be used to "
+                    f"refresh credentials. Please verify that the connector "
+                    f"exists and is accessible: {e}."
+                )
+
+            assert isinstance(connector, GCPServiceConnector)
+
+            credentials, expires_at = connector.get_session(
+                self.auth_method,
+                resource_type=self.resource_type,
+                resource_id=self.resource_id,
+            )
+
+            # The refresh handler is only set for OAuth 2.0 temporary credentials
+            assert expires_at is not None
+
+            if credentials.token is None:
+                raise RuntimeError(
+                    f"The connector with ID {self.id} could not be used to "
+                    f"refresh credentials. The credentials do not have a token."
+                )
+
+            # Google's OAuth2 library expects a naive UTC datetime
+            expires_at_naive = expires_at.replace(tzinfo=None)
+
+            return (
+                credentials.token,
+                expires_at_naive,
+            )
+
+        if self.auth_method == GCPAuthenticationMethods.OAUTH2_TOKEN:
+            assert isinstance(credentials, gcp_oauth2_credentials.Credentials)
+
+            # Configuring a refresh handler here ensures that the credentials
+            # are automatically refreshed when they expire without any
+            # intervention from the code that uses them.
+            credentials.refresh_handler = _refresh_handler
+
         if resource_type == GCS_RESOURCE_TYPE:
             # Validate that the resource ID is a valid GCS bucket name
             self._parse_gcs_resource_id(resource_id)
@@ -1821,7 +1888,7 @@ class GCPServiceConnector(ServiceConnector):
                 )
         else:
             # Check if user account credentials are available
-            if isinstance(credentials, gcp_credentials.Credentials):
+            if isinstance(credentials, gcp_oauth2_credentials.Credentials):
                 if auth_method not in [
                     GCPAuthenticationMethods.USER_ACCOUNT,
                     None,

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for run templates."""
 
+import copy
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
@@ -256,7 +257,7 @@ def generate_config_schema(
                 f"{step_name}_parameters", **parameter_fields
             )
             step_fields["parameters"] = (
-                parameters_class,
+                Optional[parameters_class],
                 FieldInfo(default=...),
             )
 
@@ -269,7 +270,7 @@ def generate_config_schema(
             sanitized_step_name = sanitized_step_name + "_"
 
         if step.config.parameters:
-            # This step has required parameters -> we make this attribute
+            # This step has parameters -> we make this attribute
             # required and also the parent attribute so these parameters must
             # always be included
             all_steps_required = True
@@ -319,7 +320,6 @@ def generate_config_schema(
             top_level_fields[key] = (field_info.annotation, field_info)
 
     top_level_fields["settings"] = (Optional[settings_model], None)
-
     if all_steps_required:
         top_level_fields["steps"] = (all_steps_model, FieldInfo(default=...))
     else:
@@ -328,4 +328,84 @@ def generate_config_schema(
             FieldInfo(default=None),
         )
 
-    return create_model("Result", **top_level_fields).model_json_schema()  # type: ignore[no-any-return]
+    schema = create_model("Result", **top_level_fields).model_json_schema()
+    return _replace_step_parameter_definitions(schema, step_configurations)
+
+
+def _replace_step_parameter_definitions(
+    schema: Dict[str, Any], step_configurations: Dict[str, "Step"]
+) -> Dict[str, Any]:
+    """Replaces step parameter definitions in the root schema.
+
+    Args:
+        schema: The generated config schema.
+        step_configurations: Step configurations.
+
+    Returns:
+        The updated schema.
+    """
+    root_definitions = schema.setdefault("$defs", {})
+    if not isinstance(root_definitions, dict):
+        return schema
+
+    def _rewrite_refs(value: Any, rename_map: Dict[str, str]) -> Any:
+        if isinstance(value, dict):
+            return {
+                key: (
+                    f"#/$defs/{rename_map[item.removeprefix('#/$defs/')]}"
+                    if key == "$ref"
+                    and isinstance(item, str)
+                    and item.startswith("#/$defs/")
+                    and item.removeprefix("#/$defs/") in rename_map
+                    else _rewrite_refs(item, rename_map)
+                )
+                for key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [_rewrite_refs(item, rename_map) for item in value]
+        return value
+
+    for step_name, step in step_configurations.items():
+        if not step.spec.parameter_spec:
+            continue
+
+        step_schema = root_definitions.get(step_name)
+        if not isinstance(step_schema, dict):
+            continue
+
+        parameter_schema = copy.deepcopy(step.spec.parameter_spec)
+        step_definitions = parameter_schema.pop("$defs", {})
+        rename_map = {}
+
+        for definition_name, definition in step_definitions.items():
+            target_name = definition_name
+            if (
+                target_name in root_definitions
+                and root_definitions[target_name] != definition
+            ):
+                target_name = f"{step_name}__{definition_name}"
+                suffix = 1
+                while (
+                    target_name in root_definitions
+                    and root_definitions[target_name] != definition
+                ):
+                    suffix += 1
+                    target_name = f"{step_name}__{definition_name}_{suffix}"
+
+            rename_map[definition_name] = target_name
+
+        parameter_schema = _rewrite_refs(parameter_schema, rename_map)
+        step_definitions = _rewrite_refs(step_definitions, rename_map)
+
+        for definition_name, definition in step_definitions.items():
+            root_definitions.setdefault(
+                rename_map[definition_name], definition
+            )
+
+        step_schema.setdefault("properties", {})["parameters"] = (
+            parameter_schema
+        )
+        # Remove the original parameter schema #def that we just replaced
+        root_definitions.pop(f"{step_name}_parameters")
+
+    return schema
