@@ -8,6 +8,10 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple
 
 from zenml.client import Client
+from zenml.constants import (
+    ENV_ZENML_DISABLE_INTERACTIVE_INPUT,
+    handle_bool_env_var,
+)
 from zenml.models import (
     RunWaitConditionResolution,
     RunWaitConditionResolveRequest,
@@ -32,7 +36,10 @@ def can_answer_wait_condition_interactively(
     from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 
     return bool(
-        isinstance(orchestrator, LocalOrchestrator)
+        not handle_bool_env_var(
+            ENV_ZENML_DISABLE_INTERACTIVE_INPUT, default=False
+        )
+        and isinstance(orchestrator, LocalOrchestrator)
         and sys.stdin.isatty()
         and sys.stdout.isatty()
     )
