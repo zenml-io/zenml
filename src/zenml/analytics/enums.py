@@ -97,3 +97,10 @@ class AnalyticsEvent(str, Enum):
     # Triggers
     CREATED_TRIGGER = "Trigger created"
     DELETED_TRIGGER = "Trigger deleted"
+
+    # Kitaru
+    KITARU_CLI_INVOKED = "Kitaru CLI invoked"
+    KITARU_MCP_SERVER_STARTED = "Kitaru MCP server started"
+    KITARU_FLOW_DEPLOYED = "Kitaru flow deployed"
+    KITARU_FLOW_REPLAYED = "Kitaru flow replayed"
+    KITARU_CONNECTED = "Kitaru server connected"

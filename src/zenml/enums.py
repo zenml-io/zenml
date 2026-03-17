@@ -346,6 +346,11 @@ class SourceContextTypes(StrEnum):
     DASHBOARD = "dashboard"
     DASHBOARD_V2 = "dashboard-v2"
     API = "api"
+    KITARU_PYTHON = "kitaru-python"
+    KITARU_CLI = "kitaru-cli"
+    KITARU_MCP = "kitaru-mcp"
+    KITARU_API = "kitaru-api"
+    KITARU_DASHBOARD = "kitaru-dashboard"
     UNKNOWN = "unknown"
 
 
