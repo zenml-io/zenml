@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator flavor."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 
-from pydantic import Field, NonNegativeInt, field_validator
+from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -75,7 +75,7 @@ class KubernetesStepOperatorSettings(BaseSettings):
         "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
         "should cause the job to fail immediately.",
     )
-    api_request_timeout: Optional[int] = Field(
+    api_request_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
     )
@@ -110,7 +110,7 @@ class KubernetesStepOperatorSettings(BaseSettings):
 
     @field_validator("api_request_timeout", mode="before")
     @classmethod
-    def api_request_timeout_validator(cls, value: Any) -> Union[int, None]:
+    def api_request_timeout_validator(cls, value: Any) -> Any:
         """Validates API request timeout.
 
         Args:
@@ -118,23 +118,11 @@ class KubernetesStepOperatorSettings(BaseSettings):
 
         Returns:
             The validated value in integer format.
-
-        Raises:
-            TypeError: If the value is not an integer or float or None.
         """
-        if not (value is None or isinstance(value, (int, float))):
-            raise TypeError(
-                f"Expected `api_request_timeout` to be an int or float, got {type(value)}."
-            )
-        if value is not None and value <= 0:
-            logger.warning(
-                "Non-positive value for `api_request_timeout` ignored."
-            )
-            return None
         if isinstance(value, float):
             logger.warning(
                 f"Converted `api_request_timeout` from float to int: {value} -> {int(value)}. "
-                "Consider updating Step Operator settings."
+                "Consider updating the Step Operator settings."
             )
             return int(value)
         return value
