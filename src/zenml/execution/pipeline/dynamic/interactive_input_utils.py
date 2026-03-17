@@ -46,6 +46,7 @@ def print_wait_condition_details(
     Args:
         condition: The wait condition shown to the user.
     """
+    # Keep the logs neutral because they're printed as-is also in Kitaru.
     print()
     print("Waiting for input.")
     print(f"Question: {condition.question or 'Please provide input.'}")
@@ -153,6 +154,6 @@ def poll_interactive_wait_condition_input(
             ),
         )
     except Exception as e:
-        print(f"Failed to resolve wait condition: {e}")
+        print(f"Failed to resolve: {e}")
         print("> ", end="", flush=True)
         return

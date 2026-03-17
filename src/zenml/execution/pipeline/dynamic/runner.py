@@ -56,7 +56,7 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, GroupType, StepRuntime
-from zenml.execution.pipeline.dynamic.local_input_utils import (
+from zenml.execution.pipeline.dynamic.interactive_input_utils import (
     maybe_enable_interactive_wait_prompt,
     poll_interactive_wait_condition_input,
 )
