@@ -56,6 +56,10 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, GroupType, StepRuntime
+from zenml.execution.pipeline.dynamic.local_input_utils import (
+    maybe_enable_interactive_wait_prompt,
+    poll_interactive_wait_condition_input,
+)
 from zenml.execution.pipeline.dynamic.outputs import (
     AnyStepFuture,
     ArtifactFuture,
@@ -1075,6 +1079,12 @@ class DynamicPipelineRunner:
         if state.is_terminal:
             return state.value
 
+        if poll_interval <= 0:
+            logger.warning(
+                "Negative poll interval provided, falling back to 5 seconds."
+            )
+            poll_interval = 5
+
         logger.info(
             "Waiting on wait condition `%s` (type=%s, timeout=%ss, poll=%ss).",
             wait_condition_name,
@@ -1083,29 +1093,48 @@ class DynamicPipelineRunner:
             poll_interval,
         )
         deadline = time.time() + timeout
+
         try:
-            # We keep polling until the deadline is reached and all ongoing
-            # steps have finished.
-            while time.time() < deadline or self.has_in_progress_steps():
-                lease_now = utc_now()
-                status = Client().zen_store.update_run_wait_condition_lease(
-                    run_wait_condition_id=condition.id,
-                    lease_update=RunWaitConditionLeaseUpdate(
-                        poller_instance_id=self._orchestrator_run_id,
-                        poller_lease_expires_at=lease_now
-                        + timedelta(seconds=max(15, poll_interval * 2)),
-                    ),
-                )
-                if status != RunWaitConditionStatus.PENDING:
-                    condition = Client().zen_store.get_run_wait_condition(
-                        condition.id, hydrate=True
+            with maybe_enable_interactive_wait_prompt(
+                orchestrator=self._orchestrator,
+                condition=condition,
+            ) as interactive_prompting_enabled:
+                # We keep polling until the deadline is reached and all ongoing
+                # steps have finished.
+                while time.time() < deadline or self.has_in_progress_steps():
+                    lease_now = utc_now()
+                    status = (
+                        Client().zen_store.update_run_wait_condition_lease(
+                            run_wait_condition_id=condition.id,
+                            lease_update=RunWaitConditionLeaseUpdate(
+                                poller_instance_id=self._orchestrator_run_id,
+                                poller_lease_expires_at=lease_now
+                                + timedelta(
+                                    seconds=max(15, poll_interval * 2)
+                                ),
+                            ),
+                        )
                     )
-                state = self._handle_wait_condition_state(
-                    condition=condition, schema=schema
-                )
-                if state.is_terminal:
-                    return state.value
-                time.sleep(poll_interval)
+                    if status != RunWaitConditionStatus.PENDING:
+                        condition = Client().zen_store.get_run_wait_condition(
+                            condition.id, hydrate=True
+                        )
+                    state = self._handle_wait_condition_state(
+                        condition=condition, schema=schema
+                    )
+                    if state.is_terminal:
+                        return state.value
+
+                    if interactive_prompting_enabled:
+                        # If we're running interactively, we sleep until the
+                        # polling interval is reached or the user submitted
+                        # input in their terminal.
+                        poll_interactive_wait_condition_input(
+                            condition=condition,
+                            poll_interval=poll_interval,
+                        )
+                    else:
+                        time.sleep(poll_interval)
         except _WaitConditionAborted:
             raise
         except KeyboardInterrupt:
