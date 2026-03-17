@@ -1227,7 +1227,7 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
             with cli_utils.temporary_active_stack(
                 stack_name_or_id=snapshot.stack.id
             ) as stack:
-                stack.orchestrator.restart_run(
+                stack.orchestrator.resume_run(
                     snapshot=snapshot, run=run, stack=stack
                 )
         except Exception:
@@ -1287,7 +1287,7 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
             with cli_utils.temporary_active_stack(
                 stack_name_or_id=snapshot.stack.id
             ) as stack:
-                stack.orchestrator.restart_run(
+                stack.orchestrator.resume_run(
                     snapshot=snapshot, run=run, stack=stack
                 )
         except Exception as e:

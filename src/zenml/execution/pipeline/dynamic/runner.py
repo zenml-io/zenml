@@ -56,6 +56,10 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, GroupType, StepRuntime
+from zenml.execution.pipeline.dynamic.local_input_utils import (
+    maybe_enable_interactive_wait_prompt,
+    poll_interactive_wait_condition_input,
+)
 from zenml.execution.pipeline.dynamic.outputs import (
     AnyStepFuture,
     ArtifactFuture,
@@ -83,6 +87,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotResponse,
+    RunWaitConditionLeaseMode,
     RunWaitConditionLeaseUpdate,
     RunWaitConditionRequest,
     RunWaitConditionResolution,
@@ -1016,7 +1021,7 @@ class DynamicPipelineRunner:
 
         Raises:
             RuntimeError: If called outside the dynamic pipeline function.
-            PipelinePausedError: If the wait timed out and the run was paused.
+            _WaitConditionPollTimeout: If the wait condition polling timed out.
             KeyboardInterrupt: If interrupted while waiting.
 
         Returns:
@@ -1074,6 +1079,12 @@ class DynamicPipelineRunner:
         if state.is_terminal:
             return state.value
 
+        if poll_interval <= 0:
+            logger.warning(
+                "Negative poll interval provided, falling back to 5 seconds."
+            )
+            poll_interval = 5
+
         logger.info(
             "Waiting on wait condition `%s` (type=%s, timeout=%ss, poll=%ss).",
             wait_condition_name,
@@ -1082,27 +1093,50 @@ class DynamicPipelineRunner:
             poll_interval,
         )
         deadline = time.time() + timeout
+
         try:
-            while time.time() < deadline:
-                lease_now = utc_now()
-                status = Client().zen_store.update_run_wait_condition_lease(
-                    run_wait_condition_id=condition.id,
-                    lease_update=RunWaitConditionLeaseUpdate(
-                        poller_instance_id=self._orchestrator_run_id,
-                        poller_lease_expires_at=lease_now
-                        + timedelta(seconds=max(15, poll_interval * 2)),
-                    ),
-                )
-                if status != RunWaitConditionStatus.PENDING:
-                    condition = Client().zen_store.get_run_wait_condition(
-                        condition.id, hydrate=True
+            with maybe_enable_interactive_wait_prompt(
+                orchestrator=self._orchestrator,
+                condition=condition,
+            ) as interactive_prompting_enabled:
+                # We keep polling until the deadline is reached and all ongoing
+                # steps have finished.
+                while time.time() < deadline or self.has_in_progress_steps():
+                    lease_now = utc_now()
+                    status = (
+                        Client().zen_store.update_run_wait_condition_lease(
+                            run_wait_condition_id=condition.id,
+                            lease_update=RunWaitConditionLeaseUpdate(
+                                poller_instance_id=self._orchestrator_run_id,
+                                poller_lease_expires_at=lease_now
+                                + timedelta(
+                                    seconds=max(15, poll_interval * 2)
+                                ),
+                            ),
+                        )
                     )
-                state = self._handle_wait_condition_state(
-                    condition=condition, schema=schema
-                )
-                if state.is_terminal:
-                    return state.value
-                time.sleep(poll_interval)
+                    if status != RunWaitConditionStatus.PENDING:
+                        condition = Client().zen_store.get_run_wait_condition(
+                            condition.id, hydrate=True
+                        )
+                    state = self._handle_wait_condition_state(
+                        condition=condition, schema=schema
+                    )
+                    if state.is_terminal:
+                        return state.value
+
+                    if interactive_prompting_enabled:
+                        # If we're running interactively, we sleep until the
+                        # polling interval is reached or the user submitted
+                        # input in their terminal.
+                        poll_interactive_wait_condition_input(
+                            condition=condition,
+                            poll_interval=poll_interval,
+                        )
+                    else:
+                        time.sleep(poll_interval)
+        except _WaitConditionAborted:
+            raise
         except KeyboardInterrupt:
             try:
                 Client().zen_store.resolve_run_wait_condition(
@@ -1119,12 +1153,31 @@ class DynamicPipelineRunner:
                     e,
                 )
             raise
+        except BaseException:
+            try:
+                Client().zen_store.update_run_wait_condition_lease(
+                    run_wait_condition_id=condition.id,
+                    lease_update=RunWaitConditionLeaseUpdate(
+                        poller_instance_id=self._orchestrator_run_id,
+                        poller_lease_expires_at=utc_now(),
+                        mode=RunWaitConditionLeaseMode.ABANDON,
+                    ),
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to abandon wait condition `%s` after wait loop "
+                    "failure: %s",
+                    condition.id,
+                    e,
+                )
+            raise
 
         status = Client().zen_store.update_run_wait_condition_lease(
             run_wait_condition_id=condition.id,
             lease_update=RunWaitConditionLeaseUpdate(
                 poller_instance_id=self._orchestrator_run_id,
                 poller_lease_expires_at=utc_now(),
+                mode=RunWaitConditionLeaseMode.FINALIZE,
             ),
         )
         if status != RunWaitConditionStatus.PENDING:
@@ -1137,13 +1190,6 @@ class DynamicPipelineRunner:
         if state.is_terminal:
             return state.value
 
-        self._run = Client().zen_store.update_run(
-            run_id=self._run.id,
-            run_update=PipelineRunUpdate(
-                status=ExecutionStatus.PAUSED,
-                status_reason="Waiting for input.",
-            ),
-        )
         raise _WaitConditionPollTimeout(
             f"Wait condition `{condition.name}` polling timed out."
         )
@@ -1160,7 +1206,7 @@ class DynamicPipelineRunner:
             schema: Optional schema used to parse the resolved result.
 
         Raises:
-            PipelineAbortedError: If the condition was resolved with abort.
+            _WaitConditionAborted: If the condition was resolved with abort.
 
         Returns:
             State indicating whether the condition is terminal and its value.
@@ -1188,6 +1234,14 @@ class DynamicPipelineRunner:
         for future in self._futures.values():
             future.wait()
         self._futures = {}
+
+    def has_in_progress_steps(self) -> bool:
+        """Check if there are any in-progress steps.
+
+        Returns:
+            True if there are any in-progress steps, False otherwise.
+        """
+        return any(future.running() for future in self._futures.values())
 
 
 def compile_dynamic_step_invocation(
