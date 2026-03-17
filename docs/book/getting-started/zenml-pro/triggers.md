@@ -5,6 +5,10 @@ icon: server
 
 # Triggers
 
+{% hint style="info" %}
+Triggers are part of ZenML's paid features. For details on availability and supported plans, visit the [pricing page](https://www.zenml.io/pricing)
+{% endhint %}
+
 In the [snapshots](./snapshots.md) section, you learned how to prepare snapshots and execute them on demand via 
 the dashboard, CLI, or SDK. In many cases, however, pipelines need to run automatically - either on a schedule or in 
 response to an event.
