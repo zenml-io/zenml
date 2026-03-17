@@ -10966,7 +10966,7 @@ class SqlZenStore(BaseZenStore):
         """
         from zenml.orchestrators.publish_utils import get_pipeline_run_status
 
-        # Make sure we start with a fresh transaction before locking the 
+        # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
         pipeline_run = session.exec(
