@@ -3289,6 +3289,29 @@ def test_abandon_wait_condition_lease_attempts_resume_for_resolved_run(
     assert updated_run.status == ExecutionStatus.RESUMING
 
 
+def test_create_wait_condition_is_idempotent_while_pending(
+    clean_client: "Client",
+):
+    store = clean_client.zen_store
+    run = _create_dynamic_pipeline_run(clean_client)
+    request = RunWaitConditionRequest(
+        project=clean_client.active_project.id,
+        run=run.id,
+        name=sample_name("wait-condition"),
+        type=RunWaitConditionType.EXTERNAL_INPUT,
+        question="Need approval?",
+        metadata={"owner": "alice"},
+    )
+
+    first_condition = store.create_run_wait_condition(request)
+    second_condition = store.create_run_wait_condition(request)
+
+    assert second_condition.id == first_condition.id
+    assert second_condition.status == RunWaitConditionStatus.PENDING
+    assert second_condition.run_metadata == first_condition.run_metadata
+    assert second_condition.run_metadata == {"owner": "alice"}
+
+
 # .--------------------.
 # | Pipeline run steps |
 # '--------------------'

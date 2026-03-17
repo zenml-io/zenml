@@ -6968,9 +6968,8 @@ class SqlZenStore(BaseZenStore):
             run_wait_condition: Wait condition creation payload.
 
         Raises:
-            IllegalOperationError: If the owning run is not dynamic.
+            IllegalOperationError: If the parent run is not dynamic.
             EntityExistsError: If a non-idempotent duplicate name exists.
-            IntegrityError: If wait condition persistence fails.
 
         Returns:
             The created or idempotently reused wait condition.
@@ -6992,6 +6991,29 @@ class SqlZenStore(BaseZenStore):
                     "Wait conditions are only supported for dynamic pipelines."
                 )
 
+            existing_schema = session.exec(
+                select(RunWaitConditionSchema).where(
+                    col(RunWaitConditionSchema.run_id)
+                    == run_wait_condition.run,
+                    col(RunWaitConditionSchema.name)
+                    == run_wait_condition.name,
+                )
+            ).one_or_none()
+            if existing_schema is not None:
+                if not self._is_idempotent_wait_condition_create(
+                    existing_schema=existing_schema,
+                    request=run_wait_condition,
+                ):
+                    raise EntityExistsError(
+                        "A run wait condition with this name already exists "
+                        "for the run, but with different configuration."
+                    )
+
+                return existing_schema.to_model(
+                    include_metadata=True,
+                    include_resources=True,
+                )
+
             existing_pending_schema = self._get_pending_wait_condition_schema(
                 run_id=run_wait_condition.run,
                 session=session,
@@ -7005,31 +7027,8 @@ class SqlZenStore(BaseZenStore):
 
             schema = RunWaitConditionSchema.from_request(run_wait_condition)
             session.add(schema)
-            try:
-                session.commit()
-            except IntegrityError as e:
-                session.rollback()
-                existing_schema = session.exec(
-                    select(RunWaitConditionSchema).where(
-                        col(RunWaitConditionSchema.run_id)
-                        == run_wait_condition.run,
-                        col(RunWaitConditionSchema.name)
-                        == run_wait_condition.name,
-                    )
-                ).one_or_none()
-                if existing_schema is None:
-                    raise
-                if not self._is_idempotent_wait_condition_create(
-                    existing_schema=existing_schema,
-                    request=run_wait_condition,
-                ):
-                    raise EntityExistsError(
-                        "A run wait condition with this name already exists for "
-                        "the run, but with different configuration."
-                    ) from e
-                schema = existing_schema
-            else:
-                session.refresh(schema)
+            session.commit()
+            session.refresh(schema)
 
             if run_wait_condition.metadata:
                 values: Dict[str, "MetadataType"] = {}
@@ -7203,7 +7202,7 @@ class SqlZenStore(BaseZenStore):
             ):
                 # There is a possibility that the instance holding the lease
                 # crashes before it can release the lease, in which case the
-                # run will be stuck in a paused state. Some reconcilation loop
+                # run will be stuck in a paused state. Some reconciliation loop
                 # that tries to resume paused runs without pending wait
                 # conditions would solve this, but we don't implement this for
                 # now.
@@ -7403,9 +7402,7 @@ class SqlZenStore(BaseZenStore):
             Whether the request exactly matches the existing condition.
         """
         return (
-            existing_schema.run_id == request.run
-            and existing_schema.type == request.type.value
-            and existing_schema.name == request.name
+            existing_schema.type == request.type.value
             and existing_schema.question == request.question
             and (
                 json.loads(existing_schema.data_schema_json)
