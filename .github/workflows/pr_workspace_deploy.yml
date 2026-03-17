@@ -29,7 +29,7 @@ jobs:
       # With dynamic approach dev can set label and rerun this flow to make it running.
       - name: Get PR labels
         id: pr-labels
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
         with:
           script: |
             const prNumber = ${{ github.event.pull_request.number }};
@@ -74,7 +74,7 @@ jobs:
         env:
           GITHUB_EVENT_INPUTS_BRANCH: ${{ github.event.inputs.branch }}
       - name: Checkout repository with correct branch
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: ${{ steps.determine-branch.outputs.branch }}
           fetch-depth: 0
@@ -145,12 +145,12 @@ jobs:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
 
       # Sign in to Google
-      - uses: google-github-actions/setup-gcloud@20c93dacc1d70ddbce76c63ab32c35595345bdd1  # v0
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
         with:
           service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
           service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
@@ -173,11 +173,11 @@ jobs:
       ZENML_VERSION: ${{ needs.set-branch-info.outputs.zenml_version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
       - name: Set up Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.11'
       - name: Install dependencies
