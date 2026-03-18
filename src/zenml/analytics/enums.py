@@ -101,6 +101,7 @@ class AnalyticsEvent(str, Enum):
     # Kitaru
     KITARU_CLI_INVOKED = "Kitaru CLI invoked"
     KITARU_MCP_SERVER_STARTED = "Kitaru MCP server started"
+    KITARU_MCP_TOOL_CALLED = "Kitaru MCP tool called"
     KITARU_FLOW_DEPLOYED = "Kitaru flow deployed"
     KITARU_FLOW_REPLAYED = "Kitaru flow replayed"
     KITARU_CONNECTED = "Kitaru server connected"
