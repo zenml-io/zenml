@@ -180,6 +180,7 @@ evolution of each
 To continue your ZenML journey, explore these key topics:
 
 **For All AI Workloads:**
+* **AI-assisted pipeline building**: Use ZenML Agent Skills like `zenml-scoping` (architecture planning) and `zenml-pipeline-authoring` (implementation guidance) — see [LLM tooling](../reference/llms-txt.md)
 * **Pipeline Development**: Discover advanced features like [scheduling](../how-to/steps-pipelines/advanced_features.md#scheduling) and [caching](../how-to/steps-pipelines/advanced_features.md#caching)
 * **Artifact Management**: Learn how ZenML [stores, versions, and tracks your data](../how-to/artifacts/artifacts.md) automatically
 * **Organization**: Use [tags](../how-to/tags/tags.md) and [metadata](../how-to/metadata/metadata.md) to keep your AI projects structured

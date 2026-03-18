@@ -40,6 +40,7 @@ class StepRunInputArtifactType(StrEnum):
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
     EXTERNAL = "external"  # loaded via `ExternalArtifact(value=...)`
     LAZY_LOADED = "lazy"  # loaded via various lazy methods
+    OVERRIDE = "override"  # used when overriding step inputs
 
 
 class ArtifactSaveType(StrEnum):
@@ -88,6 +89,7 @@ class ExecutionStatus(StrEnum):
     FAILED = "failed"
     COMPLETED = "completed"
     CACHED = "cached"
+    SKIPPED = "skipped"
     # When a step that can be retried failed, its status is set to retrying.
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
@@ -106,6 +108,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
+            ExecutionStatus.SKIPPED,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
         }
@@ -117,7 +120,11 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a successful execution.
         """
-        return self in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
+        return self in {
+            ExecutionStatus.COMPLETED,
+            ExecutionStatus.CACHED,
+            ExecutionStatus.SKIPPED,
+        }
 
     @property
     def is_failed(self) -> bool:
@@ -481,22 +488,6 @@ class DatabaseBackupStrategy(StrEnum):
     CUSTOM = "custom"
 
 
-class PluginType(StrEnum):
-    """All possible types of Plugins."""
-
-    EVENT_SOURCE = "event_source"
-    ACTION = "action"
-
-
-class PluginSubType(StrEnum):
-    """All possible types of Plugins."""
-
-    # Event Source Subtypes
-    WEBHOOK = "webhook"
-    # Action Subtypes
-    PIPELINE_RUN = "pipeline_run"
-
-
 class OnboardingStep(StrEnum):
     """All onboarding steps."""
 
@@ -571,8 +562,34 @@ class StepRuntime(StrEnum):
     ISOLATED = "isolated"
 
 
+class StepType(StrEnum):
+    """All supported step types."""
+
+    TOOL_CALL = "tool_call"
+    LLM_CALL = "llm_call"
+
+
 class GroupType(StrEnum):
     """Enum representing different types of group."""
 
     MANUAL = "manual"
     MAP = "map"
+
+
+class TriggerType(StrEnum):
+    """Enum representing fundamental trigger types."""
+
+    SCHEDULE = "schedule"  # TODO: Extend with Webhook
+
+
+class TriggerFlavor(StrEnum):
+    """Enum representing trigger flavors."""
+
+    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors
+
+
+class TriggerRunConcurrency(StrEnum):
+    """Enum representing trigger run concurrency."""
+
+    SKIP = "skip"
+    SUBMIT = "submit"

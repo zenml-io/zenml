@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator flavor."""
 
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 
-from pydantic import Field, NonNegativeInt
+from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_STEP_OPERATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 from zenml.utils import deprecation_utils
@@ -29,6 +30,8 @@ if TYPE_CHECKING:
     from zenml.integrations.kubernetes.step_operators import (
         KubernetesStepOperator,
     )
+
+logger = get_logger(__name__)
 
 
 class KubernetesStepOperatorSettings(BaseSettings):
@@ -72,7 +75,7 @@ class KubernetesStepOperatorSettings(BaseSettings):
         "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
         "should cause the job to fail immediately.",
     )
-    api_request_timeout: Optional[float] = Field(
+    api_request_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
     )
@@ -104,6 +107,25 @@ class KubernetesStepOperatorSettings(BaseSettings):
         "pod_failure_retry_delay",
         "pod_failure_backoff",
     )
+
+    @field_validator("api_request_timeout", mode="before")
+    @classmethod
+    def api_request_timeout_validator(cls, value: Any) -> Any:
+        """Validates API request timeout.
+
+        Args:
+            value: The API request timeout value.
+
+        Returns:
+            The validated value in integer format.
+        """
+        if isinstance(value, float):
+            logger.warning(
+                f"Converted `api_request_timeout` from float to int: {value} -> {int(value)}. "
+                "Consider updating the Step Operator settings."
+            )
+            return int(value)
+        return value
 
 
 class KubernetesStepOperatorConfig(

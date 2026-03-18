@@ -19,6 +19,7 @@ import pytest
 
 from zenml.client import Client
 from zenml.config import DockerSettings
+from zenml.config.docker_settings import DockerBuildConfig, DockerBuildOptions
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -228,3 +229,33 @@ def test_dockerfile_needs_to_exist():
             stack=Client().active_stack,
             include_files=True,
         )
+
+
+def test_build_args_are_added_to_dockerfile():
+    """Tests that build args from the Docker settings are added to the
+    Dockerfile."""
+    # No build args specified
+    docker_settings = DockerSettings()
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+        )
+    )
+    assert "ARG" not in generated_dockerfile
+
+    # Build args are specified
+    docker_settings = DockerSettings(
+        build_config=DockerBuildConfig(
+            build_options=DockerBuildOptions(
+                build_args={"ARG1": "VALUE1", "ARG2": "VALUE2"}
+            )
+        )
+    )
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag", docker_settings
+        )
+    )
+    assert "ARG ARG1" in generated_dockerfile
+    assert "ARG ARG2" in generated_dockerfile

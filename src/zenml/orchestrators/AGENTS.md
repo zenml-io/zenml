@@ -47,6 +47,21 @@ def submit_dynamic_pipeline(
 
 Both methods ask you to submit the pipeline to your orchestration backend (e.g., starting a job in Vertex, starting a pipeline in SageMaker).
 
+### 3. Isolated-Step APIs (for dynamic pipelines)
+
+When implementing dynamic pipeline support, orchestrators can also override these methods to manage individual step execution:
+
+- `submit_isolated_step(...)` — Submit a single step as an isolated job
+- `get_isolated_step_status(...)` — Check the status of a submitted step
+- `wait_for_isolated_step(...)` — Block until a step completes
+- `stop_isolated_step(...)` — Cancel a running step
+
+These are used by the `StepLauncher` when running steps via step operators or in dynamic pipeline contexts. See the Kubernetes orchestrator for a reference implementation.
+
+### Replay/Cache-Aware Snapshots
+
+`BaseOrchestrator.run(...)` now prunes the pipeline snapshot before submission: steps skipped by replay or resolved by client-side caching are removed before your `submit_pipeline`/`submit_dynamic_pipeline` method is called. Do not re-implement replay or caching pruning inside integration orchestrators.
+
 ---
 
 ## ⚠️ The Tricky Method: `get_orchestrator_run_id`
@@ -161,7 +176,8 @@ When implementing a new orchestrator:
 - [ ] Implement `get_orchestrator_run_id()` following the static/dynamic patterns above
 - [ ] Implement `submit_pipeline()` for static pipelines
 - [ ] Optionally implement `submit_dynamic_pipeline()` for dynamic pipeline support
-- [ ] Handle `snapshot.schedule` if your backend supports scheduling
+- [ ] Optionally implement `submit_isolated_step()` / `get_isolated_step_status()` / `wait_for_isolated_step()` for dynamic pipelines with step operators
+- [ ] Handle scheduling if your backend supports it (see `update_schedule`/`delete_schedule` hooks)
 - [ ] Handle resource settings from step configurations appropriately (CPU, memory, GPU, etc.)
 - [ ] Return `SubmissionResult` with `wait_for_completion` for synchronous execution
 - [ ] Use `self.get_image(deployment, step_name)` to get the Docker image for each step

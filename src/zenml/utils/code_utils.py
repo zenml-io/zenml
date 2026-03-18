@@ -109,13 +109,21 @@ class CodeArchive(Archivable):
 
         if repo := self.git_repo:
             try:
-                result = repo.git.ls_files(
+                # Split into two calls because --recurse-submodules is only
+                # compatible with --cached, not with --others or --modified.
+                tracked = repo.git.ls_files(
                     "--cached",
+                    "--recurse-submodules",
+                    "--exclude-standard",
+                    self._root,
+                )
+                untracked_and_modified = repo.git.ls_files(
                     "--others",
                     "--modified",
                     "--exclude-standard",
                     self._root,
                 )
+                result = tracked + "\n" + untracked_and_modified
             except Exception as e:
                 logger.warning(
                     "Failed to get non-ignored files from git: %s", str(e)
@@ -123,6 +131,8 @@ class CodeArchive(Archivable):
                 all_files = self._get_all_files(archive_root=self._root)
             else:
                 for file in result.split():
+                    if not file:
+                        continue
                     file_path = os.path.join(repo.working_dir, file)
                     path_in_archive = os.path.relpath(file_path, self._root)
 

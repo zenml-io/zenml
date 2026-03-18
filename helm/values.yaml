@@ -314,6 +314,10 @@ zenml:
     # If set to true, path where the local database is created will be
     # mounted as a persistent volume so the data is not lost on pod restarts.
     # Only relevant for local sqlite database.
+    # When persistence is enabled, ensure that podSecurityContext.fsGroup
+    # is set to 1000 (this is the default) so that the ZenML container can write to
+    # the persistent volume. The container runs as UID 1000, and without fsGroup
+    # set, the PVC will be mounted with root:root ownership, causing permission errors.
     persistence:
       enabled: false
       size: 1Gi
@@ -1196,8 +1200,14 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
+podSecurityContext:
+  # fsGroup must be set to 1000 when using persistent volumes (database persistence or backup PVCs)
+  # to ensure the ZenML container (running as UID 1000) can write to the mounted volumes.
+  # This is set by default to prevent permission issues.
+  fsGroup: 1000
+  # fsGroupChangePolicy controls when fsGroup ownership changes are applied.
+  # "OnRootMismatch" only changes ownership if the root of the volume doesn't match the fsGroup.
+  fsGroupChangePolicy: "OnRootMismatch"
 
 securityContext:
   runAsNonRoot: true
@@ -1234,3 +1244,60 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Worker deployments configuration.
+# This allows deploying additional custom microservices that share the ZenML
+# server's environment variables, CA certificates, and database access
+# configuration. Workers are typically used for background tasks like scheduler
+# loops and job polling.
+#
+# Workers do not expose any endpoints (no services or ingresses are created).
+# Each worker is deployed as a separate Kubernetes Deployment.
+#
+# The workerDeployments map uses the worker name as key and the configuration
+# as value. Example:
+#
+#
+# workerDeployments:
+#     background-task:
+#         enabled: true
+#         image:
+#             repository: image-repository
+#             tag: image-tag
+#         replicaCount: 1
+#         command: ["python"]
+#         args: ["-m", "task"]
+#         ports:
+#             - name: http
+#               containerPort: 8080
+#               protocol: TCP
+#         resources:
+#             requests:
+#                 cpu: 100m
+#                 memory: 256Mi
+#             limits:
+#                 cpu: 500m
+#                 memory: 512Mi
+#         environment: {}
+#         secretEnvironment: {}
+#         livenessProbe:
+#             exec:
+#                 command: ["python", "-c", "import sys; sys.exit(0)"]
+#             initialDelaySeconds: 30
+#             periodSeconds: 60
+#         readinessProbe:
+#             exec:
+#                 command: ["python", "-c", "import sys; sys.exit(0)"]
+#             initialDelaySeconds: 10
+#             periodSeconds: 30
+#         autoscaling:
+#             enabled: false
+#             minReplicas: 1
+#             maxReplicas: 5
+#             targetCPUUtilizationPercentage: 80
+#             targetMemoryUtilizationPercentage: 80
+#         nodeSelector: {}
+#         tolerations: []
+#         affinity: {}
+#
+workerDeployments: {}

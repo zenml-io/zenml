@@ -234,6 +234,10 @@ def get_pipeline_run_status(
     Returns:
         The run status.
     """
+    # In dynamic pipelines, only the actual run status is relevant.
+    if is_dynamic_pipeline:
+        return run_status
+
     # STOPPING state
     if run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):
@@ -261,8 +265,6 @@ def get_pipeline_run_status(
         or ExecutionStatus.RETRYING in step_statuses
     ):
         return ExecutionStatus.RUNNING
-    elif is_dynamic_pipeline:
-        return run_status
     elif len(step_statuses) < num_steps:
         return ExecutionStatus.RUNNING
     # Any other state is completed

@@ -20,8 +20,8 @@ ZenML is an open-source MLOps framework designed to help you create robust, main
 To install the ZenML chart directly from Amazon ECR, use the following command:
 
 ```bash
-# example command for version 0.93.3
-helm install my-zenml oci://public.ecr.aws/zenml/zenml --version 0.93.3
+# example command for version 0.94.0
+helm install my-zenml oci://public.ecr.aws/zenml/zenml --version 0.94.0
 ```
 
 Note: Ensure you have OCI support enabled in your Helm client and that you are authenticated with Amazon ECR.
@@ -91,6 +91,26 @@ You can add additional exclusions using the `additionalNoProxy` list. The NO_PRO
 - IPv4 ranges in CIDR notation (e.g., "10.0.0.0/8")
 - IPv6 addresses (e.g., "::1")
 - IPv6 ranges in CIDR notation (e.g., "fe80::/10")
+
+### Database Persistence
+
+When using database persistence with a local SQLite database, the chart automatically configures the necessary permissions. The `podSecurityContext.fsGroup` is set to 1000 by default to ensure the ZenML container (running as UID 1000) can write to the persistent volume.
+
+Example configuration:
+
+```yaml
+zenml:
+  database:
+    persistence:
+      enabled: true
+      size: "10Gi"
+      # storageClassName: ""  # Optional: use default storage class if not specified
+
+# podSecurityContext.fsGroup is set to 1000 by default
+# This ensures the container can write to the persistent volume
+```
+
+If you override `podSecurityContext`, ensure that `fsGroup: 1000` is set when using persistent volumes, otherwise the container will not be able to write to the mounted volume and will crash.
 
 ## Telemetry
 

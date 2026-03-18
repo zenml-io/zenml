@@ -4250,34 +4250,6 @@ def test_connector_validation():
 #################
 # Models
 #################
-
-# class TestEventSource:
-#
-#     def test_create_event_source(self, clean_client: "Client"):
-#         """Test that creating event source works."""
-#         zs = clean_client.zen_store
-#         if not isinstance(zs, RestZenStore):
-#             pytest.skip("Test only applies to SQL store")
-#         event_source = zs.create_event_source(
-#             EventSourceRequest(
-#                 name="blupus_cat_cam",
-#                 configuration={},
-#                 description="Best event source ever",
-#                 flavor="github",
-#                 event_source_subtype=PluginSubType.WEBHOOK
-#             )
-#         )
-#
-#         zs.update_model(
-#             model_id=model_.id,
-#             model_update=ModelUpdate(
-#                 name="and yet another one",
-#             ),
-#         )
-#         model = zs.get_model(model_.id)
-#         assert model.name == "and yet another one"
-
-
 class TestModel:
     def test_latest_version_properly_fetched(self):
         """Test that latest version can be properly fetched."""

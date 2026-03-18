@@ -265,6 +265,7 @@ class StepLauncher:
         Raises:
             RunStoppedException: If the pipeline run is stopped by the user.
             BaseException: If the step preparation or execution fails.
+            RuntimeError: If an unexpected step run status is encountered.
 
         Returns:
             The step run response.
@@ -381,7 +382,7 @@ class StepLauncher:
                         )
                     else:
                         logger.info("Step `%s` launched.", self._invocation_id)
-                else:
+                elif step_run.status == ExecutionStatus.CACHED:
                     logger.info(
                         f"Using cached version of step `{self._invocation_id}`."
                     )
@@ -393,6 +394,24 @@ class StepLauncher:
                             artifacts=step_run.outputs,
                             model_version=model_version,
                         )
+                elif step_run.status == ExecutionStatus.SKIPPED:
+                    logger.info("Skipping step `%s`.", self._invocation_id)
+                    if (
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
+                    ):
+                        step_run_utils.link_output_artifacts_to_model_version(
+                            artifacts=step_run.outputs,
+                            model_version=model_version,
+                        )
+                elif step_run.status == ExecutionStatus.FAILED:
+                    # No need to link anything for a failed step run.
+                    pass
+                else:
+                    raise RuntimeError(
+                        f"Unexpected step run status `{step_run.status}` for "
+                        f"step `{self._invocation_id}`."
+                    )
 
         return step_run
 
@@ -531,12 +550,13 @@ class StepLauncher:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
 
+        # noqa: DAR401
         Raises:
             RuntimeError: If trying to use a step operator that does not support
                 running asynchronously in a dynamic pipeline.
             NotImplementedError: If the step operator does not implement the
                 `submit(...)` or `launch(...)` methods.
-            RuntimeError: If the step run failed.
+            BaseException: If the step run failed.
         """
         step_operator = _get_step_operator(
             stack=self._stack,
@@ -619,7 +639,14 @@ class StepLauncher:
                     step_run=step_run_info.step_run,
                 )
                 if not status.is_successful:
-                    raise RuntimeError(f"Step failed with status `{status}`.")
+                    step_run = Client().get_run_step(step_run_info.step_run_id)
+                    raise exception_utils.reconstruct_exception(
+                        exception_info=step_run.exception_info,
+                        fallback_message=(
+                            f"Step `{step_run_info.pipeline_step_name}` failed "
+                            f"with status `{status}`."
+                        ),
+                    )
 
     def _run_step_with_dynamic_orchestrator(
         self,
@@ -630,8 +657,9 @@ class StepLauncher:
         Args:
             step_run_info: Additional information needed to run the step.
 
+        # noqa: DAR401
         Raises:
-            RuntimeError: If the step run failed.
+            BaseException: If the step run failed.
         """
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
@@ -654,7 +682,14 @@ class StepLauncher:
                 step_run_info.step_run
             )
             if not status.is_successful:
-                raise RuntimeError(f"Step failed with status `{status}`.")
+                step_run = Client().get_run_step(step_run_info.step_run_id)
+                raise exception_utils.reconstruct_exception(
+                    exception_info=step_run.exception_info,
+                    fallback_message=(
+                        f"Step `{step_run_info.pipeline_step_name}` failed "
+                        f"with status `{status}`."
+                    ),
+                )
 
     def _run_step_in_current_thread(
         self,

@@ -58,3 +58,14 @@ jobs:
               "published_at": "${{ steps.release_info.outputs.published_at }}",
               "is_prerelease": ${{ steps.release_info.outputs.prerelease }}
             }
+      - name: Notify projects-backend of new release
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0  # v3
+        with:
+          token: ${{ secrets.CHANGELOG_DISPATCH_TOKEN }}
+          repository: zenml-io/zenml-projects-backend
+          event-type: zenml-release-published
+          client-payload: |-
+            {
+              "release_tag": "${{ steps.release_info.outputs.tag }}",
+              "release_url": "${{ steps.release_info.outputs.url }}"
+            }

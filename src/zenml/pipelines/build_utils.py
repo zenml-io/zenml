@@ -360,7 +360,10 @@ def create_pipeline_build(
     client = Client()
     stack_model = Client().active_stack_model
     stack = client.active_stack
-    required_builds = stack.get_docker_builds(snapshot=snapshot)
+
+    pruned_snapshot = prune_snapshot_before_build(snapshot)
+
+    required_builds = stack.get_docker_builds(snapshot=pruned_snapshot)
 
     if not required_builds:
         logger.debug("No docker builds required.")
@@ -820,3 +823,36 @@ def log_code_repository_usage(
             "there are uncommitted or untracked files.",
             local_repo_context.code_repository.name,
         )
+
+
+def prune_snapshot_before_build(
+    snapshot: "PipelineSnapshotBase",
+) -> "PipelineSnapshotBase":
+    """Prunes the snapshot before building.
+
+    This method removes all steps which will anyway be skipped for a replayed
+    run. We will anyway not run these steps so we don't need to build images
+    for them.
+
+    Args:
+        snapshot: The snapshot to prune.
+
+    Returns:
+        The pruned snapshot.
+    """
+    if snapshot.is_dynamic:
+        # In dynamic pipelines, the step configurations are only templates for
+        # potential step executions that happen at runtime. Even if a user
+        # specifies that a certain step should be skipped, that same template
+        # might still be used for other steps. So we can't safely prune the
+        # snapshot without potentially skipping the Docker builds for some
+        # steps.
+        return snapshot
+
+    pruned_snapshot = snapshot.model_copy()
+    pruned_snapshot.step_configurations = {
+        k: v
+        for k, v in pruned_snapshot.step_configurations.items()
+        if k not in snapshot.pipeline_configuration.steps_to_skip
+    }
+    return pruned_snapshot
