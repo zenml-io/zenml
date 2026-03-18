@@ -417,7 +417,7 @@ class DynamicPipelineRunner:
 
         logger.info("Stopping isolated steps.")
 
-        for step_run in self._steps_to_monitor.values():
+        for step_run in list(self._steps_to_monitor.values()):
             try:
                 self._stop_isolated_step(step_run)
             except Exception:
