@@ -258,7 +258,11 @@ class DynamicPipelineRunner:
             start_time = time.time()
             finished_step_runs = []
 
-            for invocation_id, step_run in self._steps_to_monitor.items():
+            # Copy the steps to avoid the dictionary getting modified by
+            # the main thread while we're iterating over it.
+            for invocation_id, step_run in list(
+                self._steps_to_monitor.items()
+            ):
                 infra_status: Optional[ExecutionStatus] = None
                 try:
                     infra_status = self._get_isolated_step_infra_status(
