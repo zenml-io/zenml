@@ -1314,14 +1314,6 @@ def compile_dynamic_step_invocation(
         ):
             upstream_steps.update(item.step_name for item in value)
 
-    default_parameters = {
-        key: value
-        for key, value in convert_to_keyword_arguments(
-            step.entrypoint, (), inputs, apply_defaults=True
-        ).items()
-        if key not in inputs
-    }
-
     input_artifacts = {}
     external_artifacts = {}
     for name, value in inputs.items():
@@ -1359,9 +1351,22 @@ def compile_dynamic_step_invocation(
             external_artifacts[name] = ExternalArtifact(value=value)
 
     if template := get_config_template(snapshot, step, pipeline):
+        logger.debug(
+            "Using config template `%s` for step `%s`",
+            template.spec.invocation_id,
+            invocation_id,
+        )
         step._configuration = template.config.model_copy(
             update={"template": template.spec.invocation_id}
         )
+
+    default_parameters = {
+        key: value
+        for key, value in convert_to_keyword_arguments(
+            step.entrypoint, (), inputs, apply_defaults=True
+        ).items()
+        if key not in inputs and key not in step.configuration.parameters
+    }
 
     step_invocation = StepInvocation(
         id=invocation_id,
