@@ -35,6 +35,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     PlainValidator,
+    TypeAdapter,
     ValidationInfo,
     WrapValidator,
     create_model,
@@ -89,6 +90,29 @@ def update_model(
         values = {**original_dict, **update_dict}
 
     return original.__class__.model_validate(values)
+
+
+def get_json_schema_for_type(value_type: Any) -> Dict[str, Any]:
+    """Get a JSON schema for a Python type using Pydantic.
+
+    Args:
+        value_type: Type annotation for which to get the JSON schema.
+
+    Returns:
+        JSON schema dictionary.
+
+    Raises:
+        ValueError: If the input value is not supported by Pydantic schema
+            generation.
+    """
+    try:
+        return TypeAdapter(value_type).json_schema()
+    except Exception as e:
+        raise ValueError(
+            f"Unsupported type `{value_type}`. Only JSON-serializable "
+            "types are supported. See the above pydantic error for more "
+            "details."
+        ) from e
 
 
 def create_parameter_model(
