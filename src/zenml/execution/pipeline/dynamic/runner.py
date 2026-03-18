@@ -1240,7 +1240,7 @@ class DynamicPipelineRunner:
 
     def await_all_step_futures(self) -> None:
         """Await all step futures."""
-        for future in self._futures.values():
+        for future in list(self._futures.values()):
             future.wait()
         self._futures = {}
 
@@ -1250,7 +1250,7 @@ class DynamicPipelineRunner:
         Returns:
             True if there are any in-progress steps, False otherwise.
         """
-        return any(future.running() for future in self._futures.values())
+        return any(future.running() for future in list(self._futures.values()))
 
 
 def compile_dynamic_step_invocation(
