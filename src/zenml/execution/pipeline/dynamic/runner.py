@@ -1087,8 +1087,8 @@ class DynamicPipelineRunner:
             return state.value
 
         if poll_interval <= 0:
-            logger.warning(
-                "Negative poll interval provided, falling back to 5 seconds."
+            logger.debug(
+                "Non-positive poll interval provided, falling back to 5 seconds."
             )
             poll_interval = 5
 
@@ -1227,9 +1227,7 @@ class DynamicPipelineRunner:
             )
 
         if schema is None:
-            return _WaitConditionState(
-                is_terminal=True, value=condition.result
-            )
+            return _WaitConditionState(is_terminal=True, value=None)
 
         return _WaitConditionState(
             is_terminal=True,

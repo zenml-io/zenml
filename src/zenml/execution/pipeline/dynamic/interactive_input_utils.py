@@ -3,7 +3,6 @@
 import json
 import select
 import sys
-import time
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple
 
@@ -35,6 +34,13 @@ def can_answer_wait_condition_interactively(
     """
     from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 
+    try:
+        # We use select to check if stdin is ready to be read. If it isn't
+        # available on the current platform, we don't support interactive input.
+        select.select([sys.stdin], [], [], 0)
+    except (AttributeError, OSError, ValueError):
+        return False
+
     return bool(
         not handle_bool_env_var(
             ENV_ZENML_DISABLE_INTERACTIVE_INPUT, default=False
@@ -55,12 +61,17 @@ def print_wait_condition_details(
     """
     # Keep the logs neutral because they're printed as-is also in Kitaru.
     print()
-    print("Waiting for input.")
+    if condition.data_schema is not None:
+        print("Waiting for input.")
+    else:
+        print("Waiting for confirmation.")
     print(f"Question: {condition.question or 'Please provide input.'}")
     if condition.data_schema is not None:
         print("Expected JSON schema:")
         print(json.dumps(condition.data_schema, indent=2, sort_keys=True))
-    print("Press Enter on an empty line to submit null.")
+        print("Press Enter on an empty line to submit null.")
+    else:
+        print("Press Enter to continue.")
     print("Press Ctrl+C to abort.")
     print("> ", end="", flush=True)
 
@@ -109,12 +120,10 @@ def read_stdin_line_with_timeout(
     try:
         readable, _, _ = select.select([sys.stdin], [], [], timeout)
     except (AttributeError, OSError, ValueError):
-        # If readiness checks are unavailable, we can at least wait for the
-        # same timeout window before attempting a direct read.
-        time.sleep(timeout)
-    else:
-        if not readable:
-            return False, None
+        return False, None
+
+    if not readable:
+        return False, None
 
     raw_value = sys.stdin.readline()
     if raw_value == "":
@@ -149,8 +158,6 @@ def poll_interactive_wait_condition_input(
                 print(f"Invalid JSON input: {e}")
                 print("> ", end="", flush=True)
                 return
-        else:
-            result = raw_value
 
     try:
         Client().zen_store.resolve_run_wait_condition(

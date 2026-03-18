@@ -27,6 +27,7 @@ def upgrade() -> None:
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("run_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("project_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column(
             "resolved_by_user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
         ),
@@ -60,6 +61,12 @@ def upgrade() -> None:
             ["project.id"],
             name="fk_run_wait_condition_project_id_project",
             ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["user_id"],
+            ["user.id"],
+            name="fk_run_wait_condition_user_id_user",
+            ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["resolved_by_user_id"],

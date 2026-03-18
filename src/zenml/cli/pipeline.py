@@ -1048,56 +1048,55 @@ def _interactive_resolve_wait_conditions(
                 .strip()
                 .lower()
             )
-            if action in {"c", "a", "s", "q"}:
-                break
-            click.echo("invalid action", err=True)
+            if action not in {"c", "a", "s", "q"}:
+                click.echo("invalid action", err=True)
+                continue
 
-        if action == "q":
-            return "quit"
-        if action == "s":
-            return "skipped"
+            if action == "q":
+                return "quit"
+            if action == "s":
+                return "skipped"
 
-        resolution = (
-            RunWaitConditionResolution.CONTINUE
-            if action == "c"
-            else RunWaitConditionResolution.ABORT
-        )
+            resolution = (
+                RunWaitConditionResolution.CONTINUE
+                if action == "c"
+                else RunWaitConditionResolution.ABORT
+            )
 
-        result: Optional[Any] = None
-        if (
-            resolution == RunWaitConditionResolution.CONTINUE
-            and expected_schema is not None
-        ):
-            while True:
-                raw_value = click.prompt(
-                    "JSON value for `result` (empty for null)",
-                    type=str,
-                    default="",
-                    show_default=False,
+            result: Optional[Any] = None
+            if (
+                resolution == RunWaitConditionResolution.CONTINUE
+                and expected_schema is not None
+            ):
+                while True:
+                    raw_value = click.prompt(
+                        "JSON value for `result` (empty for null)",
+                        type=str,
+                        default="",
+                        show_default=False,
+                    )
+                    if raw_value == "":
+                        result = None
+                        break
+                    try:
+                        result = json.loads(raw_value)
+                        break
+                    except json.JSONDecodeError as e:
+                        click.echo(f"Invalid JSON value: {e}", err=True)
+
+            try:
+                client.resolve_run_wait_condition(
+                    run_wait_condition_id=condition.id,
+                    resolution=resolution,
+                    result=result,
                 )
-                if raw_value == "":
-                    result = None
-                    break
-                try:
-                    result = json.loads(raw_value)
-                    break
-                except json.JSONDecodeError as e:
-                    click.echo(f"Invalid JSON value: {e}", err=True)
-
-        try:
-            client.resolve_run_wait_condition(
-                run_wait_condition_id=condition.id,
-                resolution=resolution,
-                result=result,
-            )
-            cli_utils.declare(
-                f"Resolved wait condition `{condition.id}` with resolution "
-                f"`{resolution.value}`."
-            )
-        except Exception as e:
-            click.echo(f"Failed to resolve wait condition: {e}", err=True)
-
-        return "resolved"
+                cli_utils.declare(
+                    f"Resolved wait condition `{condition.id}` with resolution "
+                    f"`{resolution.value}`."
+                )
+                return "resolved"
+            except Exception as e:
+                click.echo(f"Failed to resolve wait condition: {e}", err=True)
 
     if wait_condition_id is not None:
         try:

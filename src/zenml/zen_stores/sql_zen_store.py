@@ -6975,6 +6975,10 @@ class SqlZenStore(BaseZenStore):
             The created or idempotently reused wait condition.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=run_wait_condition,
+                session=session,
+            )
             session.exec(
                 select(PipelineRunSchema.id)
                 .with_for_update()
@@ -7138,6 +7142,7 @@ class SqlZenStore(BaseZenStore):
             resolve_request: Resolution payload.
 
         Raises:
+            KeyError: If the wait condition is not found.
             IllegalOperationError: If the wait condition has already been
                 resolved.
 
@@ -7153,7 +7158,11 @@ class SqlZenStore(BaseZenStore):
                 select(RunWaitConditionSchema)
                 .with_for_update()
                 .where(RunWaitConditionSchema.id == run_wait_condition_id)
-            ).one()
+            ).one_or_none()
+            if schema is None:
+                raise KeyError(
+                    f"Run wait condition with ID `{run_wait_condition_id}` not found."
+                )
             active_lease_exists = bool(
                 schema.poller_lease_expires_at
                 and schema.poller_lease_expires_at > now
@@ -7229,6 +7238,9 @@ class SqlZenStore(BaseZenStore):
             run_wait_condition_id: Wait condition ID.
             lease_update: Lease refresh payload.
 
+        Raises:
+            KeyError: If the wait condition is not found.
+
         Returns:
             The current wait condition status.
         """
@@ -7237,7 +7249,11 @@ class SqlZenStore(BaseZenStore):
                 select(RunWaitConditionSchema)
                 .with_for_update()
                 .where(RunWaitConditionSchema.id == run_wait_condition_id)
-            ).one()
+            ).one_or_none()
+            if schema is None:
+                raise KeyError(
+                    f"Run wait condition with ID `{run_wait_condition_id}` not found."
+                )
 
             now = utc_now()
             schema.last_polled_at = now
@@ -7413,15 +7429,22 @@ class SqlZenStore(BaseZenStore):
             resolution: Resolution semantic for resolved conditions.
             result: Optional result payload supplied during resolution.
 
+        Raises:
+            IllegalOperationError: If a result is supplied for a wait
+                condition without a schema.
+
         Returns:
             Validated result payload.
-
         """
         if resolution != RunWaitConditionResolution.CONTINUE:
             return None
 
         if not wait_condition.data_schema_json:
-            return result
+            if result is not None:
+                raise IllegalOperationError(
+                    "Wait conditions without a schema do not accept a result."
+                )
+            return None
 
         schema = json.loads(wait_condition.data_schema_json)
         return yaml_utils.validate_json_schema_value(

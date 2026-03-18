@@ -3310,6 +3310,32 @@ def test_create_wait_condition_is_idempotent_while_pending(
     assert second_condition.run_metadata == {"owner": "alice"}
 
 
+def test_resolve_wait_condition_rejects_result_without_schema(
+    clean_client: "Client",
+):
+    store = clean_client.zen_store
+    run = _create_dynamic_pipeline_run(clean_client)
+    condition = store.create_run_wait_condition(
+        RunWaitConditionRequest(
+            project=clean_client.active_project.id,
+            run=run.id,
+            name=sample_name("wait-condition"),
+            type=RunWaitConditionType.EXTERNAL_INPUT,
+        )
+    )
+
+    with pytest.raises(
+        IllegalOperationError,
+    ):
+        store.resolve_run_wait_condition(
+            run_wait_condition_id=condition.id,
+            resolve_request=RunWaitConditionResolveRequest(
+                resolution=RunWaitConditionResolution.CONTINUE,
+                result="value",
+            ),
+        )
+
+
 # .--------------------.
 # | Pipeline run steps |
 # '--------------------'

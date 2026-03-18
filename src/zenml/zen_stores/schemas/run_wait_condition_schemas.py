@@ -89,6 +89,14 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="user",
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
     resolved_by_user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target="user",
@@ -113,6 +121,11 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
     )
     resolved_at: Optional[datetime] = Field(nullable=True, default=None)
     run: "PipelineRunSchema" = Relationship(back_populates="wait_conditions")
+    user: Optional["UserSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "foreign_keys": "RunWaitConditionSchema.user_id",
+        }
+    )
     resolved_by_user: Optional["UserSchema"] = Relationship(
         sa_relationship_kwargs={
             "foreign_keys": "RunWaitConditionSchema.resolved_by_user_id",
@@ -146,7 +159,12 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
         """
         options: List[ExecutableOption] = [joinedload(jl_arg(cls.run))]
         if include_resources:
-            options.append(joinedload(jl_arg(cls.resolved_by_user)))
+            options.extend(
+                [
+                    joinedload(jl_arg(cls.user)),
+                    joinedload(jl_arg(cls.resolved_by_user)),
+                ]
+            )
         return options
 
     @classmethod
@@ -164,6 +182,7 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
         return cls(
             run_id=request.run,
             project_id=request.project,
+            user_id=request.user,
             name=request.name,
             type=request.type.value,
             status=RunWaitConditionStatus.PENDING.value,
@@ -200,7 +219,7 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
             result = json.loads(self.result_json)
 
         body = RunWaitConditionResponseBody(
-            user_id=self.run.user_id,
+            user_id=self.user_id,
             project_id=self.run.project_id,
             created=self.created,
             updated=self.updated,
@@ -226,9 +245,10 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
         resources = None
         if include_resources:
             resources = RunWaitConditionResponseResources(
+                user=self.user.to_model() if self.user else None,
                 run=self.run.to_model(
                     include_metadata=False, include_resources=False
-                )
+                ),
             )
 
         return RunWaitConditionResponse(

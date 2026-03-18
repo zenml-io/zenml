@@ -4552,6 +4552,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_run: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
+        run_metadata: Optional[List[str]] = None,
         status: Optional[str] = None,
         type: Optional[str] = None,
         hydrate: bool = False,
@@ -4572,7 +4573,8 @@ class Client(metaclass=ClientMetaClass):
             resolution: Optional resolution filter.
             pipeline_run: Optional pipeline run name/ID filter.
             project: Optional project name/ID for run lookup or filtering.
-            user: Optional user name/ID for resolver lookup or filtering.
+            user: Optional user name/ID for creator lookup or filtering.
+            run_metadata: Optional run metadata filters.
             status: Optional status filter.
             type: Optional type filter.
             hydrate: Whether to hydrate metadata/resources.
@@ -4587,6 +4589,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             project=project or self.active_project.id,
             user=user,
+            run_metadata=run_metadata,
             status=status,
             type=type,
             id=id,
