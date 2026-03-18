@@ -58,6 +58,31 @@ def replay_pipeline(expected_consumer_input: int) -> None:
     consumer(producer(), expected_input=expected_consumer_input)
 
 
+@step
+def step_with_default_parameter(value: str = "default_from_signature") -> None:
+    assert value == "value_from_configuration"
+
+
+@pipeline(
+    enable_cache=False, dynamic=True, depends_on=[step_with_default_parameter]
+)
+def pipeline_with_config_template() -> None:
+    step_with_default_parameter()
+
+
+def test_step_config_template_parameters_override_step_signature_defaults() -> (
+    None
+):
+    with does_not_raise():
+        pipeline_with_config_template.with_options(
+            steps={
+                "step_with_default_parameter": {
+                    "parameters": {"value": "value_from_configuration"}
+                }
+            }
+        )()
+
+
 def test_replay_skips_first_step_and_overrides_second_step_input():
     """Tests that replaying a pipeline and overriding step inputs works."""
     original_run = replay_pipeline(expected_consumer_input=1)

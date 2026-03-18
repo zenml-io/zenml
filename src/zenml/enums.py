@@ -94,6 +94,8 @@ class ExecutionStatus(StrEnum):
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    PAUSED = "paused"
+    RESUMING = "resuming"
     STOPPED = "stopped"
     STOPPING = "stopping"
 
@@ -154,6 +156,39 @@ class ExecutionMode(StrEnum):
     FAIL_FAST = "fail_fast"
     STOP_ON_FAILURE = "stop_on_failure"
     CONTINUE_ON_FAILURE = "continue_on_failure"
+
+
+class RunWaitConditionType(StrEnum):
+    """Supported wait condition types."""
+
+    EXTERNAL_INPUT = "external_input"
+
+
+class RunWaitConditionStatus(StrEnum):
+    """Lifecycle states for a wait condition."""
+
+    PENDING = "pending"
+    RESOLVED = "resolved"
+
+
+class RunWaitConditionResolution(StrEnum):
+    """Resolution outcomes for resolved wait conditions."""
+
+    CONTINUE = "continue"
+    ABORT = "abort"
+
+
+class RunWaitConditionLeaseMode(StrEnum):
+    """Supported lease update modes for wait-condition polling."""
+
+    REFRESH = "refresh"
+    # Finalize the lease and release it. If the wait condition has been resolved
+    # in the meantime, the poller is responsible for continuing the run.
+    FINALIZE = "finalize"
+    # The poller instance is no longer able to continue the run (due to an
+    # error, etc.). If the wait condition has been resolved in the meantime,
+    # the server should try resuming the run.
+    ABANDON = "abandon"
 
 
 class StackComponentType(StrEnum):
@@ -432,6 +467,7 @@ class MetadataResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
     SCHEDULE = "schedule"
+    WAIT_CONDITION = "wait_condition"
 
 
 class VisualizationResourceTypes(StrEnum):
