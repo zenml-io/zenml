@@ -26,6 +26,7 @@ from zenml.enums import (
     RunWaitConditionType,
 )
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models import RunMetadataFilterMixin
 from zenml.models.v2.base.base import (
     BaseUpdate,
 )
@@ -279,15 +280,19 @@ class RunWaitConditionResponse(
         return self.get_resources().run
 
 
-class RunWaitConditionFilter(ProjectScopedFilter):
+class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     """Filter model for wait conditions."""
 
     FILTER_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "resolved_by",
         "pipeline_run",
     ]
-    CLI_EXCLUDE_FIELDS = [*ProjectScopedFilter.CLI_EXCLUDE_FIELDS]
+    CLI_EXCLUDE_FIELDS = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
+    ]
 
     pipeline_run: Optional[Union[UUID, str]] = Field(
         default=None,
