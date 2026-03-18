@@ -47,7 +47,12 @@ from zenml import ExternalArtifact
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.step_configurations import GroupInfo, StepConfigurationUpdate
+from zenml.config.step_configurations import (
+    GroupInfo,
+    Step,
+    StepConfiguration,
+    StepConfigurationUpdate,
+)
 from zenml.constants import (
     ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY,
     ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL,
@@ -129,7 +134,6 @@ from zenml.utils.logging_utils import (
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
-    from zenml.config.step_configurations import Step, StepConfiguration
     from zenml.orchestrators import BaseOrchestrator
     from zenml.steps import BaseStep
 
