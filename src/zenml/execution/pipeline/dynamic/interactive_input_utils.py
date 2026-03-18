@@ -12,8 +12,8 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_INTERACTIVE_INPUT,
     handle_bool_env_var,
 )
+from zenml.enums import RunWaitConditionResolution
 from zenml.models import (
-    RunWaitConditionResolution,
     RunWaitConditionResolveRequest,
     RunWaitConditionResponse,
 )

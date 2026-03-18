@@ -23,6 +23,7 @@ from zenml.constants import (
     RUN_WAIT_CONDITIONS,
     VERSION_1,
 )
+from zenml.enums import RunWaitConditionStatus
 from zenml.models import (
     Page,
     RunWaitConditionFilter,
@@ -30,7 +31,6 @@ from zenml.models import (
     RunWaitConditionRequest,
     RunWaitConditionResolveRequest,
     RunWaitConditionResponse,
-    RunWaitConditionStatus,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response

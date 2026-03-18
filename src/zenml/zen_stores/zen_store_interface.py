@@ -19,7 +19,7 @@ from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.enums import StackDeploymentProvider
+from zenml.enums import RunWaitConditionStatus, StackDeploymentProvider
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
@@ -108,7 +108,6 @@ from zenml.models import (
     RunWaitConditionRequest,
     RunWaitConditionResolveRequest,
     RunWaitConditionResponse,
-    RunWaitConditionStatus,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,

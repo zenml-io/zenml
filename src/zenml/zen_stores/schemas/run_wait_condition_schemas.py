@@ -23,15 +23,17 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
-from zenml.enums import MetadataResourceTypes
+from zenml.enums import (
+    MetadataResourceTypes,
+    RunWaitConditionStatus,
+    RunWaitConditionType,
+)
 from zenml.models import (
     RunWaitConditionRequest,
     RunWaitConditionResponse,
     RunWaitConditionResponseBody,
     RunWaitConditionResponseMetadata,
     RunWaitConditionResponseResources,
-    RunWaitConditionStatus,
-    RunWaitConditionType,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema

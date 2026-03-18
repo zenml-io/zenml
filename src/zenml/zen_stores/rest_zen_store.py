@@ -120,6 +120,7 @@ from zenml.constants import (
 from zenml.enums import (
     APITokenType,
     OAuthGrantTypes,
+    RunWaitConditionStatus,
     StackDeploymentProvider,
     StoreType,
 )
@@ -229,7 +230,6 @@ from zenml.models import (
     RunWaitConditionRequest,
     RunWaitConditionResolveRequest,
     RunWaitConditionResponse,
-    RunWaitConditionStatus,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,

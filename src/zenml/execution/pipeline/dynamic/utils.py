@@ -28,11 +28,10 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, RunWaitConditionType
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
-    RunWaitConditionType,
     StepRunResponse,
 )
 

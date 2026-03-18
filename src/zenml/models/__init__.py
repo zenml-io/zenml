@@ -43,12 +43,6 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseResources,
     ProjectScopedFilter,
 )
-from zenml.enums import (
-    RunWaitConditionLeaseMode,
-    RunWaitConditionResolution,
-    RunWaitConditionStatus,
-    RunWaitConditionType,
-)
 from zenml.models.v2.base.filter import (
     BaseFilter,
     StrFilter,
@@ -750,16 +744,12 @@ __all__ = [
     "RunTemplateResponseResources",
     "RunTemplateFilter",
     "RunWaitConditionFilter",
-    "RunWaitConditionLeaseMode",
     "RunWaitConditionRequest",
-    "RunWaitConditionResolution",
     "RunWaitConditionResolveRequest",
     "RunWaitConditionResponse",
     "RunWaitConditionResponseBody",
     "RunWaitConditionResponseMetadata",
     "RunWaitConditionResponseResources",
-    "RunWaitConditionStatus",
-    "RunWaitConditionType",
     "RunWaitConditionLeaseUpdate",
     "RunMetadataRequest",
     "ScheduleRequest",

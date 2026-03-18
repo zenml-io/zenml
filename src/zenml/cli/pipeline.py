@@ -26,7 +26,12 @@ from zenml.cli.utils import OutputFormat, fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.deployers.base_deployer import BaseDeployer
-from zenml.enums import CliCategories, ExecutionStatus
+from zenml.enums import (
+    CliCategories,
+    ExecutionStatus,
+    RunWaitConditionResolution,
+    RunWaitConditionStatus,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildBase,
@@ -36,8 +41,6 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotFilter,
     RunWaitConditionFilter,
-    RunWaitConditionResolution,
-    RunWaitConditionStatus,
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
