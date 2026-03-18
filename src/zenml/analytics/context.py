@@ -244,7 +244,7 @@ class AnalyticsContext:
 
     def track(
         self,
-        event: Union[AnalyticsEvent, str],
+        event: "Union[AnalyticsEvent, str]",
         properties: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Track an event.

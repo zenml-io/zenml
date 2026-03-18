@@ -80,7 +80,7 @@ class Client(object):
     def track(
         self,
         user_id: UUID,
-        event: Union[AnalyticsEvent, str],
+        event: "Union[AnalyticsEvent, str]",
         properties: Optional[Dict[Any, Any]],
     ) -> Tuple[bool, str]:
         """Method to track events.

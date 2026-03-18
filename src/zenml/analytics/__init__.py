@@ -82,7 +82,7 @@ def group(  # type: ignore[return]
 
 
 def track(  # type: ignore[return]
-    event: Union[AnalyticsEvent, str],
+    event: "Union[AnalyticsEvent, str]",
     metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """Track segment event if user opted-in.

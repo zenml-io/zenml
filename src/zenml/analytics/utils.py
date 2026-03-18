@@ -137,7 +137,7 @@ def is_analytics_disabled_internally() -> bool:
     return _INTERNAL_DISABLE_ANALYTICS
 
 
-def track_decorator(event: Union[AnalyticsEvent, str]) -> Callable[[F], F]:
+def track_decorator(event: "Union[AnalyticsEvent, str]") -> Callable[[F], F]:
     """Decorator to track event.
 
     If the decorated function takes in a `AnalyticsTrackedModelMixin` object as
@@ -212,7 +212,7 @@ class track_handler(object):
 
     def __init__(
         self,
-        event: Union[AnalyticsEvent, str],
+        event: "Union[AnalyticsEvent, str]",
         metadata: Optional[Dict[str, Any]] = None,
     ):
         """Initialization of the context manager.
