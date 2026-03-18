@@ -168,6 +168,14 @@ class PipelineRunRequest(ProjectScopedRequest):
 
     @model_validator(mode="after")
     def _validate_status(self) -> "PipelineRunRequest":
+        """Validate the status of the pipeline run request.
+
+        Raises:
+            ValueError: If the status is not valid.
+
+        Returns:
+            The pipeline run request.
+        """
         if self.status not in {
             ExecutionStatus.INITIALIZING,
             ExecutionStatus.RUNNING,

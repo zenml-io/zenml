@@ -7229,9 +7229,6 @@ class SqlZenStore(BaseZenStore):
             run_wait_condition_id: Wait condition ID.
             lease_update: Lease refresh payload.
 
-        Raises:
-            RuntimeError: If an invalid lease update mode is provided.
-
         Returns:
             The current wait condition status.
         """
@@ -7273,9 +7270,11 @@ class SqlZenStore(BaseZenStore):
             session.add(schema)
             session.commit()
 
+            resolution = schema.resolution
+
         if (
             lease_update.mode == RunWaitConditionLeaseMode.ABANDON
-            and schema.resolution == RunWaitConditionResolution.CONTINUE.value
+            and resolution == RunWaitConditionResolution.CONTINUE.value
         ):
             # The poller abandons the lease, and won't continue the run
             # even if the condition has been resolved. So we try to resume
@@ -7305,6 +7304,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: Pipeline run ID.
+
+        Raises:
+            IllegalOperationError: If not running in a server.
         """
         try:
             if not handle_bool_env_var(ENV_ZENML_SERVER):
@@ -11466,7 +11468,18 @@ class SqlZenStore(BaseZenStore):
         requested_status: Optional[ExecutionStatus] = None,
         status_reason: Optional[str] = None,
     ) -> Tuple[bool, PipelineRunSchema]:
-        """Updates the status of a pipeline run without committing the transaction."""
+        """Update a pipeline run status without committing the transaction.
+
+        Args:
+            pipeline_run_id: The ID of the pipeline run to update.
+            session: The database session to use.
+            requested_status: The requested status of the pipeline run.
+            status_reason: The reason for the status of the pipeline run.
+
+        Returns:
+            A tuple containing whether the schema was updated and the updated
+            pipeline run schema.
+        """
         pipeline_run = session.exec(
             select(PipelineRunSchema).where(
                 PipelineRunSchema.id == pipeline_run_id

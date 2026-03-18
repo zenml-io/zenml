@@ -1021,8 +1021,10 @@ class DynamicPipelineRunner:
 
         Raises:
             RuntimeError: If called outside the dynamic pipeline function.
+            _WaitConditionAborted: If the wait condition was aborted.
             _WaitConditionPollTimeout: If the wait condition polling timed out.
             KeyboardInterrupt: If interrupted while waiting.
+            BaseException: If polling fails after the lease is abandoned.
 
         Returns:
             The resolved wait condition value.

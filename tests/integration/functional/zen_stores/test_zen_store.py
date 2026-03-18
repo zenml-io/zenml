@@ -3271,7 +3271,7 @@ def test_abandon_wait_condition_lease_attempts_resume_for_resolved_run(
 
     with patch.object(
         store,
-        "_resume_run_if_possible",
+        "_attempt_resume_run_from_server",
         autospec=False,
     ) as resume_mock:
         status = store.update_run_wait_condition_lease(
@@ -3285,8 +3285,6 @@ def test_abandon_wait_condition_lease_attempts_resume_for_resolved_run(
 
     assert status == RunWaitConditionStatus.RESOLVED
     resume_mock.assert_called_once_with(run_id=run.id)
-    updated_run = store.get_run(run.id)
-    assert updated_run.status == ExecutionStatus.RESUMING
 
 
 def test_create_wait_condition_is_idempotent_while_pending(
