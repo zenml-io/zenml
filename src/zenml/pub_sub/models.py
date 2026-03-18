@@ -28,6 +28,7 @@ class SnapshotExecutionPayload(BaseModel):
     snapshot_id: UUID
     trigger_type: Literal["REST", "SCHEDULE", "WEBHOOK"]
     trigger_id: UUID | None = None
+    scheduled_at: datetime | None = None
 
 
 class CriticalEventType(StrEnum):

@@ -13,14 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
-import uuid
-from contextlib import nullcontext
-
-from zenml.models.v2.core.step_run import StepHeartbeatResponse
-from zenml.utils.pydantic_utils import before_validator_handler
-from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
-from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
-
 try:
     import sqlalchemy  # noqa
 except ImportError:
@@ -43,7 +35,9 @@ import random
 import re
 import sys
 import time
+import uuid
 from collections import defaultdict
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -335,6 +329,7 @@ from zenml.models import (
     UserScopedRequest,
     UserUpdate,
 )
+from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -345,6 +340,7 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.utils.string_utils import (
     format_name_template,
@@ -360,6 +356,7 @@ from zenml.zen_stores.dag_generator import DAGGeneratorHelper
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
+from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 from zenml.zen_stores.schemas import (
     APIKeySchema,
     ApiTransactionResultSchema,
@@ -409,6 +406,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
+from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
 from zenml.zen_stores.schemas.utils import (
     get_resource_type_name,
     jl_arg,
@@ -5875,6 +5873,9 @@ class SqlZenStore(BaseZenStore):
                 step_id = None
                 metadata: Dict[str, Any] = {}
 
+                if step.config.step_type:
+                    metadata["type"] = step.config.step_type.value
+
                 if group_info := step.config.group:
                     metadata["group"] = group_info.model_dump(mode="json")
 
@@ -7002,6 +7003,7 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Triggers ---------------------
 
+    @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
     def create_trigger(
         self, trigger: TriggerRequest
     ) -> TRIGGER_RETURN_TYPE_UNION:
@@ -7149,6 +7151,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
+    @track_decorator(event=AnalyticsEvent.DELETED_TRIGGER)
     def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
         """Deletes a trigger.
 
@@ -10093,7 +10096,7 @@ class SqlZenStore(BaseZenStore):
 
                 if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
                     raise IllegalOperationError(
-                        f"Cannot creat step '{step_run.name}' for the run '{run.name}'"
+                        f"Cannot creat step '{step_run.name}' for the run '{run.name}' "
                         "because the run is in a FAILED state and the execution mode is"
                         f"{execution_mode}."
                     )
@@ -10361,10 +10364,16 @@ class SqlZenStore(BaseZenStore):
                         # This is a non-cached step run, which means all input
                         # artifacts we receive at creation time are inputs that
                         # are defined in the step config.
+                        input_overrides = set(
+                            run.get_pipeline_configuration().step_input_overrides.get(
+                                step_run.name, {}
+                            )
+                        )
                         input_type = self._get_step_run_input_type_from_config(
                             input_name=input_name,
                             step_config=step_config.config,
                             step_spec=step_config.spec,
+                            input_overrides=input_overrides,
                         )
 
                         if input_type == StepRunInputArtifactType.STEP_OUTPUT:
@@ -10768,6 +10777,7 @@ class SqlZenStore(BaseZenStore):
         input_name: str,
         step_config: StepConfiguration,
         step_spec: StepSpec,
+        input_overrides: Set[str],
     ) -> StepRunInputArtifactType:
         """Get the input type of an artifact.
 
@@ -10775,13 +10785,16 @@ class SqlZenStore(BaseZenStore):
             input_name: The name of the input artifact.
             step_config: The step config.
             step_spec: The step spec.
+            input_overrides: The input overrides.
 
         Returns:
             The input type of the artifact.
         """
-        if input_name in step_spec.inputs_v2:
+        if input_name in input_overrides:
+            return StepRunInputArtifactType.OVERRIDE
+        elif input_name in step_spec.inputs_v2:
             return StepRunInputArtifactType.STEP_OUTPUT
-        if input_name in step_config.external_input_artifacts:
+        elif input_name in step_config.external_input_artifacts:
             return StepRunInputArtifactType.EXTERNAL
         elif (
             input_name in step_config.model_artifacts_or_metadata

@@ -4,7 +4,7 @@
 
 ---
 
-# 0.94.0rc0
+# 0.94.0
 
 ## What's Changed
 * Add version 0.93.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4504
@@ -38,12 +38,15 @@
 * !fixup: disable flaky tests by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4554
 * Include git submodule files in code archive by @apoorvdarshan in https://github.com/zenml-io/zenml/pull/4496
 * Add docs references for `zenml-scoping` and `zenml-pipeline-authoring` skills by @strickvl in https://github.com/zenml-io/zenml/pull/4539
+* Prepare release 0.94.0rc0 by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4555
+* Fix for SDK docs release by @bcdurak in https://github.com/zenml-io/zenml/pull/4560
+* Small schedule fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4561
 
 ## New Contributors
 * @kshitijrajsharma made their first contribution in https://github.com/zenml-io/zenml/pull/4549
 * @apoorvdarshan made their first contribution in https://github.com/zenml-io/zenml/pull/4496
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.3...0.94.0rc0
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.3...0.94.0
 
 # 0.93.3
 
