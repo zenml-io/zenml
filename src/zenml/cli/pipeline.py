@@ -1002,59 +1002,28 @@ def _interactive_resolve_wait_conditions(
         run_name_or_id: Optional run name or ID to narrow the resolution scope.
     """
     client = Client()
-    conditions: List[Any] = []
-    if wait_condition_id is not None:
-        try:
-            condition = client.zen_store.get_run_wait_condition(
-                UUID(wait_condition_id), hydrate=True
-            )
-        except ValueError:
-            cli_utils.error(
-                f"Invalid wait condition ID: `{wait_condition_id}`."
-            )
-        if condition.status != RunWaitConditionStatus.PENDING:
-            cli_utils.error(
-                f"Wait condition `{wait_condition_id}` is currently "
-                f"`{condition.status.value}`, not `pending`."
-            )
-        conditions = [condition]
-    else:
-        page = 1
-        size = 100
-        while True:
-            page_result = client.list_run_wait_conditions(
-                project=client.active_project.id,
-                pipeline_run=run_name_or_id,
-                status=RunWaitConditionStatus.PENDING.value,
-                sort_by="asc:created",
-                page=page,
-                size=size,
-                hydrate=True,
-            )
-            conditions.extend(page_result.items)
-            if page >= page_result.total_pages:
-                break
-            page += 1
+    skipped_condition_ids: set[UUID] = set()
 
-    if not conditions:
-        if wait_condition_id:
-            cli_utils.declare(
-                f"No pending wait condition found for `{wait_condition_id}`."
-            )
-        elif run_name_or_id:
-            cli_utils.declare(
-                f"No pending wait conditions found for run `{run_name_or_id}`."
-            )
-        else:
-            cli_utils.declare("No pending wait conditions found.")
-        return
+    def _resolve_single_condition_interactively(
+        condition: Any,
+        idx: int,
+        total: int,
+    ) -> str:
+        """Interactively handle a single wait condition.
 
-    for idx, condition in enumerate(conditions, start=1):
+        Args:
+            condition: The wait condition to resolve.
+            idx: The 1-based position of the condition in the current batch.
+            total: The total number of conditions in the current batch.
+
+        Returns:
+            One of `resolved`, `skipped`, or `quit`.
+        """
         run_name = condition.run.name
         run_id = condition.run.id
 
         click.echo("")
-        click.echo(f"[{idx}/{len(conditions)}] Run `{run_name}` ({run_id})")
+        click.echo(f"[{idx}/{total}] Run `{run_name}` ({run_id})")
         click.echo(f"Condition `{condition.id}` name={condition.name}")
         click.echo(
             f"Type: {condition.type.value} | Status: {condition.status}"
@@ -1084,9 +1053,9 @@ def _interactive_resolve_wait_conditions(
             click.echo("invalid action", err=True)
 
         if action == "q":
-            break
+            return "quit"
         if action == "s":
-            continue
+            return "skipped"
 
         resolution = (
             RunWaitConditionResolution.CONTINUE
@@ -1127,6 +1096,76 @@ def _interactive_resolve_wait_conditions(
             )
         except Exception as e:
             click.echo(f"Failed to resolve wait condition: {e}", err=True)
+
+        return "resolved"
+
+    if wait_condition_id is not None:
+        try:
+            condition = client.zen_store.get_run_wait_condition(
+                UUID(wait_condition_id), hydrate=True
+            )
+        except ValueError:
+            cli_utils.error(
+                f"Invalid wait condition ID: `{wait_condition_id}`."
+            )
+        if condition.status != RunWaitConditionStatus.PENDING:
+            cli_utils.error(
+                f"Wait condition `{wait_condition_id}` is currently "
+                f"`{condition.status.value}`, not `pending`."
+            )
+        _resolve_single_condition_interactively(
+            condition=condition,
+            idx=1,
+            total=1,
+        )
+        return
+    else:
+        while True:
+            page = 1
+            conditions = []
+            while True:
+                page_result = client.list_run_wait_conditions(
+                    project=client.active_project.id,
+                    pipeline_run=run_name_or_id,
+                    status=RunWaitConditionStatus.PENDING.value,
+                    sort_by="asc:created",
+                    page=page,
+                    size=20,
+                    hydrate=True,
+                )
+                conditions = [
+                    condition
+                    for condition in page_result.items
+                    if condition.id not in skipped_condition_ids
+                ]
+                if conditions or page >= page_result.total_pages:
+                    break
+                page += 1
+
+            if not conditions:
+                if skipped_condition_ids:
+                    cli_utils.declare(
+                        "No additional pending wait conditions found."
+                    )
+                elif run_name_or_id:
+                    cli_utils.declare(
+                        f"No pending wait conditions found for run "
+                        f"`{run_name_or_id}`."
+                    )
+                else:
+                    cli_utils.declare("No pending wait conditions found.")
+                return
+
+            for idx, condition in enumerate(conditions, start=1):
+                result = _resolve_single_condition_interactively(
+                    condition=condition,
+                    idx=idx,
+                    total=len(conditions),
+                )
+                if result == "quit":
+                    return
+                if result == "skipped":
+                    skipped_condition_ids.add(condition.id)
 
 
 @runs.command("stop")
