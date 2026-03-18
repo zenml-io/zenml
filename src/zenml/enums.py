@@ -350,7 +350,7 @@ class SourceContextTypes(StrEnum):
     KITARU_CLI = "kitaru-cli"
     KITARU_MCP = "kitaru-mcp"
     KITARU_API = "kitaru-api"
-    KITARU_DASHBOARD = "kitaru-dashboard"
+    KITARU_UI = "kitaru-ui"
     UNKNOWN = "unknown"
 
 
