@@ -473,8 +473,10 @@ class KubernetesDeployer(ContainerizedDeployer):
         # context variable.
         if resources:
             if pod_settings_for_template is not None:
-                pod_settings_for_template = pod_settings_for_template.model_copy(
-                    update={"resources": resources}
+                pod_settings_for_template = (
+                    pod_settings_for_template.model_copy(
+                        update={"resources": resources}
+                    )
                 )
             else:
                 pod_settings_for_template = KubernetesPodSettings(
