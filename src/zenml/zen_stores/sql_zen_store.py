@@ -10247,7 +10247,6 @@ class SqlZenStore(BaseZenStore):
                             source=logs_request.source or "step",
                             artifact_store_id=logs_request.artifact_store_id,
                             log_store_id=logs_request.log_store_id,
-                            pipeline_run_id=step_schema.pipeline_run_id,
                             step_run_id=step_schema.id,
                         ),
                         session=session,
