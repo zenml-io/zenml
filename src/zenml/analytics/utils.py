@@ -150,7 +150,7 @@ def track_decorator(event: "Union[AnalyticsEvent, str]") -> Callable[[F], F]:
     tracking analytics.
 
     Args:
-        event: Event to track. Can be an AnalyticsEvent enum member 
+        event: Event to track. Can be an AnalyticsEvent enum member
             or an arbitrary string for downstream consumers that
             define their own event names.
 

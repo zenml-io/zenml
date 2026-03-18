@@ -97,5 +97,3 @@ class AnalyticsEvent(str, Enum):
     # Triggers
     CREATED_TRIGGER = "Trigger created"
     DELETED_TRIGGER = "Trigger deleted"
-
-
