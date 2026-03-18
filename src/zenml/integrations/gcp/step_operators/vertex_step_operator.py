@@ -211,6 +211,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             encryption_spec_key_name=self.config.encryption_spec_key_name,
             service_account=self.config.service_account,
             network=self.config.network,
+            # We handle step retries ourselves.
+            disable_vertex_retries=True,
         )
         logger.debug("Vertex AI Job=%s", job_request)
 

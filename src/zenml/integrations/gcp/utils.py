@@ -119,6 +119,7 @@ def build_job_request(
     service_account: Optional[str] = None,
     network: Optional[str] = None,
     reserved_ip_ranges: Optional[str] = None,
+    disable_vertex_retries: bool = False,
 ) -> Dict[str, Any]:
     """Build a job request.
 
@@ -134,6 +135,8 @@ def build_job_request(
         service_account: The service account.
         network: The network.
         reserved_ip_ranges: The reserved IP ranges.
+        disable_vertex_retries: Whether to disable Vertex-side retries and
+            worker restarts for this job.
 
     Returns:
         Job request dictionary.
@@ -146,41 +149,48 @@ def build_job_request(
     accelerator_count = (
         resource_settings.gpu_count or custom_job_settings.accelerator_count
     )
+    job_spec = {
+        "worker_pool_specs": [
+            {
+                "machine_spec": {
+                    "machine_type": custom_job_settings.machine_type,
+                    "accelerator_type": custom_job_settings.accelerator_type,
+                    "accelerator_count": accelerator_count
+                    if custom_job_settings.accelerator_type
+                    else 0,
+                },
+                "replica_count": 1,
+                "container_spec": {
+                    "image_uri": image,
+                    "command": entrypoint_command,
+                    "args": [],
+                    "env": [
+                        {"name": key, "value": value}
+                        for key, value in environment.items()
+                    ],
+                },
+                "disk_spec": {
+                    "boot_disk_type": custom_job_settings.boot_disk_type,
+                    "boot_disk_size_gb": custom_job_settings.boot_disk_size_gb,
+                },
+            }
+        ],
+        "service_account": service_account,
+        "network": network,
+        "reserved_ip_ranges": (
+            reserved_ip_ranges.split(",") if reserved_ip_ranges else []
+        ),
+        "persistent_resource_id": custom_job_settings.persistent_resource_id,
+    }
+    if disable_vertex_retries:
+        job_spec["scheduling"] = {
+            "restart_job_on_worker_restart": False,
+            "disable_retries": True,
+        }
+
     return {
         "display_name": display_name,
-        "job_spec": {
-            "worker_pool_specs": [
-                {
-                    "machine_spec": {
-                        "machine_type": custom_job_settings.machine_type,
-                        "accelerator_type": custom_job_settings.accelerator_type,
-                        "accelerator_count": accelerator_count
-                        if custom_job_settings.accelerator_type
-                        else 0,
-                    },
-                    "replica_count": 1,
-                    "container_spec": {
-                        "image_uri": image,
-                        "command": entrypoint_command,
-                        "args": [],
-                        "env": [
-                            {"name": key, "value": value}
-                            for key, value in environment.items()
-                        ],
-                    },
-                    "disk_spec": {
-                        "boot_disk_type": custom_job_settings.boot_disk_type,
-                        "boot_disk_size_gb": custom_job_settings.boot_disk_size_gb,
-                    },
-                }
-            ],
-            "service_account": service_account,
-            "network": network,
-            "reserved_ip_ranges": (
-                reserved_ip_ranges.split(",") if reserved_ip_ranges else []
-            ),
-            "persistent_resource_id": custom_job_settings.persistent_resource_id,
-        },
+        "job_spec": job_spec,
         "labels": labels,
         "encryption_spec": {"kmsKeyName": encryption_spec_key_name}
         if encryption_spec_key_name

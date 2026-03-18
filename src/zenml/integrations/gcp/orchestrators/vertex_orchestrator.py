@@ -792,6 +792,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             encryption_spec_key_name=self.config.encryption_spec_key_name,
             service_account=self.config.workload_service_account,
             network=self.config.network,
+            # We handle step retries ourselves.
+            disable_vertex_retries=True,
         )
 
         client = self.get_job_service_client()
