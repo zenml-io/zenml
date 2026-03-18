@@ -112,7 +112,7 @@ class _InlineStepFuture(BaseFuture):
         Returns:
             True if the step run future is running, False otherwise.
         """
-        return self._wrapped.running()
+        return not self._wrapped.done()
 
     def result(self) -> "StepRunResponse":
         """Get the result of the step run future.
@@ -151,7 +151,7 @@ class _IsolatedStepFuture(BaseFuture):
         """
         from zenml.execution.pipeline.dynamic.utils import get_latest_step_run
 
-        if self._wrapped and self._wrapped.running():
+        if self._wrapped and not self._wrapped.done():
             return True
 
         step_run = get_latest_step_run(
