@@ -108,6 +108,17 @@ src/zenml/integrations/<name>/
 └── ...
 ```
 
+## Step Operator Contract
+
+Step operators now use an async-first lifecycle instead of the legacy `launch()` method:
+
+- `submit(...)` — Submit the step for remote execution (non-blocking)
+- `get_status(...)` — Check current execution status
+- `wait(...)` — Block until the step completes (polls `get_status` internally)
+- `cancel(...)` — Cancel a running step
+
+The `StepLauncher` calls `submit()` + `wait()` by default, falling back to the legacy `launch()` only for backwards compatibility. New step operator integrations should implement the async contract. Store the backend job ID in run metadata immediately after submission so that status/cancel/wait can work. See `integrations/runai/step_operators/runai_step_operator.py` for a reference implementation.
+
 ## Adding New Integrations
 
 1. Create the integration package structure
@@ -121,7 +132,7 @@ src/zenml/integrations/<name>/
 
 When updating integration dependencies in `pyproject.toml`:
 
-1. **Check compatibility**: Ensure the new version works with supported Python versions (3.9+)
+1. **Check compatibility**: Ensure the new version works with supported Python versions (3.10+)
 2. **Test locally**: Run integration tests with the new dependency version
 3. **Update bounds carefully**: Prefer inclusive lower bounds and exclusive upper bounds (`>=1.0.0,<2.0.0`)
 4. **Document breaking changes**: If the update requires code changes, mention this in the PR

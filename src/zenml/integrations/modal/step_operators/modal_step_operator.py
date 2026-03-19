@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
-import asyncio
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
@@ -22,23 +21,25 @@ from modal_proto import api_pb2
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.resource_settings import ByteUnit, ResourceSettings
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
+STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
 
 
 def get_gpu_values(
@@ -149,13 +150,13 @@ class ModalStepOperator(BaseStepOperator):
 
         return builds
 
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launch a step run on Modal.
+        """Submits a step run to Modal.
 
         Args:
             info: The step run information.
@@ -206,37 +207,58 @@ class ModalStepOperator(BaseStepOperator):
 
         resource_settings = info.config.resource_settings
         gpu_values = get_gpu_values(settings, resource_settings)
+        memory_mb = resource_settings.get_memory(ByteUnit.MB)
+        memory_int = int(memory_mb) if memory_mb is not None else None
 
-        app = modal.App(
-            f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
+        app = modal.App.lookup(
+            f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
+            create_if_missing=True,
+        )
+        sandbox = modal.Sandbox.create(
+            "bash",
+            "-c",
+            " ".join(entrypoint_command),
+            app=app,
+            image=zenml_image,
+            gpu=gpu_values,
+            cpu=resource_settings.cpu_count,
+            memory=memory_int,
+            cloud=settings.cloud,
+            region=settings.region,
+            timeout=86400,  # 24h, the max Modal allows
+        )
+        publish_step_run_metadata(
+            info.step_run_id,
+            {self.id: {STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id}},
+        )
+        info.step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY] = (
+            sandbox.object_id
         )
 
-        async def run_sandbox() -> asyncio.Future[None]:
-            loop = asyncio.get_event_loop()
-            future = loop.create_future()
-            with modal.enable_output():
-                async with app.run():
-                    memory_mb = resource_settings.get_memory(ByteUnit.MB)
-                    memory_int = (
-                        int(memory_mb) if memory_mb is not None else None
-                    )
-                    sb = await modal.Sandbox.create.aio(
-                        "bash",
-                        "-c",
-                        " ".join(entrypoint_command),
-                        image=zenml_image,
-                        gpu=gpu_values,
-                        cpu=resource_settings.cpu_count,
-                        memory=memory_int,
-                        cloud=settings.cloud,
-                        region=settings.region,
-                        app=app,
-                        timeout=86400,  # 24h, the max Modal allows
-                    )
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Gets the status of a submitted Modal sandbox.
 
-                    await sb.wait.aio()
+        Args:
+            step_run: The step run.
 
-            future.set_result(None)
-            return future
+        Returns:
+            The step status.
+        """
+        sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
+        sandbox = modal.Sandbox.from_id(sandbox_id)
+        return_code = sandbox.poll()
+        if return_code is None:
+            return ExecutionStatus.RUNNING
+        if return_code == 0:
+            return ExecutionStatus.COMPLETED
+        return ExecutionStatus.FAILED
 
-        asyncio.run(run_sandbox())
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancels a submitted Modal sandbox.
+
+        Args:
+            step_run: The step run.
+        """
+        sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
+        sandbox = modal.Sandbox.from_id(sandbox_id)
+        sandbox.terminate()

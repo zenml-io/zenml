@@ -247,10 +247,6 @@ formats:
 ```
 {% endcode %}
 
-Dashboard equivalent:
-
-<img src="../../how-to/.gitbook/assets/.gitbook/assets/aws-s3-bucket-resource-type.png" alt="AWS Service Connector Type Details" data-size="original">
-
 Displaying information about the AWS Session Token authentication method:
 
 ```sh
@@ -308,9 +304,6 @@ Attributes:
 ```
 {% endcode %}
 
-Dashboard equivalent:
-
-<img src="../../how-to/.gitbook/assets/.gitbook/assets/aws-session-token-auth-method.png" alt="AWS Service Connector Type Details" data-size="original">
 
 </details>
 

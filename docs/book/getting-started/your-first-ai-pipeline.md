@@ -14,6 +14,10 @@ Why ZenML pipelines?
 - **Observe by default**: Lineage and step metadata (e.g., latency, tokens, metrics) are tracked and visible in the dashboard.
 {% endhint %}
 
+{% hint style="info" %}
+**Plan and build pipelines with AI coding agents:** If you use Claude Code, Codex, Copilot, Cursor, or similar tools, ZenML provides Agent Skills that can scope your idea into a realistic multi-pipeline plan (`zenml-scoping`) and help you implement steps and pipelines (`zenml-pipeline-authoring`). See [LLM tooling](../reference/llms-txt.md) for installation instructions.
+{% endhint %}
+
 ---
 
 ## What do you want to build?

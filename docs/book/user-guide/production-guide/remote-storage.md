@@ -174,7 +174,7 @@ zenml stack register local_with_remote_storage -o default -a cloud_artifact_stor
 {% endtab %}
 
 {% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
+Register a new stack using the stack creation form in the ZenML dashboard.
 {% endtab %}
 {% endtabs %}
 

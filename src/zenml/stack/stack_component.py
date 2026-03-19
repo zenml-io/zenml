@@ -448,7 +448,8 @@ class StackComponent:
             from zenml.integrations.registry import integration_registry
 
             integration_requirements = " ".join(
-                integration_registry.select_integration_requirements(
+                f"'{req}'"
+                for req in integration_registry.select_integration_requirements(
                     flavor_model.integration
                 )
             )

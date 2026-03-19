@@ -401,6 +401,9 @@ def connect_to_pro_server(
             token = web_login(
                 pro_api_url=pro_api_url,
                 verify_ssl=verify_ssl,
+                preferred_workspace=str(server_id)
+                if server_id
+                else server_name,
             )
         except AuthorizationException as e:
             cli_utils.error(f"Authorization error: {e}")

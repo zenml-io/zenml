@@ -167,6 +167,9 @@ class Stack:
 
         Returns:
             The created Stack instance.
+
+        Raises:
+            ImportError: If a stack component's dependencies cannot be imported.
         """
         global _STACK_CACHE
         key = (stack_model.id, stack_model.updated)
@@ -182,10 +185,21 @@ class Stack:
             hydrate=True,
         )
 
-        stack_components = {
-            model.type: StackComponent.from_model(model)
-            for model in component_models
-        }
+        try:
+            stack_components = {
+                model.type: StackComponent.from_model(model)
+                for model in component_models
+            }
+        except ImportError as e:
+            stack_hint = (
+                "\n\nTo install all requirements for this stack at "
+                "once, run:\n\n"
+                f"  zenml stack export-requirements "
+                f"'{stack_model.name}' -o stack-requirements.txt\n"
+                "  pip install -r stack-requirements.txt"
+            )
+            e.args = (e.args[0] + stack_hint,) + e.args[1:]
+            raise
         stack = Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,
@@ -417,7 +431,31 @@ class Stack:
         Returns:
             The orchestrator of the stack.
         """
-        return self._orchestrator
+        from zenml.execution.utils import DebugModeContext
+        from zenml.orchestrators import (
+            LocalOrchestrator,
+            LocalOrchestratorConfig,
+        )
+
+        if not DebugModeContext.is_active():
+            return self._orchestrator
+
+        now = utc_now()
+
+        return LocalOrchestrator(
+            id=UUID("00000000-0000-0000-0000-000000000000"),
+            name="local-debug",
+            config=LocalOrchestratorConfig(),
+            flavor="local",
+            type=StackComponentType.ORCHESTRATOR,
+            user=None,
+            created=now,
+            updated=now,
+            # Use the environment and secrets of the actual orchestrator in
+            # the debug case
+            environment=self._orchestrator.environment,
+            secrets=self._orchestrator.secrets,
+        )
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":

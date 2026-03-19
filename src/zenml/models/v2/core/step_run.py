@@ -34,6 +34,7 @@ from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
     StepRunInputArtifactType,
+    StepType,
 )
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
@@ -214,6 +215,10 @@ class StepRunUpdate(BaseUpdate):
 class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
+    type: Optional[StepType] = Field(
+        title="The type of the step.",
+        default=None,
+    )
     status: ExecutionStatus = Field(title="The status of the step.")
     version: int = Field(
         title="The version of the step run.",
@@ -464,6 +469,16 @@ class StepRunResponse(
         return result
 
     # Body and metadata properties
+
+    @property
+    def type(self) -> Optional[StepType]:
+        """The `type` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().type
+
     @property
     def status(self) -> ExecutionStatus:
         """The `status` property.
@@ -674,6 +689,15 @@ class StepRunResponse(
         return self.get_metadata().parent_step_ids
 
     @property
+    def exception_info(self) -> Optional[ExceptionInfo]:
+        """The `exception_info` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().exception_info
+
+    @property
     def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
@@ -776,6 +800,11 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     model: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
+    )
+    version: Union[int, str, None] = Field(
+        default=None,
+        description="Version of the step run.",
+        union_mode="left_to_right",
     )
     exclude_retried: Optional[bool] = Field(
         default=None,

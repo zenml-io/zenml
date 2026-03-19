@@ -501,7 +501,10 @@ def log_step_metadata(
 
 
 def run_as_single_step_pipeline(
-    __step: "BaseStep", *args: Any, **kwargs: Any
+    __step: "BaseStep",
+    __pipeline_name: Optional[str],
+    *args: Any,
+    **kwargs: Any,
 ) -> Any:
     """Runs the step as a single step pipeline.
 
@@ -511,6 +514,8 @@ def run_as_single_step_pipeline(
     that was used to store them.
 
     Args:
+        __step: The step to run.
+        __pipeline_name: The name to use for the pipeline.
         *args: Entrypoint function arguments.
         **kwargs: Entrypoint function keyword arguments.
 
@@ -560,7 +565,11 @@ def run_as_single_step_pipeline(
         key = settings_utils.get_stack_component_setting_key(orchestrator)
         pipeline_settings[key] = BaseSettings(synchronous=True)
 
-    @pipeline(name=__step.name, enable_cache=False, settings=pipeline_settings)
+    @pipeline(
+        name=__pipeline_name or __step.name,
+        enable_cache=False,
+        settings=pipeline_settings,
+    )
     def single_step_pipeline() -> None:
         __step(**inputs)
 

@@ -97,7 +97,7 @@ This will run `my_modal_step` on a Modal instance with 1 A100 GPU, 2 CPUs, and
 
 Check out the [Modal docs](https://modal.com/docs/reference/modal.gpu) for the
 full list of supported GPU types and the [SDK
-docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-modal/#zenml.integrations.modal.flavors.modal\_step\_operator\_flavor.ModalStepOperatorSettings)
+docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html)
 for more details on the available settings.
 
 The settings do allow you to specify the region and cloud provider, but these

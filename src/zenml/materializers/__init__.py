@@ -26,6 +26,7 @@ from zenml.materializers.built_in_materializer import (
 from zenml.materializers.cloudpickle_materializer import (
     CloudpickleMaterializer,
 )
+from zenml.materializers.dataclass_materializer import DataclassMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
 from zenml.materializers.path_materializer import PathMaterializer
 from zenml.materializers.pydantic_materializer import PydanticMaterializer
@@ -40,6 +41,7 @@ __all__ = [
     "BuiltInMaterializer",
     "BytesMaterializer",
     "CloudpickleMaterializer",
+    "DataclassMaterializer",
     "InMemoryMaterializer",
     "StructuredStringMaterializer",
     "PydanticMaterializer",

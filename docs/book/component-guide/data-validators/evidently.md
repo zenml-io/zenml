@@ -16,10 +16,10 @@ Evidently currently works with tabular data in `pandas.DataFrame` or CSV file fo
 
 You should use the Evidently Data Validator when you need the following data and/or model validation features that are possible with Evidently:
 
-* [Data Quality](https://docs.evidentlyai.com/presets/data-quality) reports and tests: provides detailed feature statistics and a feature behavior overview for a single dataset. It can also compare any two datasets. E.g. you can use it to compare train and test data, reference and current data, or two subgroups of one dataset.
-* [Data Drift](https://docs.evidentlyai.com/presets/data-drift) reports and tests: helps detects and explore feature distribution changes in the input data by comparing two datasets with identical schema.
-* [Target Drift](https://docs.evidentlyai.com/presets/target-drift) reports and tests: helps detect and explore changes in the target function and/or model predictions by comparing two datasets where the target and/or prediction columns are available.
-* [Regression Performance](https://docs.evidentlyai.com/presets/reg-performance) or [Classification Performance](https://docs.evidentlyai.com/presets/class-performance) reports and tests: evaluate the performance of a model by analyzing a single dataset where both the target and prediction columns are available. It can also compare it to the past performance of the same model, or the performance of an alternative model by providing a second dataset.
+* [Data Quality](https://docs.evidentlyai.com/metrics/preset_data_summary) reports and tests: provides detailed feature statistics and a feature behavior overview for a single dataset. It can also compare any two datasets. E.g. you can use it to compare train and test data, reference and current data, or two subgroups of one dataset.
+* [Data Drift](https://docs.evidentlyai.com/metrics/preset_data_drift) reports and tests: helps detects and explore feature distribution changes in the input data by comparing two datasets with identical schema.
+* [Target Drift](https://docs.evidentlyai.com/metrics/preset_data_drift) reports and tests: helps detect and explore changes in the target function and/or model predictions by comparing two datasets where the target and/or prediction columns are available.
+* [Regression Performance](https://docs.evidentlyai.com/metrics/preset_regression) or [Classification Performance](https://docs.evidentlyai.com/metrics/preset_classification) reports and tests: evaluate the performance of a model by analyzing a single dataset where both the target and prediction columns are available. It can also compare it to the past performance of the same model, or the performance of an alternative model by providing a second dataset.
 
 You should consider one of the other [Data Validator flavors](./#data-validator-flavors) if you need a different set of data validation features.
 
@@ -47,7 +47,7 @@ zenml stack register custom_stack -dv evidently_data_validator ... --set
 
 Evidently's profiling functions take in a `pandas.DataFrame` dataset or a pair of datasets and generate results in the form of a `Report` object.
 
-One of Evidently's notable characteristics is that it only requires datasets as input. Even when running model performance comparison analyzes, no model needs to be present. However, that does mean that the input data needs to include additional `target` and `prediction` columns for some profiling reports and, you have to include additional information about the dataset columns in the form of [column mappings](https://docs.evidentlyai.com/user-guide/tests-and-reports/column-mapping). Depending on how your data is structured, you may also need to include additional steps in your pipeline before the data validation step to insert the additional `target` and `prediction` columns into your data. This may also require interacting with one or more models.
+One of Evidently's notable characteristics is that it only requires datasets as input. Even when running model performance comparison analyzes, no model needs to be present. However, that does mean that the input data needs to include additional `target` and `prediction` columns for some profiling reports and, you have to include additional information about the dataset columns in the form of [column mappings](https://docs.evidentlyai.com/docs/library/data_definition). Depending on how your data is structured, you may also need to include additional steps in your pipeline before the data validation step to insert the additional `target` and `prediction` columns into your data. This may also require interacting with one or more models.
 
 There are three ways you can use Evidently to generate data reports in your ZenML pipelines that allow different levels of flexibility:
 
@@ -145,9 +145,9 @@ report.run(
 
 Let's break this down...
 
-We configure the `evidently_report_step` using parameters that you would normally pass to the Evidently `Report` object to [configure and run an Evidently report](https://docs.evidentlyai.com/user-guide/tests-and-reports/custom-report). It consists of the following fields:
+We configure the `evidently_report_step` using parameters that you would normally pass to the Evidently `Report` object to [configure and run an Evidently report](https://docs.evidentlyai.com/docs/library/report). It consists of the following fields:
 
-* `column_mapping`: This is an `EvidentlyColumnMapping` object that is the exact equivalent of [the `ColumnMapping` object in Evidently](https://docs.evidentlyai.com/user-guide/input-data/column-mapping). It is used to describe the columns in the dataset and how they should be treated (e.g. as categorical, numerical, or text features).
+* `column_mapping`: This is an `EvidentlyColumnMapping` object that is the exact equivalent of [the `ColumnMapping` object in Evidently](https://docs.evidentlyai.com/docs/library/data_definition). It is used to describe the columns in the dataset and how they should be treated (e.g. as categorical, numerical, or text features).
 * `metrics`: This is a list of `EvidentlyMetricConfig` objects that are used to configure the metrics that should be used to generate the report in a declarative way. This is the same as configuring the `metrics` that go in the Evidently `Report`.
 * `download_nltk_data`: This is a boolean that is used to indicate whether the NLTK data should be downloaded. This is only needed if you are using Evidently reports that handle text data, which require the NLTK data to be downloaded ahead of time.
 
@@ -172,7 +172,7 @@ There are several ways you can reference the Evidently metrics when configuring 
 As can be seen in the example, there are two basic ways of adding metrics to your Evidently report step configuration:
 
 * to add a single metric or metric preset: call `EvidentlyMetricConfig.metric` with an Evidently metric or metric preset class name (or class path or class). The rest of the parameters are the same ones that you would usually pass to the Evidently metric or metric preset class constructor.
-* to generate multiple metrics, similar to calling [the Evidently column metric generator](https://docs.evidentlyai.com/user-guide/tests-and-reports/test-metric-generator#column-metric-generator): call `EvidentlyMetricConfig.metric_generator` with an Evidently metric or metric preset class name (or class path or class) and a list of column names. The rest of the parameters are the same ones that you would usually pass to the Evidently metric or metric preset class constructor.
+* to generate multiple metrics, similar to calling [the Evidently column metric generator](https://docs.evidentlyai.com/docs/library/metric_generator): call `EvidentlyMetricConfig.metric_generator` with an Evidently metric or metric preset class name (or class path or class) and a list of column names. The rest of the parameters are the same ones that you would usually pass to the Evidently metric or metric preset class constructor.
 
 The ZenML Evidently report step can then be inserted into your pipeline where it can take in two datasets and outputs the Evidently report generated in both JSON and HTML formats, e.g.:
 
@@ -208,9 +208,9 @@ For a version of the same step that works with a single dataset, simply don't pa
 text_data_report(reference_dataset=reference_dataset)
 ```
 
-You should consult [the official Evidently documentation](https://docs.evidentlyai.com/reference/all-metrics) for more information on what each metric is useful for and what data columns it requires as input.
+You should consult [the official Evidently documentation](https://docs.evidentlyai.com/metrics/all_metrics) for more information on what each metric is useful for and what data columns it requires as input.
 
-The `evidently_report_step` step also allows for additional Report [options](https://docs.evidentlyai.com/user-guide/customization) to be passed to the `Report` constructor e.g.:
+The `evidently_report_step` step also allows for additional Report [options](https://docs.evidentlyai.com/metrics/customize_metric) to be passed to the `Report` constructor e.g.:
 
 ```python
 from zenml.integrations.evidently.steps import (
@@ -333,9 +333,9 @@ test_suite.run(
 
 Let's break this down...
 
-We configure the `evidently_test_step` using parameters that you would normally pass to the Evidently `TestSuite` object to [configure and run an Evidently test suite](https://docs.evidentlyai.com/user-guide/tests-and-reports/custom-test-suite) . It consists of the following fields:
+We configure the `evidently_test_step` using parameters that you would normally pass to the Evidently `TestSuite` object to [configure and run an Evidently test suite](https://docs.evidentlyai.com/docs/library/tests) . It consists of the following fields:
 
-* `column_mapping`: This is an `EvidentlyColumnMapping` object that is the exact equivalent of [the `ColumnMapping` object in Evidently](https://docs.evidentlyai.com/user-guide/input-data/column-mapping). It is used to describe the columns in the dataset and how they should be treated (e.g. as categorical, numerical, or text features).
+* `column_mapping`: This is an `EvidentlyColumnMapping` object that is the exact equivalent of [the `ColumnMapping` object in Evidently](https://docs.evidentlyai.com/docs/library/data_definition). It is used to describe the columns in the dataset and how they should be treated (e.g. as categorical, numerical, or text features).
 * `tests`: This is a list of `EvidentlyTestConfig` objects that are used to configure the tests that will be run as part of your test suite in a declarative way. This is the same as configuring the `tests` that go in the Evidently `TestSuite`.
 * `download_nltk_data`: This is a boolean that is used to indicate whether the NLTK data should be downloaded. This is only needed if you are using Evidently tests or test presets that handle text data, which require the NLTK data to be downloaded ahead of time.
 
@@ -360,7 +360,7 @@ There are several ways you can reference the Evidently tests when configuring `E
 As can be seen in the example, there are two basic ways of adding tests to your Evidently test step configuration:
 
 * to add a single test or test preset: call `EvidentlyTestConfig.test` with an Evidently test or test preset class name (or class path or class). The rest of the parameters are the same ones that you would usually pass to the Evidently test or test preset class constructor.
-* to generate multiple tests, similar to calling [the Evidently column test generator](https://docs.evidentlyai.com/user-guide/tests-and-reports/test-metric-generator#column-test-generator): call `EvidentlyTestConfig.test_generator` with an Evidently test or test preset class name (or class path or class) and a list of column names. The rest of the parameters are the same ones that you would usually pass to the Evidently test or test preset class constructor.
+* to generate multiple tests, similar to calling [the Evidently column test generator](https://docs.evidentlyai.com/docs/library/metric_generator): call `EvidentlyTestConfig.test_generator` with an Evidently test or test preset class name (or class path or class) and a list of column names. The rest of the parameters are the same ones that you would usually pass to the Evidently test or test preset class constructor.
 
 The ZenML Evidently test step can then be inserted into your pipeline where it can take in two datasets and outputs the Evidently test suite results generated in both JSON and HTML formats, e.g.:
 
@@ -385,9 +385,9 @@ For a version of the same step that works with a single dataset, simply don't pa
 text_data_test(reference_dataset=reference_dataset)
 ```
 
-You should consult [the official Evidently documentation](https://docs.evidentlyai.com/reference/all-tests) for more information on what each test is useful for and what data columns it requires as input.
+You should consult [the official Evidently documentation](https://docs.evidentlyai.com/docs/library/tests) for more information on what each test is useful for and what data columns it requires as input.
 
-The `evidently_test_step` step also allows for additional Test [options](https://docs.evidentlyai.com/user-guide/customization) to be passed to the `TestSuite` constructor e.g.:
+The `evidently_test_step` step also allows for additional Test [options](https://docs.evidentlyai.com/metrics/customize_metric) to be passed to the `TestSuite` constructor e.g.:
 
 ```python
 from zenml.integrations.evidently.steps import (

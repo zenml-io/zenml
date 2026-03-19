@@ -40,6 +40,7 @@ class StepRunInputArtifactType(StrEnum):
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
     EXTERNAL = "external"  # loaded via `ExternalArtifact(value=...)`
     LAZY_LOADED = "lazy"  # loaded via various lazy methods
+    OVERRIDE = "override"  # used when overriding step inputs
 
 
 class ArtifactSaveType(StrEnum):
@@ -88,10 +89,13 @@ class ExecutionStatus(StrEnum):
     FAILED = "failed"
     COMPLETED = "completed"
     CACHED = "cached"
+    SKIPPED = "skipped"
     # When a step that can be retried failed, its status is set to retrying.
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    PAUSED = "paused"
+    RESUMING = "resuming"
     STOPPED = "stopped"
     STOPPING = "stopping"
 
@@ -106,6 +110,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.FAILED,
             ExecutionStatus.COMPLETED,
             ExecutionStatus.CACHED,
+            ExecutionStatus.SKIPPED,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
         }
@@ -117,7 +122,11 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a successful execution.
         """
-        return self in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
+        return self in {
+            ExecutionStatus.COMPLETED,
+            ExecutionStatus.CACHED,
+            ExecutionStatus.SKIPPED,
+        }
 
     @property
     def is_failed(self) -> bool:
@@ -147,6 +156,39 @@ class ExecutionMode(StrEnum):
     FAIL_FAST = "fail_fast"
     STOP_ON_FAILURE = "stop_on_failure"
     CONTINUE_ON_FAILURE = "continue_on_failure"
+
+
+class RunWaitConditionType(StrEnum):
+    """Supported wait condition types."""
+
+    EXTERNAL_INPUT = "external_input"
+
+
+class RunWaitConditionStatus(StrEnum):
+    """Lifecycle states for a wait condition."""
+
+    PENDING = "pending"
+    RESOLVED = "resolved"
+
+
+class RunWaitConditionResolution(StrEnum):
+    """Resolution outcomes for resolved wait conditions."""
+
+    CONTINUE = "continue"
+    ABORT = "abort"
+
+
+class RunWaitConditionLeaseMode(StrEnum):
+    """Supported lease update modes for wait-condition polling."""
+
+    REFRESH = "refresh"
+    # Finalize the lease and release it. If the wait condition has been resolved
+    # in the meantime, the poller is responsible for continuing the run.
+    FINALIZE = "finalize"
+    # The poller instance is no longer able to continue the run (due to an
+    # error, etc.). If the wait condition has been resolved in the meantime,
+    # the server should try resuming the run.
+    ABANDON = "abandon"
 
 
 class StackComponentType(StrEnum):
@@ -420,6 +462,7 @@ class MetadataResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
     SCHEDULE = "schedule"
+    WAIT_CONDITION = "wait_condition"
 
 
 class VisualizationResourceTypes(StrEnum):
@@ -479,22 +522,6 @@ class DatabaseBackupStrategy(StrEnum):
     MYDUMPER = "mydumper"
     # Use a custom backup engine
     CUSTOM = "custom"
-
-
-class PluginType(StrEnum):
-    """All possible types of Plugins."""
-
-    EVENT_SOURCE = "event_source"
-    ACTION = "action"
-
-
-class PluginSubType(StrEnum):
-    """All possible types of Plugins."""
-
-    # Event Source Subtypes
-    WEBHOOK = "webhook"
-    # Action Subtypes
-    PIPELINE_RUN = "pipeline_run"
 
 
 class OnboardingStep(StrEnum):
@@ -571,8 +598,34 @@ class StepRuntime(StrEnum):
     ISOLATED = "isolated"
 
 
+class StepType(StrEnum):
+    """All supported step types."""
+
+    TOOL_CALL = "tool_call"
+    LLM_CALL = "llm_call"
+
+
 class GroupType(StrEnum):
     """Enum representing different types of group."""
 
     MANUAL = "manual"
     MAP = "map"
+
+
+class TriggerType(StrEnum):
+    """Enum representing fundamental trigger types."""
+
+    SCHEDULE = "schedule"  # TODO: Extend with Webhook
+
+
+class TriggerFlavor(StrEnum):
+    """Enum representing trigger flavors."""
+
+    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors
+
+
+class TriggerRunConcurrency(StrEnum):
+    """Enum representing trigger run concurrency."""
+
+    SKIP = "skip"
+    SUBMIT = "submit"

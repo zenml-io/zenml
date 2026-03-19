@@ -105,7 +105,7 @@ ZenML skills work with tools that support the Agent Skills format:
 | [OpenCode](https://github.com/opencode-ai/opencode) | Open source AI agent | Native skills support |
 | [Amp](https://amp.dev) | AI coding assistant | Agent Skills integration |
 | [Cursor](https://cursor.sh) | AI-powered IDE | Via settings configuration |
-| [Gemini CLI](https://github.com/google/gemini-cli) | Google's terminal agent | Skills support |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google's terminal agent | Skills support |
 
 ### Installing ZenML skills
 
@@ -115,7 +115,9 @@ ZenML skills work with tools that support the Agent Skills format:
 # Add the ZenML marketplace (one-time setup)
 /plugin marketplace add zenml-io/skills
 
-# Install available skills
+# Install any available skill (repeat for each skill you want)
+/plugin install zenml-scoping@zenml
+/plugin install zenml-pipeline-authoring@zenml
 /plugin install zenml-quick-wins@zenml
 ```
 
@@ -126,10 +128,60 @@ ZenML skills work with tools that support the Agent Skills format:
 codex plugin add zenml-io/skills
 
 # Install skills
+codex plugin install zenml-scoping@zenml
+codex plugin install zenml-pipeline-authoring@zenml
 codex plugin install zenml-quick-wins@zenml
 ```
 
 ### Available skills
+
+| Skill | What it's for | When to use it |
+|-------|---------------|----------------|
+| `zenml-scoping` | Structured interview to turn a big ML/LLM idea into a realistic multi-pipeline ZenML architecture | When requirements are fuzzy, ambitious, or likely "too much in one pipeline" |
+| `zenml-pipeline-authoring` | Hands-on guidance to write/refactor ZenML steps/pipelines, config, Docker settings, materializers, metadata, secrets, and visualizations | When you're actively implementing a pipeline (or debugging "works local, fails on cloud") |
+| `zenml-quick-wins` | Repo/stack-aware recommendations of high-impact ZenML improvements, then guided implementation | When you already have a project and want best-practice upgrades fast |
+
+#### `zenml-scoping`
+
+Scopes and decomposes ML workflow ideas into realistic ZenML pipeline architectures through an in-depth interview process. Produces a `pipeline_architecture.md` spec you can implement incrementally.
+
+**Use when:**
+- You have an "end-to-end" idea (ingest → train → deploy → monitor → retrain) and need a sane MVP
+- You're unsure what should be one pipeline vs multiple pipelines
+- You want explicit cross-pipeline data flow (e.g., via the Model Control Plane)
+
+**What it does:**
+1. Interviews you to capture goals, data sources, and operational needs
+2. Classifies components (pipeline vs deployed pipeline vs not-a-pipeline)
+3. Produces a decomposed architecture with an MVP recommendation (`pipeline_architecture.md`)
+
+**Example prompts:**
+```
+Use zenml-scoping to turn my idea into a realistic ZenML pipeline architecture and write pipeline_architecture.md.
+
+Use zenml-scoping to decide whether this should be one pipeline or multiple pipelines, and propose the MVP.
+```
+
+#### `zenml-pipeline-authoring`
+
+Authors ZenML pipelines with steps, artifacts, Docker settings, materializers, metadata logging, secrets management, YAML configuration, and custom visualizations.
+
+**Use when:**
+- You want to write or refactor ZenML `@step` / `@pipeline` code with correct artifact flow and typing
+- You're implementing dynamic pipelines (`@pipeline(dynamic=True)`)
+- You're moving from local to remote execution (Kubernetes / Vertex / SageMaker) and hit portability issues
+
+**What it does:**
+1. Clarifies requirements (static vs dynamic, local vs remote, data sources, custom types)
+2. Guides step/pipeline structure and artifact flow
+3. Helps with configuration (YAML), Docker settings, materializers, metadata, and secrets
+
+**Example prompts:**
+```
+Use zenml-pipeline-authoring to implement the MVP pipeline described in pipeline_architecture.md.
+
+Use zenml-pipeline-authoring to refactor this pipeline so it works on Kubernetes/Vertex/SageMaker (fix artifact flow + Docker settings).
+```
 
 #### `zenml-quick-wins`
 
@@ -161,7 +213,6 @@ See the [Quick Wins guide](../user-guide/best-practices/quick-wins.md) for the f
 
 We're developing additional skills to help with common ZenML workflows:
 
-- **Pipeline creation** - Scaffolding new pipelines from templates
 - **Stack setup** - Guided stack component configuration
 - **Debugging** - Investigating pipeline failures and performance issues
 - **Migration** - Migrating from other MLOps platforms and orchestrators to ZenML

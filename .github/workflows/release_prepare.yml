@@ -216,6 +216,7 @@ jobs:
           - cloud: aws
           - cloud: azure
           - cloud: gcp
+          - cloud: kubernetes_aws
     steps:
       - name: Free disk space
         run: |

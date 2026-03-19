@@ -827,6 +827,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         batch_api=self._k8s_batch_api,
                         namespace=self.config.kubernetes_namespace,
                         job_manifest=job_manifest,
+                        api_request_timeout=settings.api_request_timeout,
                     )
 
                     if settings.synchronous:
@@ -842,6 +843,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                                 backoff_interval=settings.job_monitoring_interval,
                                 fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                                 stream_logs=True,
+                                api_request_timeout=settings.api_request_timeout,
                             )
 
                         return SubmissionResult(
@@ -937,6 +939,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             batch_api=self._k8s_batch_api,
             namespace=self.config.kubernetes_namespace,
             job_manifest=job_manifest,
+            api_request_timeout=settings.api_request_timeout,
         )
 
     def get_isolated_step_status(
@@ -958,6 +961,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
+                api_request_timeout=self.config.api_request_timeout,
             )
         except Exception as e:
             logger.warning(
@@ -993,6 +997,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
+                api_request_timeout=self.config.api_request_timeout,
             )
         except Exception as e:
             logger.warning(
@@ -1059,6 +1064,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     core_api=self._k8s_core_api,
                     pod_name=pod_name,
                     namespace=self.config.kubernetes_namespace,
+                    api_request_timeout=self.config.api_request_timeout,
                 )
             except Exception as e:
                 logger.warning(
@@ -1100,6 +1106,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
+                api_request_timeout=self.config.api_request_timeout,
             )
         except Exception as e:
             raise RuntimeError(
@@ -1192,6 +1199,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
+                api_request_timeout=self.config.api_request_timeout,
             )
         except Exception as e:
             logger.warning(f"Failed to list jobs for run {run.id}: {e}")

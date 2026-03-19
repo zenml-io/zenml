@@ -291,6 +291,20 @@ class BaseOrchestrator(StackComponent, ABC):
         # in the orchestrator environment
         base_environment.update(secrets)
 
+        if placeholder_run and placeholder_run.original_run:
+            from zenml.execution.pipeline.utils import (
+                skip_steps_and_prune_snapshot,
+            )
+
+            run_required = skip_steps_and_prune_snapshot(
+                snapshot=snapshot,
+                pipeline_run=placeholder_run,
+            )
+
+            if not run_required:
+                self._cleanup_run()
+                return
+
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
         )
@@ -452,6 +466,52 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
+    def resume_run(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        run: "PipelineRunResponse",
+        stack: "Stack",
+        force_async: bool = False,
+    ) -> None:
+        """Resume an existing dynamic pipeline run.
+
+        Args:
+            snapshot: Snapshot backing the run.
+            run: Existing pipeline run to resume.
+            stack: Stack used for the resume.
+            force_async: Whether to skip waiting for submission completion.
+
+        Raises:
+            RuntimeError: If the snapshot does not represent a dynamic pipeline.
+        """
+        if not snapshot.is_dynamic:
+            raise RuntimeError("Cannot resume a non-dynamic pipeline.")
+
+        self._prepare_run(snapshot=snapshot)
+
+        base_environment, secrets = get_config_environment_vars(
+            pipeline_run_id=run.id,
+        )
+        base_environment.update(secrets)
+
+        try:
+            submission_result = self.submit_dynamic_pipeline(
+                snapshot=snapshot,
+                stack=stack,
+                environment=base_environment,
+                placeholder_run=run,
+            )
+
+            if submission_result:
+                if submission_result.metadata:
+                    # TODO: Do we somehow prefix the metadata here
+                    pass
+
+                if submission_result.wait_for_completion and not force_async:
+                    submission_result.wait_for_completion()
+        finally:
+            self._cleanup_run()
+
     def run_step(
         self,
         step: "Step",
@@ -532,11 +592,16 @@ class BaseOrchestrator(StackComponent, ABC):
             f"the {self.__class__.__name__} orchestrator."
         )
 
-    def wait_for_isolated_step(self, step_run: "StepRunResponse") -> None:
+    def wait_for_isolated_step(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
         """Wait for an isolated step run to complete.
 
         Args:
             step_run: The step run.
+
+        Returns:
+            The final status of the isolated step run.
         """
         sleep_interval = 1
         max_sleep_interval = 16
@@ -556,8 +621,8 @@ class BaseOrchestrator(StackComponent, ABC):
                     Client().get_run_step(step_run.id, hydrate=False).status
                 )
 
-            if status.is_finished:
-                return
+            if status.is_finished or status == ExecutionStatus.RETRYING:
+                return status
 
             logger.debug(
                 "Waiting for isolated step with ID %s to finish (current "
