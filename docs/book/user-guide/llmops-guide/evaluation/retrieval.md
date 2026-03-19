@@ -2,6 +2,11 @@
 description: See how the retrieval component responds to changes in the pipeline.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Retrieval evaluation
 
 The retrieval component of our RAG pipeline is responsible for finding relevant

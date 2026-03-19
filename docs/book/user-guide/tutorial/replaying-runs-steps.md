@@ -118,6 +118,11 @@ train.replay(pipeline="training_pipeline", invocation_id="train_2")
 
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## Debug mode
 
 Both pipeline and step replays accept `debug=True`. This runs the replay
