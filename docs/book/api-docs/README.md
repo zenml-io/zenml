@@ -4,6 +4,11 @@ description: >-
   available in the Python SDK.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Overview
 
 Welcome to the ZenML API documentation. This guide provides information about both the open-source (OSS) and Pro API endpoints available in the ZenML platform.

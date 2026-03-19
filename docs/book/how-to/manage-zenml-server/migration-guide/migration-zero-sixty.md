@@ -2,6 +2,11 @@
 description: How to migrate from ZenML 0.58.2 to 0.60.0 (Pydantic 2 edition).
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Release Notes
 
 ZenML now uses Pydantic v2. 🥳
