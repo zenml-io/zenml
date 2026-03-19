@@ -598,6 +598,16 @@ You have the option of using [a custom implementation of the secrets store API](
    secretEnvironment:
      ZENML_SECRETS_STORE_SECRET_OPTION_3: value3
      ZENML_SECRETS_STORE_SECRET_OPTION_4: value4
+
+   # Extra environment variables to set in the ZenML server container that
+   # are injected from external secret references.
+    environmentSecretKeyRefs:
+      - name: ZENML_SECRETS_STORE_OPTION_5
+        secretName: my-existing-secret
+        secretKey: key_name_not_value5
+      - name: ZENML_SECRETS_STORE_OPTION_6
+        secretName: my-existing-secret
+        secretKey: key_name_not_value6
 ```
 {% endtab %}
 {% endtabs %}

@@ -468,7 +468,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequest:
         name="sample_run_name",
         config=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
-        status=ExecutionStatus.COMPLETED,
+        status=ExecutionStatus.RUNNING,
         user=uuid4(),
         project=uuid4(),
         snapshot=uuid4(),

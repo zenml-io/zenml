@@ -18,7 +18,7 @@ import random
 import time
 import uuid
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
+from datetime import datetime, timedelta
 from string import ascii_lowercase
 from threading import Thread
 from typing import Dict, List, Optional, Tuple, Union
@@ -70,6 +70,10 @@ from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
     ModelStages,
+    RunWaitConditionLeaseMode,
+    RunWaitConditionResolution,
+    RunWaitConditionStatus,
+    RunWaitConditionType,
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
@@ -117,6 +121,9 @@ from zenml.models import (
     ProjectUpdate,
     RunMetadataRequest,
     RunMetadataResource,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
     ScheduleRequest,
     ServiceAccountFilter,
     ServiceAccountRequest,
@@ -3076,6 +3083,259 @@ def test_run_metadata_filtering(clean_client):
         assert av.run_metadata["blupus"] < 30
 
 
+def _create_dynamic_pipeline_run(
+    clean_client: "Client",
+) -> PipelineRunResponse:
+    store = clean_client.zen_store
+    project_id = clean_client.active_project.id
+
+    pipeline_model = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("dynamic-pipeline"),
+            project=project_id,
+        )
+    )
+
+    step_name = sample_name("dynamic-step")
+    snapshot = store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=project_id,
+            run_name_template=sample_name("dynamic-run"),
+            pipeline_configuration=PipelineConfiguration(
+                name=sample_name("dynamic-config")
+            ),
+            pipeline=pipeline_model.id,
+            stack=clean_client.active_stack.id,
+            client_version="0.1.0",
+            server_version="0.1.0",
+            step_configurations={
+                step_name: Step(
+                    spec=StepSpec(
+                        source=Source(
+                            module="acme.dynamic_step",
+                            type=SourceType.INTERNAL,
+                        ),
+                        upstream_steps=[],
+                    ),
+                    config=StepConfiguration(name=step_name),
+                )
+            },
+            is_dynamic=True,
+        )
+    )
+
+    run, _ = store.get_or_create_run(
+        PipelineRunRequest(
+            project=project_id,
+            id=uuid4(),
+            name=sample_name("dynamic-run"),
+            snapshot=snapshot.id,
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+    return run
+
+
+def test_finalize_wait_condition_lease_pauses_run_if_wait_condition_pending(
+    clean_client: "Client",
+):
+    store = clean_client.zen_store
+    run = _create_dynamic_pipeline_run(clean_client)
+    condition = store.create_run_wait_condition(
+        RunWaitConditionRequest(
+            project=clean_client.active_project.id,
+            run=run.id,
+            name=sample_name("wait-condition"),
+            type=RunWaitConditionType.EXTERNAL_INPUT,
+        )
+    )
+
+    status = store.update_run_wait_condition_lease(
+        run_wait_condition_id=condition.id,
+        lease_update=RunWaitConditionLeaseUpdate(
+            poller_instance_id="poller-1",
+            poller_lease_expires_at=datetime.utcnow(),
+            mode=RunWaitConditionLeaseMode.FINALIZE,
+        ),
+    )
+
+    assert status == RunWaitConditionStatus.PENDING
+    updated_run = store.get_run(run.id)
+    updated_condition = store.get_run_wait_condition(condition.id)
+    assert updated_run.status == ExecutionStatus.PAUSED
+    assert updated_condition.status == RunWaitConditionStatus.PENDING
+    assert updated_condition.poller_instance_id is None
+
+
+def test_finalize_wait_condition_does_not_resume_run_from_server(
+    clean_client: "Client",
+):
+    store = clean_client.zen_store
+    run = _create_dynamic_pipeline_run(clean_client)
+    condition = store.create_run_wait_condition(
+        RunWaitConditionRequest(
+            project=clean_client.active_project.id,
+            run=run.id,
+            name=sample_name("wait-condition"),
+            type=RunWaitConditionType.EXTERNAL_INPUT,
+        )
+    )
+
+    store.update_run_wait_condition_lease(
+        run_wait_condition_id=condition.id,
+        lease_update=RunWaitConditionLeaseUpdate(
+            poller_instance_id="poller-1",
+            poller_lease_expires_at=datetime.utcnow() + timedelta(minutes=1),
+        ),
+    )
+    with patch.object(
+        store,
+        "_attempt_resume_run_from_server",
+        autospec=False,
+    ) as resume_mock:
+        store.resolve_run_wait_condition(
+            run_wait_condition_id=condition.id,
+            resolve_request=RunWaitConditionResolveRequest(
+                resolution=RunWaitConditionResolution.CONTINUE,
+            ),
+        )
+
+        status = store.update_run_wait_condition_lease(
+            run_wait_condition_id=condition.id,
+            lease_update=RunWaitConditionLeaseUpdate(
+                poller_instance_id="poller-1",
+                poller_lease_expires_at=datetime.utcnow(),
+                mode=RunWaitConditionLeaseMode.FINALIZE,
+            ),
+        )
+
+    assert status == RunWaitConditionStatus.RESOLVED
+    resume_mock.assert_not_called()
+
+
+def test_abandon_wait_condition_lease_pauses_run_if_wait_condition_pending(
+    clean_client: "Client",
+):
+    store = clean_client.zen_store
+    run = _create_dynamic_pipeline_run(clean_client)
+    condition = store.create_run_wait_condition(
+        RunWaitConditionRequest(
+            project=clean_client.active_project.id,
+            run=run.id,
+            name=sample_name("wait-condition"),
+            type=RunWaitConditionType.EXTERNAL_INPUT,
+        )
+    )
+
+    status = store.update_run_wait_condition_lease(
+        run_wait_condition_id=condition.id,
+        lease_update=RunWaitConditionLeaseUpdate(
+            poller_instance_id="poller-1",
+            poller_lease_expires_at=datetime.utcnow(),
+            mode=RunWaitConditionLeaseMode.ABANDON,
+        ),
+    )
+
+    assert status == RunWaitConditionStatus.PENDING
+    updated_run = store.get_run(run.id)
+    assert updated_run.status == ExecutionStatus.PAUSED
+
+
+def test_abandon_wait_condition_lease_attempts_resume_for_resolved_run(
+    clean_client: "Client",
+):
+    store = clean_client.zen_store
+    run = _create_dynamic_pipeline_run(clean_client)
+    condition = store.create_run_wait_condition(
+        RunWaitConditionRequest(
+            project=clean_client.active_project.id,
+            run=run.id,
+            name=sample_name("wait-condition"),
+            type=RunWaitConditionType.EXTERNAL_INPUT,
+        )
+    )
+
+    store.update_run_wait_condition_lease(
+        run_wait_condition_id=condition.id,
+        lease_update=RunWaitConditionLeaseUpdate(
+            poller_instance_id="poller-1",
+            poller_lease_expires_at=datetime.utcnow() + timedelta(minutes=1),
+        ),
+    )
+    store.resolve_run_wait_condition(
+        run_wait_condition_id=condition.id,
+        resolve_request=RunWaitConditionResolveRequest(
+            resolution=RunWaitConditionResolution.CONTINUE,
+        ),
+    )
+
+    with patch.object(
+        store,
+        "_attempt_resume_run_from_server",
+        autospec=False,
+    ) as resume_mock:
+        status = store.update_run_wait_condition_lease(
+            run_wait_condition_id=condition.id,
+            lease_update=RunWaitConditionLeaseUpdate(
+                poller_instance_id="poller-1",
+                poller_lease_expires_at=datetime.utcnow(),
+                mode=RunWaitConditionLeaseMode.ABANDON,
+            ),
+        )
+
+    assert status == RunWaitConditionStatus.RESOLVED
+    resume_mock.assert_called_once_with(run_id=run.id)
+
+
+def test_create_wait_condition_is_idempotent_while_pending(
+    clean_client: "Client",
+):
+    store = clean_client.zen_store
+    run = _create_dynamic_pipeline_run(clean_client)
+    request = RunWaitConditionRequest(
+        project=clean_client.active_project.id,
+        run=run.id,
+        name=sample_name("wait-condition"),
+        type=RunWaitConditionType.EXTERNAL_INPUT,
+        question="Need approval?",
+        metadata={"owner": "alice"},
+    )
+
+    first_condition = store.create_run_wait_condition(request)
+    second_condition = store.create_run_wait_condition(request)
+
+    assert second_condition.id == first_condition.id
+    assert second_condition.status == RunWaitConditionStatus.PENDING
+    assert second_condition.run_metadata == first_condition.run_metadata
+    assert second_condition.run_metadata == {"owner": "alice"}
+
+
+def test_resolve_wait_condition_rejects_result_without_schema(
+    clean_client: "Client",
+):
+    store = clean_client.zen_store
+    run = _create_dynamic_pipeline_run(clean_client)
+    condition = store.create_run_wait_condition(
+        RunWaitConditionRequest(
+            project=clean_client.active_project.id,
+            run=run.id,
+            name=sample_name("wait-condition"),
+            type=RunWaitConditionType.EXTERNAL_INPUT,
+        )
+    )
+
+    with pytest.raises(
+        IllegalOperationError,
+    ):
+        store.resolve_run_wait_condition(
+            run_wait_condition_id=condition.id,
+            resolve_request=RunWaitConditionResolveRequest(
+                resolution=RunWaitConditionResolution.CONTINUE,
+                result="value",
+            ),
+        )
+
+
 # .--------------------.
 # | Pipeline run steps |
 # '--------------------'
@@ -5632,6 +5892,39 @@ class TestRunMetadata:
                     is_dynamic=False,
                 )
             )
+        elif type_ == MetadataResourceTypes.WAIT_CONDITION:
+            snapshot = client.zen_store.create_snapshot(
+                PipelineSnapshotRequest(
+                    project=client.active_project.id,
+                    run_name_template=sample_name("foo"),
+                    pipeline_configuration=PipelineConfiguration(
+                        name=sample_name("foo")
+                    ),
+                    stack=client.active_stack.id,
+                    pipeline=pipeline_model.id,
+                    client_version="0.1.0",
+                    server_version="0.1.0",
+                    step_configurations={},
+                    is_dynamic=True,
+                )
+            )
+            pr, _ = client.zen_store.get_or_create_run(
+                PipelineRunRequest(
+                    project=client.active_project.id,
+                    id=uuid4(),
+                    name=sample_name("foo"),
+                    snapshot=snapshot.id,
+                    status=ExecutionStatus.RUNNING,
+                )
+            )
+            resource = client.zen_store.create_run_wait_condition(
+                RunWaitConditionRequest(
+                    project=client.active_project.id,
+                    run=pr.id,
+                    name=sample_name("wait-condition"),
+                    type=RunWaitConditionType.EXTERNAL_INPUT,
+                )
+            )
         else:
             raise ValueError("Unknown/untested MetadataResourceType.")
 
@@ -5687,16 +5980,69 @@ class TestRunMetadata:
         (ExecutionStatus.FAILED, ExecutionStatus.FAILED),
     ],
 )
-def test_updating_the_pipeline_run_status(step_status, expected_run_status):
+def test_updating_the_pipeline_run_status(
+    step_status, expected_run_status, clean_client
+):
     """Tests updating the status of a pipeline run."""
-    run_context = PipelineRunContext(1)
-    with run_context:
-        Client().zen_store.update_run_step(
-            step_run_id=run_context.steps[-1].id,
-            step_run_update=StepRunUpdate(status=step_status),
+    project_id = clean_client.active_project.id
+    pipeline_model = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("pipeline"),
+            project=project_id,
         )
-        run_status = Client().get_pipeline_run(run_context.runs[-1].id).status
-        assert run_status == expected_run_status
+    )
+    step_name = sample_name("step")
+    snapshot = clean_client.zen_store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=project_id,
+            run_name_template=sample_name("run"),
+            pipeline_configuration=PipelineConfiguration(
+                name=sample_name("pipeline-config")
+            ),
+            pipeline=pipeline_model.id,
+            stack=clean_client.active_stack.id,
+            client_version="0.1.0",
+            server_version="0.1.0",
+            step_configurations={
+                step_name: Step(
+                    spec=StepSpec(
+                        source=Source(
+                            module="some.step", type=SourceType.INTERNAL
+                        ),
+                        upstream_steps=[],
+                    ),
+                    config=StepConfiguration(name=step_name),
+                )
+            },
+            is_dynamic=False,
+        )
+    )
+
+    pipeline_run, _ = clean_client.zen_store.get_or_create_run(
+        PipelineRunRequest(
+            project=project_id,
+            id=uuid4(),
+            name=sample_name("run"),
+            snapshot=snapshot.id,
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+    step_run = clean_client.zen_store.create_run_step(
+        StepRunRequest(
+            project=project_id,
+            name=step_name,
+            status=ExecutionStatus.RUNNING,
+            pipeline_run_id=pipeline_run.id,
+            start_time=datetime.now(),
+        )
+    )
+
+    clean_client.zen_store.update_run_step(
+        step_run_id=step_run.id,
+        step_run_update=StepRunUpdate(status=step_status),
+    )
+    run_status = clean_client.get_pipeline_run(pipeline_run.id).status
+    assert run_status == expected_run_status
 
 
 @step
