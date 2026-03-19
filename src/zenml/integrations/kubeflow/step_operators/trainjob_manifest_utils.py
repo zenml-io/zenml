@@ -83,8 +83,17 @@ def _build_env_entries(
     ]
 
 
-def _flatten_multi_proc_trainer_spec(trainer_spec: Dict[str, Any]) -> None:
-    """Flattens a multi-process setup to one process per Trainer pod."""
+def _flatten_multi_proc_trainer_spec(
+    trainer_spec: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Flattens a multi-process setup to one process per Trainer pod.
+
+    Args:
+        trainer_spec: The trainer spec dict (not modified).
+
+    Returns:
+        A new trainer spec dict with flattened process configuration.
+    """
     # Each ZenML Trainer pod runs exactly one process — there is no
     # torchrun wrapper to spawn extra workers inside a pod.  When the
     # user requests numProcPerNode > 1, the intent is to have that many
@@ -104,10 +113,12 @@ def _flatten_multi_proc_trainer_spec(trainer_spec: Dict[str, Any]) -> None:
             effective_nproc,
             total_workers,
         )
-        trainer_spec["numNodes"] = total_workers
-        trainer_spec["numProcPerNode"] = 1
 
-        rpn = trainer_spec.get("resourcesPerNode") or {}
+        result = copy.deepcopy(trainer_spec)
+        result["numNodes"] = total_workers
+        result["numProcPerNode"] = 1
+
+        rpn = result.get("resourcesPerNode") or {}
         gpu_request = (rpn.get("requests") or {}).get("nvidia.com/gpu")
         if gpu_request:
             logger.warning(
@@ -120,6 +131,7 @@ def _flatten_multi_proc_trainer_spec(trainer_spec: Dict[str, Any]) -> None:
                 total_workers * int(gpu_request),
                 int(gpu_request),
             )
+        return result
     elif (
         effective_num_nodes is not None
         and effective_num_nodes > 1
@@ -134,6 +146,7 @@ def _flatten_multi_proc_trainer_spec(trainer_spec: Dict[str, Any]) -> None:
             effective_num_nodes,
             effective_nproc,
         )
+    return copy.deepcopy(trainer_spec)
 
 
 def _build_trainer_spec(
@@ -178,7 +191,7 @@ def _build_trainer_spec(
             trainer_spec["numProcPerNode"]
         )
 
-    _flatten_multi_proc_trainer_spec(trainer_spec)
+    trainer_spec = _flatten_multi_proc_trainer_spec(trainer_spec)
     return trainer_spec
 
 

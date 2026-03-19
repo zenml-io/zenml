@@ -14,14 +14,15 @@
 """Kubeflow Trainer v2 step operator implementation."""
 
 import os
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+import time
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
 from kubernetes.client.exceptions import ApiException
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubeflow.flavors import (
     KubeflowTrainerStepOperatorConfig,
     KubeflowTrainerStepOperatorSettings,
@@ -36,9 +37,7 @@ from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_operator_n
     sanitize_kubernetes_name,
 )
 from zenml.integrations.kubeflow.step_operators.trainer_job_watcher import (
-    RunStoppedException,
-    cancel_trainjob,
-    wait_for_trainjob_to_finish,
+    get_terminal_trainjob_status,
 )
 from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
     TRAINJOB_GROUP,
@@ -47,6 +46,7 @@ from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
     build_trainjob_manifest,
 )
 from zenml.logger import get_logger
+from zenml.models import StepRunResponse
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
@@ -62,7 +62,8 @@ logger = get_logger(__name__)
 KUBEFLOW_TRAINER_STEP_OPERATOR_DOCKER_IMAGE_KEY = (
     "kubeflow_trainer_step_operator"
 )
-_sanitize_kubernetes_name = sanitize_kubernetes_name
+
+_STEP_RUN_ID_LABEL = "zenml.io/step-run-id"
 
 
 class KubeflowTrainerStepOperator(BaseStepOperator):
@@ -203,7 +204,7 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
 
         return self._k8s_client
 
-    def _get_k8s_custom_objects_api(
+    def _get_custom_objects_api(
         self, settings: KubeflowTrainerStepOperatorSettings
     ) -> "k8s_client.CustomObjectsApi":
         """Kubernetes CustomObjectsApi client.
@@ -215,6 +216,16 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
             CustomObjectsApi client.
         """
         return k8s_client.CustomObjectsApi(self.get_kube_client(settings))
+
+    def _get_custom_objects_api_from_config(
+        self,
+    ) -> "k8s_client.CustomObjectsApi":
+        """Kubernetes CustomObjectsApi using component config for auth.
+
+        Returns:
+            CustomObjectsApi client.
+        """
+        return self._get_custom_objects_api(self.config)
 
     def _resolve_namespace(
         self, settings: KubeflowTrainerStepOperatorSettings
@@ -243,6 +254,40 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
                     return inferred_namespace
 
         return settings.kubernetes_namespace
+
+    def _find_trainjob(
+        self, step_run: StepRunResponse
+    ) -> Optional[Dict[str, Any]]:
+        """Finds a TrainJob by step run ID label.
+
+        API errors are allowed to propagate so the base ``wait()`` can
+        fall back to querying the ZenML server for step status.
+
+        Args:
+            step_run: The step run to look up.
+
+        Returns:
+            The TrainJob resource dict, or None if not found.
+        """
+        custom_objects_api = self._get_custom_objects_api_from_config()
+        namespace = self._resolve_namespace(self.config)
+        label_selector = (
+            f"{_STEP_RUN_ID_LABEL}="
+            f"{sanitize_kubernetes_name(str(step_run.id))}"
+        )
+        result = custom_objects_api.list_namespaced_custom_object(
+            group=TRAINJOB_GROUP,
+            version=TRAINJOB_VERSION,
+            namespace=namespace,
+            plural=TRAINJOB_PLURAL,
+            label_selector=label_selector,
+        )
+
+        items = result.get("items", [])
+        if not items:
+            return None
+        trainjob: Dict[str, Any] = items[0]
+        return trainjob
 
     def _delete_trainjob(
         self,
@@ -274,13 +319,17 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
                 return
             raise
 
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launches a step using Kubeflow Trainer v2.
+        """Submits a step as a Kubeflow Trainer v2 TrainJob.
+
+        Creates the TrainJob resource and returns immediately without
+        waiting for completion. The framework calls ``wait()`` and
+        ``get_status()`` to monitor progress.
 
         Args:
             info: Step run information.
@@ -291,7 +340,7 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
             KubeflowTrainerStepOperatorSettings,
             self.get_settings(info),
         )
-        custom_objects_api = self._get_k8s_custom_objects_api(settings)
+        custom_objects_api = self._get_custom_objects_api(settings)
 
         image_name = settings.image or info.get_image(
             key=KUBEFLOW_TRAINER_STEP_OPERATOR_DOCKER_IMAGE_KEY
@@ -307,11 +356,22 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
             run_name=str(info.run_name),
             pipeline_name=info.pipeline.name,
             step_name=info.pipeline_step_name,
+            step_run_id=str(info.step_run_id),
         )
         annotations = build_trainjob_annotations(
             operator_id=str(self.id),
             step_name=info.pipeline_step_name,
         )
+
+        if info.config.outputs:
+            logger.warning(
+                "Step `%s` has %d configured output(s), but only the "
+                "primary (rank-0) replica will publish artifacts. "
+                "Worker replicas will execute user code without "
+                "materializing outputs.",
+                info.pipeline_step_name,
+                len(info.config.outputs),
+            )
 
         trainjob_manifest = build_trainjob_manifest(
             trainjob_name=trainjob_name,
@@ -349,26 +409,148 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
             body=trainjob_manifest,
         )
 
-        try:
-            wait_for_trainjob_to_finish(
-                step_run_id=info.step_run_id,
-                custom_objects_api=custom_objects_api,
-                namespace=namespace,
-                name=trainjob_name,
-                poll_interval_seconds=settings.poll_interval_seconds,
-                timeout_seconds=settings.timeout_seconds,
+    def get_status(self, step_run: StepRunResponse) -> ExecutionStatus:
+        """Gets the execution status of a submitted TrainJob.
+
+        Args:
+            step_run: The step run to check.
+
+        Returns:
+            The current execution status.
+        """
+        trainjob = self._find_trainjob(step_run)
+        if trainjob is None:
+            logger.warning(
+                "No TrainJob found for step run `%s`.", step_run.id
             )
-        except RunStoppedException:
-            cancel_trainjob(
-                custom_objects_api=custom_objects_api,
-                namespace=namespace,
-                name=trainjob_name,
-            )
-            raise RunStoppedException("Step run was cancelled, cancelling TrainJob.")
-        finally:
-            if settings.delete_trainjob_after_completion:
-                self._delete_trainjob(
-                    custom_objects_api=custom_objects_api,
-                    namespace=namespace,
-                    trainjob_name=trainjob_name,
+            return ExecutionStatus.FAILED
+
+        terminal = get_terminal_trainjob_status(trainjob)
+        if terminal is None:
+            return ExecutionStatus.RUNNING
+
+        is_success, details = terminal
+        if is_success:
+            return ExecutionStatus.COMPLETED
+
+        logger.warning("TrainJob for step `%s` failed: %s", step_run.id, details)
+        return ExecutionStatus.FAILED
+
+    def wait(self, step_run: StepRunResponse) -> ExecutionStatus:
+        """Waits for a TrainJob to finish, respecting configured timeout.
+
+        Uses the component's ``poll_interval_seconds`` and
+        ``timeout_seconds`` settings instead of the base class's
+        hardcoded exponential backoff.
+
+        Args:
+            step_run: The step run to wait for.
+
+        Returns:
+            The final execution status.
+
+        Raises:
+            TimeoutError: If ``timeout_seconds`` is set and exceeded.
+        """
+        poll_interval = self.config.poll_interval_seconds
+        timeout = self.config.timeout_seconds
+        start_time = time.time()
+
+        while True:
+            try:
+                status = self.get_status(step_run)
+            except Exception as e:
+                logger.error(
+                    "Failed to get status of step run `%s`: %s",
+                    step_run.id,
+                    e,
                 )
+                from zenml.client import Client
+
+                status = (
+                    Client()
+                    .get_run_step(step_run.id, hydrate=False)
+                    .status
+                )
+
+            if status.is_finished or status == ExecutionStatus.RETRYING:
+                break
+
+            if timeout is not None:
+                elapsed = time.time() - start_time
+                if elapsed > timeout:
+                    self.cancel(step_run)
+                    raise TimeoutError(
+                        f"Waiting for TrainJob timed out after "
+                        f"{timeout} seconds."
+                    )
+
+            logger.debug(
+                "Waiting for step run `%s` to finish (status: %s).",
+                step_run.id,
+                status,
+            )
+            time.sleep(poll_interval)
+
+        if self.config.delete_trainjob_after_completion:
+            self._find_and_delete_trainjob(step_run)
+
+        return status
+
+    def cancel(self, step_run: StepRunResponse) -> None:
+        """Cancels a running TrainJob by suspending it.
+
+        Args:
+            step_run: The step run to cancel.
+        """
+        trainjob = self._find_trainjob(step_run)
+        if trainjob is None:
+            logger.warning(
+                "No TrainJob found for step run `%s` to cancel.",
+                step_run.id,
+            )
+            return
+
+        trainjob_name = trainjob.get("metadata", {}).get("name", "")
+        namespace = self._resolve_namespace(self.config)
+        custom_objects_api = self._get_custom_objects_api_from_config()
+
+        try:
+            custom_objects_api.patch_namespaced_custom_object(
+                group=TRAINJOB_GROUP,
+                version=TRAINJOB_VERSION,
+                namespace=namespace,
+                plural=TRAINJOB_PLURAL,
+                name=trainjob_name,
+                body={"spec": {"suspend": True}},
+            )
+            logger.info("Suspended TrainJob `%s`.", trainjob_name)
+        except ApiException as e:
+            logger.warning(
+                "Failed to suspend TrainJob `%s` (HTTP %s): %s",
+                trainjob_name,
+                e.status,
+                e.reason,
+            )
+
+    def _find_and_delete_trainjob(
+        self, step_run: StepRunResponse
+    ) -> None:
+        """Finds and deletes a TrainJob for a step run.
+
+        Args:
+            step_run: The step run whose TrainJob should be deleted.
+        """
+        trainjob = self._find_trainjob(step_run)
+        if trainjob is None:
+            return
+
+        trainjob_name = trainjob.get("metadata", {}).get("name", "")
+        namespace = self._resolve_namespace(self.config)
+        custom_objects_api = self._get_custom_objects_api_from_config()
+
+        self._delete_trainjob(
+            custom_objects_api=custom_objects_api,
+            namespace=namespace,
+            trainjob_name=trainjob_name,
+        )

@@ -30,6 +30,8 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+_SERVER_POLL_CADENCE = 6
+
 _SUCCESS_CONDITIONS = {"complete"}
 _FAILURE_CONDITIONS = {"failed", "suspended"}
 _SUCCESS_PHASES = {"succeeded", "complete", "completed"}
@@ -140,14 +142,21 @@ def wait_for_trainjob_to_finish(
     """
     start_time = time.time()
     client = Client()
+    iteration = 0
 
     while True:
-        step_run_status = client.get_run_step(step_run_id)
-        if step_run_status.status in (
-            ExecutionStatus.STOPPING,
-            ExecutionStatus.STOPPED,
-        ):
-            raise RunStoppedException("Step run was cancelled, cancelling TrainJob.")
+        iteration += 1
+
+        if iteration % _SERVER_POLL_CADENCE == 0:
+            step_run_status = client.get_run_step(step_run_id)
+            if step_run_status.status in (
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+            ):
+                raise RunStoppedException(
+                    "Step run was cancelled, cancelling TrainJob."
+                )
+
         trainjob = custom_objects_api.get_namespaced_custom_object(
             group=TRAINJOB_GROUP,
             version=TRAINJOB_VERSION,

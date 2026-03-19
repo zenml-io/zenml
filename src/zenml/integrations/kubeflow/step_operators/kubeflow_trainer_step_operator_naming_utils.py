@@ -67,6 +67,7 @@ def build_trainjob_labels(
     run_name: str,
     pipeline_name: str,
     step_name: str,
+    step_run_id: str,
 ) -> Dict[str, str]:
     """Builds standard labels for Kubeflow Trainer TrainJobs.
 
@@ -76,16 +77,18 @@ def build_trainjob_labels(
         run_name: Pipeline run name.
         pipeline_name: Pipeline name.
         step_name: Pipeline step name.
+        step_run_id: Step run ID used for status lookups.
 
     Returns:
         Sanitized label dictionary.
     """
     return {
-        "project_id": sanitize_kubernetes_name(project_id),
-        "run_id": sanitize_kubernetes_name(run_id),
-        "run_name": sanitize_kubernetes_name(run_name),
-        "pipeline": sanitize_kubernetes_name(pipeline_name),
-        "step_name": sanitize_kubernetes_name(step_name),
+        "zenml.io/project-id": sanitize_kubernetes_name(project_id),
+        "zenml.io/run-id": sanitize_kubernetes_name(run_id),
+        "zenml.io/run-name": sanitize_kubernetes_name(run_name),
+        "zenml.io/pipeline": sanitize_kubernetes_name(pipeline_name),
+        "zenml.io/step-name": sanitize_kubernetes_name(step_name),
+        "zenml.io/step-run-id": sanitize_kubernetes_name(step_run_id),
     }
 
 
@@ -102,6 +105,6 @@ def build_trainjob_annotations(
         Annotation dictionary.
     """
     return {
-        "zenml.step_operator": operator_id,
-        "zenml.step_name": step_name,
+        "zenml.io/step-operator": operator_id,
+        "zenml.io/step-name": step_name,
     }

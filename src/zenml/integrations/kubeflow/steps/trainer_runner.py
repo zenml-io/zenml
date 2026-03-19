@@ -20,7 +20,7 @@ from zenml.integrations.kubeflow import KUBEFLOW_TRAINER_STEP_OPERATOR_FLAVOR
 from zenml.integrations.kubeflow.flavors import (
     KubeflowTrainerStepOperatorSettings,
 )
-from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
+from zenml.integrations.kubeflow.step_operators.trainjob_value_utils import (
     deep_merge_dicts,
 )
 from zenml.logger import get_logger

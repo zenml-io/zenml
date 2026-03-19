@@ -143,7 +143,7 @@ class KubeflowTrainerStepOperatorSettings(BaseSettings):
         Returns:
             Normalized value.
         """
-        from zenml.integrations.kubeflow.step_operators.trainjob_manifest_utils import (
+        from zenml.integrations.kubeflow.step_operators.trainjob_value_utils import (
             normalize_num_proc_per_node,
         )
 

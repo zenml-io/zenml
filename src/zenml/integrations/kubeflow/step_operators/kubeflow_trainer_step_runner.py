@@ -14,9 +14,11 @@
 """Kubeflow Trainer-specific step runner with distributed side-effect gating."""
 
 import inspect
-from typing import TYPE_CHECKING, Dict, List
+from contextlib import nullcontext
+from typing import TYPE_CHECKING, Any, ContextManager, Dict, List
 
 from zenml.integrations.kubeflow.step_operators.distributed_utils import (
+    get_global_rank,
     is_primary_distributed_replica,
 )
 from zenml.logger import get_logger
@@ -24,6 +26,10 @@ from zenml.orchestrators.step_runner import StepRunner
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import parse_return_type_annotations
 from zenml.utils import env_utils
+from zenml.utils.logging_utils import (
+    is_step_logging_enabled,
+    setup_logging_context,
+)
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -89,9 +95,12 @@ class KubeflowTrainerStepRunner(StepRunner):
 
         This path intentionally avoids ZenML run-state and artifact publishing.
         It mirrors the execution portion of ``StepRunner.run`` while skipping
-        logging setup, heartbeat, hooks, artifact storage, and status
-        publishing.  If ``StepRunner.run`` gains a public extension point for
-        skipping publish side-effects, this method should be replaced.
+        heartbeat, hooks, artifact storage, and status publishing.  If
+        ``StepRunner.run`` gains a public extension point for skipping publish
+        side-effects, this method should be replaced.
+
+        # SYNC-WITH: StepRunner.run() — if the base class gains new required
+        # setup steps, this method must be updated accordingly.
 
         Args:
             pipeline_run: The model of the current pipeline run.
@@ -100,66 +109,81 @@ class KubeflowTrainerStepRunner(StepRunner):
             output_artifact_uris: Output artifact URIs for this execution.
             step_run_info: Runtime information for the step run.
         """
-        step_instance = self._load_step()
-        output_materializers = self._load_output_materializers()
+        rank = get_global_rank()
+        source = f"worker-{rank}" if rank is not None else "worker"
 
-        spec = inspect.getfullargspec(inspect.unwrap(step_instance.entrypoint))
-        output_annotations = parse_return_type_annotations(
-            func=step_instance.entrypoint
-        )
+        logs_context: ContextManager[Any] = nullcontext()
+        if is_step_logging_enabled(
+            step_configuration=step_run.config,
+            pipeline_configuration=pipeline_run.config,
+        ):
+            logs_context = setup_logging_context(
+                source=source,
+                step_run=step_run,
+                pipeline_run=pipeline_run,
+            )
 
-        self._evaluate_artifact_names_in_collections(
-            step_run,
-            output_annotations,
-            [
-                output_artifact_uris,
-                output_materializers,
-            ],
-        )
+        with logs_context:
+            step_instance = self._load_step()
+            output_materializers = self._load_output_materializers()
 
-        self._stack.prepare_step_run(info=step_run_info)
+            spec = inspect.getfullargspec(
+                inspect.unwrap(step_instance.entrypoint)
+            )
+            output_annotations = parse_return_type_annotations(
+                func=step_instance.entrypoint
+            )
 
-        step_context = StepContext(
-            pipeline_run=pipeline_run,
-            step_run=step_run,
-            output_materializers=output_materializers,
-            output_artifact_uris=output_artifact_uris,
-            output_artifact_configs={
-                key: value.artifact_config
-                for key, value in output_annotations.items()
-            },
-        )
+            self._evaluate_artifact_names_in_collections(
+                step_run,
+                output_annotations,
+                [
+                    output_artifact_uris,
+                    output_materializers,
+                ],
+            )
 
-        step_failed = False
-        try:
-            with step_context:
-                function_params = self._parse_inputs(
-                    args=spec.args,
-                    annotations=spec.annotations,
-                    input_artifacts=input_artifacts,
-                )
+            self._stack.prepare_step_run(info=step_run_info)
 
-                step_environment = env_utils.get_runtime_environment(
-                    config=step_run.config,
-                    stack=self._stack,
-                )
-                secret_environment = env_utils.get_runtime_secret_environment(
-                    config=step_run.config,
-                    stack=self._stack,
-                )
-                step_environment.update(secret_environment)
+            step_context = StepContext(
+                pipeline_run=pipeline_run,
+                step_run=step_run,
+                output_materializers=output_materializers,
+                output_artifact_uris=output_artifact_uris,
+                output_artifact_configs={
+                    key: value.artifact_config
+                    for key, value in output_annotations.items()
+                },
+            )
 
-                with env_utils.temporary_environment(step_environment):
-                    return_values = step_instance.call_entrypoint(
-                        **function_params
+            step_failed = False
+            try:
+                with step_context:
+                    function_params = self._parse_inputs(
+                        args=spec.args,
+                        annotations=spec.annotations,
+                        input_artifacts=input_artifacts,
                     )
 
-                self._validate_outputs(return_values, output_annotations)
-        except BaseException:  # noqa: E722
-            step_failed = True
-            raise
-        finally:
-            self._stack.cleanup_step_run(
-                info=step_run_info,
-                step_failed=step_failed,
-            )
+                    step_environment = env_utils.get_runtime_environment(
+                        config=step_run.config,
+                        stack=self._stack,
+                    )
+                    secret_environment = (
+                        env_utils.get_runtime_secret_environment(
+                            config=step_run.config,
+                            stack=self._stack,
+                        )
+                    )
+                    step_environment.update(secret_environment)
+
+                    with env_utils.temporary_environment(step_environment):
+                        step_instance.call_entrypoint(**function_params)
+            except BaseException:  # noqa: E722
+                step_failed = True
+                raise
+            finally:
+                self._stack.cleanup_step_run(
+                    info=step_run_info,
+                    step_failed=step_failed,
+                )
