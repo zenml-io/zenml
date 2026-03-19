@@ -1115,6 +1115,21 @@ zenml:
   # mounted as environment variables in the ZenML server container.
   secretEnvironment: {}
 
+  # Extra environment variables sourced from existing Kubernetes secrets via
+  # valueFrom.secretKeyRef. Use this to inject sensitive values (API keys,
+  # passwords, tokens) from secrets that already exist in the cluster without
+  # committing them to values.yaml.
+  #
+  # Example:
+  #   environmentSecretKeyRefs:
+  #     - name: MY_API_KEY
+  #       secretName: my-existing-secret
+  #       secretKey: api-key
+  #     - name: DB_PASSWORD
+  #       secretName: db-credentials
+  #       secretKey: password
+  environmentSecretKeyRefs: []
+
   # Custom 'app.kubernetes.io/instance' label value to use. This is used to
   # uniquely identify the ZenML deployment in the Kubernetes cluster. All
   # resources in the deployment will be labeled with this value, if set. The
