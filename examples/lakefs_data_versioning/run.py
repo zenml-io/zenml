@@ -33,7 +33,9 @@ Usage:
 
 import argparse
 import os
+from typing import Any, Dict
 
+import yaml
 from pipelines import training_pipeline
 from utils.lakefs_utils import setup_lakefs_repo
 
@@ -77,24 +79,36 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    repo = args.lakefs_repo or os.environ.get("LAKEFS_REPO", "robot-data")
+    config_params: Dict[str, Any] = {}
+    if args.config:
+        with open(args.config) as f:
+            config_params = yaml.safe_load(f).get("parameters", {})
+
+    # LakeFS repository name - get repo name from either CLI arg, config file, or environment variable
+    repo = (
+        args.lakefs_repo
+        or config_params.get("lakefs_repo")
+        or os.environ.get("LAKEFS_REPO", "robot-data")
+    )
 
     # Ensure the LakeFS repo exists before running the pipeline
     if not args.lakefs_commit:
         setup_lakefs_repo(repo)
 
-    options = {}
+    options: Dict[str, Any] = {}
     if args.config:
         options["config_path"] = args.config
     if args.no_cache:
         options["enable_cache"] = False
 
     pipeline_instance = training_pipeline.with_options(**options)
-    pipeline_instance(
-        existing_commit=args.lakefs_commit,
-        n_rows=args.n_rows,
-        lakefs_repo=repo,
-    )
+
+    pipeline_params: Dict[str, Any] = {
+        "existing_commit": args.lakefs_commit,
+        "lakefs_repo": repo,
+        "n_rows": config_params.get("n_rows", args.n_rows),
+    }
+    pipeline_instance(**pipeline_params)
 
 
 if __name__ == "__main__":
