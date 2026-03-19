@@ -1,0 +1,2 @@
+torch>=2.2.0
+zenml[server]

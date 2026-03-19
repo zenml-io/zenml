@@ -1,0 +1,38 @@
+# ZenML pipeline config: CPU-only local run for development and smoke testing.
+#
+# No KAI-Scheduler settings — uses the default Kubernetes scheduler.
+# GPU resources are not requested so this works on any Kubernetes cluster,
+# including local kind/minikube clusters for CI and local dev.
+#
+# Usage:
+#   python run.py --config kai_demo_local.yaml
+
+model:
+  name: kai-scheduler-gpu-demo-local
+  tags:
+    - local
+    - cpu
+
+settings:
+  docker:
+    parent_image: "pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime"
+    requirements: requirements.txt
+    python_package_installer: uv
+    python_package_installer_args:
+      system: null
+
+  orchestrator.kubernetes:
+    pod_settings:
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "1"
+        limits:
+          memory: "2Gi"
+          cpu: "2"
+
+parameters:
+  matrix_size: 512
+  epochs: 2
+  batch_size: 32
+  learning_rate: 0.001

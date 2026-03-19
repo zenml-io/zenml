@@ -1,0 +1,54 @@
+# Kubernetes PriorityClasses for KAI-Scheduler workload tiers.
+#
+# KAI-Scheduler respects standard Kubernetes PriorityClass objects.
+# Higher value = higher priority. KAI combines this with queue fair-share
+# to determine scheduling order and preemption decisions.
+#
+# Usage:
+#   kubectl apply -f k8s/priority-classes.yaml
+#
+# Verify:
+#   kubectl get priorityclasses | grep -E "build|train|inference"
+---
+# Low-priority: CI/build jobs that can wait.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: build
+value: 25
+globalDefault: false
+description: >
+  Low priority for CI builds and short-lived jobs.
+  These can be preempted by training or inference workloads.
+---
+# Standard training priority — default for most ZenML pipeline steps.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: train
+value: 50
+globalDefault: false
+description: >
+  Standard priority for model training pipelines.
+  Preempts 'build' workloads; yields to 'train-high' and 'inference'.
+---
+# High-priority training — for time-sensitive retraining jobs.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: train-high
+value: 75
+globalDefault: false
+description: >
+  High priority for urgent model retraining. Preempts 'train' and 'build'.
+---
+# Inference serving — highest priority, should rarely be preempted.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: inference
+value: 100
+globalDefault: false
+description: >
+  Highest priority for live inference services.
+  These pods are non-preemptible in normal operation.

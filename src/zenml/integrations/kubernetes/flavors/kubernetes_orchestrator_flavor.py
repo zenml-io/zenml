@@ -21,6 +21,7 @@ from pydantic import (
     PositiveFloat,
     PositiveInt,
     field_validator,
+    model_validator,
 )
 
 from zenml.config.base_settings import BaseSettings
@@ -185,6 +186,102 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=None,
         description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
     )
+
+    # --- KAI-Scheduler settings ---
+    kai_queue: Optional[str] = Field(
+        default=None,
+        description="KAI-Scheduler leaf queue name. When set, enables KAI-Scheduler "
+        "integration: sets schedulerName to 'kai-scheduler' and adds the "
+        "kai.scheduler/queue label to all step pods. Example: 'default-queue'",
+    )
+    kai_gpu_fraction: Optional[float] = Field(
+        default=None,
+        description="GPU time-slice fraction for KAI GPU sharing (0.0 < value <= 1.0). "
+        "Sets the 'gpu-fraction' annotation on pods. Example: 0.5 for half a GPU. "
+        "Mutually exclusive with kai_gpu_memory",
+        gt=0.0,
+        le=1.0,
+    )
+    kai_gpu_memory: Optional[int] = Field(
+        default=None,
+        description="GPU memory in MiB for KAI GPU sharing. Sets the 'gpu-memory' "
+        "annotation on pods. Example: 4096 for 4 GiB. "
+        "Mutually exclusive with kai_gpu_fraction",
+        gt=0,
+    )
+    kai_priority_class: Optional[str] = Field(
+        default=None,
+        description="Kubernetes PriorityClass name for KAI scheduling. Applied to "
+        "both the pod priorityClassName and the PodGroup when created. "
+        "Example: 'train-high-priority'",
+    )
+    kai_preemptibility: Optional[str] = Field(
+        default=None,
+        description="KAI preemptibility setting for the PodGroup. "
+        "Valid values: 'preemptible' or 'non-preemptible'. "
+        "Only used when kai_pod_group_name is set",
+    )
+    kai_pod_group_name: Optional[str] = Field(
+        default=None,
+        description="Name of a KAI PodGroup CRD to create for gang scheduling. "
+        "When set, a PodGroup is created before job submission so all pods "
+        "are scheduled as a unit. Example: 'my-pipeline-run-group'",
+    )
+    kai_pod_group_min_members: Optional[int] = Field(
+        default=None,
+        description="Minimum number of pods required for the KAI PodGroup gang "
+        "scheduling gate. Requires kai_pod_group_name. Defaults to 1 when a "
+        "PodGroup is created without this field",
+        ge=1,
+    )
+    kai_topology_constraint: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="KAI topology constraint dict for the PodGroup. Controls "
+        "placement of pods relative to hardware topology. "
+        "Example: {'requiredTopologyLevel': 'rack', 'topology': 'cluster-topology'}. "
+        "Requires kai_pod_group_name",
+    )
+
+    @model_validator(mode="after")
+    def _validate_kai_settings(
+        self,
+    ) -> "KubernetesOrchestratorSettings":
+        """Validates KAI-Scheduler field combinations.
+
+        Returns:
+            The validated settings instance.
+
+        Raises:
+            ValueError: If incompatible KAI field combinations are set.
+        """
+        if self.kai_gpu_fraction is not None and self.kai_gpu_memory is not None:
+            raise ValueError(
+                "kai_gpu_fraction and kai_gpu_memory are mutually exclusive. "
+                "Set only one GPU sharing mode."
+            )
+        if (
+            self.kai_pod_group_min_members is not None
+            and self.kai_pod_group_name is None
+        ):
+            raise ValueError(
+                "kai_pod_group_min_members requires kai_pod_group_name to be set."
+            )
+        if (
+            self.kai_preemptibility is not None
+            and self.kai_preemptibility not in {"preemptible", "non-preemptible"}
+        ):
+            raise ValueError(
+                "kai_preemptibility must be 'preemptible' or 'non-preemptible', "
+                f"got '{self.kai_preemptibility}'."
+            )
+        if (
+            self.kai_topology_constraint is not None
+            and self.kai_pod_group_name is None
+        ):
+            raise ValueError(
+                "kai_topology_constraint requires kai_pod_group_name to be set."
+            )
+        return self
 
     # Deprecated fields
     timeout: Optional[int] = Field(

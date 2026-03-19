@@ -17,6 +17,15 @@
 """Kubernetes orchestrator constants."""
 
 ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
+
+# KAI-Scheduler constants
+KAI_SCHEDULER_NAME = "kai-scheduler"
+KAI_QUEUE_LABEL_KEY = "kai.scheduler/queue"
+KAI_GPU_FRACTION_ANNOTATION_KEY = "gpu-fraction"
+KAI_GPU_MEMORY_ANNOTATION_KEY = "gpu-memory"
+KAI_PODGROUP_API_GROUP = "scheduling.run.ai"
+KAI_PODGROUP_API_VERSION = "v2alpha2"
+KAI_PODGROUP_PLURAL = "podgroups"
 KUBERNETES_SECRET_TOKEN_KEY_NAME = "zenml_api_token"
 KUBERNETES_CRON_JOB_METADATA_KEY = "cron_job_name"
 # Annotation keys

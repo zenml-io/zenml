@@ -1,0 +1,73 @@
+# ZenML pipeline config: GPU workload with KAI-Scheduler queue assignment.
+#
+# Prerequisites:
+#   1. KAI-Scheduler installed in your cluster (see k8s/README instructions).
+#   2. Queues applied: kubectl apply -f k8s/queues.yaml
+#   3. Priority classes applied: kubectl apply -f k8s/priority-classes.yaml
+#   4. A ZenML stack registered with the Kubernetes orchestrator.
+#
+# Usage:
+#   python run.py --config kai_demo.yaml
+
+model:
+  name: kai-scheduler-gpu-demo
+  tags:
+    - kai-scheduler
+    - gpu
+    - kubecon-demo
+
+settings:
+  docker:
+    # CUDA 11.8 + PyTorch 2.2 runtime image — matches requirements.txt.
+    parent_image: "pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime"
+    requirements: requirements.txt
+    python_package_installer: uv
+    python_package_installer_args:
+      system: null
+
+  orchestrator.kubernetes:
+    # ── KAI-Scheduler integration ─────────────────────────────────────────
+    # Setting kai_queue activates KAI: sets schedulerName=kai-scheduler and
+    # adds the kai.scheduler/queue label to every step pod automatically.
+    kai_queue: "default-queue"
+
+    # PriorityClass applied to both the pod and the PodGroup (if created).
+    kai_priority_class: "train"
+
+    # ── Gang scheduling via PodGroup (optional) ───────────────────────────
+    # Uncomment to enable gang scheduling: KAI will only allocate resources
+    # when all pods in the group can be scheduled simultaneously.
+    #
+    # kai_pod_group_name: "kai-demo-group"
+    # kai_pod_group_min_members: 2
+    # kai_preemptibility: "preemptible"
+
+    # ── Pod-level settings ────────────────────────────────────────────────
+    pod_settings:
+      # scheduler_name is set automatically by kai_queue, but you can
+      # override it explicitly here if needed.
+      # scheduler_name: kai-scheduler
+
+      resources:
+        requests:
+          memory: "4Gi"
+          cpu: "2"
+          nvidia.com/gpu: "1"
+        limits:
+          memory: "8Gi"
+          cpu: "4"
+          nvidia.com/gpu: "1"
+
+      node_selectors:
+        accelerator: nvidia-gpu
+
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+parameters:
+  matrix_size: 4096
+  epochs: 5
+  batch_size: 64
+  learning_rate: 0.001

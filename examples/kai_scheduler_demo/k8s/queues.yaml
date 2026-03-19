@@ -1,0 +1,66 @@
+# KAI-Scheduler Queue CRDs for the ZenML + KAI demo.
+#
+# This file sets up a two-level queue hierarchy:
+#   root-queue  (cluster root, no quota limit)
+#     └── default-queue  (leaf queue for ZenML workloads, GPU quota = 8)
+#
+# Usage:
+#   kubectl apply -f k8s/queues.yaml
+#
+# Verify queue creation:
+#   kubectl get queues.scheduling.run.ai
+#
+# Reference: https://docs.run.ai/latest/Researcher/scheduling/the-runai-scheduler/
+---
+apiVersion: scheduling.run.ai/v2
+kind: Queue
+metadata:
+  name: root-queue
+spec:
+  # Root queues have no parent and act as the scheduling domain root.
+  displayName: "Root Queue"
+  quota:
+    gpu: 32
+    cpu: 128
+    memory: "512Gi"
+  overQuotaWeight: 1
+---
+apiVersion: scheduling.run.ai/v2
+kind: Queue
+metadata:
+  name: default-queue
+spec:
+  displayName: "ZenML Default Queue"
+  # Parent queue — must match the root queue's name.
+  parentQueue: root-queue
+  # Guaranteed GPU quota for this queue.
+  quota:
+    gpu: 8
+    cpu: 32
+    memory: "128Gi"
+  # When resources are available above quota, this queue gets this weight
+  # relative to sibling queues for over-quota allocation (fair-share).
+  overQuotaWeight: 1
+  # Hard cap: never exceed this regardless of availability.
+  limit:
+    gpu: 16
+    cpu: 64
+    memory: "256Gi"
+---
+# Optional: a separate queue for high-priority production workloads.
+apiVersion: scheduling.run.ai/v2
+kind: Queue
+metadata:
+  name: prod-queue
+spec:
+  displayName: "ZenML Production Queue"
+  parentQueue: root-queue
+  quota:
+    gpu: 4
+    cpu: 16
+    memory: "64Gi"
+  overQuotaWeight: 2
+  limit:
+    gpu: 8
+    cpu: 32
+    memory: "128Gi"

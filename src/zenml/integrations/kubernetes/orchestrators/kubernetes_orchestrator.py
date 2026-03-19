@@ -60,6 +60,10 @@ from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
+    KAI_GPU_FRACTION_ANNOTATION_KEY,
+    KAI_GPU_MEMORY_ANNOTATION_KEY,
+    KAI_QUEUE_LABEL_KEY,
+    KAI_SCHEDULER_NAME,
     KUBERNETES_CRON_JOB_METADATA_KEY,
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
     ORCHESTRATOR_ANNOTATION_KEY,
@@ -223,6 +227,72 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The Kubernetes RBAC API client.
         """
         return k8s_client.RbacAuthorizationV1Api(self.get_kube_client())
+
+    @property
+    def _k8s_custom_api(self) -> k8s_client.CustomObjectsApi:
+        """Getter for the Kubernetes Custom Objects API client.
+
+        Used to create KAI-Scheduler PodGroup CRDs and other custom resources.
+
+        Returns:
+            The Kubernetes Custom Objects API client.
+        """
+        return k8s_client.CustomObjectsApi(self.get_kube_client())
+
+    def _apply_kai_settings_to_pod_settings(
+        self,
+        settings: KubernetesOrchestratorSettings,
+        pod_settings: Optional[KubernetesPodSettings],
+    ) -> Optional[KubernetesPodSettings]:
+        """Merges KAI-Scheduler fields into pod settings immutably.
+
+        When `kai_queue` is set on the orchestrator settings, this method
+        returns a new `KubernetesPodSettings` with:
+        - `scheduler_name` set to 'kai-scheduler' (unless already overridden)
+        - `labels` extended with the KAI queue label
+        - `annotations` extended with GPU sharing annotations if configured
+        - `additional_pod_spec_args` extended with `priority_class_name` if set
+
+        When `kai_queue` is not set, the original `pod_settings` is returned
+        unchanged so non-KAI pipelines are completely unaffected.
+
+        Args:
+            settings: The orchestrator settings for this step or pipeline.
+            pod_settings: Existing pod settings to extend, or None.
+
+        Returns:
+            A new KubernetesPodSettings with KAI fields merged in, or the
+            original `pod_settings` when KAI is not enabled.
+        """
+        if not settings.kai_queue:
+            return pod_settings
+
+        base = pod_settings or KubernetesPodSettings()
+
+        merged_labels = {**(base.labels or {}), KAI_QUEUE_LABEL_KEY: settings.kai_queue}
+
+        merged_annotations = dict(base.annotations or {})
+        if settings.kai_gpu_fraction is not None:
+            merged_annotations[KAI_GPU_FRACTION_ANNOTATION_KEY] = str(
+                settings.kai_gpu_fraction
+            )
+        elif settings.kai_gpu_memory is not None:
+            merged_annotations[KAI_GPU_MEMORY_ANNOTATION_KEY] = str(
+                settings.kai_gpu_memory
+            )
+
+        merged_pod_spec_args = dict(base.additional_pod_spec_args or {})
+        if settings.kai_priority_class:
+            merged_pod_spec_args["priority_class_name"] = settings.kai_priority_class
+
+        return base.model_copy(
+            update={
+                "scheduler_name": base.scheduler_name or KAI_SCHEDULER_NAME,
+                "labels": merged_labels,
+                "annotations": merged_annotations,
+                "additional_pod_spec_args": merged_pod_spec_args,
+            }
+        )
 
     @property
     def config(self) -> KubernetesOrchestratorConfig:
@@ -739,9 +809,22 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         settings = cast(
             KubernetesOrchestratorSettings, self.get_settings(snapshot)
         )
-        orchestrator_pod_settings = (
-            settings.orchestrator_pod_settings or KubernetesPodSettings()
-        )
+        orchestrator_pod_settings = self._apply_kai_settings_to_pod_settings(
+            settings,
+            settings.orchestrator_pod_settings or KubernetesPodSettings(),
+        ) or KubernetesPodSettings()
+
+        if settings.kai_pod_group_name and settings.kai_queue:
+            kube_utils.create_kai_pod_group(
+                custom_api=self._k8s_custom_api,
+                namespace=self.config.kubernetes_namespace,
+                name=settings.kai_pod_group_name,
+                queue=settings.kai_queue,
+                min_member=settings.kai_pod_group_min_members or 1,
+                priority_class_name=settings.kai_priority_class,
+                preemptibility=settings.kai_preemptibility,
+                topology_constraint=settings.kai_topology_constraint,
+            )
 
         try:
             image = self.get_image(snapshot=snapshot)
@@ -928,7 +1011,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             labels=labels,
             annotations=annotations,
             settings=settings,
-            pod_settings=settings.pod_settings,
+            pod_settings=self._apply_kai_settings_to_pod_settings(
+                settings, settings.pod_settings
+            ),
             # In the dynamic pipeline case, we can't handle retries at the
             # orchestrator level because the entrypoint args contain a step
             # run ID.

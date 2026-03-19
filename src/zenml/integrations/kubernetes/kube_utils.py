@@ -57,6 +57,9 @@ from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
+    KAI_PODGROUP_API_GROUP,
+    KAI_PODGROUP_API_VERSION,
+    KAI_PODGROUP_PLURAL,
     STEP_NAME_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
@@ -1442,5 +1445,133 @@ def build_service_url(
             f"service/{service_name} 8080:{service_port}"
         )
         return f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
+
+
+def create_kai_pod_group(
+    custom_api: k8s_client.CustomObjectsApi,
+    namespace: str,
+    name: str,
+    queue: str,
+    min_member: int = 1,
+    priority_class_name: Optional[str] = None,
+    preemptibility: Optional[str] = None,
+    topology_constraint: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """Create a KAI-Scheduler PodGroup CRD for gang scheduling.
+
+    A PodGroup groups pods so the KAI scheduler treats them as a unit,
+    only allocating resources when at least `min_member` pods can be
+    scheduled simultaneously (gang scheduling).
+
+    Args:
+        custom_api: Kubernetes CustomObjectsApi client.
+        namespace: Namespace to create the PodGroup in.
+        name: PodGroup name. Must be unique within the namespace.
+        queue: KAI leaf queue name the pods belong to.
+        min_member: Minimum number of pods required to start the group.
+        priority_class_name: Kubernetes PriorityClass for the group.
+        preemptibility: KAI preemptibility — 'preemptible' or
+            'non-preemptible'. Controls whether higher-priority workloads
+            can evict this group's pods.
+        topology_constraint: Dict with topology placement constraints.
+            Keys: 'requiredTopologyLevel' (e.g. 'node', 'rack') and
+            'topology' (topology CR name). Both keys are required when
+            this argument is provided.
+
+    Returns:
+        The created PodGroup object dict.
+
+    Raises:
+        ApiException: On API failure. A 409 (AlreadyExists) is logged
+            and re-raised so the caller can decide whether to ignore it.
+    """
+    spec: Dict[str, Any] = {
+        "minMember": min_member,
+        "queue": queue,
+    }
+    if priority_class_name:
+        spec["priorityClassName"] = priority_class_name
+    if preemptibility:
+        spec["preemptibility"] = preemptibility
+    if topology_constraint:
+        spec["topologyConstraint"] = topology_constraint
+
+    body = {
+        "apiVersion": f"{KAI_PODGROUP_API_GROUP}/{KAI_PODGROUP_API_VERSION}",
+        "kind": "PodGroup",
+        "metadata": {"name": name, "namespace": namespace},
+        "spec": spec,
+    }
+
+    try:
+        result = custom_api.create_namespaced_custom_object(
+            group=KAI_PODGROUP_API_GROUP,
+            version=KAI_PODGROUP_API_VERSION,
+            namespace=namespace,
+            plural=KAI_PODGROUP_PLURAL,
+            body=body,
+        )
+        logger.info(
+            "Created KAI PodGroup '%s' in namespace '%s' "
+            "(queue=%s, minMember=%d).",
+            name,
+            namespace,
+            queue,
+            min_member,
+        )
+        return result  # type: ignore[no-any-return]
+    except ApiException as e:
+        if e.status == 409:
+            logger.warning(
+                "KAI PodGroup '%s' already exists in namespace '%s', "
+                "skipping creation.",
+                name,
+                namespace,
+            )
+            return {}
+        error_body = json.loads(e.body or "{}")
+        raise ApiException(
+            status=e.status,
+            reason=(
+                f"Failed to create KAI PodGroup '{name}': "
+                f"{e.reason} — {error_body.get('message', '')}"
+            ),
+        ) from e
+
+
+def delete_kai_pod_group(
+    custom_api: k8s_client.CustomObjectsApi,
+    namespace: str,
+    name: str,
+) -> None:
+    """Delete a KAI-Scheduler PodGroup CRD.
+
+    Args:
+        custom_api: Kubernetes CustomObjectsApi client.
+        namespace: Namespace the PodGroup lives in.
+        name: PodGroup name to delete.
+    """
+    try:
+        custom_api.delete_namespaced_custom_object(
+            group=KAI_PODGROUP_API_GROUP,
+            version=KAI_PODGROUP_API_VERSION,
+            namespace=namespace,
+            plural=KAI_PODGROUP_PLURAL,
+            name=name,
+        )
+        logger.info(
+            "Deleted KAI PodGroup '%s' from namespace '%s'.", name, namespace
+        )
+    except ApiException as e:
+        if e.status == 404:
+            logger.debug(
+                "KAI PodGroup '%s' not found in namespace '%s', nothing to delete.",
+                name,
+                namespace,
+            )
+        else:
+            logger.warning(
+                "Failed to delete KAI PodGroup '%s': %s", name, e
+            )
 
     return None

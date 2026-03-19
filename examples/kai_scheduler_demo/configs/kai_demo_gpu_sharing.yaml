@@ -1,0 +1,63 @@
+# ZenML pipeline config: GPU time-slicing (fractional GPU) via KAI-Scheduler.
+#
+# This config demonstrates KAI-Scheduler's GPU sharing feature. Instead of
+# requesting a full nvidia.com/gpu, each pod requests a fraction of a GPU.
+# KAI allocates the GPU and enforces the fraction as a time-slice.
+#
+# Use this when multiple workloads share a single physical GPU to maximise
+# hardware utilization across teams.
+#
+# Prerequisites:
+#   1. KAI-Scheduler with GPU sharing enabled in your cluster.
+#   2. Queues applied: kubectl apply -f k8s/queues.yaml
+#
+# Usage:
+#   python run.py --config kai_demo_gpu_sharing.yaml
+
+model:
+  name: kai-scheduler-gpu-sharing-demo
+  tags:
+    - kai-scheduler
+    - gpu-sharing
+    - kubecon-demo
+
+settings:
+  docker:
+    parent_image: "pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime"
+    requirements: requirements.txt
+    python_package_installer: uv
+    python_package_installer_args:
+      system: null
+
+  orchestrator.kubernetes:
+    kai_queue: "default-queue"
+
+    # Request 50% of a GPU via KAI time-slicing.
+    # This adds the annotation: gpu-fraction=0.5 to each pod.
+    # KAI enforces the fraction as a GPU time-slice; no nvidia.com/gpu
+    # resource request is needed — KAI handles the GPU allocation.
+    kai_gpu_fraction: 0.5
+
+    # Alternatively, use kai_gpu_memory to request a fixed amount of GPU
+    # memory in MiB (mutually exclusive with kai_gpu_fraction):
+    # kai_gpu_memory: 4096
+
+    pod_settings:
+      resources:
+        requests:
+          memory: "2Gi"
+          cpu: "1"
+        limits:
+          memory: "4Gi"
+          cpu: "2"
+
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+parameters:
+  matrix_size: 2048
+  epochs: 3
+  batch_size: 32
+  learning_rate: 0.001
