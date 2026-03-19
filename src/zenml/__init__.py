@@ -13,8 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization for ZenML."""
 
+from importlib.metadata import entry_points
 import os
 from typing import Any
+
+def _run_init_hooks() -> None:
+    """Runs installed ZenML init hooks."""
+    for entrypoint in entry_points().select(group="zenml.init_hooks"):
+        entrypoint.load()()
+
+_run_init_hooks()
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
