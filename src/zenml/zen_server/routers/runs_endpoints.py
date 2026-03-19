@@ -26,6 +26,7 @@ from zenml.constants import (
     LOGS_RUNNER_SOURCE,
     PIPELINE_CONFIGURATION,
     REFRESH,
+    RESUME,
     RUNS,
     STATUS,
     STEPS,
@@ -54,6 +55,7 @@ from zenml.zen_server.auth import (
     AuthContext,
     authorize,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
@@ -559,3 +561,38 @@ def disable_run_heartbeat(
     verify_permission_for_model(run, action=Action.UPDATE)
 
     zen_store().disable_run_heartbeat(run_id=run_id)
+
+
+if server_config().workload_manager_enabled:
+
+    @router.post(
+        "/{run_id}" + RESUME,
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
+    )
+    @async_fastapi_endpoint_wrapper
+    def resume_run(
+        run_id: UUID,
+        _: AuthContext = Security(authorize),
+    ) -> None:
+        """Resumes a specific pipeline run.
+
+        Args:
+            run_id: ID of the run to resume.
+
+        Raises:
+            IllegalOperationError: If the run is not paused.
+        """
+        run = zen_store().get_run(run_id, hydrate=True)
+        verify_permission_for_model(run, action=Action.READ)
+
+        if run.status != ExecutionStatus.PAUSED:
+            raise IllegalOperationError(
+                "Cannot resume a run that is not paused."
+            )
+
+        verify_permission_for_model(run, action=Action.UPDATE)
+        zen_store()._attempt_resume_run_from_server(run_id)
