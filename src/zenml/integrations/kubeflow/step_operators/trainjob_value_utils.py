@@ -14,7 +14,7 @@
 """Value-level utilities for Kubeflow Trainer TrainJob manifest generation."""
 
 import copy
-from typing import Any, Dict, Literal, Mapping, Optional, Union
+from typing import Any, Dict, Literal, Mapping, Optional, Union, cast
 
 _MEMORY_UNIT_TO_K8S = {
     "KiB": "Ki",
@@ -122,7 +122,7 @@ def normalize_num_proc_per_node(
 
     normalized = value.strip().lower()
     if normalized in _NUM_PROC_PER_NODE_AUTO_VALUES:
-        return normalized
+        return cast(Literal["auto", "cpu", "gpu"], normalized)
 
     if normalized.isdigit():
         parsed = int(normalized)

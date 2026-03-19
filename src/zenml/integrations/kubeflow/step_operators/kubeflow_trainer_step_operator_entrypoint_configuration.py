@@ -18,6 +18,9 @@ from typing import TYPE_CHECKING
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
+from zenml.entrypoints.step_entrypoint_configuration import (
+    STEP_NAME_OPTION,
+)
 from zenml.integrations.kubeflow.step_operators.distributed_utils import (
     is_primary_distributed_replica,
     normalize_kubeflow_trainer_distributed_env,
@@ -27,7 +30,6 @@ from zenml.integrations.kubeflow.step_operators.kubeflow_trainer_step_runner imp
 )
 from zenml.orchestrators import input_utils, output_utils
 from zenml.step_operators.step_operator_entrypoint_configuration import (
-    STEP_NAME_OPTION,
     StepOperatorEntrypointConfiguration,
 )
 

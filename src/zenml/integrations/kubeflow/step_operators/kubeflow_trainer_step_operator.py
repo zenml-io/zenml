@@ -420,9 +420,7 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
         """
         trainjob = self._find_trainjob(step_run)
         if trainjob is None:
-            logger.warning(
-                "No TrainJob found for step run `%s`.", step_run.id
-            )
+            logger.warning("No TrainJob found for step run `%s`.", step_run.id)
             return ExecutionStatus.FAILED
 
         terminal = get_terminal_trainjob_status(trainjob)
@@ -433,7 +431,9 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
         if is_success:
             return ExecutionStatus.COMPLETED
 
-        logger.warning("TrainJob for step `%s` failed: %s", step_run.id, details)
+        logger.warning(
+            "TrainJob for step `%s` failed: %s", step_run.id, details
+        )
         return ExecutionStatus.FAILED
 
     def wait(self, step_run: StepRunResponse) -> ExecutionStatus:
@@ -468,9 +468,7 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
                 from zenml.client import Client
 
                 status = (
-                    Client()
-                    .get_run_step(step_run.id, hydrate=False)
-                    .status
+                    Client().get_run_step(step_run.id, hydrate=False).status
                 )
 
             if status.is_finished or status == ExecutionStatus.RETRYING:
@@ -533,9 +531,7 @@ class KubeflowTrainerStepOperator(BaseStepOperator):
                 e.reason,
             )
 
-    def _find_and_delete_trainjob(
-        self, step_run: StepRunResponse
-    ) -> None:
+    def _find_and_delete_trainjob(self, step_run: StepRunResponse) -> None:
         """Finds and deletes a TrainJob for a step run.
 
         Args:

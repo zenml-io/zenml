@@ -169,7 +169,8 @@ def wait_for_trainjob_to_finish(
             is_success, details = terminal_status
             if is_success:
                 logger.info("TrainJob `%s` completed successfully.", name)
-                return trainjob
+                result: Dict[str, Any] = trainjob
+                return result
             raise RuntimeError(f"TrainJob `{name}` failed: {details}")
 
         if timeout_seconds is not None:
