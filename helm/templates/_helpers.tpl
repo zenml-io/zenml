@@ -1,4 +1,17 @@
 {{/*
+Resolve server configuration values with backwards compatibility.
+
+The top-level values key was renamed from 'zenml' to 'server'. This helper
+deep-merges the legacy 'zenml' key into 'server', with 'server' taking
+precedence, so existing deployments using 'zenml:' continue to work.
+*/}}
+{{- define "zenml.serverValues" -}}
+{{- $server := deepCopy (.Values.server | default dict) -}}
+{{- $legacy := .Values.zenml | default dict -}}
+{{- merge $server $legacy | toYaml -}}
+{{- end -}}
+
+{{/*
 Expand the name of the chart.
 */}}
 {{- define "zenml.name" -}}
@@ -46,9 +59,10 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Selector labels
 */}}
 {{- define "zenml.selectorLabels" -}}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
 app.kubernetes.io/name: {{ include "zenml.name" . }}
-{{- if .Values.zenml.instanceLabel }}
-app.kubernetes.io/instance: {{ .Values.zenml.instanceLabel | quote }}
+{{- if $server.instanceLabel }}
+app.kubernetes.io/instance: {{ $server.instanceLabel | quote }}
 {{- else }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
@@ -77,21 +91,22 @@ Create the name of the service account to use
 Build the complete NO_PROXY list
 */}}
 {{- define "zenml.noProxyList" -}}
-{{- $noProxy := .Values.zenml.proxy.noProxy -}}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- $noProxy := $server.proxy.noProxy -}}
 {{- /* Add the server URL hostname */ -}}
-{{- if .Values.zenml.serverURL -}}
-{{- $serverURL := urlParse .Values.zenml.serverURL -}}
+{{- if $server.serverURL -}}
+{{- $serverURL := urlParse $server.serverURL -}}
 {{- if not (contains $serverURL.host $noProxy) -}}
 {{- $noProxy = printf "%s,%s" $noProxy $serverURL.host -}}
 {{- end -}}
 {{- end -}}
 {{- /* Add the ingress hostname if specified */ -}}
-{{- if .Values.zenml.ingress.host -}}
-{{- if not (contains .Values.zenml.ingress.host $noProxy) -}}
-{{- $noProxy = printf "%s,%s" $noProxy .Values.zenml.ingress.host -}}
+{{- if $server.ingress.host -}}
+{{- if not (contains $server.ingress.host $noProxy) -}}
+{{- $noProxy = printf "%s,%s" $noProxy $server.ingress.host -}}
 {{- end -}}
 {{- end -}}
-{{- range .Values.zenml.proxy.additionalNoProxy -}}
+{{- range $server.proxy.additionalNoProxy -}}
 {{- $noProxy = printf "%s,%s" $noProxy . -}}
 {{- end -}}
 {{- /* Add service hostnames if they're not already included */ -}}

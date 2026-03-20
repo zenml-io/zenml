@@ -6,7 +6,7 @@ fullnameOverride: ""
 
 
 # ZenML server related options.
-zenml:
+server:
 
   replicaCount: 1
 
@@ -1316,3 +1316,9 @@ affinity: {}
 #         affinity: {}
 #
 workerDeployments: {}
+
+# DEPRECATED: The 'zenml' top-level key has been renamed to 'server'.
+# Existing values under 'zenml:' still work — they are deep-merged into
+# 'server:', with 'server:' taking precedence when both are provided.
+# This backwards-compatibility shim will be removed in a future release.
+zenml: {}

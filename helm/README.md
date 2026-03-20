@@ -38,7 +38,7 @@ If you need to connect to services using HTTPS with certificates signed by custo
 
 1. Direct injection in values.yaml:
 ```yaml
-zenml:
+server:
   certificates:
     customCAs:
       - name: "my-custom-ca"
@@ -51,7 +51,7 @@ zenml:
 
 2. Reference existing Kubernetes secrets:
 ```yaml
-zenml:
+server:
   certificates:
     secretRefs:
       - name: "my-secret"
@@ -65,7 +65,7 @@ The certificates will be installed in the server container, allowing it to secur
 If your environment requires a proxy for external connections, you can configure it using:
 
 ```yaml
-zenml:
+server:
   proxy:
     enabled: true
     httpProxy: "http://proxy.example.com:8080"
@@ -80,8 +80,8 @@ By default, the following hostnames/domains are excluded from proxying:
 - `localhost`, `127.0.0.1`, `::1` (IPv4 and IPv6 localhost)
 - `fe80::/10` (IPv6 link-local addresses)
 - `.svc` and `.svc.cluster.local` (Kubernetes service DNS domains)
-- The hostname from `zenml.serverURL` if configured
-- The ingress hostname (`zenml.ingress.host`) if configured
+- The hostname from `server.serverURL` if configured
+- The ingress hostname (`server.ingress.host`) if configured
 - Internal service names used for communication between components
 
 You can add additional exclusions using the `additionalNoProxy` list. The NO_PROXY environment variable accepts:
@@ -99,7 +99,7 @@ When using database persistence with a local SQLite database, the chart automati
 Example configuration:
 
 ```yaml
-zenml:
+server:
   database:
     persistence:
       enabled: true
@@ -112,9 +112,16 @@ zenml:
 
 If you override `podSecurityContext`, ensure that `fsGroup: 1000` is set when using persistent volumes, otherwise the container will not be able to write to the mounted volume and will crash.
 
+## Backwards Compatibility
+
+The top-level `zenml:` values key has been renamed to `server:`. Existing
+values files using `zenml:` continue to work — the chart deep-merges `zenml:`
+into `server:`, with `server:` taking precedence when both are provided. The
+`zenml:` key is deprecated and will be removed in a future release.
+
 ## Telemetry
 
-The ZenML server collects anonymous usage data to help us improve the product. You can opt out by setting `zenml.analyticsOptIn` to false.
+The ZenML server collects anonymous usage data to help us improve the product. You can opt out by setting `server.analyticsOptIn` to false.
 
 ## Contributing
 
