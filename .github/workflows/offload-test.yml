@@ -24,6 +24,9 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      MODAL_ENVIRONMENT: ci
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     steps:
       - name: Checkout code
@@ -45,10 +48,8 @@ jobs:
         run: |
           source $HOME/.cargo/env
           cargo install offload
-      - name: Authenticate Modal
-        run: |
-          uv pip install --system modal
-          modal token set --token-id ${{ secrets.MODAL_TOKEN_ID }} --token-secret ${{ secrets.MODAL_TOKEN_SECRET }}
+      - name: Install Modal SDK
+        run: uv pip install --system modal
       - name: Set Python version in Dockerfile
         if: inputs.python-version != '3.11'
         run: sed -i "s/python:3.11/python:${{ inputs.python-version }}/" docker/offload-test.Dockerfile
