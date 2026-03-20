@@ -83,7 +83,7 @@ To deploy your custom image via Helm, first familiarize yourself with the genera
 To use your own image, the only thing you need to do differently is to modify the `image` section of your `values.yaml` file:
 
 ```yaml
-zenml:
+server:
   image:
     repository: <YOUR_CONTAINER_REGISTRY>/<IMAGE_NAME>
     tag: <IMAGE_TAG>
