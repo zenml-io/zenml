@@ -27,7 +27,7 @@ In addition to tools and infrastructure, you will also need to collect and [prep
 When you are ready, you can proceed to the [installation](deploy-with-helm.md#zenml-helm-installation) section.
 
 {% hint style="info" %}
-**Values key rename:** The top-level `zenml` key in the Helm chart values has been renamed to `server`. Existing values files that use the old `zenml` key continue to work — the chart automatically merges `zenml` values into `server`, with `server` taking precedence when both are present. The `zenml` key is deprecated and will be removed in a future release. We recommend updating your values files to use `server` instead.
+**Values key rename:** The top-level `zenml` key in the Helm chart values has been renamed to `server`. Existing values files that use the old `zenml` key continue to work — the chart automatically merges both keys. We recommend using only one key; if both are present, `zenml` values take precedence for overlapping keys. The `zenml` key is deprecated and will be removed in a future release.
 {% endhint %}
 
 ### Collect information from your SQL database service

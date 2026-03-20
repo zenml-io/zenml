@@ -115,9 +115,10 @@ If you override `podSecurityContext`, ensure that `fsGroup: 1000` is set when us
 ## Backwards Compatibility
 
 The top-level `zenml:` values key has been renamed to `server:`. Existing
-values files using `zenml:` continue to work — the chart deep-merges `zenml:`
-into `server:`, with `server:` taking precedence when both are provided. The
-`zenml:` key is deprecated and will be removed in a future release.
+values files using `zenml:` continue to work — the chart deep-merges both
+keys. We recommend using only one key; if both are provided, `zenml:` values
+take precedence for overlapping keys. The `zenml:` key is deprecated and will
+be removed in a future release.
 
 ## Telemetry
 

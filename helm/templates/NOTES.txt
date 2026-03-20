@@ -59,8 +59,10 @@ You can get the ZenML server URL by running these commands:
     The top-level 'zenml' values key is deprecated and will be removed in a
     future release. Please migrate your values to use 'server' instead.
     For example, change 'zenml.database.url' to 'server.database.url'.
-    Values under 'zenml' are currently merged into 'server' for backwards
-    compatibility, with 'server' taking precedence.
+    Values under 'zenml' are currently merged with 'server' for backwards
+    compatibility. If both 'zenml:' and 'server:' are provided, 'zenml:'
+    values take precedence for overlapping keys. We recommend using only one
+    key to avoid confusion.
 
 {{- end }}
 {{- end }}

@@ -2,13 +2,19 @@
 Resolve server configuration values with backwards compatibility.
 
 The top-level values key was renamed from 'zenml' to 'server'. This helper
-deep-merges the legacy 'zenml' key into 'server', with 'server' taking
-precedence, so existing deployments using 'zenml:' continue to work.
+merges both keys so existing deployments using 'zenml:' continue to work.
+
+Because Helm always populates .Values.server with the chart defaults (from
+values.yaml), we cannot use merge order alone to let user-provided 'zenml:'
+overrides beat those defaults. Instead we use 'zenml:' as the base (first
+arg to merge, which takes precedence) and let .Values.server fill in
+anything not set. When users adopt the new 'server:' key, their overrides
+are baked into .Values.server by Helm's own values merge and naturally win.
 */}}
 {{- define "zenml.serverValues" -}}
 {{- $server := deepCopy (.Values.server | default dict) -}}
-{{- $legacy := .Values.zenml | default dict -}}
-{{- merge $server $legacy | toYaml -}}
+{{- $legacy := deepCopy (.Values.zenml | default dict) -}}
+{{- merge $legacy $server | toYaml -}}
 {{- end -}}
 
 {{/*
