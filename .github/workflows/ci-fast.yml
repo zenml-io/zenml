@@ -107,7 +107,6 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   ubuntu-setup-and-unit-test:
-    needs: linting
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/offload-test.yml
     secrets: inherit
