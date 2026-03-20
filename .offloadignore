@@ -5,16 +5,16 @@
 # Version control
 .git
 
-# Python artifacts
-__pycache__
-*.pyc
-*.pyo
-*.egg-info
+# Python artifacts (use **/ prefix for recursive matching)
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.egg-info
 dist
 build
 .venv
 .tox
-.pytest_cache
+**/.pytest_cache
 .ruff_cache
 .mypy_cache
 
