@@ -364,7 +364,7 @@ For more advanced configuration management, you can use tools like [Hydra](https
 
 The key idea: **Hydra decides _what_ to run** (hyperparameters, model settings, data config) while **ZenML decides _where_ and _when_** (orchestration, caching, artifact versioning). Neither needs to know about the other's internals.
 
-For a complete working example, see the [Hydra + ZenML configuration management example](https://github.com/zenml-io/zenml/tree/develop/examples/hydra_config_management).
+For a complete working example, see the [Hydra + ZenML configuration management example](https://github.com/zenml-io/zenml/tree/main/examples/hydra_config_management).
 
 ## Autogenerate a template yaml file
 
