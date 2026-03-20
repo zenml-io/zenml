@@ -1,0 +1,45 @@
+# Offload ignore patterns for Modal sandbox file mounting.
+# Modal's add_local_dir(ignore=...) does not support dockerignore-style
+# negation patterns (* + !), so we use explicit ignore patterns here.
+
+# Version control
+.git
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist
+build
+.venv
+.tox
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# IDE / editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules
+
+# Test output & caches
+test-results
+.offload-image-cache
+
+# Docs & examples (not needed for test execution)
+docs
+examples
+
+# CI / config files not needed in sandbox
+.github
+.claude
