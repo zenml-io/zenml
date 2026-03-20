@@ -1,0 +1,22 @@
+[offload]
+max_parallel = 32
+test_timeout_secs = 600
+sandbox_project_root = "/app"
+sandbox_init_cmd = "scripts/install-zenml-dev.sh --system --integrations yes"
+
+[provider]
+type = "modal"
+dockerfile = "docker/offload-test.Dockerfile"
+include_cwd = true
+
+[framework]
+type = "pytest"
+paths = ["tests/unit", "tests/integration"]
+command = "python -m pytest"
+run_args = "--color=yes -vv --no-provision --environment default"
+
+[groups.unit]
+retry_count = 2
+
+[report]
+output_dir = "test-results"

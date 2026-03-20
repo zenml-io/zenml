@@ -196,18 +196,16 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  ubuntu-unit-test:
+  ubuntu-offload-test:
     if: github.event.pull_request.draft == false
     needs: [run-slow-ci-label-is-set, ubuntu-linting]
     strategy:
       matrix:
-        os: [ubuntu-latest]
         python-version: ['3.10', '3.12', '3.13']
       fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
+    uses: ./.github/workflows/offload-test.yml
     with:
       python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
     secrets: inherit
   windows-linting:
     needs: run-slow-ci-label-is-set
@@ -293,31 +291,18 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
+  # Default environment integration tests are handled by ubuntu-offload-test.
+  # Only Docker/MySQL/MariaDB environments remain on GHA.
   ubuntu-latest-integration-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-unit-test]
+    needs: [run-slow-ci-label-is-set, ubuntu-offload-test]
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ['3.11']
         test_environment:
-          - default
           - docker-server-docker-orchestrator-mysql
           - docker-server-docker-orchestrator-mariadb
-        exclude:
-          # docker is time-consuming to run, so we only run it on 3.11
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.12'
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.13'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.12'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.13'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:
