@@ -73,6 +73,12 @@ jobs:
       - name: Set Python version in Dockerfile
         if: inputs.python-version != '3.12'
         run: sed -i "s/python:3.12/python:${{ inputs.python-version }}/" docker/offload-test.Dockerfile
+      - name: Restore offload image cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        with:
+          path: .offload-image-cache
+          key: offload-modal-py${{ inputs.python-version }}-${{ hashFiles('docker/offload-test.Dockerfile',
+            'pyproject.toml', 'src/zenml/integrations/*/__init__.py') }}
       - name: Replace .dockerignore for offload
         run: |
           cp .dockerignore .dockerignore.bak

@@ -2,7 +2,6 @@
 max_parallel = 32
 test_timeout_secs = 600
 sandbox_project_root = "/app"
-sandbox_init_cmd = "scripts/install-zenml-dev.sh --system --integrations yes"
 
 [provider]
 type = "modal"
