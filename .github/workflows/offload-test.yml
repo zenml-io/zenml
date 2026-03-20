@@ -7,14 +7,14 @@ on:
         description: Python version for Modal sandbox
         type: string
         required: false
-        default: '3.11'
+        default: '3.12'
   workflow_dispatch:
     inputs:
       python-version:
         description: Python version for Modal sandbox
         type: string
         required: false
-        default: '3.11'
+        default: '3.12'
 jobs:
   offload-test:
     name: offload-test (py${{ inputs.python-version }})
@@ -29,30 +29,50 @@ jobs:
       MODAL_ENVIRONMENT: ci
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     steps:
+      - name: Free disk space (Ubuntu)
+        run: |
+          set -euxo pipefail
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force || true
+      - name: Set uv cache + temp dirs (/opt)
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: Set up Python 3.11
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+      - name: Restore uv cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
         with:
-          python-version: '3.11'
-      - name: Install local dev dependencies (for test discovery)
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
-          uv pip install --system -e ".[dev]"
+          path: /opt/uv-cache
+          key: |
+            uv-Linux-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          restore-keys: |
+            uv-Linux-${{ inputs.python-version }}-
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ubuntu-latest
+          install_integrations: 'yes'
       - name: Install offload
-        run: |
-          source $HOME/.cargo/env
-          cargo install offload
+        run: cargo install offload
       - name: Install Modal SDK
         run: uv pip install --system modal
       - name: Set Python version in Dockerfile
-        if: inputs.python-version != '3.11'
-        run: sed -i "s/python:3.11/python:${{ inputs.python-version }}/" docker/offload-test.Dockerfile
+        if: inputs.python-version != '3.12'
+        run: sed -i "s/python:3.12/python:${{ inputs.python-version }}/" docker/offload-test.Dockerfile
       - name: Run tests on Modal via offload
         run: bash scripts/test-offload.sh
       - name: Upload test results

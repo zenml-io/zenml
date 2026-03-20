@@ -15,8 +15,9 @@ paths = ["tests/unit", "tests/integration"]
 command = "python -m pytest"
 run_args = "--color=yes -vv --no-provision --environment default"
 
-[groups.unit]
+[groups.default]
 retry_count = 2
+filters = "--continue-on-collection-errors"
 
 [report]
 output_dir = "test-results"
