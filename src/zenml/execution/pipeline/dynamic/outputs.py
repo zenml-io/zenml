@@ -18,6 +18,7 @@ from concurrent.futures import Future
 from typing import Any, Iterator, List, Optional, Tuple, Union, overload
 from uuid import UUID
 
+from zenml.execution.pipeline.dynamic.invocation_state import InvocationState
 from zenml.logger import get_logger
 from zenml.models import ArtifactVersionResponse, StepRunResponse
 from zenml.utils import exception_utils
@@ -91,20 +92,43 @@ class BaseFuture(ABC):
         """
 
 
-class _InlineStepFuture(BaseFuture):
+class _StateBackedStepFuture(BaseFuture):
+    """Base class for step futures backed by invocation state."""
+
+    def __init__(
+        self,
+        invocation_id: str,
+        state: Optional[InvocationState] = None,
+    ) -> None:
+        """Initialize the state-backed step future.
+
+        Args:
+            invocation_id: The invocation ID of the step run.
+            state: Optional shared invocation state.
+        """
+        self.invocation_id = invocation_id
+        self._state = state or InvocationState(invocation_id=invocation_id)
+
+
+class _InlineStepFuture(_StateBackedStepFuture):
     """Future for an inline step run."""
 
     def __init__(
-        self, wrapped: Future["StepRunResponse"], invocation_id: str
+        self,
+        invocation_id: str,
+        wrapped: Optional[Future["StepRunResponse"]] = None,
+        state: Optional[InvocationState] = None,
     ) -> None:
         """Initialize the inline step run future.
 
         Args:
-            wrapped: The wrapped future object.
             invocation_id: The invocation ID of the step run.
+            wrapped: Optional wrapped executor future.
+            state: Optional shared invocation state.
         """
-        self._wrapped = wrapped
-        self.invocation_id = invocation_id
+        super().__init__(invocation_id=invocation_id, state=state)
+        if wrapped is not None:
+            self._state.bind_inline_future(wrapped)
 
     def running(self) -> bool:
         """Check if the step run future is running.
@@ -112,25 +136,39 @@ class _InlineStepFuture(BaseFuture):
         Returns:
             True if the step run future is running, False otherwise.
         """
-        return not self._wrapped.done()
+        wrapped = self._state.inline_future()
+        if wrapped is not None:
+            return not wrapped.done()
+
+        return not self._state.is_terminal()
 
     def result(self) -> "StepRunResponse":
         """Get the result of the step run future.
 
+        # noqa: DAR401
+        Raises:
+            BaseException: Any exception that happened while waiting for the
+                step to finish or before it was dispatched.
+
         Returns:
             The result of the step run future.
         """
-        return self._wrapped.result()
+        wrapped = self._state.wait_for_inline_future_or_terminal()
+        if wrapped is None:
+            return self._state.wait_for_terminal_step_run()
+
+        return wrapped.result()
 
 
-class _IsolatedStepFuture(BaseFuture):
-    """Future for an inline step run."""
+class _IsolatedStepFuture(_StateBackedStepFuture):
+    """Future for an isolated step run."""
 
     def __init__(
         self,
         pipeline_run_id: UUID,
         invocation_id: str,
         wrapped: Optional[Future["StepRunResponse"]] = None,
+        state: Optional[InvocationState] = None,
     ) -> None:
         """Initialize the step run future.
 
@@ -138,10 +176,11 @@ class _IsolatedStepFuture(BaseFuture):
             pipeline_run_id: The ID of the pipeline run.
             invocation_id: The invocation ID of the step run.
             wrapped: Optional future to wait for that submits the step run.
+            state: Optional shared invocation state.
         """
+        super().__init__(invocation_id=invocation_id, state=state)
         self._wrapped = wrapped
         self.pipeline_run_id = pipeline_run_id
-        self.invocation_id = invocation_id
 
     def running(self) -> bool:
         """Check if the isolated step future is running.
@@ -153,6 +192,13 @@ class _IsolatedStepFuture(BaseFuture):
 
         if self._wrapped and not self._wrapped.done():
             return True
+
+        inline_future = self._state.inline_future()
+        if inline_future is not None:
+            return not inline_future.done()
+
+        if not self._state.is_dispatched():
+            return not self._state.is_terminal()
 
         step_run = get_latest_step_run(
             self.pipeline_run_id, self.invocation_id, hydrate=False
@@ -179,6 +225,14 @@ class _IsolatedStepFuture(BaseFuture):
             # We first wait until the step run is submitted and only then
             # start monitoring the actual step.
             self._wrapped.result()
+            self._state.mark_dispatched()
+
+        inline_future = self._state.inline_future()
+        if inline_future is not None:
+            return inline_future.result()
+
+        if not self._state.wait_for_dispatch_or_terminal():
+            return self._state.wait_for_terminal_step_run()
 
         step_run = wait_for_step_to_finish(
             pipeline_run_id=self.pipeline_run_id, step_name=self.invocation_id
@@ -460,13 +514,48 @@ class StepFuture(BaseStepFuture):
 class MapResultsFuture(BaseFuture):
     """Future that represents the results of a `step.map/product(...)` call."""
 
-    def __init__(self, futures: List[StepFuture]) -> None:
+    def __init__(
+        self,
+        futures: Optional[List[StepFuture]] = None,
+        wrapped: Optional[Future[List[StepFuture]]] = None,
+    ) -> None:
         """Initialize the map results future.
 
         Args:
-            futures: The step run futures.
+            futures: Optional already expanded step run futures.
+            wrapped: Optional future that resolves to the expanded step run
+                futures once the controller finishes map expansion.
         """
-        self.futures = futures
+        self._futures = futures
+        self._wrapped = wrapped
+
+    @property
+    def futures(self) -> List[StepFuture]:
+        """Get the expanded step futures.
+
+        Returns:
+            The expanded step futures.
+        """
+        if self._futures is None:
+            assert self._wrapped is not None
+            self._futures = self._wrapped.result()
+
+        return self._futures
+
+    def expanded_futures(self) -> Optional[List[StepFuture]]:
+        """Get expanded step futures without blocking for expansion.
+
+        Returns:
+            The expanded step futures if expansion completed, otherwise `None`.
+        """
+        if self._futures is not None:
+            return self._futures
+
+        if self._wrapped and self._wrapped.done():
+            self._futures = self._wrapped.result()
+            return self._futures
+
+        return None
 
     def running(self) -> bool:
         """Check if the map results future is running.
@@ -474,6 +563,9 @@ class MapResultsFuture(BaseFuture):
         Returns:
             True if the map results future is running, False otherwise.
         """
+        if self._wrapped and not self._wrapped.done():
+            return True
+
         return any(future.running() for future in self.futures)
 
     def result(self) -> List[StepRunOutputs]:
