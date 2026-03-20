@@ -6,7 +6,7 @@ fullnameOverride: ""
 
 
 # ZenML server related options.
-zenml:
+server:
 
   replicaCount: 1
 

@@ -1,14 +1,15 @@
-{{- if .Values.zenml.pro.enabled }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- if $server.pro.enabled }}
 
 The ZenML Pro server API is now active and ready to use at the following URL:
 
-  {{ .Values.zenml.serverURL }}
+  {{ $server.serverURL }}
 
-{{- if .Values.zenml.pro.enrollmentKey }}
+{{- if $server.pro.enrollmentKey }}
 
 The following enrollment key has been used to enroll your server in the ZenML Pro control plane:
 
-  {{ .Values.zenml.pro.enrollmentKey }}
+  {{ $server.pro.enrollmentKey }}
 
 {{- else }}
 
@@ -19,12 +20,12 @@ An enrollment key has been auto-generated for your server. Please use the follow
 {{- end }}
 
 {{- else }}
-{{- if .Values.zenml.ingress.enabled }}
-{{- if .Values.zenml.ingress.host }}
+{{- if $server.ingress.enabled }}
+{{- if $server.ingress.host }}
 
 Please access the ZenML server at the following URL {{- if .Release.IsInstall }} to activate the server and create an initial admin user account {{- end }}:
 
-  http{{ if $.Values.zenml.ingress.tls.enabled }}s{{ end }}://{{ .Values.zenml.ingress.host }}{{ .Values.zenml.ingress.path }}
+  http{{ if $server.ingress.tls.enabled }}s{{ end }}://{{ $server.ingress.host }}{{ $server.ingress.path }}
 
 {{- else }}
 {{- end }}
@@ -32,21 +33,36 @@ Please access the ZenML server at the following URL {{- if .Release.IsInstall }}
 
 You can get the ZenML server URL by running these commands:
 
-{{- if contains "NodePort" .Values.zenml.service.type }}
+{{- if contains "NodePort" $server.service.type }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "zenml.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
   echo http://$NODE_IP:$NODE_PORT
-{{- else if contains "LoadBalancer" .Values.zenml.service.type }}
+{{- else if contains "LoadBalancer" $server.service.type }}
      NOTE: It may take a few minutes for the LoadBalancer IP to be available.
            You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "zenml.fullname" . }}'
   export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "zenml.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
-  echo http://$SERVICE_IP:{{ .Values.zenml.service.port }}
-{{- else if contains "ClusterIP" .Values.zenml.service.type }}
+  echo http://$SERVICE_IP:{{ $server.service.port }}
+{{- else if contains "ClusterIP" $server.service.type }}
   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "zenml.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
   echo "Visit http://127.0.0.1:8080 to use your application"
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
 {{- end }}
+
+{{- end }}
+{{- end }}
+
+{{- if .Values.zenml }}
+{{- if ne (len .Values.zenml) 0 }}
+
+==> DEPRECATION WARNING:
+    The top-level 'zenml' values key is deprecated and will be removed in a
+    future release. Please migrate your values to use 'server' instead.
+    For example, change 'zenml.database.url' to 'server.database.url'.
+    Values under 'zenml' are currently merged with 'server' for backwards
+    compatibility. If both 'zenml:' and 'server:' are provided, 'zenml:'
+    values take precedence for overlapping keys. We recommend using only one
+    key to avoid confusion.
 
 {{- end }}
 {{- end }}
