@@ -73,8 +73,15 @@ jobs:
       - name: Set Python version in Dockerfile
         if: inputs.python-version != '3.12'
         run: sed -i "s/python:3.12/python:${{ inputs.python-version }}/" docker/offload-test.Dockerfile
+      - name: Replace .dockerignore for offload
+        run: |
+          cp .dockerignore .dockerignore.bak
+          cp .offloadignore .dockerignore
       - name: Run tests on Modal via offload
         run: bash scripts/test-offload.sh
+      - name: Restore .dockerignore
+        if: always()
+        run: mv .dockerignore.bak .dockerignore
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
