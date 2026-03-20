@@ -4,17 +4,19 @@ Resolve server configuration values with backwards compatibility.
 The top-level values key was renamed from 'zenml' to 'server'. This helper
 merges both keys so existing deployments using 'zenml:' continue to work.
 
-Because Helm always populates .Values.server with the chart defaults (from
-values.yaml), we cannot use merge order alone to let user-provided 'zenml:'
-overrides beat those defaults. Instead we use 'zenml:' as the base (first
-arg to merge, which takes precedence) and let .Values.server fill in
-anything not set. When users adopt the new 'server:' key, their overrides
-are baked into .Values.server by Helm's own values merge and naturally win.
+Helm always populates .Values.server with the chart defaults from
+values.yaml, so we start with those as the base and let user-provided
+'zenml:' overrides win via mustMergeOverwrite. We use mustMergeOverwrite
+(not merge) because Go's mergo.Merge treats zero-values (false, 0, "")
+as empty and silently drops them; mustMergeOverwrite preserves them.
+
+When users adopt the new 'server:' key their overrides are baked into
+.Values.server by Helm's own values merge and are already in the base.
 */}}
 {{- define "zenml.serverValues" -}}
 {{- $server := deepCopy (.Values.server | default dict) -}}
 {{- $legacy := deepCopy (.Values.zenml | default dict) -}}
-{{- merge $legacy $server | toYaml -}}
+{{- mustMergeOverwrite $server $legacy | toYaml -}}
 {{- end -}}
 
 {{/*
