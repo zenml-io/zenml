@@ -91,8 +91,7 @@ def run_ag2_agents(
         recommendation for the formatting step.
     """
     llm_config = LLMConfig(
-        api_type="openai",
-        model="gpt-4o-mini",
+        {"model": "gpt-4o-mini", "api_key": os.getenv("OPENAI_API_KEY")},
     )
 
     weather_agent = AssistantAgent(
