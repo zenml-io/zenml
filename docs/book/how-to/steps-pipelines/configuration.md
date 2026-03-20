@@ -358,6 +358,14 @@ extra:
 
 This allows you to easily adapt your pipelines to different environments without changing code.
 
+## Using External Configuration Tools (Hydra)
+
+For more advanced configuration management, you can use tools like [Hydra](https://hydra.cc/) to manage your pipeline parameters through composable YAML configs and CLI overrides, then pass the resolved values into ZenML.
+
+The key idea: **Hydra decides _what_ to run** (hyperparameters, model settings, data config) while **ZenML decides _where_ and _when_** (orchestration, caching, artifact versioning). Neither needs to know about the other's internals.
+
+For a complete working example, see the [Hydra + ZenML configuration management example](https://github.com/zenml-io/zenml/tree/develop/examples/hydra_config_management).
+
 ## Autogenerate a template yaml file
 
 If you want to generate a template yaml file of your specific pipeline, you can do so by using the `.write_run_configuration_template()` method. This will generate a yaml file with all options commented out. This way you can pick and choose the settings that are relevant to you.
