@@ -26,6 +26,10 @@ In addition to tools and infrastructure, you will also need to collect and [prep
 
 When you are ready, you can proceed to the [installation](deploy-with-helm.md#zenml-helm-installation) section.
 
+{% hint style="info" %}
+**Values key rename:** The top-level `zenml` key in the Helm chart values has been renamed to `server`. Existing values files that use the old `zenml` key continue to work — the chart automatically merges `zenml` values into `server`, with `server` taking precedence when both are present. The `zenml` key is deprecated and will be removed in a future release. We recommend updating your values files to use `server` instead.
+{% endhint %}
+
 ### Collect information from your SQL database service
 
 Using an external MySQL-compatible database service is optional, but is recommended for production deployments. If omitted, ZenML will default to using an embedded SQLite database, which has the following limitations:
@@ -132,7 +136,7 @@ This section covers some common Helm deployment scenarios for ZenML.
 The example below is a minimal configuration for a ZenML server deployment that uses a temporary SQLite database and a ClusterIP service that is not exposed to the internet:
 
 ```yaml
-zenml:
+server:
 
   ingress:
     enabled: false
@@ -154,7 +158,7 @@ When using a local SQLite database with persistence enabled, you need to configu
 Example configuration:
 
 ```yaml
-zenml:
+server:
   database:
     persistence:
       enabled: true
@@ -210,7 +214,7 @@ EOF
 Finally, you can deploy the ZenML server with the following Helm values:
 
 ```yaml
-zenml:
+server:
 
   ingress:
     enabled: true
@@ -240,7 +244,7 @@ kubectl -n nginx-ingress get svc nginx-ingress-ingress-nginx-controller -o jsonp
 You can deploy the ZenML server with the following Helm values:
 
 ```yaml
-zenml:
+server:
 
   ingress:
     enabled: true
@@ -261,7 +265,7 @@ If you cannot use a dedicated Ingress hostname for ZenML, you can use a dedicate
 To deploy the ZenML server with a dedicated Ingress URL path, you can use the following Helm values:
 
 ```yaml
-zenml:
+server:
 
   ingress:
     enabled: true
@@ -310,7 +314,7 @@ openssl rand -hex 32
 * then configure it in the Helm values:
 
 ```yaml
- zenml:
+ server:
 
    # ...
 
@@ -359,7 +363,7 @@ The minimum set of permissions that must be attached to the implicit or configur
 Example configuration for the AWS Secrets Store:
 
 ```yaml
- zenml:
+ server:
 
    # ...
 
@@ -432,7 +436,7 @@ gcloud projects add-iam-policy-binding <your GCP project ID> \
 Example configuration for the GCP Secrets Store:
 
 ```yaml
- zenml:
+ server:
 
    # ...
 
@@ -492,7 +496,7 @@ The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to
 Example configuration for the Azure Key Vault Secrets Store:
 
 ```yaml
- zenml:
+ server:
 
    # ...
 
@@ -532,7 +536,7 @@ Example configuration for the Azure Key Vault Secrets Store:
 To use the HashiCorp Vault service as a Secrets Store back-end, it must be configured in the Helm values:
 
 ```yaml
- zenml:
+ server:
 
    # ...
 
@@ -565,7 +569,7 @@ To use the HashiCorp Vault service as a Secrets Store back-end, it must be confi
 You have the option of using [a custom implementation of the secrets store API](secret-management.md) as your secrets store back-end. This must come in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to build a custom container image that contains the class. Then, you can configure the Helm values to use your custom secrets store as follows:
 
 ```yaml
- zenml:
+ server:
 
    # ...
 
@@ -619,7 +623,7 @@ You have the option of using [a custom implementation of the secrets store API](
 To configure a backup secrets store in the Helm chart, use the same approach and instructions documented for the primary secrets store, but using the `backupSecretsStore` configuration section instead of `secretsStore`, e.g.:
 
 ```yaml
- zenml:
+ server:
 
    # ...
 
@@ -658,7 +662,7 @@ An automated database backup and recovery feature is enabled by default for all 
 The database backup automatically created by the ZenML server is only temporary and only used as an immediate recovery in case of database migration failures. It is not meant to be used as a long-term backup solution. If you need to back up your database for long-term storage, you should use a dedicated backup solution.
 {% endhint %}
 
-Several database backup strategies are supported, depending on where and how the backup is stored. The strategy can be configured by means of the `zenml.database.backupStrategy` Helm value:
+Several database backup strategies are supported, depending on where and how the backup is stored. The strategy can be configured by means of the `server.database.backupStrategy` Helm value:
 
 * `disabled` - no backup is performed
 * `in-memory` - the database schema and data are stored in memory. This is the fastest backup strategy, but the backup is not persisted across pod restarts, so no manual intervention is possible in case the automatic DB recovery fails after a failed DB migration. Adequate memory resources should be allocated to the ZenML server pod when using this backup strategy with larger databases. This is the default backup strategy.
@@ -684,7 +688,7 @@ The following additional rules are applied concerning the creation and lifetime 
 The following example shows how to configure the ZenML server to use a persistent volume to store the database dump file:
 
 ```yaml
- zenml:
+ server:
 
    # ...
 
@@ -706,7 +710,7 @@ If you need to connect to services using HTTPS with certificates signed by custo
 
 1. Direct injection in values.yaml:
 ```yaml
-zenml:
+server:
   certificates:
     customCAs:
       - name: "my-custom-ca"
@@ -719,7 +723,7 @@ zenml:
 
 2. Reference existing Kubernetes secrets:
 ```yaml
-zenml:
+server:
   certificates:
     secretRefs:
       - name: "my-secret"
@@ -733,7 +737,7 @@ The certificates will be installed in the server container, allowing it to secur
 If your environment requires a proxy for external connections, you can configure it using:
 
 ```yaml
-zenml:
+server:
   proxy:
     enabled: true
     httpProxy: "http://proxy.example.com:8080"
@@ -748,8 +752,8 @@ By default, the following hostnames/domains are excluded from proxying:
 - `localhost`, `127.0.0.1`, `::1` (IPv4 and IPv6 localhost)
 - `fe80::/10` (IPv6 link-local addresses)
 - `.svc` and `.svc.cluster.local` (Kubernetes service DNS domains)
-- The hostname from `zenml.serverURL` if configured
-- The ingress hostname (`zenml.ingress.host`) if configured
+- The hostname from `server.serverURL` if configured
+- The ingress hostname (`server.ingress.host`) if configured
 - Internal service names used for communication between components
 
 You can add additional exclusions using the `additionalNoProxy` list. The NO_PROXY environment variable accepts:
