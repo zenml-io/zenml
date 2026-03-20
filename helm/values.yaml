@@ -1316,10 +1316,3 @@ affinity: {}
 #         affinity: {}
 #
 workerDeployments: {}
-
-# DEPRECATED: The 'zenml' top-level key has been renamed to 'server'.
-# Existing values files that use 'zenml:' continue to work — the chart
-# deep-merges both keys. If both 'zenml:' and 'server:' are provided,
-# 'zenml:' values take precedence for overlapping keys; we recommend
-# using only one key to avoid confusion. This backwards-compatibility
-# shim will be removed in a future release.
