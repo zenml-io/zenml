@@ -17,7 +17,7 @@ env:
   ZENML_ANALYTICS_OPT_IN: false
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
-  check-label:
+  check-staging-label:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
       false
@@ -51,8 +51,8 @@ jobs:
             echo "has_label=false" >> $GITHUB_OUTPUT
           fi
   set-branch-info:
-    needs: check-label
-    if: github.event_name == 'workflow_dispatch' || needs.check-label.outputs.should_deploy
+    needs: check-staging-label
+    if: github.event_name == 'workflow_dispatch' || needs.check-staging-label.outputs.should_deploy
       == 'true'
     runs-on: ubuntu-latest
     outputs:
@@ -136,8 +136,8 @@ jobs:
             exit 1
           fi
   build-images:
-    needs: [set-branch-info, check-label]
-    if: always() && (github.event_name == 'workflow_dispatch' || needs.check-label.outputs.should_deploy
+    needs: [set-branch-info, check-staging-label]
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.check-staging-label.outputs.should_deploy
       == 'true') && needs.set-branch-info.result == 'success'
     runs-on: ubuntu-latest
     permissions:

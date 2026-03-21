@@ -15,7 +15,7 @@
 
 import json
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
 from uuid import UUID
 
 from zenml.analytics import identify, track
@@ -137,7 +137,7 @@ def is_analytics_disabled_internally() -> bool:
     return _INTERNAL_DISABLE_ANALYTICS
 
 
-def track_decorator(event: AnalyticsEvent) -> Callable[[F], F]:
+def track_decorator(event: "Union[AnalyticsEvent, str]") -> Callable[[F], F]:
     """Decorator to track event.
 
     If the decorated function takes in a `AnalyticsTrackedModelMixin` object as
@@ -150,7 +150,9 @@ def track_decorator(event: AnalyticsEvent) -> Callable[[F], F]:
     tracking analytics.
 
     Args:
-        event: Event string to stamp with.
+        event: Event to track. Can be an AnalyticsEvent enum member
+            or an arbitrary string for downstream consumers that
+            define their own event names.
 
     Returns:
         A decorator that applies the analytics tracking to a function.
@@ -181,7 +183,9 @@ def track_decorator(event: AnalyticsEvent) -> Callable[[F], F]:
                 try:
                     for obj in list(args) + list(kwargs.values()):
                         if isinstance(obj, AnalyticsTrackedModelMixin):
-                            handler.metadata = obj.get_analytics_metadata()
+                            handler.metadata.update(
+                                obj.get_analytics_metadata()
+                            )
                             break
                 except Exception as e:
                     logger.debug(f"Analytics tracking failure for {func}: {e}")
@@ -190,7 +194,9 @@ def track_decorator(event: AnalyticsEvent) -> Callable[[F], F]:
 
                 try:
                     if isinstance(result, AnalyticsTrackedModelMixin):
-                        handler.metadata = result.get_analytics_metadata()
+                        handler.metadata.update(
+                            result.get_analytics_metadata()
+                        )
                 except Exception as e:
                     logger.debug(f"Analytics tracking failure for {func}: {e}")
 
@@ -206,16 +212,17 @@ class track_handler(object):
 
     def __init__(
         self,
-        event: AnalyticsEvent,
+        event: "Union[AnalyticsEvent, str]",
         metadata: Optional[Dict[str, Any]] = None,
     ):
         """Initialization of the context manager.
 
         Args:
-            event: The type of the analytics event
+            event: The type of the analytics event. Can be an
+                AnalyticsEvent enum member or an arbitrary string.
             metadata: The metadata of the event.
         """
-        self.event: AnalyticsEvent = event
+        self.event: Union[AnalyticsEvent, str] = event
         self.metadata: Dict[str, Any] = metadata or {}
 
     def __enter__(self) -> "track_handler":

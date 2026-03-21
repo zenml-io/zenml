@@ -102,6 +102,14 @@ simple_ml_pipeline()
 
 The run is automatically logged to the ZenML dashboard where you can view the DAG or [Timeline view](../dashboard/dashboard-features.md#timeline-view) and associated metadata.
 
+{% hint style="info" %}
+**Want an AI agent to help write this pipeline?** Install ZenML Agent Skills:
+- `zenml-pipeline-authoring` for step/pipeline code, artifacts, config, and remote execution details
+- `zenml-scoping` first if you're designing a multi-pipeline system
+
+See [LLM tooling](../../reference/llms-txt.md).
+{% endhint %}
+
 ## End-to-End Example
 
 Here's a simple end-to-end example that demonstrates the basic workflow:

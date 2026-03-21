@@ -72,7 +72,7 @@ Your choice of implementation will determine the additional environment variable
 Provides generic Kubernetes functionality to run snapshots.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
@@ -84,7 +84,7 @@ zenml:
 Provides AWS-specific features including external S3 logs and ECR integration.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
@@ -104,7 +104,7 @@ Choose how runner images are managed. Your choice of implementation will determi
 Reuse the container images built for the snapshot being run.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
         # Keep this empty or skip setting it to reuse the snapshot container images
@@ -116,7 +116,7 @@ zenml:
 Build the runner images on-demand.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
         ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: internal-registry.mycompany.com/zenml
@@ -127,7 +127,7 @@ zenml:
 Use a pre-built runner image for all runs.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
         ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: internal-registry.mycompany.com/zenml/zenml:<ZENML_OSS_VERSION>
@@ -183,7 +183,7 @@ All supported environment variables for workload manager configuration:
 **Minimal Kubernetes Configuration:**
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
@@ -193,7 +193,7 @@ zenml:
 **Full AWS Configuration:**
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
@@ -212,7 +212,7 @@ zenml:
 **Configuration with a Pre-built Runner Image:**
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace

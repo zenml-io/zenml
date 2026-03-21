@@ -47,3 +47,15 @@ If you're writing code that needs to interact with server functionality:
 1. **From client code**: Use the `Client` class which handles REST API communication
 2. **From server code**: You can import freely within `zen_server/`
 3. **Shared types**: Use models from `src/zenml/models/` which are shared between client and server
+
+## Standard Endpoint Pattern
+
+Server endpoints follow a consistent pattern:
+
+1. **Authorize** — call `authorize(...)` for authentication
+2. **Entitlement check** — verify feature access if the endpoint is gated
+3. **RBAC** — use `verify_permissions_and_*` wrappers or explicit permission checks
+4. **Store operation** — call `zen_store()` for the actual data operation
+5. **Async wrapper** — wrap with `async_fastapi_endpoint_wrapper` for async compatibility
+
+Non-CRUD endpoints (e.g., trigger attach/detach) may require permission checks across multiple resource domains.

@@ -34,6 +34,7 @@
 * [Projects](projects.md)
 * [Teams](teams.md)
 * [Snapshots](snapshots.md)
+* [Triggers](triggers.md)
 
 ## Access Management
 

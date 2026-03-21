@@ -1,0 +1,8 @@
+# Local development config — works with docker-compose LakeFS out of the box.
+# No DockerSettings needed since steps run on the local machine.
+
+enable_cache: false
+
+parameters:
+  n_rows: 1000
+  lakefs_repo: robot-data

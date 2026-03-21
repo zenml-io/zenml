@@ -77,7 +77,7 @@ For advanced deployment configurations, you can also consult the [Deploy with He
 imagePullSecrets:
   - name: image-pull-secret
 
-zenml:
+server:
     analyticsOptIn: false
     threadPoolSize: 10
     database:
@@ -156,17 +156,17 @@ resources:
 
 **Minimum required settings:**
 
-* the database credentials (`zenml.database.url`)
-* the URL (`zenml.serverURL`) and Ingress hostname (`zenml.ingress.host`) where the ZenML Pro workspace server will be reachable
-* the Pro configuration (`zenml.pro.*`) with your organization and workspace details
+* the database credentials (`server.database.url`)
+* the URL (`server.serverURL`) and Ingress hostname (`server.ingress.host`) where the ZenML Pro workspace server will be reachable
+* the Pro configuration (`server.pro.*`) with your organization and workspace details
 
 **Additional relevant settings:**
 
 * configure container registry credentials (`imagePullSecrets`) if your cluster needs to authenticate to the container registry
-* injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificates used by the ZenML Pro services are signed by a custom Certificate Authority
-* configure HTTP proxy settings (`zenml.proxy`)
-* custom container image repository location (`zenml.image.repository`)
-* additional Ingress settings (`zenml.ingress`)
+* injecting custom CA certificates (`server.certificates`), especially important if the TLS certificates used by the ZenML Pro services are signed by a custom Certificate Authority
+* configure HTTP proxy settings (`server.proxy`)
+* custom container image repository location (`server.image.repository`)
+* additional Ingress settings (`server.ingress`)
 * Kubernetes resources allocated to the pods (`resources`)
 
 ### Step 4: Deploy the ZenML Pro Workspace Server with Helm
