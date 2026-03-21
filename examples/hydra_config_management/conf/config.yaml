@@ -1,0 +1,32 @@
+# Hydra configuration for ZenML training pipeline
+# Override from CLI: python run.py training.learning_rate=0.005 training.max_epochs=50
+
+# Training hyperparameters
+training:
+  learning_rate: 0.001
+  batch_size: 64
+  hidden_dim: 32
+  max_epochs: 2
+
+# Model configuration
+model:
+  architecture: CNN
+  num_classes: 10
+  framework: PyTorch Lightning
+
+# Data configuration
+data:
+  dataset: FashionMNIST
+  train_split: 0.8
+  val_split: 0.2
+  seed: 42
+
+# ZenML pipeline configuration
+zenml_config:
+  settings:
+    docker:
+      requirements: "requirements.txt"
+      python_package_installer: "uv"
+      build_config:
+        build_options:
+          platform: linux/amd64
