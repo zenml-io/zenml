@@ -298,6 +298,60 @@ The pipeline creates a Numba-accelerated function, applies it to a large NumPy a
 
 By incorporating Spark or Ray directly into your ZenML steps, you can leverage the power of distributed computing for processing very large datasets while still benefiting from ZenML's pipeline management and versioning capabilities.
 
+## Version data externally with LakeFS (50 GB+)
+
+Sometimes the bottleneck isn't compute — it's the artifact store. Serializing a 100 GB DataFrame through ZenML's artifact store on every run is slow and expensive, even if the data hasn't changed. For large, slowly-changing datasets, a better pattern is to **keep the heavy data in a dedicated data versioning layer** and pass only lightweight references through the pipeline.
+
+[LakeFS](https://lakefs.io) is a good fit here. It provides Git-like branching, commits, and rollbacks on top of your existing object store (S3, GCS, Azure Blob). ZenML handles pipeline orchestration and lineage; LakeFS handles the data.
+
+The core idea: define a small Pydantic model that points to data in LakeFS, and pass that between steps instead of the data itself:
+
+```python
+from pydantic import BaseModel
+
+class LakeFSRef(BaseModel):
+    repo: str       # "my-data-repo"
+    ref: str        # branch name or commit SHA
+    path: str       # "validated/data.parquet"
+    endpoint: str   # "https://lakefs.example.com"
+```
+
+Each step reads/writes data directly to LakeFS via its S3-compatible API. ZenML only sees the ~200-byte reference object — the artifact store never touches the heavy data:
+
+```python
+from typing import Annotated
+from zenml import step
+
+@step
+def validate_data(raw_ref: LakeFSRef) -> Annotated[LakeFSRef, "validated_ref"]:
+    # Read directly from LakeFS via boto3 (S3-compatible)
+    df = read_from_lakefs(raw_ref)
+    df_clean = df.dropna()
+
+    # Write validated data back to LakeFS
+    write_to_lakefs(df_clean, raw_ref.repo, raw_ref.ref, "validated/data.parquet")
+
+    # Commit the branch — returns an immutable SHA
+    commit_sha = commit_branch(raw_ref.repo, raw_ref.ref, "Validated data")
+
+    return LakeFSRef(
+        repo=raw_ref.repo,
+        ref=commit_sha,  # immutable — guarantees reproducibility
+        path="validated/data.parquet",
+        endpoint=raw_ref.endpoint,
+    )
+```
+
+The key trick is returning the **commit SHA** rather than the branch name. This makes downstream steps deterministic — they always read the exact same data snapshot, no matter when they run.
+
+This pattern works well when:
+
+- Your datasets are large enough that serializing through the artifact store is a bottleneck (50 GB+).
+- You want Git-like data versioning (branches, diffs, rollbacks) alongside your pipeline versioning.
+- Multiple pipelines or teams share the same datasets and need isolation.
+
+For a complete working example with LakeFS, synthetic data generation, validation, and training, see the [LakeFS data versioning example](https://github.com/zenml-io/zenml/tree/main/examples/lakefs_data_versioning).
+
 ## Choosing the Right Scaling Strategy
 
 When selecting a scaling strategy, consider:

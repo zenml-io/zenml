@@ -1,0 +1,20 @@
+# Config for adaptive_sweep_pipeline (multi-round mode).
+# Usage: python run.py adaptive --config config/adaptive.yaml
+
+enable_step_logs: true
+enable_artifact_metadata: true
+enable_artifact_visualization: true
+
+parameters:
+  study_name: "fashion_mnist_sweep"
+  n_rounds: 2
+  trials_per_round: 2
+  max_iter: 3
+
+settings:
+  docker:
+    requirements: "requirements.txt"
+    python_package_installer: "uv"
+    build_config:
+      build_options:
+        platform: linux/amd64

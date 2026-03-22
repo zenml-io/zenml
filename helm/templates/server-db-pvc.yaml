@@ -1,4 +1,5 @@
-{{- if and (or (eq .Values.zenml.database.backupStrategy "dump-file") (eq .Values.zenml.database.backupStrategy "mydumper")) .Values.zenml.database.backupPVStorageSize }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- if and (or (eq $server.database.backupStrategy "dump-file") (eq $server.database.backupStrategy "mydumper")) $server.database.backupPVStorageSize }}
 {{- $pvc_name := printf "%s-db-backup" (include "zenml.fullname" .) -}}
 {{- $pvc := (lookup "v1" "PersistentVolumeClaim" .Release.Namespace $pvc_name) }}
 {{- if not $pvc }}
@@ -17,8 +18,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.zenml.database.backupPVStorageSize }}
-  {{- with .Values.zenml.database.backupPVStorageClass }}
+      storage: {{ $server.database.backupPVStorageSize }}
+  {{- with $server.database.backupPVStorageClass }}
   storageClassName: {{ . }}
   {{- end }}
 {{- end }}

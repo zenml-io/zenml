@@ -16,6 +16,7 @@
 import json
 import logging
 import os
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, List, Optional, Type, TypeVar
 
 from zenml.enums import AuthScheme
@@ -93,6 +94,37 @@ def is_false_string_value(value: Any) -> bool:
     return value in ["0", "n", "no", "False", "false"]
 
 
+def validate_directory_name(name: str) -> str:
+    """Validate a directory name.
+
+    Args:
+        name: The directory name to validate.
+
+    Raises:
+        ValueError: If the name is not a valid directory name.
+
+    Returns:
+        The validated directory name.
+    """
+    if not name:
+        raise ValueError("Directory name cannot be empty.")
+
+    if name in {".", ".."}:
+        raise ValueError(
+            "Directory name must not point to the current or parent directory."
+        )
+
+    if PurePosixPath(name).parts != (name,) or PureWindowsPath(name).parts != (
+        name,
+    ):
+        raise ValueError(
+            "Directory name must be a single path component without nested "
+            "levels."
+        )
+
+    return name
+
+
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
 
@@ -157,6 +189,7 @@ ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
 ENV_ZENML_LOGGING_FORMAT = "ZENML_LOGGING_FORMAT"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
+ENV_ZENML_REPOSITORY_DIRECTORY_NAME = "ZENML_REPOSITORY_DIRECTORY_NAME"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_ACTIVE_STACK_ID = "ZENML_ACTIVE_STACK_ID"
 ENV_ZENML_ACTIVE_PROJECT_ID = "ZENML_ACTIVE_PROJECT_ID"
@@ -284,7 +317,9 @@ REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
 
 # Repository and local store directory paths:
-REPOSITORY_DIRECTORY_NAME = ".zen"
+REPOSITORY_DIRECTORY_NAME = validate_directory_name(
+    os.getenv(ENV_ZENML_REPOSITORY_DIRECTORY_NAME, ".zen")
+)
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 # Config file name
