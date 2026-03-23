@@ -361,8 +361,7 @@ class ScheduleFilter(ProjectScopedFilter):
         description="The time at which the schedule should run once",
         union_mode="left_to_right",
     )
-
-    is_archived: bool = Field(
-        default=False,
+    is_archived: bool | None = Field(
+        default=None,
         description="Whether or not the schedule is archived",
     )

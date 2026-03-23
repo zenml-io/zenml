@@ -666,6 +666,9 @@ def list_schedules(
         output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter schedules.
     """
+    if kwargs.get("is_archived") is None:
+        kwargs["is_archived"] = False
+
     schedules = Client().list_schedules(**kwargs)
     cli_utils.print_page(
         schedules,

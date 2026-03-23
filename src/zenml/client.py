@@ -4110,6 +4110,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
+        is_archived: bool | None = False,
     ) -> ScheduleResponse:
         """Get a schedule by name, id or prefix.
 
@@ -4119,6 +4120,7 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            is_archived: Flag whether to filter-out archived schedules.
 
         Returns:
             The schedule.
@@ -4130,6 +4132,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=allow_name_prefix_match,
             project=project,
             hydrate=hydrate,
+            is_archived=is_archived,
         )
 
     def list_schedules(
@@ -4154,7 +4157,7 @@ class Client(metaclass=ClientMetaClass):
         catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
         run_once_start_time: Optional[Union[datetime, str]] = None,
-        is_archived: bool = False,
+        is_archived: bool | None = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -4306,6 +4309,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
             project=project,
+            is_archived=None,
         )
 
         orchestrator = self._get_orchestrator_for_schedule(schedule)
@@ -7551,6 +7555,7 @@ class Client(metaclass=ClientMetaClass):
         if project:
             scope = f"in project {project} "
             list_kwargs["project"] = project
+
         entity = list_method(**list_kwargs)
 
         # If only a single entity is found, return it
@@ -7566,6 +7571,7 @@ class Client(metaclass=ClientMetaClass):
                 allow_name_prefix_match=allow_name_prefix_match,
                 project=project,
                 hydrate=hydrate,
+                **kwargs,
             )
 
         # If more than one entity with the same name is found, raise an error.
