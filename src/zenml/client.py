@@ -4127,12 +4127,13 @@ class Client(metaclass=ClientMetaClass):
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_schedule,
-            list_method=self.list_schedules,
+            list_method=functools.partial(
+                self.list_schedules, is_archived=is_archived
+            ),
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             project=project,
             hydrate=hydrate,
-            is_archived=is_archived,
         )
 
     def list_schedules(
