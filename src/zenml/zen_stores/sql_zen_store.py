@@ -7459,6 +7459,7 @@ class SqlZenStore(BaseZenStore):
                 # Soft deletion - set is_archived
                 schedule.is_archived = True
                 schedule.active = False
+                schedule.name = f"{schedule.name}_{uuid.uuid4()}"
                 session.add(schedule)
 
             session.commit()
