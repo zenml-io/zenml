@@ -17,6 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.constants import (
     API,
     PIPELINE_SNAPSHOTS,
@@ -34,6 +35,10 @@ from zenml.models import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import check_entitlement
+from zenml.zen_server.pipeline_execution.utils import (
+    create_snapshot_from_source,
+    validate_snapshot_for_server_execution,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -203,6 +208,7 @@ def delete_trigger(
 def attach_trigger_to_snapshot(
     trigger_id: UUID,
     snapshot_id: UUID,
+    run_configuration: PipelineRunConfiguration | None = None,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Attaches a trigger to a snapshot.
@@ -210,17 +216,28 @@ def attach_trigger_to_snapshot(
     Args:
         trigger_id: The ID of the trigger.
         snapshot_id: The ID of the snapshot.
+        run_configuration: Configuration for the follow-up trigger runs.
     """
-    verify_permission_for_model(
-        model=zen_store().get_trigger(trigger_id=trigger_id, hydrate=True),
-        action=Action.UPDATE,
-    )
+    trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
     snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
+
+    verify_permission_for_model(
+        model=trigger,
+        action=Action.UPDATE,
+    )
 
     verify_permission_for_model(
         model=snapshot,
         action=Action.READ,
+    )
+
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_SNAPSHOT,
+        action=Action.CREATE,
+        project_id=snapshot.project_id,
     )
 
     verify_permission(
@@ -229,11 +246,20 @@ def attach_trigger_to_snapshot(
         project_id=snapshot.project_id,
     )
 
-    check_entitlement(feature=SCHEDULE_FEATURE)
+    # Validates and creates a runnable snapshot from the source snapshot + run configuration
+    build, stack, model_version = validate_snapshot_for_server_execution(
+        snapshot=snapshot,
+        run_configuration=run_configuration,
+    )
+    target_snapshot = create_snapshot_from_source(
+        snapshot=snapshot,
+        stack=stack,
+        run_configuration=run_configuration,
+    )
 
     zen_store().attach_trigger_to_snapshot(
         trigger_id=trigger_id,
-        snapshot_id=snapshot_id,
+        snapshot_id=target_snapshot.id,
     )
 
 
@@ -253,8 +279,10 @@ def detach_trigger_from_snapshot(
         trigger_id: The ID of the trigger.
         snapshot_id: The ID of the snapshot.
     """
+    trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
+
     verify_permission_for_model(
-        model=zen_store().get_trigger(trigger_id=trigger_id, hydrate=True),
+        model=trigger,
         action=Action.UPDATE,
     )
 

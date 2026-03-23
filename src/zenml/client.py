@@ -44,7 +44,9 @@ from zenml.client_lazy_loader import (
     evaluate_all_lazy_load_args_in_client_methods,
 )
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+)
 from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
@@ -4072,8 +4074,12 @@ class Client(metaclass=ClientMetaClass):
 
         self.zen_store.delete_trigger(trigger_id=trigger_id, soft=soft)
 
+    @_fail_for_sql_zen_store
     def attach_trigger_to_snapshot(
-        self, trigger_id: UUID, pipeline_snapshot_id: UUID
+        self,
+        trigger_id: UUID,
+        pipeline_snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
     ) -> None:
         """Attaches a trigger to a snapshot.
 
@@ -4083,9 +4089,12 @@ class Client(metaclass=ClientMetaClass):
         Args:
             trigger_id: The ID of the trigger.
             pipeline_snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs of this trigger & snapshot.
         """
         self.zen_store.attach_trigger_to_snapshot(
-            trigger_id=trigger_id, snapshot_id=pipeline_snapshot_id
+            trigger_id=trigger_id,
+            snapshot_id=pipeline_snapshot_id,
+            run_configuration=run_configuration,
         )
 
     def detach_trigger_from_snapshot(

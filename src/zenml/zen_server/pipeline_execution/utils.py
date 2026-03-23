@@ -145,6 +145,35 @@ class BoundedThreadPoolExecutor:
         self._executor.shutdown(**kwargs)
 
 
+def create_snapshot_from_source(
+    snapshot: PipelineSnapshotResponse,
+    stack: StackResponse,
+    run_configuration: PipelineRunConfiguration | None = None,
+    template_id: UUID | None = None,
+) -> PipelineSnapshotResponse:
+    """Creates a snapshot from a snapshot source and a run configuration.
+
+    Note: Ensures that orchestrator is configured to run async.
+
+    Args:
+        snapshot: The snapshot to run.
+        stack: The stack to execute the snapshot on.
+        run_configuration: The configuration for the snapshot run/runs.
+        template_id: The ID of the template from which to create the snapshot
+            request.
+
+    Returns:
+        A new pipeline snapshot response.
+    """
+    snapshot_request = snapshot_request_from_source_snapshot(
+        source_snapshot=snapshot,
+        config=run_configuration or PipelineRunConfiguration(),
+        template_id=template_id,
+    )
+    ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
+    return zen_store().create_snapshot(snapshot_request)
+
+
 def run_snapshot(
     snapshot: PipelineSnapshotResponse,
     auth_context: AuthContext,
@@ -185,16 +214,13 @@ def run_snapshot(
         run_configuration=request.run_configuration,
     )
 
-    snapshot_request = snapshot_request_from_source_snapshot(
-        source_snapshot=snapshot,
-        config=request.run_configuration or PipelineRunConfiguration(),
-        template_id=template_id,
-    )
-
-    ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
-
     if create_new_snapshot:
-        target_snapshot = zen_store().create_snapshot(snapshot_request)
+        target_snapshot = create_snapshot_from_source(
+            snapshot=snapshot,
+            run_configuration=request.run_configuration,
+            template_id=template_id,
+            stack=stack,
+        )
     else:
         target_snapshot = snapshot
 

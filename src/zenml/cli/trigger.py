@@ -21,6 +21,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, TriggerRunConcurrency
 from zenml.logger import get_logger
@@ -221,17 +222,33 @@ def delete_schedule_trigger(schedule_id: UUID, soft: bool = True) -> None:
 @schedule.command("attach", help="Attach schedule to snapshot")
 @click.argument("schedule_id", type=UUID)
 @click.argument("snapshot_id", type=UUID)
-def attach_schedule_trigger(schedule_id: UUID, snapshot_id: UUID) -> None:
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to config file (PipelineRunConfiguration) for triggered runs.",
+)
+def attach_schedule_trigger(
+    schedule_id: UUID,
+    snapshot_id: UUID,
+    config_path: str | None = None,
+) -> None:
     """Attach a schedule to a snapshot.
 
     Args:
         schedule_id: The ID of the schedule.
         snapshot_id: The ID of the snapshot.
+        config_path: The path to the config file to use.
     """
     try:
         Client().attach_trigger_to_snapshot(
             trigger_id=schedule_id,
             pipeline_snapshot_id=snapshot_id,
+            run_configuration=PipelineRunConfiguration.from_yaml(config_path)
+            if config_path
+            else None,
         )
     except Exception as e:
         cli_utils.exception(e)
