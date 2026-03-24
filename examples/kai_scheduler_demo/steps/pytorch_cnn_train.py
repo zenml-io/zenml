@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """PyTorch CNN training step on GPU."""
 
+import subprocess
 from typing import Dict
 
 import torch
@@ -23,6 +24,22 @@ from zenml import log_metadata, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def _log_nvidia_smi(label: str = "") -> None:
+    """Run nvidia-smi and log the output for GPU visibility during demos."""
+    prefix = f"[{label}] " if label else ""
+    try:
+        result = subprocess.run(
+            ["nvidia-smi"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            logger.info("%snvidia-smi output:\n%s", prefix, result.stdout)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
 
 # Synthetic dataset dimensions — large enough to keep the GPU busy.
 _NUM_SAMPLES = 2048
@@ -91,6 +108,8 @@ def pytorch_cnn_train(
     Returns:
         Dict with final_loss, best_loss, and total_samples_seen.
     """
+    _log_nvidia_smi("before training")
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
         logger.info(
@@ -135,6 +154,7 @@ def pytorch_cnn_train(
             avg_loss = epoch_loss / steps_per_epoch
             epoch_losses.append(avg_loss)
             logger.info("Epoch [%d/%d] — avg loss: %.4f", epoch + 1, epochs, avg_loss)
+            _log_nvidia_smi(f"epoch {epoch + 1}/{epochs}")
             log_metadata(
                 metadata={"training": {f"epoch_{epoch + 1}_loss": round(avg_loss, 6)}}
             )

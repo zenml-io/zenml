@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """CUDA matrix multiplication benchmark step."""
 
+import subprocess
 from typing import Dict
 
 import torch
@@ -21,6 +22,25 @@ from zenml import log_metadata, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def _log_nvidia_smi() -> None:
+    """Run nvidia-smi and log the output for GPU visibility during demos."""
+    try:
+        result = subprocess.run(
+            ["nvidia-smi"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            logger.info("nvidia-smi output:\n%s", result.stdout)
+        else:
+            logger.warning("nvidia-smi failed: %s", result.stderr)
+    except FileNotFoundError:
+        logger.warning("nvidia-smi not found on this node.")
+    except subprocess.TimeoutExpired:
+        logger.warning("nvidia-smi timed out.")
 
 _WARMUP_ITERATIONS = 3
 
@@ -47,6 +67,8 @@ def cuda_matrix_benchmark(matrix_size: int = 4096) -> Dict[str, float]:
     Returns:
         Dict with benchmark results: elapsed_ms, gflops, device, memory_mb.
     """
+    _log_nvidia_smi()
+
     device_name = "cpu"
     device = torch.device("cpu")
 

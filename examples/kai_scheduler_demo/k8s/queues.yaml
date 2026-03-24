@@ -1,8 +1,17 @@
 # KAI-Scheduler Queue CRDs for the ZenML + KAI demo.
 #
-# This file sets up a two-level queue hierarchy:
-#   root-queue  (cluster root, no quota limit)
-#     └── default-queue  (leaf queue for ZenML workloads, GPU quota = 8)
+# Queue hierarchy (sized for 2 × T4 GPU nodes, ~15 GB RAM / 4 CPU each):
+#
+#   root-queue  (2 GPUs total)
+#     ├── default-queue  (quota=1 GPU — regular train/build jobs)
+#     └── prod-queue     (quota=1 GPU — high-priority jobs, 2× over-quota weight)
+#
+# With 2 GPUs:
+#   - Both queues run simultaneously (1 GPU each at quota).
+#   - If one queue is idle, the other can burst to 2 GPUs (over-quota).
+#   - A train-high job in prod-queue will preempt a train job in default-queue.
+#
+# Memory is in MiB. ~6 GB per node reserved for system + GPU operator pods.
 #
 # Usage:
 #   kubectl apply -f k8s/queues.yaml
@@ -17,13 +26,20 @@ kind: Queue
 metadata:
   name: root-queue
 spec:
-  # Root queues have no parent and act as the scheduling domain root.
   displayName: "Root Queue"
-  quota:
-    gpu: 32
-    cpu: 128
-    memory: "512Gi"
-  overQuotaWeight: 1
+  resources:
+    gpu:
+      quota: 2
+      limit: -1
+      overQuotaWeight: 1
+    cpu:
+      quota: 6000
+      limit: -1
+      overQuotaWeight: 1
+    memory:
+      quota: 18432
+      limit: -1
+      overQuotaWeight: 1
 ---
 apiVersion: scheduling.run.ai/v2
 kind: Queue
@@ -31,23 +47,21 @@ metadata:
   name: default-queue
 spec:
   displayName: "ZenML Default Queue"
-  # Parent queue — must match the root queue's name.
   parentQueue: root-queue
-  # Guaranteed GPU quota for this queue.
-  quota:
-    gpu: 8
-    cpu: 32
-    memory: "128Gi"
-  # When resources are available above quota, this queue gets this weight
-  # relative to sibling queues for over-quota allocation (fair-share).
-  overQuotaWeight: 1
-  # Hard cap: never exceed this regardless of availability.
-  limit:
-    gpu: 16
-    cpu: 64
-    memory: "256Gi"
+  resources:
+    gpu:
+      quota: 1
+      limit: 2
+      overQuotaWeight: 1
+    cpu:
+      quota: 8000
+      limit: 16000
+      overQuotaWeight: 1
+    memory:
+      quota: 9216
+      limit: 18432
+      overQuotaWeight: 1
 ---
-# Optional: a separate queue for high-priority production workloads.
 apiVersion: scheduling.run.ai/v2
 kind: Queue
 metadata:
@@ -55,12 +69,16 @@ metadata:
 spec:
   displayName: "ZenML Production Queue"
   parentQueue: root-queue
-  quota:
-    gpu: 4
-    cpu: 16
-    memory: "64Gi"
-  overQuotaWeight: 2
-  limit:
-    gpu: 8
-    cpu: 32
-    memory: "128Gi"
+  resources:
+    gpu:
+      quota: 1
+      limit: 2
+      overQuotaWeight: 2
+    cpu:
+      quota: 3000
+      limit: 6000
+      overQuotaWeight: 2
+    memory:
+      quota: 9216
+      limit: 18432
+      overQuotaWeight: 2

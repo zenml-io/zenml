@@ -28,33 +28,56 @@ settings:
     python_package_installer: uv
     python_package_installer_args:
       system: null
+    environment:
+      FORCE_REBUILD: "1"
 
+  # Pipeline-level: only queue assignment (no GPU settings here,
+  # so the orchestrator pod stays on a regular CPU node).
   orchestrator.kubernetes:
     kai_queue: "default-queue"
 
-    # Request 50% of a GPU via KAI time-slicing.
-    # This adds the annotation: gpu-fraction=0.5 to each pod.
-    # KAI enforces the fraction as a GPU time-slice; no nvidia.com/gpu
-    # resource request is needed — KAI handles the GPU allocation.
-    kai_gpu_fraction: 0.5
+steps:
+  cuda_matrix_benchmark:
+    settings:
+      orchestrator.kubernetes:
+        kai_gpu_fraction: 0.5
+        pod_settings:
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+              nvidia.com/gpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "1500m"
+              nvidia.com/gpu: "1"
+          node_selectors:
+            cloud.google.com/gke-accelerator: nvidia-tesla-t4
+          tolerations:
+            - key: "nvidia.com/gpu"
+              operator: "Exists"
+              effect: "NoSchedule"
 
-    # Alternatively, use kai_gpu_memory to request a fixed amount of GPU
-    # memory in MiB (mutually exclusive with kai_gpu_fraction):
-    # kai_gpu_memory: 4096
-
-    pod_settings:
-      resources:
-        requests:
-          memory: "2Gi"
-          cpu: "1"
-        limits:
-          memory: "4Gi"
-          cpu: "2"
-
-      tolerations:
-        - key: "nvidia.com/gpu"
-          operator: "Exists"
-          effect: "NoSchedule"
+  pytorch_cnn_train:
+    settings:
+      orchestrator.kubernetes:
+        kai_gpu_fraction: 0.5
+        pod_settings:
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+              nvidia.com/gpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "1500m"
+              nvidia.com/gpu: "1"
+          node_selectors:
+            cloud.google.com/gke-accelerator: nvidia-tesla-t4
+          tolerations:
+            - key: "nvidia.com/gpu"
+              operator: "Exists"
+              effect: "NoSchedule"
 
 parameters:
   matrix_size: 2048

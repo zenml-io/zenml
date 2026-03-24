@@ -1,0 +1,70 @@
+# ZenML pipeline config: high-priority GPU workload for preemption demo.
+#
+# Use this config to demonstrate KAI-Scheduler preemption:
+#   1. First, start a regular job:  python run.py --config kai_demo.yaml --no-cache
+#   2. While it runs, start this:   python run.py --config kai_demo_preemption.yaml --no-cache
+#   3. KAI will preempt the train-priority pod to free the GPU for train-high.
+#
+# Requires: 2 GPU nodes in the cluster (to observe preemption clearly).
+#
+# Usage:
+#   python run.py --config kai_demo_preemption.yaml
+
+model:
+  name: kai-scheduler-gpu-demo
+  tags:
+    - kai-scheduler
+    - gpu
+    - kubecon-demo
+    - preemption
+
+settings:
+  docker:
+    parent_image: "pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime"
+    requirements: requirements.txt
+    python_package_installer: uv
+    python_package_installer_args:
+      system: null
+
+  orchestrator.kubernetes:
+    # ── KAI-Scheduler integration ─────────────────────────────────────────
+    # prod-queue has overQuotaWeight=2, giving it priority in fair-share
+    # allocation when both queues compete for the same GPU.
+    kai_queue: "prod-queue"
+
+    # train-high (value=75) preempts train (value=50) and build (value=25).
+    kai_priority_class: "train-high"
+
+    # Distinct prefix so preemption pods are easy to spot in k9s/kubectl.
+    job_name_prefix: "URGENT"
+
+    # ── Pod-level settings ────────────────────────────────────────────────
+    pod_settings:
+      scheduler_name: kai-scheduler
+
+      labels:
+        kai.scheduler/queue: "prod-queue"
+
+      resources:
+        requests:
+          memory: "2Gi"
+          cpu: "1"
+          nvidia.com/gpu: "1"
+        limits:
+          memory: "4Gi"
+          cpu: "2"
+          nvidia.com/gpu: "1"
+
+      node_selectors:
+        cloud.google.com/gke-accelerator: nvidia-tesla-t4
+
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+parameters:
+  matrix_size: 2048
+  epochs: 5
+  batch_size: 32
+  learning_rate: 0.001

@@ -25,6 +25,7 @@ _CONFIGS_DIR = os.path.join(os.path.dirname(__file__), "configs")
 
 _CONFIG_CHOICES = [
     "kai_demo.yaml",
+    "kai_demo_preemption.yaml",
     "kai_demo_gpu_sharing.yaml",
     "kai_demo_local.yaml",
 ]

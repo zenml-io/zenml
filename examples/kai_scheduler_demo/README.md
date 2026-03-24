@@ -33,6 +33,39 @@ cuda_matrix_benchmark ──▶ pytorch_cnn_train
 
 ## Prerequisites
 
+### 0. Provision a 2-GPU GKE Cluster
+
+The demo is sized for **2 nodes × 1 T4 GPU each**. This lets KAI run two
+jobs in parallel and demonstrate live preemption.
+
+```bash
+# Scale the GPU node pool to 2 nodes (adjust cluster name/zone as needed)
+gcloud container node-pools update gpu \
+  --cluster=cluster-1 \
+  --num-nodes=2 \
+  --zone=<your-zone>
+```
+
+If you're creating a new GPU node pool from scratch:
+
+```bash
+gcloud container node-pools create gpu \
+  --cluster=cluster-1 \
+  --machine-type=n1-standard-4 \
+  --accelerator=type=nvidia-tesla-t4,count=1 \
+  --num-nodes=2 \
+  --node-taints=nvidia.com/gpu=present:NoSchedule \
+  --node-labels=accelerator=nvidia-gpu \
+  --zone=<your-zone>
+```
+
+Verify both GPU nodes are ready:
+
+```bash
+kubectl get nodes -l accelerator=nvidia-gpu
+# Should show 2 nodes in Ready state
+```
+
 ### 1. Install KAI-Scheduler
 
 ```bash
@@ -103,7 +136,7 @@ Each step pod is:
 
 ### GPU Sharing Mode (KAI time-slicing)
 
-```bash
+```bashkai-k8s
 python run.py --config kai_demo_gpu_sharing.yaml
 ```
 
@@ -119,6 +152,45 @@ python run.py --config kai_demo_local.yaml
 
 Runs on any Kubernetes cluster without KAI-Scheduler or GPUs. Useful
 for smoke-testing the pipeline logic locally (e.g., `kind`, `minikube`).
+
+### Preemption Demo (2 GPU nodes required)
+
+This is the most visual demo moment: submit a low-priority job, let it start,
+then submit a high-priority job and watch KAI preempt the first one.
+
+**Terminal 1** — start two `train`-priority jobs (one per GPU node):
+
+```bash
+python run.py --config kai_demo.yaml --no-cache &
+python run.py --config kai_demo.yaml --no-cache &
+```
+
+**Terminal 2** — once both pods are running, submit the high-priority job:
+
+```bash
+python run.py --config kai_demo_preemption.yaml --no-cache
+```
+
+Watch KAI preempt one of the `train` pods to free a GPU for `train-high`:
+
+```bash
+# Watch pods — you'll see one train pod go Terminating as the preemption fires
+kubectl get pods -n zenml -w
+
+# Confirm the preempted pod's priority class
+kubectl get pod <preempted-pod> -n zenml \
+  -o jsonpath='{.spec.priorityClassName}'
+# → train
+
+# Confirm the new pod's priority class
+kubectl get pod <new-pod> -n zenml \
+  -o jsonpath='{.spec.priorityClassName}'
+# → train-high
+```
+
+The two queues (`default-queue` and `prod-queue`) are each allocated 1 GPU
+at quota. When `prod-queue` needs its GPU and `default-queue` is using both,
+KAI preempts the lowest-priority pod in `default-queue`.
 
 ### Disable Caching
 
@@ -221,7 +293,8 @@ kai_scheduler_demo/
 │   ├── cuda_matrix_benchmark.py  # CUDA matmul GFLOPS benchmark
 │   └── pytorch_cnn_train.py      # Minimal CNN training
 ├── configs/
-│   ├── kai_demo.yaml             # Full GPU + KAI-Scheduler config
+│   ├── kai_demo.yaml             # Full GPU + KAI-Scheduler config (train priority)
+│   ├── kai_demo_preemption.yaml  # High-priority config for preemption demo
 │   ├── kai_demo_gpu_sharing.yaml # GPU time-slicing config
 │   └── kai_demo_local.yaml       # CPU-only for local dev
 ├── k8s/

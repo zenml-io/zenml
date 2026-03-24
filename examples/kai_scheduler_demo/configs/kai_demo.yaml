@@ -44,22 +44,25 @@ settings:
 
     # ── Pod-level settings ────────────────────────────────────────────────
     pod_settings:
-      # scheduler_name is set automatically by kai_queue, but you can
-      # override it explicitly here if needed.
-      # scheduler_name: kai-scheduler
+      # scheduler_name should be set automatically by kai_queue, but
+      # must be explicit until the entrypoint bug is fixed.
+      scheduler_name: kai-scheduler
+
+      labels:
+        kai.scheduler/queue: "default-queue"
 
       resources:
         requests:
+          memory: "2Gi"
+          cpu: "1"
+          nvidia.com/gpu: "1"
+        limits:
           memory: "4Gi"
           cpu: "2"
           nvidia.com/gpu: "1"
-        limits:
-          memory: "8Gi"
-          cpu: "4"
-          nvidia.com/gpu: "1"
 
       node_selectors:
-        accelerator: nvidia-gpu
+        cloud.google.com/gke-accelerator: nvidia-tesla-t4
 
       tolerations:
         - key: "nvidia.com/gpu"
@@ -67,7 +70,7 @@ settings:
           effect: "NoSchedule"
 
 parameters:
-  matrix_size: 4096
-  epochs: 5
-  batch_size: 64
+  matrix_size: 2048
+  epochs: 300
+  batch_size: 32
   learning_rate: 0.001
