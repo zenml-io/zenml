@@ -18,6 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
 
 BASE_OPTIONAL_DEPENDENCY_GROUPS = (
+    "local",
     "server",
     "templates",
     "terraform",
