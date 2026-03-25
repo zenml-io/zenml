@@ -106,22 +106,20 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  ubuntu-setup-and-unit-test:
+  ubuntu-modal-unit-test:
     needs: linting
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        # IMPORTANT: Since we are using the combination of `arc-runner-set`
-        # and `3.10` in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow. If you change the configuration
-        # here, please adjust the configuration of `ci-slow` accordingly.
-        os: [ubuntu-latest]
         python-version: ['3.11']
       fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
+    uses: ./.github/workflows/unit-test-modal.yml
     with:
       python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
+      reruns: 3
+      install_integrations: 'yes'
+      cpu: 4
+      memory-mb: 16384
     secrets: inherit
   ubuntu-latest-integration-test:
     needs: [linting]

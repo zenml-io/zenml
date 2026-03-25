@@ -188,6 +188,9 @@ norecursedirs = [
 parallel = true
 source = ["src/zenml"]
 
+[tool.coverage.paths]
+source = ["src/zenml", "/workspace/src/zenml"]
+
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
