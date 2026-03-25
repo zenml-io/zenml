@@ -338,7 +338,10 @@ coverage run -m pytest {pytest_target} \\
   --instafail \\
   --junitxml={artifact_dir}/junit.xml
 exit_code=$?
-if [ -f .coverage ]; then
+coverage_file=$(ls .coverage.* 2>/dev/null | head -n 1)
+if [ -n "$coverage_file" ]; then
+  mv "$coverage_file" {artifact_dir}/.coverage.{int(args.shard_index)}
+elif [ -f .coverage ]; then
   mv .coverage {artifact_dir}/.coverage.{int(args.shard_index)}
 fi
 exit "$exit_code"
