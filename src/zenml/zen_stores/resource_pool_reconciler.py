@@ -205,7 +205,7 @@ class ResourcePoolReconciler:
                     continue
 
                 try:
-                    self._store.reconcile_resource_pools(
+                    self._store.resource_pools.reconcile_resource_pools(
                         max_allocations_per_pool=max_allocations_per_pool
                     )
                 except Exception:

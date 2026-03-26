@@ -119,6 +119,7 @@ class ResourcePoolSubjectPolicySchema(BaseSchema, table=True):
         Args:
             include_metadata: If metadata should be included.
             include_resources: If resources should be included.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             The query options.

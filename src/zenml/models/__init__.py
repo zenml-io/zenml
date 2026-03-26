@@ -821,6 +821,8 @@ __all__ = [
     "ResourcePoolResponseBody",
     "ResourcePoolResponseMetadata",
     "ResourcePoolResponseResources",
+    "ResourcePoolAllocation",
+    "ResourcePoolQueueItem",
     "ResourcePoolSubjectPolicyFilter",
     "ResourcePoolSubjectPolicyRequest",
     "ResourcePoolSubjectPolicyResponse",

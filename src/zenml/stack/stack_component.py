@@ -14,6 +14,7 @@
 """Implementation of the ZenML Stack Component class."""
 
 import json
+import math
 from abc import ABC
 from collections.abc import Mapping, Sequence
 from datetime import datetime
@@ -33,6 +34,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.resource_settings import ByteUnit
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
@@ -807,10 +809,11 @@ class StackComponent:
             requested_resources["gpu"] = required_gpu_count
 
         if resource_settings.cpu_count is not None:
-            requested_resources["cpu"] = resource_settings.cpu_count
+            requested_resources["cpu"] = math.ceil(resource_settings.cpu_count)
 
-        if resource_settings.memory is not None:
-            requested_resources["memory"] = resource_settings.get_memory()
+        memory_amount = resource_settings.get_memory(unit=ByteUnit.MIB)
+        if memory_amount is not None:
+            requested_resources["memory"] = math.ceil(memory_amount)
 
         return requested_resources
 
