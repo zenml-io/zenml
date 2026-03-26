@@ -102,6 +102,19 @@ class DatabricksOrchestratorSettings(BaseSettings):
         description="Instance availability type: ON_DEMAND (guaranteed), SPOT (cost-optimized), "
         "or SPOT_WITH_FALLBACK (spot with on-demand backup).",
     )
+    custom_tags: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Custom tags applied to Databricks cluster resources (e.g., AWS "
+        "instances, EBS volumes). Useful for cost allocation and governance. "
+        "Maximum 45 tags. "
+        "Example: {'cost_center': 'ml-team', 'environment': 'production'}",
+    )
+    job_tags: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Tags associated with the Databricks job, forwarded to the "
+        "cluster as cluster tags. Maximum 25 tags. "
+        "Example: {'project': 'recommendation-engine', 'owner': 'data-team'}",
+    )
 
 
 class DatabricksOrchestratorConfig(

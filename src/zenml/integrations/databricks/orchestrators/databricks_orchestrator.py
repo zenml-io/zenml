@@ -422,6 +422,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 workload_type=WorkloadType(
                     clients=ClientsTypes(jobs=True, notebooks=False)
                 ),
+                custom_tags=settings.custom_tags,
             ),
         )
         if schedule and schedule.cron_expression:
@@ -446,6 +447,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             tasks=tasks,
             job_clusters=[job_cluster],
             schedule=databricks_schedule,
+            tags=settings.job_tags,
         )
         if job.job_id:
             databricks_client.jobs.run_now(job_id=job.job_id)
