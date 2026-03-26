@@ -664,16 +664,30 @@ def schedule() -> None:
         "is_archived",
     ],
 )
+@click.option(
+    "--is-archived",
+    help="Hide archived, show archived or show both archived and non-archived.",
+    type=click.Choice(["true", "false", "both"], case_sensitive=False),
+    default="false",
+)
 def list_schedules(
-    columns: str, output_format: OutputFormat, **kwargs: Any
+    columns: str, output_format: OutputFormat, is_archived: str, **kwargs: Any
 ) -> None:
     """List all pipeline schedules.
 
     Args:
         columns: Columns to display in output.
         output_format: Format for output (table/json/yaml/csv/tsv).
+        is_archived: Flag to filter or not by archived state.
         **kwargs: Keyword arguments to filter schedules.
     """
+    if is_archived.lower() == "true":
+        kwargs["is_archived"] = True
+    elif is_archived.lower() == "false":
+        kwargs["is_archived"] = False
+    else:
+        kwargs["is_archived"] = None
+
     schedules = Client().list_schedules(**kwargs)
     cli_utils.print_page(
         schedules,

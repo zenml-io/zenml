@@ -14,7 +14,7 @@
 """Models representing schedules."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional, Union
+from typing import ClassVar, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
@@ -319,6 +319,11 @@ class ScheduleResponse(
 class ScheduleFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all Users."""
 
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        "is_archived",
+    ]
+
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",
@@ -361,8 +366,7 @@ class ScheduleFilter(ProjectScopedFilter):
         description="The time at which the schedule should run once",
         union_mode="left_to_right",
     )
-
-    is_archived: bool = Field(
-        default=False,
+    is_archived: bool | None = Field(
+        default=None,
         description="Whether or not the schedule is archived",
     )
