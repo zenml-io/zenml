@@ -19,6 +19,9 @@ from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 from zenml.zen_stores.resource_pools.sql_store import ResourcePoolsSqlStore
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsSQLStoreInterface,
+)
 
 try:
     import sqlalchemy  # noqa
@@ -681,6 +684,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     myloader_threads: Optional[int] = None
     myloader_extra_args: Optional[List[str]] = None
 
+    resource_pool_implementation_source: Optional[str] = None
+
     @field_validator("secrets_store")
     @classmethod
     def validate_secrets_store(
@@ -1098,6 +1103,15 @@ class SqlZenStore(BaseZenStore):
         return self._backup_secrets_store
 
     @property
+    def resource_pools_enabled(self) -> bool:
+        """Whether the resource pools functionality is enabled.
+
+        Returns:
+            True if the resource pools functionality is enabled, False otherwise.
+        """
+        return self._resource_pools is not None
+
+    @property
     def resource_pools(self) -> ResourcePoolsSqlStore:
         """The resource pools store associated with this store.
 
@@ -1105,10 +1119,13 @@ class SqlZenStore(BaseZenStore):
             The resource pools store associated with this store.
 
         Raises:
-            ValueError: If the resource pools store is not initialized.
+            NotImplementedError: If the resource pool functionality is not
+                enabled
         """
         if not self._resource_pools:
-            raise ValueError("Resource pools store not initialized")
+            raise NotImplementedError(
+                "Resource pool functionality is not enabled"
+            )
         return self._resource_pools
 
     @property
@@ -1460,6 +1477,20 @@ class SqlZenStore(BaseZenStore):
             self.config.backup_secrets_store = (
                 self._backup_secrets_store.config
             )
+
+        if (
+            resource_pool_source
+            := self.config.resource_pool_implementation_source
+        ):
+            logger.debug(
+                "Initializing resource pool implementation: %s",
+                resource_pool_source,
+            )
+            implementation_class = source_utils.load_and_validate_class(
+                resource_pool_source,
+                expected_class=ResourcePoolsSQLStoreInterface,
+            )
+            self._resource_pools = implementation_class()
 
     def _initialize_database(self) -> None:
         """Initialize the database if not already initialized."""
@@ -11489,8 +11520,11 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            if ExecutionStatus(existing_step_run.status).is_finished:
-                self.resource_pools._release_step_run_resources(
+            if (
+                ExecutionStatus(existing_step_run.status).is_finished
+                and self.resource_pools_enabled
+            ):
+                self.resource_pools.release_step_run_resources(
                     session, existing_step_run.id
                 )
 

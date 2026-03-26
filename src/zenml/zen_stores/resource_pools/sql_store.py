@@ -124,17 +124,6 @@ logger = get_logger(__name__)
 class ResourcePoolsSqlStore(ResourcePoolsStoreInterface):
     """Resource pools store implementation that uses SQL database backend."""
 
-    store: "SqlZenStore"
-
-    def __init__(self, store: "SqlZenStore") -> None:
-        """Initialize the resource pools SQL store.
-
-        Args:
-            store: The store to use.
-        """
-        super().__init__()
-        self.store = store
-
     # -------------------- Resource Pools -------------
 
     def _apply_resource_pool_capacity_updates(
@@ -2843,7 +2832,7 @@ class ResourcePoolsSqlStore(ResourcePoolsStoreInterface):
 
         return allocations_done
 
-    def _release_step_run_resources(
+    def release_step_run_resources(
         self, session: "Session", step_run_id: UUID
     ) -> None:
         """Release potentially acquired resources for a step run.

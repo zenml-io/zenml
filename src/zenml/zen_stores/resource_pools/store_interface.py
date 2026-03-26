@@ -14,6 +14,7 @@
 """Resource pools store interface."""
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from zenml.models import (
@@ -32,9 +33,21 @@ from zenml.models import (
     ResourceRequestUpdate,
 )
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
+
 
 class ResourcePoolsStoreInterface(ABC):
     """Resource pools store interface."""
+
+    def __init__(self, store: "SqlZenStore") -> None:
+        """Initialize the resource pools SQL store.
+
+        Args:
+            store: The store to use.
+        """
+        super().__init__()
+        self.store = store
 
     # -------------------- Resource Pools -------------
 
@@ -235,4 +248,32 @@ class ResourcePoolsStoreInterface(ABC):
 
         Args:
             resource_request_id: The ID of the resource request to delete.
+        """
+
+
+class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
+    """Resource pools SQL store interface."""
+
+    @abstractmethod
+    def release_step_run_resources(
+        self, session: "Session", step_run_id: UUID
+    ) -> None:
+        """Release potentially acquired resources for a step run.
+
+        Args:
+            session: DB session.
+            step_run_id: The ID of the step run to release resources for.
+        """
+
+    @abstractmethod
+    def reconcile_resource_pools(
+        self, max_allocations_per_pool: int = 100
+    ) -> None:
+        """Run one full reconciliation pass for all resource pools.
+
+        Args:
+            max_allocations_per_pool: Maximum allocations to perform per pool.
+
+        Failures are isolated per pool: one pool failure is logged and does not
+        stop reconciliation for other pools.
         """
