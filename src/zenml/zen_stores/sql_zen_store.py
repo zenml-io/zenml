@@ -7753,11 +7753,6 @@ class SqlZenStore(BaseZenStore):
             if not trigger:
                 raise KeyError(f"Trigger {trigger_id} doesn't exist.")
 
-            for s in trigger.snapshots:
-                if snapshot_id in {s.source_snapshot_id, s.id}:
-                    # Skip attaching already attached snapshot.
-                    return
-
             if trigger.is_archived:
                 raise IllegalOperationError(
                     f"Can not attach snapshot {snapshot_id} to archived trigger {trigger_id}."

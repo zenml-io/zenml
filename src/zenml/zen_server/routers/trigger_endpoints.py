@@ -25,6 +25,7 @@ from zenml.constants import (
     TRIGGERS,
     VERSION_1,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
@@ -221,6 +222,14 @@ def attach_trigger_to_snapshot(
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
     snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
+
+    for s in trigger.snapshots:
+        if snapshot_id in {s.source_snapshot_id, s.id}:
+            raise IllegalOperationError(
+                f"Trigger {trigger_id} is already attached to snapshot {snapshot_id}. "
+                f"To attach {snapshot_id} with a different configuration, please detach "
+                f"the current attachment first."
+            )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
 
