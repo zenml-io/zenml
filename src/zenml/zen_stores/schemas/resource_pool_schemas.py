@@ -211,6 +211,7 @@ class ResourcePoolSchema(NamedSchema, table=True):
         }
     )
     policies: List["ResourcePoolSubjectPolicySchema"] = Relationship(
+        back_populates="pool",
         sa_relationship_kwargs={
             "order_by": desc(col(ResourcePoolSubjectPolicySchema.priority)),
             "passive_deletes": True,
