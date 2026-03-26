@@ -184,6 +184,14 @@ dev = [
     "types-jsonschema>=4.26.0",
     "types-cachetools>=5.3.0,<8.0.0"
 ]
+otel = [
+    "opentelemetry-distro>=0.59b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.38.0",
+    "opentelemetry-instrumentation-fastapi>=0.59b0",
+    "opentelemetry-instrumentation-logging>=0.59b0",
+    "opentelemetry-instrumentation-requests>=0.59b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.59b0",
+]
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]

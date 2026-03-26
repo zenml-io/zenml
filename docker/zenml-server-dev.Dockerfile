@@ -25,7 +25,7 @@ RUN set -ex && \
   apt-get update && \
   apt-get upgrade -y && \
   if [ "$INSTALL_DEBUG_TOOLS" = "true" ]; then \
-    apt-get install -y curl net-tools nmap inetutils-ping default-mysql-client mariadb-client git ; \
+  apt-get install -y curl net-tools nmap inetutils-ping default-mysql-client mariadb-client git ; \
   fi && \
   apt-get autoremove -y && \
   apt-get clean -y && \
@@ -88,9 +88,9 @@ COPY --chown=$USERNAME:$USER_GID src/zenml_cli/__init__.py ./src/zenml_cli/
 # NOTE: we uninstall zenml at the end because we install it separately in the
 # final stage
 RUN pip install --upgrade pip uv setuptools \
-    && uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] "alembic==1.15.2" \
-    && uv pip uninstall zenml \
-    && uv pip freeze > requirements.txt
+  && uv pip install .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex,otel] "alembic==1.15.2" \
+  && uv pip uninstall zenml \
+  && uv pip freeze > requirements.txt
 
 # Inherit from the base image which has the minimal set of updated system
 # software packages
@@ -146,22 +146,24 @@ FROM common-runtime AS local-runtime
 
 # Run pip install again to install the source code in the virtual environment
 # in editable mode
-RUN pip install --no-deps --no-cache -e .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]
+RUN pip install --no-deps --no-cache -e .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex,otel]
 
 EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload", "--port", "8080", "--host",  "0.0.0.0"]
+# CMD ["opentelemetry-instrument", "uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--reload", "--port", "8080", "--host",  "0.0.0.0"]
 
 
 FROM common-runtime AS runtime
 
 # Run pip install again to install the source code in the virtual environment
 # and then remove the sources
-RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
-    && rm -rf src README.md pyproject.toml
+RUN pip install --no-deps --no-cache .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex,otel] \
+  && rm -rf src README.md pyproject.toml
 
 EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--port", "8080", "--host",  "0.0.0.0"]
+# CMD ["opentelemetry-instrument", "uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header", "--proxy-headers", "--forwarded-allow-ips", "*", "--port", "8080", "--host",  "0.0.0.0"]
