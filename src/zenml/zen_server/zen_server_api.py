@@ -131,6 +131,10 @@ app = FastAPI(
 
 add_middlewares(app)
 
+from zenml.zen_server.otel import configure_otel
+
+configure_otel(app)
+
 
 # Customize the default request validation handler that comes with FastAPI
 # to return a JSON response that matches the ZenML API spec.
