@@ -216,7 +216,7 @@ class ResourcePoolSchema(NamedSchema, table=True):
             "order_by": desc(col(ResourcePoolSubjectPolicySchema.priority)),
             "passive_deletes": True,
             "cascade": "all, delete-orphan",
-        }
+        },
     )
 
     @classmethod

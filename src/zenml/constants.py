@@ -331,15 +331,6 @@ DEFAULT_STORE_DIRECTORY_NAME = "default_zen_store"
 # SQL Store backup directory subpath:
 SQL_STORE_BACKUP_DIRECTORY_NAME = "database_backup"
 
-# Resource pool defaults
-# Keys listed here default to unbounded pool capacity when no
-# explicit value is provided for the pool resource.
-RESOURCE_POOL_UNBOUNDED_KEYS = {"step_run", "cpu", "memory"}
-RESOURCE_POOL_UNBOUNDED_CAPACITY = 2_147_483_647
-RESOURCE_POOL_RECONCILIATION_ADVISORY_LOCK_NAME = (
-    "zenml:resource_pool_reconciliation"
-)
-
 DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
 DEFAULT_PROJECT_NAME = "default"
@@ -393,8 +384,6 @@ DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT = 2 * 1024 * 1024 * 1024  # 20 GB
 DEFAULT_ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS = 2
 
 DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL = 15  # seconds
-DEFAULT_ZENML_SERVER_RESOURCE_POOL_RECONCILIATION_INTERVAL = 30  # seconds
-DEFAULT_ZENML_SERVER_RESOURCE_POOL_RECONCILIATION_MAX_ALLOCATIONS = 100
 
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
     "max-age=63072000; includeSubdomains"
@@ -666,5 +655,6 @@ LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
 
 # Subscription-based features
 SCHEDULE_FEATURE = "schedule"
+RESOURCE_POOL_FEATURE = "resource_pool"
 
 LOGS_RUNNER_SOURCE = "runner"

@@ -67,6 +67,9 @@ from zenml.zen_server.pipeline_execution.workload_manager_interface import (
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.request_management import RequestContext, RequestManager
 from zenml.zen_stores.resource_pool_reconciler import ResourcePoolReconciler
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsSQLStoreInterface,
+)
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 if TYPE_CHECKING:
@@ -88,6 +91,7 @@ _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
+_resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
 _memcache: Optional[MemoryCache] = None
 _request_manager: Optional[RequestManager] = None
@@ -208,6 +212,47 @@ def initialize_workload_manager() -> None:
             _workload_manager = workload_manager_class()
 
 
+def resource_pool_store() -> ResourcePoolsSQLStoreInterface:
+    """Return the initialized resource pool store component.
+
+    Raises:
+        RuntimeError: If the resource pool store component is not initialized.
+
+    Returns:
+        The resource pool store component.
+    """
+    global _resource_pool_store
+    if _resource_pool_store is None:
+        raise RuntimeError("Resource pool store component not initialized")
+    return _resource_pool_store
+
+
+def initialize_resource_pool_store() -> None:
+    """Initialize the resource pool store component.
+
+    This does not fail if the source can't be loaded but only logs a warning.
+
+    Args:
+        store: The ZenML store to use for the resource pool store.
+    """
+    global _resource_pool_store
+
+    if source := server_config().resource_pool_implementation_source:
+        from zenml.utils import source_utils
+
+        try:
+            resource_pool_store_class: Type[ResourcePoolsSQLStoreInterface] = (
+                source_utils.load_and_validate_class(
+                    source=source,
+                    expected_class=ResourcePoolsSQLStoreInterface,
+                )
+            )
+        except (ModuleNotFoundError, KeyError):
+            logger.warning("Unable to load resource pool store source.")
+        else:
+            _resource_pool_store = resource_pool_store_class(store=zen_store())
+
+
 def snapshot_executor() -> "BoundedThreadPoolExecutor":
     """Return the initialized snapshot executor.
 
@@ -259,41 +304,6 @@ def initialize_zen_store() -> None:
 
     global _zen_store
     _zen_store = zen_store_
-
-
-def initialize_resource_pool_reconciler() -> None:
-    """Initialize and start the resource pool reconciler."""
-    global _resource_pool_reconciler
-
-    cfg = server_config()
-    if not cfg.resource_pool_reconciliation_enabled:
-        logger.info("Resource pool reconciler is disabled by server config.")
-        return
-
-    if _resource_pool_reconciler is None:
-        _resource_pool_reconciler = ResourcePoolReconciler(store=zen_store())
-
-    _resource_pool_reconciler.start(
-        interval_seconds=float(cfg.resource_pool_reconciliation_interval),
-        max_allocations_per_pool=(
-            cfg.resource_pool_reconciliation_max_allocations_per_pool
-        ),
-    )
-
-
-def shutdown_resource_pool_reconciler(timeout_seconds: float = 5.0) -> None:
-    """Stop and cleanup the resource pool reconciler.
-
-    Args:
-        timeout_seconds: Maximum duration to wait for the reconciler thread to
-            stop.
-    """
-    global _resource_pool_reconciler
-    if _resource_pool_reconciler is None:
-        return
-
-    _resource_pool_reconciler.stop(timeout_seconds=timeout_seconds)
-    _resource_pool_reconciler = None
 
 
 def initialize_memcache(max_capacity: int, default_expiry: int) -> None:

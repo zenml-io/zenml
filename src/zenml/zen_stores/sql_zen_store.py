@@ -18,7 +18,6 @@ from contextlib import nullcontext
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
-from zenml.zen_stores.resource_pools.sql_store import ResourcePoolsSqlStore
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
@@ -684,8 +683,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     myloader_threads: Optional[int] = None
     myloader_extra_args: Optional[List[str]] = None
 
-    resource_pool_implementation_source: Optional[str] = None
-
     @field_validator("secrets_store")
     @classmethod
     def validate_secrets_store(
@@ -1061,19 +1058,7 @@ class SqlZenStore(BaseZenStore):
     _should_send_user_enriched_events: bool = False
     _cached_onboarding_state: Optional[Set[str]] = None
     _default_user: Optional[UserResponse] = None
-    _resource_pools: Optional[ResourcePoolsSqlStore] = None
-
-    def __init__(
-        self, skip_default_registrations: bool = False, **kwargs: Any
-    ) -> None:
-        """Initialize the SQL ZenML store.
-
-        Args:
-            skip_default_registrations: Whether to skip the default registrations.
-            **kwargs: Additional keyword arguments to pass to the parent class.
-        """
-        super().__init__(skip_default_registrations, **kwargs)
-        self._resource_pools = ResourcePoolsSqlStore(self)
+    _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1112,7 +1097,7 @@ class SqlZenStore(BaseZenStore):
         return self._resource_pools is not None
 
     @property
-    def resource_pools(self) -> ResourcePoolsSqlStore:
+    def resource_pools(self) -> ResourcePoolsSQLStoreInterface:
         """The resource pools store associated with this store.
 
         Returns:
@@ -1127,6 +1112,17 @@ class SqlZenStore(BaseZenStore):
                 "Resource pool functionality is not enabled"
             )
         return self._resource_pools
+
+    @resource_pools.setter
+    def resource_pools(
+        self, resource_pools: ResourcePoolsSQLStoreInterface
+    ) -> None:
+        """Set the resource pools store.
+
+        Args:
+            resource_pools: The resource pools store to set.
+        """
+        self._resource_pools = resource_pools
 
     @property
     def engine(self) -> Engine:
@@ -1477,20 +1473,6 @@ class SqlZenStore(BaseZenStore):
             self.config.backup_secrets_store = (
                 self._backup_secrets_store.config
             )
-
-        if (
-            resource_pool_source
-            := self.config.resource_pool_implementation_source
-        ):
-            logger.debug(
-                "Initializing resource pool implementation: %s",
-                resource_pool_source,
-            )
-            implementation_class = source_utils.load_and_validate_class(
-                resource_pool_source,
-                expected_class=ResourcePoolsSQLStoreInterface,
-            )
-            self._resource_pools = implementation_class()
 
     def _initialize_database(self) -> None:
         """Initialize the database if not already initialized."""

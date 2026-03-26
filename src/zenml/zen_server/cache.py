@@ -15,10 +15,11 @@
 
 import time
 from collections import OrderedDict
+from collections.abc import Hashable
+from functools import wraps
 from threading import Lock
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, TypeVar, cast
 from typing import OrderedDict as OrderedDictType
-from uuid import UUID
 
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
@@ -65,12 +66,11 @@ class MemoryCache(metaclass=SingletonMetaClass):
     Usage Example:
 
         cache = MemoryCache()
-        uuid_key = UUID("12345678123456781234567812345678")
+        key = "feature-name"  # or any hashable key (e.g. UUID, str, tuple)
 
-        if not cache.get(uuid_key):
-            # Get the value from the database or other source
+        if not cache.get(key):
             value = get_value_from_database()
-            cache.set(uuid_key, value, expiry=60)
+            cache.set(key, value, expiry=60)
 
     Usage Example with decorator:
 
@@ -90,16 +90,21 @@ class MemoryCache(metaclass=SingletonMetaClass):
             max_capacity: The maximum number of entries the cache can hold.
             default_expiry: The default expiry time in seconds.
         """
-        self.cache: OrderedDictType[UUID, MemoryCacheEntry] = OrderedDict()
+        self.cache: OrderedDictType[Hashable, MemoryCacheEntry] = OrderedDict()
         self.max_capacity = max_capacity
         self.default_expiry = default_expiry
         self._lock = Lock()
 
-    def set(self, key: UUID, value: Any, expiry: Optional[int] = None) -> None:
+    def set(
+        self,
+        key: Hashable,
+        value: Any,
+        expiry: Optional[int] = None,
+    ) -> None:
         """Insert value into cache with optional custom expiry time in seconds.
 
         Args:
-            key: The key to insert the value with.
+            key: Hashable cache key (for example ``str`` or ``UUID``).
             value: The value to insert into the cache.
             expiry: The expiry time in seconds. If None, uses the default expiry.
         """
@@ -109,7 +114,7 @@ class MemoryCache(metaclass=SingletonMetaClass):
             )
             self._cleanup()
 
-    def get(self, key: UUID) -> Optional[Any]:
+    def get(self, key: Hashable) -> Optional[Any]:
         """Retrieve value if it's still valid; otherwise, return None.
 
         Args:
@@ -121,7 +126,7 @@ class MemoryCache(metaclass=SingletonMetaClass):
         with self._lock:
             return self._get_internal(key)
 
-    def _get_internal(self, key: UUID) -> Optional[Any]:
+    def _get_internal(self, key: Hashable) -> Optional[Any]:
         """Helper to retrieve a value without lock (internal use only).
 
         Args:
@@ -149,24 +154,28 @@ class MemoryCache(metaclass=SingletonMetaClass):
             self.cache.popitem(last=False)
 
 
-F = Callable[[UUID], Any]
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 
 def cache_result(
     expiry: Optional[int] = None,
-) -> Callable[[F], F]:
-    """A decorator to cache the result of a function based on a UUID key argument.
+) -> Callable[[_F], _F]:
+    """Cache the result of a function keyed by its first positional argument.
+
+    The first positional argument must be hashable (for example ``str`` or
+    ``UUID``). Remaining positional and keyword arguments are passed through
+    and are not part of the cache key.
 
     Args:
         expiry: Custom time in seconds for the cache entry to expire. If None,
             uses the default expiry time.
 
     Returns:
-        A decorator that wraps a function, caching its results based on a UUID
-        key.
+        A decorator that wraps a function with memoization on the first
+        positional argument.
     """
 
-    def decorator(func: F) -> F:
+    def decorator(func: _F) -> _F:
         """The actual decorator that wraps the function with caching logic.
 
         Args:
@@ -176,33 +185,30 @@ def cache_result(
             The wrapped function with caching logic.
         """
 
-        def wrapper(key: UUID) -> Any:
-            """The wrapped function with caching logic.
-
-            Args:
-                key: The key to use for caching.
-
-            Returns:
-                The result of the original function, either from cache or
-                freshly computed.
-            """
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            """The wrapped function with caching logic."""
+            if not args:
+                raise TypeError(
+                    "cache_result requires at least one positional argument "
+                    "(the hashable cache key)."
+                )
+            key = args[0]
             from zenml.zen_server.utils import memcache
 
             cache = memcache()
 
-            # Attempt to retrieve the result from cache
-            cached_value = cache.get(key)
+            cached_value = cache.get(cast(Hashable, key))
             if cached_value is not None:
                 logger.debug(
                     f"Memory cache hit for key: {key} and func: {func.__name__}"
                 )
                 return cached_value
 
-            # Call the original function and cache its result
-            result = func(key)
-            cache.set(key, result, expiry)
+            result = func(*args, **kwargs)
+            cache.set(cast(Hashable, key), result, expiry)
             return result
 
-        return wrapper
+        return cast(_F, wrapper)
 
     return decorator

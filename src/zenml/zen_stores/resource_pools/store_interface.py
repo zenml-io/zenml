@@ -40,15 +40,6 @@ if TYPE_CHECKING:
 class ResourcePoolsStoreInterface(ABC):
     """Resource pools store interface."""
 
-    def __init__(self, store: "SqlZenStore") -> None:
-        """Initialize the resource pools SQL store.
-
-        Args:
-            store: The store to use.
-        """
-        super().__init__()
-        self.store = store
-
     # -------------------- Resource Pools -------------
 
     @abstractmethod
@@ -254,6 +245,16 @@ class ResourcePoolsStoreInterface(ABC):
 class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
     """Resource pools SQL store interface."""
 
+    def __init__(self, store: "SqlZenStore") -> None:
+        """Initialize the resource pools SQL store.
+
+        Args:
+            store: The store to use.
+        """
+        super().__init__()
+        self.store = store
+        store.resource_pools = self
+
     @abstractmethod
     def release_step_run_resources(
         self, session: "Session", step_run_id: UUID
@@ -263,17 +264,4 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
         Args:
             session: DB session.
             step_run_id: The ID of the step run to release resources for.
-        """
-
-    @abstractmethod
-    def reconcile_resource_pools(
-        self, max_allocations_per_pool: int = 100
-    ) -> None:
-        """Run one full reconciliation pass for all resource pools.
-
-        Args:
-            max_allocations_per_pool: Maximum allocations to perform per pool.
-
-        Failures are isolated per pool: one pool failure is logged and does not
-        stop reconciliation for other pools.
         """
