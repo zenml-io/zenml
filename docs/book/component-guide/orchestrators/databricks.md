@@ -165,6 +165,25 @@ def my_pipeline():
     ...
 ```
 
+#### Tagging Databricks resources
+
+You can apply tags to Databricks resources for cost allocation, governance, and project tracking using two settings:
+
+* `custom_tags`: Applied to the underlying cluster resources (e.g., AWS EC2 instances, EBS volumes). Maximum 45 tags.
+* `job_tags`: Applied to the Databricks job itself and forwarded as cluster tags. Maximum 25 tags.
+
+```python
+from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import DatabricksOrchestratorSettings
+
+databricks_settings = DatabricksOrchestratorSettings(
+    spark_version="15.3.x-scala2.12",
+    num_workers="3",
+    node_type_id="Standard_D4s_v5",
+    custom_tags={"cost_center": "ml-team", "environment": "production"},
+    job_tags={"project": "recommendation-engine", "owner": "data-team"},
+)
+```
+
 We can also enable GPU support for the Databricks orchestrator changing the `spark_version` and `node_type_id` to a GPU-enabled version and node type:
 
 ```python
