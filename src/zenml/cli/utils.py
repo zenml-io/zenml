@@ -2043,9 +2043,6 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
     Returns:
         An emoji representing the given execution status.
-
-    Raises:
-        RuntimeError: If the given execution status is not supported.
     """
     from zenml.enums import ExecutionStatus
 
@@ -2053,6 +2050,8 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
         ExecutionStatus.INITIALIZING,
         ExecutionStatus.PROVISIONING,
         ExecutionStatus.QUEUED,
+        ExecutionStatus.RESUMING,
+        ExecutionStatus.RETRYING,
     }:
         return ":hourglass_flowing_sand:"
     if status == ExecutionStatus.FAILED:
@@ -2070,7 +2069,10 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
         ExecutionStatus.CANCELLED,
     }:
         return ":stop_sign:"
-    raise RuntimeError(f"Unknown status: {status}")
+    if status == ExecutionStatus.PAUSED:
+        return ":pause_button:"
+
+    return ":question:"
 
 
 def fetch_snapshot(

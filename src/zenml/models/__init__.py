@@ -53,21 +53,6 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
-from zenml.models.v2.core.action import (
-    ActionFilter,
-    ActionRequest,
-    ActionResponse,
-    ActionResponseBody,
-    ActionResponseMetadata,
-    ActionResponseResources,
-    ActionUpdate,
-)
-from zenml.models.v2.core.action_flavor import (
-    ActionFlavorResponse,
-    ActionFlavorResponseBody,
-    ActionFlavorResponseMetadata,
-    ActionFlavorResponseResources,
-)
 from zenml.models.v2.core.api_key import (
     APIKey,
     APIKeyRequest,
@@ -148,12 +133,6 @@ from zenml.models.v2.core.component import (
     ComponentResponseMetadata,
     ComponentResponseResources,
     DefaultComponentRequest,
-)
-from zenml.models.v2.core.event_source_flavor import (
-    EventSourceFlavorResponse,
-    EventSourceFlavorResponseBody,
-    EventSourceFlavorResponseMetadata,
-    EventSourceFlavorResponseResources,
 )
 from zenml.models.v2.core.deployment import (
     DeploymentRequest,
@@ -279,7 +258,16 @@ from zenml.models.v2.core.run_template import (
     RunTemplateResponseResources,
     RunTemplateFilter,
 )
-from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
+from zenml.models.v2.core.run_wait_condition import (
+    RunWaitConditionFilter,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
+    RunWaitConditionResponseBody,
+    RunWaitConditionResponseMetadata,
+    RunWaitConditionResponseResources,
+    RunWaitConditionLeaseUpdate,
+)
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
 )
@@ -360,6 +348,21 @@ from zenml.models.v2.core.resource_request import (
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
 )
+from zenml.models.v2.core.triggers import (
+    TriggerRequest,
+    TriggerUpdate,
+    TriggerResponseBody,
+    TriggerResponseMetadata,
+    TriggerResponseResources,
+    TriggerFilter,
+    ScheduleTriggerRequest,
+    ScheduleTriggerResponseBody,
+    ScheduleTriggerResponse,
+    ScheduleTriggerUpdate,
+    TRIGGER_UPDATE_TYPE_UNION,
+    TRIGGER_CREATE_TYPE_UNION,
+    TRIGGER_RETURN_TYPE_UNION,
+)
 from zenml.models.v2.misc.param_groups import (
     PipelineRunIdentifier,
     StepRunIdentifier,
@@ -425,32 +428,6 @@ from zenml.models.v2.misc.server_models import (
     ServerLoadInfo,
     ServerModel,
 )
-from zenml.models.v2.core.trigger import (
-    TriggerRequest,
-    TriggerFilter,
-    TriggerUpdate,
-    TriggerResponse,
-    TriggerResponseBody,
-    TriggerResponseMetadata,
-    TriggerResponseResources,
-)
-from zenml.models.v2.core.trigger_execution import (
-    TriggerExecutionRequest,
-    TriggerExecutionFilter,
-    TriggerExecutionResponse,
-    TriggerExecutionResponseBody,
-    TriggerExecutionResponseMetadata,
-    TriggerExecutionResponseResources,
-)
-from zenml.models.v2.core.event_source import (
-    EventSourceRequest,
-    EventSourceFilter,
-    EventSourceUpdate,
-    EventSourceResponse,
-    EventSourceResponseBody,
-    EventSourceResponseMetadata,
-    EventSourceResponseResources,
-)
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
@@ -502,8 +479,6 @@ from zenml.models.v2.misc.exception_info import ExceptionInfo
 # ----------------------------- Forward References -----------------------------
 
 # V2
-ActionResponseResources.model_rebuild()
-ActionResponseMetadata.model_rebuild()
 APIKeyResponseBody.model_rebuild()
 ApiTransactionResponse.model_rebuild()
 ArtifactResponse.model_rebuild()
@@ -533,9 +508,6 @@ CuratedVisualizationResponseBody.model_rebuild()
 CuratedVisualizationResponseMetadata.model_rebuild()
 CuratedVisualizationResponseResources.model_rebuild()
 CuratedVisualizationResponse.model_rebuild()
-EventSourceResponseBody.model_rebuild()
-EventSourceResponseMetadata.model_rebuild()
-EventSourceResponseResources.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
 FlavorResponseResources.model_rebuild()
@@ -569,6 +541,12 @@ PipelineRunRequest.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
 PipelineRunResponseResources.model_rebuild()
+RunWaitConditionRequest.model_rebuild()
+RunWaitConditionResolveRequest.model_rebuild()
+RunWaitConditionResponseBody.model_rebuild()
+RunWaitConditionResponseMetadata.model_rebuild()
+RunWaitConditionResponseResources.model_rebuild()
+RunWaitConditionResponse.model_rebuild()
 RunTemplateResponseBody.model_rebuild()
 RunTemplateResponseMetadata.model_rebuild()
 RunTemplateResponseResources.model_rebuild()
@@ -596,11 +574,6 @@ StepRunResponseMetadata.model_rebuild()
 StepRunResponseResources.model_rebuild()
 TagResponseBody.model_rebuild()
 TagResponseResources.model_rebuild()
-TriggerExecutionResponseResources.model_rebuild()
-TriggerResponseBody.model_rebuild()
-TriggerResponseMetadata.model_rebuild()
-TriggerResponseResources.model_rebuild()
-TriggerResponseResources.model_rebuild()
 ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
@@ -620,6 +593,15 @@ ResourcePoolSubjectPolicyResponseBody.model_rebuild()
 ResourcePoolSubjectPolicyResponseMetadata.model_rebuild()
 ResourcePoolSubjectPolicyResponseResources.model_rebuild()
 ResourcePoolSubjectPolicyResponse.model_rebuild()
+TriggerRequest.model_rebuild()
+TriggerResponseBody.model_rebuild()
+TriggerResponseMetadata.model_rebuild()
+TriggerResponseResources.model_rebuild()
+ScheduleTriggerRequest.model_rebuild()
+ScheduleTriggerResponse.model_rebuild()
+ScheduleTriggerResponseBody.model_rebuild()
+ScheduleTriggerUpdate.model_rebuild()
+
 
 __all__ = [
     # V2 Base
@@ -632,7 +614,6 @@ __all__ = [
     "BaseResponseResources",
     "BaseDatedResponseBody",
     "BaseZenModel",
-    "BasePluginFlavorResponse",
     "UserScopedRequest",
     "UserScopedFilter",
     "UserScopedResponse",
@@ -654,17 +635,6 @@ __all__ = [
     "RunMetadataFilterMixin",
     "Page",
     # V2 Core
-    "ActionFilter",
-    "ActionRequest",
-    "ActionResponse",
-    "ActionResponseBody",
-    "ActionResponseMetadata",
-    "ActionResponseResources",
-    "ActionUpdate",
-    "ActionFlavorResponse",
-    "ActionFlavorResponseBody",
-    "ActionFlavorResponseMetadata",
-    "ActionFlavorResponseResources",
     "APIKey",
     "APIKeyRequest",
     "APIKeyUpdate",
@@ -735,10 +705,6 @@ __all__ = [
     "CuratedVisualizationResponseMetadata",
     "CuratedVisualizationResponseResources",
     "CuratedVisualizationUpdate",
-    "EventSourceFlavorResponse",
-    "EventSourceFlavorResponseBody",
-    "EventSourceFlavorResponseMetadata",
-    "EventSourceFlavorResponseResources",
     "FlavorRequest",
     "FlavorUpdate",
     "FlavorFilter",
@@ -844,6 +810,14 @@ __all__ = [
     "RunTemplateResponseMetadata",
     "RunTemplateResponseResources",
     "RunTemplateFilter",
+    "RunWaitConditionFilter",
+    "RunWaitConditionRequest",
+    "RunWaitConditionResolveRequest",
+    "RunWaitConditionResponse",
+    "RunWaitConditionResponseBody",
+    "RunWaitConditionResponseMetadata",
+    "RunWaitConditionResponseResources",
+    "RunWaitConditionLeaseUpdate",
     "RunMetadataRequest",
     "ScheduleRequest",
     "ScheduleUpdate",
@@ -912,26 +886,6 @@ __all__ = [
     "TagResponseResources",
     "TagRequest",
     "TagUpdate",
-    "TriggerResponse",
-    "TriggerRequest",
-    "TriggerFilter",
-    "TriggerUpdate",
-    "TriggerResponseBody",
-    "TriggerResponseMetadata",
-    "TriggerResponseResources",
-    "TriggerExecutionRequest",
-    "TriggerExecutionFilter",
-    "TriggerExecutionResponse",
-    "TriggerExecutionResponseBody",
-    "TriggerExecutionResponseMetadata",
-    "TriggerExecutionResponseResources",
-    "EventSourceResponse",
-    "EventSourceRequest",
-    "EventSourceFilter",
-    "EventSourceUpdate",
-    "EventSourceResponseBody",
-    "EventSourceResponseMetadata",
-    "EventSourceResponseResources",
     "UserRequest",
     "UserUpdate",
     "UserFilter",
@@ -944,6 +898,12 @@ __all__ = [
     "ProjectResponse",
     "ProjectResponseBody",
     "ProjectResponseMetadata",
+    "TriggerRequest",
+    "TriggerUpdate",
+    "TriggerResponseBody",
+    "TriggerResponseMetadata",
+    "TriggerResponseResources",
+    "TriggerFilter",
     # V2 Misc
     "AuthenticationMethodModel",
     "DeployedStack",
@@ -986,4 +946,11 @@ __all__ = [
     "ArtifactVersionIdentifier",
     "ModelVersionIdentifier",
     "StepHeartbeatResponse",
+    "ScheduleTriggerRequest",
+    "ScheduleTriggerResponse",
+    "ScheduleTriggerResponseBody",
+    "ScheduleTriggerUpdate",
+    "TRIGGER_UPDATE_TYPE_UNION",
+    "TRIGGER_CREATE_TYPE_UNION",
+    "TRIGGER_RETURN_TYPE_UNION",
 ]

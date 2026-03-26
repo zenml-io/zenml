@@ -809,11 +809,13 @@ class StackComponent:
             requested_resources["gpu"] = required_gpu_count
 
         if resource_settings.cpu_count is not None:
-            requested_resources["cpu"] = math.ceil(resource_settings.cpu_count)
+            requested_resources["mcpu"] = math.ceil(
+                resource_settings.cpu_count * 1000
+            )
 
-        memory_amount = resource_settings.get_memory(unit=ByteUnit.MIB)
+        memory_amount = resource_settings.get_memory(unit=ByteUnit.MB)
         if memory_amount is not None:
-            requested_resources["memory"] = math.ceil(memory_amount)
+            requested_resources["memory_mb"] = math.ceil(memory_amount)
 
         return requested_resources
 

@@ -644,6 +644,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         "runnable",
         "deployable",
         "deployed",
+        "trigger_id",
     ]
     CUSTOM_SORTING_OPTIONS = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -701,6 +702,10 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     deployed: Optional[bool] = Field(
         default=None,
         description="Whether the snapshot is deployed.",
+    )
+    trigger_id: UUID | None = Field(
+        default=None,
+        description="Trigger associated with the snapshot (attached).",
     )
 
     def get_custom_filters(
@@ -861,8 +866,32 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
 
         return query
 
+    def apply_filter(
+        self, query: "AnyQuery", table: Type["AnySchema"]
+    ) -> "AnyQuery":
+        """Applies the filter to a query.
 
-# ------------------ Trigger Model ------------------
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from zenml.zen_stores.schemas import (
+            PipelineSnapshotSchema,
+            TriggerSnapshotSchema,
+        )
+
+        query = super().apply_filter(query=query, table=table)
+
+        if self.trigger_id is not None:
+            query = query.join(
+                TriggerSnapshotSchema,
+                PipelineSnapshotSchema.id == TriggerSnapshotSchema.snapshot_id,
+            ).where(TriggerSnapshotSchema.trigger_id == self.trigger_id)
+
+        return query
 
 
 class PipelineSnapshotRunRequest(BaseZenModel):

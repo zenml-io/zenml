@@ -211,7 +211,7 @@ class SecretSchema(NamedSchema, table=True):
         """Map ORM -> domain model. Only include extras when requested."""
         metadata = None
         if include_metadata:
-            metadata = SecretResponseMetadata(workspace=self.workspace.to_model())
+            metadata = SecretResponseMetadata(project=self.project.to_model())
         body = SecretResponseBody(
             user=self.user.to_model() if include_resources and self.user else None,
             created=self.created,

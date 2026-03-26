@@ -1,19 +1,20 @@
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "zenml.fullname" . }}
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
-  {{- with .Values.zenml.service.annotations }}
+  {{- with $server.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  type: {{ .Values.zenml.service.type }}
+  type: {{ $server.service.type }}
   ports:
-    - port: {{ .Values.zenml.service.port }}
+    - port: {{ $server.service.port }}
       targetPort: 8080
       protocol: TCP
       name: http
   selector:
-    {{- include "zenml.selectorLabels" . | nindent 4 }}
+    {{- include "zenml.serverSelectorLabels" . | nindent 4 }}

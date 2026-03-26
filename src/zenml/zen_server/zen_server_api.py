@@ -52,7 +52,6 @@ from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
 from zenml.zen_server.routers import (
-    actions_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
@@ -60,7 +59,6 @@ from zenml.zen_server.routers import (
     curated_visualization_endpoints,
     deployment_endpoints,
     devices_endpoints,
-    event_source_endpoints,
     flavors_endpoints,
     logs_endpoints,
     model_versions_endpoints,
@@ -69,13 +67,13 @@ from zenml.zen_server.routers import (
     pipeline_deployments_endpoints,
     pipeline_snapshot_endpoints,
     pipelines_endpoints,
-    plugin_endpoints,
     projects_endpoints,
     resource_pool_subject_policies_endpoints,
     resource_pools_endpoints,
     resource_requests_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
+    run_wait_conditions_endpoints,
     runs_endpoints,
     schedule_endpoints,
     secrets_endpoints,
@@ -89,9 +87,8 @@ from zenml.zen_server.routers import (
     steps_endpoints,
     tag_resource_endpoints,
     tags_endpoints,
-    triggers_endpoints,
+    trigger_endpoints,
     users_endpoints,
-    webhook_endpoints,
 )
 from zenml.zen_server.secure_headers import (
     initialize_secure_headers,
@@ -100,7 +97,6 @@ from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_feature_gate,
     initialize_memcache,
-    initialize_plugins,
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_reconciler,
@@ -175,7 +171,6 @@ async def initialize() -> None:
     initialize_feature_gate()
     initialize_workload_manager()
     initialize_snapshot_executor()
-    initialize_plugins()
     initialize_secure_headers()
     initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
@@ -266,7 +261,6 @@ async def dashboard(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-app.include_router(actions_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
@@ -274,8 +268,6 @@ app.include_router(devices_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(deployment_endpoints.router)
 app.include_router(curated_visualization_endpoints.router)
-app.include_router(plugin_endpoints.plugin_router)
-app.include_router(event_source_endpoints.event_source_router)
 app.include_router(flavors_endpoints.router)
 app.include_router(logs_endpoints.router)
 app.include_router(models_endpoints.router)
@@ -288,6 +280,7 @@ app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(pipeline_snapshot_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
+app.include_router(run_wait_conditions_endpoints.router)
 app.include_router(run_templates_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
@@ -304,15 +297,14 @@ app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
 app.include_router(tags_endpoints.router)
 app.include_router(tag_resource_endpoints.router)
-app.include_router(triggers_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
-app.include_router(webhook_endpoints.router)
 app.include_router(projects_endpoints.workspace_router)
 app.include_router(projects_endpoints.router)
 app.include_router(resource_pools_endpoints.router)
 app.include_router(resource_pool_subject_policies_endpoints.router)
 app.include_router(resource_requests_endpoints.router)
+app.include_router(trigger_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.

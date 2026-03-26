@@ -16,6 +16,7 @@
 import json
 import logging
 import os
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, List, Optional, Type, TypeVar
 
 from zenml.enums import AuthScheme
@@ -93,6 +94,37 @@ def is_false_string_value(value: Any) -> bool:
     return value in ["0", "n", "no", "False", "false"]
 
 
+def validate_directory_name(name: str) -> str:
+    """Validate a directory name.
+
+    Args:
+        name: The directory name to validate.
+
+    Raises:
+        ValueError: If the name is not a valid directory name.
+
+    Returns:
+        The validated directory name.
+    """
+    if not name:
+        raise ValueError("Directory name cannot be empty.")
+
+    if name in {".", ".."}:
+        raise ValueError(
+            "Directory name must not point to the current or parent directory."
+        )
+
+    if PurePosixPath(name).parts != (name,) or PureWindowsPath(name).parts != (
+        name,
+    ):
+        raise ValueError(
+            "Directory name must be a single path component without nested "
+            "levels."
+        )
+
+    return name
+
+
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
 
@@ -157,6 +189,7 @@ ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
 ENV_ZENML_LOGGING_FORMAT = "ZENML_LOGGING_FORMAT"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
+ENV_ZENML_REPOSITORY_DIRECTORY_NAME = "ZENML_REPOSITORY_DIRECTORY_NAME"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_ACTIVE_STACK_ID = "ZENML_ACTIVE_STACK_ID"
 ENV_ZENML_ACTIVE_PROJECT_ID = "ZENML_ACTIVE_PROJECT_ID"
@@ -187,6 +220,7 @@ ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS = (
 )
 ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
+ENV_ZENML_DISABLE_INTERACTIVE_INPUT = "ZENML_DISABLE_INTERACTIVE_INPUT"
 ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE = "ZENML_DISABLE_PIPELINE_LOGS_STORAGE"
 ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS = "ZENML_DISABLE_STEP_NAMES_IN_LOGS"
@@ -218,6 +252,9 @@ ENV_ZENML_DISABLE_PATH_MATERIALIZER = "ZENML_DISABLE_PATH_MATERIALIZER"
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
 ENV_ZENML_SERVER_PRO_PREFIX = "ZENML_SERVER_PRO_"
+ENV_ZENML_PRODUCER_PREFIX = "ZENML_PRODUCER_"
+ENV_ZENML_CONSUMER_PREFIX = "ZENML_CONSUMER_"
+ENV_ZENML_CONSUMER_POLLING_PREFIX = "ZENML_CONSUMER_POLLING_"
 ENV_ZENML_SERVER_DEPLOYMENT_TYPE = f"{ENV_ZENML_SERVER_PREFIX}DEPLOYMENT_TYPE"
 ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
@@ -236,6 +273,7 @@ ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY = (
 )
 
 ENV_ZENML_DEFAULT_OUTPUT = "ZENML_DEFAULT_OUTPUT"
+ENV_ZENML_DEFAULT_ANALYTICS_SOURCE = "ZENML_DEFAULT_ANALYTICS_SOURCE"
 ENV_ZENML_CLI_COLUMN_WIDTH = "ZENML_CLI_COLUMN_WIDTH"
 
 ENV_ZENML_DYNAMIC_PIPELINE_WORKER_COUNT = "ZENML_DYNAMIC_PIPELINE_WORKER_COUNT"
@@ -244,6 +282,9 @@ ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL = (
 )
 ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY = (
     "ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY"
+)
+ENV_ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH = (
+    "ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH"
 )
 
 # Logging variables
@@ -276,7 +317,9 @@ REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
 
 # Repository and local store directory paths:
-REPOSITORY_DIRECTORY_NAME = ".zen"
+REPOSITORY_DIRECTORY_NAME = validate_directory_name(
+    os.getenv(ENV_ZENML_REPOSITORY_DIRECTORY_NAME, ".zen")
+)
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 # Config file name
@@ -408,7 +451,6 @@ RUN_TEMPLATE_TRIGGERS_FEATURE_NAME = "template_run"
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
-ACTIONS = "/actions"
 API = "/api"
 API_KEYS = "/api_keys"
 API_KEY_ROTATE = "/rotate"
@@ -433,7 +475,6 @@ DISABLE_HEARTBEAT = "/disable_heartbeat"
 DOWNLOAD_TOKEN = "/download-token"
 EMAIL_ANALYTICS = "/email-opt-in"
 EVENT_FLAVORS = "/event-flavors"
-EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
 HEALTH = "/health"
 READY = "/ready"
@@ -450,15 +491,16 @@ CURATED_VISUALIZATIONS = "/curated_visualizations"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
-PLUGIN_FLAVORS = "/plugin-flavors"
 RESOURCE_POOLS = "/resource_pools"
 RESOURCE_POOL_SUBJECT_POLICIES = "/resource_pool_subject_policies"
 RESOURCE_REQUESTS = "/resource_requests"
 PROJECTS = "/projects"
 REFRESH = "/refresh"
+RESOLVE = "/resolve"
 RUNS = "/runs"
 RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
+RUN_WAIT_CONDITIONS = "/run_wait_conditions"
 SCHEDULES = "/schedules"
 SECRETS = "/secrets"
 SECRETS_OPERATIONS = "/secrets_operations"
@@ -490,7 +532,6 @@ STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"
 TRIGGERS = "/triggers"
-TRIGGER_EXECUTIONS = "/trigger_executions"
 ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
 URL = "/url"
@@ -622,3 +663,8 @@ LOGS_OTEL_MAX_EXPORT_BATCH_SIZE = handle_int_env_var(
 LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
     ENV_ZENML_LOGS_OTEL_EXPORT_TIMEOUT_MILLIS, default=15000
 )
+
+# Subscription-based features
+SCHEDULE_FEATURE = "schedule"
+
+LOGS_RUNNER_SOURCE = "runner"

@@ -20,6 +20,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
+from datetime import timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -28,20 +29,30 @@ from typing import (
     Dict,
     List,
     Literal,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
     Tuple,
+    Type,
+    TypeVar,
     Union,
     overload,
 )
 from uuid import uuid4
 
+from pydantic import TypeAdapter
+
 from zenml import ExternalArtifact
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.step_configurations import GroupInfo, StepConfigurationUpdate
+from zenml.config.step_configurations import (
+    GroupInfo,
+    Step,
+    StepConfiguration,
+    StepConfigurationUpdate,
+)
 from zenml.constants import (
     ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY,
     ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL,
@@ -49,7 +60,20 @@ from zenml.constants import (
     handle_float_env_var,
     handle_int_env_var,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, GroupType, StepRuntime
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    GroupType,
+    RunWaitConditionLeaseMode,
+    RunWaitConditionResolution,
+    RunWaitConditionStatus,
+    RunWaitConditionType,
+    StepRuntime,
+)
+from zenml.execution.pipeline.dynamic.interactive_input_utils import (
+    maybe_enable_interactive_wait_prompt,
+    poll_interactive_wait_condition_input,
+)
 from zenml.execution.pipeline.dynamic.outputs import (
     AnyStepFuture,
     ArtifactFuture,
@@ -77,6 +101,10 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotResponse,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     StepRunResponse,
 )
 from zenml.orchestrators.publish_utils import (
@@ -96,6 +124,7 @@ from zenml.utils import (
     context_utils,
     env_utils,
     exception_utils,
+    pydantic_utils,
     source_utils,
     string_utils,
 )
@@ -106,12 +135,28 @@ from zenml.utils.logging_utils import (
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
-    from zenml.config.step_configurations import Step, StepConfiguration
     from zenml.orchestrators import BaseOrchestrator
     from zenml.steps import BaseStep
 
 
 logger = get_logger(__name__)
+
+T = TypeVar("T")
+
+
+class _WaitConditionPollTimeout(Exception):
+    """Raised when a wait condition polling times out."""
+
+
+class _WaitConditionAborted(Exception):
+    """Raised when a wait condition is aborted."""
+
+
+class _WaitConditionState(NamedTuple):
+    """State tuple for wait condition handling."""
+
+    is_terminal: bool
+    value: Any
 
 
 class DynamicPipelineRunner:
@@ -259,7 +304,11 @@ class DynamicPipelineRunner:
             start_time = time.time()
             finished_step_runs = []
 
-            for invocation_id, step_run in self._steps_to_monitor.items():
+            # Copy the steps to avoid the dictionary getting modified by
+            # the main thread while we're iterating over it.
+            for invocation_id, step_run in list(
+                self._steps_to_monitor.items()
+            ):
                 infra_status: Optional[ExecutionStatus] = None
                 try:
                     infra_status = self._get_isolated_step_infra_status(
@@ -418,7 +467,7 @@ class DynamicPipelineRunner:
 
         logger.info("Stopping isolated steps.")
 
-        for step_run in self._steps_to_monitor.values():
+        for step_run in list(self._steps_to_monitor.values()):
             try:
                 self._stop_isolated_step(step_run)
             except Exception:
@@ -469,8 +518,33 @@ class DynamicPipelineRunner:
             if self._run.status.is_finished:
                 logger.info("Run `%s` is already finished.", str(self._run.id))
                 return
-            if self._run.status == ExecutionStatus.RUNNING:
+            elif self._run.status in {
+                ExecutionStatus.RESUMING,
+                ExecutionStatus.PAUSED,
+                ExecutionStatus.RETRYING,
+            }:
+                self._run = Client().zen_store.update_run(
+                    run_id=self._run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.RUNNING,
+                    ),
+                )
+                logger.info("Resuming run `%s`.", str(self._run.id))
+            elif self._run.status == ExecutionStatus.RUNNING:
                 logger.info("Continuing existing run `%s`.", str(self._run.id))
+            elif self._run.status in {
+                ExecutionStatus.INITIALIZING,
+                ExecutionStatus.PROVISIONING,
+            }:
+                # Set the run status to running already, in case no steps start
+                # immediately which would otherwise cause the run to be stuck in
+                # some init state.
+                self._run = Client().zen_store.update_run(
+                    run_id=self._run.id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.RUNNING,
+                    ),
+                )
 
             assert self._snapshot.stack
 
@@ -510,6 +584,14 @@ class DynamicPipelineRunner:
                     # steps might still be running. We now wait for all of
                     # them and raise any exceptions that occurred.
                     self.await_all_step_futures()
+                except _WaitConditionPollTimeout:
+                    logger.info("Pausing pipeline run `%s`.", self._run.id)
+                except _WaitConditionAborted:
+                    logger.info(
+                        "Stopping pipeline run `%s` because a wait condition "
+                        "was aborted.",
+                        self._run.id,
+                    )
                 except Exception as e:
                     exception_info = (
                         exception_utils.collect_exception_information(
@@ -539,8 +621,12 @@ class DynamicPipelineRunner:
                     self._executor.shutdown(wait=True, cancel_futures=True)
                     monitoring_thread.join()
 
-                publish_successful_pipeline_run(self._run.id)
-                logger.info("Pipeline completed successfully.")
+                self._run = Client().zen_store.get_run(
+                    self._run.id, hydrate=False
+                )
+                if self._run.status == ExecutionStatus.RUNNING:
+                    publish_successful_pipeline_run(self._run.id)
+                    logger.info("Pipeline completed successfully.")
 
     @overload
     def launch_step(
@@ -586,6 +672,10 @@ class DynamicPipelineRunner:
             after: The step run output futures to wait for.
             group: The group information for this step.
             concurrent: Whether to launch the step concurrently.
+
+        # noqa: DAR401
+        Raises:
+            BaseException: If the step failed.
 
         Returns:
             The step run outputs or a future for the step run outputs.
@@ -678,13 +768,15 @@ class DynamicPipelineRunner:
                 # a future in case the step was launched concurrently so the
                 # caller gets the correct object back.
                 if concurrent:
-                    return StepFuture(
+                    future = StepFuture(
                         wrapped=_IsolatedStepFuture(
                             pipeline_run_id=self._run.id,
                             invocation_id=invocation_id,
                         ),
                         output_keys=list(compiled_step.config.outputs),
                     )
+                    self._futures[invocation_id] = future
+                    return future
                 else:
                     return load_step_run_outputs(step_run.id)
 
@@ -699,6 +791,28 @@ class DynamicPipelineRunner:
                 # orchestration environment, so we mark them as failed and
                 # potentially restart them depending on the retry config.
                 step_run = publish_failed_step_run(step_run.id)
+
+            if step_run.status.is_failed:
+                # If the step is running concurrently, we only raise the
+                # exception once the future is awaited.
+                if concurrent:
+                    future = StepFuture(
+                        wrapped=_IsolatedStepFuture(
+                            pipeline_run_id=self._run.id,
+                            invocation_id=invocation_id,
+                        ),
+                        output_keys=list(compiled_step.config.outputs),
+                    )
+                    self._futures[invocation_id] = future
+                    return future
+                else:
+                    raise exception_utils.reconstruct_exception(
+                        exception_info=step_run.exception_info,
+                        fallback_message=(
+                            f"Step `{invocation_id}` failed with status "
+                            f"`{step_run.status}`."
+                        ),
+                    )
 
             remaining_retries = get_remaining_retries(step_run=step_run)
 
@@ -874,6 +988,265 @@ class DynamicPipelineRunner:
 
         return MapResultsFuture(futures=step_futures)
 
+    @overload
+    def wait(
+        self,
+        schema: Type[T],
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    ) -> T: ...
+
+    @overload
+    def wait(
+        self,
+        schema: object = None,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    ) -> Any: ...
+
+    def wait(
+        self,
+        schema: Optional[Any] = None,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
+        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    ) -> Any:
+        """Create and poll a run wait condition.
+
+        Args:
+            schema: Optional expected output type for the resolved result.
+            type: Wait condition type.
+            timeout: Maximum time in seconds to poll before pausing.
+            poll_interval: Poll interval in seconds.
+            question: Optional question shown to external actors.
+            metadata: Optional metadata attached to the condition.
+            name: Optional deterministic wait condition name.
+            after: Optional upstream futures that must finish before waiting.
+
+        Raises:
+            RuntimeError: If called outside the dynamic pipeline function.
+            _WaitConditionAborted: If the wait condition was aborted.
+            _WaitConditionPollTimeout: If the wait condition polling timed out.
+            KeyboardInterrupt: If interrupted while waiting.
+            BaseException: If polling fails after the lease is abandoned.
+
+        Returns:
+            The resolved wait condition value.
+        """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+        from zenml.steps.step_context import StepContext
+        from zenml.utils.time_utils import utc_now
+
+        context = DynamicPipelineRunContext.get()
+        if not context:
+            raise RuntimeError(
+                "`zenml.wait(...)` can only be used inside dynamic pipelines."
+            )
+
+        if StepContext.is_active():
+            raise RuntimeError(
+                "`zenml.wait(...)` cannot be called inside a step function. "
+                "Use it only in the pipeline function."
+            )
+
+        wait_condition_name = name or context.next_wait_condition_name()
+
+        if isinstance(after, BaseStepFuture):
+            after.result()
+        elif isinstance(after, MapResultsFuture):
+            for future in after:
+                future.result()
+        elif isinstance(after, Sequence):
+            for item in after:
+                if isinstance(item, BaseStepFuture):
+                    item.result()
+                elif isinstance(item, MapResultsFuture):
+                    for future in item:
+                        future.result()
+
+        condition = Client().zen_store.create_run_wait_condition(
+            RunWaitConditionRequest(
+                project=self._run.project_id,
+                run=self._run.id,
+                name=wait_condition_name,
+                type=type,
+                question=question,
+                metadata=metadata or {},
+                data_schema=pydantic_utils.get_json_schema_for_type(schema)
+                if schema
+                else None,
+            )
+        )
+        state = self._handle_wait_condition_state(
+            condition=condition, schema=schema
+        )
+        if state.is_terminal:
+            return state.value
+
+        if poll_interval <= 0:
+            logger.debug(
+                "Non-positive poll interval provided, falling back to 5 seconds."
+            )
+            poll_interval = 5
+
+        logger.info(
+            "Waiting on wait condition `%s` (type=%s, timeout=%ss, poll=%ss).",
+            wait_condition_name,
+            type.value,
+            timeout,
+            poll_interval,
+        )
+        deadline = time.time() + timeout
+
+        try:
+            with maybe_enable_interactive_wait_prompt(
+                orchestrator=self._orchestrator,
+                condition=condition,
+            ) as interactive_prompting_enabled:
+                # We keep polling until the deadline is reached and all ongoing
+                # steps have finished.
+                while time.time() < deadline or self.has_in_progress_steps():
+                    lease_now = utc_now()
+                    status = (
+                        Client().zen_store.update_run_wait_condition_lease(
+                            run_wait_condition_id=condition.id,
+                            lease_update=RunWaitConditionLeaseUpdate(
+                                poller_instance_id=self._orchestrator_run_id,
+                                poller_lease_expires_at=lease_now
+                                + timedelta(
+                                    seconds=max(15, poll_interval * 2)
+                                ),
+                            ),
+                        )
+                    )
+                    if status != RunWaitConditionStatus.PENDING:
+                        condition = Client().zen_store.get_run_wait_condition(
+                            condition.id, hydrate=True
+                        )
+                    state = self._handle_wait_condition_state(
+                        condition=condition, schema=schema
+                    )
+                    if state.is_terminal:
+                        return state.value
+
+                    if interactive_prompting_enabled:
+                        # If we're running interactively, we sleep until the
+                        # polling interval is reached or the user submitted
+                        # input in their terminal.
+                        poll_interactive_wait_condition_input(
+                            condition=condition,
+                            poll_interval=poll_interval,
+                        )
+                    else:
+                        time.sleep(poll_interval)
+        except _WaitConditionAborted:
+            raise
+        except KeyboardInterrupt:
+            try:
+                Client().zen_store.resolve_run_wait_condition(
+                    run_wait_condition_id=condition.id,
+                    resolve_request=RunWaitConditionResolveRequest(
+                        resolution=RunWaitConditionResolution.ABORT,
+                    ),
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to abort wait condition `%s` after keyboard "
+                    "interrupt: %s",
+                    condition.id,
+                    e,
+                )
+            raise
+        except BaseException:
+            try:
+                Client().zen_store.update_run_wait_condition_lease(
+                    run_wait_condition_id=condition.id,
+                    lease_update=RunWaitConditionLeaseUpdate(
+                        poller_instance_id=self._orchestrator_run_id,
+                        poller_lease_expires_at=utc_now(),
+                        mode=RunWaitConditionLeaseMode.ABANDON,
+                    ),
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to abandon wait condition `%s` after wait loop "
+                    "failure: %s",
+                    condition.id,
+                    e,
+                )
+            raise
+
+        status = Client().zen_store.update_run_wait_condition_lease(
+            run_wait_condition_id=condition.id,
+            lease_update=RunWaitConditionLeaseUpdate(
+                poller_instance_id=self._orchestrator_run_id,
+                poller_lease_expires_at=utc_now(),
+                mode=RunWaitConditionLeaseMode.FINALIZE,
+            ),
+        )
+        if status != RunWaitConditionStatus.PENDING:
+            condition = Client().zen_store.get_run_wait_condition(
+                condition.id, hydrate=True
+            )
+        state = self._handle_wait_condition_state(
+            condition=condition, schema=schema
+        )
+        if state.is_terminal:
+            return state.value
+
+        raise _WaitConditionPollTimeout(
+            f"Wait condition `{condition.name}` polling timed out."
+        )
+
+    @staticmethod
+    def _handle_wait_condition_state(
+        condition: "RunWaitConditionResponse",
+        schema: Optional[Any] = None,
+    ) -> _WaitConditionState:
+        """Handle wait conditions.
+
+        Args:
+            condition: The latest wait condition state.
+            schema: Optional schema used to parse the resolved result.
+
+        Raises:
+            _WaitConditionAborted: If the condition was resolved with abort.
+
+        Returns:
+            State indicating whether the condition is terminal and its value.
+        """
+        if condition.status == RunWaitConditionStatus.PENDING:
+            return _WaitConditionState(is_terminal=False, value=None)
+
+        if condition.resolution == RunWaitConditionResolution.ABORT:
+            raise _WaitConditionAborted(
+                f"Wait condition `{condition.name}` resolved with abort."
+            )
+
+        if schema is None:
+            return _WaitConditionState(is_terminal=True, value=None)
+
+        return _WaitConditionState(
+            is_terminal=True,
+            value=TypeAdapter(schema).validate_python(condition.result),
+        )
+
     def await_all_step_futures(self) -> None:
         """Await all scheduled step futures.
 
@@ -881,7 +1254,7 @@ class DynamicPipelineRunner:
             RuntimeError: If one or more step futures failed while waiting.
         """
         failed_steps = []
-        for future in self._futures.values():
+        for future in list(self._futures.values()):
             try:
                 future.wait()
             except Exception as e:
@@ -900,6 +1273,14 @@ class DynamicPipelineRunner:
             raise RuntimeError(
                 f"Failed to run step(s): {', '.join(failed_steps)}"
             )
+
+    def has_in_progress_steps(self) -> bool:
+        """Check if there are any in-progress steps.
+
+        Returns:
+            True if there are any in-progress steps, False otherwise.
+        """
+        return any(future.running() for future in list(self._futures.values()))
 
 
 def compile_dynamic_step_invocation(
@@ -959,14 +1340,6 @@ def compile_dynamic_step_invocation(
         ):
             upstream_steps.update(item.step_name for item in value)
 
-    default_parameters = {
-        key: value
-        for key, value in convert_to_keyword_arguments(
-            step.entrypoint, (), inputs, apply_defaults=True
-        ).items()
-        if key not in inputs
-    }
-
     input_artifacts = {}
     external_artifacts = {}
     for name, value in inputs.items():
@@ -1004,9 +1377,22 @@ def compile_dynamic_step_invocation(
             external_artifacts[name] = ExternalArtifact(value=value)
 
     if template := get_config_template(snapshot, step, pipeline):
+        logger.debug(
+            "Using config template `%s` for step `%s`",
+            template.spec.invocation_id,
+            invocation_id,
+        )
         step._configuration = template.config.model_copy(
             update={"template": template.spec.invocation_id}
         )
+
+    default_parameters = {
+        key: value
+        for key, value in convert_to_keyword_arguments(
+            step.entrypoint, (), inputs, apply_defaults=True
+        ).items()
+        if key not in inputs and key not in step.configuration.parameters
+    }
 
     step_invocation = StepInvocation(
         id=invocation_id,

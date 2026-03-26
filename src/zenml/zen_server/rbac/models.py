@@ -50,11 +50,9 @@ class Action(StrEnum):
 class ResourceType(StrEnum):
     """Resource types of the server API."""
 
-    ACTION = "action"
     ARTIFACT = "artifact"
     ARTIFACT_VERSION = "artifact_version"
     CODE_REPOSITORY = "code_repository"
-    EVENT_SOURCE = "event_source"
     FLAVOR = "flavor"
     MODEL = "model"
     MODEL_VERSION = "model_version"
@@ -76,11 +74,10 @@ class ResourceType(StrEnum):
     RESOURCE_POOL = "resource_pool"
     RESOURCE_POOL_SUBJECT_POLICY = "resource_pool_subject_policy"
     TAG = "tag"
-    TRIGGER = "trigger"
-    TRIGGER_EXECUTION = "trigger_execution"
     PROJECT = "project"
     # Deactivated for now
     # USER = "user"
+    TRIGGER = "trigger"
 
     def is_project_scoped(self) -> bool:
         """Check if a resource type is project scoped.
