@@ -56,7 +56,6 @@ from zenml.constants import (
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import ProjectScopedFilter
-from zenml.zen_server.cache import MemoryCache
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
@@ -92,7 +91,6 @@ _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
-_memcache: Optional[MemoryCache] = None
 _request_manager: Optional[RequestManager] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
@@ -302,31 +300,6 @@ def initialize_zen_store() -> None:
 
     global _zen_store
     _zen_store = zen_store_
-
-
-def initialize_memcache(max_capacity: int, default_expiry: int) -> None:
-    """Initialize the memory cache.
-
-    Args:
-        max_capacity: The maximum capacity of the cache.
-        default_expiry: The default expiry time in seconds.
-    """
-    global _memcache
-    _memcache = MemoryCache(max_capacity, default_expiry)
-
-
-def memcache() -> MemoryCache:
-    """Return the memory cache.
-
-    Returns:
-        The memory cache.
-
-    Raises:
-        RuntimeError: If the memory cache is not initialized.
-    """
-    if _memcache is None:
-        raise RuntimeError("Memory cache not initialized")
-    return _memcache
 
 
 _server_config: Optional[ServerConfiguration] = None

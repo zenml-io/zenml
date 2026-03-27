@@ -96,7 +96,6 @@ from zenml.zen_server.secure_headers import (
 from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_feature_gate,
-    initialize_memcache,
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
@@ -172,7 +171,6 @@ async def initialize() -> None:
     initialize_resource_pool_store()
     initialize_snapshot_executor()
     initialize_secure_headers()
-    initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
         # ZenML server is running or to update the version and server URL.

@@ -82,6 +82,7 @@ server = [
     "tldextract~=5.1.0",
     "itsdangerous~=2.2.0",
     "croniter>=6.0.0",
+    "cachetools>=5.3.0,<8.0.0",
 ]
 jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
