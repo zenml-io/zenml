@@ -19,10 +19,15 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
+from databricks.sdk.service import iam
 from databricks.sdk.service.compute import (
     AutoScale,
     ClientsTypes,
     ClusterSpec,
+    DbfsStorageInfo,
+    DockerBasicAuth,
+    DockerImage,
+    InitScriptInfo,
     WorkloadType,
 )
 from databricks.sdk.service.jobs import CronSchedule, JobCluster
@@ -296,6 +301,10 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     depends_on=upstream_steps,
                     zenml_project_wheel=zenml_project_wheel,
                     job_cluster_key=job_cluster_key,
+                    timeout_seconds=settings.task_timeout_seconds,
+                    max_retries=settings.max_retries,
+                    min_retry_interval_millis=settings.min_retry_interval_millis,
+                    retry_on_timeout=settings.retry_on_timeout,
                 )
                 tasks.append(task)
             return tasks
@@ -396,14 +405,39 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         databricks_client = self._get_databricks_client()
         spark_conf = settings.spark_conf or {}
 
-        policy_id = settings.policy_id or None
-        for policy in databricks_client.cluster_policies.list():
-            if policy.name == "Job Compute":
-                policy_id = policy.policy_id
+        policy_id = settings.policy_id
+        if policy_id is None:
+            for policy in databricks_client.cluster_policies.list():
+                if policy.name == "Job Compute":
+                    policy_id = policy.policy_id
+                    break
         if policy_id is None:
             raise ValueError(
-                "Could not find the `Job Compute` policy in Databricks."
+                "Could not find the `Job Compute` policy in Databricks. "
+                "Either create a `Job Compute` policy or specify a "
+                "`policy_id` in the orchestrator settings."
             )
+
+        docker_image = None
+        if settings.docker_image_url:
+            basic_auth = None
+            if settings.docker_image_username:
+                basic_auth = DockerBasicAuth(
+                    username=settings.docker_image_username,
+                    password=settings.docker_image_password,
+                )
+            docker_image = DockerImage(
+                url=settings.docker_image_url,
+                basic_auth=basic_auth,
+            )
+
+        init_scripts = None
+        if settings.init_scripts:
+            init_scripts = [
+                InitScriptInfo(dbfs=DbfsStorageInfo(destination=script))
+                for script in settings.init_scripts
+            ]
+
         job_cluster = JobCluster(
             job_cluster_key=job_cluster_key,
             new_cluster=ClusterSpec(
@@ -411,6 +445,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 or DATABRICKS_SPARK_DEFAULT_VERSION,
                 num_workers=settings.num_workers,
                 node_type_id=settings.node_type_id or "Standard_D4s_v5",
+                driver_node_type_id=settings.driver_node_type_id,
                 policy_id=policy_id,
                 autoscale=AutoScale(
                     min_workers=settings.autoscale[0],
@@ -423,6 +458,8 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     clients=ClientsTypes(jobs=True, notebooks=False)
                 ),
                 custom_tags=settings.custom_tags,
+                docker_image=docker_image,
+                init_scripts=init_scripts,
             ),
         )
         if schedule and schedule.cron_expression:
@@ -442,12 +479,29 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         else:
             databricks_schedule = None
 
+        access_control_list = None
+        if settings.access_control_list:
+            access_control_list = [
+                iam.AccessControlRequest(
+                    group_name=acl.group_name,
+                    user_name=acl.user_name,
+                    service_principal_name=acl.service_principal_name,
+                    permission_level=iam.PermissionLevel(
+                        acl.permission_level.value
+                    ),
+                )
+                for acl in settings.access_control_list
+            ]
+
         job = databricks_client.jobs.create(
             name=pipeline_name,
             tasks=tasks,
             job_clusters=[job_cluster],
             schedule=databricks_schedule,
             tags=settings.job_tags,
+            access_control_list=access_control_list,
+            timeout_seconds=settings.timeout_seconds,
+            max_concurrent_runs=settings.max_concurrent_runs,
         )
         if job.job_id:
             databricks_client.jobs.run_now(job_id=job.job_id)

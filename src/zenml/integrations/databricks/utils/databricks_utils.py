@@ -31,6 +31,10 @@ def convert_step_to_task(
     depends_on: Optional[List[str]] = None,
     zenml_project_wheel: Optional[str] = None,
     job_cluster_key: Optional[str] = None,
+    timeout_seconds: Optional[int] = None,
+    max_retries: Optional[int] = None,
+    min_retry_interval_millis: Optional[int] = None,
+    retry_on_timeout: Optional[bool] = None,
 ) -> DatabricksTask:
     """Convert a ZenML step to a Databricks task.
 
@@ -42,6 +46,11 @@ def convert_step_to_task(
         depends_on: List of tasks to depend on.
         zenml_project_wheel: Path to the ZenML project wheel.
         job_cluster_key: ID of the Databricks job_cluster_key.
+        timeout_seconds: Timeout in seconds for the task.
+        max_retries: Maximum number of retries for a failed task.
+        min_retry_interval_millis: Minimum interval between retries
+            in milliseconds.
+        retry_on_timeout: Whether to retry on timeout.
 
     Returns:
         Databricks task.
@@ -66,6 +75,10 @@ def convert_step_to_task(
         depends_on=[TaskDependency(task) for task in depends_on]
         if depends_on
         else None,
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+        min_retry_interval_millis=min_retry_interval_millis,
+        retry_on_timeout=retry_on_timeout,
     )
 
 

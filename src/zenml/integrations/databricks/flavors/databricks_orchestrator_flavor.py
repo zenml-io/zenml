@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Databricks orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
@@ -39,6 +39,43 @@ class DatabricksAvailabilityType(StrEnum):
     ON_DEMAND = "ON_DEMAND"
     SPOT = "SPOT"
     SPOT_WITH_FALLBACK = "SPOT_WITH_FALLBACK"
+
+
+class DatabricksPermissionLevel(StrEnum):
+    """Databricks job permission levels."""
+
+    CAN_VIEW = "CAN_VIEW"
+    CAN_MANAGE_RUN = "CAN_MANAGE_RUN"
+    CAN_MANAGE = "CAN_MANAGE"
+    IS_OWNER = "IS_OWNER"
+
+
+class DatabricksAccessControlRequest(BaseModel):
+    """Databricks job access control entry.
+
+    Exactly one of group_name, user_name, or service_principal_name
+    must be specified.
+    """
+
+    group_name: Optional[str] = Field(
+        default=None,
+        description="Databricks group name to grant permissions to. "
+        "Example: 'data-science-team'",
+    )
+    user_name: Optional[str] = Field(
+        default=None,
+        description="Databricks user email to grant permissions to. "
+        "Example: 'user@company.com'",
+    )
+    service_principal_name: Optional[str] = Field(
+        default=None,
+        description="Application ID of a Databricks service principal "
+        "to grant permissions to",
+    )
+    permission_level: DatabricksPermissionLevel = Field(
+        description="Permission level to grant. Valid values for jobs: "
+        "CAN_VIEW, CAN_MANAGE_RUN, CAN_MANAGE, IS_OWNER",
+    )
 
 
 class DatabricksOrchestratorSettings(BaseSettings):
@@ -114,6 +151,74 @@ class DatabricksOrchestratorSettings(BaseSettings):
         description="Tags associated with the Databricks job, forwarded to the "
         "cluster as cluster tags. Maximum 25 tags. "
         "Example: {'project': 'recommendation-engine', 'owner': 'data-team'}",
+    )
+    access_control_list: Optional[List[DatabricksAccessControlRequest]] = Field(
+        default=None,
+        description="Access control list for the Databricks job. Grants "
+        "permissions to users, groups, or service principals. By default, "
+        "only the job creator (service principal) can access the job. "
+        "Example: [{'group_name': 'users', 'permission_level': 'CAN_VIEW'}]",
+    )
+
+    # Job-level execution control
+    timeout_seconds: Optional[int] = Field(
+        default=None,
+        description="Timeout in seconds applied to each run of the job. "
+        "Value of 0 means no timeout. Example: 3600 for a 1-hour timeout",
+    )
+    max_concurrent_runs: Optional[int] = Field(
+        default=None,
+        description="Maximum number of concurrent runs for this job. "
+        "Databricks defaults to 1 if not specified. Maximum is 1000",
+    )
+
+    # Task-level retry and timeout
+    task_timeout_seconds: Optional[int] = Field(
+        default=None,
+        description="Timeout in seconds for each task (step) in the job. "
+        "Value of 0 means no timeout",
+    )
+    max_retries: Optional[int] = Field(
+        default=None,
+        description="Maximum number of times to retry a failed task. "
+        "Use -1 for unlimited retries",
+    )
+    min_retry_interval_millis: Optional[int] = Field(
+        default=None,
+        description="Minimum interval in milliseconds between retry attempts. "
+        "Example: 60000 for 1 minute between retries",
+    )
+    retry_on_timeout: Optional[bool] = Field(
+        default=None,
+        description="Whether to retry a task when it times out. "
+        "Requires max_retries to be set",
+    )
+
+    # Additional cluster configuration
+    driver_node_type_id: Optional[str] = Field(
+        default=None,
+        description="Databricks node type for the Spark driver. Defaults to "
+        "the same type as worker nodes if not specified. "
+        "Example: 'i3.xlarge'",
+    )
+    init_scripts: Optional[List[str]] = Field(
+        default=None,
+        description="DBFS paths to init scripts for cluster setup. "
+        "Example: ['dbfs:/scripts/install_dependencies.sh']",
+    )
+    docker_image_url: Optional[str] = Field(
+        default=None,
+        description="Docker image URL for the cluster. Must be accessible "
+        "from the Databricks workspace. "
+        "Example: 'my-registry.com/my-image:latest'",
+    )
+    docker_image_username: Optional[str] = Field(
+        default=None,
+        description="Username for authenticating to the Docker registry",
+    )
+    docker_image_password: Optional[str] = Field(
+        default=None,
+        description="Password for authenticating to the Docker registry",
     )
 
 
