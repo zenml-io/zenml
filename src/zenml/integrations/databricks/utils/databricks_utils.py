@@ -22,37 +22,6 @@ from databricks.sdk.service.jobs import Task as DatabricksTask
 
 from zenml import __version__
 
-_ZENML_RE = re.compile(
-    r"(^zenml([>=<!~\[,\s]|$))|(/zenml(\.git)?(@|$))",
-    re.IGNORECASE,
-)
-
-
-def _split_requirements(
-    requirements: List[str],
-) -> Tuple[List[str], bool]:
-    """Separate installable PyPI requirements from zenml references.
-
-    Git URLs and other non-PyPI specs that reference zenml are dropped
-    because Databricks PyPI libraries only accept standard package specs.
-    When such a reference is found, the caller knows zenml is already
-    bundled in the project wheel and should not be added from PyPI.
-
-    Args:
-        requirements: Raw pip requirement strings.
-
-    Returns:
-        A tuple of (filtered requirements, has_custom_zenml).
-    """
-    filtered: List[str] = []
-    has_custom_zenml = False
-    for req in requirements:
-        if _ZENML_RE.search(req):
-            has_custom_zenml = True
-        else:
-            filtered.append(req)
-    return filtered, has_custom_zenml
-
 
 def convert_step_to_task(
     task_name: str,
@@ -87,16 +56,13 @@ def convert_step_to_task(
         Databricks task.
     """
     db_libraries = []
-    has_custom_zenml = False
     if libraries:
-        installable, has_custom_zenml = _split_requirements(libraries)
-        for library in installable:
+        for library in libraries:
             db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
     db_libraries.append(Library(whl=zenml_project_wheel))
-    if not has_custom_zenml:
-        db_libraries.append(
-            Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
-        )
+    db_libraries.append(
+        Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
+    )
     return DatabricksTask(
         task_key=task_name,
         job_cluster_key=job_cluster_key,
