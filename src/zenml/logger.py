@@ -328,16 +328,15 @@ class ZenMLLoggingHandler(logging.Handler):
         Args:
             record: The log record to emit.
         """
-        try:
-            from zenml.utils.logging_utils import LoggingContext
-        except ImportError:
-            # During module initialization (e.g. on Databricks where py4j
-            # logs on a background thread), importing logging_utils can
-            # trigger a circular import. Silently skip in that case — the
-            # log record will still reach other handlers.
+        # Look up the module only if it has already been fully imported.
+        # Attempting a fresh import here can trigger a circular import
+        # when a background thread (e.g. Databricks Py4J) emits a log
+        # while zenml.__init__ is still loading.
+        mod = sys.modules.get("zenml.utils.logging_utils")
+        if mod is None:
             return
 
-        LoggingContext.emit(record)
+        mod.LoggingContext.emit(record)
 
 
 def get_console_handler() -> logging.Handler:
