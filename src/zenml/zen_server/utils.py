@@ -66,7 +66,6 @@ from zenml.zen_server.pipeline_execution.workload_manager_interface import (
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.request_management import RequestContext, RequestManager
-from zenml.zen_stores.resource_pool_reconciler import ResourcePoolReconciler
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
@@ -95,7 +94,6 @@ _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
 _memcache: Optional[MemoryCache] = None
 _request_manager: Optional[RequestManager] = None
-_resource_pool_reconciler: Optional[ResourcePoolReconciler] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
