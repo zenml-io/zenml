@@ -28,7 +28,7 @@ from fastapi import (
     Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -209,15 +209,14 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
             # everything else is directed to the index.html file that hosts the
             # single-page application - this is to support client-side routing
-            return templates.TemplateResponse(
-                "index.html",
-                dict(
-                    request=request,
-                    service_info=self.service.get_service_info().model_dump(
-                        mode="json"
-                    ),
+            template = templates.get_template("index.html")
+            html = template.render(
+                request=request,
+                service_info=self.service.get_service_info().model_dump(
+                    mode="json"
                 ),
             )
+            return HTMLResponse(content=html)
 
         endpoints.append(
             EndpointSpec(
