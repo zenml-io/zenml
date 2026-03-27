@@ -56,13 +56,21 @@ def convert_step_to_task(
         Databricks task.
     """
     db_libraries = []
+    zenml_pattern = re.compile(
+        r"(^zenml([>=<!~\[,\s]|$))|(/zenml(\.git)?(@|$))",
+        re.IGNORECASE,
+    )
+    has_custom_zenml = libraries and any(
+        zenml_pattern.search(lib) for lib in libraries
+    )
     if libraries:
         for library in libraries:
             db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
     db_libraries.append(Library(whl=zenml_project_wheel))
-    db_libraries.append(
-        Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
-    )
+    if not has_custom_zenml:
+        db_libraries.append(
+            Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
+        )
     return DatabricksTask(
         task_key=task_name,
         job_cluster_key=job_cluster_key,
