@@ -251,6 +251,7 @@ class BentoMLContainerDeploymentService(
         """
         zenml_client = ZenMLClient()
         container_registry = zenml_client.active_stack.container_registry
+        image_builder = zenml_client.active_stack.image_builder
         # a tuple of config image and image tag
         if self.config.image and self.config.image_tag:
             image_tag = (self.config.image, self.config.image_tag)
@@ -281,18 +282,25 @@ class BentoMLContainerDeploymentService(
             logger.error(f"Error containerizing the bento: {e}")
             raise e
 
-        if container_registry:
-            logger.info(
-                f"Pushing bento to container registry {container_registry.config.uri}"
-            )
-            # push the bento to the image registry
-            container_registry.push_image(self.config.image)
-        else:
+        if not container_registry:
             logger.warning(
                 "No container registry found in the active stack. "
                 "Please add a container registry to your stack to push "
                 "the bento to an image registry."
             )
+        elif not image_builder or not image_builder.is_building_locally:
+            logger.warning(
+                "No image builder found in the active stack or the image "
+                "builder is not building locally. "
+                "Please add an image builder to your stack to push "
+                "the bento to an image registry."
+            )
+        else:
+            logger.info(
+                f"Pushing bento to container registry {container_registry.config.uri}"
+            )
+            # push the bento to the image registry
+            image_builder.push_image(self.config.image, container_registry)
 
     def provision(self) -> None:
         """Provision the service."""

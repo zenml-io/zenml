@@ -42,7 +42,7 @@ from zenml.constants import (
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.utils import docker_utils, io_utils, source_utils
+from zenml.utils import io_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.code_repositories import BaseCodeRepository
@@ -209,7 +209,7 @@ class PipelineDockerImageBuilder:
                         )
 
                 repository = repository or DEFAULT_ZENML_DOCKER_REPOSITORY
-                user_image_tag = docker_utils.sanitize_tag(
+                user_image_tag = image_builder.sanitize_image_tag(
                     f"{tag}-intermediate-build"
                 )
                 user_image_name = f"{repository}:{user_image_tag}"
@@ -251,16 +251,18 @@ class PipelineDockerImageBuilder:
                     "specified and no files will be copied or requirements "
                     "installed."
                 )
-            else:
+            elif image_builder.is_building_locally:
                 # The parent image will be used directly to run the pipeline and
                 # needs to be tagged/pushed
-                docker_utils.tag_image(parent_image, target=target_image_name)
+                image_builder.tag_image(parent_image, target=target_image_name)
                 if container_registry:
-                    image_name_or_digest = container_registry.push_image(
-                        target_image_name
+                    image_name_or_digest = image_builder.push_image(
+                        target_image_name, container_registry
                     )
                 else:
                     image_name_or_digest = target_image_name
+            else:
+                image_name_or_digest = target_image_name
 
         if requires_zenml_build:
             logger.info("Building Docker image `%s`.", target_image_name)
@@ -332,7 +334,7 @@ class PipelineDockerImageBuilder:
                 # If the image is local, we don't need to pull it. Otherwise
                 # we play it safe and always pull in case the user pushed a new
                 # image for the given name and tag
-                pull_parent_image = not docker_utils.is_local_image(
+                pull_parent_image = not image_builder.is_image_local(
                     parent_image
                 )
 

@@ -201,49 +201,6 @@ class BaseContainerRegistry(AuthenticationMixin):
             image_name: Name of the docker image that will be pushed.
         """
 
-    def push_image(self, image_name: str) -> str:
-        """Pushes a docker image.
-
-        Args:
-            image_name: Name of the docker image that will be pushed.
-
-        Returns:
-            The Docker repository digest of the pushed image.
-
-        Raises:
-            ValueError: If the image name is not associated with this
-                container registry.
-        """
-        if not self.is_valid_image_name_for_registry(image_name):
-            raise ValueError(
-                f"Docker image `{image_name}` does not belong to container "
-                f"registry `{self.config.uri}`."
-            )
-
-        self.prepare_image_push(image_name)
-        return docker_utils.push_image(
-            image_name, docker_client=self.docker_client
-        )
-
-    def get_image_repo_digest(self, image_name: str) -> Optional[str]:
-        """Get the repository digest of an image.
-
-        Args:
-            image_name: The name of the image.
-
-        Returns:
-            The repository digest of the image.
-        """
-        if not self.is_valid_image_name_for_registry(image_name):
-            return None
-
-        try:
-            metadata = self.docker_client.images.get_registry_data(image_name)
-        except Exception:
-            return None
-
-        return cast(str, metadata.id.split(":")[-1])
-
 
 class BaseContainerRegistryFlavor(Flavor):
     """Base flavor for container registries."""

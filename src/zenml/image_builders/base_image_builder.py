@@ -15,6 +15,7 @@
 
 import hashlib
 import os
+import re
 import tempfile
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional, Type, cast
@@ -97,6 +98,102 @@ class BaseImageBuilder(StackComponent, ABC):
         Returns:
             The Docker image repo digest or name.
         """
+
+    def sanitize_image_tag(self, tag: str) -> str:
+        """Sanitize a container image tag for OCI-compatible registries.
+
+        Args:
+            tag: Raw tag string, often derived from pipeline or step names.
+
+        Raises:
+            ValueError: If the tag is empty after sanitization.
+
+        Returns:
+            A tag of at most 128 characters using allowed characters only.
+        """
+        tag = re.sub(r"[^a-zA-Z0-9_.\-]", "", tag)
+        tag = re.sub(r"^[-.]", "_", tag)
+
+        if not tag:
+            raise ValueError("Container image tag cannot be empty.")
+
+        return tag[:128]
+
+    def tag_image(self, source: str, target: str) -> None:
+        """Tag a local image as ``target``.
+
+        Args:
+            source: Existing local image reference.
+            target: Full image name including tag to apply.
+
+        Raises:
+            NotImplementedError: If the image builder does not support tagging
+                images.
+        """
+        raise NotImplementedError(
+            "Tagging images is not supported by this image builder. Use the "
+            "local image builder instead."
+        )
+
+    def is_image_local(self, image_name: str) -> bool:
+        """Return True if the image exists locally without a single repo digest.
+
+        Used to decide whether a parent image should be pulled before build.
+
+        Args:
+            image_name: Image reference to inspect on the local engine.
+
+        Returns:
+            Whether the image exists locally without a single repo digest.
+
+        Raises:
+            NotImplementedError: If the image builder does not support checking
+                if images are local.
+        """
+        raise NotImplementedError(
+            "Checking if images are local is not supported by this image builder. "
+            "Use the local image builder instead."
+        )
+
+    def push_image(
+        self,
+        image_name: str,
+        container_registry: "BaseContainerRegistry",
+    ) -> str:
+        """Push ``image_name`` and return a digest or name.
+
+        Args:
+            image_name: Full image reference including tag.
+            container_registry: Registry to push to.
+
+        Returns:
+            Repository digest when available, otherwise the image name.
+
+        Raises:
+            NotImplementedError: If the image builder does not support pushing
+                images.
+        """
+        raise NotImplementedError(
+            "Pushing images is not supported by this image builder. Use the "
+            "local image builder instead."
+        )
+
+    def get_image_repo_digest(
+        self,
+        image_name: str,
+    ) -> Optional[str]:
+        """Get the repository digest of an image.
+
+        Args:
+            image_name: The name of the image.
+
+        Returns:
+            The repository digest of the image.
+        """
+        raise NotImplementedError(
+            "Getting the repository digest of an image is not supported by "
+            "this image builder. Use the local image builder instead."
+        )
 
     @staticmethod
     def _upload_build_context(

@@ -38,7 +38,7 @@ from zenml.models import (
     StackResponse,
 )
 from zenml.stack import Stack
-from zenml.utils import docker_utils, source_utils
+from zenml.utils import source_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -419,7 +419,13 @@ def create_pipeline_build(
                 if build_config.step_name:
                     tag += f"-{build_config.step_name}"
                 tag += f"-{build_config.key}"
-                tag = docker_utils.sanitize_tag(tag)
+                ib = stack.image_builder
+                if ib is None:
+                    raise RuntimeError(
+                        "Unable to build Docker images without an image "
+                        f"builder in the stack `{stack.name}`."
+                    )
+                tag = ib.sanitize_image_tag(tag)
 
             include_files = build_config.should_include_files(
                 code_repository=code_repository,
