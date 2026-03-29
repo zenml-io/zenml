@@ -218,6 +218,9 @@ def attach_trigger_to_snapshot(
         trigger_id: The ID of the trigger.
         snapshot_id: The ID of the snapshot.
         run_configuration: Configuration for the follow-up trigger runs.
+
+    Raises:
+        IllegalOperationError: If the trigger is already attached to the snapshot.
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
