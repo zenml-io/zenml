@@ -27,7 +27,6 @@ jobs:
             echo "::error::Invalid version '$VERSION' extracted from branch '$BRANCH'. Expected semver like 0.71.0"
             exit 1
           fi
-
           echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
 
           # Only tag as "latest" if this is the highest release version.

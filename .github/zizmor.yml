@@ -49,8 +49,8 @@ rules:
   # Ignores: Low-confidence findings for protected publish workflows
   cache-poisoning:
     ignore:
-      - publish_api_docs.yml:24  # Protected release branch, docs only (setup-node caching)
-      - publish_api_docs.yml:27  # Protected release branch, docs only
+      - publish_sdk_docs.yml:24  # Protected release branch, docs only (setup-node caching)
+      - publish_sdk_docs.yml:27  # Protected release branch, docs only
 
   # Detect malformed conditionals
   unsound-condition: {}
