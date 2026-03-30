@@ -358,6 +358,11 @@ from zenml.models.v2.core.triggers import (
     ScheduleTriggerResponseBody,
     ScheduleTriggerResponse,
     ScheduleTriggerUpdate,
+    PlatformEventTriggerRequest,
+    PlatformEventTriggerUpdate,
+    PlatformEventTriggerResponse,
+    PlatformEventTriggerResponseBody,
+    PlatformEventTrigger,
     TRIGGER_UPDATE_TYPE_UNION,
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
@@ -600,6 +605,11 @@ ScheduleTriggerRequest.model_rebuild()
 ScheduleTriggerResponse.model_rebuild()
 ScheduleTriggerResponseBody.model_rebuild()
 ScheduleTriggerUpdate.model_rebuild()
+PlatformEventTrigger.model_rebuild()
+PlatformEventTriggerRequest.model_rebuild()
+PlatformEventTriggerUpdate.model_rebuild()
+PlatformEventTriggerResponse.model_rebuild()
+PlatformEventTriggerResponseBody.model_rebuild()
 
 
 __all__ = [
@@ -948,6 +958,11 @@ __all__ = [
     "ScheduleTriggerResponse",
     "ScheduleTriggerResponseBody",
     "ScheduleTriggerUpdate",
+    "PlatformEventTriggerRequest",
+    "PlatformEventTriggerUpdate",
+    "PlatformEventTriggerResponse",
+    "PlatformEventTriggerResponseBody",
+    "PlatformEventTrigger",
     "TRIGGER_UPDATE_TYPE_UNION",
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",

@@ -26,7 +26,7 @@ from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import TEXT, VARCHAR, String
 from sqlmodel import Field, Relationship, col, desc, select
 
-from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
@@ -75,6 +75,10 @@ class TriggerSchema(NamedSchema, table=True):
         build_index(
             table_name=__tablename__,
             column_names=["flavor", "next_occurrence"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["flavor", "source_entity"],
         ),
     )
 
@@ -147,6 +151,24 @@ class TriggerSchema(NamedSchema, table=True):
         nullable=True,
         default=None,
         description="The next occurrence. Applicable for schedules.",
+    )
+
+    source_entity: str | None = Field(
+        sa_column=Column(
+            String(length=STR_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
+            nullable=True,
+            default=None,
+        ),
+        description="The event source(e.g. pipeline:<uuid>. Applicable for platform events.",
+    )
+
+    target_events: str | None = Field(
+        sa_column=Column(
+            String(length=TEXT_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
+            nullable=True,
+            default=None,
+        ),
+        description="The event source(e.g. pipeline:<uuid>. Applicable for platform events.",
     )
 
     @property

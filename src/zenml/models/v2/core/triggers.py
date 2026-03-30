@@ -15,12 +15,29 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Literal, Optional, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Generic,
+    Literal,
+    Optional,
+    Type,
+    TypeVar,
+)
+from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import TriggerFlavor, TriggerRunConcurrency, TriggerType
+from zenml.enums import (
+    SourceEvent,
+    SourceType,
+    TriggerFlavor,
+    TriggerRunConcurrency,
+    TriggerType,
+)
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.scoped import (
@@ -39,6 +56,9 @@ if TYPE_CHECKING:
         UserResponse,
     )
     from zenml.models.v2.base.filter import AnySchema
+
+
+# ----------- TRIGGER BASE CLASSES ------------------- #
 
 
 class TriggerBase(BaseModel, ABC):
@@ -255,6 +275,9 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         return query
 
 
+# ----------- SCHEDULE CLASSES ------------------- #
+
+
 class ScheduleTrigger(BaseModel):
     """Base class for schedule-specific parameters."""
 
@@ -462,15 +485,17 @@ class ScheduleTriggerResponseBody(ScheduleTrigger, TriggerResponseBody):
         return ["next_occurrence"]
 
 
-class ScheduleTriggerResponse(
+TriggerBodyT = TypeVar("TriggerBodyT", bound="TriggerResponseBody")
+
+
+class TriggerResponse(
     ProjectScopedResponse[
-        ScheduleTriggerResponseBody,
+        TriggerResponseBody,
         TriggerResponseMetadata,
         TriggerResponseResources,
-    ]
+    ],
+    Generic[TriggerBodyT],
 ):
-    """Class representing a ScheduleTrigger response."""
-
     @property
     def is_archived(self) -> bool:
         """Implements the 'is_archived' property.
@@ -515,6 +540,46 @@ class ScheduleTriggerResponse(
             The trigger flavor.
         """
         return self.get_body().flavor
+
+    @property
+    def snapshots(self) -> list["PipelineSnapshotResponse"]:
+        """Implements the 'snapshots' property.
+
+        Returns:
+            A list of source snapshots the triggers is attached to.
+        """
+        return self.get_resources().snapshots
+
+    @property
+    def executable_snapshots(self) -> list["PipelineSnapshotResponse"]:
+        """Implements the 'executable_snapshots' property.
+
+        Returns:
+            A list of snapshots the triggers is attached to.
+        """
+        return self.get_resources().executable_snapshots
+
+    @property
+    def latest_run(self) -> Optional["PipelineRunResponse"]:
+        """Implements the 'latest_run' property.
+
+        Returns:
+            The latest run of the trigger.
+        """
+        return self.get_resources().latest_run
+
+    @property
+    def concurrency(self) -> TriggerRunConcurrency:
+        """Implements the 'concurrency' property.
+
+        Returns:
+            The concurrency of the trigger.
+        """
+        return self.get_body().concurrency
+
+
+class ScheduleTriggerResponse(TriggerResponse[ScheduleTriggerResponseBody,]):
+    """Class representing a ScheduleTrigger response."""
 
     @property
     def next_occurrence(self) -> datetime | None:
@@ -570,43 +635,142 @@ class ScheduleTriggerResponse(
         """
         return self.get_body().run_once_start_time
 
-    @property
-    def snapshots(self) -> list["PipelineSnapshotResponse"]:
-        """Implements the 'snapshots' property.
+# ----------- EVENT CLASSES ------------------- #
+
+
+class SourceEntity(BaseModel):
+    """Base class representing a SourceEntity."""
+
+    type: SourceType
+    id: UUID
+
+
+SOURCE_TYPE_EVENT_MAPPING = {
+    SourceType.PIPELINE.value: {
+        SourceEvent.RUN_FAILED.value,
+        SourceEvent.RUN_COMPLETED.value,
+    },
+    SourceType.PIPELINE_RUN: {
+        SourceEvent.COMPLETED.value,
+        SourceEvent.FAILED.value,
+    },
+}
+
+
+class PlatformEventTrigger(BaseModel):
+    """Base class for event-specific parameters."""
+
+    source_entity: SourceEntity
+    target_events: list[SourceEvent]
+
+    @model_validator(mode="after")
+    def validate_event_type(self) -> "PlatformEventTrigger":
+        """Validates type/event combination.
 
         Returns:
-            A list of source snapshots the triggers is attached to.
-        """
-        return self.get_resources().snapshots
+            The event trigger instance.
 
-    @property
-    def executable_snapshots(self) -> list["PipelineSnapshotResponse"]:
-        """Implements the 'executable_snapshots' property.
+        Raises:
+            ValueError: If type/event combination is invalid.
+        """
+
+        if any(
+            event.value
+            not in SOURCE_TYPE_EVENT_MAPPING.get(self.source_entity.type, {})
+            for event in self.target_events
+        ):
+            raise ValueError(
+                f"Events {[e.value for e in self.target_events]} is not compatible with source {self.source_entity.type}"
+            )
+
+        return self
+
+
+class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
+    def get_config(self) -> str:
+        """Returns the serialized blob of custom trigger fields.
 
         Returns:
-            A list of snapshots the triggers is attached to.
+            Json-dump of ScheduleTrigger config.
         """
-        return self.get_resources().executable_snapshots
+        return self.model_dump_json(
+            include=set(PlatformEventTrigger.model_fields),
+        )
 
-    @property
-    def latest_run(self) -> Optional["PipelineRunResponse"]:
-        """Implements the 'latest_run' property.
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Calculates and returns extra flat fields.
 
         Returns:
-            The latest run of the trigger.
+            A dictionary with extra fields (next occurrence or empty).
         """
-        return self.get_resources().latest_run
 
-    @property
-    def concurrency(self) -> TriggerRunConcurrency:
-        """Implements the 'concurrency' property.
+        return {
+            "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
+            "target_events": " ".join(event.value for event in self.events),
+        }
+
+
+class PlatformEventTriggerUpdate(TriggerUpdate, PlatformEventTrigger):
+    type: Literal[TriggerType.PLATFORM_EVENT] = TriggerType.PLATFORM_EVENT
+    flavor: Literal[TriggerFlavor.PLATFORM_EVENT] = (
+        TriggerFlavor.PLATFORM_EVENT
+    )
+
+    def get_config(self) -> str:
+        """Returns the serialized blob of custom trigger fields.
 
         Returns:
-            The concurrency of the trigger.
+            Json-dump of ScheduleTrigger config.
         """
-        return self.get_body().concurrency
+        return self.model_dump_json(
+            include=set(PlatformEventTrigger.model_fields),
+        )
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Calculates and returns extra flat fields.
+
+        Returns:
+            A dictionary with extra fields (next occurrence or empty).
+        """
+
+        return {
+            "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
+            "target_events": " ".join(event.value for event in self.events),
+        }
 
 
-TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate
-TRIGGER_CREATE_TYPE_UNION = ScheduleTriggerRequest
-TRIGGER_RETURN_TYPE_UNION = ScheduleTriggerResponse
+class PlatformEventTriggerResponseBody(
+    PlatformEventTrigger, TriggerResponseBody
+):
+    """Class representing a PlatformEvent trigger response body."""
+
+    def get_extra_fields(self) -> list[str]:
+        """Returns the extra fields (e.g. next occurrence).
+
+        Returns:
+            The extra fields for the schedule payload.
+        """
+        return []
+
+
+class PlatformEventTriggerResponse(
+    TriggerResponse[PlatformEventTriggerResponseBody,]
+):
+    """Class representing a platform event trigger response."""
+
+    @property
+    def source_type(self) -> SourceType:
+        return self.get_body().source_entity.type
+
+    @property
+    def source_id(self) -> UUID:
+        return self.get_body().source_entity.id
+
+
+TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate | PlatformEventTriggerUpdate
+TRIGGER_CREATE_TYPE_UNION = (
+    ScheduleTriggerRequest | PlatformEventTriggerRequest
+)
+TRIGGER_RETURN_TYPE_UNION = (
+    ScheduleTriggerResponse | PlatformEventTriggerResponse
+)
