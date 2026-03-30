@@ -1,4 +1,4 @@
----
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration---
 description: Trigger pipelines by schedule or event.
 icon: server
 ---
@@ -79,6 +79,31 @@ Via the CLI:
 
 ~~~bash
 zenml trigger schedule attach "<TRIGGER_ID>" "<SNAPSHOT_ID>"
+~~~
+
+Users can provide a configuration object to define the parameters of pipeline runs triggered from this attachment.
+
+Via the SDK:
+
+~~~python
+from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+
+client = Client()
+client.attach_trigger_to_snapshot(
+    trigger_id="<TRIGGER_ID>",
+    pipeline_snapshot_id="<>SNAPSHOT_ID",
+    run_configuration=PipelineRunConfiguration(
+        enable_step_logs=True,
+        enable_pipeline_logs=True,
+    )
+)
+~~~
+
+Via the CLI:
+
+~~~bash
+zenml trigger schedule detach "<TRIGGER_ID>" "<SNAPSHOT_ID>" --config=<path-to-your-config>.yml
 ~~~
 
 Triggers can be *detached* from snapshots as well.
