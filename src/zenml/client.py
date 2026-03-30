@@ -4080,6 +4080,7 @@ class Client(metaclass=ClientMetaClass):
         trigger_id: UUID,
         pipeline_snapshot_id: UUID,
         run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
     ) -> None:
         """Attaches a trigger to a snapshot.
 
@@ -4090,11 +4091,13 @@ class Client(metaclass=ClientMetaClass):
             trigger_id: The ID of the trigger.
             pipeline_snapshot_id: The ID of the snapshot.
             run_configuration: The configuration applied to subsequent runs of this trigger & snapshot.
+            allow_replace: Allow replacement if attachment already exists.
         """
         self.zen_store.attach_trigger_to_snapshot(
             trigger_id=trigger_id,
             snapshot_id=pipeline_snapshot_id,
             run_configuration=run_configuration,
+            allow_replace=allow_replace,
         )
 
     def detach_trigger_from_snapshot(

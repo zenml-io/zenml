@@ -230,10 +230,18 @@ def delete_schedule_trigger(schedule_id: UUID, soft: bool = True) -> None:
     required=False,
     help="Path to config file (PipelineRunConfiguration) for triggered runs.",
 )
+@click.option(
+    "--allow-replace",
+    type=click.BOOL,
+    required=False,
+    help="Allow replacement if attachment already exists.",
+    is_flag=True,
+)
 def attach_schedule_trigger(
     schedule_id: UUID,
     snapshot_id: UUID,
     config_path: str | None = None,
+    allow_replace: bool = False,
 ) -> None:
     """Attach a schedule to a snapshot.
 
@@ -241,6 +249,7 @@ def attach_schedule_trigger(
         schedule_id: The ID of the schedule.
         snapshot_id: The ID of the snapshot.
         config_path: The path to the config file to use.
+        allow_replace: Allow replacement if attachment already exists.
     """
     try:
         Client().attach_trigger_to_snapshot(
@@ -249,6 +258,7 @@ def attach_schedule_trigger(
             run_configuration=PipelineRunConfiguration.from_yaml(config_path)
             if config_path
             else None,
+            allow_replace=allow_replace,
         )
     except Exception as e:
         cli_utils.exception(e)

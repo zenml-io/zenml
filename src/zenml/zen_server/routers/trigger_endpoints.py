@@ -210,6 +210,7 @@ def attach_trigger_to_snapshot(
     trigger_id: UUID,
     snapshot_id: UUID,
     run_configuration: PipelineRunConfiguration | None = None,
+    allow_replace: bool = False,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Attaches a trigger to a snapshot.
@@ -218,6 +219,7 @@ def attach_trigger_to_snapshot(
         trigger_id: The ID of the trigger.
         snapshot_id: The ID of the snapshot.
         run_configuration: Configuration for the follow-up trigger runs.
+        allow_replace: Allow replacement if attachment already exists.
 
     Raises:
         IllegalOperationError: If the trigger is already attached to the snapshot.
@@ -226,13 +228,18 @@ def attach_trigger_to_snapshot(
 
     snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
 
+    snapshot_replaced_id = None
+
     for s in trigger.snapshots:
         if snapshot_id in {s.source_snapshot_id, s.id}:
-            raise IllegalOperationError(
-                f"Trigger {trigger_id} is already attached to snapshot {snapshot_id}. "
-                f"To attach {snapshot_id} with a different configuration, please detach "
-                f"the current attachment first."
-            )
+            if not allow_replace:
+                raise IllegalOperationError(
+                    f"Trigger {trigger_id} is already attached to snapshot {snapshot_id}. "
+                    f"To attach {snapshot_id} with a different configuration, please detach "
+                    f"the current attachment first or use the `allow_replace` flag."
+                )
+            else:
+                snapshot_replaced_id = s.id
 
     check_entitlement(feature=SCHEDULE_FEATURE)
 
@@ -268,6 +275,11 @@ def attach_trigger_to_snapshot(
         stack=stack,
         run_configuration=run_configuration,
     )
+
+    if snapshot_replaced_id is not None:
+        zen_store().detach_trigger_from_snapshot(
+            trigger_id=trigger_id, snapshot_id=snapshot_replaced_id
+        )
 
     zen_store().attach_trigger_to_snapshot(
         trigger_id=trigger_id,
