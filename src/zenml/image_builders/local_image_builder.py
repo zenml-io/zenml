@@ -15,11 +15,10 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
 import tempfile
-from typing import TYPE_CHECKING, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Optional, Type, cast
 
 from pydantic import Field
 
@@ -32,10 +31,12 @@ from zenml.image_builders import (
     BaseImageBuilderFlavor,
 )
 from zenml.logger import get_logger
-from zenml.utils import docker_utils
+from zenml.utils import docker_utils, podman_utils
 from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
+    from docker.client import DockerClient
+
     from zenml.config.docker_settings import DockerBuildOptions
     from zenml.image_builders import BuildContext
 
@@ -89,6 +90,81 @@ class LocalImageBuilder(BaseImageBuilder):
         """
         return True
 
+    @staticmethod
+    def _get_docker_client(
+        container_registry: BaseContainerRegistry | None = None,
+        authenticate_cli: bool = True,
+    ) -> "DockerClient":
+        """Returns a Docker client for a container registry.
+
+        Args:
+            container_registry: The container registry to get the Docker client
+                for. If not provided, a client will be created from the
+                environment.
+            authenticate_cli: Whether to authenticate the Docker CLI too.
+
+        Returns:
+            The Docker client.
+        """
+        if container_registry:
+            credentials = container_registry.credentials
+            if credentials:
+                username, password = credentials
+
+                if authenticate_cli:
+                    # The reason callers might also need to configure the Docker
+                    # CLI here is the following: When calling the login method
+                    # on the python client, it stores the credentials in memory,
+                    # but doesn't actually use them in future calls to push/pull
+                    # images in case a credential store or credential helper is
+                    # configured. If the cred store/helper contains
+                    # invalid/expired credentials for the registry, these calls
+                    # will fail.
+                    # This solution is not ideal as we're now replacing
+                    # potentially long-lived credentials in the cred store with
+                    # our short lived ones, but the best we can do without
+                    # modifying the docker library.
+                    docker_utils.authenticate_docker_cli(
+                        username=username,
+                        password=password,
+                        registry=container_registry.config.uri,
+                    )
+
+                return docker_utils.get_docker_client(
+                    username=username,
+                    password=password,
+                    registry=container_registry.config.uri,
+                )
+
+        return docker_utils.get_docker_client()
+
+    def _authenticate_local_cli(
+        self, container_registry: BaseContainerRegistry
+    ) -> None:
+        """Authenticates the local container engine CLI to a container registry.
+
+        Args:
+            container_registry: The container registry to authenticate to.
+        """
+        credentials = container_registry.credentials
+        if not credentials:
+            return
+
+        username, password = credentials
+
+        if self.config.container_runtime == LocalContainerRuntime.DOCKER:
+            docker_utils.authenticate_docker_cli(
+                username=username,
+                password=password,
+                registry=container_registry.config.uri,
+            )
+        elif self.config.container_runtime == LocalContainerRuntime.PODMAN:
+            podman_utils.authenticate_podman_cli(
+                username=username,
+                password=password,
+                registry=container_registry.config.uri,
+            )
+
     def _check_prerequisites(self) -> None:
         """Checks that all prerequisites are installed.
 
@@ -130,6 +206,24 @@ class LocalImageBuilder(BaseImageBuilder):
                 "`DOCKER_HOST` environment variable to that value."
             )
 
+    def _check_registry_image(
+        self, image_name: str, container_registry: BaseContainerRegistry
+    ) -> None:
+        """Checks if the image is valid for the container registry.
+
+        Args:
+            image_name: The name of the image to check.
+            container_registry: The container registry to check the image for.
+
+        Raises:
+            ValueError: If the image is not valid for the container registry.
+        """
+        if not container_registry.is_valid_image_name_for_registry(image_name):
+            raise ValueError(
+                f"Container image `{image_name}` does not belong to container "
+                f"registry `{container_registry.config.uri}`."
+            )
+
     def build(
         self,
         image_name: str,
@@ -149,6 +243,14 @@ class LocalImageBuilder(BaseImageBuilder):
             The Docker image repo digest.
         """
         self._check_prerequisites()
+
+        if container_registry:
+            self._check_registry_image(image_name, container_registry)
+
+            # Authenticate the local container engine CLI to the container
+            # registry to also allow the build to pull images from the registry,
+            # if necessary.
+            self._authenticate_local_cli(container_registry)
 
         if self.config.container_runtime == LocalContainerRuntime.PODMAN:
             self._build_with_container_cli(
@@ -173,7 +275,18 @@ class LocalImageBuilder(BaseImageBuilder):
             )
 
         if container_registry:
-            return self.push_image(image_name, container_registry)
+            container_registry.prepare_image_push(image_name)
+
+            if self.config.container_runtime == LocalContainerRuntime.DOCKER:
+                return docker_utils.push_image(
+                    image_name,
+                    self._get_docker_client(
+                        container_registry, authenticate_cli=False
+                    ),
+                )
+
+            return podman_utils.push_image(image_name)
+
         return image_name
 
     def tag_image(self, source: str, target: str) -> None:
@@ -187,45 +300,45 @@ class LocalImageBuilder(BaseImageBuilder):
         Raises:
             RuntimeError: If the tag operation fails.
         """
+        self._check_prerequisites()
+
         if self.config.container_runtime == LocalContainerRuntime.DOCKER:
             docker_utils.tag_image(source, target=target)
             return
 
-        self._check_prerequisites()
-        result = subprocess.run(
-            ["podman", "tag", source, target],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"Podman tag failed: {result.stderr or result.stdout}"
-            )
+        podman_utils.tag_image(source, target)
 
     def get_image_repo_digest(
         self,
         image_name: str,
+        container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> Optional[str]:
         """Get the repository digest of an image.
 
         Args:
             image_name: The name of the image.
+            container_registry: The container registry to get the digest from.
 
         Returns:
             The repository digest of the image.
         """
         self._check_prerequisites()
 
+        if (
+            container_registry
+            and container_registry.is_valid_image_name_for_registry(image_name)
+        ):
+            # Authenticate the local container engine CLI to the container
+            # registry
+            self._authenticate_local_cli(container_registry)
+
         if self.config.container_runtime == LocalContainerRuntime.DOCKER:
-            try:
-                docker_client = docker_utils._try_get_docker_client_from_env()
-                metadata = docker_client.images.get_registry_data(image_name)
-            except Exception:
-                return None
+            return docker_utils.get_image_repo_digest(
+                image_name,
+                docker_client=self._get_docker_client(container_registry),
+            )
 
-            return cast(str, metadata.id.split(":")[-1])
-
-        return _podman_select_repo_digest(image_name)
+        return podman_utils.get_image_repo_digest(image_name)
 
     def is_image_local(self, image_name: str) -> bool:
         """Return True if the image exists locally without a single digest.
@@ -236,18 +349,12 @@ class LocalImageBuilder(BaseImageBuilder):
         Returns:
             Whether the image appears to be a local-only build.
         """
+        self._check_prerequisites()
+
         if self.config.container_runtime == LocalContainerRuntime.DOCKER:
             return docker_utils.is_local_image(image_name)
 
-        self._check_prerequisites()
-        exists = subprocess.run(
-            ["podman", "image", "exists", image_name],
-            capture_output=True,
-        )
-        if exists.returncode != 0:
-            return False
-        digests = _podman_inspect_repo_digests(image_name)
-        return len(digests) != 1
+        return podman_utils.is_local_image(image_name)
 
     def push_image(
         self,
@@ -263,39 +370,23 @@ class LocalImageBuilder(BaseImageBuilder):
         Returns:
             Repository digest when available, otherwise the image name.
         """
-        if not container_registry.is_valid_image_name_for_registry(image_name):
-            raise ValueError(
-                f"Docker image `{image_name}` does not belong to container "
-                f"registry `{container_registry.config.uri}`."
-            )
+        self._check_prerequisites()
+
+        self._check_registry_image(image_name, container_registry)
 
         container_registry.prepare_image_push(image_name)
 
-        self._check_prerequisites()
+        self._authenticate_local_cli(container_registry)
 
         if self.config.container_runtime == LocalContainerRuntime.DOCKER:
             return docker_utils.push_image(
-                image_name, docker_client=container_registry.docker_client
+                image_name,
+                self._get_docker_client(
+                    container_registry, authenticate_cli=False
+                ),
             )
 
-        _podman_login_if_needed(container_registry)
-        logger.info("Pushing container image `%s` via Podman.", image_name)
-        push_result = subprocess.run(
-            ["podman", "push", image_name],
-            capture_output=True,
-            text=True,
-        )
-        if push_result.returncode != 0:
-            raise RuntimeError(
-                f"Podman push failed: {push_result.stderr or push_result.stdout}"
-            )
-        logger.info("Finished pushing container image via Podman.")
-        digest = _podman_select_repo_digest(image_name)
-        if digest is None:
-            raise RuntimeError(
-                f"Unable to find repo digest after pushing image {image_name}."
-            )
-        return digest
+        return podman_utils.push_image(image_name)
 
     def _build_with_python_sdk(
         self,
@@ -312,12 +403,9 @@ class LocalImageBuilder(BaseImageBuilder):
             docker_build_options: Docker build options.
             container_registry: Optional container registry.
         """
-        if container_registry:
-            # Use the container registry's docker client, which may be
-            # authenticated to access additional registries
-            docker_client = container_registry.docker_client
-        else:
-            docker_client = docker_utils._try_get_docker_client_from_env()
+        docker_client = self._get_docker_client(
+            container_registry, authenticate_cli=False
+        )
 
         build_options = (
             docker_build_options.to_docker_python_sdk_options()
@@ -372,70 +460,6 @@ class LocalImageBuilder(BaseImageBuilder):
                     f"Failed to build image {image_name} with `{binary}`. "
                     "Please check the logs above for more information."
                 )
-
-
-def _podman_inspect_repo_digests(image_name: str) -> List[str]:
-    """Return RepoDigests entries from `podman inspect`."""
-    result = subprocess.run(
-        ["podman", "inspect", image_name, "--format", "{{json .RepoDigests}}"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        return []
-    raw = (result.stdout or "").strip() or "[]"
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        return []
-    if not isinstance(parsed, list):
-        return []
-    return [d for d in parsed if isinstance(d, str)]
-
-
-def _podman_login_if_needed(container_registry: BaseContainerRegistry) -> None:
-    """Run `podman login` when the registry stack component has credentials."""
-    credentials = container_registry.credentials
-    if not credentials:
-        return
-    username, password = credentials
-    registry = container_registry.config.uri
-    logger.info("Logging in to `%s` with Podman.", registry)
-    proc = subprocess.run(
-        [
-            "podman",
-            "login",
-            registry,
-            "--username",
-            username,
-            "--password-stdin",
-        ],
-        input=password,
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"Podman login failed for {registry}: {proc.stderr or proc.stdout}"
-        )
-
-
-def _podman_select_repo_digest(image_name: str) -> Optional[str]:
-    """Pick a repo digest for ``image_name`` after push (Podman)."""
-    image_name_without_tag, _ = image_name.rsplit(":", maxsplit=1)
-    digests = _podman_inspect_repo_digests(image_name)
-    prefix_candidates = [f"{image_name_without_tag}@"]
-    if image_name_without_tag.startswith(("index.docker.io/", "docker.io/")):
-        without_index = image_name_without_tag.split("/", maxsplit=1)[1]
-        prefix_candidates.append(f"{without_index}@")
-    for digest in digests:
-        if digest.startswith(tuple(prefix_candidates)):
-            return digest
-    for digest in reversed(digests):
-        if "@" in digest:
-            return digest
-    return None
 
 
 class LocalImageBuilderFlavor(BaseImageBuilderFlavor):

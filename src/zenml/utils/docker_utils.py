@@ -16,6 +16,7 @@
 import json
 import os
 import re
+import subprocess
 from typing import (
     Any,
     Dict,
@@ -32,11 +33,14 @@ from docker.client import DockerClient
 from docker.errors import DockerException
 from docker.utils import build as docker_build_utils
 
+from zenml.exceptions import AuthorizationException
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, string_utils
 
 logger = get_logger(__name__)
+
+DOCKERHUB_REGISTRY_URI = "docker.io"
 
 
 def check_docker() -> bool:
@@ -56,7 +60,80 @@ def check_docker() -> bool:
     return False
 
 
-def _parse_dockerignore(dockerignore_path: str) -> List[str]:
+def authenticate_docker_cli(
+    username: str,
+    password: str,
+    registry: str,
+) -> None:
+    """Authenticate a Docker client to a Docker/OCI registry."""
+    docker_login_cmd = [
+        "docker",
+        "login",
+        "-u",
+        username,
+        "--password-stdin",
+    ]
+    if registry != DOCKERHUB_REGISTRY_URI:
+        docker_login_cmd.append(registry)
+
+    try:
+        subprocess.run(
+            docker_login_cmd,
+            check=True,
+            input=password.encode(),
+        )
+    except subprocess.CalledProcessError as e:
+        raise AuthorizationException(
+            f"Failed to authenticate to Docker registry '{registry}': {e}"
+        ) from e
+
+
+def get_docker_client(
+    username: str | None = None,
+    password: str | None = None,
+    registry: str | None = None,
+) -> DockerClient:
+    """Creates a Docker client and optionally authenticates it to a Docker/OCI registry.
+
+    Args:
+        username: The username to authenticate with.
+        password: The password to authenticate with.
+        registry: The registry to authenticate with.
+        authenticate_cli: Whether to also authenticate the Docker CLI.
+
+    Raises:
+        RuntimeError: If creating a Docker client from the environment failed.
+
+    Returns:
+        A Docker client created from the environment.
+    """
+    try:
+        docker_client = DockerClient.from_env()
+    except DockerException as e:
+        raise RuntimeError(
+            "Could not create a Docker client from the environment. Is your "
+            "Docker daemon running?"
+        ) from e
+
+    if username and password and registry:
+        try:
+            docker_client.login(
+                username=username,
+                password=password,
+                registry=registry
+                if registry != DOCKERHUB_REGISTRY_URI
+                else None,
+                reauth=True,
+            )
+        except DockerException as e:
+            raise AuthorizationException(
+                f"failed to authenticate with Docker registry {registry}: {e}"
+            )
+
+    return docker_client
+
+
+def parse_dockerignore(dockerignore_path: str) -> List[str]:
     """Parses a dockerignore file and returns a list of patterns to ignore.
 
     Args:
@@ -123,7 +200,7 @@ def _create_custom_build_context(
                 "Using dockerignore file `%s` to create docker build context.",
                 dockerignore,
             )
-            exclude_patterns = _parse_dockerignore(dockerignore)
+            exclude_patterns = parse_dockerignore(dockerignore)
         else:
             logger.info(
                 "No `.dockerignore` found, including all files inside build "
@@ -228,7 +305,7 @@ def build_image(
 
     logger.info("Building the image might take a while...")
 
-    docker_client = _try_get_docker_client_from_env()
+    docker_client = get_docker_client()
 
     # We use the client api directly here, so we can stream the logs
     output_stream = docker_client.images.client.api.build(
@@ -260,7 +337,7 @@ def push_image(
         RuntimeError: If fetching the repository digest of the image failed.
     """
     logger.info("Pushing Docker image `%s`.", image_name)
-    docker_client = docker_client or _try_get_docker_client_from_env()
+    docker_client = docker_client or get_docker_client()
     output_stream = docker_client.images.push(image_name, stream=True)
     aux_info = _process_stream(output_stream)
     logger.info("Finished pushing Docker image.")
@@ -302,35 +379,33 @@ def tag_image(image_name: str, target: str) -> None:
         image_name: The name of the image to tag.
         target: The full target name including a tag.
     """
-    docker_client = _try_get_docker_client_from_env()
+    docker_client = get_docker_client()
     image = docker_client.images.get(image_name)
     image.tag(target)
 
 
-def get_image_digest(image_name: str) -> Optional[str]:
-    """Gets the digest of an image.
+def get_image_repo_digest(
+    image_name: str, docker_client: Optional[DockerClient] = None
+) -> Optional[str]:
+    """Gets the repository digest SHA-256 of an image.
 
     Args:
         image_name: Name of the image to get the digest for.
+        docker_client: Optional Docker client to use for getting the digest. If
+            no client is given, a new client will be created using the default
+            Docker environment.
 
     Returns:
-        Returns the repo digest for the given image if there exists exactly one.
-        If there are zero or multiple repo digests, returns `None`.
+        Returns the repo digest SHA-256 for the given image if there exists one.
     """
-    docker_client = _try_get_docker_client_from_env()
+    docker_client = docker_client or get_docker_client()
 
-    image = docker_client.images.get(image_name)
-    repo_digests = image.attrs["RepoDigests"]
-
-    if len(repo_digests) == 1:
-        return cast(str, repo_digests[0])
-    else:
-        logger.debug(
-            "Found zero or more repo digests for docker image '%s': %s",
-            image_name,
-            repo_digests,
-        )
+    try:
+        metadata = docker_client.images.get_registry_data(image_name)
+    except Exception:
         return None
+
+    return cast(str, metadata.id.split(":")[-1])
 
 
 def is_local_image(image_name: str) -> bool:
@@ -342,33 +417,18 @@ def is_local_image(image_name: str) -> bool:
     Returns:
         `True` if the image was pulled from a registry, `False` otherwise.
     """
-    docker_client = _try_get_docker_client_from_env()
+    docker_client = get_docker_client()
     images = docker_client.images.list(name=image_name)
-    if images:
-        # An image with this name is available locally -> now check whether it
-        # was pulled from a repo or built locally (in which case the repo
-        # digest is empty)
-        return get_image_digest(image_name) is None
-    else:
-        # no image with this name found locally
+    if not images:
         return False
 
+    # An image with this name is available locally -> now check whether it
+    # was pulled from a repo or built locally (in which case the repo
+    # digest is empty)
+    image = docker_client.images.get(image_name)
+    repo_digests = image.attrs["RepoDigests"]
 
-def _try_get_docker_client_from_env() -> DockerClient:
-    """Tries to create a Docker client from the environment.
-
-    Raises:
-        RuntimeError: If creating a Docker client from the environment failed.
-
-    Returns:
-        A Docker client created from the environment.
-    """
-    try:
-        return DockerClient.from_env()
-    except DockerException as e:
-        raise RuntimeError(
-            "Could not create a Docker client from the environment. Is your Docker daemon running?"
-        ) from e
+    return len(repo_digests) == 0
 
 
 def _process_stream(stream: Iterable[bytes]) -> List[Dict[str, Any]]:

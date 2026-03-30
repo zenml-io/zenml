@@ -141,7 +141,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        docker_client = docker_utils._try_get_docker_client_from_env()
+        docker_client = docker_utils.get_docker_client()
 
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
@@ -304,7 +304,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             DynamicPipelineEntrypointConfiguration,
         )
 
-        docker_client = docker_utils._try_get_docker_client_from_env()
+        docker_client = docker_utils.get_docker_client()
 
         settings = cast(
             LocalDockerOrchestratorSettings,

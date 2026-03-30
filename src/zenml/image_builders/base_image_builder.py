@@ -181,11 +181,13 @@ class BaseImageBuilder(StackComponent, ABC):
     def get_image_repo_digest(
         self,
         image_name: str,
+        container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> Optional[str]:
         """Get the repository digest of an image.
 
         Args:
             image_name: The name of the image.
+            container_registry: The container registry to get the digest from.
 
         Returns:
             The repository digest of the image.

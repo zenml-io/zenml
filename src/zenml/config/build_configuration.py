@@ -117,6 +117,7 @@ class BuildConfiguration(BaseModel):
         ):
             digest = stack.image_builder.get_image_repo_digest(
                 self.settings.parent_image,
+                container_registry=stack.container_registry,
             )
             if digest:
                 hash_.update(digest.encode())

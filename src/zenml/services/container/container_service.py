@@ -183,9 +183,7 @@ class ContainerService(BaseService):
             The docker client.
         """
         if self._docker_client is None:
-            self._docker_client = (
-                docker_utils._try_get_docker_client_from_env()
-            )
+            self._docker_client = docker_utils.get_docker_client()
         return self._docker_client
 
     @property
