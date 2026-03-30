@@ -244,13 +244,15 @@ class AnalyticsContext:
 
     def track(
         self,
-        event: "AnalyticsEvent",
+        event: "Union[AnalyticsEvent, str]",
         properties: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Track an event.
 
         Args:
-            event: Event to track.
+            event: Event to track. Can be an AnalyticsEvent enum member
+                or an arbitrary string for downstream consumers that
+                define their own event names.
             properties: Event properties.
 
         Returns:
@@ -261,12 +263,15 @@ class AnalyticsContext:
         if properties is None:
             properties = {}
 
+        event_value = (
+            event.value if isinstance(event, AnalyticsEvent) else event
+        )
         if (
             not self.analytics_opt_in
-            and event.value
+            and event_value
             not in {
-                AnalyticsEvent.OPT_OUT_ANALYTICS,
-                AnalyticsEvent.OPT_IN_ANALYTICS,
+                AnalyticsEvent.OPT_OUT_ANALYTICS.value,
+                AnalyticsEvent.OPT_IN_ANALYTICS.value,
             }
             or self.user_id is None
         ):

@@ -64,7 +64,7 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 - YAML formatting uses yamlfix: `yamlfix .github -v`
 
 ### Python Standards
-- Use Python 3.9+ compatible code
+- Use Python 3.10+ compatible code
 - Follow Google Python style for docstrings
 - Type hint all function parameters and return values
 - Use descriptive variable names and documentation
@@ -374,11 +374,12 @@ This ensures migrations handle existing data correctly. CI does basic migration 
 - Stack components provide functionality like storage, orchestration, etc.
 
 ### Key Abstractions
-- `BaseComponent` - Base for stack components
-- `BasePipeline` - Pipeline definition
+- `StackComponent` - Base for stack components
+- `Pipeline` - Pipeline definition
 - `BaseStep` - Step implementation
 - `BaseMaterializer` - Artifact serialization
 - `BaseOrchestrator` - Pipeline execution
+- `BaseStepOperator` - Remote step execution (submit/status/wait/cancel lifecycle)
 
 ## Common Tasks
 
@@ -424,6 +425,8 @@ Quick reference for common review concerns. Detailed explanations live in the ne
 - [ ] **Import checking:** No direct SQL imports from outside `zen_stores` (`zen_stores/schemas/AGENTS.md`)
 - [ ] **Model changes:** Adding properties OK, deleting/making optional is breaking (`models/AGENTS.md`)
 - [ ] **Dependency bumps:** If dropping old version support, it's a breaking change (`integrations/AGENTS.md`)
+- [ ] **Scheduling changes:** Must span both legacy schedule and trigger stacks (CLI + client + server + models + schemas)
+- [ ] **Step operator changes:** Check `BaseStepOperator`, `StepLauncher`, and at least one concrete integration
 
 ## Documentation Guidelines
 

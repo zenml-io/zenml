@@ -17,6 +17,15 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 from uuid import UUID
 
+from zenml.utils.enum_utils import StrEnum
+
+
+class WorkloadType(StrEnum):
+    """Workload type."""
+
+    SNAPSHOT = "snapshot"
+    RUN = "run"
+
 
 class WorkloadManagerInterface(ABC):
     """Workload manager interface."""
@@ -52,6 +61,7 @@ class WorkloadManagerInterface(ABC):
     def build_and_push_image(
         self,
         workload_id: UUID,
+        workload_type: WorkloadType,
         dockerfile: str,
         image_name: str,
         sync: bool = True,
@@ -61,6 +71,7 @@ class WorkloadManagerInterface(ABC):
 
         Args:
             workload_id: Workload ID.
+            workload_type: Workload type (The type of entity workload_id corresponds to).
             dockerfile: The dockerfile content to build the image.
             image_name: The image repository and tag.
             sync: If True, will wait until the build finished before returning.

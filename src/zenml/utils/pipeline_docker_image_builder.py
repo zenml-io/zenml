@@ -731,6 +731,15 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
+        if (
+            docker_settings.build_config
+            and docker_settings.build_config.build_options
+        ):
+            b_args = docker_settings.build_config.build_options.build_args
+            if b_args:
+                for arg_key in b_args.keys():
+                    lines.append(f"ARG {arg_key}")
+
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}='{value}'")
 

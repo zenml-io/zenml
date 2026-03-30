@@ -1,4 +1,5 @@
-{{- if and .Values.zenml.database.persistence.enabled (not .Values.zenml.database.url) }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- if and $server.database.persistence.enabled (not $server.database.url) }}
 {{- $pvc_name := printf "%s-config" (include "zenml.fullname" .) -}}
 {{- $pvc := (lookup "v1" "PersistentVolumeClaim" .Release.Namespace $pvc_name) }}
 {{- if not $pvc }}
@@ -13,13 +14,13 @@ metadata:
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": before-hook-creation
 spec:
-  {{- with .Values.zenml.database.persistence.storageClassName }}
+  {{- with $server.database.persistence.storageClassName }}
   storageClassName: {{.}}
   {{- end }}
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{.Values.zenml.database.persistence.size}}
+      storage: {{ $server.database.persistence.size }}
 {{- end }}
 {{- end }}

@@ -47,7 +47,7 @@ from zenml.constants import (
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     handle_bool_env_var,
 )
-from zenml.enums import GroupType, StepRuntime
+from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.exceptions import SourceValidationException, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -117,6 +117,7 @@ class BaseStep:
     def __init__(
         self,
         name: Optional[str] = None,
+        step_type: Optional[StepType] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -145,6 +146,7 @@ class BaseStep:
 
         Args:
             name: The name of the step.
+            step_type: The type of the step.
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
@@ -225,7 +227,9 @@ class BaseStep:
                 },
             )
 
-        self._configuration = PartialStepConfiguration(name=name)
+        self._configuration = PartialStepConfiguration(
+            name=name, step_type=step_type
+        )
         self._dynamic_configuration: Optional["StepConfigurationUpdate"] = None
         self._capture_dynamic_configuration = True
 
@@ -1566,6 +1570,37 @@ To avoid this consider setting step parameters only in one place (config or code
                 params[key] = value
 
         return params
+
+    def _compute_parameter_schema(self) -> Optional[Dict[str, Any]]:
+        """Computes a JSON schema for the configured step parameters.
+
+        Returns:
+            The JSON schema for the configured step parameters.
+        """
+        parameter_names = set(self.configuration.parameters)
+        if not parameter_names:
+            return {}
+
+        parameter_inputs = {
+            name: parameter
+            for name, parameter in self.entrypoint_definition.inputs.items()
+            if name in parameter_names
+        }
+
+        try:
+            parameter_model = pydantic_utils.create_parameter_model(
+                model_name=f"{self.name.title().replace('_', '')}Parameters",
+                parameters=parameter_inputs,
+                default_values=self.configuration.parameters,
+            )
+            return parameter_model.model_json_schema()
+        except Exception as e:
+            logger.debug(
+                "Failed to generate the parameter schema for step `%s`: %s.",
+                self.name,
+                e,
+            )
+            return None
 
     def replay(
         self,
