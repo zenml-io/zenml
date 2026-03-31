@@ -254,7 +254,7 @@ def test_request_rejected_if_exceeds_policy_limit(
     )
 
 
-def test_non_preemptable_request_rejected_if_exceeds_reserved_share(
+def test_non_preemptible_request_rejected_if_exceeds_reserved_share(
     clean_client,
     sample_pipeline_snapshot_request_model,
     sample_pipeline_run_request_model,
@@ -370,7 +370,7 @@ def test_request_allocated_when_equal_policy_limit(
     )
 
 
-def test_non_preemptable_request_allocated_when_equal_reserved_share(
+def test_non_preemptible_request_allocated_when_equal_reserved_share(
     clean_client,
     sample_pipeline_snapshot_request_model,
     sample_pipeline_run_request_model,
@@ -642,7 +642,7 @@ def test_policy_without_key_can_use_new_pool_key_after_capacity_update(
     )
 
 
-def test_allocation_respects_non_preemptable_reserved_share(
+def test_allocation_respects_non_preemptible_reserved_share(
     clean_client,
     sample_pipeline_snapshot_request_model,
     sample_pipeline_run_request_model,
@@ -724,7 +724,7 @@ def test_allocation_respects_non_preemptable_reserved_share(
     assert req_2.id in queued_ids
 
 
-def test_preemption_skips_non_preemptable_victims(
+def test_preemption_skips_non_preemptible_victims(
     clean_client,
     sample_pipeline_snapshot_request_model,
     sample_pipeline_run_request_model,
@@ -809,7 +809,7 @@ def test_preemption_skips_non_preemptable_victims(
     assert _get_pool(clean_client, pool.id).queued_requests
 
 
-def test_preemption_triggers_for_preemptable_victims(
+def test_preemption_triggers_for_preemptible_victims(
     clean_client,
     sample_pipeline_snapshot_request_model,
     sample_pipeline_run_request_model,
@@ -1490,7 +1490,7 @@ def test_capacity_rebuild_keeps_boundary_multikey_requests_eligible(
     )
 
 
-def test_capacity_rebuild_keeps_pending_non_preemptable_if_still_eligible(
+def test_capacity_rebuild_keeps_pending_non_preemptible_if_still_eligible(
     clean_client,
     sample_pipeline_snapshot_request_model,
     sample_pipeline_run_request_model,
@@ -1516,13 +1516,13 @@ def test_capacity_rebuild_keeps_pending_non_preemptable_if_still_eligible(
         sample_pipeline_run_request_model,
         sample_step_request_model,
     )
-    _, step_non_preemptable = _create_step_run_in_db(
+    _, step_non_preemptible = _create_step_run_in_db(
         clean_client,
         sample_pipeline_snapshot_request_model,
         sample_pipeline_run_request_model,
         sample_step_request_model,
     )
-    _, step_preemptable = _create_step_run_in_db(
+    _, step_preemptible = _create_step_run_in_db(
         clean_client,
         sample_pipeline_snapshot_request_model,
         sample_pipeline_run_request_model,
@@ -1536,17 +1536,17 @@ def test_capacity_rebuild_keeps_pending_non_preemptable_if_still_eligible(
         requested_resources={"gpu": 2},
         preemptible=True,
     )
-    pending_non_preemptable = _create_resource_request(
+    pending_non_preemptible = _create_resource_request(
         clean_client,
         component_id=component_id,
-        step_run_id=step_non_preemptable,
+        step_run_id=step_non_preemptible,
         requested_resources={"gpu": 1},
         preemptible=False,
     )
-    pending_preemptable = _create_resource_request(
+    pending_preemptible = _create_resource_request(
         clean_client,
         component_id=component_id,
-        step_run_id=step_preemptable,
+        step_run_id=step_preemptible,
         requested_resources={"gpu": 1},
         preemptible=True,
     )
@@ -1556,11 +1556,11 @@ def test_capacity_rebuild_keeps_pending_non_preemptable_if_still_eligible(
     )
 
     assert (
-        _get_request(clean_client, pending_non_preemptable.id).status
+        _get_request(clean_client, pending_non_preemptible.id).status
         == ResourceRequestStatus.PENDING
     )
     assert (
-        _get_request(clean_client, pending_preemptable.id).status
+        _get_request(clean_client, pending_preemptible.id).status
         == ResourceRequestStatus.PENDING
     )
 
