@@ -326,19 +326,18 @@ class DockerServiceConnector(ServiceConnector):
         """
         # The docker server isn't available on the ZenML server, so we can't
         # verify the credentials there.
-        if ENV_ZENML_SERVER in os.environ:
-            return []
+        if ENV_ZENML_SERVER not in os.environ:
+            assert resource_id is not None
+            registry = self._parse_resource_id(resource_id)
 
-        assert resource_id is not None
-        registry = self._parse_resource_id(resource_id)
-
-        try:
-            docker_client = docker_utils.get_docker_client(
-                username=self.config.username.get_secret_value(),
-                password=self.config.password.get_secret_value(),
-                registry=registry,
-            )
-        finally:
-            docker_client.close()
+            try:
+                docker_client = docker_utils.get_docker_client(
+                    username=self.config.username.get_secret_value(),
+                    password=self.config.password.get_secret_value(),
+                    registry=registry,
+                )
+                docker_client.ping()
+            finally:
+                docker_client.close()
 
         return [resource_id] if resource_id else []
