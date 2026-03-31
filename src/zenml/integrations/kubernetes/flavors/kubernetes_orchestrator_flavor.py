@@ -27,6 +27,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
@@ -35,6 +36,8 @@ if TYPE_CHECKING:
     from zenml.integrations.kubernetes.orchestrators import (
         KubernetesOrchestrator,
     )
+
+logger = get_logger(__name__)
 
 
 class KubernetesOrchestratorSettings(BaseSettings):
@@ -178,7 +181,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=30,
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
     )
-    api_request_timeout: Optional[float] = Field(
+    api_request_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
     )
@@ -276,6 +279,25 @@ class KubernetesOrchestratorSettings(BaseSettings):
             return serialization_utils.serialize_kubernetes_model(value)
         else:
             return value
+
+    @field_validator("api_request_timeout", mode="before")
+    @classmethod
+    def api_request_timeout_validator(cls, value: Any) -> Any:
+        """Validates API request timeout.
+
+        Args:
+            value: The API request timeout value.
+
+        Returns:
+            The validated value in integer format.
+        """
+        if isinstance(value, float):
+            logger.warning(
+                f"Converted `api_request_timeout` from float to int: {value} -> {int(value)}. "
+                "Consider updating the Orchestrator settings."
+            )
+            return int(value)
+        return value
 
 
 class KubernetesOrchestratorConfig(

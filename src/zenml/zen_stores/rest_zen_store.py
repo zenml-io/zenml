@@ -50,7 +50,9 @@ from requests.adapters import HTTPAdapter, Retry
 import zenml
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+)
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
@@ -86,8 +88,10 @@ from zenml.constants import (
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
+    RESOLVE,
     RUN_METADATA,
     RUN_TEMPLATES,
+    RUN_WAIT_CONDITIONS,
     RUNS,
     SCHEDULES,
     SECRETS,
@@ -118,6 +122,7 @@ from zenml.constants import (
 from zenml.enums import (
     APITokenType,
     OAuthGrantTypes,
+    RunWaitConditionStatus,
     StackDeploymentProvider,
     StoreType,
 )
@@ -222,6 +227,11 @@ from zenml.models import (
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -2120,6 +2130,103 @@ class RestZenStore(BaseZenStore):
             timeout=10,
         )
 
+    def create_run_wait_condition(
+        self, run_wait_condition: RunWaitConditionRequest
+    ) -> RunWaitConditionResponse:
+        """Create a run wait condition.
+
+        Args:
+            run_wait_condition: Wait condition creation payload.
+
+        Returns:
+            The created wait condition.
+        """
+        response_body = self.post(
+            RUN_WAIT_CONDITIONS,
+            body=run_wait_condition,
+        )
+        return RunWaitConditionResponse.model_validate(response_body)
+
+    def get_run_wait_condition(
+        self, run_wait_condition_id: UUID, hydrate: bool = True
+    ) -> RunWaitConditionResponse:
+        """Get a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            hydrate: Whether to hydrate metadata/resources.
+
+        Returns:
+            The requested wait condition.
+        """
+        return self._get_resource(
+            resource_id=run_wait_condition_id,
+            route=RUN_WAIT_CONDITIONS,
+            response_model=RunWaitConditionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_run_wait_conditions(
+        self,
+        run_wait_condition_filter_model: RunWaitConditionFilter,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions.
+
+        Args:
+            run_wait_condition_filter_model: Wait condition filter model.
+            hydrate: Whether to hydrate metadata/resources.
+
+        Returns:
+            A page of wait conditions.
+        """
+        return self._list_paginated_resources(
+            route=RUN_WAIT_CONDITIONS,
+            response_model=RunWaitConditionResponse,
+            filter_model=run_wait_condition_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolve_request: RunWaitConditionResolveRequest,
+    ) -> RunWaitConditionResponse:
+        """Resolve a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            resolve_request: Resolution payload.
+
+        Returns:
+            The resolved wait condition.
+        """
+        response_body = self.put(
+            path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}{RESOLVE}",
+            body=resolve_request,
+        )
+        return RunWaitConditionResponse.model_validate(response_body)
+
+    def update_run_wait_condition_lease(
+        self,
+        run_wait_condition_id: UUID,
+        lease_update: RunWaitConditionLeaseUpdate,
+    ) -> RunWaitConditionStatus:
+        """Update a run wait condition polling lease.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            lease_update: Lease refresh payload.
+
+        Returns:
+            The current wait condition status after attempting the lease update.
+        """
+        response_body = self.put(
+            path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}",
+            body=lease_update,
+        )
+        return RunWaitConditionStatus(response_body)
+
     # ----------------------------- Run Metadata -----------------------------
 
     def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
@@ -2259,17 +2366,25 @@ class RestZenStore(BaseZenStore):
         )
 
     def attach_trigger_to_snapshot(
-        self, trigger_id: UUID, snapshot_id: UUID
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
     ) -> None:
         """Attaches (links) a trigger to a snapshot.
 
         Args:
             trigger_id: The ID of the trigger.
             snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs of this trigger & snapshot.
+            allow_replace: Allow replacement if attachment already exists.
         """
         self.put(
             path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            body=run_configuration,
             timeout=5,
+            params={"allow_replace": allow_replace},
         )
 
     def detach_trigger_from_snapshot(

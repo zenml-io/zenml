@@ -421,6 +421,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         body = StepRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
+            type=step.config.step_type,
             status=ExecutionStatus(self.status),
             version=self.version,
             is_retriable=self.is_retriable,

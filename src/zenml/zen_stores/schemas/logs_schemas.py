@@ -123,8 +123,10 @@ class LogsSchema(BaseSchema, table=True):
             The created `LogsSchema`.
         """
         log_key = None
-        if request.pipeline_run_id or request.step_run_id:
-            log_key = f"{request.pipeline_run_id}-{request.step_run_id}-{request.source}"
+        if request.pipeline_run_id:
+            log_key = f"{request.pipeline_run_id}-{request.source}"
+        if request.step_run_id:
+            log_key = f"{request.step_run_id}-{request.source}"
 
         return LogsSchema(
             id=request.id,
