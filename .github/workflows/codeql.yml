@@ -28,7 +28,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@4bdb89f48054571735e3792627da6195c57459e2  # v3.31.10
+        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13  # v4.35.1
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
@@ -38,6 +38,6 @@ jobs:
           # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           # queries: security-extended,security-and-quality
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@4bdb89f48054571735e3792627da6195c57459e2  # v3.31.10
+        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13  # v4.35.1
         with:
           category: /language:${{matrix.language}}
