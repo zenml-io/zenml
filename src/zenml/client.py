@@ -38,8 +38,8 @@ from typing import (
 from uuid import UUID
 
 from pydantic import ConfigDict, SecretStr
-from zenml import PlatformEventTriggerResponse
 
+from zenml import PlatformEventTriggerResponse
 from zenml.client_lazy_loader import (
     client_lazy_loader,
     evaluate_all_lazy_load_args_in_client_methods,
@@ -72,13 +72,15 @@ from zenml.enums import (
     RunWaitConditionResolution,
     ServiceState,
     SorterOps,
+    SourceEvent,
+    SourceType,
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
     TriggerFlavor,
     TriggerRunConcurrency,
     TriggerType,
-    VisualizationResourceTypes, SourceType, SourceEvent,
+    VisualizationResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -144,6 +146,9 @@ from zenml.models import (
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
+    PlatformEventTriggerRequest,
+    PlatformEventTriggerResponse,
+    PlatformEventTriggerUpdate,
     ProjectFilter,
     ProjectRequest,
     ProjectResponse,
@@ -192,6 +197,7 @@ from zenml.models import (
     ServiceResponse,
     ServiceType,
     ServiceUpdate,
+    SourceEntity,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -210,10 +216,6 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    PlatformEventTriggerRequest,
-    PlatformEventTriggerResponse,
-    PlatformEventTriggerUpdate,
-    SourceEntity,
 )
 from zenml.utils import dict_utils, io_utils, source_utils, tag_utils
 from zenml.utils.dict_utils import dict_to_bytes
@@ -4371,8 +4373,7 @@ class Client(metaclass=ClientMetaClass):
             trigger=PlatformEventTriggerRequest(
                 project=project_id or self.active_project.id,
                 name=name,
-                type=TriggerType.SCHEDULE,
-                flavor=TriggerFlavor.NATIVE_SCHEDULE,
+                flavor=TriggerFlavor.PLATFORM_EVENT,
                 active=active,
                 concurrency=concurrency,
                 source_entity=SourceEntity(
@@ -4424,7 +4425,6 @@ class Client(metaclass=ClientMetaClass):
                 target_events=target_events or trigger.target_events,
             ),
         )
-
 
     def get_platform_event_trigger(
         self, trigger_id: UUID

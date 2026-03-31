@@ -382,6 +382,11 @@ class ScheduleTrigger(BaseModel):
 class ScheduleTriggerRequest(TriggerRequest, ScheduleTrigger):
     """Class representing a ScheduleTrigger request."""
 
+    type: Literal[TriggerType.SCHEDULE] = TriggerType.SCHEDULE
+    flavor: Literal[TriggerFlavor.NATIVE_SCHEDULE] = (
+        TriggerFlavor.NATIVE_SCHEDULE
+    )
+
     def get_config(self) -> str:
         """Returns the serialized blob of custom trigger fields.
 
@@ -490,7 +495,7 @@ TriggerBodyT = TypeVar("TriggerBodyT", bound="TriggerResponseBody")
 
 class TriggerResponse(
     ProjectScopedResponse[
-        TriggerResponseBody,
+        TriggerBodyT,
         TriggerResponseMetadata,
         TriggerResponseResources,
     ],
@@ -635,6 +640,7 @@ class ScheduleTriggerResponse(TriggerResponse[ScheduleTriggerResponseBody,]):
         """
         return self.get_body().run_once_start_time
 
+
 # ----------- EVENT CLASSES ------------------- #
 
 
@@ -687,6 +693,11 @@ class PlatformEventTrigger(BaseModel):
 
 
 class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
+    type: Literal[TriggerType.PLATFORM_EVENT] = TriggerType.PLATFORM_EVENT
+    flavor: Literal[TriggerFlavor.PLATFORM_EVENT] = (
+        TriggerFlavor.PLATFORM_EVENT
+    )
+
     def get_config(self) -> str:
         """Returns the serialized blob of custom trigger fields.
 
@@ -706,7 +717,9 @@ class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
 
         return {
             "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
-            "target_events": " ".join(event.value for event in self.target_events),
+            "target_events": " ".join(
+                f"event:{event.value}" for event in self.target_events
+            ),
         }
 
 
@@ -735,7 +748,9 @@ class PlatformEventTriggerUpdate(TriggerUpdate, PlatformEventTrigger):
 
         return {
             "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
-            "target_events": " ".join(event.value for event in self.target_events),
+            "target_events": " ".join(
+                event.value for event in self.target_events
+            ),
         }
 
 

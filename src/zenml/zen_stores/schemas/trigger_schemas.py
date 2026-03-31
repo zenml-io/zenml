@@ -26,7 +26,7 @@ from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import TEXT, VARCHAR, String
 from sqlmodel import Field, Relationship, col, desc, select
 
-from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TriggerFlavor, TriggerType
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
