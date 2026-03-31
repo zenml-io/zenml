@@ -142,7 +142,16 @@ class ResourceRequestSchema(BaseSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
-        """Get the query options for the schema."""
+        """Get the query options for the schema.
+        
+        Args:
+            include_metadata: Whether to include metadata in the response.
+            include_resources: Whether to include resources in the response.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A list of query options.
+        """
         options = [
             selectinload(jl_arg(ResourceRequestSchema.requested_resources)),
         ]
@@ -166,7 +175,14 @@ class ResourceRequestSchema(BaseSchema, table=True):
         cls,
         request: "ResourceRequestRequest",
     ) -> "ResourceRequestSchema":
-        """Create a resource request schema from a request."""
+        """Create a resource request schema from a request.
+        
+        Args:
+            request: The `ResourceRequestRequest` to create from.
+
+        Returns:
+            The created `ResourceRequestSchema`.
+        """
         return cls(
             user_id=request.user,
             component_id=request.component_id,
@@ -179,7 +195,14 @@ class ResourceRequestSchema(BaseSchema, table=True):
     def update(
         self, resource_request_update: "ResourceRequestUpdate"
     ) -> "ResourceRequestSchema":
-        """Updates a `ResourceRequestSchema` from a `ResourceRequestUpdate`."""
+        """Updates a `ResourceRequestSchema` from a `ResourceRequestUpdate`.
+        
+        Args:
+            resource_request_update: The `ResourceRequestUpdate` to update from.
+
+        Returns:
+            The updated `ResourceRequestSchema`.
+        """
         if resource_request_update.step_run_id:
             self.step_run_id = resource_request_update.step_run_id
 
@@ -192,7 +215,16 @@ class ResourceRequestSchema(BaseSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> "ResourceRequestResponse":
-        """Creates a `ResourceRequestResponse` from a `ResourceRequestSchema`."""
+        """Creates a `ResourceRequestResponse` from a `ResourceRequestSchema`.
+        
+        Args:
+            include_metadata: Whether to include metadata in the response.
+            include_resources: Whether to include resources in the response.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A `ResourceRequestResponse` object.
+        """
         body = ResourceRequestResponseBody(
             created=self.created,
             updated=self.updated,

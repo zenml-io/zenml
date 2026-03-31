@@ -345,6 +345,9 @@ def detach_policy_from_resource_pool(
     Args:
         resource_pool: Name, ID or prefix of the resource pool.
         component: Name, ID or prefix of the component.
+
+    Raises:
+        KeyError: If no policy is found for the component in the resource pool.
     """
     with console.status("Detaching pool policy from resource pool...\n"):
         try:

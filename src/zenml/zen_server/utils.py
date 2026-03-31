@@ -227,9 +227,6 @@ def initialize_resource_pool_store() -> None:
     """Initialize the resource pool store component.
 
     This does not fail if the source can't be loaded but only logs a warning.
-
-    Args:
-        store: The ZenML store to use for the resource pool store.
     """
     global _resource_pool_store
 
