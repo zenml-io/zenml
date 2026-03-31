@@ -18,6 +18,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
+import uuid
 from typing import TYPE_CHECKING, Optional, Type, cast
 
 from pydantic import Field
@@ -275,17 +276,7 @@ class LocalImageBuilder(BaseImageBuilder):
             )
 
         if container_registry:
-            container_registry.prepare_image_push(image_name)
-
-            if self.config.container_runtime == LocalContainerRuntime.DOCKER:
-                return docker_utils.push_image(
-                    image_name,
-                    self._get_docker_client(
-                        container_registry, authenticate_cli=False
-                    ),
-                )
-
-            return podman_utils.push_image(image_name)
+            return self._push_image(image_name, container_registry)
 
         return image_name
 
@@ -338,16 +329,21 @@ class LocalImageBuilder(BaseImageBuilder):
                 docker_client=self._get_docker_client(container_registry),
             )
 
-        return podman_utils.get_image_repo_digest(image_name)
+        # Podman is currently unable to report the correct remote repo digest
+        # (see https://github.com/containers/podman/issues/14779). We return
+        # None in this case.
+        return None
 
     def is_image_local(self, image_name: str) -> bool:
-        """Return True if the image exists locally without a single digest.
+        """Check if an image exists only locally (not in a remote registry).
 
         Args:
-            image_name: Image reference to inspect.
+            image_name: Image reference to inspect on the local engine.
 
         Returns:
-            Whether the image appears to be a local-only build.
+            Whether the image exists only locally (i.e. hasn't been pushed to or
+            pulled from a remote registry).
+
         """
         self._check_prerequisites()
 
@@ -355,6 +351,41 @@ class LocalImageBuilder(BaseImageBuilder):
             return docker_utils.is_local_image(image_name)
 
         return podman_utils.is_local_image(image_name)
+
+    def _push_image(
+        self, image_name: str, container_registry: "BaseContainerRegistry"
+    ) -> str:
+        """Pushes an image using the Podman CLI.
+
+        Args:
+            image_name: Full image reference including tag.
+            container_registry: Registry to push to.
+
+        Returns:
+            Repository digest when available, otherwise the image name.
+        """
+        container_registry.prepare_image_push(image_name)
+
+        if self.config.container_runtime == LocalContainerRuntime.DOCKER:
+            return docker_utils.push_image(
+                image_name,
+                self._get_docker_client(
+                    container_registry, authenticate_cli=False
+                ),
+            )
+
+        podman_utils.push_image(image_name)
+
+        # Podman is currently unable to report the correct remote repo digest
+        # (see https://github.com/containers/podman/issues/14779). We simulate
+        # a unique repo digest by generating a random UUID and using it as
+        # an additional tag.
+        unique_tag = uuid.uuid4()
+        image_name_without_tag, _ = image_name.rsplit(":", maxsplit=1)
+        unique_image_name = f"{image_name_without_tag}:{unique_tag}"
+        podman_utils.tag_image(image_name, unique_image_name)
+        podman_utils.push_image(unique_image_name)
+        return unique_image_name
 
     def push_image(
         self,
@@ -374,19 +405,9 @@ class LocalImageBuilder(BaseImageBuilder):
 
         self._check_registry_image(image_name, container_registry)
 
-        container_registry.prepare_image_push(image_name)
-
         self._authenticate_local_cli(container_registry)
 
-        if self.config.container_runtime == LocalContainerRuntime.DOCKER:
-            return docker_utils.push_image(
-                image_name,
-                self._get_docker_client(
-                    container_registry, authenticate_cli=False
-                ),
-            )
-
-        return podman_utils.push_image(image_name)
+        return self._push_image(image_name, container_registry)
 
     def _build_with_python_sdk(
         self,
@@ -451,6 +472,7 @@ class LocalImageBuilder(BaseImageBuilder):
             # The `-` signals that the build context will be passed as a tar
             # file to stdin
             command = [binary, "build", "-", "-t", image_name]
+
             if docker_build_options:
                 command.extend(docker_build_options.to_docker_cli_options())
             process = subprocess.Popen(command, stdin=f)

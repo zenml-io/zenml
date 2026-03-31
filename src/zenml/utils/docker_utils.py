@@ -409,13 +409,14 @@ def get_image_repo_digest(
 
 
 def is_local_image(image_name: str) -> bool:
-    """Returns whether an image was pulled from a registry or not.
+    """Check if an image exists only locally (not in a remote registry).
 
     Args:
-        image_name: Name of the image to check.
+        image_name: Image reference to inspect.
 
     Returns:
-        `True` if the image was pulled from a registry, `False` otherwise.
+        Whether the image exists only locally (i.e. hasn't been pushed to or
+        pulled from a remote registry).
     """
     docker_client = get_docker_client()
     images = docker_client.images.list(name=image_name)

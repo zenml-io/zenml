@@ -136,7 +136,7 @@ class BaseImageBuilder(StackComponent, ABC):
         )
 
     def is_image_local(self, image_name: str) -> bool:
-        """Return True if the image exists locally without a single repo digest.
+        """Check if an image exists only locally (not in a remote registry).
 
         Used to decide whether a parent image should be pulled before build.
 
@@ -144,7 +144,8 @@ class BaseImageBuilder(StackComponent, ABC):
             image_name: Image reference to inspect on the local engine.
 
         Returns:
-            Whether the image exists locally without a single repo digest.
+            Whether the image exists only locally (i.e. hasn't been pushed to or
+            pulled from a remote registry).
 
         Raises:
             NotImplementedError: If the image builder does not support checking

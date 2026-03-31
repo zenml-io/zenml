@@ -16,10 +16,7 @@
 import json
 import subprocess
 from typing import (
-    Any,
-    Dict,
     List,
-    Optional,
 )
 
 from zenml.exceptions import AuthorizationException
@@ -60,17 +57,11 @@ def authenticate_podman_cli(
         ) from e
 
 
-def push_image(image_name: str) -> str:
+def push_image(image_name: str) -> None:
     """Pushes an image to a container registry.
 
     Args:
         image_name: The full name (including a tag) of the image to push.
-
-    Returns:
-        The Docker repository digest of the pushed image.
-
-    Raises:
-        RuntimeError: If fetching the repository digest of the image failed.
     """
     logger.info(f"Pushing container image `{image_name}` via Podman.")
     push_result = subprocess.run(
@@ -83,13 +74,6 @@ def push_image(image_name: str) -> str:
             f"Podman push failed: {push_result.stderr or push_result.stdout}"
         )
     logger.info("Finished pushing container image via Podman.")
-
-    digest = get_image_repo_digest(image_name)
-    if digest is None:
-        raise RuntimeError(
-            f"Unable to find repo digest after pushing image {image_name}."
-        )
-    return digest
 
 
 def tag_image(image_name: str, target: str) -> None:
@@ -111,113 +95,17 @@ def tag_image(image_name: str, target: str) -> None:
         raise RuntimeError(f"Podman tag failed for {image_name}: {e}") from e
 
 
-def get_image_repo_digest(
-    image_name: str,
-) -> Optional[str]:
-    """Gets the repository digest SHA-256 of an image.
-
-    Uses ``podman manifest inspect`` JSON only. The digest comes from a
-    manifest list with exactly one entry (not from local ``RepoDigests``).
-
-    Args:
-        image_name: Name of the image to get the digest for.
-
-    Returns:
-        The SHA-256 hex digest (without the ``sha256:`` prefix) when inspect
-        reports exactly one manifest entry; otherwise ``None``.
-    """
-    result = subprocess.run(
-        ["podman", "manifest", "inspect", image_name],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        logger.debug(
-            "Podman manifest inspect failed for '%s': %s",
-            image_name,
-            (result.stderr or result.stdout or "").strip(),
-        )
-        return None
-
-    try:
-        data: Dict[str, Any] = json.loads(result.stdout)
-    except json.JSONDecodeError as e:
-        logger.error(
-            "Failed to parse podman manifest inspect JSON for '%s': %s",
-            image_name,
-            e,
-        )
-        return None
-
-    manifests_raw = data.get("manifests")
-    if not isinstance(manifests_raw, list):
-        return None
-    if len(manifests_raw) != 1:
-        logger.debug(
-            "Expected exactly one manifest entry for '%s', found %s",
-            image_name,
-            len(manifests_raw),
-        )
-        return None
-
-    first = manifests_raw[0]
-    if not isinstance(first, dict):
-        return None
-    digest_val = first.get("digest")
-    if not isinstance(digest_val, str) or not digest_val.startswith("sha256:"):
-        return None
-
-    return digest_val.split(":", maxsplit=1)[-1]
-
-
 def is_local_image(image_name: str) -> bool:
-    """Returns whether an image was pulled from a registry or not.
+    """Check if an image exists only locally (not in a remote registry).
 
     Args:
-        image_name: Name of the image to check.
+        image_name: Image reference to inspect.
 
     Returns:
-        `True` if the image was pulled from a registry, `False` otherwise.
+        Whether the image exists only locally (i.e. hasn't been pushed to or
+        pulled from a remote registry).
     """
-    exists = subprocess.run(
-        ["podman", "image", "exists", image_name],
-        capture_output=True,
-    )
-    if exists.returncode != 0:
-        return False
-
-    # An image with this name is available locally -> now check whether it
-    # was pulled from a repo or built locally (in which case the repo
-    # digest is empty)
-    result = subprocess.run(
-        ["podman", "image", "inspect", image_name],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        logger.error(f"Podman image inspect failed for '{image_name}'.")
-        return False
-
-    try:
-        inspected: List[Dict[str, Any]] = json.loads(result.stdout)
-    except json.JSONDecodeError as e:
-        logger.error(
-            f"Failed to parse podman image inspect JSON for '{image_name}': {e}",
-        )
-        return False
-
-    if not inspected:
-        logger.debug(
-            f"Podman image inspect returned no data for '{image_name}'."
-        )
-        return False
-
-    repo_digests_raw = inspected[0].get("RepoDigests")
-    repo_digests: List[str] = (
-        repo_digests_raw if isinstance(repo_digests_raw, list) else []
-    )
+    repo_digests = get_image_local_digests(image_name)
 
     # Prune localhost digests
     repo_digests = [
@@ -227,3 +115,42 @@ def is_local_image(image_name: str) -> bool:
     ]
 
     return len(repo_digests) == 0
+
+
+def get_image_local_digests(
+    image_name: str,
+) -> List[str]:
+    """Get the local digests of an image.
+
+    Args:
+        image_name: Image reference to inspect.
+
+    Returns:
+        The local digests of the image.
+    """
+    result = subprocess.run(
+        [
+            "podman",
+            "image",
+            "inspect",
+            image_name,
+            "--format",
+            "{{json .RepoDigests}}",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        logger.error(f"Podman image inspect failed for '{image_name}'.")
+        return []
+
+    try:
+        repo_digests: List[str] = json.loads(result.stdout)
+    except json.JSONDecodeError as e:
+        logger.error(
+            f"Failed to parse podman image inspect JSON for '{image_name}': {e}",
+        )
+        return []
+
+    return repo_digests
