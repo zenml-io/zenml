@@ -363,6 +363,7 @@ from zenml.models.v2.core.triggers import (
     PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTrigger,
+    SourceEntity,
     TRIGGER_UPDATE_TYPE_UNION,
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
@@ -966,4 +967,5 @@ __all__ = [
     "TRIGGER_UPDATE_TYPE_UNION",
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",
+    "SourceEntity",
 ]

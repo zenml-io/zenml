@@ -766,6 +766,10 @@ class PlatformEventTriggerResponse(
     def source_id(self) -> UUID:
         return self.get_body().source_entity.id
 
+    @property
+    def target_events(self) -> list[SourceEvent]:
+        return self.get_body().target_events
+
 
 TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate | PlatformEventTriggerUpdate
 TRIGGER_CREATE_TYPE_UNION = (

@@ -38,6 +38,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import ConfigDict, SecretStr
+from zenml import PlatformEventTriggerResponse
 
 from zenml.client_lazy_loader import (
     client_lazy_loader,
@@ -77,7 +78,7 @@ from zenml.enums import (
     TriggerFlavor,
     TriggerRunConcurrency,
     TriggerType,
-    VisualizationResourceTypes,
+    VisualizationResourceTypes, SourceType, SourceEvent,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -209,6 +210,10 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    PlatformEventTriggerRequest,
+    PlatformEventTriggerResponse,
+    PlatformEventTriggerUpdate,
+    SourceEntity,
 )
 from zenml.utils import dict_utils, io_utils, source_utils, tag_utils
 from zenml.utils.dict_utils import dict_to_bytes
@@ -4328,6 +4333,170 @@ class Client(metaclass=ClientMetaClass):
                 is_archived=is_archived,
                 flavor=flavor,
                 type=TriggerType.SCHEDULE,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                next_occurrence=next_occurrence,
+                pipeline_id=str(pipeline_id) if pipeline_id else None,
+                snapshot_id=str(snapshot_id) if snapshot_id else None,
+            )
+        )
+
+    def create_platform_event_trigger(
+        self,
+        name: str,
+        source_type: SourceType,
+        source_id: UUID,
+        target_events: list[SourceEvent],
+        project_id: str | UUID | None = None,
+        active: bool = True,
+        concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+    ) -> PlatformEventTriggerResponse:
+        """Create a native schedule trigger.
+
+        Args:
+            name: The name of the trigger.
+            source_type: The source type of the trigger. (e.g. Pipeline Run).
+            source_id: The source ID of the trigger. (e.g. Pipeline Run ID).
+            target_events: The events to react for the trigger source(e.g. Pipeline run completed).
+            project_id: The project ID.
+            active: Whether the trigger should be activated on creation.
+            concurrency: Option controlling trigger run concurrency behavior (SKIP, SUBMIT, etc.).
+
+        Returns:
+            The created trigger.
+        """
+        return self.zen_store.create_trigger(
+            trigger=PlatformEventTriggerRequest(
+                project=project_id or self.active_project.id,
+                name=name,
+                type=TriggerType.SCHEDULE,
+                flavor=TriggerFlavor.NATIVE_SCHEDULE,
+                active=active,
+                concurrency=concurrency,
+                source_entity=SourceEntity(
+                    id=source_id,
+                    type=source_type,
+                ),
+                target_events=target_events,
+            )
+        )
+
+    def update_platform_event_trigger(
+        self,
+        trigger_id: UUID,
+        name: str | None = None,
+        active: bool | None = None,
+        source_type: SourceType | None = None,
+        source_id: UUID | None = None,
+        target_events: list[SourceEvent] | None = None,
+        concurrency: TriggerRunConcurrency | None = None,
+    ) -> PlatformEventTriggerResponse:
+        """Update a native schedule trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            name: The new name of the trigger.
+            active: The new active status of the trigger.
+            concurrency: The new trigger run concurrency.
+            source_type: The source type of the trigger. (e.g. Pipeline Run).
+            source_id: The source ID of the trigger. (e.g. Pipeline Run ID).
+            target_events: The events to react for the trigger source(e.g. Pipeline run completed).
+
+        Returns:
+            The updated trigger.
+        """
+        trigger = self.zen_store.get_trigger(trigger_id)
+
+        return self.zen_store.update_trigger(
+            trigger_id=trigger_id,
+            trigger_update=PlatformEventTriggerUpdate(
+                name=name or trigger.name,
+                active=active if active is not None else trigger.active,
+                concurrency=concurrency
+                if concurrency is not None
+                else trigger.concurrency,
+                source_entity=SourceEntity(
+                    type=source_type or trigger.source_type,
+                    id=source_id or trigger.source_id,
+                ),
+                target_events=target_events or trigger.target_events,
+            ),
+        )
+
+
+    def get_platform_event_trigger(
+        self, trigger_id: UUID
+    ) -> PlatformEventTriggerResponse:
+        """Retrieve a trigger by trigger ID.
+
+        Args:
+            trigger_id: The id of the trigger.
+
+        Returns:
+            The trigger response.
+        """
+        return self.zen_store.get_trigger(trigger_id=trigger_id)
+
+    def list_platform_event_triggers(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        user: str | UUID | None = None,
+        project: UUID | str | None = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        active: bool | None = None,
+        concurrency: str | None = None,
+        is_archived: bool = False,
+        next_occurrence: datetime | None = None,
+        pipeline_id: str | UUID | None = None,
+        snapshot_id: str | UUID | None = None,
+    ) -> Page[PlatformEventTriggerResponse]:
+        """List platform event triggers.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            project: The project name/ID to filter by.
+            user: Filter by user name/ID.
+            id: Use the id of schedule to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the schedule.
+            active: The active status of the schedule.
+            concurrency: The concurrency of the schedule.
+            is_archived: The archived status of the schedule.
+            flavor: The flavor of the schedule.
+            next_occurrence: The next occurrence of the schedule.
+            pipeline_id: Filter triggers by pipeline with attached snapshots.
+            snapshot_id: Filter triggers by attached snapshot.
+
+        Returns:
+            A Page of ScheduleTriggerResponse objects.
+        """
+        return self.zen_store.list_triggers(
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                user=user,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                active=active,
+                concurrency=TriggerRunConcurrency(concurrency)
+                if concurrency
+                else None,
+                is_archived=is_archived,
+                flavor=TriggerFlavor.PLATFORM_EVENT,
+                type=TriggerType.PLATFORM_EVENT,
                 sort_by=sort_by,
                 page=page,
                 size=size,
