@@ -706,7 +706,7 @@ class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
 
         return {
             "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
-            "target_events": " ".join(event.value for event in self.events),
+            "target_events": " ".join(event.value for event in self.target_events),
         }
 
 
@@ -735,7 +735,7 @@ class PlatformEventTriggerUpdate(TriggerUpdate, PlatformEventTrigger):
 
         return {
             "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
-            "target_events": " ".join(event.value for event in self.events),
+            "target_events": " ".join(event.value for event in self.target_events),
         }
 
 
