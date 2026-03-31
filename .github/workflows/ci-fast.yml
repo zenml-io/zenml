@@ -68,7 +68,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       - name: Spelling checker
-        uses: crate-ci/typos@d01f29c66d1bf1a08730750f61d86c210b0d039d  # v1.27.0
+        uses: crate-ci/typos@631208b7aac2daa8b707f55e7331f9112b0e062d  # v1.44.0
         with:
           files: .
           config: ./.typos.toml

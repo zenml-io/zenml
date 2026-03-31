@@ -56,7 +56,7 @@ jobs:
             uv-tutorial-${{ runner.os }}-3.12-
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@a283f9441d2d96eb62436dc46d7014f5d357ac22  # v3.17
+        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
       - name: Clone tutorial repository
         run: |
           # Clone with retry logic for network resilience
@@ -93,4 +93,4 @@ jobs:
           bash scripts/test-tutorial-pipelines.sh
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@a283f9441d2d96eb62436dc46d7014f5d357ac22  # v3.17
+        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
