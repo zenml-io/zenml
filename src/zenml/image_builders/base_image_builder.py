@@ -131,8 +131,7 @@ class BaseImageBuilder(StackComponent, ABC):
                 images.
         """
         raise NotImplementedError(
-            "Tagging images is not supported by this image builder. Use the "
-            "local image builder instead."
+            "Tagging images is not implemented by this image builder."
         )
 
     def is_image_local(self, image_name: str) -> bool:
@@ -152,8 +151,8 @@ class BaseImageBuilder(StackComponent, ABC):
                 if images are local.
         """
         raise NotImplementedError(
-            "Checking if images are local is not supported by this image builder. "
-            "Use the local image builder instead."
+            "Checking if images are local is not implemented by this image "
+            "builder."
         )
 
     def push_image(
@@ -175,8 +174,7 @@ class BaseImageBuilder(StackComponent, ABC):
                 images.
         """
         raise NotImplementedError(
-            "Pushing images is not supported by this image builder. Use the "
-            "local image builder instead."
+            "Pushing images is not implemented by this image builder."
         )
 
     def get_image_repo_digest(
@@ -194,8 +192,8 @@ class BaseImageBuilder(StackComponent, ABC):
             The repository digest of the image.
         """
         raise NotImplementedError(
-            "Getting the repository digest of an image is not supported by "
-            "this image builder. Use the local image builder instead."
+            "Getting the repository digest of an image is not implemented by "
+            "this image builder."
         )
 
     @staticmethod
