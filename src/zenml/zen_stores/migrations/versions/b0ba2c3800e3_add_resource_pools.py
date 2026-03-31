@@ -154,7 +154,7 @@ def upgrade() -> None:
         sa.Column(
             "status_reason", sqlmodel.sql.sqltypes.AutoString(), nullable=True
         ),
-        sa.Column("preemptable", sa.Boolean(), nullable=False),
+        sa.Column("preemptible", sa.Boolean(), nullable=False),
         sa.ForeignKeyConstraint(
             ["component_id"],
             ["stack_component.id"],

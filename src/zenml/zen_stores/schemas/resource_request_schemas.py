@@ -133,7 +133,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
     )
     status: str
     status_reason: Optional[str] = Field(default=None, nullable=True)
-    preemptable: bool
+    preemptible: bool
 
     @classmethod
     def get_query_options(
@@ -189,7 +189,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
             step_run_id=request.step_run_id,
             status=ResourceRequestStatus.PENDING.value,
             preemption_initiated_by_id=None,
-            preemptable=request.preemptable,
+            preemptible=request.preemptible,
         )
 
     def update(
@@ -234,7 +234,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
             },
             status=ResourceRequestStatus(self.status),
             status_reason=self.status_reason,
-            preemptable=self.preemptable,
+            preemptible=self.preemptible,
         )
 
         metadata = None

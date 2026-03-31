@@ -11920,7 +11920,7 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
             }:
                 raise IllegalOperationError(
-                    "Stopping steps can not be transistioned to status "
+                    "Stopping steps can not be transitioned to status "
                     f"`{new_status}`."
                 )
 
@@ -11930,7 +11930,7 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
             }:
                 raise IllegalOperationError(
-                    "Cancelling steps can not be transistioned to status "
+                    "Cancelling steps can not be transitioned to status "
                     f"`{new_status}`"
                 )
 

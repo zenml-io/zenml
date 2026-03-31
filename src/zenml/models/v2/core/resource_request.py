@@ -67,7 +67,7 @@ class ResourceRequestRequest(UserScopedRequest):
     requested_resources: Dict[str, PositiveInt] = Field(
         title="The resources requested."
     )
-    preemptable: bool = Field(
+    preemptible: bool = Field(
         default=True,
         title="Whether this request can be preempted.",
     )
@@ -110,7 +110,7 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
         title="The reason for the status of the resource request.",
         default=None,
     )
-    preemptable: bool = Field(
+    preemptible: bool = Field(
         title="Whether this request can be preempted.",
     )
 
@@ -185,13 +185,13 @@ class ResourceRequestResponse(
         return self.get_body().status_reason
 
     @property
-    def preemptable(self) -> bool:
-        """The `preemptable` property.
+    def preemptible(self) -> bool:
+        """The `preemptible` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().preemptable
+        return self.get_body().preemptible
 
     @property
     def component(self) -> "ComponentResponse":
@@ -241,9 +241,9 @@ class ResourceRequestFilter(UserScopedFilter):
         "pipeline_run_id",
     ]
 
-    preemptable: Optional[bool] = Field(
+    preemptible: Optional[bool] = Field(
         default=None,
-        description="Whether the resource request is preemptable.",
+        description="Whether the resource request is preemptible.",
     )
     component_id: Union[UUID, str, None] = Field(
         default=None,

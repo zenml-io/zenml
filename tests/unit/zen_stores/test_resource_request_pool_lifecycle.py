@@ -142,7 +142,7 @@ def _create_resource_request(
     component_id: UUID,
     step_run_id: UUID,
     requested_resources: Dict[str, int],
-    preemptable: bool = True,
+    preemptible: bool = True,
 ):
     """Create a resource request.
 
@@ -151,7 +151,7 @@ def _create_resource_request(
         component_id: Component requesting resources.
         step_run_id: Step run owning the request.
         requested_resources: Requested resources per key.
-        preemptable: Whether the request is preemptable.
+        preemptible: Whether the request is preemptible.
 
     Returns:
         The created resource request model.
@@ -161,7 +161,7 @@ def _create_resource_request(
             component_id=component_id,
             step_run_id=step_run_id,
             requested_resources=requested_resources,
-            preemptable=preemptable,
+            preemptible=preemptible,
         )
     )
 
@@ -286,7 +286,7 @@ def test_non_preemptable_request_rejected_if_exceeds_reserved_share(
         component_id=component_id,
         step_run_id=step_id,
         requested_resources={"gpu": 2},
-        preemptable=False,
+        preemptible=False,
     )
     assert (
         _get_request(clean_client, request.id).status
@@ -401,7 +401,7 @@ def test_non_preemptable_request_allocated_when_equal_reserved_share(
         component_id=component_id,
         step_run_id=step_id,
         requested_resources={"gpu": 2},
-        preemptable=False,
+        preemptible=False,
     )
     assert (
         _get_request(clean_client, request.id).status
@@ -686,21 +686,21 @@ def test_allocation_respects_non_preemptable_reserved_share(
         component_id=component_id,
         step_run_id=step_1,
         requested_resources={"gpu": 1},
-        preemptable=False,
+        preemptible=False,
     )
     req_2 = _create_resource_request(
         clean_client,
         component_id=component_id,
         step_run_id=step_2,
         requested_resources={"gpu": 1},
-        preemptable=False,
+        preemptible=False,
     )
     req_3 = _create_resource_request(
         clean_client,
         component_id=component_id,
         step_run_id=step_3,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
 
     assert (
@@ -777,7 +777,7 @@ def test_preemption_skips_non_preemptable_victims(
         component_id=low_priority_component,
         step_run_id=low_step,
         requested_resources={"gpu": 1},
-        preemptable=False,
+        preemptible=False,
     )
 
     evictions: List[UUID] = []
@@ -794,7 +794,7 @@ def test_preemption_skips_non_preemptable_victims(
         component_id=high_priority_component,
         step_run_id=high_step,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
 
     assert (
@@ -862,7 +862,7 @@ def test_preemption_triggers_for_preemptable_victims(
         component_id=low_priority_component,
         step_run_id=low_step,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
 
     evictions: List[UUID] = []
@@ -879,7 +879,7 @@ def test_preemption_triggers_for_preemptable_victims(
         component_id=high_priority_component,
         step_run_id=high_step,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
 
     assert evictions == [victim.id]
@@ -920,7 +920,7 @@ def test_orphaned_requests_are_cancelled_before_allocation(
         component_id=component_id,
         step_run_id=step_1,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
     assert (
         _get_request(clean_client, orphan_candidate.id).status
@@ -940,7 +940,7 @@ def test_orphaned_requests_are_cancelled_before_allocation(
         component_id=component_id,
         step_run_id=step_2,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
 
     orphan = _get_request(clean_client, orphan_candidate.id)
@@ -1372,14 +1372,14 @@ def test_preemption_candidates_filtered_by_requested_resource_keys(
         component_id=low_priority_component,
         step_run_id=low_step_gpu,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
     cpu_victim = _create_resource_request(
         clean_client,
         component_id=low_priority_component,
         step_run_id=low_step_cpu,
         requested_resources={"cpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
     assert (
         _get_request(clean_client, gpu_victim.id).status
@@ -1404,7 +1404,7 @@ def test_preemption_candidates_filtered_by_requested_resource_keys(
         component_id=high_priority_component,
         step_run_id=high_step,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
 
     assert evictions == [gpu_victim.id]
@@ -1534,21 +1534,21 @@ def test_capacity_rebuild_keeps_pending_non_preemptable_if_still_eligible(
         component_id=component_id,
         step_run_id=step_alloc,
         requested_resources={"gpu": 2},
-        preemptable=True,
+        preemptible=True,
     )
     pending_non_preemptable = _create_resource_request(
         clean_client,
         component_id=component_id,
         step_run_id=step_non_preemptable,
         requested_resources={"gpu": 1},
-        preemptable=False,
+        preemptible=False,
     )
     pending_preemptable = _create_resource_request(
         clean_client,
         component_id=component_id,
         step_run_id=step_preemptable,
         requested_resources={"gpu": 1},
-        preemptable=True,
+        preemptible=True,
     )
 
     clean_client.zen_store.update_resource_pool(
