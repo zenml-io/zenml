@@ -15,7 +15,6 @@
 
 import hashlib
 import os
-import re
 import tempfile
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional, Type, cast
@@ -98,26 +97,6 @@ class BaseImageBuilder(StackComponent, ABC):
         Returns:
             The Docker image repo digest or name.
         """
-
-    def sanitize_image_tag(self, tag: str) -> str:
-        """Sanitize a container image tag for OCI-compatible registries.
-
-        Args:
-            tag: Raw tag string, often derived from pipeline or step names.
-
-        Raises:
-            ValueError: If the tag is empty after sanitization.
-
-        Returns:
-            A tag of at most 128 characters using allowed characters only.
-        """
-        tag = re.sub(r"[^a-zA-Z0-9_.\-]", "", tag)
-        tag = re.sub(r"^[-.]", "_", tag)
-
-        if not tag:
-            raise ValueError("Container image tag cannot be empty.")
-
-        return tag[:128]
 
     def tag_image(self, source: str, target: str) -> None:
         """Tag a local image as ``target``.

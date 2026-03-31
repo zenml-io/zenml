@@ -42,7 +42,7 @@ from zenml.constants import (
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.utils import io_utils, source_utils
+from zenml.utils import docker_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.code_repositories import BaseCodeRepository
@@ -209,7 +209,7 @@ class PipelineDockerImageBuilder:
                         )
 
                 repository = repository or DEFAULT_ZENML_DOCKER_REPOSITORY
-                user_image_tag = image_builder.sanitize_image_tag(
+                user_image_tag = docker_utils.sanitize_tag(
                     f"{tag}-intermediate-build"
                 )
                 user_image_name = f"{repository}:{user_image_tag}"
