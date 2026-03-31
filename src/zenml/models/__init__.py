@@ -258,6 +258,16 @@ from zenml.models.v2.core.run_template import (
     RunTemplateResponseResources,
     RunTemplateFilter,
 )
+from zenml.models.v2.core.run_wait_condition import (
+    RunWaitConditionFilter,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
+    RunWaitConditionResponseBody,
+    RunWaitConditionResponseMetadata,
+    RunWaitConditionResponseResources,
+    RunWaitConditionLeaseUpdate,
+)
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
 )
@@ -502,6 +512,12 @@ PipelineRunRequest.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
 PipelineRunResponseResources.model_rebuild()
+RunWaitConditionRequest.model_rebuild()
+RunWaitConditionResolveRequest.model_rebuild()
+RunWaitConditionResponseBody.model_rebuild()
+RunWaitConditionResponseMetadata.model_rebuild()
+RunWaitConditionResponseResources.model_rebuild()
+RunWaitConditionResponse.model_rebuild()
 RunTemplateResponseBody.model_rebuild()
 RunTemplateResponseMetadata.model_rebuild()
 RunTemplateResponseResources.model_rebuild()
@@ -727,6 +743,14 @@ __all__ = [
     "RunTemplateResponseMetadata",
     "RunTemplateResponseResources",
     "RunTemplateFilter",
+    "RunWaitConditionFilter",
+    "RunWaitConditionRequest",
+    "RunWaitConditionResolveRequest",
+    "RunWaitConditionResponse",
+    "RunWaitConditionResponseBody",
+    "RunWaitConditionResponseMetadata",
+    "RunWaitConditionResponseResources",
+    "RunWaitConditionLeaseUpdate",
     "RunMetadataRequest",
     "ScheduleRequest",
     "ScheduleUpdate",

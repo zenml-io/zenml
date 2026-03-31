@@ -78,7 +78,7 @@ One other way to improve the performance of your ZenML server is to increase the
 You can control this by setting the `zenml.threadPoolSize` value in the ZenML Helm chart values. For example:
 
 ```yaml
-zenml:
+server:
   threadPoolSize: 100
 ```
 
@@ -104,7 +104,7 @@ Exposing your ZenML server to the internet securely and reliably is a must for p
 If you are using the official [ZenML Helm chart](https://artifacthub.io/packages/helm/zenml/zenml), you can take advantage of the `zenml.ingress.enabled` flag to enable ingress for your ZenML server. For example:
 
 ```yaml
-zenml:
+server:
   ingress:
     enabled: true
     className: "nginx"
