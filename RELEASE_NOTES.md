@@ -4,6 +4,52 @@
 
 ---
 
+# 0.94.1
+
+## What's Changed
+* Add version 0.93.3 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4556
+* Add 0.94.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4564
+* Fix kubernetes service selector by @schustmi in https://github.com/zenml-io/zenml/pull/4567
+* Update contribution guidelines for PRs and commits by @strickvl in https://github.com/zenml-io/zenml/pull/4587
+* Only show named snapshots in CLI by @schustmi in https://github.com/zenml-io/zenml/pull/4583
+* Allow helm env vars to override computed settings by @stefannica in https://github.com/zenml-io/zenml/pull/4595
+* Enhance changelog workflow to dispatch new release to zenml-projects-backend by @safoinme in https://github.com/zenml-io/zenml/pull/4592
+* Adjusted helm chart to have the right permissions for PVC by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4225
+* Replaced pngs with avif by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4413
+* Handle activation exceptions for individual integrations by @strickvl in https://github.com/zenml-io/zenml/pull/4490
+* Update `CLAUDE.md` and `AGENTS.md` for recent codebase changes by @strickvl in https://github.com/zenml-io/zenml/pull/4585
+* Fix S3 double-close AssertionError on cleanup by @strickvl in https://github.com/zenml-io/zenml/pull/4593
+* Bugfix/runner logs for triggered runs by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4601
+* Add dataclass materializer by @schustmi in https://github.com/zenml-io/zenml/pull/4600
+* Store step parameter schemas by @schustmi in https://github.com/zenml-io/zenml/pull/4591
+* Raise correct exceptions for isolated steps and pipeline retries by @schustmi in https://github.com/zenml-io/zenml/pull/4589
+* Better gcsfs credentials refresh by @schustmi in https://github.com/zenml-io/zenml/pull/4527
+* Step types by @schustmi in https://github.com/zenml-io/zenml/pull/4608
+* Allow overwriting step inputs for pipeline replays by @schustmi in https://github.com/zenml-io/zenml/pull/4590
+* Update pydantic version to 2.12.5 by @htahir1 in https://github.com/zenml-io/zenml/pull/4552
+* Fix `api_request_timeout` typing in K8S orchestrator by @avishniakov in https://github.com/zenml-io/zenml/pull/4605
+* Pricing details on trigger doc page by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4611
+* Improve error when not having local extra installed by @schustmi in https://github.com/zenml-io/zenml/pull/4613
+* Heartbeat logs and neptune update by @bcdurak in https://github.com/zenml-io/zenml/pull/4581
+* Add `ARG` instructions to Dockerfile for build arguments defined in DockerSettings by @jlamperez in https://github.com/zenml-io/zenml/pull/4612
+* Don't pass pipeline run and step run ids to logs request by @schustmi in https://github.com/zenml-io/zenml/pull/4614
+* Fix broken image link in self-hosted K8s deploy docs by @strickvl in https://github.com/zenml-io/zenml/pull/4617
+* Fix dict size change during iteration error by @schustmi in https://github.com/zenml-io/zenml/pull/4619
+* Fix log keys by @schustmi in https://github.com/zenml-io/zenml/pull/4620
+* Pause and resume pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4588
+* Fix running property of dynamic runner futures by @schustmi in https://github.com/zenml-io/zenml/pull/4622
+* Use step parameters from config template over function defaults by @schustmi in https://github.com/zenml-io/zenml/pull/4624
+* Add a way to inject secret environment variables into the server deployment (helm) by @spwoodcock in https://github.com/zenml-io/zenml/pull/4606
+* Add LakeFS data versioning example by @htahir1 in https://github.com/zenml-io/zenml/pull/4559
+* Feature/kitaru analytics support by @safoinme in https://github.com/zenml-io/zenml/pull/4618
+* Configurable repository directory by @schustmi in https://github.com/zenml-io/zenml/pull/4623
+
+## New Contributors
+* @jlamperez made their first contribution in https://github.com/zenml-io/zenml/pull/4612
+* @spwoodcock made their first contribution in https://github.com/zenml-io/zenml/pull/4606
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.0...0.94.1
+
 # 0.94.0
 
 ## What's Changed

@@ -74,6 +74,9 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionPipelineRunSchema,
 )
 from zenml.zen_stores.schemas.run_template_schemas import RunTemplateSchema
+from zenml.zen_stores.schemas.run_wait_condition_schemas import (
+    RunWaitConditionSchema,
+)
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
 from zenml.zen_stores.schemas.api_transaction_schemas import (
     ApiTransactionResultSchema,
@@ -115,6 +118,7 @@ __all__ = [
     "StepRunParentsSchema",
     "StepRunSchema",
     "RunTemplateSchema",
+    "RunWaitConditionSchema",
     "TagSchema",
     "TagResourceSchema",
     "UserSchema",

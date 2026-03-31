@@ -133,6 +133,7 @@ class TriggerSchema(NamedSchema, table=True):
 
     # ------------------ RELATIONSHIPS --------------------------------------------
 
+    # Reference to attached executable snapshots.
     snapshots: list[PipelineSnapshotSchema] = Relationship(
         link_model=TriggerSnapshotSchema,
         sa_relationship_kwargs={"viewonly": True},
@@ -201,7 +202,9 @@ class TriggerSchema(NamedSchema, table=True):
         if include_resources:
             options.extend(
                 [
-                    selectinload(jl_arg(TriggerSchema.snapshots)),
+                    selectinload(jl_arg(TriggerSchema.snapshots)).selectinload(
+                        jl_arg(PipelineSnapshotSchema.source_snapshot)
+                    )
                 ]
             )
 
@@ -307,14 +310,12 @@ class TriggerSchema(NamedSchema, table=True):
             resources = TriggerResponseResources(
                 user=self.user.to_model() if self.user else None,
                 snapshots=[
-                    s.to_model(
-                        include_resources=False,
-                        include_metadata=False,
-                        include_config_schema=False,
-                        include_python_packages=False,
-                    )
+                    s.source_snapshot.to_model()
+                    if s.source_snapshot is not None
+                    else s.to_model()
                     for s in self.snapshots
                 ],
+                executable_snapshots=[s.to_model() for s in self.snapshots],
                 latest_run=latest_run.to_model()
                 if latest_run is not None
                 else None,

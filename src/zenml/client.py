@@ -44,7 +44,9 @@ from zenml.client_lazy_loader import (
     evaluate_all_lazy_load_args_in_client_methods,
 )
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+)
 from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
@@ -66,6 +68,7 @@ from zenml.enums import (
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
+    RunWaitConditionResolution,
     ServiceState,
     SorterOps,
     StackComponentType,
@@ -150,6 +153,9 @@ from zenml.models import (
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     ScheduleFilter,
     ScheduleResponse,
     ScheduleTriggerRequest,
@@ -4068,8 +4074,13 @@ class Client(metaclass=ClientMetaClass):
 
         self.zen_store.delete_trigger(trigger_id=trigger_id, soft=soft)
 
+    @_fail_for_sql_zen_store
     def attach_trigger_to_snapshot(
-        self, trigger_id: UUID, pipeline_snapshot_id: UUID
+        self,
+        trigger_id: UUID,
+        pipeline_snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
     ) -> None:
         """Attaches a trigger to a snapshot.
 
@@ -4079,9 +4090,14 @@ class Client(metaclass=ClientMetaClass):
         Args:
             trigger_id: The ID of the trigger.
             pipeline_snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs of this trigger & snapshot.
+            allow_replace: Allow replacement if attachment already exists.
         """
         self.zen_store.attach_trigger_to_snapshot(
-            trigger_id=trigger_id, snapshot_id=pipeline_snapshot_id
+            trigger_id=trigger_id,
+            snapshot_id=pipeline_snapshot_id,
+            run_configuration=run_configuration,
+            allow_replace=allow_replace,
         )
 
     def detach_trigger_from_snapshot(
@@ -4110,6 +4126,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
+        is_archived: bool | None = False,
     ) -> ScheduleResponse:
         """Get a schedule by name, id or prefix.
 
@@ -4119,13 +4136,16 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            is_archived: Flag whether to filter-out archived schedules.
 
         Returns:
             The schedule.
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_schedule,
-            list_method=self.list_schedules,
+            list_method=functools.partial(
+                self.list_schedules, is_archived=is_archived
+            ),
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             project=project,
@@ -4154,7 +4174,7 @@ class Client(metaclass=ClientMetaClass):
         catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
         run_once_start_time: Optional[Union[datetime, str]] = None,
-        is_archived: bool = False,
+        is_archived: bool | None = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -4306,6 +4326,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
             project=project,
+            is_archived=None,
         )
 
         orchestrator = self._get_orchestrator_for_schedule(schedule)
@@ -4529,6 +4550,105 @@ class Client(metaclass=ClientMetaClass):
             project=project,
         )
         self.zen_store.delete_run(run_id=run.id)
+
+    # ----------------------------- Run wait conditions ------------------------
+
+    def list_run_wait_conditions(
+        self,
+        sort_by: str = "desc:created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        resolved_by: Optional[Union[UUID, str]] = None,
+        resolved_at: Optional[Union[datetime, str]] = None,
+        resolution: Optional[str] = None,
+        pipeline_run: Optional[Union[str, UUID]] = None,
+        project: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
+        run_metadata: Optional[List[str]] = None,
+        status: Optional[str] = None,
+        type: Optional[str] = None,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions.
+
+        Args:
+            sort_by: Sort expression.
+            page: Page number.
+            size: Page size.
+            logical_operator: Logical operator for combining filters.
+            id: Optional wait condition ID filter.
+            created: Optional creation timestamp filter.
+            updated: Optional update timestamp filter.
+            name: Optional wait condition name filter.
+            resolved_by: Optional resolver name/ID filter.
+            resolved_at: Optional resolution timestamp filter.
+            resolution: Optional resolution filter.
+            pipeline_run: Optional pipeline run name/ID filter.
+            project: Optional project name/ID for run lookup or filtering.
+            user: Optional user name/ID for creator lookup or filtering.
+            run_metadata: Optional run metadata filters.
+            status: Optional status filter.
+            type: Optional type filter.
+            hydrate: Whether to hydrate metadata/resources.
+
+        Returns:
+            A page of run wait conditions.
+        """
+        filter_model = RunWaitConditionFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            project=project or self.active_project.id,
+            user=user,
+            run_metadata=run_metadata,
+            status=status,
+            type=type,
+            id=id,
+            name=name,
+            created=created,
+            updated=updated,
+            resolved_by=resolved_by,
+            resolved_at=resolved_at,
+            resolution=resolution,
+            pipeline_run=pipeline_run,
+        )
+
+        return self.zen_store.list_run_wait_conditions(
+            run_wait_condition_filter_model=filter_model,
+            hydrate=hydrate,
+        )
+
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolution: RunWaitConditionResolution = (
+            RunWaitConditionResolution.CONTINUE
+        ),
+        result: Optional[Any] = None,
+    ) -> RunWaitConditionResponse:
+        """Resolve a wait condition.
+
+        Args:
+            run_wait_condition_id: ID of the wait condition.
+            resolution: Resolution semantic.
+            result: Optional resolved result value.
+
+        Returns:
+            The resolved wait condition.
+        """
+        return self.zen_store.resolve_run_wait_condition(
+            run_wait_condition_id=run_wait_condition_id,
+            resolve_request=RunWaitConditionResolveRequest(
+                resolution=resolution,
+                result=result,
+            ),
+        )
 
     # -------------------------------- Step run --------------------------------
 
@@ -7551,6 +7671,7 @@ class Client(metaclass=ClientMetaClass):
         if project:
             scope = f"in project {project} "
             list_kwargs["project"] = project
+
         entity = list_method(**list_kwargs)
 
         # If only a single entity is found, return it
@@ -7566,6 +7687,7 @@ class Client(metaclass=ClientMetaClass):
                 allow_name_prefix_match=allow_name_prefix_match,
                 project=project,
                 hydrate=hydrate,
+                **kwargs,
             )
 
         # If more than one entity with the same name is found, raise an error.

@@ -40,6 +40,7 @@ class StepRunInputArtifactType(StrEnum):
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
     EXTERNAL = "external"  # loaded via `ExternalArtifact(value=...)`
     LAZY_LOADED = "lazy"  # loaded via various lazy methods
+    OVERRIDE = "override"  # used when overriding step inputs
 
 
 class ArtifactSaveType(StrEnum):
@@ -93,6 +94,8 @@ class ExecutionStatus(StrEnum):
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    PAUSED = "paused"
+    RESUMING = "resuming"
     STOPPED = "stopped"
     STOPPING = "stopping"
 
@@ -153,6 +156,39 @@ class ExecutionMode(StrEnum):
     FAIL_FAST = "fail_fast"
     STOP_ON_FAILURE = "stop_on_failure"
     CONTINUE_ON_FAILURE = "continue_on_failure"
+
+
+class RunWaitConditionType(StrEnum):
+    """Supported wait condition types."""
+
+    EXTERNAL_INPUT = "external_input"
+
+
+class RunWaitConditionStatus(StrEnum):
+    """Lifecycle states for a wait condition."""
+
+    PENDING = "pending"
+    RESOLVED = "resolved"
+
+
+class RunWaitConditionResolution(StrEnum):
+    """Resolution outcomes for resolved wait conditions."""
+
+    CONTINUE = "continue"
+    ABORT = "abort"
+
+
+class RunWaitConditionLeaseMode(StrEnum):
+    """Supported lease update modes for wait-condition polling."""
+
+    REFRESH = "refresh"
+    # Finalize the lease and release it. If the wait condition has been resolved
+    # in the meantime, the poller is responsible for continuing the run.
+    FINALIZE = "finalize"
+    # The poller instance is no longer able to continue the run (due to an
+    # error, etc.). If the wait condition has been resolved in the meantime,
+    # the server should try resuming the run.
+    ABANDON = "abandon"
 
 
 class StackComponentType(StrEnum):
@@ -345,6 +381,11 @@ class SourceContextTypes(StrEnum):
     DASHBOARD = "dashboard"
     DASHBOARD_V2 = "dashboard-v2"
     API = "api"
+    KITARU_PYTHON = "kitaru-python"
+    KITARU_CLI = "kitaru-cli"
+    KITARU_MCP = "kitaru-mcp"
+    KITARU_API = "kitaru-api"
+    KITARU_UI = "kitaru-ui"
     UNKNOWN = "unknown"
 
 
@@ -426,6 +467,7 @@ class MetadataResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
     SCHEDULE = "schedule"
+    WAIT_CONDITION = "wait_condition"
 
 
 class VisualizationResourceTypes(StrEnum):
@@ -559,6 +601,13 @@ class StepRuntime(StrEnum):
 
     INLINE = "inline"
     ISOLATED = "isolated"
+
+
+class StepType(StrEnum):
+    """All supported step types."""
+
+    TOOL_CALL = "tool_call"
+    LLM_CALL = "llm_call"
 
 
 class GroupType(StrEnum):

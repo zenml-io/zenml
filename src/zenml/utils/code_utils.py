@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import IO, TYPE_CHECKING, Dict, Optional
 
 from zenml.client import Client
+from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, source_utils, string_utils
@@ -156,7 +157,8 @@ class CodeArchive(Archivable):
         all_files = {
             path_in_archive: file_path
             for path_in_archive, file_path in sorted(all_files.items())
-            if ".zen" not in Path(path_in_archive).parts[:-1]
+            if REPOSITORY_DIRECTORY_NAME
+            not in Path(path_in_archive).parts[:-1]
         }
 
         return all_files

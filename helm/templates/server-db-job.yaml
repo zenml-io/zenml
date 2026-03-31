@@ -1,4 +1,5 @@
-{{- if .Values.zenml.database.url }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- if $server.database.url }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -9,7 +10,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-1"
-    "helm.sh/hook-delete-policy": before-hook-creation{{ if not .Values.zenml.debug }},hook-succeeded{{ end }}
+    "helm.sh/hook-delete-policy": before-hook-creation{{ if not $server.debug }},hook-succeeded{{ end }}
 spec:
   backoffLimit: 0
   template:
@@ -23,11 +24,11 @@ spec:
         {{- include "zenml.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: db-migration
     spec:
-      {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+      {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
       initContainers:
         - name: update-ca-certificates
-          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
-          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ $server.image.pullPolicy }}
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -59,36 +60,33 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
         - name: zenml-config
-        {{- if and .Values.zenml.database.persistence.enabled (not .Values.zenml.database.url) }}
+        {{- if and $server.database.persistence.enabled (not $server.database.url) }}
           persistentVolumeClaim:
             claimName: {{ include "zenml.fullname" . }}-config
         {{- else }}
           emptyDir: {}
         {{- end }}
-      {{- if or (eq .Values.zenml.database.backupStrategy "dump-file") (eq .Values.zenml.database.backupStrategy "mydumper") }}
-        # define a volume that will hold a backup of the database
+      {{- if or (eq $server.database.backupStrategy "dump-file") (eq $server.database.backupStrategy "mydumper") }}
         - name: db-backup
-        # if a storage PVC is configured, then use it
-        {{- if .Values.zenml.database.backupPVStorageSize }}
+        {{- if $server.database.backupPVStorageSize }}
           persistentVolumeClaim:
             claimName: {{ include "zenml.fullname" . }}-db-backup
         {{- else }}
-        # otherwise, use an emptyDir
           emptyDir: {}
         {{- end }}
       {{- end }}
-      {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+      {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
         - name: custom-certs
           projected:
             sources:
-            {{- range .Values.zenml.certificates.customCAs }}
+            {{- range $server.certificates.customCAs }}
             - secret:
                 name: {{ include "zenml.fullname" $ }}-custom-ca-{{ .name }}-db-migration
                 items:
                   - key: certificate
                     path: {{ .name }}.crt
             {{- end }}
-            {{- range .Values.zenml.certificates.secretRefs }}
+            {{- range $server.certificates.secretRefs }}
             - secret:
                 name: {{ .name }}
                 items:
@@ -98,30 +96,30 @@ spec:
         - name: ca-certificates
           emptyDir: {}
       {{- end }}
-      {{- if or (and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef) (and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef) (and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef) }}
+      {{- if or (and $server.database.sslCa $server.database.sslCa.secretRef) (and $server.database.sslCert $server.database.sslCert.secretRef) (and $server.database.sslKey $server.database.sslKey.secretRef) }}
         - name: db-certs
           projected:
             sources:
-              {{- if and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef }}
+              {{- if and $server.database.sslCa $server.database.sslCa.secretRef }}
               - secret:
-                  name: {{ .Values.zenml.database.sslCa.secretRef.name }}
+                  name: {{ $server.database.sslCa.secretRef.name }}
                   items:
-                    - key: {{ .Values.zenml.database.sslCa.secretRef.key }}
-                      path: {{ .Values.zenml.database.sslCa.secretRef.key }}
+                    - key: {{ $server.database.sslCa.secretRef.key }}
+                      path: {{ $server.database.sslCa.secretRef.key }}
               {{- end }}
-              {{- if and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef }}
+              {{- if and $server.database.sslCert $server.database.sslCert.secretRef }}
               - secret:
-                  name: {{ .Values.zenml.database.sslCert.secretRef.name }}
+                  name: {{ $server.database.sslCert.secretRef.name }}
                   items:
-                    - key: {{ .Values.zenml.database.sslCert.secretRef.key }}
-                      path: {{ .Values.zenml.database.sslCert.secretRef.key }}
+                    - key: {{ $server.database.sslCert.secretRef.key }}
+                      path: {{ $server.database.sslCert.secretRef.key }}
               {{- end }}
-              {{- if and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef }}
+              {{- if and $server.database.sslKey $server.database.sslKey.secretRef }}
               - secret:
-                  name: {{ .Values.zenml.database.sslKey.secretRef.name }}
+                  name: {{ $server.database.sslKey.secretRef.name }}
                   items:
-                    - key: {{ .Values.zenml.database.sslKey.secretRef.key }}
-                      path: {{ .Values.zenml.database.sslKey.secretRef.key }}
+                    - key: {{ $server.database.sslKey.secretRef.key }}
+                      path: {{ $server.database.sslKey.secretRef.key }}
               {{- end }}
       {{- end }}
       restartPolicy: Never
@@ -129,23 +127,23 @@ spec:
         - name: {{ .Chart.Name }}-db-migration
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
-          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ $server.image.pullPolicy }}
           args: ["migrate-database"]
           command: ['zenml']
           volumeMounts:
             - name: zenml-config
               mountPath: /zenml/.zenconfig
-          {{- if or (eq .Values.zenml.database.backupStrategy "dump-file") (eq .Values.zenml.database.backupStrategy "mydumper") }}
+          {{- if or (eq $server.database.backupStrategy "dump-file") (eq $server.database.backupStrategy "mydumper") }}
             - name: db-backup
               mountPath: /backups
           {{- end }}
-          {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+          {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
             - name: ca-certificates
               mountPath: /updated-certs
               readOnly: true
           {{- end }}
-          {{- if or (and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef) (and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef) (and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef) }}
+          {{- if or (and $server.database.sslCa $server.database.sslCa.secretRef) (and $server.database.sslCert $server.database.sslCert.secretRef) (and $server.database.sslKey $server.database.sslKey.secretRef) }}
             - name: db-certs
               mountPath: /dbcerts
               readOnly: true
@@ -156,12 +154,19 @@ spec:
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
-            {{- if and .Values.zenml.database.url .Values.zenml.database.passwordSecretRef }}
+            {{- if and $server.database.url $server.database.passwordSecretRef }}
             - name: ZENML_STORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.zenml.database.passwordSecretRef.name }}
-                  key: {{ .Values.zenml.database.passwordSecretRef.key }}
+                  name: {{ $server.database.passwordSecretRef.name }}
+                  key: {{ $server.database.passwordSecretRef.key }}
+            {{- end }}
+            {{- range $server.environmentSecretKeyRefs }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .secretKey }}
             {{- end }}
           envFrom:
           - secretRef:

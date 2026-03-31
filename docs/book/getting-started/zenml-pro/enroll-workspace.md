@@ -70,7 +70,7 @@ These details will need to be passed to the workspace server container in the fo
 NOTE: in the case of Helm, these values are configurable as Helm values when deploying the workspace server:
 
 ```yaml
-zenml:
+server:
   ...
   pro:
     enabled: true

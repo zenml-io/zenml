@@ -140,7 +140,8 @@ class TriggerResponseMetadata(ProjectScopedResponseMetadata):
 class TriggerResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the schedule entity."""
 
-    snapshots: Optional[list["PipelineSnapshotResponse"]] = None
+    snapshots: list["PipelineSnapshotResponse"] = []
+    executable_snapshots: list["PipelineSnapshotResponse"] = []
     user: Optional["UserResponse"] = None
     latest_run: Optional["PipelineRunResponse"] = None
 
@@ -570,13 +571,22 @@ class ScheduleTriggerResponse(
         return self.get_body().run_once_start_time
 
     @property
-    def snapshots(self) -> list["PipelineSnapshotResponse"] | None:
+    def snapshots(self) -> list["PipelineSnapshotResponse"]:
         """Implements the 'snapshots' property.
+
+        Returns:
+            A list of source snapshots the triggers is attached to.
+        """
+        return self.get_resources().snapshots
+
+    @property
+    def executable_snapshots(self) -> list["PipelineSnapshotResponse"]:
+        """Implements the 'executable_snapshots' property.
 
         Returns:
             A list of snapshots the triggers is attached to.
         """
-        return self.get_resources().snapshots
+        return self.get_resources().executable_snapshots
 
     @property
     def latest_run(self) -> Optional["PipelineRunResponse"]:
