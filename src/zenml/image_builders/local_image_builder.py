@@ -59,7 +59,7 @@ class LocalImageBuilderConfig(BaseImageBuilderConfig):
         "`container_runtime` is `podman` (Podman always uses the CLI).",
     )
     container_runtime: LocalContainerRuntime = Field(
-        default=LocalContainerRuntime.PODMAN,
+        default=LocalContainerRuntime.DOCKER,
         description="Selects which local engine runs builds, tags, and pushes "
         "images for this stack component. Use `docker` for Docker Desktop or a "
         "standard Docker daemon. Use `podman` for rootless Podman on "
