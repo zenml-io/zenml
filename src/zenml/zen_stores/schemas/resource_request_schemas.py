@@ -143,7 +143,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
-        
+
         Args:
             include_metadata: Whether to include metadata in the response.
             include_resources: Whether to include resources in the response.
@@ -176,7 +176,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
         request: "ResourceRequestRequest",
     ) -> "ResourceRequestSchema":
         """Create a resource request schema from a request.
-        
+
         Args:
             request: The `ResourceRequestRequest` to create from.
 
@@ -196,7 +196,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
         self, resource_request_update: "ResourceRequestUpdate"
     ) -> "ResourceRequestSchema":
         """Updates a `ResourceRequestSchema` from a `ResourceRequestUpdate`.
-        
+
         Args:
             resource_request_update: The `ResourceRequestUpdate` to update from.
 
@@ -216,7 +216,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
         **kwargs: Any,
     ) -> "ResourceRequestResponse":
         """Creates a `ResourceRequestResponse` from a `ResourceRequestSchema`.
-        
+
         Args:
             include_metadata: Whether to include metadata in the response.
             include_resources: Whether to include resources in the response.

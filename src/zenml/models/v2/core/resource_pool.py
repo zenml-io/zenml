@@ -151,6 +151,15 @@ class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    active_requests: List["ResourcePoolAllocation"] = Field(
+        title="The active allocations for the resource pool.",
+        default=[],
+    )
+    queued_requests: List["ResourcePoolQueueItem"] = Field(
+        title="The queued requests for the resource pool.",
+        default=[],
+    )
+
 
 class ResourcePoolResponseResources(UserScopedResponseResources):
     """Response resources for resource pools."""
@@ -187,6 +196,24 @@ class ResourcePoolResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def active_requests(self) -> List["ResourcePoolAllocation"]:
+        """The `active_requests` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().active_requests
+
+    @property
+    def queued_requests(self) -> List["ResourcePoolQueueItem"]:
+        """The `queued_requests` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().queued_requests
 
     @property
     def capacity(self) -> Dict[str, int]:
