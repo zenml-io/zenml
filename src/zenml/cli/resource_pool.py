@@ -31,6 +31,7 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.models import (
     Page,
     ResourcePoolFilter,
+    ResourcePoolSubjectPolicyResponse,
     ResourceRequestResponse,
 )
 
@@ -255,6 +256,18 @@ def delete_resource_pool(name_id_or_prefix: str, yes: bool = False) -> None:
 @click.argument("resource_pool", type=str, required=True)
 @click.argument("component", type=str, required=True)
 @click.option(
+    "--component-type",
+    "-t",
+    type=click.Choice(
+        [
+            StackComponentType.ORCHESTRATOR.value,
+            StackComponentType.STEP_OPERATOR.value,
+        ]
+    ),
+    default=StackComponentType.ORCHESTRATOR.value,
+    help="Type of the component to attach the policy to.",
+)
+@click.option(
     "--priority",
     "-p",
     type=int,
@@ -278,6 +291,7 @@ def delete_resource_pool(name_id_or_prefix: str, yes: bool = False) -> None:
 def attach_policy_to_resource_pool(
     resource_pool: str,
     component: str,
+    component_type: StackComponentType,
     priority: int,
     reserved: str,
     limit: Optional[str] = None,
@@ -287,6 +301,7 @@ def attach_policy_to_resource_pool(
     Args:
         resource_pool: Name, ID or prefix of the resource pool.
         component: Name, ID or prefix of the component.
+        component_type: Type of the component to attach the policy to.
         priority: Priority of the assignment.
         reserved: Resources that are reserved for the component.
         limit: Maximum resources that the component can use.
@@ -310,7 +325,7 @@ def attach_policy_to_resource_pool(
             )
             component_model = Client().get_stack_component(
                 name_id_or_prefix=component,
-                component_type=StackComponentType.ORCHESTRATOR,
+                component_type=component_type,
                 allow_name_prefix_match=False,
                 hydrate=False,
             )
@@ -336,15 +351,29 @@ def attach_policy_to_resource_pool(
 )
 @click.argument("resource_pool", type=str, required=True)
 @click.argument("component", type=str, required=True)
+@click.option(
+    "--component-type",
+    "-t",
+    type=click.Choice(
+        [
+            StackComponentType.ORCHESTRATOR.value,
+            StackComponentType.STEP_OPERATOR.value,
+        ]
+    ),
+    default=StackComponentType.ORCHESTRATOR.value,
+    help="Type of the component to detach the policy from.",
+)
 def detach_policy_from_resource_pool(
     resource_pool: str,
     component: str,
+    component_type: StackComponentType,
 ) -> None:
     """Detach a policy from a resource pool.
 
     Args:
         resource_pool: Name, ID or prefix of the resource pool.
         component: Name, ID or prefix of the component.
+        component_type: Type of the component to detach the policy from.
 
     Raises:
         KeyError: If no policy is found for the component in the resource pool.
@@ -356,7 +385,7 @@ def detach_policy_from_resource_pool(
             )
             component_model = Client().get_stack_component(
                 name_id_or_prefix=component,
-                component_type=StackComponentType.ORCHESTRATOR,
+                component_type=component_type,
                 allow_name_prefix_match=False,
                 hydrate=False,
             )
@@ -380,6 +409,118 @@ def detach_policy_from_resource_pool(
                 f"Detached pool policy for component `{component_model.name}` "
                 f"from resource pool `{pool.name}`."
             )
+
+
+@resource_pool.command(
+    "list-policies",
+    help=(
+        "List subject policies (orchestrator components attached to pools with "
+        "priority, reserved resources, and limits). Provide a pool and/or a "
+        "component; at least one is required."
+    ),
+)
+@click.argument("pool", type=str, required=False, default=None)
+@click.option(
+    "--component",
+    "-c",
+    type=str,
+    required=False,
+    help=(
+        "Orchestrator component name or ID. If the pool is omitted, lists all "
+        "policies for this component across pools. If the pool is set, only "
+        "that component's policy for that pool is listed."
+    ),
+)
+@click.option(
+    "--component-type",
+    "-t",
+    type=click.Choice(
+        [
+            StackComponentType.ORCHESTRATOR.value,
+            StackComponentType.STEP_OPERATOR.value,
+        ]
+    ),
+    default=None,
+    help="Type of the component to list the policies for.",
+)
+@click.option(
+    "--columns",
+    type=str,
+    default="id,component,pool,priority,reserved,limit,created",
+    help="Comma-separated list of columns to display, or 'all' for all columns.",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
+    default=get_default_output_format(),
+    help="Output format for the list.",
+)
+def list_resource_pool_policies(
+    pool: Optional[str],
+    component: Optional[str],
+    component_type: Optional[StackComponentType],
+    columns: str,
+    output_format: OutputFormat,
+) -> None:
+    """List policies attached to resource pool subject(s).
+
+    Provide a pool (positional or ``--pool``), a ``--component``, or both.
+    Omitting the pool lists every policy for that orchestrator component.
+
+    Args:
+        pool: Optional positional pool name, ID, or prefix.
+        component: Optional orchestrator component name or ID.
+        component_type: Type of the component to list the policies for.
+        columns: Columns to print.
+        output_format: Output format for the table or structured data.
+    """
+    pool_id = None
+    pool_label = pool
+    with console.status("Loading resource pool policies...\n"):
+        try:
+            if pool is not None:
+                pool_model = Client().get_resource_pool(
+                    name_id_or_prefix=pool, hydrate=False
+                )
+                pool_id = pool_model.id
+                pool_label = pool_model.name
+            component_id = None
+            if component is not None:
+                component_model = Client().get_stack_component(
+                    name_id_or_prefix=component,
+                    component_type=component_type
+                    or StackComponentType.ORCHESTRATOR,
+                    allow_name_prefix_match=False,
+                    hydrate=False,
+                )
+                component_id = component_model.id
+            policies_page = Client().list_resource_pool_subject_policies(
+                pool_id=pool_id,
+                component_id=component_id,
+                hydrate=True,
+            )
+        except Exception as err:
+            cli_utils.exception(err)
+
+    page: Page[ResourcePoolSubjectPolicyResponse] = policies_page
+    if pool is not None and component is not None:
+        empty = (
+            f"No policies found for resource pool `{pool_label}` and "
+            f"component `{component}`."
+        )
+    elif pool is not None:
+        empty = f"No policies found for resource pool `{pool_label}`."
+    else:
+        empty = f"No policies found for orchestrator component `{component}`."
+
+    cli_utils.print_page(
+        page=page,
+        columns=columns,
+        output_format=output_format,
+        empty_message=empty,
+    )
 
 
 @resource_pool.command(
