@@ -16,7 +16,7 @@
 import json
 from datetime import timedelta
 from typing import Dict, List, Optional, Set, Tuple
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -113,6 +113,14 @@ class StepRunRequestFactory:
         if not self.snapshot.pipeline_configuration.skip_successful_steps:
             return False
 
+        if self._get_input_overrides(invocation_id):
+            logger.warning(
+                "Step `%s` should be skipped, but there are input overrides "
+                "configured. The step will be executed.",
+                invocation_id,
+            )
+            return False
+
         try:
             original_step_run = self._get_original_step_run(invocation_id)
         except Exception as e:
@@ -191,11 +199,13 @@ class StepRunRequestFactory:
             request.dynamic_config
             or self.snapshot.step_configurations[request.name]
         )
+        input_overrides = self._get_input_overrides(request.name, step=step)
 
         input_artifacts = input_utils.resolve_step_inputs(
             step=step,
             pipeline_run=self.pipeline_run,
             step_runs=step_runs,
+            input_overrides=input_overrides,
         )
 
         request.inputs = {
@@ -403,6 +413,43 @@ class StepRunRequestFactory:
                     return step.docstring, step.source_code
 
         return None, None
+
+    def _get_input_overrides(
+        self, invocation_id: str, step: Optional["Step"] = None
+    ) -> Dict[str, "UUID"]:
+        """Get input overrides for a step.
+
+        Args:
+            invocation_id: The invocation ID to look up.
+            step: The step configuration. If not provided, no input key
+                validation is performed.
+
+        Returns:
+            The input overrides for the step.
+        """
+        overrides = (
+            self.snapshot.pipeline_configuration.step_input_overrides.get(
+                invocation_id, {}
+            )
+        )
+
+        if step:
+            available_input_keys = step.available_input_keys
+            invalid_keys = overrides.keys() - available_input_keys
+            if invalid_keys:
+                logger.warning(
+                    "Ignoring invalid input overrides for step `%s`: %s",
+                    invocation_id,
+                    invalid_keys,
+                )
+
+            overrides = {
+                key: value
+                for key, value in overrides.items()
+                if key in available_input_keys
+            }
+
+        return overrides
 
 
 def find_cacheable_invocation_candidates(

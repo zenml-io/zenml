@@ -20,6 +20,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -44,7 +45,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source, SourceWithValidator
-from zenml.enums import GroupType, StepRuntime
+from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
@@ -281,6 +282,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
+    step_type: Optional[StepType] = None
     # TODO: maybe move to spec?
     template: Optional[str] = None
     parameters: Dict[str, Any] = {}
@@ -418,6 +420,7 @@ class StepSpec(FrozenBaseModel):
     inputs: Dict[str, Union[List[InputSpec], InputSpec]] = {}
     invocation_id: str
     enable_heartbeat: bool = False
+    parameter_spec: Optional[Dict[str, Any]] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -470,6 +473,9 @@ class StepSpec(FrozenBaseModel):
                 return False
 
             if self.inputs_v2 != other.inputs_v2:
+                return False
+
+            if self.parameter_spec != other.parameter_spec:
                 return False
 
             if self.invocation_id != other.invocation_id:
@@ -561,6 +567,21 @@ class Step(FrozenBaseModel):
             data["config"] = merged_config_dict
 
         return cls.model_validate(data)
+
+    @property
+    def available_input_keys(self) -> Set[str]:
+        """Available input keys for the step.
+
+        Returns:
+            The available input keys for the step.
+        """
+        return (
+            set(self.spec.inputs_v2)
+            | set(self.config.parameters)
+            | set(self.config.model_artifacts_or_metadata)
+            | set(self.config.external_input_artifacts)
+            | set(self.config.client_lazy_loaders)
+        )
 
 
 def _apply_pipeline_configuration(

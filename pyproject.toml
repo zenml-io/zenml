@@ -7,7 +7,7 @@ module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.94.0"
+version = "0.94.1"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -41,7 +41,7 @@ dependencies = [
     "opentelemetry-sdk==1.38.0",
     "packaging>=24.1",
     "psutil>=5.0.0",
-    "pydantic>=2.0,<=2.11.9",
+    "pydantic>=2.0,<=2.12.5",
     "python-dateutil>=2.8.1,<3.0.0",
     "pyyaml>=6.0.1",
     "rich>=12.0.0", # Make sure to keep the version aligned with our `jupyter` extra
@@ -66,6 +66,7 @@ local = [
     "sqlalchemy>=2.0.0,<3.0.0",
     "sqlalchemy_utils",
     "sqlmodel==0.0.18",
+    "jsonschema>=4.0.0",
 ]
 server = [
     "zenml[local,native-schedules]",  # Includes all the DB dependencies
@@ -170,6 +171,7 @@ dev = [
     "types-termcolor>=1.1.2",
     "types-psutil>=5.8.13",
     "types-passlib>=1.7.7",
+    "types-jsonschema>=4.26.0",
 ]
 
 [tool.pytest.ini_options]

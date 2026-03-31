@@ -15,7 +15,7 @@
 
 import json
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -80,14 +80,15 @@ class Client(object):
     def track(
         self,
         user_id: UUID,
-        event: "AnalyticsEvent",
+        event: "Union[AnalyticsEvent, str]",
         properties: Optional[Dict[Any, Any]],
     ) -> Tuple[bool, str]:
         """Method to track events.
 
         Args:
             user_id: The user ID.
-            event: The type of the event.
+            event: The type of the event. Can be an AnalyticsEvent enum
+                member or an arbitrary string.
             properties: Dict of additional properties for the event.
 
         Returns:

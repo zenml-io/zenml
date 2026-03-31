@@ -14,6 +14,7 @@
 """Server middlewares."""
 
 import logging
+import os
 from asyncio import Lock
 from asyncio.log import logger
 from datetime import datetime, timedelta
@@ -36,6 +37,7 @@ from starlette.types import ASGIApp
 from zenml.analytics import source_context
 from zenml.constants import (
     DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS,
+    ENV_ZENML_DEFAULT_ANALYTICS_SOURCE,
     HEALTH,
     READY,
 )
@@ -255,9 +257,13 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
         the response to the request.
     """
     try:
+        default_source = os.environ.get(
+            ENV_ZENML_DEFAULT_ANALYTICS_SOURCE,
+            SourceContextTypes.API.value,
+        )
         s = request.headers.get(
             source_context.name,
-            default=SourceContextTypes.API.value,
+            default=default_source,
         )
         source_context.set(SourceContextTypes(s))
     except Exception as e:
