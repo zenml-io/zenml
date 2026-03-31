@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Local Docker image builder implementation."""
 
-from __future__ import annotations
-
 import shutil
 import subprocess
 import tempfile
