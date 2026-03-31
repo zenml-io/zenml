@@ -154,11 +154,7 @@ class TriggerSchema(NamedSchema, table=True):
     )
 
     source_entity: str | None = Field(
-        sa_column=Column(
-            String(length=STR_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
-            nullable=True,
-            default=None,
-        ),
+        sa_column=Column(VARCHAR(255), default=None, nullable=True),
         description="The event source(e.g. pipeline:<uuid>. Applicable for platform events.",
     )
 

@@ -8,6 +8,7 @@ Create Date: 2026-03-30 15:51:09.472631
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import VARCHAR
 
 # revision identifiers, used by Alembic.
 revision = "77c8a1f91ab4"
@@ -23,7 +24,8 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "source_entity",
-                sa.String(length=255).with_variant(sa.TEXT(), "mysql"),
+                VARCHAR(255),
+                default=None,
                 nullable=True,
             )
         )
