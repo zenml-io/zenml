@@ -310,8 +310,6 @@ class StackSchema(NamedSchema, table=True):
                 StackComponentType, List["StackComponentSchema"]
             ] = defaultdict(list)
 
-            default_ids: Dict[StackComponentType, UUID] = {}
-
             sorted_compositions = sorted(
                 self.stack_compositions,
                 key=lambda composition: (
@@ -322,8 +320,6 @@ class StackSchema(NamedSchema, table=True):
             for composition in sorted_compositions:
                 component_type = StackComponentType(composition.component.type)
                 components[component_type].append(composition.component)
-                if composition.default_for_type is not None:
-                    default_ids[component_type] = composition.component_id
 
             metadata = StackResponseMetadata(
                 components={
@@ -332,7 +328,6 @@ class StackSchema(NamedSchema, table=True):
                     ]
                     for component_type, component_list in components.items()
                 },
-                default_component_ids=default_ids,
                 stack_spec_path=self.stack_spec_path,
                 labels=json.loads(base64.b64decode(self.labels).decode())
                 if self.labels

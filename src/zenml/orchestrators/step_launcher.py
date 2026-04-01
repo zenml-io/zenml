@@ -82,12 +82,15 @@ def _get_step_operator(
     Raises:
         RuntimeError: If no active step operator is found.
     """
-    if stack.step_operators is None:
-        raise RuntimeError(
-            f"No step operators specified for active stack '{stack.name}'."
-        )
+    if step_operator_name is None:
+        step_operator = stack.step_operator
+        if step_operator is None:
+            raise RuntimeError(
+                f"No step operators specified for active stack '{stack.name}'."
+            )
+        return step_operator
 
-    step_operator = stack.step_operators.get(step_operator_name, None)
+    step_operator = stack.step_operators.get(step_operator_name)
     if step_operator is None:
         raise RuntimeError(
             f"No step operator named '{step_operator_name}' found in active "

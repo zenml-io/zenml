@@ -18,14 +18,6 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("step_operator_id", sa.Uuid(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("experiment_tracker_id", sa.Uuid(), nullable=True)
-        )
-
     with op.batch_alter_table("stack_composition", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column("default_for_type", sa.String(), nullable=True)
@@ -95,7 +87,3 @@ def downgrade() -> None:
             type_="unique",
         )
         batch_op.drop_column("default_for_type")
-
-    with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.drop_column("experiment_tracker_id")
-        batch_op.drop_column("step_operator_id")

@@ -170,14 +170,6 @@ class StepRunRequest(ProjectScopedRequest):
         title="The dynamic configuration of the step run.",
         default=None,
     )
-    step_operator_id: Optional[UUID] = Field(
-        title="The ID of the step operator used for this step run.",
-        default=None,
-    )
-    experiment_tracker_id: Optional[UUID] = Field(
-        title="The ID of the experiment tracker used for this step run.",
-        default=None,
-    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -257,14 +249,6 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     )
     heartbeat_threshold: Optional[int] = Field(
         title="The applied heartbeat healthiness threshold ",
-        default=None,
-    )
-    step_operator_id: Optional[UUID] = Field(
-        title="The ID of the step operator used for this step run.",
-        default=None,
-    )
-    experiment_tracker_id: Optional[UUID] = Field(
-        title="The ID of the experiment tracker used for this step run.",
         default=None,
     )
     model_config = ConfigDict(protected_namespaces=())
@@ -557,24 +541,6 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().substitutions
-
-    @property
-    def step_operator_id(self) -> Optional[UUID]:
-        """The `step_operator_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().step_operator_id
-
-    @property
-    def experiment_tracker_id(self) -> Optional[UUID]:
-        """The `experiment_tracker_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().experiment_tracker_id
 
     @property
     def config(self) -> "StepConfiguration":

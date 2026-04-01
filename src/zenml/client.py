@@ -1194,9 +1194,6 @@ class Client(metaclass=ClientMetaClass):
             StackComponentType,
             Union[str, UUID, Sequence[Union[str, UUID]]],
         ],
-        default_component_ids: Optional[
-            Mapping[StackComponentType, Union[str, UUID]]
-        ] = None,
         stack_spec_file: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
         secrets: Optional[Sequence[Union[UUID, str]]] = None,
@@ -1207,8 +1204,6 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the stack to register.
             components: Dictionary which maps component types to component
                 names/IDs or sequences of names/IDs.
-            default_component_ids: Optional explicit default component IDs or
-                names per component type.
             stack_spec_file: path to the stack spec file
             labels: The labels of the stack.
             secrets: The secrets of the stack.
@@ -1216,8 +1211,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered stack.
         """
-        stack_components = {}
-        resolved_default_component_ids = {}
+        stack_components: Dict[StackComponentType, List[UUID]] = {}
 
         for c_type, c_identifier in components.items():
             if isinstance(c_identifier, Sequence) and not isinstance(
@@ -1242,20 +1236,9 @@ class Client(metaclass=ClientMetaClass):
                 )
                 stack_components[c_type].append(component.id)
 
-        for c_type, component_ids in stack_components.items():
-            if default_component_ids and c_type in default_component_ids:
-                default_component = self.get_stack_component(
-                    name_id_or_prefix=default_component_ids[c_type],
-                    component_type=c_type,
-                )
-                resolved_default_component_ids[c_type] = default_component.id
-            elif component_ids:
-                resolved_default_component_ids[c_type] = component_ids[0]
-
         stack = StackRequest(
             name=name,
             components=stack_components,
-            default_component_ids=resolved_default_component_ids,
             stack_spec_path=stack_spec_file,
             labels=labels,
             secrets=secrets,
@@ -1378,7 +1361,7 @@ class Client(metaclass=ClientMetaClass):
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
                 lists of new stack component names or ids.
-            default_component_ids: Optional explicit default component IDs or
+            default_components: Optional explicit default component IDs or
                 names per component type.
             add_secrets: The secrets to add to the stack.
             remove_secrets: The secrets to remove from the stack.
@@ -1414,53 +1397,66 @@ class Client(metaclass=ClientMetaClass):
         if description:
             update_model.description = description
 
-        # Get the current components
-        if component_updates or default_component_ids:
-            components_dict = stack.components.copy()
+        components_dict = stack.components.copy()
 
-            if component_updates:
-                for (
-                    component_type,
-                    component_identifiers,
-                ) in component_updates.items():
-                    if component_identifiers is not None:
-                        if isinstance(
-                            component_identifiers, Sequence
-                        ) and not isinstance(
-                            component_identifiers, (str, bytes)
-                        ):
-                            component_id_list = list(component_identifiers)
-                        else:
-                            component_id_list = [component_identifiers]
+        if component_updates:
+            for (
+                component_type,
+                component_identifiers,
+            ) in component_updates.items():
+                if component_identifiers is not None:
+                    if isinstance(
+                        component_identifiers, Sequence
+                    ) and not isinstance(component_identifiers, (str, bytes)):
+                        component_id_list = list(component_identifiers)
+                    else:
+                        component_id_list = [component_identifiers]
 
-                        components_dict[component_type] = [
-                            self.get_stack_component(
-                                name_id_or_prefix=component_id,
-                                component_type=component_type,
-                            )
-                            for component_id in component_id_list
-                        ]
-
-            resolved_default_component_ids = {}
-            for c_type, component_list in components_dict.items():
-                if default_component_ids and c_type in default_component_ids:
-                    default_component = self.get_stack_component(
-                        name_id_or_prefix=default_component_ids[c_type],
-                        component_type=c_type,
-                    )
-                    resolved_default_component_ids[c_type] = (
-                        default_component.id
-                    )
-                elif component_list:
-                    resolved_default_component_ids[c_type] = component_list[
-                        0
-                    ].id
+                    components_dict[component_type] = [
+                        self.get_stack_component(
+                            name_id_or_prefix=component_id,
+                            component_type=component_type,
+                        )
+                        for component_id in component_id_list
+                    ]
 
             update_model.components = {
                 c_type: [c.id for c in c_list]
                 for c_type, c_list in components_dict.items()
             }
-            update_model.default_component_ids = resolved_default_component_ids
+
+        if default_components:
+            for (
+                c_type,
+                default_component_name_or_id,
+            ) in default_components.items():
+                component_list = components_dict.get(c_type, [])
+                default_component = self.get_stack_component(
+                    name_id_or_prefix=default_component_name_or_id,
+                    component_type=c_type,
+                )
+                if not component_list or all(
+                    component.id != default_component.id
+                    for component in component_list
+                ):
+                    raise ValueError(
+                        f"Component `{default_component_name_or_id}` is "
+                        f"not attached to stack `{stack.name}` as a "
+                        f"`{c_type}` component."
+                    )
+                components_dict[c_type] = [
+                    default_component,
+                    *[
+                        component
+                        for component in component_list
+                        if component.id != default_component.id
+                    ],
+                ]
+
+            update_model.components = {
+                c_type: [c.id for c in c_list]
+                for c_type, c_list in components_dict.items()
+            }
 
         if labels is not None:
             existing_labels = stack.labels or {}
@@ -1972,15 +1968,6 @@ class Client(metaclass=ClientMetaClass):
                 component_type, None
             )
             if components:
-                default_component_id = (
-                    self.active_stack_model.default_component_ids.get(
-                        component_type
-                    )
-                )
-                if default_component_id:
-                    for component in components:
-                        if component.id == default_component_id:
-                            return component
                 return components[0]
             raise KeyError(
                 "No name_id_or_prefix provided and there is no active "

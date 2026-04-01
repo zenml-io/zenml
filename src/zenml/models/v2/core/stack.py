@@ -31,7 +31,6 @@ from pydantic import Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.logger import get_logger
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
@@ -53,9 +52,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-
-logger = get_logger(__name__)
-
 
 # ------------------ Request Model ------------------
 
@@ -82,11 +78,6 @@ class StackRequest(UserScopedRequest):
             "existing components or request information for brand new "
             "components.",
         )
-    )
-    default_component_ids: Optional[Dict[StackComponentType, UUID]] = Field(
-        default=None,
-        title="The default stack component ID for each configured component "
-        "type.",
     )
     environment: Optional[Dict[str, str]] = Field(
         default=None,
@@ -167,40 +158,6 @@ class StackRequest(UserScopedRequest):
                             )
 
         for component_type in StackComponentType:
-            if component_type.supports_multiple_per_stack:
-                if component_type in self.components:
-                    if self.default_component_ids is not None:
-                        default_id = self.default_component_ids.get(
-                            component_type, None
-                        )
-
-                        if default_id is not None:
-                            component_ids = [
-                                component.id
-                                for component in self.components[
-                                    component_type
-                                ]
-                            ]
-                            if default_id not in component_ids:
-                                raise ValueError(
-                                    f"Default component ID `{default_id}` for "
-                                    f"`{component_type}` is not included in the configured "
-                                    "components."
-                                )
-                            else:
-                                logger.warning(
-                                    f"Default component ID `{default_id}` for "
-                                    f"`{component_type}` is not included in the configured "
-                                    "components."
-                                )
-                                self.default_component_ids[component_type] = (
-                                    self.components[component_type][0].id
-                                )
-                    else:
-                        self.default_component_ids[component_type] = (
-                            self.components[component_type][0].id
-                        )
-
             if component_type in self.components:
                 components = self.components[component_type]
                 if (
@@ -243,11 +200,6 @@ class StackUpdate(BaseUpdate):
         title="A mapping of stack component types to the actual"
         "instances of components of this type.",
         default=None,
-    )
-    default_component_ids: Optional[Dict[StackComponentType, UUID]] = Field(
-        default=None,
-        title="The default stack component ID for each configured component "
-        "type.",
     )
     environment: Optional[Dict[str, str]] = Field(
         default=None,
@@ -323,11 +275,6 @@ class StackResponseMetadata(UserScopedResponseMetadata):
     components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
-    )
-    default_component_ids: Dict[StackComponentType, UUID] = Field(
-        default={},
-        title="A mapping of stack component types to the default component "
-        "ID for that type.",
     )
     description: Optional[str] = Field(
         default="",
@@ -486,15 +433,6 @@ class StackResponse(
             the value of the property.
         """
         return self.get_metadata().components
-
-    @property
-    def default_component_ids(self) -> Dict[StackComponentType, UUID]:
-        """The `default_component_ids` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().default_component_ids
 
     @property
     def environment(self) -> Dict[str, str]:

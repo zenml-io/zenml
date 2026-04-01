@@ -10241,20 +10241,8 @@ class SqlZenStore(BaseZenStore):
                     component_ids,
                 ) in components_mapping.items():
                     default_component_id = (
-                        stack.default_component_ids.get(component_type)
-                        if stack.default_component_ids
-                        else None
-                    ) or (component_ids[0] if component_ids else None)
-
-                    if (
-                        default_component_id is not None
-                        and default_component_id not in component_ids
-                    ):
-                        raise ValueError(
-                            f"Default component ID `{default_component_id}` for "
-                            f"`{component_type}` is not attached to stack "
-                            f"`{stack.name}`."
-                        )
+                        component_ids[0] if component_ids else None
+                    )
 
                     for component_id in component_ids:
                         session.add(
@@ -10383,6 +10371,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             IllegalOperationError: if the stack is a default stack.
+            ValueError: if the default component doesn't belong to the stack.
         """
         with Session(self.engine) as session:
             existing_stack = self._get_schema_by_id(
@@ -10404,39 +10393,31 @@ class SqlZenStore(BaseZenStore):
 
             existing_stack.update(stack_update=stack_update)
 
-            if (
-                stack_update.components is not None
-                or stack_update.default_component_ids is not None
-            ):
+            if stack_update.components is not None:
                 component_ids_by_type: Dict[StackComponentType, List[UUID]] = (
                     defaultdict(list)
                 )
 
-                if stack_update.components is not None:
-                    for (
-                        component_type,
-                        list_of_component_ids,
-                    ) in stack_update.components.items():
-                        for component_id in list_of_component_ids:
-                            self._get_reference_schema_by_id(
-                                resource=existing_stack,
-                                reference_schema=StackComponentSchema,
-                                reference_id=component_id,
-                                session=session,
-                                reference_type=f"{str(component_type)} stack component",
-                            )
-                        component_ids_by_type[component_type] = list(
-                            list_of_component_ids
+                for (
+                    component_type,
+                    list_of_component_ids,
+                ) in stack_update.components.items():
+                    for component_id in list_of_component_ids:
+                        self._get_reference_schema_by_id(
+                            resource=existing_stack,
+                            reference_schema=StackComponentSchema,
+                            reference_id=component_id,
+                            session=session,
+                            reference_type=f"{str(component_type)} stack component",
                         )
-                else:
-                    for composition in existing_stack.stack_compositions:
-                        component_ids_by_type[
-                            StackComponentType(composition.component.type)
-                        ].append(composition.component_id)
+                    component_ids_by_type[component_type] = list(
+                        list_of_component_ids
+                    )
 
-                session.exec(
+                session.execute(
                     delete(StackCompositionSchema).where(
-                        StackCompositionSchema.stack_id == existing_stack.id
+                        col(StackCompositionSchema.stack_id)
+                        == existing_stack.id
                     )
                 )
 
@@ -10445,24 +10426,10 @@ class SqlZenStore(BaseZenStore):
                     list_of_component_ids,
                 ) in component_ids_by_type.items():
                     default_component_id = (
-                        stack_update.default_component_ids.get(component_type)
-                        if stack_update.default_component_ids
-                        else None
-                    ) or (
                         list_of_component_ids[0]
                         if list_of_component_ids
                         else None
                     )
-
-                    if (
-                        default_component_id is not None
-                        and default_component_id not in list_of_component_ids
-                    ):
-                        raise ValueError(
-                            f"Default component ID `{default_component_id}` for "
-                            f"`{component_type}` is not attached to stack "
-                            f"`{existing_stack.name}`."
-                        )
 
                     for component_id in list_of_component_ids:
                         session.add(

@@ -30,6 +30,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -204,11 +205,25 @@ class Stack:
         )
 
         try:
-            stack_components = defaultdict(list)
-            for model in component_models:
-                stack_components[model.type].append(
-                    StackComponent.from_model(model)
-                )
+            component_models_by_id = {
+                model.id: model for model in component_models
+            }
+            stack_components: Dict[
+                StackComponentType, List["StackComponent"]
+            ] = defaultdict(list)
+            for (
+                component_type,
+                ordered_component_models,
+            ) in stack_model.components.items():
+                for ordered_component_model in ordered_component_models:
+                    hydrated_model = component_models_by_id.get(
+                        ordered_component_model.id
+                    )
+                    if hydrated_model is None:
+                        continue
+                    stack_components[component_type].append(
+                        StackComponent.from_model(hydrated_model)
+                    )
         except ImportError as e:
             stack_hint = (
                 "\n\nTo install all requirements for this stack at "
@@ -225,7 +240,7 @@ class Stack:
             name=stack_model.name,
             environment=stack_model.environment,
             secrets=stack_model.secrets,
-            components=stack_components,
+            components=dict(stack_components),
         )
         _STACK_CACHE[key] = stack
 
@@ -600,8 +615,9 @@ class Stack:
         """
         return {
             component.name: component
-            for component in self.get_components_by_type(
-                StackComponentType.STEP_OPERATOR
+            for component in cast(
+                List["BaseStepOperator"],
+                self.get_components_by_type(StackComponentType.STEP_OPERATOR),
             )
         }
 
@@ -643,8 +659,11 @@ class Stack:
         """
         return {
             component.name: component
-            for component in self.get_components_by_type(
-                StackComponentType.EXPERIMENT_TRACKER
+            for component in cast(
+                List["BaseExperimentTracker"],
+                self.get_components_by_type(
+                    StackComponentType.EXPERIMENT_TRACKER
+                ),
             )
         }
 
@@ -666,8 +685,9 @@ class Stack:
         """
         return {
             component.name: component
-            for component in self.get_components_by_type(
-                StackComponentType.ALERTER
+            for component in cast(
+                List["BaseAlerter"],
+                self.get_components_by_type(StackComponentType.ALERTER),
             )
         }
 
@@ -1177,6 +1197,20 @@ class Stack:
             for component in self.all_components
             if _is_active(component)
         ]
+
+    def get_active_components_for_step(
+        self, step_config: "StepConfiguration"
+    ) -> List["StackComponent"]:
+        """Gets all active stack components for a step.
+
+        Args:
+            step_config: Configuration of the step for which to get the active
+                components.
+
+        Returns:
+            List of active stack components.
+        """
+        return self._get_active_components_for_step(step_config)
 
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Prepares running a step.

@@ -118,8 +118,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
     )
     heartbeat_threshold: Optional[int] = Field(nullable=True)
-    step_operator_id: Optional[UUID] = Field(nullable=True)
-    experiment_tracker_id: Optional[UUID] = Field(nullable=True)
 
     # Foreign keys
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
@@ -355,8 +353,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             source_code=request.source_code,
             version=version,
             is_retriable=is_retriable,
-            step_operator_id=request.step_operator_id,
-            experiment_tracker_id=request.experiment_tracker_id,
             exception_info=request.exception_info.model_dump_json()
             if request.exception_info
             else None,
@@ -438,8 +434,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             model_version_id=self.model_version_id,
             substitutions=step.config.substitutions,
             heartbeat_threshold=self.heartbeat_threshold,
-            step_operator_id=self.step_operator_id,
-            experiment_tracker_id=self.experiment_tracker_id,
         )
         metadata = None
         if include_metadata:

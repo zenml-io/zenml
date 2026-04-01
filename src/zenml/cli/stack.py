@@ -23,7 +23,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Union,
@@ -84,27 +83,6 @@ if TYPE_CHECKING:
     from zenml.models import StackResponse
 
 logger = get_logger(__name__)
-
-
-def _resolve_stack_component_ids(
-    client: Client,
-    component_type: StackComponentType,
-    component_names_or_ids: Sequence[Union[str, UUID]],
-) -> List[UUID]:
-    """Resolve stack component names or IDs to component IDs.
-
-    Args:
-        client: The ZenML client.
-        component_type: The component type to resolve.
-        component_names_or_ids: The component names or IDs.
-
-    Returns:
-        The resolved component IDs in the provided order.
-    """
-    return [
-        client.get_stack_component(component_type, component_name_or_id).id
-        for component_name_or_id in component_names_or_ids
-    ]
 
 
 @cli.group(
@@ -583,7 +561,7 @@ def register_stack(
                     [
                         client.get_stack_component(
                             component_type_, component_name_
-                        )
+                        ).id
                         for component_name_ in component_names_
                     ]
                 )
@@ -593,11 +571,6 @@ def register_stack(
                 stack=StackRequest(
                     name=stack_name,
                     components=components,
-                    default_component_ids={
-                        component_type: component_ids[0]
-                        for component_type, component_ids in components.items()
-                        if component_ids
-                    },
                     service_connectors=[service_connector]
                     if service_connector
                     else [],

@@ -26,7 +26,7 @@ from zenml.constants import (
     TEXT_FIELD_MAX_LENGTH,
     handle_int_env_var,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
@@ -169,30 +169,6 @@ class StepRunRequestFactory:
         Returns:
             The step run request.
         """
-        step = (
-            dynamic_config or self.snapshot.step_configurations[invocation_id]
-        )
-
-        components = self.stack.get_active_components_for_step(step.config)
-
-        # For each step, there can only be a one active step operator and one active experiment tracker
-        step_operator_id = next(
-            (
-                component.id
-                for component in components
-                if component.type == StackComponentType.STEP_OPERATOR
-            ),
-            None,
-        )
-        experiment_tracker_id = next(
-            (
-                component.id
-                for component in components
-                if component.type == StackComponentType.EXPERIMENT_TRACKER
-            ),
-            None,
-        )
-
         return StepRunRequest(
             name=invocation_id,
             pipeline_run_id=self.pipeline_run.id,
@@ -200,8 +176,6 @@ class StepRunRequestFactory:
             start_time=utc_now(),
             project=Client().active_project.id,
             dynamic_config=dynamic_config,
-            step_operator_id=step_operator_id,
-            experiment_tracker_id=experiment_tracker_id,
         )
 
     def populate_request(
