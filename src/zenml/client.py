@@ -44,7 +44,9 @@ from zenml.client_lazy_loader import (
     evaluate_all_lazy_load_args_in_client_methods,
 )
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+)
 from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
@@ -4072,8 +4074,13 @@ class Client(metaclass=ClientMetaClass):
 
         self.zen_store.delete_trigger(trigger_id=trigger_id, soft=soft)
 
+    @_fail_for_sql_zen_store
     def attach_trigger_to_snapshot(
-        self, trigger_id: UUID, pipeline_snapshot_id: UUID
+        self,
+        trigger_id: UUID,
+        pipeline_snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
     ) -> None:
         """Attaches a trigger to a snapshot.
 
@@ -4083,9 +4090,14 @@ class Client(metaclass=ClientMetaClass):
         Args:
             trigger_id: The ID of the trigger.
             pipeline_snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs of this trigger & snapshot.
+            allow_replace: Allow replacement if attachment already exists.
         """
         self.zen_store.attach_trigger_to_snapshot(
-            trigger_id=trigger_id, snapshot_id=pipeline_snapshot_id
+            trigger_id=trigger_id,
+            snapshot_id=pipeline_snapshot_id,
+            run_configuration=run_configuration,
+            allow_replace=allow_replace,
         )
 
     def detach_trigger_from_snapshot(
@@ -4114,6 +4126,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
+        is_archived: bool | None = False,
     ) -> ScheduleResponse:
         """Get a schedule by name, id or prefix.
 
@@ -4123,13 +4136,16 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            is_archived: Flag whether to filter-out archived schedules.
 
         Returns:
             The schedule.
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_schedule,
-            list_method=self.list_schedules,
+            list_method=functools.partial(
+                self.list_schedules, is_archived=is_archived
+            ),
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             project=project,
@@ -4158,7 +4174,7 @@ class Client(metaclass=ClientMetaClass):
         catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
         run_once_start_time: Optional[Union[datetime, str]] = None,
-        is_archived: bool = False,
+        is_archived: bool | None = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -4310,6 +4326,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
             project=project,
+            is_archived=None,
         )
 
         orchestrator = self._get_orchestrator_for_schedule(schedule)
@@ -7654,6 +7671,7 @@ class Client(metaclass=ClientMetaClass):
         if project:
             scope = f"in project {project} "
             list_kwargs["project"] = project
+
         entity = list_method(**list_kwargs)
 
         # If only a single entity is found, return it
@@ -7669,6 +7687,7 @@ class Client(metaclass=ClientMetaClass):
                 allow_name_prefix_match=allow_name_prefix_match,
                 project=project,
                 hydrate=hydrate,
+                **kwargs,
             )
 
         # If more than one entity with the same name is found, raise an error.

@@ -97,6 +97,45 @@ zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID> --hard
 Using `--hard` permanently removes the schedule and any historical references to it. Pipeline runs that were triggered by this schedule will no longer show the schedule association.
 {% endhint %}
 
+#### Post-Deletion Lifecycle
+
+When an object is soft-deleted, it remains in the database but is no longer usable.
+
+By default, list operations only return active (non-archived) schedules. To view archived schedules, use the following options:
+
+Show archived schedules on the CLI:
+
+```bash
+zenml pipeline schedule list --is_archived=true
+```
+
+Sow archived schedules on the SDK:
+
+```python
+from zenml.client import Client
+
+archived_schedules = Client().list_schedules(is_archived=True)
+```
+
+#### Archived Object Naming
+
+After archival, you may notice that the schedule name has changed. In ZenML, schedule names act as unique identifiers. 
+To prevent naming conflicts and allow reuse of the original name, archived schedules are automatically renamed by 
+appending a random hash to the original name.
+
+#### Permanent Deletion (Hard Delete)
+
+Archived objects can be permanently deleted using one of the following identifiers:
+
+* ID
+* ID prefix
+* Name (updated/archived name only)
+
+{% hint style="warning" %}
+Deletion using the original (pre-archival) name will not work, since the object has been renamed. Deletion by name 
+prefix is not supported for schedules (and most other entities), as it is considered unsafe.
+{% endhint %}
+
 ### Kubernetes CronJob advanced configuration
 
 When using the Kubernetes orchestrator, scheduled pipelines are backed by Kubernetes CronJobs. You can customize CronJob-specific behavior through `KubernetesOrchestratorSettings`:

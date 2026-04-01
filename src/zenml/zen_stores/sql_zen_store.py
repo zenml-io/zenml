@@ -117,7 +117,9 @@ from zenml.analytics.utils import (
 )
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+)
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.source import Source
@@ -7719,13 +7721,19 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def attach_trigger_to_snapshot(
-        self, trigger_id: UUID, snapshot_id: UUID
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
     ) -> None:
         """Attaches (links) a trigger to a snapshot.
 
         Args:
             trigger_id: The ID of the trigger.
             snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs.
+            allow_replace: Allow replacement if attachment already exists.
 
         Raises:
             IllegalOperationError: if the trigger is archived.
@@ -7773,16 +7781,27 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the entities don't exist.
         """
         with Session(self.engine) as session:
-            assoc = session.get(
-                TriggerSnapshotSchema, (trigger_id, snapshot_id)
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
             )
 
-            if assoc is None:
+            tbd = [
+                snapshot.id
+                for snapshot in trigger.snapshots
+                if snapshot_id in {snapshot.id, snapshot.source_snapshot_id}
+            ]
+
+            if not tbd:
                 raise KeyError(
-                    f"No snapshot {snapshot_id} association found for trigger {trigger_id}"
+                    f"Snapshot {snapshot_id} is not attached to trigger {trigger_id}"
                 )
 
-            session.delete(assoc)
+            for sid in tbd:
+                assoc = session.get(TriggerSnapshotSchema, (trigger_id, sid))
+                session.delete(assoc)
+
             session.commit()
 
     def create_trigger_execution(
@@ -7990,6 +8009,7 @@ class SqlZenStore(BaseZenStore):
                 # Soft deletion - set is_archived
                 schedule.is_archived = True
                 schedule.active = False
+                schedule.name = f"{schedule.name}_{uuid.uuid4()}"
                 session.add(schedule)
 
             session.commit()
