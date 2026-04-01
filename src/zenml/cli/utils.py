@@ -1440,8 +1440,7 @@ def flavor_config_schema_click_help_dl(
     ``--field=value`` in ARGS, parallel to built-in Click options.
 
     Args:
-        flavor: Registered flavor (e.g. from
-            ``Client.get_flavor_by_name_and_type``).
+        flavor: Registered flavor.
 
     Returns:
         Rows for :meth:`click.formatting.HelpFormatter.write_dl`.
