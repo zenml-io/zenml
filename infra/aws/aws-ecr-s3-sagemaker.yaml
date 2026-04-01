@@ -84,7 +84,7 @@ Resources:
       RepositoryName: !Sub '${ResourceName}'
       Tags:
         - Key: !Ref TagName
-          Value: !Sub TagValue
+          Value: !Ref TagValue
 
   CodeBuildProject:
     Condition: RegisterCodeBuild
@@ -98,7 +98,7 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: bentolor/docker-dind-awscli
-        PrivilegedMode: false
+        PrivilegedMode: true
       Source:
         Type: S3
         Location: !Sub '${S3Bucket}/codebuild'
@@ -305,7 +305,7 @@ Resources:
     Properties:
       FunctionName: !Sub '${ResourceName}'
       Handler: index.handler
-      Runtime: python3.8
+      Runtime: python3.12
       MemorySize: 512
       Timeout: 60
       Environment:
