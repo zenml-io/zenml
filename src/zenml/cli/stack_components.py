@@ -211,10 +211,7 @@ class StackComponentConfigHelpCommand(click.Command):
                     name_id_or_prefix=name_or_id,
                     component_type=self._component_type,
                 )
-                flavor_model = client.get_flavor_by_name_and_type(
-                    name=component.flavor_name,
-                    component_type=self._component_type,
-                )
+                flavor_model = component.flavor
         except KeyError:
             return None
         except Exception:
@@ -1126,7 +1123,7 @@ def generate_stack_component_flavor_describe_command(
                 name=name, component_type=component_type
             )
 
-            cli_utils.describe_pydantic_object(flavor_model.config_schema)
+            cli_utils.describe_json_schema(flavor_model.config_schema)
             resources = flavor_model.connector_requirements
             if resources:
                 resources_str = f"a '{resources.resource_type}' resource"

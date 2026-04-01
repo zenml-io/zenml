@@ -1366,7 +1366,7 @@ def _resolve_schema_property_type(
 
     Handles plain ``type``, ``anyOf`` (picks the first non-null
     variant), and falls back to ``"object"``.  Used by both
-    ``describe_pydantic_object`` and
+    ``describe_json_schema`` and
     ``flavor_config_schema_click_help_dl`` so that type resolution
     stays consistent.
 
@@ -1457,14 +1457,14 @@ def flavor_config_schema_click_help_dl(
     return rows
 
 
-def describe_pydantic_object(
+def describe_json_schema(
     schema_json: Dict[str, Any],
 ) -> None:
-    """Describe a Pydantic object based on its JSON schema.
+    """Describe a JSON schema in a human-readable format.
 
     Args:
-        schema_json: Dict representation of a Pydantic schema,
-            obtained via ``BaseModel.model_json_schema()``.
+        schema_json: JSON schema dict, e.g. from
+            ``BaseModel.model_json_schema()``.
     """
     schema_title = schema_json["title"]
     description = schema_json.get("description", "")
