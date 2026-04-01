@@ -501,6 +501,8 @@ class TriggerResponse(
     ],
     Generic[TriggerBodyT],
 ):
+    """Class representing a base TriggerResponse."""
+
     @property
     def is_archived(self) -> bool:
         """Implements the 'is_archived' property.
@@ -679,7 +681,6 @@ class PlatformEventTrigger(BaseModel):
         Raises:
             ValueError: If type/event combination is invalid.
         """
-
         if any(
             event.value
             not in SOURCE_TYPE_EVENT_MAPPING.get(self.source_entity.type, {})
@@ -693,6 +694,8 @@ class PlatformEventTrigger(BaseModel):
 
 
 class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
+    """Class representing a PlatformEventTrigger request."""
+
     type: Literal[TriggerType.PLATFORM_EVENT] = TriggerType.PLATFORM_EVENT
     flavor: Literal[TriggerFlavor.PLATFORM_EVENT] = (
         TriggerFlavor.PLATFORM_EVENT
@@ -714,7 +717,6 @@ class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
         Returns:
             A dictionary with extra fields (next occurrence or empty).
         """
-
         return {
             "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
             "target_events": " ".join(
@@ -724,6 +726,8 @@ class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
 
 
 class PlatformEventTriggerUpdate(TriggerUpdate, PlatformEventTrigger):
+    """Class representing a PlatformEventTrigger update."""
+
     type: Literal[TriggerType.PLATFORM_EVENT] = TriggerType.PLATFORM_EVENT
     flavor: Literal[TriggerFlavor.PLATFORM_EVENT] = (
         TriggerFlavor.PLATFORM_EVENT
@@ -745,7 +749,6 @@ class PlatformEventTriggerUpdate(TriggerUpdate, PlatformEventTrigger):
         Returns:
             A dictionary with extra fields (next occurrence or empty).
         """
-
         return {
             "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
             "target_events": " ".join(
@@ -775,14 +778,29 @@ class PlatformEventTriggerResponse(
 
     @property
     def source_type(self) -> SourceType:
+        """Implements the `source_type` property.
+
+        Returns:
+            The source entity type.
+        """
         return self.get_body().source_entity.type
 
     @property
     def source_id(self) -> UUID:
+        """Implements the `source_id` property.
+
+        Returns:
+            The source entity id.
+        """
         return self.get_body().source_entity.id
 
     @property
     def target_events(self) -> list[SourceEvent]:
+        """Implements the `target_events` property.
+
+        Returns:
+            The list of events we trigger runs for.
+        """
         return self.get_body().target_events
 
 

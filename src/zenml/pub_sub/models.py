@@ -26,9 +26,10 @@ class SnapshotExecutionPayload(BaseModel):
     """Payload class for snapshot async execution."""
 
     snapshot_id: UUID
-    trigger_type: Literal["REST", "SCHEDULE", "WEBHOOK"]
+    trigger_type: Literal["REST", "SCHEDULE", "WEBHOOK", "PLATFORM_EVENT"]
     trigger_id: UUID | None = None
     scheduled_at: datetime | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class CriticalEventType(StrEnum):

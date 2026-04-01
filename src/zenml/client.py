@@ -39,7 +39,6 @@ from uuid import UUID
 
 from pydantic import ConfigDict, SecretStr
 
-from zenml import PlatformEventTriggerResponse
 from zenml.client_lazy_loader import (
     client_lazy_loader,
     evaluate_all_lazy_load_args_in_client_methods,
