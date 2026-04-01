@@ -18,6 +18,7 @@ import re
 import subprocess
 import tempfile
 import zipfile
+from typing import Optional
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -44,13 +45,16 @@ def sanitize_name(name: str) -> str:
     return name
 
 
-def get_wheel_package_name() -> str:
+def get_wheel_package_name(source_root: Optional[str] = None) -> str:
     """Generate the package name used for the temporary project wheel.
+
+    Args:
+        source_root: Optional source root override.
 
     Returns:
         The generated package name.
     """
-    repo_path = get_source_root()
+    repo_path = source_root or get_source_root()
     return (
         f"{DEFAULT_PACKAGE_NAME}_{sanitize_name(os.path.basename(repo_path))}"
     )
@@ -59,17 +63,19 @@ def get_wheel_package_name() -> str:
 def prepare_repository_copy_for_wheel(
     package_name: str,
     package_version: str,
+    source_root: Optional[str] = None,
 ) -> str:
     """Copy the repository to a temporary directory and add a setup.py file.
 
     Args:
         package_name: Name for the generated wheel package.
         package_version: Version for the generated wheel package.
+        source_root: Optional source root override.
 
     Returns:
         Path to the temporary directory containing the copied repository.
     """
-    repo_path = get_source_root()
+    repo_path = source_root or get_source_root()
 
     temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
     temp_repo_path = os.path.join(temp_dir, package_name)
@@ -133,5 +139,13 @@ def create_wheel(temp_dir: str) -> str:
             )
 
         return wheel_path
+    except subprocess.CalledProcessError as e:
+        stdout = e.stdout.decode() if e.stdout else ""
+        stderr = e.stderr.decode() if e.stderr else ""
+        raise RuntimeError(
+            "Failed to create wheel file.\n"
+            f"stdout:\n{stdout}\n"
+            f"stderr:\n{stderr}"
+        ) from e
     finally:
         os.chdir(original_dir)

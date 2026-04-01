@@ -36,6 +36,7 @@ from zenml.integrations.databricks.utils.databricks_utils import (
     build_submit_access_control_list,
     collect_requirements,
     convert_step_to_submit_task,
+    get_databricks_wheel_source,
     map_databricks_run_to_execution_status,
     upload_wheel_to_workspace,
 )
@@ -205,10 +206,16 @@ class DatabricksStepOperator(BaseStepOperator):
         self._warn_about_ignored_settings(info=info, settings=settings)
         info.force_write_logs()
 
-        package_name = get_wheel_package_name()
+        wheel_source = get_databricks_wheel_source()
+        if wheel_source:
+            source_root, package_name = wheel_source
+        else:
+            source_root = None
+            package_name = get_wheel_package_name()
         repository_temp_dir = prepare_repository_copy_for_wheel(
             package_name=package_name,
             package_version=__version__,
+            source_root=source_root,
         )
         try:
             wheel_path = create_wheel(repository_temp_dir)

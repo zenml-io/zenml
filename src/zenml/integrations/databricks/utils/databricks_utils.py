@@ -67,6 +67,7 @@ DATABRICKS_WHEELS_DIRECTORY_PREFIX = "/Workspace/Shared/.zenml"
 DATABRICKS_SPARK_DEFAULT_VERSION = "16.4.x-scala2.12"
 DATABRICKS_DEFAULT_NODE_TYPE_ID = "Standard_D4s_v5"
 DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
+ENV_ZENML_DATABRICKS_WHEEL_PACKAGE = "ZENML_DATABRICKS_WHEEL_PACKAGE"
 
 
 def collect_requirements(
@@ -156,6 +157,27 @@ def add_wheel_package_to_sys_path(wheel_package: str) -> None:
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
         sys.path.insert(-1, project_root)
+
+
+def get_databricks_wheel_source() -> Optional[tuple[str, str]]:
+    """Get the source root and package name of an installed Databricks wheel.
+
+    When code is already running from a Databricks wheel, building a new wheel
+    from the active custom source root can point at the Databricks working
+    directory instead of the packaged project source. In that case we rebuild
+    from the installed wheel package contents instead.
+
+    Returns:
+        Tuple of (source_root, package_name) if running from a Databricks wheel,
+        otherwise None.
+    """
+    wheel_package = os.environ.get(ENV_ZENML_DATABRICKS_WHEEL_PACKAGE)
+    if not wheel_package:
+        return None
+
+    dist = distribution(wheel_package)
+    source_root = os.path.join(str(dist.locate_file(".")), wheel_package)
+    return source_root, wheel_package
 
 
 def _get_databricks_libraries(

@@ -16,6 +16,7 @@
 from typing import Any, Dict, List
 
 from zenml.integrations.databricks.utils.databricks_utils import (
+    ENV_ZENML_DATABRICKS_WHEEL_PACKAGE,
     add_wheel_package_to_sys_path,
 )
 from zenml.step_operators.step_operator_entrypoint_configuration import (
@@ -77,5 +78,8 @@ class DatabricksStepOperatorEntrypointConfiguration(
         """Runs the Databricks step operator step."""
         wheel_package = self.entrypoint_args.get(WHEEL_PACKAGE_OPTION)
         if wheel_package:
+            import os
+
             add_wheel_package_to_sys_path(wheel_package)
+            os.environ[ENV_ZENML_DATABRICKS_WHEEL_PACKAGE] = wheel_package
         super().run()
