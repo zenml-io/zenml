@@ -160,7 +160,7 @@ jobs:
           source .venv/bin/activate
           uv pip check
       - name: Markdown link check
-        uses: gaurav-nelson/github-action-markdown-link-check@d53a906aa6b22b8979d33bc86170567e619495ec  # 1.0.15
+        uses: gaurav-nelson/github-action-markdown-link-check@3c3b66f1f7d0900e37b71eca45b63ea9eedfce31  # 1.0.17
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'no'

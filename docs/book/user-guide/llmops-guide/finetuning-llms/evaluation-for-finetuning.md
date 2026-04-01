@@ -89,7 +89,7 @@ When using Generalized evals, it's important to consider their limitations and c
 
 - [prodigy-evaluate](https://github.com/explosion/prodigy-evaluate?tab=readme-ov-file)
 - [ragas](https://docs.ragas.io/en/stable/getstarted/)
-- [giskard](https://docs.giskard.ai/en/stable/getting_started/quickstart/quickstart_llm.html)
+- [giskard](https://docs.giskard.ai/oss)
 - [langcheck](https://github.com/citadel-ai/langcheck)
 - [nervaluate](https://github.com/MantisAI/nervaluate) (for NER)
 

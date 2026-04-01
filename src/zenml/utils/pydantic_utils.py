@@ -368,7 +368,7 @@ def validate_function_args(
         f
     )
 
-    # This raises a pydantic.ValidatonError in case the arguments are not valid
+    # This raises a pydantic.ValidationError in case the arguments are not valid
     validated_function(*args, **kwargs)
 
     bound_arguments = dict(
