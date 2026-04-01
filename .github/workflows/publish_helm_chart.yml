@@ -25,7 +25,7 @@ jobs:
         run: |
           sed -i "s/version: .*/version: \"${GITHUB_REF_NAME}\"/" helm/Chart.yaml
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355  # v2
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6.0.0
         with:
           role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-helm
           aws-region: us-east-1
@@ -38,7 +38,7 @@ jobs:
 
       # TODO: revisit the pinned helm version + find a higher version
       - name: install helm with version 3.9.2
-        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78  # v3.5
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2  # v5.0.0
         with:
           version: v3.9.2  # default is latest (stable)
         id: install-helm
