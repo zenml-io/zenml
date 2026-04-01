@@ -183,7 +183,7 @@ jobs:
           restore-keys: |
             uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6.0.2
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6.0.0
         with:
           role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
           aws-region: us-east-1
@@ -194,7 +194,7 @@ jobs:
           credentials_json: ${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}
         if: contains(inputs.test_environment, 'gcp')
       - name: Set up gcloud SDK
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v6.0.2
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
         with:
           install_components: gke-gcloud-auth-plugin
         if: contains(inputs.test_environment, 'gcp')
