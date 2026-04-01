@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Tests for stack component register/update --help flavor schema."""
+"""Tests for stack component register/update/remove-attribute --help flavor schema."""
 
 import pytest
 from click.testing import CliRunner
@@ -291,3 +291,56 @@ class TestTypeToMetavar:
 
     def test_unknown_defaults_to_text(self) -> None:
         assert _type_to_metavar("custom") == "TEXT"
+
+
+def test_remove_attribute_help_includes_flavor_schema(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Flavor config schema is appended for remove-attribute when name is present."""
+    schema = {
+        "title": "RemoveAttrFlavorConfig",
+        "properties": {
+            "uri": {
+                "type": "string",
+                "description": "Endpoint URI.",
+            },
+            "timeout": {
+                "type": "integer",
+                "description": "Timeout in seconds.",
+            },
+        },
+    }
+    monkeypatch.setattr(
+        "zenml.cli.stack_components.Client", _make_mock_client(schema)
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["orchestrator", "remove-attribute", "my-orch", "--help"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    assert "Flavor configuration" in result.output
+    assert "--uri TEXT" in result.output
+    assert "--timeout INTEGER" in result.output
+    assert "Pass each field name as a positional ARGS" in result.output
+
+
+def test_remove_attribute_help_without_name_has_no_schema(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No component name means no schema block."""
+    monkeypatch.setattr(
+        "zenml.cli.stack_components.Client",
+        _make_mock_client({"properties": {}}),
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["orchestrator", "remove-attribute", "--help"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    assert "Flavor configuration" not in result.output

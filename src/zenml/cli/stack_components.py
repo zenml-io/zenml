@@ -61,7 +61,7 @@ class StackComponentConfigHelpCommand(click.Command):
         self,
         name: Optional[str],
         component_type: StackComponentType,
-        mode: Literal["register", "update"],
+        mode: Literal["register", "update", "remove-attribute"],
         **kwargs: Any,
     ) -> None:
         """Initialize the command.
@@ -70,8 +70,9 @@ class StackComponentConfigHelpCommand(click.Command):
             name: Click command name (e.g. ``"register"``).
             component_type: Stack component type this command
                 operates on.
-            mode: Whether this is a ``register`` or ``update``
-                command — controls how the flavor is resolved.
+            mode: Whether this is a ``register``, ``update``, or
+                ``remove-attribute`` command — controls how the
+                flavor is resolved and how help text is presented.
             **kwargs: Forwarded to :class:`click.Command`.
         """
         self._component_type = component_type
@@ -114,11 +115,17 @@ class StackComponentConfigHelpCommand(click.Command):
         if not rows:
             return
         with formatter.section("Flavor configuration"):
-            formatter.write_text(
-                "Pass each field as `--name=value` in ARGS"
-                " (in addition to the flags listed"
-                " under Options)."
-            )
+            if self._mode == "remove-attribute":
+                formatter.write_text(
+                    "Pass each field name as a positional ARGS"
+                    " value to remove it from the component."
+                )
+            else:
+                formatter.write_text(
+                    "Pass each field as `--name=value` in ARGS"
+                    " (in addition to the flags listed"
+                    " under Options)."
+                )
             formatter.write_paragraph()
             formatter.write_dl(rows, col_max=48)
 
@@ -1518,6 +1525,9 @@ def register_single_stack_component_cli_commands(
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "remove-attribute",
+        cls=StackComponentConfigHelpCommand,
+        component_type=component_type,
+        mode="remove-attribute",
         context_settings=context_settings,
         help=f"Remove attributes from a registered {singular_display_name}.",
     )(remove_attribute_command)
