@@ -33,7 +33,11 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    StepRuntime,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
@@ -78,19 +82,16 @@ def _get_step_operator(
     Raises:
         RuntimeError: If no active step operator is found.
     """
-    step_operator = stack.step_operator
-
-    # the two following errors should never happen as the stack gets
-    # validated before running the pipeline
-    if not step_operator:
+    if stack.step_operators is None:
         raise RuntimeError(
-            f"No step operator specified for active stack '{stack.name}'."
+            f"No step operators specified for active stack '{stack.name}'."
         )
 
-    if step_operator_name and step_operator_name != step_operator.name:
+    step_operator = stack.step_operators.get(step_operator_name, None)
+    if step_operator is None:
         raise RuntimeError(
-            f"No step operator named '{step_operator_name}' in active "
-            f"stack '{stack.name}'."
+            f"No step operator named '{step_operator_name}' found in active "
+            f"stack '{stack.name}'. Available step operators: {stack.step_operators.keys()}."
         )
 
     return step_operator

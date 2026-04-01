@@ -1190,7 +1190,13 @@ class Client(metaclass=ClientMetaClass):
     def create_stack(
         self,
         name: str,
-        components: Mapping[StackComponentType, Union[str, UUID]],
+        components: Mapping[
+            StackComponentType,
+            Union[str, UUID, Sequence[Union[str, UUID]]],
+        ],
+        default_component_ids: Optional[
+            Mapping[StackComponentType, Union[str, UUID]]
+        ] = None,
         stack_spec_file: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
         secrets: Optional[Sequence[Union[UUID, str]]] = None,
@@ -1199,7 +1205,10 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name: The name of the stack to register.
-            components: dictionary which maps component types to component names
+            components: Dictionary which maps component types to component
+                names/IDs or sequences of names/IDs.
+            default_component_ids: Optional explicit default component IDs or
+                names per component type.
             stack_spec_file: path to the stack spec file
             labels: The labels of the stack.
             secrets: The secrets of the stack.
@@ -1208,22 +1217,45 @@ class Client(metaclass=ClientMetaClass):
             The model of the registered stack.
         """
         stack_components = {}
+        resolved_default_component_ids = {}
 
         for c_type, c_identifier in components.items():
+            if isinstance(c_identifier, Sequence) and not isinstance(
+                c_identifier, (str, bytes)
+            ):
+                component_identifiers = list(c_identifier)
+            else:
+                component_identifiers = [c_identifier]
+
             # Skip non-existent components.
-            if not c_identifier:
+            if not component_identifiers:
                 continue
 
-            # Get the component.
-            component = self.get_stack_component(
-                name_id_or_prefix=c_identifier,
-                component_type=c_type,
-            )
-            stack_components[c_type] = [component.id]
+            stack_components[c_type] = []
+            for component_identifier in component_identifiers:
+                if not component_identifier:
+                    continue
+
+                component = self.get_stack_component(
+                    name_id_or_prefix=component_identifier,
+                    component_type=c_type,
+                )
+                stack_components[c_type].append(component.id)
+
+        for c_type, component_ids in stack_components.items():
+            if default_component_ids and c_type in default_component_ids:
+                default_component = self.get_stack_component(
+                    name_id_or_prefix=default_component_ids[c_type],
+                    component_type=c_type,
+                )
+                resolved_default_component_ids[c_type] = default_component.id
+            elif component_ids:
+                resolved_default_component_ids[c_type] = component_ids[0]
 
         stack = StackRequest(
             name=name,
             components=stack_components,
+            default_component_ids=resolved_default_component_ids,
             stack_spec_path=stack_spec_file,
             labels=labels,
             secrets=secrets,
@@ -1324,7 +1356,13 @@ class Client(metaclass=ClientMetaClass):
         labels: Optional[Dict[str, Any]] = None,
         description: Optional[str] = None,
         component_updates: Optional[
-            Dict[StackComponentType, List[Union[UUID, str]]]
+            Mapping[
+                StackComponentType,
+                Union[UUID, str, Sequence[Union[UUID, str]]],
+            ]
+        ] = None,
+        default_components: Optional[
+            Mapping[StackComponentType, Union[str, UUID]]
         ] = None,
         add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
@@ -1340,6 +1378,8 @@ class Client(metaclass=ClientMetaClass):
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
                 lists of new stack component names or ids.
+            default_component_ids: Optional explicit default component IDs or
+                names per component type.
             add_secrets: The secrets to add to the stack.
             remove_secrets: The secrets to remove from the stack.
             environment: The environment to set on the stack. If the value for
@@ -1375,23 +1415,52 @@ class Client(metaclass=ClientMetaClass):
             update_model.description = description
 
         # Get the current components
-        if component_updates:
+        if component_updates or default_component_ids:
             components_dict = stack.components.copy()
 
-            for component_type, component_id_list in component_updates.items():
-                if component_id_list is not None:
-                    components_dict[component_type] = [
-                        self.get_stack_component(
-                            name_id_or_prefix=component_id,
-                            component_type=component_type,
-                        )
-                        for component_id in component_id_list
-                    ]
+            if component_updates:
+                for (
+                    component_type,
+                    component_identifiers,
+                ) in component_updates.items():
+                    if component_identifiers is not None:
+                        if isinstance(
+                            component_identifiers, Sequence
+                        ) and not isinstance(
+                            component_identifiers, (str, bytes)
+                        ):
+                            component_id_list = list(component_identifiers)
+                        else:
+                            component_id_list = [component_identifiers]
+
+                        components_dict[component_type] = [
+                            self.get_stack_component(
+                                name_id_or_prefix=component_id,
+                                component_type=component_type,
+                            )
+                            for component_id in component_id_list
+                        ]
+
+            resolved_default_component_ids = {}
+            for c_type, component_list in components_dict.items():
+                if default_component_ids and c_type in default_component_ids:
+                    default_component = self.get_stack_component(
+                        name_id_or_prefix=default_component_ids[c_type],
+                        component_type=c_type,
+                    )
+                    resolved_default_component_ids[c_type] = (
+                        default_component.id
+                    )
+                elif component_list:
+                    resolved_default_component_ids[c_type] = component_list[
+                        0
+                    ].id
 
             update_model.components = {
                 c_type: [c.id for c in c_list]
                 for c_type, c_list in components_dict.items()
             }
+            update_model.default_component_ids = resolved_default_component_ids
 
         if labels is not None:
             existing_labels = stack.labels or {}
@@ -1903,6 +1972,15 @@ class Client(metaclass=ClientMetaClass):
                 component_type, None
             )
             if components:
+                default_component_id = (
+                    self.active_stack_model.default_component_ids.get(
+                        component_type
+                    )
+                )
+                if default_component_id:
+                    for component in components:
+                        if component.id == default_component_id:
+                            return component
                 return components[0]
             raise KeyError(
                 "No name_id_or_prefix provided and there is no active "

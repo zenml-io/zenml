@@ -655,14 +655,8 @@ class Compiler:
         Raises:
             StackValidationError: If a required stack component is missing.
         """
-        available_step_operators = (
-            {stack.step_operator.name} if stack.step_operator else set()
-        )
-        available_experiment_trackers = (
-            {stack.experiment_tracker.name}
-            if stack.experiment_tracker
-            else set()
-        )
+        available_step_operators = set(stack.step_operators.keys())
+        available_experiment_trackers = set(stack.experiment_trackers.keys())
 
         for name, step in steps.items():
             step_operator = step.config.step_operator

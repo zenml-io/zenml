@@ -400,6 +400,7 @@ from zenml.zen_stores.schemas import (
     ServerSettingsSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
+    StackCompositionSchema,
     StackSchema,
     StepConfigurationSchema,
     StepRunInputArtifactSchema,
@@ -10086,7 +10087,9 @@ class SqlZenStore(BaseZenStore):
                                 continue
 
                 # Stack Components
-                components_mapping: Dict[StackComponentType, List[UUID]] = {}
+                components_mapping: Dict[StackComponentType, List[UUID]] = (
+                    defaultdict(list)
+                )
                 for (
                     component_type,
                     components,
@@ -10203,9 +10206,7 @@ class SqlZenStore(BaseZenStore):
                                     component_update=component_update,
                                 )
 
-                        components_mapping[component_type] = [
-                            component.id,
-                        ]
+                        components_mapping[component_type].append(component.id)
 
                 # Stack
                 self._verify_name_uniqueness(
@@ -10231,19 +10232,48 @@ class SqlZenStore(BaseZenStore):
                 defined_components = session.exec(
                     select(StackComponentSchema).where(or_(*filters))
                 ).all()
+                new_stack_schema = StackSchema.from_request(request=stack)
+                session.add(new_stack_schema)
+                session.flush()
 
-                new_stack_schema = StackSchema.from_request(
-                    request=stack,
-                    components=defined_components,
-                )
+                for (
+                    component_type,
+                    component_ids,
+                ) in components_mapping.items():
+                    default_component_id = (
+                        stack.default_component_ids.get(component_type)
+                        if stack.default_component_ids
+                        else None
+                    ) or (component_ids[0] if component_ids else None)
+
+                    if (
+                        default_component_id is not None
+                        and default_component_id not in component_ids
+                    ):
+                        raise ValueError(
+                            f"Default component ID `{default_component_id}` for "
+                            f"`{component_type}` is not attached to stack "
+                            f"`{stack.name}`."
+                        )
+
+                    for component_id in component_ids:
+                        session.add(
+                            StackCompositionSchema(
+                                stack_id=new_stack_schema.id,
+                                component_id=component_id,
+                                default_for_type=(
+                                    component_type.value
+                                    if component_id == default_component_id
+                                    else None
+                                ),
+                            )
+                        )
 
                 self._link_secrets_to_resource(
                     resource=new_stack_schema,
                     secrets=stack.secrets,
                     session=session,
                 )
-
-                session.add(new_stack_schema)
                 session.commit()
                 session.refresh(new_stack_schema)
 
@@ -10372,26 +10402,80 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            components: List["StackComponentSchema"] = []
-            if stack_update.components:
+            existing_stack.update(stack_update=stack_update)
+
+            if (
+                stack_update.components is not None
+                or stack_update.default_component_ids is not None
+            ):
+                component_ids_by_type: Dict[StackComponentType, List[UUID]] = (
+                    defaultdict(list)
+                )
+
+                if stack_update.components is not None:
+                    for (
+                        component_type,
+                        list_of_component_ids,
+                    ) in stack_update.components.items():
+                        for component_id in list_of_component_ids:
+                            self._get_reference_schema_by_id(
+                                resource=existing_stack,
+                                reference_schema=StackComponentSchema,
+                                reference_id=component_id,
+                                session=session,
+                                reference_type=f"{str(component_type)} stack component",
+                            )
+                        component_ids_by_type[component_type] = list(
+                            list_of_component_ids
+                        )
+                else:
+                    for composition in existing_stack.stack_compositions:
+                        component_ids_by_type[
+                            StackComponentType(composition.component.type)
+                        ].append(composition.component_id)
+
+                session.exec(
+                    delete(StackCompositionSchema).where(
+                        StackCompositionSchema.stack_id == existing_stack.id
+                    )
+                )
+
                 for (
                     component_type,
                     list_of_component_ids,
-                ) in stack_update.components.items():
-                    for component_id in list_of_component_ids:
-                        component = self._get_reference_schema_by_id(
-                            resource=existing_stack,
-                            reference_schema=StackComponentSchema,
-                            reference_id=component_id,
-                            session=session,
-                            reference_type=f"{str(component_type)} stack component",
-                        )
-                        components.append(component)
+                ) in component_ids_by_type.items():
+                    default_component_id = (
+                        stack_update.default_component_ids.get(component_type)
+                        if stack_update.default_component_ids
+                        else None
+                    ) or (
+                        list_of_component_ids[0]
+                        if list_of_component_ids
+                        else None
+                    )
 
-            existing_stack.update(
-                stack_update=stack_update,
-                components=components,
-            )
+                    if (
+                        default_component_id is not None
+                        and default_component_id not in list_of_component_ids
+                    ):
+                        raise ValueError(
+                            f"Default component ID `{default_component_id}` for "
+                            f"`{component_type}` is not attached to stack "
+                            f"`{existing_stack.name}`."
+                        )
+
+                    for component_id in list_of_component_ids:
+                        session.add(
+                            StackCompositionSchema(
+                                stack_id=existing_stack.id,
+                                component_id=component_id,
+                                default_for_type=(
+                                    component_type.value
+                                    if component_id == default_component_id
+                                    else None
+                                ),
+                            )
+                        )
 
             self._link_secrets_to_resource(
                 resource=existing_stack,

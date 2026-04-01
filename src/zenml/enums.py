@@ -223,6 +223,19 @@ class StackComponentType(StrEnum):
 
         return f"{self.value}s"
 
+    @property
+    def supports_multiple_per_stack(self) -> bool:
+        """Whether multiple components of this type can exist in one stack.
+
+        Returns:
+            True if this component type is repeatable within a stack.
+        """
+        return self in {
+            StackComponentType.ALERTER,
+            StackComponentType.EXPERIMENT_TRACKER,
+            StackComponentType.STEP_OPERATOR,
+        }
+
 
 class StoreType(StrEnum):
     """Zen Store Backend Types."""

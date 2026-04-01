@@ -79,7 +79,15 @@ class StackComponentSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(back_populates="components")
 
     stacks: List["StackSchema"] = Relationship(
-        back_populates="components", link_model=StackCompositionSchema
+        back_populates="components",
+        link_model=StackCompositionSchema,
+        sa_relationship_kwargs={
+            "overlaps": "stack,component,stack_compositions"
+        },
+    )
+    stack_compositions: List["StackCompositionSchema"] = Relationship(
+        back_populates="component",
+        sa_relationship_kwargs={"overlaps": "components,stacks,stack"},
     )
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="orchestrator",

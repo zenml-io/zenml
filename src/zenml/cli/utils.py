@@ -512,11 +512,17 @@ def print_stack_configuration(
             "owner": stack.user.name if stack.user else None,
             "labels": stack.labels or {},
             "components": {
-                (ct.value if hasattr(ct, "value") else str(ct)): {
-                    "id": str(components[0].id),
-                    "name": components[0].name,
-                    "flavor": components[0].flavor_name,
-                }
+                (ct.value if hasattr(ct, "value") else str(ct)): [
+                    {
+                        "id": str(component.id),
+                        "name": component.name,
+                        "flavor": component.flavor_name,
+                        "default": (
+                            stack.default_component_ids.get(ct) == component.id
+                        ),
+                    }
+                    for component in components
+                ]
                 for ct, components in stack.components.items()
                 if components
             },
@@ -537,8 +543,15 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
+    rich_table.add_column("DEFAULT", overflow="fold")
     for component_type, components in stack.components.items():
-        rich_table.add_row(component_type, components[0].name)
+        default_component_id = stack.default_component_ids.get(component_type)
+        for index, component in enumerate(components):
+            rich_table.add_row(
+                component_type if index == 0 else "",
+                component.name,
+                "YES" if component.id == default_component_id else "",
+            )
 
     rich_table.columns[0]._cells = [
         component.upper()  # type: ignore[union-attr]
@@ -2254,7 +2267,18 @@ def generate_stack_row(
             header = component_type.value.upper().replace("_", " ")
         else:
             header = component_type.value
-        row[header] = components[0].name if components else "-"
+        row[header] = (
+            ", ".join(
+                [
+                    f"{component.name} (default)"
+                    if index == 0
+                    else component.name
+                    for index, component in enumerate(components)
+                ]
+            )
+            if components
+            else "-"
+        )
 
     return row
 
