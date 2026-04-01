@@ -14,13 +14,12 @@
 """Resource Pool schemas."""
 
 from datetime import datetime
-from typing import Any, List, Optional, Sequence, cast
+from typing import Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import UniqueConstraint, and_, desc
+from sqlalchemy import UniqueConstraint, desc
 from sqlalchemy.orm import load_only, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Field, Relationship, col
 
 from zenml.models import (
@@ -142,29 +141,20 @@ class ResourcePoolAllocationSchema(BaseSchema, table=True):
         nullable=False,
     )
     request: "ResourceRequestSchema" = Relationship()
-    # primaryjoin uses the usual string form. secondaryjoin cannot: a string
-    # binds allocation.pool_id to the bare table name, while selectinload
-    # queries the parent under an alias (resource_pool_allocation_1), which
-    # breaks the ON clause at runtime. Clause objects participate in alias
-    # adaptation; strings for this leg do not.
     policy: Optional["ResourcePoolSubjectPolicySchema"] = Relationship(
         sa_relationship_kwargs={
-            "secondary": ResourceRequestSchema.__tablename__,
+            "secondary": "resource_request",
             "primaryjoin": (
                 "ResourcePoolAllocationSchema.request_id == "
                 "ResourceRequestSchema.id"
             ),
-            "secondaryjoin": lambda: and_(
-                cast(
-                    ColumnElement[bool],
-                    ResourcePoolSubjectPolicySchema.pool_id
-                    == ResourcePoolAllocationSchema.pool_id,
-                ),
-                cast(
-                    ColumnElement[bool],
-                    ResourcePoolSubjectPolicySchema.component_id
-                    == ResourceRequestSchema.component_id,
-                ),
+            "secondaryjoin": (
+                "and_("
+                "ResourcePoolSubjectPolicySchema.pool_id == "
+                "ResourcePoolAllocationSchema.pool_id, "
+                "ResourcePoolSubjectPolicySchema.component_id == "
+                "ResourceRequestSchema.component_id"
+                ")"
             ),
             "uselist": False,
             "viewonly": True,
