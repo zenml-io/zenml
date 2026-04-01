@@ -150,7 +150,7 @@ class ResourceSettings(BaseSettings):
             "respectively."
         ),
     )
-    preemptible: bool = False
+    preemptible: bool = True
 
     # Settings only applicable for deployers and deployed pipelines
     min_replicas: Optional[NonNegativeInt] = None
