@@ -1374,6 +1374,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             EntityExistsError: If the stack name is already taken.
+            ValueError: If the default component is not attached to the stack.
         """
         # First, get the stack
         stack = self.get_stack(

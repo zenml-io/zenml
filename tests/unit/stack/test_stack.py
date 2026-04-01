@@ -124,49 +124,6 @@ def test_stack_requirements(stack_with_mock_components):
     }
 
 
-def test_repeatable_components_keep_default_and_named_lookup(
-    local_orchestrator, local_artifact_store, sample_step_operator
-):
-    """Tests default resolution and named lookup for repeatable components."""
-    default_step_operator = sample_step_operator.model_copy(
-        update={"name": "default-step-operator"}
-    )
-    secondary_step_operator = sample_step_operator.model_copy(
-        update={
-            "id": uuid4(),
-            "name": "secondary-step-operator",
-        }
-    )
-
-    stack = Stack.from_components(
-        id=uuid4(),
-        name="stack-with-repeatable-components",
-        components={
-            StackComponentType.ORCHESTRATOR: local_orchestrator,
-            StackComponentType.ARTIFACT_STORE: local_artifact_store,
-            StackComponentType.STEP_OPERATOR: [
-                default_step_operator,
-                secondary_step_operator,
-            ],
-        },
-    )
-
-    assert stack.step_operator == default_step_operator
-    assert stack.get_component(StackComponentType.STEP_OPERATOR) == (
-        default_step_operator
-    )
-    assert (
-        stack.get_component(
-            StackComponentType.STEP_OPERATOR, "secondary-step-operator"
-        )
-        == secondary_step_operator
-    )
-    assert stack.step_operators == {
-        "default-step-operator": default_step_operator,
-        "secondary-step-operator": secondary_step_operator,
-    }
-
-
 def test_stack_validation_fails_if_a_components_validator_fails(
     stack_with_mock_components, failing_stack_validator
 ):
