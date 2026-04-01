@@ -112,6 +112,8 @@ class ResourceSettings(BaseSettings):
         cpu_count: The amount of CPU cores that should be configured.
         gpu_count: The amount of GPUs that should be configured.
         memory: The amount of memory that should be configured.
+        preemptible: Whether the resources can be preempted. This only applies
+            when using ZenML resource pools.
         min_replicas: Minimum number of container instances (replicas).
             Use 0 to allow scale-to-zero on idle. Only relevant to
             deployed pipelines.
@@ -132,6 +134,7 @@ class ResourceSettings(BaseSettings):
     cpu_count: Optional[PositiveFloat] = None
     gpu_count: Optional[NonNegativeInt] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
+    preemptible: bool = False
 
     # Settings only applicable for deployers and deployed pipelines
     min_replicas: Optional[NonNegativeInt] = None
