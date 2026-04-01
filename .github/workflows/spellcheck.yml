@@ -21,7 +21,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Spelling checker
-        uses: crate-ci/typos@2361394247a38536a5f2376a05181ca001dd9e26  # v1.17.0
+        uses: crate-ci/typos@631208b7aac2daa8b707f55e7331f9112b0e062d  # v1.44.0
         with:
           files: .
           config: ./.typos.toml
