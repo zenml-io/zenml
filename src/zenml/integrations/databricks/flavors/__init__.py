@@ -13,18 +13,26 @@
 #  permissions and limitations under the License.
 """Databricks integration flavors."""
 
+from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor import (
+    DatabricksModelDeployerConfig,
+    DatabricksModelDeployerFlavor,
+)
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
     DatabricksOrchestratorConfig,
     DatabricksOrchestratorFlavor,
 )
-from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor import (
-    DatabricksModelDeployerConfig,
-    DatabricksModelDeployerFlavor,
+from zenml.integrations.databricks.flavors.databricks_step_operator_flavor import (
+    DatabricksStepOperatorConfig,
+    DatabricksStepOperatorFlavor,
+    DatabricksStepOperatorSettings,
 )
 
 __all__ = [
     "DatabricksOrchestratorFlavor",
     "DatabricksOrchestratorConfig",
+    "DatabricksStepOperatorFlavor",
+    "DatabricksStepOperatorConfig",
+    "DatabricksStepOperatorSettings",
     "DatabricksModelDeployerFlavor",
     "DatabricksModelDeployerConfig",
 ]

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,38 +11,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Databricks orchestrator base config and settings."""
+"""Databricks step operator flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
+from zenml.integrations.databricks import DATABRICKS_STEP_OPERATOR_FLAVOR
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
     DatabricksBaseSettings,
 )
-from zenml.orchestrators import BaseOrchestratorConfig
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
+from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.integrations.databricks.orchestrators import (
-        DatabricksOrchestrator,
+    from zenml.integrations.databricks.step_operators import (
+        DatabricksStepOperator,
     )
 
 
-class DatabricksOrchestratorSettings(DatabricksBaseSettings):
-    """Databricks orchestrator settings."""
+class DatabricksStepOperatorSettings(DatabricksBaseSettings):
+    """Databricks step operator settings."""
 
 
-class DatabricksOrchestratorConfig(
-    BaseOrchestratorConfig, DatabricksOrchestratorSettings
+class DatabricksStepOperatorConfig(
+    BaseStepOperatorConfig, DatabricksStepOperatorSettings
 ):
-    """Databricks orchestrator base config.
-
-    Attributes:
-        host: Databricks host.
-        client_id: Databricks client id.
-        client_secret: Databricks client secret.
-    """
+    """Databricks step operator config."""
 
     host: str
     client_id: str = SecretField(default=None)
@@ -53,7 +46,7 @@ class DatabricksOrchestratorConfig(
         """Checks if this stack component is running locally.
 
         Returns:
-            True if this config is for a local component, False otherwise.
+            False, because the Databricks step operator always runs remotely.
         """
         return False
 
@@ -62,22 +55,13 @@ class DatabricksOrchestratorConfig(
         """Checks if this stack component is running remotely.
 
         Returns:
-            True if this config is for a remote component, False otherwise.
-        """
-        return True
-
-    @property
-    def is_schedulable(self) -> bool:
-        """Whether the orchestrator is schedulable or not.
-
-        Returns:
-            Whether the orchestrator is schedulable or not.
+            True, because the Databricks step operator always runs remotely.
         """
         return True
 
 
-class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Databricks orchestrator flavor."""
+class DatabricksStepOperatorFlavor(BaseStepOperatorFlavor):
+    """Databricks step operator flavor."""
 
     @property
     def name(self) -> str:
@@ -86,29 +70,29 @@ class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The name of the flavor.
         """
-        return DATABRICKS_ORCHESTRATOR_FLAVOR
+        return DATABRICKS_STEP_OPERATOR_FLAVOR
 
     @property
     def docs_url(self) -> Optional[str]:
-        """A url to point at docs explaining this flavor.
+        """A URL to point at docs explaining this flavor.
 
         Returns:
-            A flavor docs url.
+            A flavor docs URL.
         """
         return self.generate_default_docs_url()
 
     @property
     def sdk_docs_url(self) -> Optional[str]:
-        """A url to point at SDK docs explaining this flavor.
+        """A URL to point at SDK docs explaining this flavor.
 
         Returns:
-            A flavor SDK docs url.
+            A flavor SDK docs URL.
         """
         return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:
-        """A url to represent the flavor in the dashboard.
+        """A URL to represent the flavor in the dashboard.
 
         Returns:
             The flavor logo.
@@ -116,23 +100,23 @@ class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/databricks.png"
 
     @property
-    def config_class(self) -> Type[DatabricksOrchestratorConfig]:
-        """Returns `KubeflowOrchestratorConfig` config class.
+    def config_class(self) -> Type[DatabricksStepOperatorConfig]:
+        """Returns DatabricksStepOperatorConfig config class.
 
         Returns:
-                The config class.
+            The config class.
         """
-        return DatabricksOrchestratorConfig
+        return DatabricksStepOperatorConfig
 
     @property
-    def implementation_class(self) -> Type["DatabricksOrchestrator"]:
+    def implementation_class(self) -> Type["DatabricksStepOperator"]:
         """Implementation class for this flavor.
 
         Returns:
             The implementation class.
         """
-        from zenml.integrations.databricks.orchestrators import (
-            DatabricksOrchestrator,
+        from zenml.integrations.databricks.step_operators import (
+            DatabricksStepOperator,
         )
 
-        return DatabricksOrchestrator
+        return DatabricksStepOperator

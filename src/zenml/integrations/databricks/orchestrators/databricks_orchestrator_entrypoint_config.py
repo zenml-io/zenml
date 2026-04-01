@@ -14,12 +14,13 @@
 """Entrypoint configuration for ZenML Databricks pipeline steps."""
 
 import os
-import sys
-from importlib.metadata import distribution
 from typing import Any, Dict, List
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
+)
+from zenml.integrations.databricks.utils.databricks_utils import (
+    add_wheel_package_to_sys_path,
 )
 
 WHEEL_PACKAGE_OPTION = "wheel_package"
@@ -77,17 +78,8 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
 
     def run(self) -> None:
         """Runs the step."""
-        # Get the wheel package and add it to the sys path
         wheel_package = self.entrypoint_args[WHEEL_PACKAGE_OPTION]
-
-        dist = distribution(wheel_package)
-        project_root = os.path.join(
-            str(dist.locate_file(".")), str(wheel_package)
-        )
-
-        if project_root not in sys.path:
-            sys.path.insert(0, project_root)
-            sys.path.insert(-1, project_root)
+        add_wheel_package_to_sys_path(wheel_package)
 
         # Get the job id and add it to the environment
         databricks_job_id = self.entrypoint_args[DATABRICKS_JOB_ID_OPTION]
