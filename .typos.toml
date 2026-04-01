@@ -7,6 +7,7 @@ extend-exclude = [
     "tests/unit/materializers/test_built_in_materializer.py",
     "tests/integration/functional/cli/test_pipeline.py",
     "src/zenml/zen_server/dashboard/",
+    "src/zenml/zen_server/dashboard_legacy/",
     "examples/llm_finetuning/lit_gpt/"
 ]
 
@@ -40,6 +41,11 @@ OT = "OT"
 cll = "cll"
 ser = "ser"
 fo = "fo"
+Packt = "Packt"
+TPE = "TPE"
+registr = "registr"
+tokenzation = "tokenzation"
+Conveyer = "Conveyer"
 
 [default]
 locale = "en-us"

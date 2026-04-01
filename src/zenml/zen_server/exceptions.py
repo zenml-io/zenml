@@ -235,6 +235,11 @@ def exception_from_response(
     exc_name, exc_msg = unpack_exc()
     default_exc: Optional[Type[Exception]] = None
 
+    if response.status_code == 414:
+        # For 414 errors, we don't have a custom exception and instead raise
+        # the HTTP error directly.
+        response.raise_for_status()
+
     for exception, status_code in REST_API_EXCEPTIONS:
         if response.status_code != status_code:
             continue
