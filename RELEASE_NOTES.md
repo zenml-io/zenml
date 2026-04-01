@@ -7040,7 +7040,7 @@ zenml init
 * Run pre commit in local environment by @schustmi in https://github.com/zenml-io/zenml/pull/260
 * Hamza/eng 269 move beam out by @htahir1 in https://github.com/zenml-io/zenml/pull/262
 * Update docs by @alex-zenml in https://github.com/zenml-io/zenml/pull/261
-* Hamza/update readme with contribitions by @htahir1 in https://github.com/zenml-io/zenml/pull/271
+* Hamza/update readme with contributions by @htahir1 in https://github.com/zenml-io/zenml/pull/271
 * Hamza/eng 256 backoff analytics by @htahir1 in https://github.com/zenml-io/zenml/pull/270
 * Add spellcheck by @alex-zenml in https://github.com/zenml-io/zenml/pull/264
 * Using the pipeline run name to explicitly access when explaining the … by @AlexejPenner in https://github.com/zenml-io/zenml/pull/263
