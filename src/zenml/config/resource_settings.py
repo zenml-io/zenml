@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Resource settings class used to specify resources for a step."""
 
+import math
 from enum import Enum
-from typing import Literal, Optional, Union
+from typing import Dict, Literal, Optional, Union
 
 from pydantic import (
     ConfigDict,
@@ -127,11 +128,26 @@ class ResourceSettings(BaseSettings):
         max_concurrency: Maximum concurrent requests per instance (if supported
             by the platform). Defines a concurrency limit for each container.
             Only relevant to deployed pipelines.
+        pool_resources: Optional map of resource name to positive integer amount
+            for ZenML resource pools. Use for custom keys
+            (for example ``tpu``) or to supply ``gpu`` / ``mcpu`` / ``memory_mb``
+            without the typed fields. When ``gpu_count``, ``cpu_count``, or
+            ``memory`` is set, those fields override the same keys in this map.
     """
 
     cpu_count: Optional[PositiveFloat] = None
     gpu_count: Optional[NonNegativeInt] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
+    pool_resources: Optional[Dict[str, PositiveInt]] = Field(
+        default=None,
+        description=(
+            "Maps resource names to positive integer amounts allocated from "
+            "ZenML resource pools. Examples: {'memory': 2}, {'tpu': 4}, "
+            "{'vcpus': 2}, {'gpus': 4}. When gpu_count, cpu_count, or memory "
+            "is set, those fields override the gpu, mcpu, and memory_mb keys "
+            "respectively."
+        ),
+    )
 
     # Settings only applicable for deployers and deployed pipelines
     min_replicas: Optional[NonNegativeInt] = None
@@ -205,6 +221,31 @@ class ResourceSettings(BaseSettings):
         else:
             # Should never happen due to the regex validation
             raise ValueError(f"Unable to parse memory unit from '{memory}'.")
+
+    def merged_requested_resources(self) -> Dict[str, int]:
+        """Build the resource request map for scheduling and pool allocation.
+
+        Returns:
+            Resource name to amount.
+        """
+        merged: Dict[str, int] = (
+            dict(self.pool_resources) if self.pool_resources else {}
+        )
+
+        if self.gpu_count is not None:
+            if self.gpu_count > 0:
+                merged["gpu"] = self.gpu_count
+            else:
+                merged.pop("gpu", None)
+
+        if self.cpu_count is not None:
+            merged["mcpu"] = math.ceil(self.cpu_count * 1000)
+
+        memory_amount = self.get_memory(unit=ByteUnit.MB)
+        if memory_amount is not None:
+            merged["memory_mb"] = math.ceil(memory_amount)
+
+        return merged
 
     model_config = ConfigDict(
         # public attributes are immutable

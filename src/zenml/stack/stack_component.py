@@ -14,7 +14,6 @@
 """Implementation of the ZenML Stack Component class."""
 
 import json
-import math
 from abc import ABC
 from collections.abc import Mapping, Sequence
 from datetime import datetime
@@ -34,7 +33,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.resource_settings import ByteUnit
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
@@ -801,23 +799,7 @@ class StackComponent:
         Returns:
             A dictionary of resources requested by the component.
         """
-        resource_settings = info.config.resource_settings
-        required_gpu_count = resource_settings.gpu_count or 0
-
-        requested_resources: Dict[str, int] = {}
-        if required_gpu_count > 0:
-            requested_resources["gpu"] = required_gpu_count
-
-        if resource_settings.cpu_count is not None:
-            requested_resources["mcpu"] = math.ceil(
-                resource_settings.cpu_count * 1000
-            )
-
-        memory_amount = resource_settings.get_memory(unit=ByteUnit.MB)
-        if memory_amount is not None:
-            requested_resources["memory_mb"] = math.ceil(memory_amount)
-
-        return requested_resources
+        return info.config.resource_settings.merged_requested_resources()
 
     def __repr__(self) -> str:
         """String representation of the stack component.

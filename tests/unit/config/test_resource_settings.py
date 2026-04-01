@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for ResourceSettings and ByteUnit."""
+
 from contextlib import ExitStack as does_not_raise
 
 import pytest
@@ -93,3 +95,53 @@ def test_resource_config_memory_conversion():
     assert r.get_memory(unit="KiB") == 11 * 1024 * 1024
     assert r.get_memory(unit="MiB") == 11 * 1024
     assert r.get_memory(unit="GiB") == 11
+
+
+def test_pool_resources_empty_dict_merges_to_empty() -> None:
+    """Empty pool_resources is accepted; merged map has no keys from the map."""
+    rs = ResourceSettings(pool_resources={})
+    assert rs.merged_requested_resources() == {}
+
+
+def test_merged_requested_resources_from_pool_resources_only() -> None:
+    """Custom keys pass through when typed resource fields are unset."""
+    rs = ResourceSettings(pool_resources={"tpu": 2, "widgets": 3})
+    assert rs.merged_requested_resources() == {"tpu": 2, "widgets": 3}
+
+
+def test_merged_requested_resources_typed_fields_override_pool_resources() -> (
+    None
+):
+    """gpu_count, cpu_count, and memory override duplicate dict keys."""
+    rs = ResourceSettings(
+        pool_resources={"gpu": 9, "mcpu": 1, "memory_mb": 1},
+        gpu_count=2,
+        cpu_count=1.0,
+        memory="512MB",
+    )
+    merged = rs.merged_requested_resources()
+    assert merged["gpu"] == 2
+    assert merged["mcpu"] == 1000
+    assert merged["memory_mb"] == 512
+
+
+def test_merged_requested_resources_gpu_count_zero_clears_gpu() -> None:
+    """gpu_count zero removes gpu from the merged map."""
+    rs = ResourceSettings(pool_resources={"gpu": 2}, gpu_count=0)
+    assert "gpu" not in rs.merged_requested_resources()
+
+
+def test_merged_requested_resources_legacy_equivalent() -> None:
+    """Behavior matches the former StackComponent.get_requested_resources logic."""
+    rs = ResourceSettings(cpu_count=2.5, gpu_count=1, memory="1GB")
+    assert rs.merged_requested_resources() == {
+        "gpu": 1,
+        "mcpu": 2500,
+        "memory_mb": 1000,
+    }
+
+
+def test_empty_property_includes_pool_resources() -> None:
+    """empty is False when only pool_resources is set."""
+    rs = ResourceSettings(pool_resources={"x": 1})
+    assert rs.empty is False
