@@ -764,6 +764,7 @@ class StepLauncher:
                 component_id=component.id,
                 step_run_id=step_run_info.step_run_id,
                 requested_resources=requested_resources,
+                preemptible=step_run_info.config.resource_settings.preemptible,
             )
         )
         for delay in exponential_backoff_delays(
