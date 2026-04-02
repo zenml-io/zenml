@@ -105,19 +105,17 @@ from zenml.zen_server.utils import (
     stop_event_loop_lag_monitor,
 )
 
-DASHBOARD_DIRECTORY = "dashboard"
 
-
-def relative_path(rel: str) -> str:
-    """Get the absolute path of a path relative to the ZenML server module.
-
-    Args:
-        rel: Relative path.
+def dashboard_directory() -> str:
+    """Absolute path to the dashboard directory.
 
     Returns:
-        Absolute path.
+        The dashboard directory.
     """
-    return os.path.join(os.path.dirname(__file__), rel)
+    if dashboard_path := server_config().dashboard_files_path:
+        return os.path.abspath(dashboard_path)
+
+    return os.path.join(os.path.dirname(__file__), "dashboard")
 
 
 app = FastAPI(
@@ -196,9 +194,7 @@ if not DASHBOARD_REDIRECT_URL:
     app.mount(
         "/assets",
         StaticFiles(
-            directory=relative_path(
-                os.path.join(DASHBOARD_DIRECTORY, "assets")
-            ),
+            directory=os.path.join(dashboard_directory(), "assets"),
             check_dir=False,
         ),
     )
@@ -228,7 +224,7 @@ async def ready() -> str:
     return "OK"
 
 
-templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
+templates = Jinja2Templates(directory=dashboard_directory())
 
 
 @app.get("/", include_in_schema=False)
@@ -247,9 +243,7 @@ async def dashboard(request: Request) -> Any:
     if DASHBOARD_REDIRECT_URL:
         return RedirectResponse(url=DASHBOARD_REDIRECT_URL)
 
-    if not os.path.isfile(
-        os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
-    ):
+    if not os.path.isfile(os.path.join(dashboard_directory(), "index.html")):
         raise HTTPException(status_code=404)
     return templates.TemplateResponse("index.html", {"request": request})
 
@@ -311,7 +305,7 @@ def get_root_static_files() -> List[str]:
     Returns:
         List of static files in the root directory.
     """
-    root_path = relative_path(DASHBOARD_DIRECTORY)
+    root_path = dashboard_directory()
     if not os.path.isdir(root_path):
         return []
     files = []
@@ -364,7 +358,7 @@ async def catch_all(request: Request, file_path: str) -> Any:
     # directory
     if file_path and file_path in root_static_files:
         logger.debug(f"Returning static file: {file_path}")
-        full_path = os.path.join(relative_path(DASHBOARD_DIRECTORY), file_path)
+        full_path = os.path.join(dashboard_directory(), file_path)
         return FileResponse(full_path)
 
     # everything else is directed to the index.html file that hosts the
