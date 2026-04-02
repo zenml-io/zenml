@@ -16,10 +16,10 @@
 import logging
 import os
 from asyncio import Lock
-from asyncio.log import logger
 from datetime import datetime, timedelta
 from typing import Any, Set
 
+import structlog
 from anyio import CapacityLimiter, to_thread
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
@@ -39,7 +39,6 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS,
     ENV_ZENML_DEFAULT_ANALYTICS_SOURCE,
     HEALTH,
-    READY,
 )
 from zenml.enums import SourceContextTypes
 from zenml.utils.time_utils import utc_now
@@ -48,12 +47,38 @@ from zenml.zen_server.secure_headers import (
     secure_headers,
 )
 from zenml.zen_server.utils import (
-    get_system_metrics_log_str,
+    get_system_metrics,
     is_user_request,
     request_manager,
     server_config,
     zen_store,
 )
+
+logger = structlog.get_logger(__name__)
+
+
+def _error_response(
+    status_code: int = 500,
+    detail: str = "An unexpected error occurred.",
+) -> JSONResponse:
+    """Build a JSON error response that includes request_id when available.
+
+    Args:
+        status_code: HTTP status code.
+        detail: Human-readable error description.
+
+    Returns:
+        A JSONResponse with the error detail and, if set, the request_id.
+    """
+    content: dict[str, Any] = {"detail": detail}
+    try:
+        ctx = structlog.contextvars.get_contextvars()
+        if rid := ctx.get("request_id"):
+            content["request_id"] = rid
+    except Exception:
+        pass
+    return JSONResponse(status_code=status_code, content=content)
+
 
 # Track active requests with an atomic counter
 active_requests_count = 0
@@ -104,10 +129,7 @@ class RequestBodyLimit(BaseHTTPMiddleware):
             return await call_next(request)
         except Exception:
             logger.exception("An error occurred while processing the request")
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "An unexpected error occurred."},
-            )
+            return _error_response()
 
 
 class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
@@ -152,10 +174,7 @@ class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         except Exception:
             logger.exception("An error occurred while processing the request")
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "An unexpected error occurred."},
-            )
+            return _error_response()
 
 
 ALLOWED_FOR_FILE_UPLOAD: Set[str] = set()
@@ -199,27 +218,15 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
                 # entire application for who knows how long.
                 # We use the threadpool for it.
 
-                request_context = request_manager().current_request
-
                 def update_last_user_activity_timestamp() -> None:
-                    logger.debug(
-                        f"[{request_context.log_request_id}] API STATS - "
-                        f"{request_context.log_request} "
-                        f"UPDATING LAST USER ACTIVITY "
-                        f"{get_system_metrics_log_str(request_context.request)}"
-                    )
+                    logger.debug("user_activity.updating", **get_system_metrics())
 
                     try:
                         zen_store()._update_last_user_activity_timestamp(
                             last_user_activity=last_user_activity,
                         )
                     finally:
-                        logger.debug(
-                            f"[{request_context.log_request_id}] API STATS - "
-                            f"{request_context.log_request} "
-                            f"UPDATED LAST USER ACTIVITY "
-                            f"{get_system_metrics_log_str(request_context.request)}"
-                        )
+                        logger.debug("user_activity.updated", **get_system_metrics())
 
                 await to_thread.run_sync(
                     update_last_user_activity_timestamp,
@@ -235,10 +242,7 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
         return await call_next(request)
     except Exception:
         logger.exception("An error occurred while processing the request")
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "An unexpected error occurred."},
-        )
+        return _error_response()
 
 
 async def infer_source_context(request: Request, call_next: Any) -> Any:
@@ -277,10 +281,7 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
         return await call_next(request)
     except Exception:
         logger.exception("An error occurred while processing the request")
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "An unexpected error occurred."},
-        )
+        return _error_response()
 
 
 async def set_secure_headers(request: Request, call_next: Any) -> Any:
@@ -297,10 +298,7 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
         response = await call_next(request)
     except Exception:
         logger.exception("An error occurred while processing the request")
-        response = JSONResponse(
-            status_code=500,
-            content={"detail": "An unexpected error occurred."},
-        )
+        response = _error_response()
 
     # If the request is for the openAPI docs, don't set secure headers
     if request.url.path.startswith("/docs") or request.url.path.startswith(
@@ -325,28 +323,23 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     """
     global active_requests_count
 
-    if not logger.isEnabledFor(logging.DEBUG):
+    if not logging.getLogger(__name__).isEnabledFor(logging.DEBUG):
         return await call_next(request)
 
     async with active_requests_lock:
         active_requests_count += 1
 
-    request_context = request_manager().current_request
-
-    logger.debug(
-        f"[{request_context.log_request_id}] API STATS - "
-        f"{request_context.log_request} "
-        f"RECEIVED {get_system_metrics_log_str(request)}"
-    )
+    logger.debug("request.received", **get_system_metrics())
 
     try:
         response = await call_next(request)
 
+        request_context = request_manager().current_request
         logger.debug(
-            f"[{request_context.log_request_id}] API STATS - "
-            f"{response.status_code} {request_context.log_request} "
-            f"took {request_context.log_duration} "
-            f"{get_system_metrics_log_str(request)}"
+            "request.completed",
+            status_code=response.status_code,
+            duration_ms=request_context.log_duration,
+            **get_system_metrics(),
         )
 
         return response
@@ -357,6 +350,10 @@ async def log_requests(request: Request, call_next: Any) -> Any:
 
 async def record_requests(request: Request, call_next: Any) -> Any:
     """Record requests to the ZenML server.
+
+    Creates a RequestContext and binds key request fields into structlog's
+    context vars so that every downstream log line automatically carries
+    request_id, method, path, and client_ip.
 
     Args:
         request: The incoming request object.
@@ -370,20 +367,29 @@ async def record_requests(request: Request, call_next: Any) -> Any:
     request_context = RequestContext(request=request)
     request_manager().current_request = request_context
 
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(
+        request_id=request_context.request_id,
+        trace_id=request_context.trace_id,
+        method=request.method,
+        path=request.url.path,
+        client_ip=(request.client.host if request.client else "unknown"),
+    )
+
     try:
         response = await call_next(request)
     except Exception:
         logger.exception("An error occurred while processing the request")
-        response = JSONResponse(
-            status_code=500,
-            content={"detail": "An unexpected error occurred."},
-        )
+        response = _error_response()
 
     return response
 
 
 async def skip_health_middleware(request: Request, call_next: Any) -> Any:
-    """Skip health and ready endpoints.
+    """Short-circuit the health endpoint to avoid middleware overhead.
+
+    Only /health is short-circuited (liveness probe). /ready passes through
+    so its handler can verify downstream dependencies (e.g. database).
 
     Args:
         request: The incoming request.
@@ -392,8 +398,7 @@ async def skip_health_middleware(request: Request, call_next: Any) -> Any:
     Returns:
         The response to the request.
     """
-    if request.url.path in [HEALTH, READY]:
-        # Skip expensive processing
+    if request.url.path == HEALTH:
         return PlainTextResponse("ok")
 
     return await call_next(request)
