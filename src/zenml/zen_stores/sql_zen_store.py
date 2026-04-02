@@ -11265,7 +11265,10 @@ class SqlZenStore(BaseZenStore):
                         preemptible=step_config.config.resource_settings.preemptible,
                     ),
                 )
-                if request.status != ResourceRequestStatus.ALLOCATED:
+                if (
+                    request is not None
+                    and request.status != ResourceRequestStatus.ALLOCATED
+                ):
                     step_schema.status = ExecutionStatus.QUEUED.value
                     session.add(step_schema)
                     session.commit()

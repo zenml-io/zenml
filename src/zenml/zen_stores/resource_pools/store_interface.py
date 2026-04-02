@@ -241,7 +241,7 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
     @abstractmethod
     def create_resource_request(
         self, session: "Session", resource_request: ResourceRequestRequest
-    ) -> ResourceRequestResponse:
+    ) -> ResourceRequestResponse | None:
         """Create a resource request.
 
         Args:
@@ -249,5 +249,5 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
             resource_request: The resource request to create.
 
         Returns:
-            The created resource request.
+            The created resource request or None if the feature is not enabled.
         """
