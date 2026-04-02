@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    RESOURCE_POOL_FEATURE,
     RESOURCE_POOL_SUBJECT_POLICIES,
     VERSION_1,
 )
@@ -31,6 +32,7 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import check_entitlement
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -69,6 +71,8 @@ def create_resource_pool_subject_policy(
     Returns:
         The created policy.
     """
+    check_entitlement(feature=RESOURCE_POOL_FEATURE)
+
     return verify_permissions_and_create_entity(
         request_model=policy,
         create_method=zen_store().create_resource_pool_subject_policy,
@@ -149,6 +153,8 @@ def update_resource_pool_subject_policy(
     Returns:
         The updated policy.
     """
+    check_entitlement(feature=RESOURCE_POOL_FEATURE)
+
     return verify_permissions_and_update_entity(
         id=policy_id,
         update_model=policy_update,
