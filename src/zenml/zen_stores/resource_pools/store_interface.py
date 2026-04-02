@@ -30,7 +30,6 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
-    ResourceRequestUpdate,
 )
 
 if TYPE_CHECKING:
@@ -176,19 +175,6 @@ class ResourcePoolsStoreInterface(ABC):
     # -------------------- Resource Requests -------------
 
     @abstractmethod
-    def create_resource_request(
-        self, resource_request: ResourceRequestRequest
-    ) -> ResourceRequestResponse:
-        """Create a resource request.
-
-        Args:
-            resource_request: The resource request to create.
-
-        Returns:
-            The created resource request.
-        """
-
-    @abstractmethod
     def get_resource_request(
         self, resource_request_id: UUID, hydrate: bool = True
     ) -> ResourceRequestResponse:
@@ -217,20 +203,6 @@ class ResourcePoolsStoreInterface(ABC):
 
         Returns:
             A list of all resource requests matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_resource_request(
-        self, resource_request_id: UUID, update: ResourceRequestUpdate
-    ) -> ResourceRequestResponse:
-        """Update an existing resource request.
-
-        Args:
-            resource_request_id: The ID of the resource request to update.
-            update: The update to be applied to the resource request.
-
-        Returns:
-            The updated resource request.
         """
 
     @abstractmethod
@@ -264,4 +236,18 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
         Args:
             session: DB session.
             step_run_id: The ID of the step run to release resources for.
+        """
+
+    @abstractmethod
+    def create_resource_request(
+        self, session: "Session", resource_request: ResourceRequestRequest
+    ) -> ResourceRequestResponse:
+        """Create a resource request.
+
+        Args:
+            session: DB session.
+            resource_request: The resource request to create.
+
+        Returns:
+            The created resource request.
         """

@@ -21,9 +21,7 @@ from zenml.constants import API, RESOURCE_REQUESTS, VERSION_1
 from zenml.models import (
     Page,
     ResourceRequestFilter,
-    ResourceRequestRequest,
     ResourceRequestResponse,
-    ResourceRequestUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -38,26 +36,6 @@ router = APIRouter(
     tags=["resource_requests"],
     responses={401: error_response, 403: error_response},
 )
-
-
-@router.post(
-    "",
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def create_resource_request(
-    resource_request: ResourceRequestRequest,
-    _: AuthContext = Security(authorize),
-) -> ResourceRequestResponse:
-    """Creates a resource request.
-
-    Args:
-        resource_request: Resource request to register.
-
-    Returns:
-        The created resource request.
-    """
-    return zen_store().create_resource_request(resource_request)
 
 
 @router.get(
@@ -111,30 +89,6 @@ def get_resource_request(
     """
     return zen_store().get_resource_request(
         resource_request_id, hydrate=hydrate
-    )
-
-
-@router.put(
-    "/{resource_request_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def update_resource_request(
-    resource_request_id: UUID,
-    resource_request_update: ResourceRequestUpdate,
-    _: AuthContext = Security(authorize),
-) -> ResourceRequestResponse:
-    """Updates a resource request.
-
-    Args:
-        resource_request_id: ID of the resource request.
-        resource_request_update: Resource request to use to update.
-
-    Returns:
-        Updated resource request.
-    """
-    return zen_store().update_resource_request(
-        resource_request_id, resource_request_update
     )
 
 

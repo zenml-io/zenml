@@ -28,7 +28,6 @@ from uuid import UUID
 from pydantic import Field, PositiveInt, model_validator
 
 from zenml.enums import ResourceRequestStatus
-from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -80,18 +79,6 @@ class ResourceRequestRequest(UserScopedRequest):
             )
 
         return self
-
-
-# ------------------ Update Model ------------------
-
-
-class ResourceRequestUpdate(BaseUpdate):
-    """Update model for resource requests."""
-
-    step_run_id: Optional[UUID] = Field(
-        title="The id of the step run that is requesting the resources.",
-        default=None,
-    )
 
 
 # ------------------ Response Model ------------------

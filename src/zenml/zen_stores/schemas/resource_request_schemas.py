@@ -28,9 +28,7 @@ from zenml.models import (
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
-    ResourceRequestUpdate,
 )
-from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import (
@@ -191,23 +189,6 @@ class ResourceRequestSchema(BaseSchema, table=True):
             preemption_initiated_by_id=None,
             preemptible=request.preemptible,
         )
-
-    def update(
-        self, resource_request_update: "ResourceRequestUpdate"
-    ) -> "ResourceRequestSchema":
-        """Updates a `ResourceRequestSchema` from a `ResourceRequestUpdate`.
-
-        Args:
-            resource_request_update: The `ResourceRequestUpdate` to update from.
-
-        Returns:
-            The updated `ResourceRequestSchema`.
-        """
-        if resource_request_update.step_run_id:
-            self.step_run_id = resource_request_update.step_run_id
-
-        self.updated = utc_now()
-        return self
 
     def to_model(
         self,

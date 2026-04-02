@@ -341,7 +341,6 @@ from zenml.models.v2.core.resource_pool_subject_policy import (
 )
 from zenml.models.v2.core.resource_request import (
     ResourceRequestRequest,
-    ResourceRequestUpdate,
     ResourceRequestFilter,
     ResourceRequestResponse,
     ResourceRequestResponseBody,
@@ -797,7 +796,6 @@ __all__ = [
     "ResourcePoolSubjectPolicyResponseResources",
     "ResourcePoolSubjectPolicyUpdate",
     "ResourceRequestRequest",
-    "ResourceRequestUpdate",
     "ResourceRequestFilter",
     "ResourceRequestResponse",
     "ResourceRequestResponseBody",

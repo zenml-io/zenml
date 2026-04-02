@@ -171,6 +171,11 @@ class StepRunRequest(ProjectScopedRequest):
         title="The dynamic configuration of the step run.",
         default=None,
     )
+    resource_requester: Optional[UUID] = Field(
+        title="The ID of the component that requested the resources for the "
+        "step run.",
+        default=None,
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -728,6 +733,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_resources().model_version
+
+    @property
+    def resource_request(self) -> Optional["ResourceRequestResponse"]:
+        """The `resource_request` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().resource_request
 
 
 # ------------------ Filter Model ------------------

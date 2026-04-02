@@ -46,14 +46,13 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineSnapshotResponse,
-    ResourceRequestRequest,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
-from zenml.stack import Stack, StackComponent
+from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
@@ -491,6 +490,9 @@ class StepLauncher:
             skip_artifact_materialization=runtime.should_skip_artifact_materialization(),
         )
 
+        if self._snapshot.is_dynamic:
+            self._wait_until_resources_acquired(step_run_info)
+
         try:
             if self._step.config.step_operator:
                 step_operator_name = None
@@ -571,9 +573,6 @@ class StepLauncher:
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
-        )
-        self._acquire_resources_if_necessary(
-            step_run_info, component=step_operator
         )
 
         entrypoint_cfg_class = step_operator.entrypoint_config_class
@@ -675,10 +674,6 @@ class StepLauncher:
         Raises:
             BaseException: If the step run failed.
         """
-        self._acquire_resources_if_necessary(
-            step_run_info, component=self._stack.orchestrator
-        )
-
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
@@ -735,38 +730,18 @@ class StepLauncher:
             step_run_info=step_run_info,
         )
 
-    def _acquire_resources_if_necessary(
-        self, step_run_info: StepRunInfo, component: "StackComponent"
+    def _wait_until_resources_acquired(
+        self, step_run_info: StepRunInfo
     ) -> None:
-        """Acquires resources if necessary.
+        """Waits until the resources are acquired.
 
         Args:
             step_run_info: Step run information.
-            component: The component that is requesting the resources.
-
-        Raises:
-            RuntimeError: If the resources could not be acquired.
         """
-        # TODO: Bool on component that indicates if we should request resources?
-        # Probably don't need this if we request resources on the step run
-        # request instead.
-        requested_resources = component.get_requested_resources(step_run_info)
-        requested_resources["step_run"] = 1
+        resource_request = step_run_info.step_run.resource_request
+        if not resource_request:
+            return
 
-        # TODO: we should probably simply put the resource request in the step
-        # run request, to save some API calls.
-        publish_utils.publish_step_run_status_update(
-            step_run_id=step_run_info.step_run_id,
-            status=ExecutionStatus.QUEUED,
-        )
-        resource_request = Client().zen_store.create_resource_request(
-            ResourceRequestRequest(
-                component_id=component.id,
-                step_run_id=step_run_info.step_run_id,
-                requested_resources=requested_resources,
-                preemptible=step_run_info.config.resource_settings.preemptible,
-            )
-        )
         for delay in exponential_backoff_delays(
             initial_delay=1.0,
             max_delay=20.0,
@@ -791,8 +766,6 @@ class StepLauncher:
                     resource_request.id,
                     step_run_info.pipeline_step_name,
                 )
-                # TODO: start date should be set here, not on initial
-                # creation.
                 publish_utils.publish_step_run_status_update(
                     step_run_id=step_run_info.step_run_id,
                     status=ExecutionStatus.RUNNING,

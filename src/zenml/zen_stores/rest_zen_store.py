@@ -232,9 +232,7 @@ from zenml.models import (
     ResourcePoolSubjectPolicyUpdate,
     ResourcePoolUpdate,
     ResourceRequestFilter,
-    ResourceRequestRequest,
     ResourceRequestResponse,
-    ResourceRequestUpdate,
     RunMetadataRequest,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -1467,23 +1465,6 @@ class RestZenStore(BaseZenStore):
 
     # -------------------- Resource Requests -------------
 
-    def create_resource_request(
-        self, resource_request: ResourceRequestRequest
-    ) -> ResourceRequestResponse:
-        """Create a resource request.
-
-        Args:
-            resource_request: The resource request to create.
-
-        Returns:
-            The created resource request.
-        """
-        return self._create_resource(
-            resource=resource_request,
-            route=RESOURCE_REQUESTS,
-            response_model=ResourceRequestResponse,
-        )
-
     def get_resource_request(
         self, resource_request_id: UUID, hydrate: bool = True
     ) -> ResourceRequestResponse:
@@ -1523,25 +1504,6 @@ class RestZenStore(BaseZenStore):
             response_model=ResourceRequestResponse,
             filter_model=filter_model,
             params={"hydrate": hydrate},
-        )
-
-    def update_resource_request(
-        self, resource_request_id: UUID, update: ResourceRequestUpdate
-    ) -> ResourceRequestResponse:
-        """Update an existing resource request.
-
-        Args:
-            resource_request_id: The ID of the resource request to update.
-            update: The update to be applied to the resource request.
-
-        Returns:
-            The updated resource request.
-        """
-        return self._update_resource(
-            resource_id=resource_request_id,
-            resource_update=update,
-            route=RESOURCE_REQUESTS,
-            response_model=ResourceRequestResponse,
         )
 
     def delete_resource_request(self, resource_request_id: UUID) -> None:

@@ -158,6 +158,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    ResourceRequestStatus,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -289,7 +290,6 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
-    ResourceRequestUpdate,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -4003,19 +4003,6 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Resource Requests -------------
 
-    def create_resource_request(
-        self, resource_request: ResourceRequestRequest
-    ) -> ResourceRequestResponse:
-        """Create a resource request.
-
-        Args:
-            resource_request: The resource request to create.
-
-        Returns:
-            The created resource request.
-        """
-        return self.resource_pools.create_resource_request(resource_request)
-
     def get_resource_request(
         self, resource_request_id: UUID, hydrate: bool = True
     ) -> ResourceRequestResponse:
@@ -4049,22 +4036,6 @@ class SqlZenStore(BaseZenStore):
         """
         return self.resource_pools.list_resource_requests(
             filter_model, hydrate=hydrate
-        )
-
-    def update_resource_request(
-        self, resource_request_id: UUID, update: ResourceRequestUpdate
-    ) -> ResourceRequestResponse:
-        """Update an existing resource request.
-
-        Args:
-            resource_request_id: The ID of the resource request to update.
-            update: The update to be applied to the resource request.
-
-        Returns:
-            The updated resource request.
-        """
-        return self.resource_pools.update_resource_request(
-            resource_request_id, update
         )
 
     def delete_resource_request(self, resource_request_id: UUID) -> None:
@@ -11270,6 +11241,36 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.refresh(step_schema)
 
+            if (
+                self.resource_pools_enabled
+                and step_schema.status
+                in {
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                }
+                and step_run.resource_requester
+            ):
+                requested_resources = step_config.config.resource_settings.merged_requested_resources()
+                requested_resources["step_run"] = 1
+
+                request = self.resource_pools.create_resource_request(
+                    session=session,
+                    resource_request=ResourceRequestRequest(
+                        user=step_run.user,
+                        component_id=step_run.resource_requester,
+                        step_run_id=step_schema.id,
+                        requested_resources=requested_resources,
+                        preemptible=step_config.config.resource_settings.preemptible,
+                    ),
+                )
+                if request.status != ResourceRequestStatus.ALLOCATED:
+                    step_schema.status = ExecutionStatus.QUEUED.value
+                    session.add(step_schema)
+                    session.commit()
+
+                session.refresh(step_schema)
+
             return step_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -11901,6 +11902,7 @@ class SqlZenStore(BaseZenStore):
             ExecutionStatus.RETRYING,
             ExecutionStatus.RETRIED,
             ExecutionStatus.CANCELLING,
+            ExecutionStatus.QUEUED,
         }:
             raise IllegalOperationError(
                 f"Execution status `{new_status}` cannot be set manually."

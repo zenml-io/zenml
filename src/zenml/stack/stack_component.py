@@ -790,17 +790,6 @@ class StackComponent:
         """Cleans up the component after it has been used."""
         pass
 
-    def get_requested_resources(self, info: "StepRunInfo") -> Dict[str, int]:
-        """Get the resources requested by the component.
-
-        Args:
-            info: Info about the step that will be executed.
-
-        Returns:
-            A dictionary of resources requested by the component.
-        """
-        return info.config.resource_settings.merged_requested_resources()
-
     def __repr__(self) -> str:
         """String representation of the stack component.
 
