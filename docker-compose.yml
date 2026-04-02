@@ -51,7 +51,6 @@
 # The server auto-activates with a default admin account (empty password).
 
 services:
-
   database:
     image: mysql:8
     container_name: zenml-database
@@ -72,9 +71,9 @@ services:
     image: grafana/otel-lgtm:latest
     container_name: zenml-otel-lgtm
     ports:
-      - 3002:3000   # Grafana UI
-      - 4317:4317   # OTLP gRPC
-      - 4318:4318   # OTLP HTTP
+      - 3002:3000 # Grafana UI
+      - 4317:4317 # OTLP gRPC
+      - 4318:4318 # OTLP HTTP
     environment:
       - ENABLE_OBI=true
       - OBI_TARGET=python
@@ -113,7 +112,13 @@ services:
       otel_lgtm:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health').raise_for_status()"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:8080/health').raise_for_status()",
+        ]
       interval: 10s
       timeout: 10s
       retries: 3
@@ -148,7 +153,6 @@ services:
       # OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: true
       OTEL_PYTHON_LOG_LEVEL: debug
 
-
   zenml_dashboard:
     image: node:22-slim
     container_name: zenml-dashboard
@@ -172,7 +176,6 @@ services:
     restart: on-failure
     environment:
       VITE_API_BASE_URL: http://localhost:8080/api/v1
-
 
 volumes:
   mysql_data:
