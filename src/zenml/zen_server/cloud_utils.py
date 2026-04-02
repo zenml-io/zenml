@@ -7,6 +7,7 @@ from threading import RLock
 from typing import Any, Dict, Optional
 
 import requests
+import structlog
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.config.server_config import ServerProConfiguration
@@ -14,15 +15,14 @@ from zenml.exceptions import (
     IllegalOperationError,
     SubscriptionUpgradeRequiredError,
 )
-from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.utils import (
-    get_system_metrics_log_str,
+    get_system_metrics,
     get_zenml_headers,
     server_config,
 )
 
-logger = get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
 
@@ -63,21 +63,14 @@ class ZenMLCloudConnection:
         Returns:
             The response.
         """
-        from zenml.zen_server.utils import get_current_request_context
-
         url = self._config.api_url + endpoint
-
-        log_request_id = "N/A"
-        try:
-            request_context = get_current_request_context()
-            log_request_id = request_context.log_request_id
-        except RuntimeError:
-            pass
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                f"[{log_request_id}] RBAC STATS - {method} "
-                f"{endpoint} started {get_system_metrics_log_str()}"
+                "rbac.request.started",
+                rbac_method=method,
+                rbac_endpoint=endpoint,
+                **get_system_metrics(),
             )
             start_time = time.time()
 
@@ -116,11 +109,14 @@ class ZenMLCloudConnection:
                     )
         finally:
             if logger.isEnabledFor(logging.DEBUG):
-                duration = (time.time() - start_time) * 1000
+                duration_ms = round((time.time() - start_time) * 1000, 2)  # type: ignore[unbound-variable]
                 logger.debug(
-                    f"[{log_request_id}] RBAC STATS - "
-                    f"{status_code} {method} {endpoint} completed in "
-                    f"{duration:.2f}ms {get_system_metrics_log_str()}"
+                    "rbac.request.completed",
+                    rbac_method=method,
+                    rbac_endpoint=endpoint,
+                    status_code=status_code,
+                    duration_ms=duration_ms,
+                    **get_system_metrics(),
                 )
 
         return response

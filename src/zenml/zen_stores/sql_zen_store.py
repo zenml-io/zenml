@@ -74,6 +74,7 @@ from typing import (
 )
 from uuid import UUID
 
+import structlog
 from packaging import version
 from pydantic import (
     ConfigDict,
@@ -184,7 +185,7 @@ from zenml.exceptions import (
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
-from zenml.logger import get_console_handler, get_logger, get_logging_level
+from zenml.logger import get_console_handler, get_logging_level
 from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
@@ -474,7 +475,7 @@ AnyIdentifiedResponse = TypeVar(
 SelectOfScalar.inherit_cache = True
 Select.inherit_cache = True
 
-logger = get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
@@ -520,27 +521,6 @@ class Session(SqlModelSession):
             "overflow_connections": overflow,
         }
 
-    def _get_metrics_log_str(self) -> str:
-        """Get the metrics for the session as a string for logging.
-
-        Returns:
-            The metrics for the session as a string for logging.
-        """
-        if not logger.isEnabledFor(logging.DEBUG):
-            return ""
-        metrics = self._get_metrics()
-        # Add the server metrics if running in a server
-        if handle_bool_env_var(ENV_ZENML_SERVER):
-            from zenml.zen_server.utils import get_system_metrics
-
-            metrics.update(get_system_metrics())
-
-        return (
-            " [ "
-            + " ".join([f"{key}: {value}" for key, value in metrics.items()])
-            + " ]"
-        )
-
     def __enter__(self) -> "Session":
         """Enter the context manager.
 
@@ -548,20 +528,6 @@ class Session(SqlModelSession):
             The SqlModel session.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            self.log_request_id = "N/A"
-            self.log_request = ""
-            if handle_bool_env_var(ENV_ZENML_SERVER):
-                # Running inside server
-                from zenml.zen_server.utils import get_current_request_context
-
-                # If the code is running on the server, use the auth context.
-                try:
-                    request_context = get_current_request_context()
-                    self.log_request_id = request_context.log_request_id
-                    self.log_request = request_context.log_request
-                except RuntimeError:
-                    pass
-
             # Look up the stack to find the SQLZenStore method
             for frame in inspect.stack():
                 if "self" in frame.frame.f_locals:
@@ -575,9 +541,9 @@ class Session(SqlModelSession):
                 self.caller_method = "unknown"
 
             logger.debug(
-                f"[{self.log_request_id}] SQL STATS - "
-                f"{self.log_request} "
-                f"'{self.caller_method}' STARTED {self._get_metrics_log_str()}"
+                "sql.session.started",
+                caller=self.caller_method,
+                **self._get_metrics(),
             )
 
             self.start_time = time.time()
@@ -598,18 +564,14 @@ class Session(SqlModelSession):
             exc_tb: The exception traceback.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            duration = (time.time() - self.start_time) * 1000
-
-            # Add error information to the log
-            error_info = ""
-            if exc_type is not None:
-                error_info = " with ERROR"
+            duration_ms = round((time.time() - self.start_time) * 1000, 2)
 
             logger.debug(
-                f"[{self.log_request_id}] SQL STATS - "
-                f"{self.log_request} "
-                f"'{self.caller_method}' COMPLETED in "
-                f"{duration:.2f}ms {error_info} {self._get_metrics_log_str()}"
+                "sql.session.completed",
+                caller=self.caller_method,
+                duration_ms=duration_ms,
+                error=exc_type is not None,
+                **self._get_metrics(),
             )
 
         super().__exit__(exc_type, exc_val, exc_tb)
