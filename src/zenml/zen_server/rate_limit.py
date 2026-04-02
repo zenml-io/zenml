@@ -29,12 +29,12 @@ from typing import (
     cast,
 )
 
+import structlog
 from starlette.requests import Request
 
-from zenml.logger import get_logger
 from zenml.zen_server.utils import server_config
 
-logger = get_logger(__name__)
+logger = structlog.get_logger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
 
 
@@ -90,6 +90,12 @@ class RequestLimiter:
         self.limiter[requester] = self.limiter[requester][older_index:]
 
         if self.day_limit and len(self.limiter[requester]) > self.day_limit:
+            logger.warning(
+                "rate_limit.exceeded",
+                client_ip=requester,
+                limit_type="daily",
+                limit=self.day_limit,
+            )
             raise HTTPException(
                 status_code=429, detail="Daily request limit exceeded."
             )
@@ -101,6 +107,12 @@ class RequestLimiter:
             ]
         )
         if self.minute_limit and minute_requests > self.minute_limit:
+            logger.warning(
+                "rate_limit.exceeded",
+                client_ip=requester,
+                limit_type="minute",
+                limit=self.minute_limit,
+            )
             raise HTTPException(
                 status_code=429, detail="Minute request limit exceeded."
             )

@@ -22,6 +22,7 @@ from uuid import UUID, uuid4
 
 import anyio.to_thread
 import requests
+import structlog
 from anyio import CapacityLimiter
 from cachetools.func import ttl_cache
 from fastapi import Depends, Response
@@ -57,7 +58,6 @@ from zenml.exceptions import (
     CredentialsNotValid,
     OAuthError,
 )
-from zenml.logger import get_logger
 from zenml.models import (
     APIKey,
     APIKeyInternalResponse,
@@ -87,7 +87,7 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-logger = get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class AuthContext(BaseModel):
@@ -1323,7 +1323,7 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
 
     @wraps(provider)
     async def async_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
-        from zenml.zen_server.utils import get_system_metrics_log_str
+        from zenml.zen_server.utils import get_system_metrics
 
         request_context = request_manager().current_request
 
@@ -1331,24 +1331,14 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
         def sync_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
             assert request_context is not None
 
-            logger.debug(
-                f"[{request_context.log_request_id}] API STATS - "
-                f"{request_context.log_request} "
-                f"AUTHORIZING "
-                f"{get_system_metrics_log_str(request_context.request)}"
-            )
+            logger.debug("request.authorizing", **get_system_metrics())
 
             try:
                 auth_context = provider(*args, **kwargs)
                 request_context.auth_context = auth_context
                 return auth_context
             finally:
-                logger.debug(
-                    f"[{request_context.log_request_id}] API STATS - "
-                    f"{request_context.log_request} "
-                    f"AUTHORIZED "
-                    f"{get_system_metrics_log_str(request_context.request)}"
-                )
+                logger.debug("request.authorized", **get_system_metrics())
 
         func = functools.partial(sync_authorize_fn, *args, **kwargs)
         return await anyio.to_thread.run_sync(func, limiter=thread_limiter)
