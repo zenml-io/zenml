@@ -752,7 +752,7 @@ class DynamicPipelineRunner:
                     step_config_overrides=old_config,
                 )
                 logger.warning(
-                    "Configuration for step `%s` changed since the the "
+                    "Configuration for step `%s` changed since the "
                     "orchestration environment was restarted. If the step "
                     "needs to be retried, it will use the old configuration.",
                     step_run.name,
