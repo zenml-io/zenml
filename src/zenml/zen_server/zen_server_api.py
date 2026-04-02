@@ -108,7 +108,6 @@ from zenml.zen_server.utils import (
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
-    zen_store,
 )
 
 
@@ -229,26 +228,9 @@ async def health() -> str:
 async def ready() -> str:
     """Get readiness status of the server.
 
-    Verifies that the database is reachable via a lightweight SELECT 1.
-
-    Raises:
-        HTTPException: If the database is not reachable.
-
     Returns:
         String representing the readiness status of the server.
     """
-    from sqlalchemy import text
-
-    def _db_ping() -> None:
-        with zen_store().engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-
-    try:
-        await to_thread.run_sync(_db_ping)
-    except Exception:
-        raise HTTPException(
-            status_code=503, detail="Server not ready: database unavailable"
-        )
     return "OK"
 
 

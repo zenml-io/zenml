@@ -39,6 +39,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS,
     ENV_ZENML_DEFAULT_ANALYTICS_SOURCE,
     HEALTH,
+    READY,
 )
 from zenml.enums import SourceContextTypes
 from zenml.utils.time_utils import utc_now
@@ -390,10 +391,7 @@ async def record_requests(request: Request, call_next: Any) -> Any:
 
 
 async def skip_health_middleware(request: Request, call_next: Any) -> Any:
-    """Short-circuit the health endpoint to avoid middleware overhead.
-
-    Only /health is short-circuited (liveness probe). /ready passes through
-    so its handler can verify downstream dependencies (e.g. database).
+    """Skip health and ready endpoints.
 
     Args:
         request: The incoming request.
@@ -402,7 +400,8 @@ async def skip_health_middleware(request: Request, call_next: Any) -> Any:
     Returns:
         The response to the request.
     """
-    if request.url.path == HEALTH:
+    if request.url.path in [HEALTH, READY]:
+        # Skip expensive processing
         return PlainTextResponse("ok")
 
     return await call_next(request)
