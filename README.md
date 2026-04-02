@@ -223,3 +223,5 @@ ZenML is distributed under the terms of the Apache License Version 2.0. See
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://www.cncf.io/"><img src="docs/book/.gitbook/assets/cncf-member-silver.svg" alt="CNCF Silver Member" height="100"/></a>
 </div>
+
+<img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />

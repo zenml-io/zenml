@@ -66,3 +66,5 @@ To execute your step code, ZenML imports the Python module containing the step d
 {% hint style="info" %}
 If you don't need all files inside your source root for step execution, see the [containerization guide](../containerization/containerization.md#controlling-included-files) for controlling which files are included.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

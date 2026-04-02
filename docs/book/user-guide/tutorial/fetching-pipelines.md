@@ -511,3 +511,5 @@ Now that you know how to inspect and retrieve information from past pipeline run
 5. Combine with [hyperparameter tuning](hyper-parameter-tuning.md) to compare model variants
 6. Explore [managing datasets](datasets.md) for more advanced data handling
 7. Learn about [handling big data](manage-big-data.md) for scaling your pipelines
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
