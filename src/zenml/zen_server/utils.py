@@ -15,7 +15,6 @@
 
 import asyncio
 import inspect
-import logging
 import os
 import sys
 import threading
@@ -48,9 +47,7 @@ from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     API,
     ENV_ZENML_SERVER,
-    HEALTH,
     INFO,
-    READY,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError, OAuthError
@@ -727,29 +724,6 @@ def get_system_metrics() -> Dict[str, Any]:
         "current_thread_name": current_thread_name,
         "current_thread_id": current_thread_id,
     }
-
-
-def get_system_metrics_log_str(request: Optional["Request"] = None) -> str:
-    """Get the system metrics as a string for logging.
-
-    Args:
-        request: The request object.
-
-    Returns:
-        The system metrics as a string for debugging logging.
-    """
-    if not logger.isEnabledFor(logging.DEBUG):
-        return ""
-    if request and request.url.path in [HEALTH, READY]:
-        # Don't log system metrics for health and ready endpoints to keep them
-        # fast
-        return ""
-    metrics = get_system_metrics()
-    return (
-        " [ "
-        + " ".join([f"{key}: {value}" for key, value in metrics.items()])
-        + " ]"
-    )
 
 
 event_loop_lag_monitor_task: Optional[asyncio.Task[None]] = None
