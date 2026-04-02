@@ -187,3 +187,5 @@ The timing of when environment variables are set depends on the orchestrator bei
 {% hint style="info" %}
 **Environment variables from secrets** are always set right before your step code is being executed for security reasons, regardless of the orchestrator.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

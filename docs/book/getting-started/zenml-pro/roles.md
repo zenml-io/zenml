@@ -213,3 +213,5 @@ For more information on creating and managing teams, see the [Teams](teams.md) d
 7. **Organization Member Role**: Use the Organization Member role for users who should only see specific workspaces.
 
 By leveraging ZenML Pro's comprehensive role-based access control, you can ensure that your team members have the right level of access to resources while maintaining security and enabling collaboration across your MLOps projects.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

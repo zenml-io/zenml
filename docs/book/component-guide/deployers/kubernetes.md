@@ -593,3 +593,5 @@ If pods can't pull the container image:
 7. **Configure PodDisruptionBudget** for high availability during cluster updates
 8. **Keep additional resources in version control** alongside your pipeline code
 
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
