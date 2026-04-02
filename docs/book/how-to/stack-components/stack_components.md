@@ -96,3 +96,5 @@ Now that you understand what stacks are, you might want to:
 * Learn about [deploying stacks](https://docs.zenml.io/stacks/deployment) on cloud platforms
 * Understand [Service Connectors](service_connectors.md) for authenticating with cloud services
 * Explore how to [register existing cloud resources](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack) as ZenML stack components
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

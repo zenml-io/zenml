@@ -494,3 +494,5 @@ Once you have collected all the required information, proceed to the deployment 
 - [Control Plane Kubernetes Deployment](deploy-control-plane-k8s.md) — Deploy ZenML Pro control plane on Kubernetes using Helm charts
 - [Workspace Server Kubernetes Deployment](deploy-workspace-k8s.md) — Deploy ZenML Pro workspace servers on Kubernetes using Helm charts
 - [Workspace Server AWS ECS Deployment](deploy-workspace-ecs.md) — Deploy ZenML Pro workspace servers on AWS ECS
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

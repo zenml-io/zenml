@@ -118,3 +118,5 @@ assess the impact of changes and identify areas that require attention. Again,
 as with everything else, don't let perfect be the enemy of the good; a simple
 dashboard using  simple technology with a few key metrics is better than no
 dashboard at all.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

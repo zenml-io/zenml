@@ -174,3 +174,5 @@ Upgrade with confidence 🚀.
 ZenML Pro: Hosted workspaces are upgraded automatically, but you still need to test your pipelines in staging before changes hit production.
 
 ZenML OSS: You are responsible for upgrades, backups, and reconfiguration — this guide helps you minimize downtime and bugs.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -538,3 +538,5 @@ Pipeline deployment transforms ZenML pipelines from batch processing workflows i
 See also:
 - [Steps & Pipelines](../steps-pipelines/steps_and_pipelines.md) - Core building blocks
 - [Deployer Stack Component](../../component-guide/deployers/README.md) - The stack component that manages the deployment of pipelines as long-running HTTP servers
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
