@@ -56,6 +56,7 @@ from zenml.constants import (
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import ProjectScopedFilter
+from zenml.zen_server.dispatcher.dispatcher import EventDispatcher
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
@@ -95,6 +96,7 @@ _request_manager: Optional[RequestManager] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
+_event_dispatcher: EventDispatcher | None = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -817,3 +819,57 @@ def get_current_request_context() -> RequestContext:
         The current request context.
     """
     return request_manager().current_request
+
+
+def initialize_event_dispatcher() -> None:
+    """Initialize the event dispatcher."""
+    from zenml.zen_server.dispatcher.handler import EventHandler
+
+    global _event_dispatcher
+
+    if server_config().event_handlers:
+        from zenml.utils import source_utils
+
+        try:
+            event_handler_cls: list[type[EventHandler]] = [
+                source_utils.load_and_validate_class(
+                    source=source, expected_class=EventHandler
+                )
+                for source in server_config().event_handlers
+            ]
+        except (ModuleNotFoundError, KeyError):
+            logger.warning("Unable to load event handler sources.")
+        else:
+            try:
+                _event_dispatcher = EventDispatcher(
+                    event_handlers=[i.create() for i in event_handler_cls]
+                )
+            except Exception as exc:
+                logger.exception(
+                    "Failed to initialize event dispatcher.", exc_info=exc
+                )
+
+
+def event_dispatcher() -> EventDispatcher | None:
+    """Gets the instantiated event dispatcher.
+
+    Returns:
+        The EventDispatcher instance.
+
+    Raises:
+        RuntimeError: If the dispatcher is not initialized.
+    """
+    global _event_dispatcher
+    if _event_dispatcher is None:
+        raise RuntimeError("Event Dispatcher component not initialized")
+    return _event_dispatcher
+
+
+def is_event_dispatcher_initialized() -> bool:
+    """Initialization check.
+
+    Returns:
+        Returns True if the dispatcher is initialized.
+    """
+    global _event_dispatcher
+    return _event_dispatcher is not None

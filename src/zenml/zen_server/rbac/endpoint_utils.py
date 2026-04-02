@@ -42,7 +42,9 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
+    event_dispatcher,
     get_auth_context,
+    is_event_dispatcher_initialized,
     server_config,
     set_filter_project_scope,
 )
@@ -289,7 +291,14 @@ def verify_permissions_and_update_entity(
     updated_model = update_method(
         model.id, update_model, **update_method_kwargs
     )
-    return dehydrate_response_model(updated_model)
+    response = dehydrate_response_model(updated_model)
+    if is_event_dispatcher_initialized():
+        event_dispatcher().handle_update(
+            original=model,
+            update=updated_model,
+            response=response,
+        )
+    return response
 
 
 def verify_permissions_and_delete_entity(

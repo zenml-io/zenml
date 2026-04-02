@@ -13,12 +13,16 @@
 #  permissions and limitations under the License.
 """Event dispatcher base functionality."""
 
+import logging
+
 from zenml.models import (
     BaseRequest,
     BaseUpdate,
     ProjectScopedResponse,
 )
 from zenml.zen_server.dispatcher.handler import EventHandler
+
+logger = logging.getLogger(__name__)
 
 
 class EventDispatcher:
@@ -45,13 +49,21 @@ class EventDispatcher:
             update: The update payload.
             response: The object after the update.
         """
+
+        # TODO: Assign to thread execution
         for event_handler in self._event_handlers:
             if event_handler.is_subscribed(update):
-                event_handler.handle_update(
-                    original=original,
-                    update=update,
-                    response=response,
-                )
+                try:
+                    event_handler.handle_update(
+                        original=original,
+                        update=update,
+                        response=response,
+                    )
+                except Exception as exc:
+                    logger.exception(
+                        f"Event handler {event_handler} failed to handle update: {update}",
+                        exc_info=exc,
+                    )
 
     def handle_request(
         self,
@@ -64,9 +76,17 @@ class EventDispatcher:
             request: The object to create.
             response: The created object.
         """
+
+        # TODO: Assign to thread execution
         for event_handler in self._event_handlers:
             if event_handler.is_subscribed(request):
-                event_handler.handle_request(
-                    request=request,
-                    response=response,
-                )
+                try:
+                    event_handler.handle_request(
+                        request=request,
+                        response=response,
+                    )
+                except Exception as exc:
+                    logger.exception(
+                        f"Event handler {event_handler} failed to handle request: {request}",
+                        exc_info=exc,
+                    )

@@ -95,6 +95,7 @@ from zenml.zen_server.secure_headers import (
 )
 from zenml.zen_server.utils import (
     cleanup_request_manager,
+    initialize_event_dispatcher,
     initialize_feature_gate,
     initialize_rbac,
     initialize_request_manager,
@@ -168,6 +169,7 @@ async def initialize() -> None:
     initialize_workload_manager()
     initialize_resource_pool_store()
     initialize_snapshot_executor()
+    initialize_event_dispatcher()
     initialize_secure_headers()
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
