@@ -465,3 +465,5 @@ These practices help maintain a clean, scalable, and maintainable infrastructure
 ## Conclusion
 
 Building ML infrastructure with ZenML and Terraform enables you to create a flexible, maintainable, and secure environment for ML teams. The official ZenML provider simplifies the process while maintaining clean infrastructure patterns.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

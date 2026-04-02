@@ -1047,3 +1047,5 @@ Now that you understand how to trigger ZenML pipelines from external systems, co
 1. [Managing scheduled pipelines](managing-scheduled-pipelines.md) for time-based execution
 2. Implementing [comprehensive CI/CD](https://docs.zenml.io/user-guides/production-guide/ci-cd) for your ML workflows
 3. Setting up [monitoring and alerting](https://docs.zenml.io/stacks/alerters) for pipeline failures
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

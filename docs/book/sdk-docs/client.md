@@ -180,3 +180,5 @@ Methods for managing ZenML server settings:
 
 * [`Client.get_settings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.get_settings)
 * [`Client.update_server_settings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.update_server_settings)
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

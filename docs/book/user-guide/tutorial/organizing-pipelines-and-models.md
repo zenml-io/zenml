@@ -396,3 +396,5 @@ Now that you understand how to organize your ML assets, consider exploring:
 1. [Managing scheduled pipelines](../tutorial/managing-scheduled-pipelines.md) to automate your ML workflows
 2. Integrating your tagging strategy with [CI/CD pipelines](https://docs.zenml.io/user-guides/production-guide/ci-cd)
 3. [Ways to trigger pipelines](https://docs.zenml.io/how-to/trigger-pipelines)
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

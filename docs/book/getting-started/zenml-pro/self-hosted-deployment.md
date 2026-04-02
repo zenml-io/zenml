@@ -159,3 +159,5 @@ If you're moving from SaaS or Hybrid to Self-hosted, migration paths can vary si
 ## Get Started
 
 Ready to deploy ZenML Pro in a Self-hosted environment? [Book a Demo](https://www.zenml.io/book-your-demo) or [contact us](mailto:cloud@zenml.io) for detailed deployment planning.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

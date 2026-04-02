@@ -625,3 +625,5 @@ steps:
 {% hint style="info" %}
 When you want to configure your pipeline with a certain stack in mind, you can do so as well: `...write_run_configuration_template(stack=<Insert_stack_here>)`
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

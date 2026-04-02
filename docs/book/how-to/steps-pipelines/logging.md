@@ -306,3 +306,5 @@ We'll update the documentation as this evolves with future releases.
 - [Steps & Pipelines](./steps_and_pipelines.md)
 - [YAML Configuration](./yaml_configuration.md)
 - [Advanced Features](./advanced_features.md) 
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
