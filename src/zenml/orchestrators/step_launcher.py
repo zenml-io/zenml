@@ -745,6 +745,9 @@ class StepLauncher:
         if not resource_request:
             return
 
+        if resource_request.status == ResourceRequestStatus.ALLOCATED:
+            return
+
         for delay in exponential_backoff_delays(
             initial_delay=1.0,
             max_delay=20.0,
