@@ -1314,7 +1314,7 @@ def compile_dynamic_step_invocation(
         ):
             upstream_steps.update(item.step_name for item in value)
 
-    input_artifacts = {}
+    input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]] = {}
     external_artifacts = {}
     for name, value in inputs.items():
         if isinstance(value, OutputArtifact):

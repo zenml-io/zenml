@@ -404,7 +404,7 @@ class BaseStep:
                 f"Wrong arguments when calling step '{self.name}': {e}"
             ) from e
 
-        artifacts = {}
+        artifacts: Dict[str, Union["StepArtifact", List["StepArtifact"]]] = {}
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ] = {}

@@ -24,6 +24,7 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
+    Union,
 )
 
 from zenml import __version__
@@ -32,6 +33,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import OutputSpec, PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
+    InputSpec,
     Step,
     StepConfiguration,
     StepConfigurationUpdate,
@@ -466,7 +468,7 @@ class Compiler:
         Returns:
             The step spec.
         """
-        inputs = {}
+        inputs: Dict[str, Union[List[InputSpec], InputSpec]] = {}
         for key, artifact_or_list in invocation.input_artifacts.items():
             if isinstance(artifact_or_list, list):
                 inputs[key] = [a.to_spec() for a in artifact_or_list]
