@@ -32,7 +32,6 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import OutputSpec, PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
-    InputSpec,
     Step,
     StepConfiguration,
     StepConfigurationUpdate,
@@ -467,18 +466,12 @@ class Compiler:
         Returns:
             The step spec.
         """
-        inputs = {
-            key: [
-                InputSpec(
-                    step_name=artifact.invocation_id,
-                    output_name=artifact.output_name,
-                    chunk_index=artifact.chunk_index,
-                    chunk_size=artifact.chunk_size,
-                )
-                for artifact in artifact_list
-            ]
-            for key, artifact_list in invocation.input_artifacts.items()
-        }
+        inputs = {}
+        for key, artifact_or_list in invocation.input_artifacts.items():
+            if isinstance(artifact_or_list, list):
+                inputs[key] = [a.to_spec() for a in artifact_or_list]
+            else:
+                inputs[key] = artifact_or_list.to_spec()
 
         return StepSpec(
             source=invocation.step.resolve(),

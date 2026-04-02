@@ -1318,16 +1318,14 @@ def compile_dynamic_step_invocation(
     external_artifacts = {}
     for name, value in inputs.items():
         if isinstance(value, OutputArtifact):
-            input_artifacts[name] = [
-                StepArtifact(
-                    invocation_id=value.step_name,
-                    output_name=value.output_name,
-                    annotation=OutputSignature(resolved_annotation=Any),
-                    pipeline=pipeline,
-                    chunk_index=value.chunk_index,
-                    chunk_size=value.chunk_size,
-                )
-            ]
+            input_artifacts[name] = StepArtifact(
+                invocation_id=value.step_name,
+                output_name=value.output_name,
+                annotation=OutputSignature(resolved_annotation=Any),
+                pipeline=pipeline,
+                chunk_index=value.chunk_index,
+                chunk_size=value.chunk_size,
+            )
         elif (
             isinstance(value, list)
             and value
