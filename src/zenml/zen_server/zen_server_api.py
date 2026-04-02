@@ -51,6 +51,7 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
+from zenml.zen_server.otel import configure_otel
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -131,8 +132,6 @@ app = FastAPI(
 )
 
 add_middlewares(app)
-
-from zenml.zen_server.otel import configure_otel
 
 configure_otel(app)
 

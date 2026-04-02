@@ -54,23 +54,21 @@ _OTEL_SAFE_TYPES = (type(None), bool, bytes, int, float, str, list, tuple)
 
 class _OTelSanitizeFilter(logging.Filter):
     """Strip non-serializable attributes from LogRecords before OTel export.
-    
-    When structlog's ProcessorFormatter processes a log record, it attaches an 
-    internal _logger attribute (a BoundLoggerFilteringAtLevel wrapper) to the 
-    LogRecord object. OTel's LoggingHandler then iterates over record.__dict__ 
-    to convert all attributes into OTLP log record attributes, and it only knows 
-    how to serialize primitives (str, int, float, bool, bytes, list, tuple). When 
+
+    When structlog's ProcessorFormatter processes a log record, it attaches an
+    internal _logger attribute (a BoundLoggerFilteringAtLevel wrapper) to the
+    LogRecord object. OTel's LoggingHandler then iterates over record.__dict__
+    to convert all attributes into OTLP log record attributes, and it only knows
+    how to serialize primitives (str, int, float, bool, bytes, list, tuple). When
     it hits the _logger object, it emits a warning like:
 
     ``Failed to encode attribute _logger of type BoundLoggerFilteringAtLevel``
 
     This warning fires on every single log record, flooding the logs.
-    The filter strips any private (`_`-prefixed) attribute whose value isn't an 
-    OTel-safe primitive. It doesn't drops log records — it just cleans them before 
+    The filter strips any private (`_`-prefixed) attribute whose value isn't an
+    OTel-safe primitive. It doesn't drops log records — it just cleans them before
     OTel sees them.
 
-
-    
     Ref:
      - https://github.com/open-telemetry/opentelemetry-python/issues/3649
      - https://github.com/open-telemetry/opentelemetry-python/issues/3370

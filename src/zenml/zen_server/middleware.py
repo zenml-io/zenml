@@ -219,14 +219,18 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
                 # We use the threadpool for it.
 
                 def update_last_user_activity_timestamp() -> None:
-                    logger.debug("user_activity.updating", **get_system_metrics())
+                    logger.debug(
+                        "user_activity.updating", **get_system_metrics()
+                    )
 
                     try:
                         zen_store()._update_last_user_activity_timestamp(
                             last_user_activity=last_user_activity,
                         )
                     finally:
-                        logger.debug("user_activity.updated", **get_system_metrics())
+                        logger.debug(
+                            "user_activity.updated", **get_system_metrics()
+                        )
 
                 await to_thread.run_sync(
                     update_last_user_activity_timestamp,
