@@ -375,7 +375,10 @@ class StepLauncher:
                                 self._invocation_id,
                                 e,
                             )
-                            if step_run.status == ExecutionStatus.RUNNING:
+                            if step_run.status in {
+                                ExecutionStatus.RUNNING,
+                                ExecutionStatus.QUEUED,
+                            }:
                                 # Only update the status if the step runner
                                 # somehow failed to do so.
                                 publish_utils.publish_failed_step_run(
