@@ -34,7 +34,9 @@ Note the following limitations when using Uvicorn with zero-code auto-instrument
 * Multiple workers (`--workers N`) is incompatible: Similar to `--reload`, running Uvicorn with multiple workers in production
        via the `--workers` flag also causes issues with the auto-instrumentation agent.
 
-Ref: https://oneuptime.com/blog/post/2026-02-06-troubleshoot-fastapi-uvicorn-reload/view
+Ref:
+ - https://oneuptime.com/blog/post/2026-02-06-troubleshoot-fastapi-uvicorn-reload/view
+ - https://github.com/open-telemetry/opentelemetry-python-contrib/issues/385
 
 """
 
@@ -46,6 +48,50 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
+
+_OTEL_SAFE_TYPES = (type(None), bool, bytes, int, float, str, list, tuple)
+
+
+class _OTelSanitizeFilter(logging.Filter):
+    """Strip non-serializable attributes from LogRecords before OTel export.
+    
+    When structlog's ProcessorFormatter processes a log record, it attaches an 
+    internal _logger attribute (a BoundLoggerFilteringAtLevel wrapper) to the 
+    LogRecord object. OTel's LoggingHandler then iterates over record.__dict__ 
+    to convert all attributes into OTLP log record attributes, and it only knows 
+    how to serialize primitives (str, int, float, bool, bytes, list, tuple). When 
+    it hits the _logger object, it emits a warning like:
+
+    ``Failed to encode attribute _logger of type BoundLoggerFilteringAtLevel``
+
+    This warning fires on every single log record, flooding the logs.
+    The filter strips any private (`_`-prefixed) attribute whose value isn't an 
+    OTel-safe primitive. It doesn't drops log records — it just cleans them before 
+    OTel sees them.
+
+
+    
+    Ref:
+     - https://github.com/open-telemetry/opentelemetry-python/issues/3649
+     - https://github.com/open-telemetry/opentelemetry-python/issues/3370
+     - https://github.com/open-telemetry/opentelemetry-python/issues/3389
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Remove non-serializable private attributes from the record.
+
+        Args:
+            record: The log record to sanitize.
+
+        Returns:
+            Always True — records are never dropped, only cleaned.
+        """
+        for key in list(record.__dict__):
+            if key.startswith("_") and not isinstance(
+                record.__dict__[key], _OTEL_SAFE_TYPES
+            ):
+                del record.__dict__[key]
+        return True
 
 
 def configure_otel(app: "FastAPI") -> None:
@@ -118,6 +164,7 @@ def configure_otel(app: "FastAPI") -> None:
         level=otel_log_level,
         logger_provider=logger_provider,
     )
+    otel_handler.addFilter(_OTelSanitizeFilter())
     logging.getLogger().addHandler(otel_handler)
 
     # --- Instrumentors (each guarded by its own import) ---
