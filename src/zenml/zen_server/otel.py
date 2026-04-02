@@ -165,7 +165,7 @@ def configure_otel(app: "FastAPI") -> None:
     otel_handler.addFilter(_OTelSanitizeFilter())
     logging.getLogger().addHandler(otel_handler)
 
-    # --- Instrumentors (each guarded by its own import) ---
+    # Instrumenting FastAPI, Requests, and SQLAlchemy
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
