@@ -159,7 +159,7 @@ def upgrade() -> None:
             ["component_id"],
             ["stack_component.id"],
             name="fk_resource_request_component_id_stack_component",
-            ondelete="CASCADE",
+            ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["preemption_initiated_by_id"],

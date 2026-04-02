@@ -109,8 +109,9 @@ class ResourceRequestResponseMetadata(UserScopedResponseMetadata):
 class ResourceRequestResponseResources(UserScopedResponseResources):
     """Response resources for resource requests."""
 
-    component: "ComponentResponse" = Field(
-        title="The component that is requesting the resources."
+    component: Optional["ComponentResponse"] = Field(
+        title="The component that is requesting the resources.",
+        default=None,
     )
     step_run: Optional["StepRunResponse"] = Field(
         title="The step run that is requesting the resources.", default=None
@@ -181,7 +182,7 @@ class ResourceRequestResponse(
         return self.get_body().preemptible
 
     @property
-    def component(self) -> "ComponentResponse":
+    def component(self) -> Optional["ComponentResponse"]:
         """The `component` property.
 
         Returns:

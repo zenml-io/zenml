@@ -64,14 +64,13 @@ class ResourceRequestSchema(BaseSchema, table=True):
         ),
     )
 
-    # TODO: handle deletion and free resources
-    component_id: UUID = build_foreign_key_field(
+    component_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
         source_column="component_id",
         target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
+        ondelete="SET NULL",
+        nullable=True,
     )
     step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -98,7 +97,7 @@ class ResourceRequestSchema(BaseSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship()
-    component: "StackComponentSchema" = Relationship()
+    component: Optional["StackComponentSchema"] = Relationship()
     step_run: Optional["StepRunSchema"] = Relationship(
         back_populates="resource_request"
     )
@@ -226,7 +225,9 @@ class ResourceRequestSchema(BaseSchema, table=True):
         if include_resources:
             resources = ResourceRequestResponseResources(
                 user=self.user.to_model() if self.user else None,
-                component=self.component.to_model(),
+                component=self.component.to_model()
+                if self.component
+                else None,
                 step_run=self.step_run.to_model() if self.step_run else None,
                 pipeline_run=self.step_run.pipeline_run.to_model()
                 if self.step_run
