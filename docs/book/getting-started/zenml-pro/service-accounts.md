@@ -393,3 +393,5 @@ Service accounts and API keys at the workspace level are deprecated and will be 
 
 If you encounter issues with service account management, check the ZenML Pro documentation or contact your organization administrator for assistance with permissions and access control.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
