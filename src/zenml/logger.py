@@ -353,6 +353,28 @@ def get_zenml_handler() -> logging.Handler:
     return ZenMLLoggingHandler()
 
 
+def _is_zenml_console_handler(handler: logging.Handler) -> bool:
+    """Check whether a handler is the ZenML console stream handler."""
+    return (
+        isinstance(handler, logging.StreamHandler)
+        and isinstance(getattr(handler, "stream", None), _ZenMLStdoutStream)
+        and isinstance(handler.formatter, ConsoleFormatter)
+    )
+
+
+def _has_zenml_console_handler(root_logger: logging.Logger) -> bool:
+    """Return whether root already has the ZenML console handler."""
+    return any(_is_zenml_console_handler(handler) for handler in root_logger.handlers)
+
+
+def _has_zenml_logging_handler(root_logger: logging.Logger) -> bool:
+    """Return whether root already has the ZenML routing handler."""
+    return any(
+        isinstance(handler, ZenMLLoggingHandler)
+        for handler in root_logger.handlers
+    )
+
+
 def init_logging() -> None:
     """Initialize the logging system."""
     set_root_verbosity()
@@ -362,10 +384,12 @@ def init_logging() -> None:
     root_logger = logging.getLogger()
 
     # Console handler - writes to original stdout
-    root_logger.addHandler(get_console_handler())
+    if not _has_zenml_console_handler(root_logger):
+        root_logger.addHandler(get_console_handler())
 
     # ZenML handler - routes through LoggingContext
-    root_logger.addHandler(get_zenml_handler())
+    if not _has_zenml_logging_handler(root_logger):
+        root_logger.addHandler(get_zenml_handler())
 
     # Mute tensorflow cuda warnings
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
