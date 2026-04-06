@@ -106,35 +106,21 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  ubuntu-setup-and-unit-test:
-    needs: linting
+  linux-fast-modal:
     if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        # IMPORTANT: Since we are using the combination of `arc-runner-set`
-        # and `3.10` in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow. If you change the configuration
-        # here, please adjust the configuration of `ci-slow` accordingly.
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
+    uses: ./.github/workflows/linux-fast-modal.yml
     with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
+      python-version: '3.13'
+      use_modal: true
     secrets: inherit
-  ubuntu-latest-integration-test:
+  ubuntu-latest-docker-integration-test:
     needs: [linting]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        # IMPORTANT: Since we are using the combination of `arc-runner-set`
-        # and `3.10` in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow. If you change the configuration
-        # here, please adjust the configuration of `ci-slow` accordingly.
         os: [ubuntu-latest]
         python-version: ['3.11']
-        test_environment: [default, docker-server-docker-orchestrator-mysql]
+        test_environment: [docker-server-docker-orchestrator-mysql]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
     with:

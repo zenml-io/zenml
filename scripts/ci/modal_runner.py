@@ -1,0 +1,2169 @@
+"""Run Linux fast CI on Modal and locally from the same entrypoint."""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import json
+import os
+import shlex
+import subprocess
+import sys
+import time
+import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any, List, Optional, Sequence
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from scripts.ci.modal_image import (
+    DEFAULT_MODAL_APP_NAME,
+    DEFAULT_SANDBOX_CPU,
+    DEFAULT_SANDBOX_MEMORY_MB,
+    ResolvedDependencyImage,
+    compute_execution_fingerprint,
+    execution_overlay_paths_for_suite,
+    resolve_dependency_image,
+)
+from scripts.ci.scheduler import (
+    DEFAULT_INTEGRATION_TEST_DURATION_SECONDS,
+    DEFAULT_UNIT_TEST_DURATION_SECONDS,
+    ScheduledBatch,
+    read_durations_file,
+    schedule_batches,
+)
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_ARTIFACTS_DIR = REPO_ROOT / "test-results" / "modal-fast-ci"
+DEFAULT_DURATION_CACHE_PATH = (
+    REPO_ROOT / ".modal-cache" / "test_durations.json"
+)
+DEFAULT_NODE_ID_CACHE_DIR = REPO_ROOT / ".modal-cache" / "node-ids"
+RUNNER_EXIT_TEST_FAILURE = 1
+RUNNER_EXIT_INFRA_FAILURE = 2
+REMOTE_ARTIFACTS_DIR = "/app/.modal-ci"
+REMOTE_SOURCE_ROOT = "/app"
+NODE_ID_PATH = "/tmp/zenml-batch-node-ids.txt"
+JUNIT_PATH = f"{REMOTE_ARTIFACTS_DIR}/junit.xml"
+RUN_LOG_PATH = f"{REMOTE_ARTIFACTS_DIR}/batch.log"
+REMOTE_COVERAGE_PATH = f"{REMOTE_ARTIFACTS_DIR}/.coverage"
+COVERAGE_FILE_ENV = "COVERAGE_FILE"
+JUNIT_LOG_START = "__MODAL_JUNIT_START__"
+JUNIT_LOG_END = "__MODAL_JUNIT_END__"
+INTEGRATION_QUEUE_DEPTH_MULTIPLIER = 1
+UNIT_QUEUE_DEPTH_MULTIPLIER = 1
+BATCH_MANIFESTS_DIRNAME = "batches"
+BATCH_NODE_UPLOAD_TIMEOUT_SECONDS = 120
+MODAL_ENV_PAYLOAD_MAX_BYTES = 28000  # Modal caps secret values at 32768 bytes
+
+RUNNER_COMMAND = """\
+test_environment="${ZENML_TEST_ENVIRONMENT}"
+artifacts_dir="${ZENML_ARTIFACTS_DIR}"
+batch_name="${ZENML_BATCH_NAME:-batch}"
+
+cd /app
+chmod +x ./zen-test
+export PYTHONUNBUFFERED=1
+mkdir -p "${artifacts_dir}" /app/.zen
+
+if [[ -n "${ZENML_NODE_IDS_B64:-}" ]]; then
+  echo "$ZENML_NODE_IDS_B64" | base64 -d > "${ZENML_NODE_ID_PATH}"
+else
+  for _ in $(seq 1 600); do
+    if [[ -s "${ZENML_NODE_ID_PATH}" ]]; then
+      break
+    fi
+    sleep 0.2
+  done
+fi
+
+if [[ ! -s "${ZENML_NODE_ID_PATH}" ]]; then
+  echo "Batch node ID file was not uploaded to ${ZENML_NODE_ID_PATH}" >&2
+  exit 97
+fi
+
+mapfile -t NODE_IDS < "${ZENML_NODE_ID_PATH}"
+
+pytest_args=(
+  --color=yes
+  -ra
+  -q
+  --environment "$test_environment"
+  --no-provision
+  -p no:randomly
+  -p no:rerunfailures
+  --junitxml="${ZENML_JUNIT_PATH}"
+)
+
+if [[ "${ZENML_COLLECT_COVERAGE:-1}" == "1" ]]; then
+  pytest_args+=(
+    --cov=src/zenml
+    --cov-config=pyproject.toml
+    --cov-report=
+  )
+fi
+
+if [[ "${ZENML_PYTEST_WORKERS:-0}" -gt 1 ]]; then
+  pytest_args+=(
+    -n "${ZENML_PYTEST_WORKERS}"
+    --dist "${ZENML_PYTEST_DIST:-worksteal}"
+  )
+fi
+
+if [[ -n "${ZENML_PYTEST_IMPORT_MODE:-}" ]]; then
+  pytest_args+=(
+    --import-mode "${ZENML_PYTEST_IMPORT_MODE}"
+  )
+fi
+
+pytest_args+=("${NODE_IDS[@]}")
+pytest_exit=0
+python -m pytest "${pytest_args[@]}" &
+pytest_pid=$!
+
+while kill -0 "$pytest_pid" >/dev/null 2>&1; do
+  printf '[heartbeat] %s pytest still running for %s\n' "$(date '+%H:%M:%S')" "$batch_name"
+  sleep 15
+done &
+heartbeat_pid=$!
+
+wait "$pytest_pid" || pytest_exit=$?
+kill "$heartbeat_pid" >/dev/null 2>&1 || true
+wait "$heartbeat_pid" 2>/dev/null || true
+
+if [[ -f "${ZENML_JUNIT_PATH}" ]]; then
+  echo "${ZENML_JUNIT_START}"
+  python -c 'import base64, pathlib, sys; print(base64.b64encode(pathlib.Path(sys.argv[1]).read_bytes()).decode("ascii"))' "${ZENML_JUNIT_PATH}"
+  echo "${ZENML_JUNIT_END}"
+fi
+exit "$pytest_exit"
+"""
+
+
+@dataclass
+class SuiteConfig:
+    """Configuration for a single suite run."""
+
+    name: str
+    test_environment: str
+    default_duration: float
+    batch_timeout: int
+    pytest_workers: int = 0
+    pytest_dist: str = "worksteal"
+    pytest_import_mode: Optional[str] = None
+    collect_coverage: bool = True
+
+
+@dataclass
+class BatchResult:
+    """Result for one Modal test batch."""
+
+    suite: str
+    batch_name: str
+    node_ids: List[str]
+    expected_duration: float
+    runtime_seconds: float
+    exit_code: int
+    junit_xml: str
+    failed_node_ids: List[str]
+    log_output: str
+    coverage_path: Optional[Path]
+
+
+@dataclass(frozen=True)
+class FailureDetail:
+    """Structured information for one failed testcase."""
+
+    batch_name: str
+    node_id: str
+    kind: str
+    summary: str
+    details: str
+
+
+@dataclass
+class BatchExecution:
+    """Running Modal batch state."""
+
+    suite: SuiteConfig
+    batch_name: str
+    scheduled_batch: ScheduledBatch
+    sandbox: Any
+    artifacts_dir: Path
+    start_time: float
+
+
+@dataclass
+class RunnerSummary:
+    """Top-level runner result."""
+
+    results: List[BatchResult]
+    startup_summary: Optional["StartupSummary"] = None
+
+
+@dataclass(frozen=True)
+class SuiteCollection:
+    """Collected suite metadata used for scheduling and execution."""
+
+    suite: SuiteConfig
+    node_ids: List[str]
+    estimated_total_duration: float
+    execution_fingerprint: str
+    execution_cache_hit: bool
+    node_id_cache_hit: bool
+
+
+@dataclass(frozen=True)
+class SuiteExecutionImage:
+    """Suite-specific execution image resolution details."""
+
+    suite_name: str
+    image: Any
+    fingerprint: str
+    cache_hit: bool
+
+
+@dataclass(frozen=True)
+class StartupSummary:
+    """Warm-start and launch metadata for one runner invocation."""
+
+    dependency_cache_hit: bool
+    execution_cache_hits: dict[str, bool]
+    node_id_cache_hits: dict[str, bool]
+    launch_to_first_batch_seconds: float
+
+
+@dataclass
+class SuiteRunOutcome:
+    """One suite execution outcome plus launch timing."""
+
+    results: List[BatchResult]
+    first_launch_started_at: Optional[float]
+
+
+class InfraFailure(RuntimeError):
+    """Raised when Modal infrastructure fails."""
+
+
+def log(message: str) -> None:
+    """Print a timestamped runner log line."""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"[{timestamp}] [modal-runner] {message}", flush=True)
+
+
+def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+    """Parse CLI args for CI and local runs."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--suite",
+        action="append",
+        choices=("unit", "integration"),
+        required=True,
+        help="Suite to run. May be passed multiple times.",
+    )
+    parser.add_argument(
+        "--test-environment",
+        default="default",
+        help="ZenML test environment to provision and run against.",
+    )
+    parser.add_argument(
+        "--python-version",
+        default="3.13",
+        help="Python version for the Modal image.",
+    )
+    parser.add_argument(
+        "--max-sandboxes",
+        type=int,
+        default=20,
+        help="Maximum number of parallel sandboxes per suite.",
+    )
+    parser.add_argument(
+        "--artifacts-dir",
+        type=Path,
+        default=DEFAULT_ARTIFACTS_DIR,
+        help="Directory where JUnit, coverage, and summary artifacts are written.",
+    )
+    parser.add_argument(
+        "--local-run-name",
+        default="local",
+        help="Run label for local execution.",
+    )
+    parser.add_argument(
+        "--use-existing-test-durations",
+        action="store_true",
+        default=True,
+        help="Use the repository .test_durations file if present.",
+    )
+    parser.add_argument(
+        "--unit-batch-timeout",
+        type=int,
+        default=900,
+        help="Sandbox timeout in seconds for unit batches.",
+    )
+    parser.add_argument(
+        "--integration-batch-timeout",
+        type=int,
+        default=960,
+        help="Sandbox timeout in seconds for integration batches.",
+    )
+    parser.add_argument(
+        "--sandbox-cpu",
+        type=float,
+        default=DEFAULT_SANDBOX_CPU,
+        help="vCPUs to allocate to each Modal sandbox.",
+    )
+    parser.add_argument(
+        "--sandbox-memory-mb",
+        type=int,
+        default=DEFAULT_SANDBOX_MEMORY_MB,
+        help="Memory in MB to allocate to each Modal sandbox.",
+    )
+    parser.add_argument(
+        "--unit-pytest-workers",
+        type=int,
+        default=None,
+        help=(
+            "Number of in-shard pytest-xdist workers for unit batches. "
+            "Defaults to the sandbox CPU count."
+        ),
+    )
+    parser.add_argument(
+        "--unit-pytest-dist",
+        choices=("worksteal", "load", "loadscope"),
+        default="worksteal",
+        help=(
+            "pytest-xdist distribution mode for unit batches. "
+            "Use worksteal or load for balanced shards; reserve loadscope "
+            "for tests that must stay grouped by scope."
+        ),
+    )
+    parser.add_argument(
+        "--unit-max-sandboxes",
+        type=int,
+        default=None,
+        help=(
+            "Maximum number of outer sandboxes reserved for the unit suite when "
+            "running multiple suites. Defaults to 3 for unit+integration runs."
+        ),
+    )
+    parser.add_argument(
+        "--collect-coverage",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Collect coverage data for test shards.",
+    )
+    return parser.parse_args(argv)
+
+
+def suite_configs_from_args(args: argparse.Namespace) -> List[SuiteConfig]:
+    """Convert parsed args into suite configs."""
+    configs: List[SuiteConfig] = []
+    for suite in args.suite:
+        batch_timeout = (
+            args.unit_batch_timeout
+            if suite == "unit"
+            else args.integration_batch_timeout
+        )
+        pytest_workers = (
+            _default_unit_pytest_workers(
+                configured_workers=args.unit_pytest_workers,
+                sandbox_cpu=args.sandbox_cpu,
+            )
+            if suite == "unit"
+            else 0
+        )
+        configs.append(
+            SuiteConfig(
+                name=suite,
+                test_environment=args.test_environment,
+                default_duration=_default_duration_for_suite(suite),
+                batch_timeout=batch_timeout,
+                pytest_workers=pytest_workers,
+                pytest_dist=(
+                    args.unit_pytest_dist if suite == "unit" else "worksteal"
+                ),
+                pytest_import_mode="importlib",
+                collect_coverage=args.collect_coverage,
+            )
+        )
+    return configs
+
+
+def _default_duration_for_suite(suite: str) -> float:
+    """Return the fallback duration for one suite."""
+    if suite == "unit":
+        return DEFAULT_UNIT_TEST_DURATION_SECONDS
+    return DEFAULT_INTEGRATION_TEST_DURATION_SECONDS
+
+
+def _default_unit_pytest_workers(
+    *,
+    configured_workers: Optional[int],
+    sandbox_cpu: float,
+) -> int:
+    """Choose a conservative default xdist worker count for unit shards."""
+    if configured_workers is not None:
+        return max(0, configured_workers)
+    return max(1, min(4, int(sandbox_cpu)))
+
+
+def _retry_modal_call(func: Any, *args: Any, **kwargs: Any) -> Any:
+    """Retry transient Modal API calls a few times before failing."""
+    last_error: Optional[Exception] = None
+    for attempt in range(3):
+        try:
+            return func(*args, **kwargs)
+        except Exception as error:  # pragma: no cover - exercised via mocks
+            last_error = error
+            if attempt == 2:
+                break
+            log(
+                f"Retrying Modal API call {func.__name__} after error: {error} "
+                f"(attempt {attempt + 2}/3)."
+            )
+            time.sleep(2**attempt)
+    raise InfraFailure(str(last_error)) from last_error
+
+
+def _read_sandbox_file(sandbox: Any, path: str) -> str:
+    """Read a UTF-8 file from a sandbox."""
+    return _read_sandbox_bytes(sandbox, path).decode("utf-8")
+
+
+def _read_sandbox_bytes(sandbox: Any, path: str) -> bytes:
+    """Read binary data from a sandbox file."""
+    last_error: Optional[Exception] = None
+    filesystem = getattr(sandbox, "filesystem", None)
+    if filesystem is not None:
+        try:
+            return filesystem.read_bytes(path)
+        except Exception as error:
+            last_error = error
+
+    opener = getattr(sandbox, "open", None)
+    if opener is None:
+        if last_error is not None:
+            raise last_error
+        raise FileNotFoundError(path)
+
+    with opener(path, "rb") as file_handle:
+        return file_handle.read()
+
+
+def _try_read_sandbox_file(sandbox: Any, path: str) -> Optional[str]:
+    """Read a sandbox file if it exists."""
+    try:
+        return _read_sandbox_file(sandbox, path)
+    except Exception:
+        return None
+
+
+def _try_read_sandbox_stdout(sandbox: Any) -> Optional[str]:
+    """Read the sandbox stdout stream if available."""
+    stdout = getattr(sandbox, "stdout", None)
+    if stdout is None:
+        return None
+
+    try:
+        return stdout.read()
+    except Exception:
+        return None
+
+
+def _extract_embedded_junit(log_output: str) -> tuple[Optional[str], str]:
+    """Extract an embedded JUnit payload from the batch log output."""
+    start = log_output.find(JUNIT_LOG_START)
+    end = log_output.find(JUNIT_LOG_END)
+    if start == -1 or end == -1 or end < start:
+        return None, log_output
+
+    payload_start = start + len(JUNIT_LOG_START)
+    payload = log_output[payload_start:end].strip()
+    cleaned_output = (
+        log_output[:start].rstrip("\n")
+        + "\n"
+        + log_output[end + len(JUNIT_LOG_END) :].lstrip("\n")
+    ).strip()
+    if not payload:
+        return None, cleaned_output
+
+    try:
+        junit_xml = base64.b64decode(payload).decode("utf-8")
+    except Exception:
+        return None, cleaned_output
+    return junit_xml, cleaned_output
+
+
+def _add_overlay_paths_to_image(
+    image: Any,
+    *,
+    overlay_paths: Sequence[str],
+) -> Any:
+    """Apply one suite overlay to a Modal image."""
+    for relative_path in overlay_paths:
+        local_path = REPO_ROOT / relative_path
+        remote_path = f"/app/{relative_path}"
+        if local_path.is_dir():
+            image = image.add_local_dir(
+                str(local_path),
+                remote_path,
+                copy=False,
+            )
+        else:
+            image = image.add_local_file(
+                str(local_path),
+                remote_path,
+                copy=False,
+            )
+    return image
+
+
+def _node_id_cache_path(
+    *,
+    suite: str,
+    execution_fingerprint: str,
+    pytest_import_mode: Optional[str],
+) -> Path:
+    """Return the cache file path for collected node IDs."""
+    import_mode = pytest_import_mode or "default"
+    cache_name = f"{execution_fingerprint}-{import_mode}.json"
+    return DEFAULT_NODE_ID_CACHE_DIR / suite / cache_name
+
+
+def _load_cached_node_ids(
+    *,
+    suite: str,
+    execution_fingerprint: str,
+    pytest_import_mode: Optional[str],
+) -> Optional[List[str]]:
+    """Load cached node IDs for one suite if present."""
+    cache_path = _node_id_cache_path(
+        suite=suite,
+        execution_fingerprint=execution_fingerprint,
+        pytest_import_mode=pytest_import_mode,
+    )
+    if not cache_path.exists():
+        return None
+
+    payload = json.loads(cache_path.read_text(encoding="utf-8"))
+    node_ids = payload.get("node_ids")
+    if not isinstance(node_ids, list) or not all(
+        isinstance(node_id, str) for node_id in node_ids
+    ):
+        return None
+    return node_ids
+
+
+def _save_cached_node_ids(
+    *,
+    suite: str,
+    execution_fingerprint: str,
+    pytest_import_mode: Optional[str],
+    node_ids: Sequence[str],
+) -> Path:
+    """Persist one suite's collected node IDs."""
+    cache_path = _node_id_cache_path(
+        suite=suite,
+        execution_fingerprint=execution_fingerprint,
+        pytest_import_mode=pytest_import_mode,
+    )
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(
+        json.dumps({"node_ids": list(node_ids)}, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return cache_path
+
+
+def _apply_source_overlay(
+    *,
+    base_image: Any,
+    dependency_fingerprint: str,
+    python_version: str,
+    suite_name: str = "",
+) -> SuiteExecutionImage:
+    """Apply source overlay to the dependency image without snapshotting.
+
+    Provision and editable install happen inside each sandbox at startup
+    via RUNNER_COMMAND, eliminating the sequential snapshot step.
+    """
+    overlay_paths = execution_overlay_paths_for_suite(suite_name)
+    image = _add_overlay_paths_to_image(
+        base_image,
+        overlay_paths=overlay_paths,
+    )
+    execution_fingerprint = compute_execution_fingerprint(
+        python_version=python_version,
+        test_environment="default",
+        dependency_fingerprint=dependency_fingerprint,
+        suite_name=suite_name,
+        overlay_paths=overlay_paths,
+    )
+    log(f"Applied source overlay for {suite_name or 'all suites'}.")
+    return SuiteExecutionImage(
+        suite_name=suite_name,
+        image=image,
+        fingerprint=execution_fingerprint,
+        cache_hit=True,
+    )
+
+
+def _resolve_suite_images(
+    *,
+    base_image: Any,
+    dependency_fingerprint: str,
+    python_version: str,
+    suite_configs: Sequence[SuiteConfig],
+) -> dict[str, SuiteExecutionImage]:
+    """Build one execution image per suite so startup sync stays minimal."""
+    return {
+        suite.name: _apply_source_overlay(
+            base_image=base_image,
+            dependency_fingerprint=dependency_fingerprint,
+            python_version=python_version,
+            suite_name=suite.name,
+        )
+        for suite in suite_configs
+    }
+
+
+def _collect_node_ids_locally(
+    *,
+    suite: str,
+    test_environment: str,
+    pytest_import_mode: Optional[str],
+) -> Optional[List[str]]:
+    """Try to collect pytest node IDs by running pytest locally.
+
+    Avoids spinning up a Modal sandbox, cutting collection time from ~5 minutes
+    to ~20 seconds. Falls back to Modal collection if the local run fails.
+    """
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        f"tests/{suite}",
+        "--collect-only",
+        "-q",
+        f"--environment={test_environment}",
+        "--no-provision",
+        "--continue-on-collection-errors",
+        "--disable-warnings",
+        "-p",
+        "no:randomly",
+        "-p",
+        "no:rerunfailures",
+    ]
+    if pytest_import_mode:
+        cmd += [f"--import-mode={pytest_import_mode}"]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            timeout=120,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+    # 0 = all collected, 1 = some files failed to import (partial collection),
+    # 5 = no tests collected. All are usable if we got node IDs.
+    if result.returncode not in (0, 1, 5):
+        return None
+
+    node_ids = _parse_collected_node_ids(result.stdout)
+    return node_ids if node_ids else None
+
+
+def _parse_collected_node_ids(output: str) -> List[str]:
+    """Extract only concrete pytest node IDs from collect-only output."""
+    node_ids: List[str] = []
+    for line in output.splitlines():
+        stripped = line.strip()
+        if not stripped or not stripped.startswith("tests/"):
+            continue
+        if "::" not in stripped:
+            continue
+        node_ids.append(stripped)
+    return node_ids
+
+
+def _count_duration_matches(
+    node_ids: Sequence[str],
+    durations: dict[str, float],
+) -> int:
+    """Count how many collected node IDs have historical duration data."""
+    return sum(1 for node_id in node_ids if node_id in durations)
+
+
+def create_batch_failure_junit(
+    *,
+    batch_name: str,
+    node_ids: Sequence[str],
+    exit_code: int,
+    message: str,
+) -> str:
+    """Create a synthetic JUnit report for infrastructure failures."""
+    tests = max(1, len(node_ids))
+    escaped_message = (
+        message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    )
+    return (
+        f'<testsuite name="{batch_name}" tests="{tests}" failures="1" errors="1">'
+        '<testcase name="batch-infrastructure" classname="modal">'
+        f'<error message="Sandbox exited with code {exit_code}. {escaped_message}" />'
+        "</testcase>"
+        "</testsuite>"
+    )
+
+
+def extract_failed_node_ids(junit_xml: str) -> List[str]:
+    """Extract failing node ids from a JUnit XML document."""
+    root = ET.fromstring(junit_xml)
+    failed: List[str] = []
+    for testcase in root.iter("testcase"):
+        has_failure = any(
+            child.tag in {"failure", "error"} for child in list(testcase)
+        )
+        if not has_failure:
+            continue
+
+        node_id = _node_id_from_testcase(testcase)
+        if node_id:
+            failed.append(node_id)
+    return failed
+
+
+def extract_failure_details(
+    junit_xml: str,
+    *,
+    batch_name: str,
+) -> List[FailureDetail]:
+    """Extract structured failure details from a JUnit XML document."""
+    root = ET.fromstring(junit_xml)
+    details: List[FailureDetail] = []
+    for testcase in root.iter("testcase"):
+        node_id = _node_id_from_testcase(testcase)
+        if not node_id:
+            continue
+
+        for child in testcase:
+            if child.tag not in {"failure", "error"}:
+                continue
+
+            summary = _normalize_failure_summary(child)
+            details.append(
+                FailureDetail(
+                    batch_name=batch_name,
+                    node_id=node_id,
+                    kind=_failure_kind(summary, child.tag),
+                    summary=summary,
+                    details=(child.text or "").strip(),
+                )
+            )
+            break
+    return details
+
+
+def extract_test_durations(junit_xml: str) -> dict[str, float]:
+    """Extract per-test durations from one JUnit XML document."""
+    root = ET.fromstring(junit_xml)
+    durations: dict[str, float] = {}
+    for testcase in root.iter("testcase"):
+        node_id = _node_id_from_testcase(testcase)
+        if not node_id:
+            continue
+        duration = testcase.attrib.get("time")
+        if duration is None:
+            continue
+        try:
+            durations[node_id] = float(duration)
+        except ValueError:
+            continue
+    return durations
+
+
+def _normalize_failure_summary(element: ET.Element) -> str:
+    """Collapse a failure message into one readable line."""
+    message = " ".join(element.attrib.get("message", "").split())
+    if message:
+        return message
+
+    for line in (element.text or "").splitlines():
+        cleaned = line.strip()
+        if not cleaned:
+            continue
+        if cleaned.startswith("E   "):
+            cleaned = cleaned[4:]
+        return " ".join(cleaned.split())
+
+    return element.tag
+
+
+def _failure_kind(summary: str, fallback: str) -> str:
+    """Infer a concise error kind from a failure summary."""
+    if ":" not in summary:
+        return fallback
+
+    kind = summary.split(":", 1)[0].strip()
+    if "." in kind:
+        kind = kind.rsplit(".", 1)[-1]
+    return kind or fallback
+
+
+def _node_id_from_testcase(testcase: ET.Element) -> Optional[str]:
+    """Map a pytest JUnit testcase back to a collectable node id."""
+    classname = testcase.attrib.get("classname", "").strip()
+    name = testcase.attrib.get("name", "").strip()
+    if not name or classname == "modal":
+        return None
+
+    if classname.startswith("tests/"):
+        return f"{classname}::{name}"
+
+    if classname.startswith("tests."):
+        parts = classname.split(".")
+        for split_index in range(len(parts), 0, -1):
+            candidate = REPO_ROOT / ("/".join(parts[:split_index]) + ".py")
+            if candidate.exists():
+                node_id = "/".join(parts[:split_index]) + ".py"
+                remainder = parts[split_index:]
+                if remainder:
+                    return f"{node_id}::{'::'.join(remainder)}::{name}"
+                return f"{node_id}::{name}"
+
+        for split_index in range(len(parts) - 1, 0, -1):
+            if not parts[split_index].startswith("test"):
+                continue
+            node_id = "/".join(parts[: split_index + 1]) + ".py"
+            remainder = parts[split_index + 1 :]
+            if remainder:
+                return f"{node_id}::{'::'.join(remainder)}::{name}"
+            return f"{node_id}::{name}"
+
+        return f"{classname.replace('.', '/')}.py::{name}"
+
+    if classname:
+        return f"{classname}::{name}"
+    return name
+
+
+def merge_junit_xml_documents(
+    documents: Sequence[str], suite_name: str
+) -> str:
+    """Merge multiple JUnit XML documents into one testsuites document."""
+    testsuites = ET.Element("testsuites", name=suite_name)
+    for document in documents:
+        root = ET.fromstring(document)
+        if root.tag == "testsuite":
+            testsuites.append(root)
+            continue
+        for testsuite in root.findall("testsuite"):
+            testsuites.append(testsuite)
+    return ET.tostring(testsuites, encoding="unicode")
+
+
+def _write_suite_junit(
+    *,
+    suite_name: str,
+    suite_results: Sequence[BatchResult],
+    suite_dir: Path,
+) -> None:
+    """Persist one merged JUnit report for a suite."""
+    merged_junit = merge_junit_xml_documents(
+        [result.junit_xml for result in suite_results],
+        suite_name=suite_name,
+    )
+    (suite_dir / "junit.xml").write_text(merged_junit)
+
+
+def write_summary(
+    *,
+    results: Sequence[BatchResult],
+    output_path: Path,
+    startup_summary: Optional[StartupSummary] = None,
+) -> str:
+    """Create a markdown summary for the run."""
+    total_batches = len(results)
+    failed_batches = sum(1 for result in results if result.exit_code != 0)
+    total_failed_tests = sum(len(result.failed_node_ids) for result in results)
+
+    lines = [
+        "# Modal Fast CI Summary",
+        "",
+        f"- Total batches: {total_batches}",
+        f"- Failed batches: {failed_batches}",
+        f"- Failed tests: {total_failed_tests}",
+    ]
+    if startup_summary is not None:
+        lines.extend(
+            [
+                f"- Dependency image cache: {'hit' if startup_summary.dependency_cache_hit else 'miss'}",
+                "- Execution image cache: "
+                + ", ".join(
+                    f"`{suite}`={'hit' if hit else 'miss'}"
+                    for suite, hit in sorted(
+                        startup_summary.execution_cache_hits.items()
+                    )
+                ),
+                "- Node ID cache: "
+                + ", ".join(
+                    f"`{suite}`={'hit' if hit else 'miss'}"
+                    for suite, hit in sorted(
+                        startup_summary.node_id_cache_hits.items()
+                    )
+                ),
+                f"- Launch to first batch: {startup_summary.launch_to_first_batch_seconds:.1f}s",
+            ]
+        )
+    lines.extend(["", "## Batch Timing"])
+    for result in results:
+        lines.append(
+            f"- `{result.batch_name}`: {result.runtime_seconds:.1f}s "
+            f"(expected {result.expected_duration:.1f}s)"
+        )
+
+    failure_details = _collect_failure_details(results)
+    failed_node_ids = [
+        node_id for result in results for node_id in result.failed_node_ids
+    ]
+    if failed_node_ids:
+        lines.extend(["", "## Failed Tests"])
+        lines.extend(f"- `{node_id}`" for node_id in failed_node_ids)
+        lines.extend(["", "## Failure Groups"])
+        for kind, grouped_details in _group_failure_details(failure_details):
+            lines.append(
+                f"### `{kind}` ({len(grouped_details)} failure"
+                f"{'' if len(grouped_details) == 1 else 's'})"
+            )
+            lines.append(
+                f"Representative message: `{grouped_details[0].summary}`"
+            )
+            lines.extend(
+                f"- `{detail.node_id}` in `{detail.batch_name}`"
+                for detail in grouped_details
+            )
+
+        lines.extend(["", "## Failed Batches"])
+        for result in results:
+            if result.exit_code == 0:
+                continue
+            batch_details = [
+                detail
+                for detail in failure_details
+                if detail.batch_name == result.batch_name
+            ]
+            lines.append(
+                f"### `{result.batch_name}` (exit {result.exit_code}, "
+                f"{result.runtime_seconds:.1f}s)"
+            )
+            for detail in batch_details:
+                lines.append(f"- `{detail.node_id}`: `{detail.summary}`")
+
+    summary = "\n".join(lines) + "\n"
+    output_path.write_text(summary)
+    github_summary = os.getenv("GITHUB_STEP_SUMMARY")
+    if github_summary:
+        with open(github_summary, "a", encoding="utf-8") as summary_file:
+            summary_file.write(summary)
+    return summary
+
+
+def write_failure_report(
+    *,
+    results: Sequence[BatchResult],
+    output_path: Path,
+) -> Optional[Path]:
+    """Write a focused failure report with grouped causes and batch details."""
+    failure_details = _collect_failure_details(results)
+    if not failure_details:
+        return None
+
+    lines = ["# Modal Fast CI Failure Report", "", "## Failure Groups"]
+    for kind, grouped_details in _group_failure_details(failure_details):
+        lines.append(
+            f"### `{kind}` ({len(grouped_details)} failure"
+            f"{'' if len(grouped_details) == 1 else 's'})"
+        )
+        lines.append(f"Representative message: `{grouped_details[0].summary}`")
+        lines.extend(
+            f"- `{detail.node_id}` in `{detail.batch_name}`"
+            for detail in grouped_details
+        )
+
+    lines.extend(["", "## Failed Batches"])
+    for result in results:
+        if result.exit_code == 0:
+            continue
+        batch_details = [
+            detail
+            for detail in failure_details
+            if detail.batch_name == result.batch_name
+        ]
+        lines.append(
+            f"### `{result.batch_name}` (exit {result.exit_code}, "
+            f"{result.runtime_seconds:.1f}s)"
+        )
+        for detail in batch_details:
+            lines.append(f"- `{detail.node_id}`")
+            lines.append(f"Cause: `{detail.summary}`")
+
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return output_path
+
+
+def format_failure_console_report(results: Sequence[BatchResult]) -> str:
+    """Render a concise console digest for failing batches."""
+    failure_details = _collect_failure_details(results)
+    if not failure_details:
+        return ""
+
+    lines = ["Failure summary:"]
+    for result in results:
+        if result.exit_code == 0:
+            continue
+        batch_details = [
+            detail
+            for detail in failure_details
+            if detail.batch_name == result.batch_name
+        ]
+        if not batch_details:
+            lines.append(
+                f"- `{result.batch_name}`: exit {result.exit_code} after "
+                f"{result.runtime_seconds:.1f}s"
+            )
+            continue
+        for detail in batch_details:
+            lines.append(
+                f"- `{result.batch_name}`: `{detail.node_id}` -> `{detail.summary}`"
+            )
+    return "\n".join(lines)
+
+
+def _collect_failure_details(
+    results: Sequence[BatchResult],
+) -> List[FailureDetail]:
+    """Collect failure details for all failed batches."""
+    details: List[FailureDetail] = []
+    for result in results:
+        if result.exit_code == 0:
+            continue
+        details.extend(
+            extract_failure_details(
+                result.junit_xml, batch_name=result.batch_name
+            )
+        )
+    return details
+
+
+def _group_failure_details(
+    details: Sequence[FailureDetail],
+) -> List[tuple[str, List[FailureDetail]]]:
+    """Group failure details by inferred error kind."""
+    grouped: dict[str, List[FailureDetail]] = {}
+    for detail in details:
+        grouped.setdefault(detail.kind, []).append(detail)
+    return sorted(
+        grouped.items(),
+        key=lambda item: (-len(item[1]), item[0]),
+    )
+
+
+def combine_coverage_files(
+    *,
+    coverage_files: Sequence[Path],
+    artifacts_dir: Path,
+) -> Optional[Path]:
+    """Combine coverage files into one XML report."""
+    if not coverage_files:
+        return None
+
+    env = os.environ.copy()
+    env[COVERAGE_FILE_ENV] = str(artifacts_dir / ".coverage")
+    subprocess.run(
+        ["coverage", "combine", *[str(path) for path in coverage_files]],
+        check=True,
+        cwd=REPO_ROOT,
+        env=env,
+    )
+    output_path = artifacts_dir / "coverage.xml"
+    subprocess.run(
+        ["coverage", "xml", "-o", str(output_path)],
+        check=True,
+        cwd=REPO_ROOT,
+        env=env,
+    )
+    return output_path
+
+
+def write_duration_cache(
+    *,
+    results: Sequence[BatchResult],
+    existing_durations: dict[str, float],
+    output_path: Path,
+) -> Optional[Path]:
+    """Persist merged duration data for the next runner invocation."""
+    durations = dict(existing_durations)
+    for result in results:
+        durations.update(extract_test_durations(result.junit_xml))
+        if result.exit_code == 124 and result.node_ids:
+            timeout_estimate = max(
+                _default_duration_for_suite(result.suite),
+                result.runtime_seconds / len(result.node_ids),
+            )
+            for node_id in result.node_ids:
+                durations.setdefault(node_id, timeout_estimate)
+
+    if not durations:
+        return None
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(dict(sorted(durations.items())), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return output_path
+
+
+def _load_duration_map(
+    artifacts_dir: Path,
+) -> tuple[dict[str, float], Optional[Path]]:
+    """Load duration data from the best available local cache."""
+    for path in (
+        REPO_ROOT / ".test_durations",
+        DEFAULT_DURATION_CACHE_PATH,
+        artifacts_dir / ".test_durations.json",
+    ):
+        durations = read_durations_file(path)
+        if durations:
+            return durations, path
+    return {}, None
+
+
+def _launch_suite_batches(
+    *,
+    app: Any,
+    image: Any,
+    suite: SuiteConfig,
+    batches: Sequence[ScheduledBatch],
+    suite_dir: Path,
+    max_workers: int,
+    sandbox_cpu: float,
+    sandbox_memory_mb: int,
+) -> List[BatchExecution]:
+    """Launch all batches for a suite concurrently."""
+    executions: List[BatchExecution] = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_index = {
+            executor.submit(
+                _launch_batch,
+                app=app,
+                image=image,
+                suite=suite,
+                batch_index=index + 1,
+                batch=batch,
+                artifacts_dir=suite_dir,
+                sandbox_cpu=sandbox_cpu,
+                sandbox_memory_mb=sandbox_memory_mb,
+            ): index
+            for index, batch in enumerate(batches)
+        }
+        for future in as_completed(future_to_index):
+            executions.append(future.result())
+    return executions
+
+
+def _allocate_suite_parallelism(
+    *,
+    suite_count: int,
+    total_parallelism: int,
+) -> list[int]:
+    """Split a global sandbox budget across suites."""
+    if suite_count <= 0:
+        return []
+    if total_parallelism <= 0:
+        raise ValueError("total_parallelism must be greater than zero")
+
+    base_parallelism = max(1, total_parallelism // suite_count)
+    parallelism = [base_parallelism] * suite_count
+    remaining = total_parallelism - sum(parallelism)
+
+    index = 0
+    while remaining > 0:
+        parallelism[index] += 1
+        remaining -= 1
+        index = (index + 1) % suite_count
+
+    return parallelism
+
+
+def _allocate_weighted_suite_parallelism(
+    *,
+    suite_names: Sequence[str],
+    estimated_total_durations: Sequence[float],
+    total_parallelism: int,
+    unit_max_sandboxes: Optional[int],
+) -> list[int]:
+    """Split the global sandbox budget proportionally to suite work."""
+    suite_count = len(estimated_total_durations)
+    if suite_count == 0:
+        return []
+    if total_parallelism <= 0:
+        raise ValueError("total_parallelism must be greater than zero")
+    if total_parallelism < suite_count:
+        raise ValueError("total_parallelism must be at least the suite count")
+    if len(suite_names) != suite_count:
+        raise ValueError(
+            "suite_names must align with estimated_total_durations"
+        )
+
+    if (
+        suite_count == 2
+        and set(suite_names) == {"unit", "integration"}
+        and unit_max_sandboxes is not None
+    ):
+        unit_index = suite_names.index("unit")
+        integration_index = suite_names.index("integration")
+        reserved_unit_parallelism = min(
+            max(1, unit_max_sandboxes),
+            total_parallelism - 1,
+        )
+        allocations = [0] * suite_count
+        allocations[unit_index] = reserved_unit_parallelism
+        allocations[integration_index] = (
+            total_parallelism - reserved_unit_parallelism
+        )
+        return allocations
+
+    total_estimated_duration = sum(
+        duration for duration in estimated_total_durations if duration > 0
+    )
+    if total_estimated_duration <= 0:
+        return _allocate_suite_parallelism(
+            suite_count=suite_count,
+            total_parallelism=total_parallelism,
+        )
+
+    allocations = [1] * suite_count
+    remaining = total_parallelism - suite_count
+    if remaining == 0:
+        return allocations
+
+    fractional_allocations: list[tuple[float, int]] = []
+    for index, duration in enumerate(estimated_total_durations):
+        share = remaining * (duration / total_estimated_duration)
+        whole_share = int(share)
+        allocations[index] += whole_share
+        fractional_allocations.append((share - whole_share, index))
+
+    leftover = total_parallelism - sum(allocations)
+    for _, index in sorted(
+        fractional_allocations,
+        key=lambda item: (-item[0], item[1]),
+    )[:leftover]:
+        allocations[index] += 1
+
+    return allocations
+
+
+def _finalize_suite_batches(
+    *,
+    executions: Sequence[BatchExecution],
+    max_workers: int,
+) -> List[BatchResult]:
+    """Finalize all running batches concurrently."""
+    results: List[BatchResult] = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [
+            executor.submit(_finalize_batch, execution)
+            for execution in executions
+        ]
+        for future in as_completed(futures):
+            results.append(future.result())
+    return sorted(results, key=lambda result: result.batch_name)
+
+
+def _collect_suite(
+    *,
+    execution_image: SuiteExecutionImage,
+    suite: SuiteConfig,
+    duration_map: dict[str, float],
+) -> SuiteCollection:
+    """Collect node IDs and estimate total suite duration for scheduling."""
+    log(f"Starting suite '{suite.name}'.")
+    node_id_cache_hit = False
+    cached_node_ids = _load_cached_node_ids(
+        suite=suite.name,
+        execution_fingerprint=execution_image.fingerprint,
+        pytest_import_mode=suite.pytest_import_mode,
+    )
+    if cached_node_ids is not None:
+        log(f"Using cached pytest node IDs for suite '{suite.name}'.")
+        node_ids = cached_node_ids
+        node_id_cache_hit = True
+    else:
+        log(f"Collecting pytest node IDs locally for suite '{suite.name}'.")
+        node_ids = _collect_node_ids_locally(
+            suite=suite.name,
+            test_environment=suite.test_environment,
+            pytest_import_mode=suite.pytest_import_mode,
+        )
+        if node_ids is None:
+            raise InfraFailure(
+                f"Local pytest collection failed for suite '{suite.name}'. "
+                "Fix the collection error locally before running CI."
+            )
+        log(f"Collected {len(node_ids)} tests for suite '{suite.name}'.")
+        _save_cached_node_ids(
+            suite=suite.name,
+            execution_fingerprint=execution_image.fingerprint,
+            pytest_import_mode=suite.pytest_import_mode,
+            node_ids=node_ids,
+        )
+    matched_durations = _count_duration_matches(node_ids, duration_map)
+    if matched_durations == 0:
+        log(
+            f"No historical durations matched suite '{suite.name}'. "
+            "Batching will be approximate and may be imbalanced."
+        )
+    else:
+        log(
+            f"Matched historical durations for {matched_durations}/"
+            f"{len(node_ids)} tests in suite '{suite.name}'."
+        )
+
+    estimated_total_duration = sum(
+        duration_map.get(node_id, suite.default_duration)
+        for node_id in node_ids
+    )
+    return SuiteCollection(
+        suite=suite,
+        node_ids=node_ids,
+        estimated_total_duration=estimated_total_duration,
+        execution_fingerprint=execution_image.fingerprint,
+        execution_cache_hit=execution_image.cache_hit,
+        node_id_cache_hit=node_id_cache_hit,
+    )
+
+
+def _queue_batch_count(
+    *,
+    suite: SuiteConfig,
+    suite_parallelism: int,
+    node_ids: Sequence[str],
+) -> int:
+    """Choose how many scheduled batches to create before dispatch."""
+    if suite.name == "integration":
+        return min(
+            len(node_ids),
+            max(
+                suite_parallelism,
+                suite_parallelism * INTEGRATION_QUEUE_DEPTH_MULTIPLIER,
+            ),
+        )
+    if suite.name == "unit":
+        return min(
+            len(node_ids),
+            max(
+                suite_parallelism,
+                suite_parallelism * UNIT_QUEUE_DEPTH_MULTIPLIER,
+            ),
+        )
+    return min(len(node_ids), suite_parallelism)
+
+
+def _execute_queued_batches(
+    *,
+    app: Any,
+    image: Any,
+    suite: SuiteConfig,
+    batches: Sequence[ScheduledBatch],
+    suite_dir: Path,
+    max_parallelism: int,
+    sandbox_cpu: float,
+    sandbox_memory_mb: int,
+) -> List[BatchResult]:
+    """Dispatch all batches concurrently using Modal's async .aio API.
+
+    Uses asyncio.gather with a semaphore so up to max_parallelism
+    sandboxes run at once. All sandbox creation happens concurrently
+    on Modal's internal event loop via .aio methods.
+    """
+    import asyncio
+    import modal
+
+    async def _run_batch(
+        semaphore: asyncio.Semaphore,
+        batch_index: int,
+        batch: ScheduledBatch,
+    ) -> BatchResult:
+        batch_name = f"{suite.name}-batch-{batch_index:02d}"
+        async with semaphore:
+            log(
+                f"Launching {batch_name} with {len(batch.node_ids)} tests "
+                f"(expected {batch.duration_seconds:.1f}s)."
+            )
+            _write_batch_manifest(
+                artifacts_dir=suite_dir,
+                batch_name=batch_name,
+                suite_name=suite.name,
+                batch=batch,
+            )
+            node_ids_b64 = base64.b64encode(
+                "\n".join(batch.node_ids).encode()
+            ).decode()
+            embed_node_ids = len(node_ids_b64) < MODAL_ENV_PAYLOAD_MAX_BYTES
+            env = {
+                "ZENML_BATCH_NAME": batch_name,
+                "ZENML_SUITE": suite.name,
+                "ZENML_TEST_ENVIRONMENT": suite.test_environment,
+                "ZENML_ARTIFACTS_DIR": REMOTE_ARTIFACTS_DIR,
+                "ZENML_NODE_ID_PATH": NODE_ID_PATH,
+                "ZENML_JUNIT_PATH": JUNIT_PATH,
+                "ZENML_JUNIT_START": JUNIT_LOG_START,
+                "ZENML_JUNIT_END": JUNIT_LOG_END,
+                "ZENML_RUN_LOG_PATH": RUN_LOG_PATH,
+                "ZENML_PYTEST_WORKERS": str(suite.pytest_workers),
+                "ZENML_PYTEST_DIST": suite.pytest_dist,
+                "ZENML_PYTEST_IMPORT_MODE": suite.pytest_import_mode or "",
+                "ZENML_COLLECT_COVERAGE": (
+                    "1" if suite.collect_coverage else "0"
+                ),
+                "ZENML_REPOSITORY_PATH": REMOTE_SOURCE_ROOT,
+                "PYTHONPATH": f"{REMOTE_SOURCE_ROOT}/src",
+                COVERAGE_FILE_ENV: REMOTE_COVERAGE_PATH,
+            }
+            if embed_node_ids:
+                env["ZENML_NODE_IDS_B64"] = node_ids_b64
+            sandbox = await modal.Sandbox.create.aio(
+                "bash",
+                "-lc",
+                (
+                    'mkdir -p "$ZENML_ARTIFACTS_DIR"\n'
+                    'exec > >(tee "$ZENML_RUN_LOG_PATH") 2>&1\n'
+                    "set -euo pipefail\n"
+                    f"{RUNNER_COMMAND}\n"
+                ),
+                app=app,
+                image=image,
+                name=batch_name,
+                timeout=suite.batch_timeout,
+                cpu=sandbox_cpu,
+                memory=sandbox_memory_mb,
+                env=env,
+            )
+            if not embed_node_ids:
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(
+                    None,
+                    lambda: _upload_batch_node_ids(
+                        sandbox=sandbox,
+                        batch_name=batch_name,
+                        node_ids=batch.node_ids,
+                    ),
+                )
+
+            start_time = time.time()
+            execution = BatchExecution(
+                suite=suite,
+                batch_name=batch_name,
+                scheduled_batch=batch,
+                sandbox=sandbox,
+                artifacts_dir=suite_dir,
+                start_time=start_time,
+            )
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(
+                None,
+                _finalize_batch,
+                execution,
+            )
+
+    async def _run_all() -> List[BatchResult]:
+        semaphore = asyncio.Semaphore(max_parallelism)
+        return list(
+            await asyncio.gather(
+                *[
+                    _run_batch(semaphore, i + 1, b)
+                    for i, b in enumerate(batches)
+                ]
+            )
+        )
+
+    results = asyncio.run(_run_all())
+    return sorted(results, key=lambda result: result.batch_name)
+
+
+def _run_suite(
+    *,
+    app: Any,
+    image: Any,
+    suite: SuiteConfig,
+    artifacts_dir: Path,
+    duration_map: dict[str, float],
+    suite_parallelism: int,
+    node_ids: Sequence[str],
+    sandbox_cpu: float,
+    sandbox_memory_mb: int,
+) -> SuiteRunOutcome:
+    """Execute one suite end to end inside its sandbox budget."""
+    suite_dir = artifacts_dir / suite.name
+    suite_dir.mkdir(parents=True, exist_ok=True)
+    scheduled_batch_count = _queue_batch_count(
+        suite=suite,
+        suite_parallelism=suite_parallelism,
+        node_ids=node_ids,
+    )
+    batches = schedule_batches(
+        node_ids=list(node_ids),
+        max_batches=scheduled_batch_count,
+        durations=duration_map,
+        default_duration_seconds=suite.default_duration,
+        group_by_scope=(
+            suite.pytest_workers > 1 and suite.pytest_dist == "loadscope"
+        ),
+    )
+    log(
+        f"Scheduled suite '{suite.name}' into {len(batches)} batches "
+        f"with max parallelism {suite_parallelism}."
+    )
+    log(
+        f"Suite '{suite.name}' settings: workers={suite.pytest_workers}, "
+        f"dist={suite.pytest_dist}, "
+        f"coverage={'on' if suite.collect_coverage else 'off'}."
+    )
+    log(
+        f"Launching suite '{suite.name}' with {len(batches)} queued batches "
+        f"and max parallelism {suite_parallelism}."
+    )
+    first_launch_started_at = time.time()
+    suite_results = _execute_queued_batches(
+        app=app,
+        image=image,
+        suite=suite,
+        batches=batches,
+        suite_dir=suite_dir,
+        max_parallelism=suite_parallelism,
+        sandbox_cpu=sandbox_cpu,
+        sandbox_memory_mb=sandbox_memory_mb,
+    )
+    _write_suite_junit(
+        suite_name=suite.name,
+        suite_results=suite_results,
+        suite_dir=suite_dir,
+    )
+    log(f"Wrote merged JUnit report for suite '{suite.name}'.")
+    return SuiteRunOutcome(
+        results=suite_results,
+        first_launch_started_at=first_launch_started_at,
+    )
+
+
+def _save_coverage_data(
+    *,
+    sandbox: Any,
+    artifacts_dir: Path,
+    batch_name: str,
+    collect_coverage: bool,
+) -> Optional[Path]:
+    """Persist one coverage data file from a sandbox if present."""
+    if not collect_coverage:
+        return None
+
+    try:
+        coverage_data = _read_sandbox_bytes(sandbox, REMOTE_COVERAGE_PATH)
+    except Exception:
+        return None
+
+    output_path = artifacts_dir / f".coverage.{batch_name}"
+    output_path.write_bytes(coverage_data)
+    return output_path
+
+
+def _batch_manifest_path(*, artifacts_dir: Path, batch_name: str) -> Path:
+    """Return the local manifest path for one scheduled batch."""
+    return artifacts_dir / BATCH_MANIFESTS_DIRNAME / f"{batch_name}.json"
+
+
+def _write_batch_manifest(
+    *,
+    artifacts_dir: Path,
+    batch_name: str,
+    suite_name: str,
+    batch: ScheduledBatch,
+) -> Path:
+    """Persist one batch schedule so timeouts remain diagnosable."""
+    manifest_path = _batch_manifest_path(
+        artifacts_dir=artifacts_dir,
+        batch_name=batch_name,
+    )
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "batch_name": batch_name,
+                "suite": suite_name,
+                "expected_duration_seconds": batch.duration_seconds,
+                "node_count": len(batch.node_ids),
+                "node_ids": list(batch.node_ids),
+            },
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    return manifest_path
+
+
+def _upload_batch_node_ids(
+    *,
+    sandbox: Any,
+    batch_name: str,
+    node_ids: Sequence[str],
+) -> None:
+    """Upload batch node IDs into the sandbox via filesystem API."""
+    payload = "".join(f"{node_id}\n" for node_id in node_ids)
+    filesystem = getattr(sandbox, "filesystem", None)
+    if filesystem is not None:
+        try:
+            filesystem.write_text(NODE_ID_PATH, payload)
+            return
+        except Exception:
+            pass
+
+    heredoc = "__ZENML_BATCH_NODE_IDS__"
+    chunk_size = 50000
+    if len(payload) <= chunk_size:
+        process = sandbox.exec(
+            "bash",
+            "-lc",
+            (
+                f"cat > {shlex.quote(NODE_ID_PATH)} <<'{heredoc}'\n"
+                f"{payload}"
+                f"{heredoc}\n"
+            ),
+            timeout=BATCH_NODE_UPLOAD_TIMEOUT_SECONDS,
+        )
+        exit_code = process.wait()
+        if exit_code != 0:
+            stdout = process.stdout.read()
+            stderr = process.stderr.read()
+            raise InfraFailure(
+                f"Failed to upload node IDs for {batch_name}.\n"
+                f"stdout:\n{stdout}\n\nstderr:\n{stderr}"
+            )
+        return
+
+    lines = payload.splitlines(keepends=True)
+    chunks: list[str] = []
+    current: list[str] = []
+    current_size = 0
+    for line in lines:
+        if current_size + len(line) > chunk_size and current:
+            chunks.append("".join(current))
+            current = []
+            current_size = 0
+        current.append(line)
+        current_size += len(line)
+    if current:
+        chunks.append("".join(current))
+
+    for i, chunk in enumerate(chunks):
+        redirect = ">" if i == 0 else ">>"
+        process = sandbox.exec(
+            "bash",
+            "-lc",
+            (
+                f"cat {redirect} {shlex.quote(NODE_ID_PATH)} <<'{heredoc}'\n"
+                f"{chunk}"
+                f"{heredoc}\n"
+            ),
+            timeout=BATCH_NODE_UPLOAD_TIMEOUT_SECONDS,
+        )
+        exit_code = process.wait()
+        stdout = process.stdout.read()
+        stderr = process.stderr.read()
+        if exit_code != 0:
+            raise InfraFailure(
+                f"Failed to upload node IDs for {batch_name} (chunk {i + 1}).\n"
+                f"stdout:\n{stdout}\n\nstderr:\n{stderr}"
+            )
+
+
+def _launch_batch(
+    *,
+    app: Any,
+    image: Any,
+    suite: SuiteConfig,
+    batch_index: int,
+    batch: ScheduledBatch,
+    artifacts_dir: Path,
+    sandbox_cpu: float,
+    sandbox_memory_mb: int,
+) -> BatchExecution:
+    """Launch one scheduled batch in Modal."""
+    import modal
+
+    batch_name = f"{suite.name}-batch-{batch_index:02d}"
+    log(
+        f"Launching {batch_name} with {len(batch.node_ids)} tests "
+        f"(expected {batch.duration_seconds:.1f}s)."
+    )
+    _write_batch_manifest(
+        artifacts_dir=artifacts_dir,
+        batch_name=batch_name,
+        suite_name=suite.name,
+        batch=batch,
+    )
+    sandbox = _retry_modal_call(
+        modal.Sandbox.create,
+        "bash",
+        "-lc",
+        (
+            'mkdir -p "$ZENML_ARTIFACTS_DIR"\n'
+            'exec > >(tee "$ZENML_RUN_LOG_PATH") 2>&1\n'
+            "set -euo pipefail\n"
+            f"{RUNNER_COMMAND}\n"
+        ),
+        app=app,
+        image=image,
+        name=batch_name,
+        timeout=suite.batch_timeout,
+        cpu=sandbox_cpu,
+        memory=sandbox_memory_mb,
+        env={
+            "ZENML_BATCH_NAME": batch_name,
+            "ZENML_SUITE": suite.name,
+            "ZENML_TEST_ENVIRONMENT": suite.test_environment,
+            "ZENML_ARTIFACTS_DIR": REMOTE_ARTIFACTS_DIR,
+            "ZENML_NODE_ID_PATH": NODE_ID_PATH,
+            "ZENML_JUNIT_PATH": JUNIT_PATH,
+            "ZENML_JUNIT_START": JUNIT_LOG_START,
+            "ZENML_JUNIT_END": JUNIT_LOG_END,
+            "ZENML_RUN_LOG_PATH": RUN_LOG_PATH,
+            "ZENML_PYTEST_WORKERS": str(suite.pytest_workers),
+            "ZENML_PYTEST_DIST": suite.pytest_dist,
+            "ZENML_PYTEST_IMPORT_MODE": suite.pytest_import_mode or "",
+            "ZENML_COLLECT_COVERAGE": "1" if suite.collect_coverage else "0",
+            "ZENML_REPOSITORY_PATH": REMOTE_SOURCE_ROOT,
+            "PYTHONPATH": f"{REMOTE_SOURCE_ROOT}/src",
+            COVERAGE_FILE_ENV: REMOTE_COVERAGE_PATH,
+        },
+    )
+    try:
+        _upload_batch_node_ids(
+            sandbox=sandbox,
+            batch_name=batch_name,
+            node_ids=batch.node_ids,
+        )
+    except Exception:
+        sandbox.terminate()
+        raise
+    start_time = time.time()
+    return BatchExecution(
+        suite=suite,
+        batch_name=batch_name,
+        scheduled_batch=batch,
+        sandbox=sandbox,
+        artifacts_dir=artifacts_dir,
+        start_time=start_time,
+    )
+
+
+def _finalize_batch(execution: BatchExecution) -> BatchResult:
+    """Wait for one running batch and collect its artifacts."""
+    log(f"Waiting for {execution.batch_name} to finish.")
+    timed_out = False
+    try:
+        execution.sandbox.wait()
+    except Exception as error:
+        if error.__class__.__name__ == "SandboxTimeoutError":
+            timed_out = True
+        else:
+            raise InfraFailure(
+                f"Failed while waiting for {execution.batch_name}: {error}"
+            ) from error
+
+    exit_code = execution.sandbox.returncode
+    if exit_code is None:
+        exit_code = 124 if timed_out else -1
+    runtime_seconds = time.time() - execution.start_time
+
+    log_output = _try_read_sandbox_stdout(execution.sandbox)
+    if log_output is None:
+        log_output = (
+            _try_read_sandbox_file(execution.sandbox, RUN_LOG_PATH) or ""
+        )
+
+    embedded_junit, log_output = _extract_embedded_junit(log_output)
+    junit_xml = embedded_junit or _try_read_sandbox_file(
+        execution.sandbox, JUNIT_PATH
+    )
+    if junit_xml is None:
+        junit_xml = create_batch_failure_junit(
+            batch_name=execution.batch_name,
+            node_ids=execution.scheduled_batch.node_ids,
+            exit_code=exit_code,
+            message=(
+                "Pytest exited before writing JUnit output. "
+                "This usually indicates an import error, crash, or timeout."
+                if not timed_out
+                else "Modal terminated the sandbox after the batch timeout."
+            ),
+        )
+        failed_node_ids = list(execution.scheduled_batch.node_ids)
+    else:
+        failed_node_ids = extract_failed_node_ids(junit_xml)
+
+    coverage_path = _save_coverage_data(
+        sandbox=execution.sandbox,
+        artifacts_dir=execution.artifacts_dir,
+        batch_name=execution.batch_name,
+        collect_coverage=execution.suite.collect_coverage,
+    )
+    execution.sandbox.terminate()
+    status = "passed" if exit_code == 0 else f"failed (exit {exit_code})"
+    log(
+        f"Finished {execution.batch_name}: {status} in {runtime_seconds:.1f}s "
+        f"with {len(failed_node_ids)} failed tests."
+    )
+
+    return BatchResult(
+        suite=execution.suite.name,
+        batch_name=execution.batch_name,
+        node_ids=list(execution.scheduled_batch.node_ids),
+        expected_duration=execution.scheduled_batch.duration_seconds,
+        runtime_seconds=runtime_seconds,
+        exit_code=exit_code,
+        junit_xml=junit_xml,
+        failed_node_ids=failed_node_ids,
+        log_output=log_output,
+        coverage_path=coverage_path,
+    )
+
+
+def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
+    """Execute the full Modal-backed Linux fast CI flow."""
+    import modal
+
+    modal.enable_output()
+    run_started_at = time.time()
+    artifacts_dir = args.artifacts_dir.resolve()
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    log(f"Writing artifacts to {artifacts_dir}.")
+    suite_configs = suite_configs_from_args(args)
+    unit_max_sandboxes = args.unit_max_sandboxes
+    if unit_max_sandboxes is None and {
+        suite.name for suite in suite_configs
+    } == {"unit", "integration"}:
+        unit_max_sandboxes = 2
+    duration_map: dict[str, float]
+    duration_source: Optional[Path]
+    if args.use_existing_test_durations:
+        duration_map, duration_source = _load_duration_map(artifacts_dir)
+    else:
+        duration_map, duration_source = {}, None
+    if duration_source is not None:
+        log(f"Loaded historical durations from {duration_source}.")
+    else:
+        log("No historical duration cache found.")
+
+    log(f"Using Modal app name '{DEFAULT_MODAL_APP_NAME}'.")
+    app = modal.App.lookup(DEFAULT_MODAL_APP_NAME, create_if_missing=True)
+    dependency_resolution: ResolvedDependencyImage = resolve_dependency_image(
+        python_version=args.python_version
+    )
+
+    suite_images = _resolve_suite_images(
+        base_image=dependency_resolution.image,
+        dependency_fingerprint=dependency_resolution.fingerprint,
+        python_version=args.python_version,
+        suite_configs=suite_configs,
+    )
+
+    results: List[BatchResult] = []
+    suite_startup: dict[str, tuple[bool, bool]] = {}
+    first_launch_started_at: Optional[float] = None
+    try:
+        with ThreadPoolExecutor(max_workers=len(suite_configs)) as executor:
+            future_to_suite = {
+                executor.submit(
+                    _collect_suite,
+                    execution_image=suite_images[suite.name],
+                    suite=suite,
+                    duration_map=duration_map,
+                ): suite.name
+                for suite in suite_configs
+            }
+            suite_collections = [
+                future.result() for future in as_completed(future_to_suite)
+            ]
+
+        suite_collections.sort(
+            key=lambda collection: suite_configs.index(collection.suite)
+        )
+        suite_parallelism = _allocate_weighted_suite_parallelism(
+            suite_names=[
+                collection.suite.name for collection in suite_collections
+            ],
+            estimated_total_durations=[
+                collection.estimated_total_duration
+                for collection in suite_collections
+            ],
+            total_parallelism=args.max_sandboxes,
+            unit_max_sandboxes=unit_max_sandboxes,
+        )
+        log(
+            "Suite sandbox budgets: "
+            + ", ".join(
+                f"{collection.suite.name}={parallelism}"
+                for collection, parallelism in zip(
+                    suite_collections, suite_parallelism
+                )
+            )
+            + "."
+        )
+
+        import asyncio
+
+        async def _run_all_suites() -> List[BatchResult]:
+            all_batches: List[
+                tuple[SuiteConfig, int, ScheduledBatch, Path]
+            ] = []
+            for collection, parallelism in zip(
+                suite_collections, suite_parallelism
+            ):
+                suite_dir = artifacts_dir / collection.suite.name
+                suite_dir.mkdir(parents=True, exist_ok=True)
+                scheduled_batch_count = _queue_batch_count(
+                    suite=collection.suite,
+                    suite_parallelism=parallelism,
+                    node_ids=collection.node_ids,
+                )
+                batches = schedule_batches(
+                    node_ids=list(collection.node_ids),
+                    max_batches=scheduled_batch_count,
+                    durations=duration_map,
+                    default_duration_seconds=collection.suite.default_duration,
+                    group_by_scope=(
+                        collection.suite.pytest_workers > 1
+                        and collection.suite.pytest_dist == "loadscope"
+                    ),
+                )
+                log(
+                    f"Scheduled suite '{collection.suite.name}' into "
+                    f"{len(batches)} batches with max parallelism "
+                    f"{parallelism}."
+                )
+                log(
+                    f"Suite '{collection.suite.name}' settings: "
+                    f"workers={collection.suite.pytest_workers}, "
+                    f"dist={collection.suite.pytest_dist}, "
+                    f"coverage={'on' if collection.suite.collect_coverage else 'off'}."
+                )
+                for i, batch in enumerate(batches):
+                    all_batches.append(
+                        (collection.suite, i + 1, batch, suite_dir)
+                    )
+
+            total_parallelism = args.max_sandboxes
+            semaphore = asyncio.Semaphore(total_parallelism)
+
+            async def _run_one(
+                suite_cfg: SuiteConfig,
+                batch_index: int,
+                batch: ScheduledBatch,
+                suite_dir: Path,
+            ) -> BatchResult:
+                batch_name = f"{suite_cfg.name}-batch-{batch_index:02d}"
+                async with semaphore:
+                    log(
+                        f"Launching {batch_name} with "
+                        f"{len(batch.node_ids)} tests "
+                        f"(expected {batch.duration_seconds:.1f}s)."
+                    )
+                    _write_batch_manifest(
+                        artifacts_dir=suite_dir,
+                        batch_name=batch_name,
+                        suite_name=suite_cfg.name,
+                        batch=batch,
+                    )
+                    node_ids_b64 = base64.b64encode(
+                        "\n".join(batch.node_ids).encode()
+                    ).decode()
+                    embed_node_ids = (
+                        len(node_ids_b64) < MODAL_ENV_PAYLOAD_MAX_BYTES
+                    )
+                    env = {
+                        "ZENML_BATCH_NAME": batch_name,
+                        "ZENML_SUITE": suite_cfg.name,
+                        "ZENML_TEST_ENVIRONMENT": suite_cfg.test_environment,
+                        "ZENML_ARTIFACTS_DIR": REMOTE_ARTIFACTS_DIR,
+                        "ZENML_NODE_ID_PATH": NODE_ID_PATH,
+                        "ZENML_JUNIT_PATH": JUNIT_PATH,
+                        "ZENML_JUNIT_START": JUNIT_LOG_START,
+                        "ZENML_JUNIT_END": JUNIT_LOG_END,
+                        "ZENML_RUN_LOG_PATH": RUN_LOG_PATH,
+                        "ZENML_PYTEST_WORKERS": str(suite_cfg.pytest_workers),
+                        "ZENML_PYTEST_DIST": suite_cfg.pytest_dist,
+                        "ZENML_PYTEST_IMPORT_MODE": (
+                            suite_cfg.pytest_import_mode or ""
+                        ),
+                        "ZENML_COLLECT_COVERAGE": (
+                            "1" if suite_cfg.collect_coverage else "0"
+                        ),
+                        "ZENML_REPOSITORY_PATH": REMOTE_SOURCE_ROOT,
+                        "PYTHONPATH": f"{REMOTE_SOURCE_ROOT}/src",
+                        COVERAGE_FILE_ENV: REMOTE_COVERAGE_PATH,
+                    }
+                    if embed_node_ids:
+                        env["ZENML_NODE_IDS_B64"] = node_ids_b64
+                    sandbox = await modal.Sandbox.create.aio(
+                        "bash",
+                        "-lc",
+                        (
+                            'mkdir -p "$ZENML_ARTIFACTS_DIR"\n'
+                            'exec > >(tee "$ZENML_RUN_LOG_PATH") 2>&1\n'
+                            "set -euo pipefail\n"
+                            f"{RUNNER_COMMAND}\n"
+                        ),
+                        app=app,
+                        image=suite_images[suite_cfg.name].image,
+                        name=batch_name,
+                        timeout=suite_cfg.batch_timeout,
+                        cpu=args.sandbox_cpu,
+                        memory=args.sandbox_memory_mb,
+                        env=env,
+                    )
+                    loop = asyncio.get_running_loop()
+                    if not embed_node_ids:
+                        await loop.run_in_executor(
+                            None,
+                            lambda: _upload_batch_node_ids(
+                                sandbox=sandbox,
+                                batch_name=batch_name,
+                                node_ids=batch.node_ids,
+                            ),
+                        )
+                    execution = BatchExecution(
+                        suite=suite_cfg,
+                        batch_name=batch_name,
+                        scheduled_batch=batch,
+                        sandbox=sandbox,
+                        artifacts_dir=suite_dir,
+                        start_time=time.time(),
+                    )
+                    return await loop.run_in_executor(
+                        None,
+                        _finalize_batch,
+                        execution,
+                    )
+
+            return list(
+                await asyncio.gather(
+                    *[_run_one(s, i, b, d) for s, i, b, d in all_batches]
+                )
+            )
+
+        first_launch_started_at = time.time()
+        results = asyncio.run(_run_all_suites())
+        for suite_name in {r.suite for r in results}:
+            suite_results = [r for r in results if r.suite == suite_name]
+            _write_suite_junit(
+                suite_name=suite_name,
+                suite_results=suite_results,
+                suite_dir=artifacts_dir / suite_name,
+            )
+            log(f"Wrote merged JUnit report for suite '{suite_name}'.")
+    except InfraFailure:
+        log("Encountered a Modal infrastructure failure.")
+        raise
+
+    results.sort(key=lambda result: (result.suite, result.batch_name))
+
+    for collection in suite_collections:
+        suite_startup[collection.suite.name] = (
+            collection.execution_cache_hit,
+            collection.node_id_cache_hit,
+        )
+
+    coverage_files = [
+        result.coverage_path
+        for result in results
+        if result.coverage_path is not None
+    ]
+    combine_coverage_files(
+        coverage_files=[path for path in coverage_files if path is not None],
+        artifacts_dir=artifacts_dir,
+    )
+    if coverage_files:
+        log("Combined coverage data.")
+    duration_cache_path = write_duration_cache(
+        results=results,
+        existing_durations=duration_map,
+        output_path=DEFAULT_DURATION_CACHE_PATH,
+    )
+    if duration_cache_path is not None:
+        log(f"Updated duration cache at {duration_cache_path}.")
+    startup_summary = StartupSummary(
+        dependency_cache_hit=dependency_resolution.cache_hit,
+        execution_cache_hits={
+            suite_name: execution_cache_hit
+            for suite_name, (execution_cache_hit, _) in suite_startup.items()
+        },
+        node_id_cache_hits={
+            suite_name: node_id_cache_hit
+            for suite_name, (_, node_id_cache_hit) in suite_startup.items()
+        },
+        launch_to_first_batch_seconds=(
+            0.0
+            if first_launch_started_at is None
+            else first_launch_started_at - run_started_at
+        ),
+    )
+    write_summary(
+        results=results,
+        output_path=artifacts_dir / "summary.md",
+        startup_summary=startup_summary,
+    )
+    log("Wrote run summary.")
+    failure_report_path = write_failure_report(
+        results=results,
+        output_path=artifacts_dir / "failures.md",
+    )
+    if failure_report_path is not None:
+        log(f"Wrote failure report to {failure_report_path}.")
+    return RunnerSummary(results=results, startup_summary=startup_summary)
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """CLI entrypoint."""
+    args = parse_args(argv)
+    log(
+        "Starting Modal fast CI run for suites "
+        f"{', '.join(args.suite)} on Python {args.python_version}."
+    )
+    try:
+        summary = run_modal_fast_ci(args)
+    except InfraFailure as error:
+        print(str(error), file=sys.stderr)
+        return RUNNER_EXIT_INFRA_FAILURE
+
+    if any(result.exit_code != 0 for result in summary.results):
+        console_report = format_failure_console_report(summary.results)
+        if console_report:
+            print(console_report)
+        log("Completed with test failures.")
+        return RUNNER_EXIT_TEST_FAILURE
+    log("Completed successfully.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

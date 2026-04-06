@@ -65,6 +65,21 @@ class SkypilotKubernetesOrchestrator(SkypilotBaseOrchestrator):
         """
         return SkypilotKubernetesOrchestratorSettings
 
+    def setup_credentials(self) -> None:
+        """Set up credentials for the orchestrator.
+
+        Unlike the base class, allows running without a service connector when
+        kubeconfig is already configured (e.g. for local or on-prem clusters).
+        """
+        connector = self.get_connector()
+        if connector is None:
+            logger.info(
+                "No service connector attached to the SkyPilot Kubernetes "
+                "orchestrator. Assuming kubeconfig is already configured."
+            )
+            return
+        connector.configure_local_client()
+
     def prepare_environment_variable(self, set: bool = True) -> None:
         """Set up Environment variables that are required for the orchestrator.
 

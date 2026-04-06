@@ -1,0 +1,153 @@
+---
+name: Linux Fast CI (Modal)
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python version
+        type: string
+        required: false
+        default: '3.13'
+      use_modal:
+        description: Run the Modal-backed fast CI path
+        type: boolean
+        required: false
+        default: true
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: Python version
+        type: string
+        required: false
+        default: '3.13'
+      use_modal:
+        description: Run the Modal-backed fast CI path
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  modal-fast-ci:
+    if: ${{ inputs.use_modal }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      modal_infra_failed: ${{ steps.run.outputs.modal_infra_failed }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Install Modal tooling
+        run: python -m pip install --upgrade pip modal coverage
+      - name: Restore Modal image manifest cache
+        id: modal-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .modal-cache
+          key: modal-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml', 'README.md', 'zen-test', 'scripts/install-zenml-dev.sh') }}
+      - name: Restore test duration cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .modal-cache/test_durations.json
+          key: test-durations-${{ runner.os }}-${{ inputs.python-version }}
+          restore-keys: |
+            test-durations-${{ runner.os }}-
+      - name: Run Linux fast CI in Modal
+        id: run
+        continue-on-error: true
+        run: |
+          set +e
+          python scripts/ci/modal_runner.py \
+            --suite unit \
+            --suite integration \
+            --test-environment default \
+            --python-version "${{ inputs.python-version }}" \
+            --max-sandboxes 20 \
+            --artifacts-dir test-results/modal-fast-ci \
+            --local-run-name github-${{ github.run_id }}
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          if [ "$exit_code" -eq 2 ]; then
+            echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+      - name: Save Modal image manifest cache
+        if: always() && steps.modal-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .modal-cache
+          key: modal-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml', 'README.md', 'zen-test', 'scripts/install-zenml-dev.sh') }}
+      - name: Save test duration cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .modal-cache/test_durations.json
+          key: test-durations-${{ runner.os }}-${{ inputs.python-version }}
+      - name: Fail on test failure
+        if: ${{ steps.run.outputs.exit_code != '0' && steps.run.outputs.modal_infra_failed != 'true' }}
+        run: exit 1
+      - name: Upload fast-CI artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
+        with:
+          name: modal-fast-ci
+          path: |
+            test-results/modal-fast-ci/**
+          if-no-files-found: warn
+
+  fallback-unit-test:
+    needs: modal-fast-ci
+    if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' }}
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      os: ubuntu-latest
+      python-version: ${{ inputs.python-version }}
+      reruns: 0
+    secrets: inherit
+
+  fallback-integration-test:
+    needs:
+      - modal-fast-ci
+      - fallback-unit-test
+    if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' && needs.fallback-unit-test.result == 'success' }}
+    uses: ./.github/workflows/integration-test-fast.yml
+    with:
+      os: ubuntu-latest
+      python-version: ${{ inputs.python-version }}
+      test_environment: default
+      reruns: 0
+    secrets: inherit
+
+  non-modal-unit-test:
+    if: ${{ ! inputs.use_modal }}
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      os: ubuntu-latest
+      python-version: ${{ inputs.python-version }}
+      reruns: 0
+    secrets: inherit
+
+  non-modal-integration-test:
+    needs: non-modal-unit-test
+    if: ${{ ! inputs.use_modal && needs.non-modal-unit-test.result == 'success' }}
+    uses: ./.github/workflows/integration-test-fast.yml
+    with:
+      os: ubuntu-latest
+      python-version: ${{ inputs.python-version }}
+      test_environment: default
+      reruns: 0
+    secrets: inherit
