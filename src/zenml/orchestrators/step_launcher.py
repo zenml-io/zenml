@@ -533,7 +533,7 @@ class StepLauncher:
                     self._run_step_with_dynamic_orchestrator(
                         step_run_info=step_run_info
                     )
-        except:  # noqa: E722
+        except BaseException:
             output_utils.remove_artifact_dirs(
                 artifact_uris=list(output_artifact_uris.values())
             )
