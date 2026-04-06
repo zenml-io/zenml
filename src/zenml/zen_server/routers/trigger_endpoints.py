@@ -25,12 +25,15 @@ from zenml.constants import (
     TRIGGERS,
     VERSION_1,
 )
+from zenml.enums import SourceType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
     TRIGGER_UPDATE_TYPE_UNION,
     Page,
+    PlatformEventTriggerRequest,
+    PlatformEventTriggerUpdate,
     TriggerFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -65,6 +68,34 @@ router = APIRouter(
 )
 
 
+def verify_permissions_for_source_entity(
+    source_type: SourceType, source_id: UUID
+) -> None:
+    """Validation helper for PlatformEventTrigger requests/updates.
+
+    Validates source exists and user has read access to it.
+
+    Args:
+        source_type: The type of the entity to validate.
+        source_id: The ID of the entity to validate.
+
+    Raises:
+        ValueError: If source type is invalid/unexpected.
+    """
+    if source_type == SourceType.PIPELINE:
+        verify_permission_for_model(
+            model=zen_store().get_pipeline(source_id),
+            action=Action.READ,
+        )
+    elif source_type == SourceType.PIPELINE_RUN:
+        verify_permission_for_model(
+            model=zen_store().get_run(run_id=source_id),
+            action=Action.READ,
+        )
+    else:
+        raise ValueError(f"Unexpected source type: {format(source_type)}")
+
+
 @router.post(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
@@ -82,6 +113,12 @@ def create_trigger(
     Returns:
         The created trigger.
     """
+    if isinstance(trigger, PlatformEventTriggerRequest):
+        verify_permissions_for_source_entity(
+            source_type=trigger.source_entity.type,
+            source_id=trigger.source_entity.id,
+        )
+
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     return verify_permissions_and_create_entity(
@@ -167,6 +204,12 @@ def update_trigger(
     Returns:
         The updated trigger object.
     """
+    if isinstance(trigger_update, PlatformEventTriggerUpdate):
+        verify_permissions_for_source_entity(
+            source_type=trigger_update.source_entity.type,
+            source_id=trigger_update.source_entity.id,
+        )
+
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     return verify_permissions_and_update_entity(
