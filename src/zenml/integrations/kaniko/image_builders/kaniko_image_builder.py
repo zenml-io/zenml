@@ -291,7 +291,7 @@ class KanikoImageBuilder(BaseImageBuilder):
 
             try:
                 return_code = p.wait()
-            except:
+            except BaseException:
                 p.kill()
                 raise
 
