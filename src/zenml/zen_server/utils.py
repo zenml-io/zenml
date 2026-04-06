@@ -844,6 +844,7 @@ def initialize_event_dispatcher() -> None:
                 _event_dispatcher = EventDispatcher(
                     event_handlers=[i.create() for i in event_handler_cls]
                 )
+                logger.info("Event Dispatcher initialized successfully.")
             except Exception as exc:
                 logger.exception(
                     "Failed to initialize event dispatcher.", exc_info=exc

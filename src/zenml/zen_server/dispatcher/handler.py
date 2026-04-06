@@ -15,65 +15,26 @@
 
 from abc import ABC, abstractmethod
 
-from zenml.models import (
-    BaseRequest,
-    BaseUpdate,
-    BaseZenModel,
-    ProjectScopedResponse,
-)
+from zenml.zen_stores.schemas import PipelineRunSchema
 
 
 class EventHandler(ABC):
     """Abstraction for EventHandler classes."""
 
-    def __init__(self, subscriptions: list[type[BaseZenModel]]):
-        """Event Handler constructor.
-
-        Args:
-            subscriptions: A list of ZenML classes to subscribe to (as events).
-        """
-        self._subscription = {sub.__name__ for sub in subscriptions}
-
-    def is_subscribed(self, event_cls: type[BaseZenModel] | BaseZenModel):
-        """Helper utility - check is event class is one of handler's subscriptions.
-
-        Args:
-            event_cls: The event class to check.
-
-        Returns:
-            True if the event class is one of handler's subscriptions.
-        """
-        if isinstance(event_cls, BaseZenModel):
-            return event_cls.__class__.__name__ in self._subscription
-        return event_cls.__name__ in self._subscription
-
     @abstractmethod
-    def handle_update(
+    def handle_run_status_update(
         self,
-        original: ProjectScopedResponse,
-        update: BaseUpdate,
-        response: ProjectScopedResponse,
+        run: PipelineRunSchema,
     ) -> None:
-        """Handle an update request.
+        """Handle a status update on a PipelineRun object.
+
+        Note: Status updates are a run-specific concept. This
+        method is non-generalisable across types by design. To support richer events
+        like `creation` or `deletion` of a resource we should extend the interface
+        signature with generic methods.
 
         Args:
-            original: The object before the update.
-            update: The update payload.
-            response: The object after the update.
-        """
-        pass
-
-    @abstractmethod
-    def handle_request(
-        self,
-        request: BaseRequest,
-        response: ProjectScopedResponse,
-    ) -> None:
-        """Handle a create request.
-
-        Args:
-            request: The object to create.
-            response: The created object.
+            run: A PipelineRunSchema object (with a status change).
         """
         pass
 

@@ -15,12 +15,8 @@
 
 import logging
 
-from zenml.models import (
-    BaseRequest,
-    BaseUpdate,
-    ProjectScopedResponse,
-)
 from zenml.zen_server.dispatcher.handler import EventHandler
+from zenml.zen_stores.schemas import PipelineRunSchema
 
 logger = logging.getLogger(__name__)
 
@@ -36,57 +32,28 @@ class EventDispatcher:
         """
         self._event_handlers = event_handlers
 
-    def handle_update(
+    def handle_run_status_update(
         self,
-        original: ProjectScopedResponse,
-        update: BaseUpdate,
-        response: ProjectScopedResponse,
+        run: PipelineRunSchema,
     ) -> None:
-        """Handle an update request.
+        """Handle a status update on a PipelineRun object.
+
+        Note: Status updates are a run-specific concept. This
+        method is non-generalisable across types by design. To support richer events
+        like `creation` or `deletion` of a resource we should extend the interface
+        signature with generic methods.
 
         Args:
-            original: The object before the update.
-            update: The update payload.
-            response: The object after the update.
+            run: A PipelineRunSchema object (with a status change).
         """
-
-        # TODO: Assign to thread execution
         for event_handler in self._event_handlers:
-            if event_handler.is_subscribed(update):
-                try:
-                    event_handler.handle_update(
-                        original=original,
-                        update=update,
-                        response=response,
-                    )
-                except Exception as exc:
-                    logger.exception(
-                        f"Event handler {event_handler} failed to handle update: {update}",
-                        exc_info=exc,
-                    )
-
-    def handle_request(
-        self,
-        request: BaseRequest,
-        response: ProjectScopedResponse,
-    ) -> None:
-        """Handle a create request.
-
-        Args:
-            request: The object to create.
-            response: The created object.
-        """
-
-        # TODO: Assign to thread execution
-        for event_handler in self._event_handlers:
-            if event_handler.is_subscribed(request):
-                try:
-                    event_handler.handle_request(
-                        request=request,
-                        response=response,
-                    )
-                except Exception as exc:
-                    logger.exception(
-                        f"Event handler {event_handler} failed to handle request: {request}",
-                        exc_info=exc,
-                    )
+            logger.debug(
+                "Event handler: %s picking up %s status change to %s",
+                event_handler.__class__.__name__,
+                run.id,
+                run.status,
+            )
+            # TODO: Offload to thread.
+            event_handler.handle_run_status_update(
+                run=run,
+            )
