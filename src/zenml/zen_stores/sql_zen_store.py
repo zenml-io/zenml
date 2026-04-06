@@ -8107,14 +8107,15 @@ class SqlZenStore(BaseZenStore):
         self,
         project_id: UUID,
         conditions: list[dict[str, str]],
-    ):
+    ) -> list[TRIGGER_RETURN_TYPE_UNION]:
         """Matches incoming events against platform-event triggers.
 
         Custom utility, existing only in SqlZenStore.
 
         Args:
             project_id: The ID of the project.
-            conditions:
+            conditions: A list of conditional dictionaries.
+                For example, {"source_entity": pipeline:<ID>, "target_events": "run_completed"}.
 
         Returns:
             A list of PlatformEventTriggerResponse objects matching the conditions.

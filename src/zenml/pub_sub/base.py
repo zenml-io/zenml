@@ -90,6 +90,20 @@ class CriticalEventHandler(ABC):
         """
         pass
 
+    @abstractmethod
+    def sync_handle(self, event: CriticalEvent) -> None:
+        """Handles a critical event.
+
+        Handling of a critical event would include the following operations:
+        - Tracking of the event instance and their evolution
+        - Alerting mechanisms based on event monitoring alarms
+        - Mitigation actions
+
+        Args:
+            event: A CriticalEvent instance.
+        """
+        pass
+
 
 class SyncProducerBase(ABC):
     """Synchronous producer base.
@@ -171,7 +185,7 @@ class SyncProducerBase(ABC):
             exc_info=event.exception if event.exception else None,
         )
         if self._event_handler:
-            self._event_handler.handle(event)
+            self._event_handler.sync_handle(event)
 
     def publish(self, payload: MessagePayload) -> str:
         """Build and send message, emitting CriticalEvent on failure.

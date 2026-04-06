@@ -851,7 +851,7 @@ def initialize_event_dispatcher() -> None:
                 )
 
 
-def event_dispatcher() -> EventDispatcher | None:
+def event_dispatcher() -> EventDispatcher:
     """Gets the instantiated event dispatcher.
 
     Returns:

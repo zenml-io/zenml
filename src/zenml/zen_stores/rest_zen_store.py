@@ -2494,7 +2494,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created trigger.
         """
-        body: dict[str, Any] = self.post(TRIGGERS, body=trigger)
+        body: dict[str, Any] = self.post(TRIGGERS, body=trigger)  # type: ignore[assignment]
 
         try:
             response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]

@@ -28,7 +28,9 @@ TYPE_TO_RESPONSE_BODY_MAPPING = {
     TriggerType.PLATFORM_EVENT.value: PlatformEventTriggerResponseBody,
 }
 
-TYPE_TO_RESPONSE_MAPPING = {
+TYPE_TO_RESPONSE_MAPPING: dict[
+    str, type[ScheduleTriggerResponse | PlatformEventTriggerResponse]
+] = {
     TriggerType.SCHEDULE.value: ScheduleTriggerResponse,
     TriggerType.PLATFORM_EVENT.value: PlatformEventTriggerResponse,
 }

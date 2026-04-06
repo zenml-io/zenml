@@ -24,6 +24,7 @@ from typing import (
     Literal,
     Optional,
     Type,
+    TypeAlias,
     TypeVar,
 )
 from uuid import UUID
@@ -804,10 +805,12 @@ class PlatformEventTriggerResponse(
         return self.get_body().target_events
 
 
-TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate | PlatformEventTriggerUpdate
-TRIGGER_CREATE_TYPE_UNION = (
+TRIGGER_UPDATE_TYPE_UNION: TypeAlias = (
+    ScheduleTriggerUpdate | PlatformEventTriggerUpdate
+)
+TRIGGER_CREATE_TYPE_UNION: TypeAlias = (
     ScheduleTriggerRequest | PlatformEventTriggerRequest
 )
-TRIGGER_RETURN_TYPE_UNION = (
+TRIGGER_RETURN_TYPE_UNION: TypeAlias = (
     ScheduleTriggerResponse | PlatformEventTriggerResponse
 )

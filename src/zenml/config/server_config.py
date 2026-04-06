@@ -371,7 +371,7 @@ class ServerConfiguration(BaseModel):
 
     _deployment_id: Optional[UUID] = None
 
-    event_handlers: list[str] | None = None
+    event_handlers: list[str] = []
 
     @model_validator(mode="before")
     @classmethod
@@ -491,20 +491,19 @@ class ServerConfiguration(BaseModel):
 
     @field_validator("event_handlers", mode="before")
     @classmethod
-    def _convert_event_handlers(cls, value: Any) -> list[str] | None:
-        """Event handlers are comma-separated string. The validator
-        converts them to a list of strings.
+    def _convert_event_handlers(cls, value: Any) -> list[str]:
+        """Convert comma-separated value to list of strings.
 
         Args:
             value: A comma-separated string or None.
 
         Returns:
-            A list of event handlers or None.
+            A list of event handlers or an empty list.
         """
         if isinstance(value, str):
             return [i.strip() for i in value.strip().split(",")]
 
-        return value
+        return []
 
     @property
     def deployment_id(self) -> UUID:

@@ -4195,7 +4195,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created trigger.
         """
-        return self.zen_store.create_trigger(
+        trigger = self.zen_store.create_trigger(
             trigger=ScheduleTriggerRequest(
                 project=project_id or self.active_project.id,
                 name=name,
@@ -4210,6 +4210,10 @@ class Client(metaclass=ClientMetaClass):
                 start_time=start_time,
             )
         )
+
+        assert isinstance(trigger, ScheduleTriggerResponse)
+
+        return trigger
 
     def update_schedule_trigger(
         self,
@@ -4239,9 +4243,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated trigger.
         """
-        trigger = self.zen_store.get_trigger(trigger_id)
+        trigger = self.get_schedule_trigger(trigger_id=trigger_id)
 
-        return self.zen_store.update_trigger(
+        response = self.zen_store.update_trigger(
             trigger_id=trigger_id,
             trigger_update=ScheduleTriggerUpdate(
                 name=name or trigger.name,
@@ -4262,6 +4266,10 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
 
+        assert isinstance(response, ScheduleTriggerResponse)
+
+        return response
+
     def get_schedule_trigger(
         self, trigger_id: UUID
     ) -> ScheduleTriggerResponse:
@@ -4273,7 +4281,14 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The trigger response.
         """
-        return self.zen_store.get_trigger(trigger_id=trigger_id)
+        trigger = self.zen_store.get_trigger(trigger_id=trigger_id)
+
+        if not isinstance(trigger, ScheduleTriggerResponse):
+            raise ValueError(
+                f"Found trigger {trigger.id} of incompatible type ({trigger.type} found {TriggerType.SCHEDULE} expected)."
+            )
+
+        return trigger
 
     def list_schedule_triggers(
         self,
@@ -4319,7 +4334,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of ScheduleTriggerResponse objects.
         """
-        return self.zen_store.list_triggers(
+        return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
                 user=user,
@@ -4368,7 +4383,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created trigger.
         """
-        return self.zen_store.create_trigger(
+        trigger = self.zen_store.create_trigger(
             trigger=PlatformEventTriggerRequest(
                 project=project_id or self.active_project.id,
                 name=name,
@@ -4382,6 +4397,10 @@ class Client(metaclass=ClientMetaClass):
                 target_events=target_events,
             )
         )
+
+        assert isinstance(trigger, PlatformEventTriggerResponse)
+
+        return trigger
 
     def update_platform_event_trigger(
         self,
@@ -4407,9 +4426,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated trigger.
         """
-        trigger = self.zen_store.get_trigger(trigger_id)
+        trigger = self.get_platform_event_trigger(trigger_id=trigger_id)
 
-        return self.zen_store.update_trigger(
+        response = self.zen_store.update_trigger(
             trigger_id=trigger_id,
             trigger_update=PlatformEventTriggerUpdate(
                 name=name or trigger.name,
@@ -4425,6 +4444,10 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
 
+        assert isinstance(response, PlatformEventTriggerResponse)
+
+        return response
+
     def get_platform_event_trigger(
         self, trigger_id: UUID
     ) -> PlatformEventTriggerResponse:
@@ -4436,7 +4459,14 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The trigger response.
         """
-        return self.zen_store.get_trigger(trigger_id=trigger_id)
+        trigger = self.zen_store.get_trigger(trigger_id=trigger_id)
+
+        if not isinstance(trigger, PlatformEventTriggerResponse):
+            raise ValueError(
+                f"Found trigger {trigger.id} of incompatible type ({trigger.type} found {TriggerType.PLATFORM_EVENT} expected)."
+            )
+
+        return trigger
 
     def list_platform_event_triggers(
         self,
@@ -4481,7 +4511,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of ScheduleTriggerResponse objects.
         """
-        return self.zen_store.list_triggers(
+        return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
                 user=user,
