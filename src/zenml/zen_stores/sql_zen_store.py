@@ -17,6 +17,7 @@ from contextlib import nullcontext
 
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.zen_server.dispatcher.utils import handle_run_status_update
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
@@ -8102,6 +8103,48 @@ class SqlZenStore(BaseZenStore):
             session.add(new_assoc)
             session.commit()
 
+    def match_event_to_triggers(
+        self,
+        project_id: UUID,
+        conditions: list[dict[str, str]],
+    ):
+        """Matches incoming events against platform-event triggers.
+
+        Custom utility, existing only in SqlZenStore.
+
+        Args:
+            project_id: The ID of the project.
+            conditions:
+
+        Returns:
+            A list of PlatformEventTriggerResponse objects matching the conditions.
+        """
+        from zenml.enums import TriggerType
+
+        with Session(self.engine) as session:
+            trigger_filters = [
+                and_(
+                    TriggerSchema.source_entity == condition["source_entity"],
+                    col(TriggerSchema.target_events).like(
+                        f"%{condition['target_events']}%"
+                    ),
+                )
+                for condition in conditions
+            ]
+
+            stmt = select(TriggerSchema).where(
+                col(TriggerSchema.type) == TriggerType.PLATFORM_EVENT.value,
+                col(TriggerSchema.project_id) == project_id,
+                col(TriggerSchema.is_archived).is_(False),
+                col(TriggerSchema.active).is_(True),
+                or_(*trigger_filters),
+            )
+
+            return [
+                row.to_model(include_metadata=True, include_resources=True)
+                for row in session.exec(stmt).all()
+            ]
+
     # ----------------------------- Schedules -----------------------------
 
     def create_schedule(self, schedule: ScheduleRequest) -> ScheduleResponse:
@@ -11860,7 +11903,7 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         if not did_update:
             return
-
+        handle_run_status_update(pipeline_run)
         new_status = ExecutionStatus(pipeline_run.status)
 
         if new_status.is_finished and pipeline_run.end_time:
