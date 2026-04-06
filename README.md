@@ -144,6 +144,24 @@ Stop clicking through dashboards to understand your ML workflows. The **[ZenML M
 
 The MCP (Model Context Protocol) integration transforms your ZenML metadata into conversational insights, making pipeline debugging and analysis as easy as asking a question. Perfect for teams who want to democratize access to ML operations without requiring dashboard expertise.
 
+## 🤖 Kitaru: Durable AI Agents
+
+Building AI agents that need to survive crashes, pause for human approval, or run on cloud infrastructure? **[Kitaru](https://kitaru.ai)** is our open-source sister project for making Python agents durable.
+
+- **Crash recovery** — checkpoint and replay from failure, not from scratch
+- **Human-in-the-loop** — built-in approval gates and wait points
+- **Persistent memory** — versioned, durable state across agent runs with full audit trail
+- **Framework agnostic** — works with PydanticAI, CrewAI, or raw Python
+- **Runs anywhere** — local, Kubernetes, Vertex AI, SageMaker, AzureML
+
+Built on the same infrastructure that powers ZenML. Two decorators (`@flow` + `@checkpoint`) and you're done.
+
+```bash
+pip install kitaru
+```
+
+👉 **[kitaru.ai](https://kitaru.ai)** · **[GitHub](https://github.com/zenml-io/kitaru)** · **[Docs](https://kitaru.ai/docs)**
+
 ### 🎓 Books & Resources
 
 <div align="center">
