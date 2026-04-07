@@ -211,7 +211,10 @@ class Stack:
             stack_components: Dict[
                 StackComponentType, List["StackComponent"]
             ] = defaultdict(list)
-            for component_type, component_models in stack_model.components.items():
+            for (
+                component_type,
+                component_models,
+            ) in stack_model.components.items():
                 for component_model in component_models:
                     hydrated_model = hydrated_component_models_by_id.get(
                         component_model.id
