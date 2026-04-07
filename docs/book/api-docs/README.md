@@ -20,3 +20,5 @@ While the ZenML Python SDK covers most workflow requirements, the Server API off
 * Enterprise team management and access control (Pro).
 
 By leveraging the ZenML API, users can enhance the robustness and control of their machine learning workflows, ensuring operations are both efficient and scalable.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

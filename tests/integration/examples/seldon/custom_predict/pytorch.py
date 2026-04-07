@@ -31,8 +31,8 @@ def pre_process(tensor: torch.Tensor) -> dict:
     Returns:
         dict: The processed data, in this case a dictionary with the tensor as value.
     """
-    tansformation = torchvision.transforms.Normalize((0.1307,), (0.3081,))
-    processed_tensor = tansformation(tensor.to(torch.float))
+    transformation = torchvision.transforms.Normalize((0.1307,), (0.3081,))
+    processed_tensor = transformation(tensor.to(torch.float))
     processed_tensor = processed_tensor.unsqueeze(0)
     return processed_tensor.float()
 

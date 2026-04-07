@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 import os
 from contextlib import ExitStack as does_not_raise
+from typing import Tuple
 
-from zenml import pipeline, step
+from typing_extensions import Annotated
+
+from zenml import ArtifactConfig, pipeline, step
 
 
 @pipeline(dynamic=True, environment={"TEST_RUNTIME_ENV": "test_value"})
@@ -81,6 +84,26 @@ def test_step_config_template_parameters_override_step_signature_defaults() -> (
                 }
             }
         )()
+
+
+@step(substitutions={"artifact_suffix": "substituted"})
+def multi_output_producer_with_substituted_artifact_name() -> Tuple[
+    Annotated[int, ArtifactConfig(name="static_output")],
+    Annotated[int, ArtifactConfig(name="dynamic_output_{artifact_suffix}")],
+]:
+    return 1, 2
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def pipeline_with_substituted_output_as_step_input() -> None:
+    _, dynamic_output = multi_output_producer_with_substituted_artifact_name()
+    consumer(input_=dynamic_output, expected_input=2)
+
+
+def test_substituted_output_artifact_can_be_used_as_step_input() -> None:
+    """Tests that substituted output artifacts can be used as step inputs."""
+    with does_not_raise():
+        pipeline_with_substituted_output_as_step_input()
 
 
 def test_replay_skips_first_step_and_overrides_second_step_input():
