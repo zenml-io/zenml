@@ -175,6 +175,46 @@ def test_schedule_batches_keeps_class_scopes_together_for_loadscope() -> None:
     ]
 
 
+def test_schedule_batches_chunks_oversized_scope_groups() -> None:
+    """Scope grouping should split oversized groups into deterministic chunks."""
+    batches = schedule_batches(
+        [
+            "tests/integration/test_alpha.py::test_one",
+            "tests/integration/test_alpha.py::test_two",
+            "tests/integration/test_alpha.py::test_three",
+            "tests/integration/test_beta.py::test_four",
+        ],
+        max_batches=3,
+        durations={
+            "tests/integration/test_alpha.py::test_one": 5.0,
+            "tests/integration/test_alpha.py::test_two": 4.0,
+            "tests/integration/test_alpha.py::test_three": 3.0,
+            "tests/integration/test_beta.py::test_four": 2.0,
+        },
+        default_duration_seconds=DEFAULT_INTEGRATION_TEST_DURATION_SECONDS,
+        group_by_scope=True,
+        max_group_size=2,
+    )
+
+    assert batches == [
+        ScheduledBatch(
+            node_ids=(
+                "tests/integration/test_alpha.py::test_one",
+                "tests/integration/test_alpha.py::test_two",
+            ),
+            duration_seconds=9.0,
+        ),
+        ScheduledBatch(
+            node_ids=("tests/integration/test_alpha.py::test_three",),
+            duration_seconds=3.0,
+        ),
+        ScheduledBatch(
+            node_ids=("tests/integration/test_beta.py::test_four",),
+            duration_seconds=2.0,
+        ),
+    ]
+
+
 def test_schedule_batches_uses_file_average_for_unknown_tests() -> None:
     """Unknown tests should inherit file-level timing before defaulting."""
     batches = schedule_batches(

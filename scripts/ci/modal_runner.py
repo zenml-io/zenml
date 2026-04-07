@@ -65,11 +65,12 @@ REMOTE_COVERAGE_PATH = f"{REMOTE_ARTIFACTS_DIR}/.coverage"
 COVERAGE_FILE_ENV = "COVERAGE_FILE"
 JUNIT_LOG_START = "__MODAL_JUNIT_START__"
 JUNIT_LOG_END = "__MODAL_JUNIT_END__"
-INTEGRATION_QUEUE_DEPTH_MULTIPLIER = 1
+INTEGRATION_QUEUE_DEPTH_MULTIPLIER = 3
 UNIT_QUEUE_DEPTH_MULTIPLIER = 1
 BATCH_MANIFESTS_DIRNAME = "batches"
 BATCH_NODE_UPLOAD_TIMEOUT_SECONDS = 120
 MODAL_ENV_PAYLOAD_MAX_BYTES = 28000  # Modal caps secret values at 32768 bytes
+INTEGRATION_SCOPE_CHUNK_SIZE = 16
 SPARSE_CHECKOUT_PATHS = (
     "src",
     "tests",
@@ -1886,7 +1887,13 @@ def _run_suite(
         durations=duration_map,
         default_duration_seconds=suite.default_duration,
         group_by_scope=(
-            suite.pytest_workers > 1 and suite.pytest_dist == "loadscope"
+            suite.name == "integration"
+            or (suite.pytest_workers > 1 and suite.pytest_dist == "loadscope")
+        ),
+        max_group_size=(
+            INTEGRATION_SCOPE_CHUNK_SIZE
+            if suite.name == "integration"
+            else None
         ),
     )
     log(

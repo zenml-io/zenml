@@ -62,6 +62,7 @@ def schedule_batches(
     durations: Mapping[str, float] | None = None,
     default_duration_seconds: float = DEFAULT_UNIT_TEST_DURATION_SECONDS,
     group_by_scope: bool = False,
+    max_group_size: int | None = None,
 ) -> list[ScheduledBatch]:
     """Group node IDs into balanced batches with an LPT heuristic.
 
@@ -82,8 +83,14 @@ def schedule_batches(
         durations=durations,
         default_duration_seconds=default_duration_seconds,
     )
+    if max_group_size is not None and max_group_size <= 0:
+        raise ValueError("max_group_size must be greater than zero")
+
     if group_by_scope:
-        grouped_node_ids = list(_group_node_ids_by_scope(node_ids).values())
+        grouped_node_ids = _chunk_grouped_node_ids(
+            grouped_node_ids=list(_group_node_ids_by_scope(node_ids).values()),
+            max_group_size=max_group_size,
+        )
     else:
         grouped_node_ids = [[node_id] for node_id in node_ids]
 
@@ -193,6 +200,22 @@ def _group_node_ids_by_scope(node_ids: Sequence[str]) -> dict[str, list[str]]:
     for node_id in node_ids:
         grouped[_scope_key(node_id)].append(node_id)
     return grouped
+
+
+def _chunk_grouped_node_ids(
+    *,
+    grouped_node_ids: list[list[str]],
+    max_group_size: int | None,
+) -> list[list[str]]:
+    """Split oversized scope groups into smaller deterministic chunks."""
+    if max_group_size is None:
+        return grouped_node_ids
+
+    chunked_groups: list[list[str]] = []
+    for scope_node_ids in grouped_node_ids:
+        for start in range(0, len(scope_node_ids), max_group_size):
+            chunked_groups.append(scope_node_ids[start : start + max_group_size])
+    return chunked_groups
 
 
 def _scope_key(node_id: str) -> str:

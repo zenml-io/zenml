@@ -193,8 +193,8 @@ def test_allocate_fixed_suite_parallelism_reserves_one_for_unit() -> None:
     ) == [1, 19]
 
 
-def test_queue_batch_count_matches_parallelism() -> None:
-    """Batch count should equal parallelism to avoid queuing overhead."""
+def test_queue_batch_count_uses_extra_queued_integration_batches() -> None:
+    """Integration should create extra queued batches to isolate slow files."""
     assert (
         _queue_batch_count(
             suite=SuiteConfig(
@@ -209,7 +209,7 @@ def test_queue_batch_count_matches_parallelism() -> None:
                 for index in range(30)
             ],
         )
-        == 4
+        == 12
     )
 
 
