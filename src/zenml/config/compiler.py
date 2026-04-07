@@ -257,7 +257,7 @@ class Compiler:
         """
         pipeline_settings = pipeline.configuration.settings
 
-        for component in stack.components.values():
+        for component in stack.all_components:
             if not component.settings_class:
                 continue
 
@@ -754,9 +754,16 @@ def convert_component_shortcut_settings_keys(
         ValueError: If stack component settings were defined both using the
             full and the shortcut key.
     """
-    for component in stack.components.values():
-        shortcut_key = str(component.type)
+    for component_type, components in stack.components.items():
+        shortcut_key = str(component_type)
         if component_settings := settings.pop(shortcut_key, None):
+            if len(components) > 1:
+                raise ValueError(
+                    "Unable to convert shortcut settings key for stack with "
+                    f"multiple components of type {component_type}."
+                )
+
+            component = components[0]
             key = settings_utils.get_stack_component_setting_key(component)
             if key in settings:
                 raise ValueError(
