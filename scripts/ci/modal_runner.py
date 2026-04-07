@@ -637,7 +637,6 @@ repo_path="${ZENML_GIT_REPO_PATH}"
 snapshot_path="${ZENML_GIT_SNAPSHOT_PATH}"
 remote_url="${ZENML_GIT_REMOTE_URL}"
 commit_sha="${ZENML_GIT_COMMIT_SHA}"
-volume_name="${ZENML_REPO_VOLUME_NAME}"
 sparse_paths_file="${ZENML_GIT_SPARSE_PATHS_FILE}"
 
 mkdir -p "$(dirname "$repo_path")" "$(dirname "$snapshot_path")"
@@ -671,14 +670,6 @@ if [[ ! -d "$snapshot_path" ]]; then
   git -C "$snapshot_path" checkout --force "$commit_sha"
   touch "$snapshot_path/.zenml-source-ready"
 fi
-
-python - <<'PY'
-import os
-
-import modal
-
-modal.Volume.from_name(os.environ["ZENML_REPO_VOLUME_NAME"]).commit()
-PY
 """
     prep_env = {
         "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
@@ -686,7 +677,6 @@ PY
         "ZENML_GIT_REPO_PATH": repo_path,
         "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
         "ZENML_GIT_SPARSE_PATHS_FILE": "/tmp/zenml-fast-ci-sparse-paths.txt",
-        "ZENML_REPO_VOLUME_NAME": volume_name,
     }
     prep_script = (
         f'cat > "$ZENML_GIT_SPARSE_PATHS_FILE" <<\'__ZENML_SPARSE_PATHS__\'\n'
