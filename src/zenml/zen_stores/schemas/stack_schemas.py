@@ -314,7 +314,6 @@ class StackSchema(NamedSchema, table=True):
                 self.stack_compositions,
                 key=lambda composition: (
                     composition.default_for_type is None,
-                    composition.component.name,
                 ),
             )
             for composition in sorted_compositions:

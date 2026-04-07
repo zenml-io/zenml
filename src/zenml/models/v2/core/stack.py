@@ -53,6 +53,7 @@ if TYPE_CHECKING:
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
+
 # ------------------ Request Model ------------------
 
 
@@ -156,18 +157,6 @@ class StackRequest(UserScopedRequest):
                                 "referring to the position in the list of service "
                                 "connectors."
                             )
-
-        for component_type in StackComponentType:
-            if component_type in self.components:
-                components = self.components[component_type]
-                if (
-                    not component_type.supports_multiple_per_stack
-                    and len(components) > 1
-                ):
-                    raise ValueError(
-                        f"Stack component type '{component_type}' does not support "
-                        "multiple components in a single stack."
-                    )
 
         return self
 
@@ -350,6 +339,14 @@ class StackResponse(
         def _serialize_component(
             component: "ComponentResponse",
         ) -> Dict[str, Any]:
+            """Serialize a component to a dictionary.
+
+            Args:
+                component: The component to serialize.
+
+            Returns:
+                The serialized component.
+            """
             component_dict = dict(
                 name=component.name,
                 type=str(component.type),
@@ -369,11 +366,7 @@ class StackResponse(
                 _serialize_component(component)
                 for component in components_list
             ]
-            component_data[component_type.value] = (
-                serialized_components
-                if len(serialized_components) > 1
-                else serialized_components[0]
-            )
+            component_data[component_type.value] = serialized_components
 
         # write zenml version and stack dict to YAML
         yaml_data = {
