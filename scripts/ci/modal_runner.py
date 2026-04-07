@@ -14,6 +14,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+import dataclasses
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -67,6 +68,12 @@ JUNIT_LOG_START = "__MODAL_JUNIT_START__"
 JUNIT_LOG_END = "__MODAL_JUNIT_END__"
 INTEGRATION_QUEUE_DEPTH_MULTIPLIER = 1
 UNIT_QUEUE_DEPTH_MULTIPLIER = 1
+SLOW_EXAMPLE_TESTS = (
+    "tests/integration/examples/test_neural_prophet.py",
+    "tests/integration/examples/test_lightgbm.py",
+    "tests/integration/examples/test_xgboost.py",
+    "tests/integration/examples/test_facets.py",
+)
 BATCH_MANIFESTS_DIRNAME = "batches"
 BATCH_NODE_UPLOAD_TIMEOUT_SECONDS = 120
 MODAL_ENV_PAYLOAD_MAX_BYTES = 28000  # Modal caps secret values at 32768 bytes
@@ -367,6 +374,15 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--integration-pytest-workers",
+        type=int,
+        default=None,
+        help=(
+            "Number of in-shard pytest-xdist workers for integration batches. "
+            "Defaults to half the sandbox CPU count (0 disables)."
+        ),
+    )
+    parser.add_argument(
         "--unit-pytest-dist",
         choices=("worksteal", "load", "loadscope"),
         default="worksteal",
@@ -391,6 +407,26 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=True,
         help="Collect coverage data for test shards.",
     )
+    parser.add_argument(
+        "--deselect",
+        action="append",
+        default=[],
+        help=(
+            "Glob patterns for test node IDs to exclude from the run. "
+            "Can be specified multiple times. "
+            "Example: --deselect 'tests/integration/examples/test_neural_prophet.py::*'"
+        ),
+    )
+    parser.add_argument(
+        "--skip-slow-examples",
+        action="store_true",
+        default=False,
+        help=(
+            "Skip slow example integration tests (neural_prophet, lightgbm, "
+            "xgboost, facets) that train ML models. These are better suited "
+            "for the full CI pipeline."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -403,14 +439,16 @@ def suite_configs_from_args(args: argparse.Namespace) -> List[SuiteConfig]:
             if suite == "unit"
             else args.integration_batch_timeout
         )
-        pytest_workers = (
-            _default_unit_pytest_workers(
+        if suite == "unit":
+            pytest_workers = _default_unit_pytest_workers(
                 configured_workers=args.unit_pytest_workers,
                 sandbox_cpu=args.sandbox_cpu,
             )
-            if suite == "unit"
-            else 0
-        )
+        else:
+            pytest_workers = _default_integration_pytest_workers(
+                configured_workers=args.integration_pytest_workers,
+                sandbox_cpu=args.sandbox_cpu,
+            )
         configs.append(
             SuiteConfig(
                 name=suite,
@@ -444,6 +482,21 @@ def _default_unit_pytest_workers(
     if configured_workers is not None:
         return max(0, configured_workers)
     return max(1, min(4, int(sandbox_cpu)))
+
+
+def _default_integration_pytest_workers(
+    *,
+    configured_workers: Optional[int],
+    sandbox_cpu: float,
+) -> int:
+    """Choose a default xdist worker count for integration shards.
+
+    Uses half the CPU count to leave headroom for the test processes
+    themselves (database operations, subprocess calls, etc.).
+    """
+    if configured_workers is not None:
+        return max(0, configured_workers)
+    return max(1, int(sandbox_cpu) // 2)
 
 
 def _retry_modal_call(func: Any, *args: Any, **kwargs: Any) -> Any:
@@ -978,6 +1031,20 @@ def _parse_collected_node_ids(output: str) -> List[str]:
             continue
         node_ids.append(stripped)
     return node_ids
+
+
+def _deselect_node_ids(
+    node_ids: List[str],
+    deselect_prefixes: Sequence[str],
+) -> List[str]:
+    """Remove node IDs matching any of the given file path prefixes."""
+    if not deselect_prefixes:
+        return node_ids
+    return [
+        nid
+        for nid in node_ids
+        if not any(nid.startswith(prefix) for prefix in deselect_prefixes)
+    ]
 
 
 def _count_duration_matches(
@@ -2374,10 +2441,28 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
                 source_ref=git_source_ref,
             )
 
-            resolved_collections = {
-                suite_name: collection_future.result()
-                for collection_future, suite_name in future_to_suite.items()
-            }
+            deselect_prefixes = list(args.deselect)
+            if args.skip_slow_examples:
+                deselect_prefixes.extend(SLOW_EXAMPLE_TESTS)
+
+            resolved_collections = {}
+            for collection_future, suite_name in future_to_suite.items():
+                collection = collection_future.result()
+                if deselect_prefixes:
+                    filtered = _deselect_node_ids(
+                        collection.node_ids, deselect_prefixes
+                    )
+                    removed = len(collection.node_ids) - len(filtered)
+                    if removed:
+                        log(
+                            f"Deselected {removed} tests from suite "
+                            f"'{suite_name}'."
+                        )
+                        collection = dataclasses.replace(
+                            collection, node_ids=filtered
+                        )
+                resolved_collections[suite_name] = collection
+
             suite_names = [suite.name for suite in suite_configs]
             estimated_total_durations = [
                 resolved_collections[name].estimated_total_duration

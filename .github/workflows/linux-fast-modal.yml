@@ -75,6 +75,7 @@ jobs:
             --test-environment default \
             --python-version "${{ inputs.python-version }}" \
             --max-sandboxes 20 \
+            --skip-slow-examples \
             --artifacts-dir test-results/modal-fast-ci \
             --local-run-name github-${{ github.run_id }}
           exit_code=$?
