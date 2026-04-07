@@ -433,39 +433,21 @@ class Stack:
             log_store=log_store,
         )
 
-    # TODO: This need to be removed and replaced with the new components property
     @property
-    def components(self) -> Dict[StackComponentType, "StackComponent"]:
-        """All components of the stack.
+    def components(self) -> Dict[StackComponentType, List["StackComponent"]]:
+        """All attached components of the stack grouped by type.
 
         Returns:
-            A dictionary of all components of the stack.
+            A dictionary of all attached stack components grouped by type. The
+            first component in each list is the default component for that
+            type.
         """
         return {
-            component_type: component
-            for component_type, component in [
-                (StackComponentType.ORCHESTRATOR, self._orchestrator),
-                (StackComponentType.ARTIFACT_STORE, self._artifact_store),
-                (
-                    StackComponentType.CONTAINER_REGISTRY,
-                    self._container_registry,
-                ),
-                (StackComponentType.STEP_OPERATOR, self.step_operator),
-                (StackComponentType.FEATURE_STORE, self._feature_store),
-                (StackComponentType.MODEL_DEPLOYER, self._model_deployer),
-                (
-                    StackComponentType.EXPERIMENT_TRACKER,
-                    self.experiment_tracker,
-                ),
-                (StackComponentType.ALERTER, self.alerter),
-                (StackComponentType.ANNOTATOR, self._annotator),
-                (StackComponentType.DATA_VALIDATOR, self._data_validator),
-                (StackComponentType.IMAGE_BUILDER, self._image_builder),
-                (StackComponentType.MODEL_REGISTRY, self._model_registry),
-                (StackComponentType.DEPLOYER, self._deployer),
-                (StackComponentType.LOG_STORE, self._log_store),
-            ]
-            if component is not None
+            component_type: components
+            for component_type in StackComponentType
+            if (
+                components := self.get_components_by_type(component_type)
+            )
         }
 
     @property
@@ -477,23 +459,8 @@ class Stack:
         """
         return [
             component
-            for component in [
-                self._orchestrator,
-                self._artifact_store,
-                self._container_registry,
-                *self._step_operator,
-                self._feature_store,
-                self._model_deployer,
-                *self._experiment_tracker,
-                *self._alerter,
-                self._annotator,
-                self._data_validator,
-                self._image_builder,
-                self._model_registry,
-                self._deployer,
-                self._log_store,
-            ]
-            if component is not None
+            for components in self.components.values()
+            for component in components
         ]
 
     def get_components_by_type(
@@ -781,9 +748,13 @@ class Stack:
         """
         component_dict = {
             component_type.value: json.dumps(
-                component.config.model_dump(mode="json"), sort_keys=True
+                [
+                    component.config.model_dump(mode="json")
+                    for component in components
+                ],
+                sort_keys=True,
             )
-            for component_type, component in self.components.items()
+            for component_type, components in self.components.items()
         }
         component_dict.update({"name": self.name})
         return component_dict
@@ -904,6 +875,22 @@ class Stack:
                 key = settings_utils.get_stack_component_setting_key(component)
                 setting_classes[key] = component.settings_class
         return setting_classes
+
+    @property
+    def component_flavor_metadata(self) -> Dict[str, str]:
+        """Flavor metadata for attached components grouped by type.
+
+        Returns:
+            A mapping from stack component type values to comma-separated
+            flavor names. Repeated flavors are only included once and the
+            component order is preserved.
+        """
+        return {
+            component_type.value: ",".join(
+                dict.fromkeys(component.flavor for component in components)
+            )
+            for component_type, components in self.components.items()
+        }
 
     @property
     def requires_remote_server(self) -> bool:

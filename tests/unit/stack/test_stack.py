@@ -82,8 +82,8 @@ def test_stack_returns_all_its_components(
     )
 
     expected_components = {
-        StackComponentType.ORCHESTRATOR: local_orchestrator,
-        StackComponentType.ARTIFACT_STORE: local_artifact_store,
+        StackComponentType.ORCHESTRATOR: [local_orchestrator],
+        StackComponentType.ARTIFACT_STORE: [local_artifact_store],
     }
     assert all(
         stack.components[component_type] == component
@@ -99,9 +99,9 @@ def test_stack_returns_all_its_components(
         container_registry=local_container_registry,
     )
 
-    expected_components[StackComponentType.CONTAINER_REGISTRY] = (
+    expected_components[StackComponentType.CONTAINER_REGISTRY] = [
         local_container_registry
-    )
+    ]
 
     assert all(
         stack.components[component_type] == component

@@ -1295,14 +1295,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         active_user = Client().active_user
         own_stack = stack_creator and stack_creator == active_user.id
 
-        stack_metadata = {
-            component_type.value: component.flavor
-            for component_type, component in stack.components.items()
-        }
         return {
             "project_id": snapshot.project_id,
             "store_type": Client().zen_store.type.value,
-            **stack_metadata,
+            **stack.component_flavor_metadata,
             "total_steps": len(self.invocations),
             "schedule": bool(snapshot.schedule),
             "custom_materializer": custom_materializer,

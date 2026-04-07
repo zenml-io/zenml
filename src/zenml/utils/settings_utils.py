@@ -93,37 +93,6 @@ def is_general_setting_key(key: str) -> bool:
     return key in get_general_settings()
 
 
-def get_stack_component_for_settings_key(
-    key: str, stack: "Stack"
-) -> "StackComponent":
-    """Gets the stack component of a stack for a given settings key.
-
-    Args:
-        key: The settings key for which to get the component.
-        stack: The stack from which to get the component.
-
-    Raises:
-        ValueError: If the key is invalid or the stack does not contain a
-            component of the correct flavor.
-
-    Returns:
-        The stack component.
-    """
-    if not is_stack_component_setting_key(key):
-        raise ValueError(
-            f"Settings key {key} does not refer to a stack component."
-        )
-
-    component_type, flavor = key.split(".", 1)
-    stack_component = stack.components.get(StackComponentType(component_type))
-    if not stack_component or stack_component.flavor != flavor:
-        raise ValueError(
-            f"Component of type {component_type} in stack {stack} is not "
-            f"of the flavor {flavor} specified by the settings key {key}."
-        )
-    return stack_component
-
-
 def get_general_settings() -> Dict[str, Type["BaseSettings"]]:
     """Returns all general settings.
 

@@ -198,9 +198,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
 
             # Validate that the rest of the components are not local.
-            for stack_comp in stack.components.values():
-                # For Forward compatibility a list of components is returned,
-                # but only the first item is relevant for now
+            for stack_comp in stack.all_components:
                 # TODO: [server] make sure the ComponentModel actually has
                 #  a local_path property or implement similar check
                 local_path = stack_comp.local_path

@@ -254,7 +254,7 @@ class StackComponentConfig(BaseModel, ABC):
         """
         from zenml.client import Client
 
-        for component in Client().active_stack.components.values():
+        for component in Client().active_stack.all_components:
             if component.config == self:
                 return True
         return False
