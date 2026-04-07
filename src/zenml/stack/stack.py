@@ -338,7 +338,9 @@ class Stack:
             _raise_type_error(container_registry, BaseContainerRegistry)
 
         step_operator = components.get(StackComponentType.STEP_OPERATOR)
-        if not isinstance(step_operator, list):
+        if step_operator is None:
+            step_operator = []
+        elif not isinstance(step_operator, list):
             step_operator = [step_operator]
         for so in step_operator:
             if not isinstance(so, BaseStepOperator):
@@ -359,7 +361,9 @@ class Stack:
         experiment_tracker = components.get(
             StackComponentType.EXPERIMENT_TRACKER
         )
-        if not isinstance(experiment_tracker, list):
+        if experiment_tracker is None:
+            experiment_tracker = []
+        elif not isinstance(experiment_tracker, list):
             experiment_tracker = [experiment_tracker]
         for et in experiment_tracker:
             if not isinstance(et, BaseExperimentTracker):
@@ -367,7 +371,9 @@ class Stack:
 
         alerter = components.get(StackComponentType.ALERTER)
 
-        if not isinstance(alerter, list):
+        if alerter is None:
+            alerter = []
+        elif not isinstance(alerter, list):
             alerter = [alerter]
         for a in alerter:
             if not isinstance(a, BaseAlerter):
