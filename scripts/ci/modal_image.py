@@ -245,6 +245,10 @@ def _build_dependency_image(
             "uv pip install --system -r /tmp/modal-fast-ci-requirements.txt",
             "uv pip uninstall --system multipart || true",
             "uv pip install --system 'setuptools<82'",
+            "python -m compileall /usr/local/lib/python*/site-packages/zenml "
+            "/usr/local/lib/python*/site-packages/sqlmodel "
+            "/usr/local/lib/python*/site-packages/pydantic "
+            "-q -j 0 2>/dev/null || true",
         )
     )
     _log("Dependency image definition prepared (Modal layer cache applies).")

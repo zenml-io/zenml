@@ -96,6 +96,8 @@ tar -C "$source_repo_root" -cf - . | tar -C "$repo_root" -xf -
 
 cd "$repo_root"
 export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+export COVERAGE_CORE=sysmon
 mkdir -p \
   "${artifacts_dir}" \
   "${ZENML_CONFIG_PATH}" \
@@ -166,11 +168,6 @@ wait "$pytest_pid" || pytest_exit=$?
 kill "$heartbeat_pid" >/dev/null 2>&1 || true
 wait "$heartbeat_pid" 2>/dev/null || true
 
-if [[ -f "${ZENML_JUNIT_PATH}" ]]; then
-  echo "${ZENML_JUNIT_START}"
-  python -c 'import base64, pathlib, sys; print(base64.b64encode(pathlib.Path(sys.argv[1]).read_bytes()).decode("ascii"))' "${ZENML_JUNIT_PATH}"
-  echo "${ZENML_JUNIT_END}"
-fi
 exit "$pytest_exit"
 """
 
@@ -339,13 +336,13 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--unit-batch-timeout",
         type=int,
-        default=900,
+        default=300,
         help="Sandbox timeout in seconds for unit batches.",
     )
     parser.add_argument(
         "--integration-batch-timeout",
         type=int,
-        default=960,
+        default=360,
         help="Sandbox timeout in seconds for integration batches.",
     )
     parser.add_argument(
@@ -1366,16 +1363,32 @@ def combine_coverage_files(
     return output_path
 
 
+_EMA_ALPHA = 0.3
+
+
 def write_duration_cache(
     *,
     results: Sequence[BatchResult],
     existing_durations: dict[str, float],
     output_path: Path,
 ) -> Optional[Path]:
-    """Persist merged duration data for the next runner invocation."""
+    """Persist merged duration data for the next runner invocation.
+
+    Uses exponential moving average (EMA) to smooth out variance when
+    updating known test durations, preventing stale outliers from
+    dominating future scheduling decisions.
+    """
     durations = dict(existing_durations)
     for result in results:
-        durations.update(extract_test_durations(result.junit_xml))
+        measured = extract_test_durations(result.junit_xml)
+        for node_id, measured_duration in measured.items():
+            if node_id in durations:
+                durations[node_id] = (
+                    _EMA_ALPHA * measured_duration
+                    + (1.0 - _EMA_ALPHA) * durations[node_id]
+                )
+            else:
+                durations[node_id] = measured_duration
         if result.exit_code == 124 and result.node_ids:
             timeout_estimate = max(
                 _default_duration_for_suite(result.suite),
@@ -2208,10 +2221,10 @@ def _finalize_batch(execution: BatchExecution) -> BatchResult:
             _try_read_sandbox_file(execution.sandbox, RUN_LOG_PATH) or ""
         )
 
-    embedded_junit, log_output = _extract_embedded_junit(log_output)
-    junit_xml = embedded_junit or _try_read_sandbox_file(
-        execution.sandbox, JUNIT_PATH
-    )
+    junit_xml = _try_read_sandbox_file(execution.sandbox, JUNIT_PATH)
+    if junit_xml is None:
+        embedded_junit, log_output = _extract_embedded_junit(log_output)
+        junit_xml = embedded_junit
     if junit_xml is None:
         junit_xml = create_batch_failure_junit(
             batch_name=execution.batch_name,
@@ -2340,8 +2353,19 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
                 image=built_dependency_image,
                 source_ref=git_source_ref,
             )
-            suite_parallelism = _allocate_fixed_suite_parallelism(
-                suite_names=[suite.name for suite in suite_configs],
+
+            resolved_collections = {
+                suite_name: collection_future.result()
+                for collection_future, suite_name in future_to_suite.items()
+            }
+            suite_names = [suite.name for suite in suite_configs]
+            estimated_total_durations = [
+                resolved_collections[name].estimated_total_duration
+                for name in suite_names
+            ]
+            suite_parallelism = _allocate_weighted_suite_parallelism(
+                suite_names=suite_names,
+                estimated_total_durations=estimated_total_durations,
                 total_parallelism=args.max_sandboxes,
                 unit_max_sandboxes=unit_max_sandboxes,
             )

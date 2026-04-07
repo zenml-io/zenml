@@ -1,8 +1,11 @@
 """Unit tests for the Modal fast CI runner helpers."""
 
+import json
 import threading
 import time
 from pathlib import Path
+
+import pytest
 
 from scripts.ci.modal_runner import (
     BATCH_MANIFESTS_DIRNAME,
@@ -480,6 +483,44 @@ def test_write_duration_cache_merges_existing_and_new_results(
     )
 
 
+def test_write_duration_cache_applies_ema_for_known_tests(
+    tmp_path: Path,
+) -> None:
+    """Known tests should be smoothed via EMA, not overwritten."""
+    output_path = tmp_path / "test_durations.json"
+
+    written_path = write_duration_cache(
+        results=[
+            BatchResult(
+                suite="unit",
+                batch_name="unit-batch-01",
+                node_ids=["tests/unit/test_file.py::test_known"],
+                expected_duration=10.0,
+                runtime_seconds=2.0,
+                exit_code=0,
+                junit_xml=(
+                    '<testsuite><testcase classname="tests.unit.test_file" '
+                    'name="test_known" time="4.0" /></testsuite>'
+                ),
+                failed_node_ids=[],
+                log_output="",
+                coverage_path=None,
+            ),
+        ],
+        existing_durations={
+            "tests/unit/test_file.py::test_known": 10.0,
+        },
+        output_path=output_path,
+    )
+
+    assert written_path == output_path
+    durations = json.loads(output_path.read_text(encoding="utf-8"))
+    # EMA: 0.3 * 4.0 + 0.7 * 10.0 = 8.2
+    assert durations["tests/unit/test_file.py::test_known"] == pytest.approx(
+        8.2
+    )
+
+
 def test_runner_exit_codes_are_stable() -> None:
     """Runner exit codes should remain stable for workflow integration."""
     assert RUNNER_EXIT_TEST_FAILURE == 1
@@ -547,10 +588,10 @@ def test_runner_command_emits_heartbeat_for_long_running_batches() -> None:
     assert "pytest still running for" in RUNNER_COMMAND
 
 
-def test_runner_command_embeds_junit_in_stdout() -> None:
-    """Batch stdout should include JUnit markers for reliable artifact recovery."""
-    assert 'echo "${ZENML_JUNIT_START}"' in RUNNER_COMMAND
-    assert 'echo "${ZENML_JUNIT_END}"' in RUNNER_COMMAND
+def test_runner_command_does_not_embed_junit_in_stdout() -> None:
+    """JUnit is retrieved via sandbox filesystem, not embedded in stdout."""
+    assert 'echo "${ZENML_JUNIT_START}"' not in RUNNER_COMMAND
+    assert 'echo "${ZENML_JUNIT_END}"' not in RUNNER_COMMAND
 
 
 def test_build_batch_environment_targets_snapshot_and_tmp_runtime() -> None:
