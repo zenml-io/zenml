@@ -1119,13 +1119,9 @@ def set_default_stack_component(
     default_ids = {}
 
     if step_operator is not None:
-        default_ids[StackComponentType.STEP_OPERATOR] = (
-            step_operator
-        )
+        default_ids[StackComponentType.STEP_OPERATOR] = step_operator
     if experiment_tracker is not None:
-        default_ids[StackComponentType.EXPERIMENT_TRACKER] = (
-            experiment_tracker
-        )
+        default_ids[StackComponentType.EXPERIMENT_TRACKER] = experiment_tracker
     if alerter is not None:
         default_ids[StackComponentType.ALERTER] = alerter
 
