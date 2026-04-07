@@ -63,6 +63,7 @@ def schedule_batches(
     default_duration_seconds: float = DEFAULT_UNIT_TEST_DURATION_SECONDS,
     group_by_scope: bool = False,
     max_group_size: int | None = None,
+    max_group_duration_seconds: float | None = None,
 ) -> list[ScheduledBatch]:
     """Group node IDs into balanced batches with an LPT heuristic.
 
@@ -85,11 +86,20 @@ def schedule_batches(
     )
     if max_group_size is not None and max_group_size <= 0:
         raise ValueError("max_group_size must be greater than zero")
+    if (
+        max_group_duration_seconds is not None
+        and max_group_duration_seconds <= 0
+    ):
+        raise ValueError(
+            "max_group_duration_seconds must be greater than zero"
+        )
 
     if group_by_scope:
         grouped_node_ids = _chunk_grouped_node_ids(
             grouped_node_ids=list(_group_node_ids_by_scope(node_ids).values()),
+            estimated_durations=estimated_durations,
             max_group_size=max_group_size,
+            max_group_duration_seconds=max_group_duration_seconds,
         )
     else:
         grouped_node_ids = [[node_id] for node_id in node_ids]
@@ -205,16 +215,40 @@ def _group_node_ids_by_scope(node_ids: Sequence[str]) -> dict[str, list[str]]:
 def _chunk_grouped_node_ids(
     *,
     grouped_node_ids: list[list[str]],
+    estimated_durations: Mapping[str, float],
     max_group_size: int | None,
+    max_group_duration_seconds: float | None,
 ) -> list[list[str]]:
     """Split oversized scope groups into smaller deterministic chunks."""
-    if max_group_size is None:
+    if max_group_size is None and max_group_duration_seconds is None:
         return grouped_node_ids
 
     chunked_groups: list[list[str]] = []
     for scope_node_ids in grouped_node_ids:
-        for start in range(0, len(scope_node_ids), max_group_size):
-            chunked_groups.append(scope_node_ids[start : start + max_group_size])
+        current_chunk: list[str] = []
+        current_duration = 0.0
+        for node_id in scope_node_ids:
+            node_duration = estimated_durations[node_id]
+            if current_chunk and (
+                (
+                    max_group_size is not None
+                    and len(current_chunk) >= max_group_size
+                )
+                or (
+                    max_group_duration_seconds is not None
+                    and current_duration + node_duration
+                    > max_group_duration_seconds
+                )
+            ):
+                chunked_groups.append(current_chunk)
+                current_chunk = []
+                current_duration = 0.0
+
+            current_chunk.append(node_id)
+            current_duration += node_duration
+
+        if current_chunk:
+            chunked_groups.append(current_chunk)
     return chunked_groups
 
 

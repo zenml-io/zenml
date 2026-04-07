@@ -1880,6 +1880,10 @@ def _run_suite(
     suite_dir = artifacts_dir / suite.name
     suite_dir.mkdir(parents=True, exist_ok=True)
     has_duration_history = _count_duration_matches(node_ids, duration_map) > 0
+    estimated_total_duration = sum(
+        duration_map.get(node_id, suite.default_duration)
+        for node_id in node_ids
+    )
     scheduled_batch_count = _queue_batch_count(
         suite=suite,
         suite_parallelism=suite_parallelism,
@@ -1897,7 +1901,14 @@ def _run_suite(
         ),
         max_group_size=(
             INTEGRATION_SCOPE_CHUNK_SIZE
-            if suite.name == "integration" and has_duration_history
+            if suite.name == "integration" and not has_duration_history
+            else None
+        ),
+        max_group_duration_seconds=(
+            estimated_total_duration / scheduled_batch_count
+            if suite.name == "integration"
+            and has_duration_history
+            and scheduled_batch_count > 0
             else None
         ),
     )

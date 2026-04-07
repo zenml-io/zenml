@@ -215,6 +215,45 @@ def test_schedule_batches_chunks_oversized_scope_groups() -> None:
     ]
 
 
+def test_schedule_batches_chunks_scope_groups_by_duration_target() -> None:
+    """Timing-aware chunking should split oversized files by cumulative cost."""
+    batches = schedule_batches(
+        [
+            "tests/integration/test_alpha.py::test_one",
+            "tests/integration/test_alpha.py::test_two",
+            "tests/integration/test_alpha.py::test_three",
+            "tests/integration/test_alpha.py::test_four",
+        ],
+        max_batches=2,
+        durations={
+            "tests/integration/test_alpha.py::test_one": 7.0,
+            "tests/integration/test_alpha.py::test_two": 6.0,
+            "tests/integration/test_alpha.py::test_three": 4.0,
+            "tests/integration/test_alpha.py::test_four": 3.0,
+        },
+        default_duration_seconds=DEFAULT_INTEGRATION_TEST_DURATION_SECONDS,
+        group_by_scope=True,
+        max_group_duration_seconds=10.0,
+    )
+
+    assert batches == [
+        ScheduledBatch(
+            node_ids=(
+                "tests/integration/test_alpha.py::test_two",
+                "tests/integration/test_alpha.py::test_three",
+            ),
+            duration_seconds=10.0,
+        ),
+        ScheduledBatch(
+            node_ids=(
+                "tests/integration/test_alpha.py::test_one",
+                "tests/integration/test_alpha.py::test_four",
+            ),
+            duration_seconds=10.0,
+        ),
+    ]
+
+
 def test_schedule_batches_uses_file_average_for_unknown_tests() -> None:
     """Unknown tests should inherit file-level timing before defaulting."""
     batches = schedule_batches(
