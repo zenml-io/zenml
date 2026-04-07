@@ -570,7 +570,10 @@ def test_build_batch_environment_targets_snapshot_and_tmp_runtime() -> None:
         ),
     )
 
-    assert env["ZENML_REPOSITORY_PATH"] == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123"
+    assert (
+        env["ZENML_BATCH_REPOSITORY_PATH"]
+        == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123"
+    )
     assert env["PYTHONPATH"] == (
         "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123:"
         "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123/src"
@@ -929,7 +932,7 @@ def test_execute_queued_batches_respects_parallelism_and_completes_all(
             "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123/src"
         )
         assert (
-            env["ZENML_REPOSITORY_PATH"]
+            env["ZENML_BATCH_REPOSITORY_PATH"]
             == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123"
         )
         decoded = base64.b64decode(env["ZENML_NODE_IDS_B64"]).decode()

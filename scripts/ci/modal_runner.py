@@ -85,7 +85,7 @@ RUNNER_COMMAND = """\
 test_environment="${ZENML_TEST_ENVIRONMENT}"
 artifacts_dir="${ZENML_ARTIFACTS_DIR}"
 batch_name="${ZENML_BATCH_NAME:-batch}"
-repo_root="${ZENML_REPOSITORY_PATH}"
+repo_root="${ZENML_BATCH_REPOSITORY_PATH}"
 
 cd "$repo_root"
 export PYTHONUNBUFFERED=1
@@ -1731,7 +1731,7 @@ def _build_batch_environment(
         "ZENML_PYTEST_DIST": suite.pytest_dist,
         "ZENML_PYTEST_IMPORT_MODE": suite.pytest_import_mode or "",
         "ZENML_COLLECT_COVERAGE": "1" if suite.collect_coverage else "0",
-        "ZENML_REPOSITORY_PATH": repository_path,
+        "ZENML_BATCH_REPOSITORY_PATH": repository_path,
         "ZENML_CONFIG_PATH": REMOTE_CONFIG_DIR,
         "ZENML_LOCAL_STORES_PATH": REMOTE_LOCAL_STORES_DIR,
         "PYTHONPATH": f"{repository_path}:{repository_path}/src",
