@@ -1369,7 +1369,6 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             EntityExistsError: If the stack name is already taken.
-            ValueError: If the default component is not attached to the stack.
         """
         # First, get the stack
         stack = self.get_stack(
@@ -1393,9 +1392,8 @@ class Client(metaclass=ClientMetaClass):
         if description:
             update_model.description = description
 
-        components_dict = stack.components.copy()
-
         if component_updates:
+            components_dict = stack.components.copy()
             for (
                 component_type,
                 component_identifiers,
