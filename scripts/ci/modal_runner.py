@@ -57,6 +57,7 @@ REMOTE_RUNTIME_ROOT = "/tmp/zenml-fast-ci"
 REMOTE_ARTIFACTS_DIR = f"{REMOTE_RUNTIME_ROOT}/artifacts"
 REMOTE_CONFIG_DIR = f"{REMOTE_RUNTIME_ROOT}/config"
 REMOTE_LOCAL_STORES_DIR = f"{REMOTE_RUNTIME_ROOT}/local-stores"
+REMOTE_LOCAL_REPOSITORY_DIR = f"{REMOTE_RUNTIME_ROOT}/repo"
 NODE_ID_PATH = "/tmp/zenml-batch-node-ids.txt"
 JUNIT_PATH = f"{REMOTE_ARTIFACTS_DIR}/junit.xml"
 RUN_LOG_PATH = f"{REMOTE_ARTIFACTS_DIR}/batch.log"
@@ -85,7 +86,12 @@ RUNNER_COMMAND = """\
 test_environment="${ZENML_TEST_ENVIRONMENT}"
 artifacts_dir="${ZENML_ARTIFACTS_DIR}"
 batch_name="${ZENML_BATCH_NAME:-batch}"
-repo_root="${ZENML_BATCH_REPOSITORY_PATH}"
+source_repo_root="${ZENML_BATCH_REPOSITORY_PATH}"
+repo_root="${ZENML_LOCAL_REPOSITORY_PATH}"
+
+rm -rf "$repo_root"
+mkdir -p "$repo_root"
+tar -C "$source_repo_root" -cf - . | tar -C "$repo_root" -xf -
 
 cd "$repo_root"
 export PYTHONUNBUFFERED=1
@@ -1732,6 +1738,7 @@ def _build_batch_environment(
         "ZENML_PYTEST_IMPORT_MODE": suite.pytest_import_mode or "",
         "ZENML_COLLECT_COVERAGE": "1" if suite.collect_coverage else "0",
         "ZENML_BATCH_REPOSITORY_PATH": repository_path,
+        "ZENML_LOCAL_REPOSITORY_PATH": REMOTE_LOCAL_REPOSITORY_DIR,
         "ZENML_CONFIG_PATH": REMOTE_CONFIG_DIR,
         "ZENML_LOCAL_STORES_PATH": REMOTE_LOCAL_STORES_DIR,
         "PYTHONPATH": f"{repository_path}:{repository_path}/src",

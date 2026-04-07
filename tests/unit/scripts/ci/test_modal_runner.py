@@ -578,6 +578,7 @@ def test_build_batch_environment_targets_snapshot_and_tmp_runtime() -> None:
         "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123:"
         "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123/src"
     )
+    assert env["ZENML_LOCAL_REPOSITORY_PATH"] == "/tmp/zenml-fast-ci/repo"
     assert env["ZENML_CONFIG_PATH"] == "/tmp/zenml-fast-ci/config"
     assert env["ZENML_LOCAL_STORES_PATH"] == "/tmp/zenml-fast-ci/local-stores"
 
@@ -935,6 +936,7 @@ def test_execute_queued_batches_respects_parallelism_and_completes_all(
             env["ZENML_BATCH_REPOSITORY_PATH"]
             == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123"
         )
+        assert env["ZENML_LOCAL_REPOSITORY_PATH"] == "/tmp/zenml-fast-ci/repo"
         decoded = base64.b64decode(env["ZENML_NODE_IDS_B64"]).decode()
         assert f"tests/integration/test_{i + 1}.py::test_ok" in decoded
 
