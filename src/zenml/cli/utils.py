@@ -517,9 +517,8 @@ def print_stack_configuration(
                         "id": str(component.id),
                         "name": component.name,
                         "flavor": component.flavor_name,
-                        "default": index == 0,
                     }
-                    for index, component in enumerate(components)
+                    for component in components
                 ]
                 for ct, components in stack.components.items()
                 if components
@@ -541,13 +540,11 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
-    rich_table.add_column("DEFAULT", overflow="fold")
     for component_type, components in stack.components.items():
         for index, component in enumerate(components):
             rich_table.add_row(
                 component_type if index == 0 else "",
                 component.name,
-                "YES" if index == 0 else "",
             )
 
     rich_table.columns[0]._cells = [
@@ -2265,14 +2262,7 @@ def generate_stack_row(
         else:
             header = component_type.value
         row[header] = (
-            ", ".join(
-                [
-                    f"{component.name} (default)"
-                    if index == 0
-                    else component.name
-                    for index, component in enumerate(components)
-                ]
-            )
+            ", ".join([component.name for component in components])
             if components
             else "-"
         )
