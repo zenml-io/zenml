@@ -494,6 +494,20 @@ def _git_cache_namespace(remote_url: str) -> str:
     return hashlib.sha256(remote_url.encode("utf-8")).hexdigest()[:16]
 
 
+def _github_archive_url(source_ref: GitSourceRef) -> Optional[str]:
+    """Return a codeload archive URL for GitHub remotes."""
+    if not source_ref.remote_url.startswith("https://github.com/"):
+        return None
+
+    repository_path = source_ref.remote_url.removeprefix(
+        "https://github.com/"
+    ).removesuffix(".git")
+    return (
+        f"https://codeload.github.com/{repository_path}/tar.gz/"
+        f"{source_ref.commit_sha}"
+    )
+
+
 def _resolve_git_source_ref() -> GitSourceRef:
     """Require a clean, pushed git state before running Modal fast CI."""
     dirty_output = _run_git_command(
@@ -589,8 +603,69 @@ def _prepare_git_source_snapshot(
             commit_sha=source_ref.commit_sha,
         )
 
-    mirror_path = _remote_git_mirror_path(source_ref)
-    prep_script = """\
+    archive_url = _github_archive_url(source_ref)
+    if archive_url is not None:
+        prep_script = """\
+set -euo pipefail
+snapshot_path="${ZENML_GIT_SNAPSHOT_PATH}"
+tmp_snapshot_path="${snapshot_path}.tmp.$$"
+archive_url="${ZENML_GIT_ARCHIVE_URL}"
+commit_sha="${ZENML_GIT_COMMIT_SHA}"
+
+mkdir -p "$(dirname "$snapshot_path")"
+rm -rf "$tmp_snapshot_path"
+
+python - <<'PY'
+import os
+import pathlib
+import shutil
+import tarfile
+import tempfile
+import urllib.request
+
+snapshot_path = pathlib.Path(os.environ["ZENML_GIT_SNAPSHOT_PATH"])
+tmp_snapshot_path = pathlib.Path(f"{snapshot_path}.tmp.{os.getpid()}")
+archive_url = os.environ["ZENML_GIT_ARCHIVE_URL"]
+commit_sha = os.environ["ZENML_GIT_COMMIT_SHA"]
+
+download_path = snapshot_path.parent / f"{commit_sha}.tar.gz"
+extract_root = snapshot_path.parent / f".extract-{os.getpid()}"
+
+with urllib.request.urlopen(archive_url, timeout=300) as response:
+    with download_path.open("wb") as output_file:
+        shutil.copyfileobj(response, output_file)
+
+extract_root.mkdir(parents=True, exist_ok=True)
+with tarfile.open(download_path, "r:gz") as archive:
+    archive.extractall(extract_root)
+
+extracted_roots = [path for path in extract_root.iterdir() if path.is_dir()]
+if len(extracted_roots) != 1:
+    raise RuntimeError(
+        f"Expected one extracted root from {archive_url}, got {len(extracted_roots)}"
+    )
+
+tmp_snapshot_path.mkdir(parents=True, exist_ok=True)
+for child in extracted_roots[0].iterdir():
+    shutil.move(str(child), tmp_snapshot_path / child.name)
+
+(tmp_snapshot_path / ".zenml-source-ready").write_text("", encoding="utf-8")
+if snapshot_path.exists():
+    shutil.rmtree(snapshot_path)
+tmp_snapshot_path.rename(snapshot_path)
+download_path.unlink(missing_ok=True)
+shutil.rmtree(extract_root, ignore_errors=True)
+PY
+"""
+        prep_env = {
+            "ZENML_GIT_ARCHIVE_URL": archive_url,
+            "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
+            "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
+        }
+        prep_mode = "GitHub archive"
+    else:
+        mirror_path = _remote_git_mirror_path(source_ref)
+        prep_script = """\
 set -euo pipefail
 mirror_path="${ZENML_GIT_MIRROR_PATH}"
 snapshot_path="${ZENML_GIT_SNAPSHOT_PATH}"
@@ -618,11 +693,18 @@ touch "$tmp_snapshot_path/.zenml-source-ready"
 rm -rf "$snapshot_path"
 mv "$tmp_snapshot_path" "$snapshot_path"
 """
+        prep_env = {
+            "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
+            "ZENML_GIT_REMOTE_URL": source_ref.remote_url,
+            "ZENML_GIT_MIRROR_PATH": mirror_path,
+            "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
+        }
+        prep_mode = "git mirror fallback"
 
     started_at = time.time()
     log(
-        "Preparing git source snapshot for commit "
-        f"{source_ref.commit_sha[:12]}."
+        f"Preparing git source snapshot for commit "
+        f"{source_ref.commit_sha[:12]} via {prep_mode}."
     )
     sandbox = _retry_modal_call(
         modal.Sandbox.create,
@@ -635,12 +717,7 @@ mv "$tmp_snapshot_path" "$snapshot_path"
         timeout=900,
         cpu=1.0,
         memory=2048,
-        env={
-            "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
-            "ZENML_GIT_REMOTE_URL": source_ref.remote_url,
-            "ZENML_GIT_MIRROR_PATH": mirror_path,
-            "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
-        },
+        env=prep_env,
         volumes={REMOTE_VOLUME_ROOT: volume},
     )
     try:

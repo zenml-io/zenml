@@ -27,6 +27,7 @@ from scripts.ci.modal_runner import (
     _execute_queued_batches,
     _extract_embedded_junit,
     _finalize_batch,
+    _github_archive_url,
     _load_cached_node_ids,
     _node_id_cache_path,
     _normalize_git_remote_url,
@@ -86,6 +87,17 @@ def test_normalize_git_remote_url_converts_ssh_to_https() -> None:
         _normalize_git_remote_url("ssh://git@github.com/zenml-io/core.git")
         == "https://github.com/zenml-io/core.git"
     )
+
+
+def test_github_archive_url_uses_exact_commit_tarball() -> None:
+    """GitHub remotes should use a lightweight commit archive URL."""
+    assert _github_archive_url(
+        GitSourceRef(
+            commit_sha="abc123",
+            remote_url="https://github.com/zenml-io/core.git",
+            cache_namespace="cache",
+        )
+    ) == "https://codeload.github.com/zenml-io/core/tar.gz/abc123"
 
 
 def test_resolve_git_source_ref_requires_clean_pushed_head(monkeypatch) -> None:
