@@ -59,7 +59,7 @@ def test_parse_args_supports_multiple_suites() -> None:
     assert args.suite == ["unit", "integration"]
     assert args.python_version == "3.13"
     assert args.max_sandboxes == 20
-    assert args.sandbox_cpu == 8.0
+    assert args.sandbox_cpu == 4.0
     assert args.sandbox_memory_mb == 8192
     assert args.unit_pytest_dist == "worksteal"
     assert args.unit_max_sandboxes is None

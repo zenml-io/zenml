@@ -445,9 +445,10 @@ def suite_configs_from_args(args: argparse.Namespace) -> List[SuiteConfig]:
                 sandbox_cpu=args.sandbox_cpu,
             )
         else:
-            pytest_workers = _default_integration_pytest_workers(
-                configured_workers=args.integration_pytest_workers,
-                sandbox_cpu=args.sandbox_cpu,
+            pytest_workers = (
+                args.integration_pytest_workers
+                if args.integration_pytest_workers is not None
+                else 0
             )
         configs.append(
             SuiteConfig(
@@ -457,9 +458,7 @@ def suite_configs_from_args(args: argparse.Namespace) -> List[SuiteConfig]:
                 batch_timeout=batch_timeout,
                 pytest_workers=pytest_workers,
                 pytest_dist=(
-                    args.unit_pytest_dist
-                    if suite == "unit"
-                    else "loadscope"
+                    args.unit_pytest_dist if suite == "unit" else "worksteal"
                 ),
                 pytest_import_mode="importlib",
                 collect_coverage=args.collect_coverage,

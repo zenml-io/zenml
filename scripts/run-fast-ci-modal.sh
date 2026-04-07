@@ -12,7 +12,7 @@ python3 scripts/ci/modal_runner.py \
     --suite integration \
     --test-environment default \
     --python-version 3.13 \
-    --max-sandboxes 20 \
+    --max-sandboxes 40 \
     --skip-slow-examples \
     --local-run-name pre-push \
     "$@"
