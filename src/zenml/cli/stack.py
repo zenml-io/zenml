@@ -1075,11 +1075,11 @@ def remove_stack_component(
     "set-default",
     help="Set the default component for a repeatable stack component type.",
 )
-@click.argument("stack_name_or_id", type=str, required=True)
+@click.argument("stack", type=str, required=True)
 @click.option(
     "-s",
     "--step_operator",
-    "step_operator_name_or_id",
+    "step_operator",
     help="Name of the step operator to set as the default for this stack.",
     type=str,
     required=False,
@@ -1087,7 +1087,7 @@ def remove_stack_component(
 @click.option(
     "-e",
     "--experiment_tracker",
-    "experiment_tracker_name_or_id",
+    "experiment_tracker",
     help="Name of the experiment tracker to set as the default for this stack.",
     type=str,
     required=False,
@@ -1095,40 +1095,39 @@ def remove_stack_component(
 @click.option(
     "-al",
     "--alerter",
-    "alerter_name_or_id",
+    "alerter",
     help="Name of the alerter to set as the default for this stack.",
     type=str,
     required=False,
 )
 def set_default_stack_component(
-    stack_name_or_id: str,
-    step_operator_name_or_id: Optional[str] = None,
-    experiment_tracker_name_or_id: Optional[str] = None,
-    alerter_name_or_id: Optional[str] = None,
+    stack: str,
+    step_operator: Optional[str] = None,
+    experiment_tracker: Optional[str] = None,
+    alerter: Optional[str] = None,
 ) -> None:
     """Set defaults for repeatable stack component types.
 
     Args:
-        stack_name_or_id: Name or ID of the stack to update.
-        step_operator_name_or_id: Name or ID of the step operator to promote.
-        experiment_tracker_name_or_id: Name or ID of the experiment tracker
-            to promote.
-        alerter_name_or_id: Name or ID of the alerter to promote.
+        stack: Name or ID of the stack to update.
+        step_operator: Name or ID of the step operator to promote.
+        experiment_tracker: Name or ID of the experiment tracker to promote.
+        alerter: Name or ID of the alerter to promote.
     """
     client = Client()
 
     default_ids = {}
 
-    if step_operator_name_or_id is not None:
+    if step_operator is not None:
         default_ids[StackComponentType.STEP_OPERATOR] = (
-            step_operator_name_or_id
+            step_operator
         )
-    if experiment_tracker_name_or_id is not None:
+    if experiment_tracker is not None:
         default_ids[StackComponentType.EXPERIMENT_TRACKER] = (
-            experiment_tracker_name_or_id
+            experiment_tracker
         )
-    if alerter_name_or_id is not None:
-        default_ids[StackComponentType.ALERTER] = alerter_name_or_id
+    if alerter is not None:
+        default_ids[StackComponentType.ALERTER] = alerter
 
     if not default_ids:
         cli_utils.error(
@@ -1138,7 +1137,7 @@ def set_default_stack_component(
 
     with console.status("Setting stack component default...\n"):
         updated_stack = client.update_stack(
-            name_id_or_prefix=stack_name_or_id,
+            name_id_or_prefix=stack,
             default_components=default_ids,
         )
 

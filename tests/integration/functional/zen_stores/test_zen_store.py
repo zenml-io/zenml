@@ -28,6 +28,7 @@ from uuid import UUID, uuid4
 import pytest
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
+from sqlmodel import Session, select
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
@@ -146,6 +147,7 @@ from zenml.models import (
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.rest_zen_store import RestZenStore
+from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 _ORIGINAL_INITIALIZE_DATABASE = SqlZenStore._initialize_database
@@ -2970,6 +2972,52 @@ def test_deleting_run_deletes_steps():
         assert store.list_run_steps(filter_model).total == 0
 
 
+def test_deleting_run_with_duplicate_tag_links():
+    """Tests deleting a run with duplicate tag links succeeds."""
+    client = Client()
+    store = client.zen_store
+
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Test only applies to SQL store")
+
+    with PipelineRunContext(num_runs=1) as runs:
+        run_id = runs[0].id
+        tag = client.create_tag(name=sample_name("duplicate_run_tag"))
+        tag_resource = TagResourceRequest(
+            tag_id=tag.id,
+            resource_id=run_id,
+            resource_type=TaggableResourceTypes.PIPELINE_RUN,
+        )
+
+        store.create_tag_resource(tag_resource)
+
+        with Session(store.engine) as session:
+            session.add(TagResourceSchema.from_request(tag_resource))
+            session.commit()
+
+            duplicate_links = session.exec(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.tag_id == tag.id,
+                    TagResourceSchema.resource_id == run_id,
+                    TagResourceSchema.resource_type
+                    == TaggableResourceTypes.PIPELINE_RUN.value,
+                )
+            ).all()
+            assert len(duplicate_links) == 2
+
+        store.delete_run(run_id)
+
+        with Session(store.engine) as session:
+            remaining_links = session.exec(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.resource_id == run_id,
+                    TagResourceSchema.resource_type
+                    == TaggableResourceTypes.PIPELINE_RUN.value,
+                )
+            ).all()
+            assert len(remaining_links) == 0
+
+
 @step
 def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
     log_metadata(metadata={"blupus": metadata}, infer_artifact=True)
@@ -5639,6 +5687,41 @@ class TestTagResource:
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
+
+    def test_delete_tag_resource_removes_duplicate_links(
+        self, clean_client: "Client"
+    ):
+        """Tests deleting a tag resource removes duplicate links."""
+        store = clean_client.zen_store
+        if not isinstance(store, SqlZenStore):
+            pytest.skip("Only SQL Zen Stores support tagging resources")
+
+        tag = clean_client.create_tag(name="foo-duplicate-delete", color="red")
+        model = clean_client.create_model(name="bar-duplicate-delete")
+        tag_resource = TagResourceRequest(
+            tag_id=tag.id,
+            resource_id=model.id,
+            resource_type=TaggableResourceTypes.MODEL,
+        )
+
+        store.create_tag_resource(tag_resource)
+
+        with Session(store.engine) as session:
+            session.add(TagResourceSchema.from_request(tag_resource))
+            session.commit()
+
+        store.delete_tag_resource(tag_resource)
+
+        with Session(store.engine) as session:
+            remaining_links = session.exec(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.tag_id == tag.id,
+                    TagResourceSchema.resource_id == model.id,
+                    TagResourceSchema.resource_type
+                    == TaggableResourceTypes.MODEL.value,
+                )
+            ).all()
+            assert len(remaining_links) == 0
 
     def test_delete_tag_resource_pass_on_non_existing(
         self, clean_client: "Client"
