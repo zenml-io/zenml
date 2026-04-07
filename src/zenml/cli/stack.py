@@ -1116,25 +1116,59 @@ def set_default_stack_component(
     """
     client = Client()
 
-    default_ids = {}
+    default_components = {}
 
     if step_operator is not None:
-        default_ids[StackComponentType.STEP_OPERATOR] = step_operator
+        default_components[StackComponentType.STEP_OPERATOR] = step_operator
     if experiment_tracker is not None:
-        default_ids[StackComponentType.EXPERIMENT_TRACKER] = experiment_tracker
+        default_components[StackComponentType.EXPERIMENT_TRACKER] = (
+            experiment_tracker
+        )
     if alerter is not None:
-        default_ids[StackComponentType.ALERTER] = alerter
+        default_components[StackComponentType.ALERTER] = alerter
 
-    if not default_ids:
+    if not default_components:
         cli_utils.error(
             "Select at least one repeatable component type using "
             "`--step_operator`, `--experiment_tracker`, or `--alerter`."
         )
 
     with console.status("Setting stack component default...\n"):
+        stack_model = client.get_stack(name_id_or_prefix=stack)
+        component_updates = {}
+
+        for (
+            component_type,
+            default_component_name_or_id,
+        ) in default_components.items():
+            component_list = stack_model.components.get(component_type, [])
+            default_component = client.get_stack_component(
+                name_id_or_prefix=default_component_name_or_id,
+                component_type=component_type,
+            )
+
+            if not component_list or all(
+                component.id != default_component.id
+                for component in component_list
+            ):
+                cli_utils.error(
+                    f"Component `{default_component_name_or_id}` is not "
+                    f"attached to stack `{stack_model.name}` as a "
+                    f"`{component_type}` component."
+                )
+
+            component_updates[component_type] = [
+                default_component.id,
+                *[
+                    component.id
+                    for component in component_list
+                    if component.id != default_component.id
+                ],
+            ]
+
         updated_stack = client.update_stack(
             name_id_or_prefix=stack,
-            default_components=default_ids,
+            component_updates=component_updates,
         )
 
     print_model_url(get_stack_url(updated_stack))

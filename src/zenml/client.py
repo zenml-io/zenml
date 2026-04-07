@@ -1344,9 +1344,6 @@ class Client(metaclass=ClientMetaClass):
                 Union[UUID, str, Sequence[Union[UUID, str]]],
             ]
         ] = None,
-        default_components: Optional[
-            Mapping[StackComponentType, Union[str, UUID]]
-        ] = None,
         add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         environment: Optional[Dict[str, Any]] = None,
@@ -1361,8 +1358,6 @@ class Client(metaclass=ClientMetaClass):
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
                 lists of new stack component names or ids.
-            default_components: Optional explicit default component IDs or
-                names per component type.
             add_secrets: The secrets to add to the stack.
             remove_secrets: The secrets to remove from the stack.
             environment: The environment to set on the stack. If the value for
@@ -1420,39 +1415,6 @@ class Client(metaclass=ClientMetaClass):
                         )
                         for component_id in component_id_list
                     ]
-
-            update_model.components = {
-                c_type: [c.id for c in c_list]
-                for c_type, c_list in components_dict.items()
-            }
-
-        if default_components:
-            for (
-                c_type,
-                default_component_name_or_id,
-            ) in default_components.items():
-                component_list = components_dict.get(c_type, [])
-                default_component = self.get_stack_component(
-                    name_id_or_prefix=default_component_name_or_id,
-                    component_type=c_type,
-                )
-                if not component_list or all(
-                    component.id != default_component.id
-                    for component in component_list
-                ):
-                    raise ValueError(
-                        f"Component `{default_component_name_or_id}` is "
-                        f"not attached to stack `{stack.name}` as a "
-                        f"`{c_type}` component."
-                    )
-                components_dict[c_type] = [
-                    default_component,
-                    *[
-                        component
-                        for component in component_list
-                        if component.id != default_component.id
-                    ],
-                ]
 
             update_model.components = {
                 c_type: [c.id for c in c_list]
