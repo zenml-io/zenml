@@ -4,37 +4,31 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST_PATH = REPO_ROOT / ".modal-cache" / "image-manifest.json"
+DEFAULT_REQUIREMENTS_DIR = REPO_ROOT / ".modal-cache" / "requirements"
 DEFAULT_MODAL_APP_NAME = "zenml-fast-ci"
 DEFAULT_SANDBOX_CPU = 4.0
 DEFAULT_SANDBOX_MEMORY_MB = 8192
-DEPENDENCY_FINGERPRINT_PATHS = (
+DEFAULT_TARGET_OS = "Linux"
+DEFAULT_MODAL_TARGET_PLATFORM = "x86_64-manylinux_2_35"
+DEPENDENCY_IMAGE_BUILD_VERSION = "v2"
+COLLECTION_FINGERPRINT_SHARED_PATHS = (
     "pyproject.toml",
-    "README.md",
-    "zen-test",
-    "scripts/install-zenml-dev.sh",
-)
-EXECUTION_FINGERPRINT_PATHS = (
-    "zen-test",
-    "scripts",
-    "tests",
-)
-SHARED_EXECUTION_OVERLAY_PATHS = (
-    "zen-test",
-    "scripts",
     "tests/__init__.py",
     "tests/conftest.py",
     "tests/venv_clone_utils.py",
     "tests/harness",
 )
-SUITE_EXECUTION_OVERLAY_PATHS = {
+SUITE_COLLECTION_FINGERPRINT_PATHS = {
     "unit": ("tests/unit",),
-    "integration": ("tests/integration", "examples"),
+    "integration": ("tests/integration",),
 }
 
 
@@ -48,18 +42,6 @@ class CachedImageManifest:
 
 
 @dataclass(frozen=True)
-class CachedExecutionImageManifest:
-    """Locally cached metadata for a prepared execution image."""
-
-    fingerprint: str
-    image_id: str
-    python_version: str
-    test_environment: str
-    dependency_fingerprint: str
-    suite_name: str = ""
-
-
-@dataclass(frozen=True)
 class ResolvedDependencyImage:
     """A dependency image plus cache metadata."""
 
@@ -68,23 +50,14 @@ class ResolvedDependencyImage:
     cache_hit: bool
 
 
-def execution_overlay_paths_for_suite(suite_name: Optional[str]) -> tuple[str, ...]:
-    """Return the synced overlay paths for a suite-specific execution image."""
-    if not suite_name:
-        return EXECUTION_FINGERPRINT_PATHS
-
-    suite_paths = SUITE_EXECUTION_OVERLAY_PATHS.get(suite_name)
+def collection_fingerprint_paths_for_suite(suite_name: str) -> tuple[str, ...]:
+    """Return the files that affect pytest node discovery for one suite."""
+    suite_paths = SUITE_COLLECTION_FINGERPRINT_PATHS.get(suite_name)
     if suite_paths is None:
-        raise ValueError(f"Unsupported suite for execution overlay: {suite_name}")
-    return SHARED_EXECUTION_OVERLAY_PATHS + suite_paths
-
-
-def execution_overlay_paths_combined() -> tuple[str, ...]:
-    """Return overlay paths covering all suites in a single image."""
-    all_suite_paths: list[str] = []
-    for suite_paths in SUITE_EXECUTION_OVERLAY_PATHS.values():
-        all_suite_paths.extend(suite_paths)
-    return SHARED_EXECUTION_OVERLAY_PATHS + tuple(all_suite_paths)
+        raise ValueError(
+            f"Unsupported suite for collection fingerprint: {suite_name}"
+        )
+    return COLLECTION_FINGERPRINT_SHARED_PATHS + suite_paths
 
 
 def _log(message: str) -> None:
@@ -98,44 +71,37 @@ def _log(message: str) -> None:
 def compute_dependency_fingerprint(
     *,
     python_version: str,
-    install_integrations: bool = True,
-    root: Path = REPO_ROOT,
+    requirements_path: Path,
 ) -> str:
     """Compute a stable dependency fingerprint for the Modal image."""
     digest = hashlib.sha256()
-    digest.update(f"python={python_version}\n".encode())
     digest.update(
-        f"install_integrations={'yes' if install_integrations else 'no'}\n".encode()
+        f"builder_version={DEPENDENCY_IMAGE_BUILD_VERSION}\n".encode()
     )
-
-    for relative_path in DEPENDENCY_FINGERPRINT_PATHS:
-        path = root / relative_path
-        digest.update(f"{relative_path}\n".encode())
-        digest.update(path.read_bytes())
-        digest.update(b"\n")
+    digest.update(f"python={python_version}\n".encode())
+    digest.update(b"resolved_requirements\n")
+    digest.update(requirements_path.read_bytes())
+    digest.update(b"\n")
 
     return digest.hexdigest()
 
 
-def compute_execution_fingerprint(
+def compute_collection_fingerprint(
     *,
     python_version: str,
     test_environment: str,
-    dependency_fingerprint: str,
-    suite_name: Optional[str] = None,
-    overlay_paths: Optional[Sequence[str]] = None,
+    suite_name: str,
+    pytest_import_mode: Optional[str],
     root: Path = REPO_ROOT,
 ) -> str:
-    """Compute a stable fingerprint for the prepared execution snapshot."""
+    """Compute a cache key for suite node collection."""
     digest = hashlib.sha256()
     digest.update(f"python={python_version}\n".encode())
     digest.update(f"test_environment={test_environment}\n".encode())
-    digest.update(f"dependency_fingerprint={dependency_fingerprint}\n".encode())
-    digest.update(f"suite_name={suite_name or 'all'}\n".encode())
+    digest.update(f"suite_name={suite_name}\n".encode())
+    digest.update(f"pytest_import_mode={pytest_import_mode or 'default'}\n".encode())
 
-    for relative_path in overlay_paths or execution_overlay_paths_for_suite(
-        suite_name
-    ):
+    for relative_path in collection_fingerprint_paths_for_suite(suite_name):
         _update_digest_for_relative_path(
             digest=digest,
             root=root,
@@ -146,7 +112,15 @@ def compute_execution_fingerprint(
 
 
 FINGERPRINT_IGNORED_SUFFIXES = (".pyc", ".pyo")
-FINGERPRINT_IGNORED_DIRS = {"__pycache__", ".egg-info", ".git"}
+FINGERPRINT_IGNORED_DIRS = {
+    "__pycache__",
+    ".egg-info",
+    ".git",
+    ".hypothesis",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+}
 
 
 def _should_skip_for_fingerprint(path: Path) -> bool:
@@ -235,19 +209,6 @@ def load_cached_dependency_manifest(
     return CachedImageManifest(**manifest_data)
 
 
-def load_cached_execution_manifest(
-    *,
-    fingerprint: str,
-    manifest_path: Path = DEFAULT_MANIFEST_PATH,
-) -> Optional[CachedExecutionImageManifest]:
-    """Load one cached execution image entry by fingerprint."""
-    data = _load_manifest_data(manifest_path)
-    manifest_data = data["execution_images"].get(fingerprint)
-    if manifest_data is None:
-        return None
-    return CachedExecutionImageManifest(**manifest_data)
-
-
 def save_cached_manifest(
     manifest: CachedImageManifest,
     manifest_path: Path = DEFAULT_MANIFEST_PATH,
@@ -259,63 +220,142 @@ def save_cached_manifest(
     manifest_path.write_text(json.dumps(data, indent=2, sort_keys=True))
 
 
-def save_cached_execution_manifest(
-    manifest: CachedExecutionImageManifest,
-    manifest_path: Path = DEFAULT_MANIFEST_PATH,
-) -> None:
-    """Persist one execution image entry in the shared cache manifest."""
-    data = _load_manifest_data(manifest_path)
-    data["execution_images"][manifest.fingerprint] = asdict(manifest)
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(json.dumps(data, indent=2, sort_keys=True))
+def _build_dependency_image(
+    modal: Any,
+    python_version: str,
+    requirements_path: Path,
+) -> Any:
+    """Build a dependency image with only third-party dependencies installed.
 
-
-def _build_dependency_image(modal: Any, python_version: str) -> Any:
-    """Build a dependency image with Modal's server-side layer caching.
-
-    Uses copy=True and run_commands so Modal hashes the layer by file
-    content. If pyproject.toml / install script haven't changed, Modal
-    returns the cached layer instantly — even across machines and CI runs.
+    Source code is fetched separately via a git snapshot volume, which keeps
+    source edits from invalidating the expensive dependency layer.
     """
-    _log(f"Building dependency image for Python {python_version}.")
+    _log(f"Preparing dependency image definition for Python {python_version}.")
     image = (
         modal.Image.debian_slim(python_version=python_version)
         .apt_install("git", "graphviz")
         .workdir("/app")
         .add_local_file(
-            str(REPO_ROOT / "pyproject.toml"),
-            "/app/pyproject.toml",
-            copy=True,
-        )
-        .add_local_file(
-            str(REPO_ROOT / "README.md"),
-            "/app/README.md",
-            copy=True,
-        )
-        .add_local_file(
-            str(REPO_ROOT / "zen-test"),
-            "/app/zen-test",
-            copy=True,
-        )
-        .add_local_file(
-            str(REPO_ROOT / "scripts" / "install-zenml-dev.sh"),
-            "/app/scripts/install-zenml-dev.sh",
-            copy=True,
-        )
-        .add_local_dir(
-            str(REPO_ROOT / "src"),
-            "/app/src",
+            str(requirements_path),
+            "/tmp/modal-fast-ci-requirements.txt",
             copy=True,
         )
         .run_commands(
-            "cd /app && chmod +x /app/zen-test /app/scripts/install-zenml-dev.sh "
-            "&& bash /app/scripts/install-zenml-dev.sh --system "
-            "--integrations yes "
-            "&& uv pip install --system 'setuptools<82'",
+            "python -m pip install --upgrade wheel pip uv",
+            "uv pip install --system -r /tmp/modal-fast-ci-requirements.txt",
+            "uv pip uninstall --system multipart || true",
+            "uv pip install --system 'setuptools<82'",
         )
     )
-    _log("Dependency image built (Modal layer cache applies).")
+    _log("Dependency image definition prepared (Modal layer cache applies).")
     return image
+
+
+def compute_requirements_export_fingerprint(
+    *,
+    python_version: str,
+    target_os: str,
+    target_platform: str,
+    root: Path = REPO_ROOT,
+) -> str:
+    """Compute the cache key for the resolved requirements export."""
+    digest = hashlib.sha256()
+    digest.update(f"python={python_version}\n".encode())
+    digest.update(f"target_os={target_os}\n".encode())
+    digest.update(f"target_platform={target_platform}\n".encode())
+
+    for relative_path in (
+        "pyproject.toml",
+        "scripts/install-zenml-dev.sh",
+        "scripts/install_dev_requirements.py",
+        "src/zenml/integrations",
+    ):
+        _update_digest_for_relative_path(
+            digest=digest,
+            root=root,
+            relative_path=relative_path,
+        )
+
+    return digest.hexdigest()
+
+
+def export_dependency_requirements(
+    *,
+    python_version: str,
+    target_os: str = DEFAULT_TARGET_OS,
+    target_platform: str = DEFAULT_MODAL_TARGET_PLATFORM,
+    output_path: Optional[Path] = None,
+    root: Path = REPO_ROOT,
+) -> Path:
+    """Export the dependency set using the dev install script workflow."""
+    platform_suffix = target_platform.lower().replace("/", "-")
+    requirements_path = output_path or (
+        DEFAULT_REQUIREMENTS_DIR
+        / (
+            "fast-ci-requirements-"
+            f"{python_version}-{target_os.lower()}-{platform_suffix}.txt"
+        )
+    )
+    requirements_path.parent.mkdir(parents=True, exist_ok=True)
+    fingerprint_path = requirements_path.with_suffix(
+        requirements_path.suffix + ".fingerprint"
+    )
+    fingerprint = compute_requirements_export_fingerprint(
+        python_version=python_version,
+        target_os=target_os,
+        target_platform=target_platform,
+        root=root,
+    )
+
+    if (
+        requirements_path.exists()
+        and fingerprint_path.exists()
+        and fingerprint_path.read_text(encoding="utf-8").strip() == fingerprint
+    ):
+        _log(
+            f"Using cached resolved requirements at {requirements_path}."
+        )
+        return requirements_path
+
+    _log("Exporting resolved requirements for the dependency image.")
+    started_at = time.time()
+    command = [
+        "/bin/sh",
+        str(root / "scripts" / "install-zenml-dev.sh"),
+        "--integrations",
+        "yes",
+        "--export-requirements-file",
+        str(requirements_path),
+        "--target-python-version",
+        python_version,
+        "--target-os",
+        target_os,
+        "--target-platform",
+        target_platform,
+    ]
+    result = subprocess.run(
+        command,
+        check=False,
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        if result.stdout:
+            print(result.stdout, end="", flush=True)
+        if result.stderr:
+            print(result.stderr, end="", flush=True)
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            command,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    fingerprint_path.write_text(fingerprint, encoding="utf-8")
+    _log(
+        f"Resolved requirements exported in {time.time() - started_at:.1f}s."
+    )
+    return requirements_path
 
 
 def resolve_dependency_image(
@@ -327,13 +367,34 @@ def resolve_dependency_image(
     import modal
 
     _log("Resolving dependency image.")
+    requirements_path = export_dependency_requirements(
+        python_version=python_version,
+        target_os=DEFAULT_TARGET_OS,
+        target_platform=DEFAULT_MODAL_TARGET_PLATFORM,
+    )
     fingerprint = compute_dependency_fingerprint(
         python_version=python_version,
-        install_integrations=True,
+        requirements_path=requirements_path,
     )
-    image = _build_dependency_image(modal, python_version)
+    cached_manifest = load_cached_dependency_manifest(
+        fingerprint=fingerprint,
+        manifest_path=manifest_path,
+    )
+    if cached_manifest is not None:
+        try:
+            image = modal.Image.from_id(cached_manifest.image_id)
+            _log("Using cached dependency image from the local manifest.")
+            return ResolvedDependencyImage(
+                image=image,
+                fingerprint=fingerprint,
+                cache_hit=True,
+            )
+        except Exception:
+            cached_manifest = None
+
+    image = _build_dependency_image(modal, python_version, requirements_path)
     return ResolvedDependencyImage(
         image=image,
         fingerprint=fingerprint,
-        cache_hit=True,
+        cache_hit=False,
     )

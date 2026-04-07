@@ -3,6 +3,12 @@
 INTEGRATIONS=no
 PIP_ARGS=
 UPGRADE_ALL=no
+EXPORT_REQUIREMENTS_FILE=
+TARGET_PYTHON_VERSION=
+TARGET_OS=
+TARGET_PLATFORM=
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+DEV_REQUIREMENTS_HELPER="$SCRIPT_DIR/install_dev_requirements.py"
 
 show_help() {
     cat << EOF
@@ -14,6 +20,12 @@ OPTIONS:
     -i, --integrations yes|no    Install integrations (default: no)
     -s, --system                 Install packages system-wide instead of in virtual environment
     -u, --upgrade-all           Uninstall existing ZenML, clear caches, and install latest versions
+    --export-requirements-file PATH
+                                Export resolved requirements to PATH and exit
+    --target-python-version VERSION
+                                Target Python version for requirements export
+    --target-os NAME            Target OS for requirements export
+    --target-platform TAG      Explicit target platform for requirements export
     -h, --help                  Show this help message
 
 EXAMPLES:
@@ -28,6 +40,11 @@ EXAMPLES:
     
     # System-wide installation with latest versions
     $0 --system --upgrade-all
+
+    # Export Linux Python 3.13 requirements without installing anything
+    $0 --integrations yes --export-requirements-file requirements.txt \
+       --target-python-version 3.13 --target-os Linux \
+       --target-platform x86_64-manylinux_2_35
 
 NOTES:
     - The --upgrade-all flag will uninstall existing ZenML installation and clear all caches
@@ -52,6 +69,26 @@ parse_args () {
             -u|--upgrade-all)
                 UPGRADE_ALL="yes"
                 shift # past argument
+                ;;
+            --export-requirements-file)
+                EXPORT_REQUIREMENTS_FILE="$2"
+                shift # past argument
+                shift # past value
+                ;;
+            --target-python-version)
+                TARGET_PYTHON_VERSION="$2"
+                shift # past argument
+                shift # past value
+                ;;
+            --target-os)
+                TARGET_OS="$2"
+                shift # past argument
+                shift # past value
+                ;;
+            --target-platform)
+                TARGET_PLATFORM="$2"
+                shift # past argument
+                shift # past value
                 ;;
             -h|--help)
                 show_help
@@ -84,6 +121,51 @@ clean_and_uninstall() {
     echo "✅ Cleanup completed"
 }
 
+editable_install_spec() {
+    python "$DEV_REQUIREMENTS_HELPER" editable-spec
+}
+
+resolve_target_python_version() {
+    if [ -n "$TARGET_PYTHON_VERSION" ]; then
+        echo "$TARGET_PYTHON_VERSION"
+    else
+        python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))"
+    fi
+}
+
+resolve_target_os() {
+    if [ -n "$TARGET_OS" ]; then
+        echo "$TARGET_OS"
+    else
+        python -c "import platform; print(platform.system())"
+    fi
+}
+
+export_requirements() {
+    if [ -z "$EXPORT_REQUIREMENTS_FILE" ]; then
+        echo "Missing --export-requirements-file"
+        exit 1
+    fi
+
+    python_version=$(resolve_target_python_version)
+    os_name=$(resolve_target_os)
+    target_platform_args=""
+    if [ -n "$TARGET_PLATFORM" ]; then
+        target_platform_args="--target-platform $TARGET_PLATFORM"
+    fi
+
+    echo "📝 Exporting resolved ZenML requirements to $EXPORT_REQUIREMENTS_FILE..."
+    # shellcheck disable=SC2086
+    python "$DEV_REQUIREMENTS_HELPER" write-compiled-requirements \
+        --output-file "$EXPORT_REQUIREMENTS_FILE" \
+        --python-version "$python_version" \
+        --target-os "$os_name" \
+        $target_platform_args \
+        --include-integrations "$INTEGRATIONS"
+
+    echo "✅ Requirements export completed"
+}
+
 install_zenml() {
     echo "📦 Installing ZenML in editable mode..."
     
@@ -95,7 +177,7 @@ install_zenml() {
     fi
     
     # install ZenML in editable mode
-    uv pip install $PIP_ARGS $upgrade_args -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
+    uv pip install $PIP_ARGS $upgrade_args -e "$(editable_install_spec)"
     
     echo "✅ ZenML installation completed"
 }
@@ -103,54 +185,14 @@ install_zenml() {
 install_integrations() {
     echo "🔌 Installing ZenML integrations..."
 
-    # figure out the python version
     python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
-
-    ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure skypilot_kubernetes skypilot_lambda pigeon prodigy argilla vllm"
-
-    # Ignore tensorflow and deepchecks only on Python 3.12 and 3.13
-    if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ]; then
-        ignore_integrations="$ignore_integrations tensorflow deepchecks"
-    fi
-
-    # TODO: Revisit once pytorch Windows support stabilizes.
-    # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
-    # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471
     os_name=$(python -c "import platform; print(platform.system())")
-    if [ "$os_name" = "Windows" ]; then
-        ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
-    fi
-    
-    # turn the ignore integrations into a list of --ignore-integration args
-    ignore_integrations_args=""
-    for integration in $ignore_integrations; do
-        ignore_integrations_args="$ignore_integrations_args --ignore-integration $integration"
-    done
 
-    # install basic ZenML integrations
-    zenml integration export-requirements \
+    python "$DEV_REQUIREMENTS_HELPER" write-integration-input \
         --output-file integration-requirements.txt \
-        $ignore_integrations_args
-
-    # Handle package pins based on upgrade mode
-    if [ "$UPGRADE_ALL" = "yes" ]; then
-        echo "🔄 Using latest versions for integration dependencies"
-        # When upgrading, use minimum versions to allow latest compatible
-        echo "" >> integration-requirements.txt
-        echo "pyyaml>=6.0.1" >> integration-requirements.txt
-        echo "pyopenssl" >> integration-requirements.txt
-        echo "typing-extensions" >> integration-requirements.txt
-        echo "maison<2" >> integration-requirements.txt
-    else
-        # Original behavior with specific pins
-        echo "" >> integration-requirements.txt
-        echo "pyyaml>=6.0.1" >> integration-requirements.txt
-        echo "pyopenssl" >> integration-requirements.txt
-        echo "typing-extensions" >> integration-requirements.txt
-        echo "maison<2" >> integration-requirements.txt
-    fi
-    
-    echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
+        --python-version "$python_version" \
+        --target-os "$os_name" \
+        --include-project-spec yes
 
     # Build upgrade arguments based on UPGRADE_ALL flag
     upgrade_args=""
@@ -179,6 +221,11 @@ export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 
 parse_args "$@"
+
+if [ -n "$EXPORT_REQUIREMENTS_FILE" ]; then
+    export_requirements
+    exit 0
+fi
 
 # Clean and upgrade tooling packages if upgrading all
 if [ "$UPGRADE_ALL" = "yes" ]; then

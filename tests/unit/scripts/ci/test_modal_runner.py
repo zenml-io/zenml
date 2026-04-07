@@ -13,12 +13,15 @@ from scripts.ci.modal_runner import (
     RUNNER_EXIT_TEST_FAILURE,
     BatchExecution,
     BatchResult,
+    GitSourceRef,
+    PreparedGitSourceSnapshot,
     ScheduledBatch,
     StartupSummary,
     SuiteConfig,
     _allocate_suite_parallelism,
     _allocate_weighted_suite_parallelism,
     _batch_manifest_path,
+    _build_batch_environment,
     _collect_node_ids_locally,
     _count_duration_matches,
     _execute_queued_batches,
@@ -26,8 +29,10 @@ from scripts.ci.modal_runner import (
     _finalize_batch,
     _load_cached_node_ids,
     _node_id_cache_path,
+    _normalize_git_remote_url,
     _parse_collected_node_ids,
     _queue_batch_count,
+    _resolve_git_source_ref,
     _save_cached_node_ids,
     _write_batch_manifest,
     create_batch_failure_junit,
@@ -66,16 +71,58 @@ def test_parse_args_can_disable_coverage_collection() -> None:
 
 def test_parse_args_can_override_unit_pytest_distribution() -> None:
     """CLI parsing should expose the unit xdist distribution mode."""
-    args = parse_args(
-        ["--suite", "unit", "--unit-pytest-dist", "loadscope"]
-    )
+    args = parse_args(["--suite", "unit", "--unit-pytest-dist", "loadscope"])
 
     assert args.unit_pytest_dist == "loadscope"
 
 
+def test_normalize_git_remote_url_converts_ssh_to_https() -> None:
+    """Git SSH remotes should be converted into HTTPS URLs for Modal."""
+    assert (
+        _normalize_git_remote_url("git@github.com:zenml-io/core.git")
+        == "https://github.com/zenml-io/core.git"
+    )
+    assert (
+        _normalize_git_remote_url("ssh://git@github.com/zenml-io/core.git")
+        == "https://github.com/zenml-io/core.git"
+    )
+
+
+def test_resolve_git_source_ref_requires_clean_pushed_head(monkeypatch) -> None:
+    """Strict git mode should reject dirty or unpushed work before Modal work."""
+    responses = {
+        ("status", "--porcelain"): "",
+        ("rev-parse", "HEAD"): "abc123\n",
+        ("remote", "get-url", "origin"): "git@github.com:zenml-io/core.git\n",
+        ("fetch", "--quiet", "origin"): "",
+        (
+            "for-each-ref",
+            "--format=%(refname)",
+            "--contains",
+            "abc123",
+            "refs/remotes/origin",
+        ): "refs/remotes/origin/develop\n",
+    }
+
+    def fake_run(cmd, **kwargs):
+        key = tuple(cmd[1:])
+        stdout = responses[key]
+        return type("Result", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
+
+    monkeypatch.setattr("scripts.ci.modal_runner.subprocess.run", fake_run)
+
+    source_ref = _resolve_git_source_ref()
+
+    assert source_ref.commit_sha == "abc123"
+    assert source_ref.remote_url == "https://github.com/zenml-io/core.git"
+    assert len(source_ref.cache_namespace) == 16
+
+
 def test_allocate_suite_parallelism_splits_budget_evenly() -> None:
     """Global suite parallelism should be split evenly when possible."""
-    assert _allocate_suite_parallelism(suite_count=2, total_parallelism=20) == [
+    assert _allocate_suite_parallelism(
+        suite_count=2, total_parallelism=20
+    ) == [
         10,
         10,
     ]
@@ -83,7 +130,9 @@ def test_allocate_suite_parallelism_splits_budget_evenly() -> None:
 
 def test_allocate_suite_parallelism_distributes_remainder() -> None:
     """Any leftover sandbox budget should be distributed deterministically."""
-    assert _allocate_suite_parallelism(suite_count=2, total_parallelism=21) == [
+    assert _allocate_suite_parallelism(
+        suite_count=2, total_parallelism=21
+    ) == [
         11,
         10,
     ]
@@ -99,7 +148,9 @@ def test_allocate_weighted_suite_parallelism_favors_heavier_suite() -> None:
     ) == [7, 13]
 
 
-def test_allocate_weighted_suite_parallelism_falls_back_when_all_zero() -> None:
+def test_allocate_weighted_suite_parallelism_falls_back_when_all_zero() -> (
+    None
+):
     """Zero-duration suites should use the even split fallback."""
     assert _allocate_weighted_suite_parallelism(
         suite_names=["unit", "integration"],
@@ -121,31 +172,42 @@ def test_allocate_weighted_suite_parallelism_caps_unit_suite() -> None:
 
 def test_queue_batch_count_matches_parallelism() -> None:
     """Batch count should equal parallelism to avoid queuing overhead."""
-    assert _queue_batch_count(
-        suite=SuiteConfig(
-            name="integration",
-            test_environment="default",
-            default_duration=5.0,
-            batch_timeout=900,
-        ),
-        suite_parallelism=4,
-        node_ids=[f"tests/integration/test_{index}.py::test_ok" for index in range(30)],
-    ) == 4
+    assert (
+        _queue_batch_count(
+            suite=SuiteConfig(
+                name="integration",
+                test_environment="default",
+                default_duration=5.0,
+                batch_timeout=900,
+            ),
+            suite_parallelism=4,
+            node_ids=[
+                f"tests/integration/test_{index}.py::test_ok"
+                for index in range(30)
+            ],
+        )
+        == 4
+    )
 
 
 def test_queue_batch_count_caps_at_test_count() -> None:
     """Batch count should not exceed the number of tests."""
-    assert _queue_batch_count(
-        suite=SuiteConfig(
-            name="unit",
-            test_environment="default",
-            default_duration=0.5,
-            batch_timeout=900,
-            pytest_workers=4,
-        ),
-        suite_parallelism=3,
-        node_ids=[f"tests/unit/test_{index}.py::test_ok" for index in range(2)],
-    ) == 2
+    assert (
+        _queue_batch_count(
+            suite=SuiteConfig(
+                name="unit",
+                test_environment="default",
+                default_duration=0.5,
+                batch_timeout=900,
+                pytest_workers=4,
+            ),
+            suite_parallelism=3,
+            node_ids=[
+                f"tests/unit/test_{index}.py::test_ok" for index in range(2)
+            ],
+        )
+        == 2
+    )
 
 
 def test_create_batch_failure_junit_contains_exit_code() -> None:
@@ -267,7 +329,7 @@ def test_write_summary_lists_failed_tests(tmp_path: Path) -> None:
         output_path=summary_path,
         startup_summary=StartupSummary(
             dependency_cache_hit=True,
-            execution_cache_hits={"unit": True, "integration": False},
+            source_snapshot_cache_hit=True,
             node_id_cache_hits={"unit": False, "integration": True},
             launch_to_first_batch_seconds=12.5,
         ),
@@ -276,6 +338,7 @@ def test_write_summary_lists_failed_tests(tmp_path: Path) -> None:
     assert summary_path.exists()
     assert "Failed batches: 1" in summary
     assert "Dependency image cache: hit" in summary
+    assert "Git source snapshot cache: hit" in summary
     assert "Launch to first batch: 12.5s" in summary
     assert "`tests.integration.test_file::test_fail`" in summary
     assert "## Failure Groups" in summary
@@ -386,10 +449,10 @@ def test_write_duration_cache_merges_existing_and_new_results(
     assert written_path == output_path
     assert output_path.exists()
     assert output_path.read_text(encoding="utf-8") == (
-        '{\n'
+        "{\n"
         '  "tests/unit/test_existing.py::test_old": 3.0,\n'
         '  "tests/unit/test_file.py::test_ok": 1.5\n'
-        '}'
+        "}"
     )
 
 
@@ -421,7 +484,10 @@ def test_runner_command_does_not_pass_entire_suite_path_to_pytest() -> None:
 def test_runner_command_decodes_node_ids_from_env_var_when_present() -> None:
     """Sandboxes should decode node IDs from ZENML_NODE_IDS_B64 to skip upload."""
     assert 'if [[ -n "${ZENML_NODE_IDS_B64:-}" ]]; then' in RUNNER_COMMAND
-    assert 'echo "$ZENML_NODE_IDS_B64" | base64 -d > "${ZENML_NODE_ID_PATH}"' in RUNNER_COMMAND
+    assert (
+        'echo "$ZENML_NODE_IDS_B64" | base64 -d > "${ZENML_NODE_ID_PATH}"'
+        in RUNNER_COMMAND
+    )
 
 
 def test_runner_command_falls_back_to_polling_without_env_var() -> None:
@@ -432,7 +498,10 @@ def test_runner_command_falls_back_to_polling_without_env_var() -> None:
 
 def test_runner_command_can_skip_coverage_collection() -> None:
     """Coverage flags should be guarded behind an env-controlled switch."""
-    assert 'if [[ "${ZENML_COLLECT_COVERAGE:-1}" == "1" ]]; then' in RUNNER_COMMAND
+    assert (
+        'if [[ "${ZENML_COLLECT_COVERAGE:-1}" == "1" ]]; then'
+        in RUNNER_COMMAND
+    )
 
 
 def test_runner_command_uses_configured_xdist_distribution() -> None:
@@ -442,7 +511,9 @@ def test_runner_command_uses_configured_xdist_distribution() -> None:
 
 def test_runner_command_accepts_optional_import_mode() -> None:
     """Modal shards should be able to opt into pytest importlib mode."""
-    assert 'if [[ -n "${ZENML_PYTEST_IMPORT_MODE:-}" ]]; then' in RUNNER_COMMAND
+    assert (
+        'if [[ -n "${ZENML_PYTEST_IMPORT_MODE:-}" ]]; then' in RUNNER_COMMAND
+    )
     assert '--import-mode "${ZENML_PYTEST_IMPORT_MODE}"' in RUNNER_COMMAND
 
 
@@ -458,9 +529,38 @@ def test_runner_command_embeds_junit_in_stdout() -> None:
     assert 'echo "${ZENML_JUNIT_END}"' in RUNNER_COMMAND
 
 
+def test_build_batch_environment_targets_snapshot_and_tmp_runtime() -> None:
+    """Sandboxes should run from the git snapshot with writable state in /tmp."""
+    env = _build_batch_environment(
+        suite=SuiteConfig(
+            name="unit",
+            test_environment="default",
+            default_duration=0.5,
+            batch_timeout=900,
+        ),
+        batch_name="unit-batch-01",
+        source_snapshot=PreparedGitSourceSnapshot(
+            volume=object(),
+            snapshot_path="/mnt/zenml-fast-ci/repo-snapshots/ns/abc123",
+            cache_hit=True,
+            commit_sha="abc123",
+        ),
+    )
+
+    assert env["ZENML_REPOSITORY_PATH"] == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123"
+    assert env["PYTHONPATH"] == (
+        "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123:"
+        "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123/src"
+    )
+    assert env["ZENML_CONFIG_PATH"] == "/tmp/zenml-fast-ci/config"
+    assert env["ZENML_LOCAL_STORES_PATH"] == "/tmp/zenml-fast-ci/local-stores"
+
+
 def test_extract_embedded_junit_returns_xml_and_cleaned_logs() -> None:
     """Embedded JUnit payloads should be decoded and stripped from logs."""
-    junit_xml = '<testsuite name="unit"><testcase name="test_ok" /></testsuite>'
+    junit_xml = (
+        '<testsuite name="unit"><testcase name="test_ok" /></testsuite>'
+    )
     payload = (
         "before\n"
         f"{JUNIT_LOG_START}\n"
@@ -477,11 +577,13 @@ def test_extract_embedded_junit_returns_xml_and_cleaned_logs() -> None:
 
 def test_count_duration_matches_counts_known_node_ids() -> None:
     """Duration coverage should count only matched tests."""
-    assert _count_duration_matches(
-        ["a", "b", "c"],
-        {"a": 1.0, "c": 2.0},
-    ) == 2
-
+    assert (
+        _count_duration_matches(
+            ["a", "b", "c"],
+            {"a": 1.0, "c": 2.0},
+        )
+        == 2
+    )
 
 
 def test_collect_node_ids_locally_returns_node_ids_on_success(
@@ -491,8 +593,7 @@ def test_collect_node_ids_locally_returns_node_ids_on_success(
     import subprocess
 
     fake_output = (
-        "tests/unit/test_foo.py::test_bar\n"
-        "tests/unit/test_foo.py::test_baz\n"
+        "tests/unit/test_foo.py::test_bar\ntests/unit/test_foo.py::test_baz\n"
     )
 
     def fake_run(cmd, **kwargs):
@@ -552,7 +653,9 @@ def test_collect_node_ids_locally_returns_partial_results_on_import_errors(
     def fake_run(cmd, **kwargs):
         result = subprocess.CompletedProcess(cmd, returncode=1)
         result.stdout = fake_output
-        result.stderr = "ERROR collecting tests/integration/test_needs_boto3.py"
+        result.stderr = (
+            "ERROR collecting tests/integration/test_needs_boto3.py"
+        )
         return result
 
     monkeypatch.setattr("scripts.ci.modal_runner.subprocess.run", fake_run)
@@ -647,19 +750,19 @@ def test_node_id_cache_round_trip(tmp_path: Path, monkeypatch) -> None:
     )
     written_path = _save_cached_node_ids(
         suite="unit",
-        execution_fingerprint="fingerprint",
+        collection_fingerprint="fingerprint",
         pytest_import_mode="importlib",
         node_ids=["tests/unit/test_file.py::test_ok"],
     )
 
     assert written_path == _node_id_cache_path(
         suite="unit",
-        execution_fingerprint="fingerprint",
+        collection_fingerprint="fingerprint",
         pytest_import_mode="importlib",
     )
     assert _load_cached_node_ids(
         suite="unit",
-        execution_fingerprint="fingerprint",
+        collection_fingerprint="fingerprint",
         pytest_import_mode="importlib",
     ) == ["tests/unit/test_file.py::test_ok"]
 
@@ -695,9 +798,6 @@ def test_execute_queued_batches_respects_parallelism_and_completes_all(
     monkeypatch,
 ) -> None:
     """Queued dispatch should run each batch once within the live budget."""
-    import asyncio
-    from unittest.mock import AsyncMock, MagicMock
-
     created_sandboxes: list[str] = []
     current_outstanding = 0
     peak_outstanding = 0
@@ -750,14 +850,22 @@ def test_execute_queued_batches_respects_parallelism_and_completes_all(
     )
 
     import modal
-    original_create = modal.Sandbox.create
+
     monkeypatch.setattr(
-        modal.Sandbox.create, "aio", fake_create_aio,
+        modal.Sandbox.create,
+        "aio",
+        fake_create_aio,
     )
 
     results = _execute_queued_batches(
         app=None,
         image=None,
+        source_snapshot=PreparedGitSourceSnapshot(
+            volume=object(),
+            snapshot_path="/mnt/zenml-fast-ci/repo-snapshots/ns/abc123",
+            cache_hit=True,
+            commit_sha="abc123",
+        ),
         suite=SuiteConfig(
             name="integration",
             test_environment="default",
@@ -792,11 +900,22 @@ def test_execute_queued_batches_respects_parallelism_and_completes_all(
     # Node IDs should be embedded in the env, not uploaded after creation.
     for i, env in enumerate(captured_envs):
         assert "ZENML_NODE_IDS_B64" in env
+        assert (
+            env["PYTHONPATH"]
+            == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123:"
+            "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123/src"
+        )
+        assert (
+            env["ZENML_REPOSITORY_PATH"]
+            == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123"
+        )
         decoded = base64.b64decode(env["ZENML_NODE_IDS_B64"]).decode()
         assert f"tests/integration/test_{i + 1}.py::test_ok" in decoded
 
 
-def test_finalize_batch_turns_timeout_into_failed_batch(tmp_path: Path) -> None:
+def test_finalize_batch_turns_timeout_into_failed_batch(
+    tmp_path: Path,
+) -> None:
     """Sandbox timeouts should not crash the runner."""
 
     class SandboxTimeoutError(Exception):
@@ -884,8 +1003,8 @@ def test_write_duration_cache_backfills_timeout_batch_durations(
 
     assert written_path == output_path
     assert output_path.read_text(encoding="utf-8") == (
-        '{\n'
+        "{\n"
         '  "tests/integration/test_a.py::test_one": 480.0,\n'
         '  "tests/integration/test_b.py::test_two": 480.0\n'
-        '}'
+        "}"
     )

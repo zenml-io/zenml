@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
 import time
 import xml.etree.ElementTree as ET
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -24,10 +26,11 @@ from scripts.ci.modal_image import (
     DEFAULT_MODAL_APP_NAME,
     DEFAULT_SANDBOX_CPU,
     DEFAULT_SANDBOX_MEMORY_MB,
+    CachedImageManifest,
     ResolvedDependencyImage,
-    compute_execution_fingerprint,
-    execution_overlay_paths_for_suite,
+    compute_collection_fingerprint,
     resolve_dependency_image,
+    save_cached_manifest,
 )
 from scripts.ci.scheduler import (
     DEFAULT_INTEGRATION_TEST_DURATION_SECONDS,
@@ -45,8 +48,14 @@ DEFAULT_DURATION_CACHE_PATH = (
 DEFAULT_NODE_ID_CACHE_DIR = REPO_ROOT / ".modal-cache" / "node-ids"
 RUNNER_EXIT_TEST_FAILURE = 1
 RUNNER_EXIT_INFRA_FAILURE = 2
-REMOTE_ARTIFACTS_DIR = "/app/.modal-ci"
-REMOTE_SOURCE_ROOT = "/app"
+DEFAULT_REPO_VOLUME_NAME = "zenml-fast-ci-source-cache"
+REMOTE_VOLUME_ROOT = "/mnt/zenml-fast-ci"
+REMOTE_REPO_CACHE_ROOT = f"{REMOTE_VOLUME_ROOT}/repo-cache"
+REMOTE_REPO_SNAPSHOTS_ROOT = f"{REMOTE_VOLUME_ROOT}/repo-snapshots"
+REMOTE_RUNTIME_ROOT = "/tmp/zenml-fast-ci"
+REMOTE_ARTIFACTS_DIR = f"{REMOTE_RUNTIME_ROOT}/artifacts"
+REMOTE_CONFIG_DIR = f"{REMOTE_RUNTIME_ROOT}/config"
+REMOTE_LOCAL_STORES_DIR = f"{REMOTE_RUNTIME_ROOT}/local-stores"
 NODE_ID_PATH = "/tmp/zenml-batch-node-ids.txt"
 JUNIT_PATH = f"{REMOTE_ARTIFACTS_DIR}/junit.xml"
 RUN_LOG_PATH = f"{REMOTE_ARTIFACTS_DIR}/batch.log"
@@ -64,11 +73,14 @@ RUNNER_COMMAND = """\
 test_environment="${ZENML_TEST_ENVIRONMENT}"
 artifacts_dir="${ZENML_ARTIFACTS_DIR}"
 batch_name="${ZENML_BATCH_NAME:-batch}"
+repo_root="${ZENML_REPOSITORY_PATH}"
 
-cd /app
-chmod +x ./zen-test
+cd "$repo_root"
 export PYTHONUNBUFFERED=1
-mkdir -p "${artifacts_dir}" /app/.zen
+mkdir -p \
+  "${artifacts_dir}" \
+  "${ZENML_CONFIG_PATH}" \
+  "${ZENML_LOCAL_STORES_PATH}"
 
 if [[ -n "${ZENML_NODE_IDS_B64:-}" ]]; then
   echo "$ZENML_NODE_IDS_B64" | base64 -d > "${ZENML_NODE_ID_PATH}"
@@ -212,19 +224,26 @@ class SuiteCollection:
     suite: SuiteConfig
     node_ids: List[str]
     estimated_total_duration: float
-    execution_fingerprint: str
-    execution_cache_hit: bool
     node_id_cache_hit: bool
 
 
 @dataclass(frozen=True)
-class SuiteExecutionImage:
-    """Suite-specific execution image resolution details."""
+class GitSourceRef:
+    """Immutable git source reference used to prepare remote snapshots."""
 
-    suite_name: str
-    image: Any
-    fingerprint: str
+    commit_sha: str
+    remote_url: str
+    cache_namespace: str
+
+
+@dataclass(frozen=True)
+class PreparedGitSourceSnapshot:
+    """Resolved git snapshot state shared by all sandboxes in a run."""
+
+    volume: Any
+    snapshot_path: str
     cache_hit: bool
+    commit_sha: str
 
 
 @dataclass(frozen=True)
@@ -232,7 +251,7 @@ class StartupSummary:
     """Warm-start and launch metadata for one runner invocation."""
 
     dependency_cache_hit: bool
-    execution_cache_hits: dict[str, bool]
+    source_snapshot_cache_hit: bool
     node_id_cache_hits: dict[str, bool]
     launch_to_first_batch_seconds: float
 
@@ -429,6 +448,243 @@ def _retry_modal_call(func: Any, *args: Any, **kwargs: Any) -> Any:
     raise InfraFailure(str(last_error)) from last_error
 
 
+def _run_git_command(
+    args: Sequence[str],
+    *,
+    error_message: str,
+) -> str:
+    """Run one git command and return stripped stdout."""
+    result = subprocess.run(
+        ["git", *args],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        stderr = result.stderr.strip() or result.stdout.strip()
+        raise InfraFailure(f"{error_message}: {stderr}")
+    return result.stdout.strip()
+
+
+def _normalize_git_remote_url(remote_url: str) -> str:
+    """Convert an origin remote into an HTTPS URL Modal can fetch."""
+    normalized = remote_url.strip()
+    if normalized.startswith(("https://", "http://")):
+        return normalized
+
+    ssh_match = re.match(r"^ssh://git@([^/]+)/(.+)$", normalized)
+    if ssh_match:
+        host, path = ssh_match.groups()
+        return f"https://{host}/{path}"
+
+    scp_match = re.match(r"^git@([^:]+):(.+)$", normalized)
+    if scp_match:
+        host, path = scp_match.groups()
+        return f"https://{host}/{path}"
+
+    raise InfraFailure(
+        "Unsupported origin remote URL for Modal git checkout. "
+        f"Use an HTTPS or Git SSH remote, got: {remote_url}"
+    )
+
+
+def _git_cache_namespace(remote_url: str) -> str:
+    """Return a stable namespace for cached git artifacts."""
+    return hashlib.sha256(remote_url.encode("utf-8")).hexdigest()[:16]
+
+
+def _resolve_git_source_ref() -> GitSourceRef:
+    """Require a clean, pushed git state before running Modal fast CI."""
+    dirty_output = _run_git_command(
+        ["status", "--porcelain"],
+        error_message="Failed to inspect git working tree",
+    )
+    if dirty_output:
+        raise InfraFailure(
+            "Modal fast CI requires a clean git working tree. "
+            "Commit and push your changes first."
+        )
+
+    commit_sha = _run_git_command(
+        ["rev-parse", "HEAD"],
+        error_message="Failed to resolve HEAD commit",
+    )
+    remote_url = _normalize_git_remote_url(
+        _run_git_command(
+            ["remote", "get-url", "origin"],
+            error_message="Failed to read git origin URL",
+        )
+    )
+    _run_git_command(
+        ["fetch", "--quiet", "origin"],
+        error_message="Failed to fetch origin while validating pushed commit",
+    )
+    contains_output = _run_git_command(
+        [
+            "for-each-ref",
+            "--format=%(refname)",
+            "--contains",
+            commit_sha,
+            "refs/remotes/origin",
+        ],
+        error_message="Failed to verify whether HEAD is reachable from origin",
+    )
+    if not contains_output:
+        raise InfraFailure(
+            "Modal fast CI requires HEAD to be pushed to origin. "
+            f"Commit {commit_sha} is not reachable from origin."
+        )
+
+    return GitSourceRef(
+        commit_sha=commit_sha,
+        remote_url=remote_url,
+        cache_namespace=_git_cache_namespace(remote_url),
+    )
+
+
+def _remote_git_mirror_path(source_ref: GitSourceRef) -> str:
+    """Return the shared mirror path for one remote namespace."""
+    return f"{REMOTE_REPO_CACHE_ROOT}/{source_ref.cache_namespace}/origin.git"
+
+
+def _remote_git_snapshot_path(source_ref: GitSourceRef) -> str:
+    """Return the immutable snapshot path for one commit."""
+    return (
+        f"{REMOTE_REPO_SNAPSHOTS_ROOT}/"
+        f"{source_ref.cache_namespace}/{source_ref.commit_sha}"
+    )
+
+
+def _volume_directory_exists(volume: Any, path: str) -> bool:
+    """Return whether a directory exists in the Modal volume."""
+    try:
+        volume.listdir(path)
+    except Exception:
+        return False
+    return True
+
+
+def _prepare_git_source_snapshot(
+    *,
+    app: Any,
+    image: Any,
+    source_ref: GitSourceRef,
+    volume_name: str = DEFAULT_REPO_VOLUME_NAME,
+) -> PreparedGitSourceSnapshot:
+    """Ensure a shared git snapshot exists in a Modal volume."""
+    import modal
+
+    volume = modal.Volume.from_name(volume_name, create_if_missing=True)
+    snapshot_path = _remote_git_snapshot_path(source_ref)
+    if _volume_directory_exists(volume, snapshot_path):
+        log(
+            "Using cached git source snapshot for commit "
+            f"{source_ref.commit_sha[:12]}."
+        )
+        return PreparedGitSourceSnapshot(
+            volume=volume,
+            snapshot_path=snapshot_path,
+            cache_hit=True,
+            commit_sha=source_ref.commit_sha,
+        )
+
+    mirror_path = _remote_git_mirror_path(source_ref)
+    prep_script = """\
+set -euo pipefail
+mirror_path="${ZENML_GIT_MIRROR_PATH}"
+snapshot_path="${ZENML_GIT_SNAPSHOT_PATH}"
+tmp_snapshot_path="${snapshot_path}.tmp.$$"
+remote_url="${ZENML_GIT_REMOTE_URL}"
+commit_sha="${ZENML_GIT_COMMIT_SHA}"
+
+mkdir -p "$(dirname "$mirror_path")" "$(dirname "$snapshot_path")"
+
+if [[ ! -d "$mirror_path" ]]; then
+  git clone --mirror "$remote_url" "$mirror_path"
+else
+  git -C "$mirror_path" remote set-url origin "$remote_url"
+fi
+
+if ! git -C "$mirror_path" cat-file -e "${commit_sha}^{commit}" 2>/dev/null; then
+  git -C "$mirror_path" fetch --prune origin
+fi
+git -C "$mirror_path" cat-file -e "${commit_sha}^{commit}"
+
+rm -rf "$tmp_snapshot_path"
+mkdir -p "$tmp_snapshot_path"
+git -C "$mirror_path" archive "$commit_sha" | tar -x -C "$tmp_snapshot_path"
+touch "$tmp_snapshot_path/.zenml-source-ready"
+rm -rf "$snapshot_path"
+mv "$tmp_snapshot_path" "$snapshot_path"
+"""
+
+    started_at = time.time()
+    log(
+        "Preparing git source snapshot for commit "
+        f"{source_ref.commit_sha[:12]}."
+    )
+    sandbox = _retry_modal_call(
+        modal.Sandbox.create,
+        "bash",
+        "-lc",
+        prep_script,
+        app=app,
+        image=image,
+        name=f"git-source-{source_ref.commit_sha[:12]}",
+        timeout=900,
+        cpu=1.0,
+        memory=2048,
+        env={
+            "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
+            "ZENML_GIT_REMOTE_URL": source_ref.remote_url,
+            "ZENML_GIT_MIRROR_PATH": mirror_path,
+            "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
+        },
+        volumes={REMOTE_VOLUME_ROOT: volume},
+    )
+    try:
+        sandbox.wait()
+    except Exception as error:
+        raise InfraFailure(
+            "Failed while preparing the git source snapshot: "
+            f"{error}"
+        ) from error
+
+    stdout = _try_read_sandbox_stdout(sandbox) or ""
+    stderr = ""
+    stderr_stream = getattr(sandbox, "stderr", None)
+    if stderr_stream is not None:
+        try:
+            stderr = stderr_stream.read()
+        except Exception:
+            stderr = ""
+    exit_code = sandbox.returncode
+    sandbox.terminate()
+    if exit_code != 0:
+        combined_logs = "\n".join(
+            chunk for chunk in (stdout.strip(), stderr.strip()) if chunk
+        )
+        raise InfraFailure(
+            "Failed while preparing the git source snapshot"
+            + (f":\n{combined_logs}" if combined_logs else ".")
+        )
+
+    volume.commit()
+    volume.reload()
+    log(
+        "Git source snapshot ready in "
+        f"{time.time() - started_at:.1f}s for commit "
+        f"{source_ref.commit_sha[:12]}."
+    )
+    return PreparedGitSourceSnapshot(
+        volume=volume,
+        snapshot_path=snapshot_path,
+        cache_hit=False,
+        commit_sha=source_ref.commit_sha,
+    )
+
+
 def _read_sandbox_file(sandbox: Any, path: str) -> str:
     """Read a UTF-8 file from a sandbox."""
     return _read_sandbox_bytes(sandbox, path).decode("utf-8")
@@ -498,52 +754,28 @@ def _extract_embedded_junit(log_output: str) -> tuple[Optional[str], str]:
     return junit_xml, cleaned_output
 
 
-def _add_overlay_paths_to_image(
-    image: Any,
-    *,
-    overlay_paths: Sequence[str],
-) -> Any:
-    """Apply one suite overlay to a Modal image."""
-    for relative_path in overlay_paths:
-        local_path = REPO_ROOT / relative_path
-        remote_path = f"/app/{relative_path}"
-        if local_path.is_dir():
-            image = image.add_local_dir(
-                str(local_path),
-                remote_path,
-                copy=False,
-            )
-        else:
-            image = image.add_local_file(
-                str(local_path),
-                remote_path,
-                copy=False,
-            )
-    return image
-
-
 def _node_id_cache_path(
     *,
     suite: str,
-    execution_fingerprint: str,
+    collection_fingerprint: str,
     pytest_import_mode: Optional[str],
 ) -> Path:
     """Return the cache file path for collected node IDs."""
     import_mode = pytest_import_mode or "default"
-    cache_name = f"{execution_fingerprint}-{import_mode}.json"
+    cache_name = f"{collection_fingerprint}-{import_mode}.json"
     return DEFAULT_NODE_ID_CACHE_DIR / suite / cache_name
 
 
 def _load_cached_node_ids(
     *,
     suite: str,
-    execution_fingerprint: str,
+    collection_fingerprint: str,
     pytest_import_mode: Optional[str],
 ) -> Optional[List[str]]:
     """Load cached node IDs for one suite if present."""
     cache_path = _node_id_cache_path(
         suite=suite,
-        execution_fingerprint=execution_fingerprint,
+        collection_fingerprint=collection_fingerprint,
         pytest_import_mode=pytest_import_mode,
     )
     if not cache_path.exists():
@@ -561,14 +793,14 @@ def _load_cached_node_ids(
 def _save_cached_node_ids(
     *,
     suite: str,
-    execution_fingerprint: str,
+    collection_fingerprint: str,
     pytest_import_mode: Optional[str],
     node_ids: Sequence[str],
 ) -> Path:
     """Persist one suite's collected node IDs."""
     cache_path = _node_id_cache_path(
         suite=suite,
-        execution_fingerprint=execution_fingerprint,
+        collection_fingerprint=collection_fingerprint,
         pytest_import_mode=pytest_import_mode,
     )
     cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -579,56 +811,26 @@ def _save_cached_node_ids(
     return cache_path
 
 
-def _apply_source_overlay(
+def _build_modal_image(
     *,
-    base_image: Any,
-    dependency_fingerprint: str,
-    python_version: str,
-    suite_name: str = "",
-) -> SuiteExecutionImage:
-    """Apply source overlay to the dependency image without snapshotting.
-
-    Provision and editable install happen inside each sandbox at startup
-    via RUNNER_COMMAND, eliminating the sequential snapshot step.
-    """
-    overlay_paths = execution_overlay_paths_for_suite(suite_name)
-    image = _add_overlay_paths_to_image(
-        base_image,
-        overlay_paths=overlay_paths,
-    )
-    execution_fingerprint = compute_execution_fingerprint(
-        python_version=python_version,
-        test_environment="default",
-        dependency_fingerprint=dependency_fingerprint,
-        suite_name=suite_name,
-        overlay_paths=overlay_paths,
-    )
-    log(f"Applied source overlay for {suite_name or 'all suites'}.")
-    return SuiteExecutionImage(
-        suite_name=suite_name,
-        image=image,
-        fingerprint=execution_fingerprint,
-        cache_hit=True,
-    )
-
-
-def _resolve_suite_images(
-    *,
-    base_image: Any,
-    dependency_fingerprint: str,
-    python_version: str,
-    suite_configs: Sequence[SuiteConfig],
-) -> dict[str, SuiteExecutionImage]:
-    """Build one execution image per suite so startup sync stays minimal."""
-    return {
-        suite.name: _apply_source_overlay(
-            base_image=base_image,
-            dependency_fingerprint=dependency_fingerprint,
-            python_version=python_version,
-            suite_name=suite.name,
+    app: Any,
+    image: Any,
+    label: str,
+) -> Any:
+    """Eagerly build one Modal image so launches don't stall later."""
+    try:
+        started_at = time.time()
+        log(f"Building {label} image on Modal.")
+        image.build(app)
+        log(
+            f"{label.capitalize()} image ready in "
+            f"{time.time() - started_at:.1f}s."
         )
-        for suite in suite_configs
-    }
+        return image
+    except Exception as error:
+        raise InfraFailure(
+            f"Failed while building the {label} image: {error}"
+        ) from error
 
 
 def _collect_node_ids_locally(
@@ -905,13 +1107,8 @@ def write_summary(
         lines.extend(
             [
                 f"- Dependency image cache: {'hit' if startup_summary.dependency_cache_hit else 'miss'}",
-                "- Execution image cache: "
-                + ", ".join(
-                    f"`{suite}`={'hit' if hit else 'miss'}"
-                    for suite, hit in sorted(
-                        startup_summary.execution_cache_hits.items()
-                    )
-                ),
+                "- Git source snapshot cache: "
+                + ("hit" if startup_summary.source_snapshot_cache_hit else "miss"),
                 "- Node ID cache: "
                 + ", ".join(
                     f"`{suite}`={'hit' if hit else 'miss'}"
@@ -1150,6 +1347,7 @@ def _launch_suite_batches(
     *,
     app: Any,
     image: Any,
+    source_snapshot: PreparedGitSourceSnapshot,
     suite: SuiteConfig,
     batches: Sequence[ScheduledBatch],
     suite_dir: Path,
@@ -1165,6 +1363,7 @@ def _launch_suite_batches(
                 _launch_batch,
                 app=app,
                 image=image,
+                source_snapshot=source_snapshot,
                 suite=suite,
                 batch_index=index + 1,
                 batch=batch,
@@ -1291,16 +1490,22 @@ def _finalize_suite_batches(
 
 def _collect_suite(
     *,
-    execution_image: SuiteExecutionImage,
     suite: SuiteConfig,
+    python_version: str,
     duration_map: dict[str, float],
 ) -> SuiteCollection:
     """Collect node IDs and estimate total suite duration for scheduling."""
     log(f"Starting suite '{suite.name}'.")
+    collection_fingerprint = compute_collection_fingerprint(
+        python_version=python_version,
+        test_environment=suite.test_environment,
+        suite_name=suite.name,
+        pytest_import_mode=suite.pytest_import_mode,
+    )
     node_id_cache_hit = False
     cached_node_ids = _load_cached_node_ids(
         suite=suite.name,
-        execution_fingerprint=execution_image.fingerprint,
+        collection_fingerprint=collection_fingerprint,
         pytest_import_mode=suite.pytest_import_mode,
     )
     if cached_node_ids is not None:
@@ -1308,7 +1513,10 @@ def _collect_suite(
         node_ids = cached_node_ids
         node_id_cache_hit = True
     else:
-        log(f"Collecting pytest node IDs locally for suite '{suite.name}'.")
+        collect_started_at = time.time()
+        log(
+            f"Collecting pytest node IDs locally for suite '{suite.name}'."
+        )
         node_ids = _collect_node_ids_locally(
             suite=suite.name,
             test_environment=suite.test_environment,
@@ -1319,10 +1527,13 @@ def _collect_suite(
                 f"Local pytest collection failed for suite '{suite.name}'. "
                 "Fix the collection error locally before running CI."
             )
-        log(f"Collected {len(node_ids)} tests for suite '{suite.name}'.")
+        log(
+            f"Collected {len(node_ids)} tests for suite '{suite.name}' "
+            f"in {time.time() - collect_started_at:.1f}s."
+        )
         _save_cached_node_ids(
             suite=suite.name,
-            execution_fingerprint=execution_image.fingerprint,
+            collection_fingerprint=collection_fingerprint,
             pytest_import_mode=suite.pytest_import_mode,
             node_ids=node_ids,
         )
@@ -1346,10 +1557,59 @@ def _collect_suite(
         suite=suite,
         node_ids=node_ids,
         estimated_total_duration=estimated_total_duration,
-        execution_fingerprint=execution_image.fingerprint,
-        execution_cache_hit=execution_image.cache_hit,
         node_id_cache_hit=node_id_cache_hit,
     )
+
+
+def _wait_for_prelaunch_tasks(
+    *,
+    blocking_future: Any,
+    blocking_label: str,
+    suite_futures: dict[Any, str],
+) -> list[SuiteCollection]:
+    """Wait for one shared prelaunch task and suite collection with progress logs."""
+    from concurrent.futures import FIRST_COMPLETED, wait
+
+    suite_collections: list[SuiteCollection] = []
+    pending_suite_futures = dict(suite_futures)
+    pending_futures = {blocking_future, *pending_suite_futures}
+    blocking_ready = False
+    last_log_at = time.time()
+
+    while pending_futures:
+        done, pending = wait(
+            pending_futures,
+            timeout=1,
+            return_when=FIRST_COMPLETED,
+        )
+        for future in done:
+            if future is blocking_future:
+                future.result()
+                blocking_ready = True
+                continue
+            suite_collections.append(future.result())
+            pending_suite_futures.pop(future, None)
+
+        pending_futures = {
+            future for future in ({blocking_future, *pending_suite_futures}) if not future.done()
+        }
+        if pending_futures and time.time() - last_log_at >= 5:
+            pending_steps: list[str] = []
+            if not blocking_ready:
+                pending_steps.append(blocking_label)
+            if pending_suite_futures:
+                pending_steps.append(
+                    "suite collection for "
+                    + ", ".join(sorted(pending_suite_futures.values()))
+                )
+            log(
+                "Still preparing launch: waiting on "
+                + " and ".join(pending_steps)
+                + "."
+            )
+            last_log_at = time.time()
+
+    return suite_collections
 
 
 def _queue_batch_count(
@@ -1378,10 +1638,72 @@ def _queue_batch_count(
     return min(len(node_ids), suite_parallelism)
 
 
+async def _create_sandbox_with_progress(
+    *,
+    create_coro: Any,
+    batch_name: str,
+) -> Any:
+    """Wait for sandbox creation while emitting progress logs."""
+    import asyncio
+
+    started_at = time.time()
+    task = asyncio.create_task(create_coro)
+    while True:
+        try:
+            sandbox = await asyncio.wait_for(
+                asyncio.shield(task),
+                timeout=5,
+            )
+            log(
+                f"Sandbox created for {batch_name} in "
+                f"{time.time() - started_at:.1f}s."
+            )
+            return sandbox
+        except asyncio.TimeoutError:
+            log(
+                f"Still creating sandbox for {batch_name} after "
+                f"{time.time() - started_at:.1f}s. "
+                "Modal is likely attaching the git snapshot volume, "
+                "preparing the dependency image container, and "
+                "registering the sandbox."
+            )
+
+
+def _build_batch_environment(
+    *,
+    suite: SuiteConfig,
+    batch_name: str,
+    source_snapshot: PreparedGitSourceSnapshot,
+) -> dict[str, str]:
+    """Build the environment shared by all Modal test sandboxes."""
+    repository_path = source_snapshot.snapshot_path
+    return {
+        "ZENML_BATCH_NAME": batch_name,
+        "ZENML_SUITE": suite.name,
+        "ZENML_TEST_ENVIRONMENT": suite.test_environment,
+        "ZENML_ARTIFACTS_DIR": REMOTE_ARTIFACTS_DIR,
+        "ZENML_NODE_ID_PATH": NODE_ID_PATH,
+        "ZENML_JUNIT_PATH": JUNIT_PATH,
+        "ZENML_JUNIT_START": JUNIT_LOG_START,
+        "ZENML_JUNIT_END": JUNIT_LOG_END,
+        "ZENML_RUN_LOG_PATH": RUN_LOG_PATH,
+        "ZENML_PYTEST_WORKERS": str(suite.pytest_workers),
+        "ZENML_PYTEST_DIST": suite.pytest_dist,
+        "ZENML_PYTEST_IMPORT_MODE": suite.pytest_import_mode or "",
+        "ZENML_COLLECT_COVERAGE": "1" if suite.collect_coverage else "0",
+        "ZENML_REPOSITORY_PATH": repository_path,
+        "ZENML_CONFIG_PATH": REMOTE_CONFIG_DIR,
+        "ZENML_LOCAL_STORES_PATH": REMOTE_LOCAL_STORES_DIR,
+        "PYTHONPATH": f"{repository_path}:{repository_path}/src",
+        COVERAGE_FILE_ENV: REMOTE_COVERAGE_PATH,
+    }
+
+
 def _execute_queued_batches(
     *,
     app: Any,
     image: Any,
+    source_snapshot: PreparedGitSourceSnapshot,
     suite: SuiteConfig,
     batches: Sequence[ScheduledBatch],
     suite_dir: Path,
@@ -1396,6 +1718,7 @@ def _execute_queued_batches(
     on Modal's internal event loop via .aio methods.
     """
     import asyncio
+
     import modal
 
     async def _run_batch(
@@ -1419,44 +1742,33 @@ def _execute_queued_batches(
                 "\n".join(batch.node_ids).encode()
             ).decode()
             embed_node_ids = len(node_ids_b64) < MODAL_ENV_PAYLOAD_MAX_BYTES
-            env = {
-                "ZENML_BATCH_NAME": batch_name,
-                "ZENML_SUITE": suite.name,
-                "ZENML_TEST_ENVIRONMENT": suite.test_environment,
-                "ZENML_ARTIFACTS_DIR": REMOTE_ARTIFACTS_DIR,
-                "ZENML_NODE_ID_PATH": NODE_ID_PATH,
-                "ZENML_JUNIT_PATH": JUNIT_PATH,
-                "ZENML_JUNIT_START": JUNIT_LOG_START,
-                "ZENML_JUNIT_END": JUNIT_LOG_END,
-                "ZENML_RUN_LOG_PATH": RUN_LOG_PATH,
-                "ZENML_PYTEST_WORKERS": str(suite.pytest_workers),
-                "ZENML_PYTEST_DIST": suite.pytest_dist,
-                "ZENML_PYTEST_IMPORT_MODE": suite.pytest_import_mode or "",
-                "ZENML_COLLECT_COVERAGE": (
-                    "1" if suite.collect_coverage else "0"
-                ),
-                "ZENML_REPOSITORY_PATH": REMOTE_SOURCE_ROOT,
-                "PYTHONPATH": f"{REMOTE_SOURCE_ROOT}/src",
-                COVERAGE_FILE_ENV: REMOTE_COVERAGE_PATH,
-            }
+            env = _build_batch_environment(
+                suite=suite,
+                batch_name=batch_name,
+                source_snapshot=source_snapshot,
+            )
             if embed_node_ids:
                 env["ZENML_NODE_IDS_B64"] = node_ids_b64
-            sandbox = await modal.Sandbox.create.aio(
-                "bash",
-                "-lc",
-                (
-                    'mkdir -p "$ZENML_ARTIFACTS_DIR"\n'
-                    'exec > >(tee "$ZENML_RUN_LOG_PATH") 2>&1\n'
-                    "set -euo pipefail\n"
-                    f"{RUNNER_COMMAND}\n"
+            sandbox = await _create_sandbox_with_progress(
+                create_coro=modal.Sandbox.create.aio(
+                    "bash",
+                    "-lc",
+                    (
+                        'mkdir -p "$ZENML_ARTIFACTS_DIR"\n'
+                        'exec > >(tee "$ZENML_RUN_LOG_PATH") 2>&1\n'
+                        "set -euo pipefail\n"
+                        f"{RUNNER_COMMAND}\n"
+                    ),
+                    app=app,
+                    image=image,
+                    name=batch_name,
+                    timeout=suite.batch_timeout,
+                    cpu=sandbox_cpu,
+                    memory=sandbox_memory_mb,
+                    env=env,
+                    volumes={REMOTE_VOLUME_ROOT: source_snapshot.volume},
                 ),
-                app=app,
-                image=image,
-                name=batch_name,
-                timeout=suite.batch_timeout,
-                cpu=sandbox_cpu,
-                memory=sandbox_memory_mb,
-                env=env,
+                batch_name=batch_name,
             )
             if not embed_node_ids:
                 loop = asyncio.get_running_loop()
@@ -1504,6 +1816,7 @@ def _run_suite(
     *,
     app: Any,
     image: Any,
+    source_snapshot: PreparedGitSourceSnapshot,
     suite: SuiteConfig,
     artifacts_dir: Path,
     duration_map: dict[str, float],
@@ -1546,6 +1859,7 @@ def _run_suite(
     suite_results = _execute_queued_batches(
         app=app,
         image=image,
+        source_snapshot=source_snapshot,
         suite=suite,
         batches=batches,
         suite_dir=suite_dir,
@@ -1700,6 +2014,7 @@ def _launch_batch(
     *,
     app: Any,
     image: Any,
+    source_snapshot: PreparedGitSourceSnapshot,
     suite: SuiteConfig,
     batch_index: int,
     batch: ScheduledBatch,
@@ -1737,24 +2052,12 @@ def _launch_batch(
         timeout=suite.batch_timeout,
         cpu=sandbox_cpu,
         memory=sandbox_memory_mb,
-        env={
-            "ZENML_BATCH_NAME": batch_name,
-            "ZENML_SUITE": suite.name,
-            "ZENML_TEST_ENVIRONMENT": suite.test_environment,
-            "ZENML_ARTIFACTS_DIR": REMOTE_ARTIFACTS_DIR,
-            "ZENML_NODE_ID_PATH": NODE_ID_PATH,
-            "ZENML_JUNIT_PATH": JUNIT_PATH,
-            "ZENML_JUNIT_START": JUNIT_LOG_START,
-            "ZENML_JUNIT_END": JUNIT_LOG_END,
-            "ZENML_RUN_LOG_PATH": RUN_LOG_PATH,
-            "ZENML_PYTEST_WORKERS": str(suite.pytest_workers),
-            "ZENML_PYTEST_DIST": suite.pytest_dist,
-            "ZENML_PYTEST_IMPORT_MODE": suite.pytest_import_mode or "",
-            "ZENML_COLLECT_COVERAGE": "1" if suite.collect_coverage else "0",
-            "ZENML_REPOSITORY_PATH": REMOTE_SOURCE_ROOT,
-            "PYTHONPATH": f"{REMOTE_SOURCE_ROOT}/src",
-            COVERAGE_FILE_ENV: REMOTE_COVERAGE_PATH,
-        },
+        env=_build_batch_environment(
+            suite=suite,
+            batch_name=batch_name,
+            source_snapshot=source_snapshot,
+        ),
+        volumes={REMOTE_VOLUME_ROOT: source_snapshot.volume},
     )
     try:
         _upload_batch_node_ids(
@@ -1874,40 +2177,77 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
     else:
         log("No historical duration cache found.")
 
+    git_source_ref = _resolve_git_source_ref()
+    log(
+        "Using pushed git commit "
+        f"{git_source_ref.commit_sha[:12]} from origin for Modal sandboxes."
+    )
     log(f"Using Modal app name '{DEFAULT_MODAL_APP_NAME}'.")
     app = modal.App.lookup(DEFAULT_MODAL_APP_NAME, create_if_missing=True)
     dependency_resolution: ResolvedDependencyImage = resolve_dependency_image(
         python_version=args.python_version
     )
 
-    suite_images = _resolve_suite_images(
-        base_image=dependency_resolution.image,
-        dependency_fingerprint=dependency_resolution.fingerprint,
-        python_version=args.python_version,
-        suite_configs=suite_configs,
-    )
-
     results: List[BatchResult] = []
-    suite_startup: dict[str, tuple[bool, bool]] = {}
+    suite_startup: dict[str, bool] = {}
     first_launch_started_at: Optional[float] = None
+    source_snapshot: Optional[PreparedGitSourceSnapshot] = None
     try:
-        with ThreadPoolExecutor(max_workers=len(suite_configs)) as executor:
+        with ThreadPoolExecutor(
+            max_workers=max(2, len(suite_configs) + 1)
+        ) as executor:
+            if dependency_resolution.cache_hit:
+                dependency_image_future: Future[Any] = Future()
+                dependency_image_future.set_result(
+                    dependency_resolution.image
+                )
+            else:
+                dependency_image_future = executor.submit(
+                    _build_modal_image,
+                    app=app,
+                    image=dependency_resolution.image,
+                    label="dependency",
+                )
             future_to_suite = {
                 executor.submit(
                     _collect_suite,
-                    execution_image=suite_images[suite.name],
                     suite=suite,
+                    python_version=args.python_version,
                     duration_map=duration_map,
                 ): suite.name
                 for suite in suite_configs
             }
-            suite_collections = [
-                future.result() for future in as_completed(future_to_suite)
-            ]
+            built_dependency_image = dependency_image_future.result()
+            if not dependency_resolution.cache_hit:
+                dependency_image_id = getattr(
+                    built_dependency_image, "object_id", None
+                )
+                if dependency_image_id:
+                    save_cached_manifest(
+                        CachedImageManifest(
+                            fingerprint=dependency_resolution.fingerprint,
+                            image_id=dependency_image_id,
+                            python_version=args.python_version,
+                        )
+                    )
+            source_snapshot_future = executor.submit(
+                _prepare_git_source_snapshot,
+                app=app,
+                image=built_dependency_image,
+                source_ref=git_source_ref,
+            )
+            suite_collections = _wait_for_prelaunch_tasks(
+                blocking_future=source_snapshot_future,
+                blocking_label="git source snapshot preparation",
+                suite_futures=future_to_suite,
+            )
+            source_snapshot = source_snapshot_future.result()
 
         suite_collections.sort(
             key=lambda collection: suite_configs.index(collection.suite)
         )
+        assert source_snapshot is not None
+        log("Prelaunch setup complete. Starting sandbox creation.")
         suite_parallelism = _allocate_weighted_suite_parallelism(
             suite_names=[
                 collection.suite.name for collection in suite_collections
@@ -2000,46 +2340,35 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
                     embed_node_ids = (
                         len(node_ids_b64) < MODAL_ENV_PAYLOAD_MAX_BYTES
                     )
-                    env = {
-                        "ZENML_BATCH_NAME": batch_name,
-                        "ZENML_SUITE": suite_cfg.name,
-                        "ZENML_TEST_ENVIRONMENT": suite_cfg.test_environment,
-                        "ZENML_ARTIFACTS_DIR": REMOTE_ARTIFACTS_DIR,
-                        "ZENML_NODE_ID_PATH": NODE_ID_PATH,
-                        "ZENML_JUNIT_PATH": JUNIT_PATH,
-                        "ZENML_JUNIT_START": JUNIT_LOG_START,
-                        "ZENML_JUNIT_END": JUNIT_LOG_END,
-                        "ZENML_RUN_LOG_PATH": RUN_LOG_PATH,
-                        "ZENML_PYTEST_WORKERS": str(suite_cfg.pytest_workers),
-                        "ZENML_PYTEST_DIST": suite_cfg.pytest_dist,
-                        "ZENML_PYTEST_IMPORT_MODE": (
-                            suite_cfg.pytest_import_mode or ""
-                        ),
-                        "ZENML_COLLECT_COVERAGE": (
-                            "1" if suite_cfg.collect_coverage else "0"
-                        ),
-                        "ZENML_REPOSITORY_PATH": REMOTE_SOURCE_ROOT,
-                        "PYTHONPATH": f"{REMOTE_SOURCE_ROOT}/src",
-                        COVERAGE_FILE_ENV: REMOTE_COVERAGE_PATH,
-                    }
+                    env = _build_batch_environment(
+                        suite=suite_cfg,
+                        batch_name=batch_name,
+                        source_snapshot=source_snapshot,
+                    )
                     if embed_node_ids:
                         env["ZENML_NODE_IDS_B64"] = node_ids_b64
-                    sandbox = await modal.Sandbox.create.aio(
-                        "bash",
-                        "-lc",
-                        (
-                            'mkdir -p "$ZENML_ARTIFACTS_DIR"\n'
-                            'exec > >(tee "$ZENML_RUN_LOG_PATH") 2>&1\n'
-                            "set -euo pipefail\n"
-                            f"{RUNNER_COMMAND}\n"
+                    sandbox = await _create_sandbox_with_progress(
+                        create_coro=modal.Sandbox.create.aio(
+                            "bash",
+                            "-lc",
+                            (
+                                'mkdir -p "$ZENML_ARTIFACTS_DIR"\n'
+                                'exec > >(tee "$ZENML_RUN_LOG_PATH") 2>&1\n'
+                                "set -euo pipefail\n"
+                                f"{RUNNER_COMMAND}\n"
+                            ),
+                            app=app,
+                            image=built_dependency_image,
+                            name=batch_name,
+                            timeout=suite_cfg.batch_timeout,
+                            cpu=args.sandbox_cpu,
+                            memory=args.sandbox_memory_mb,
+                            env=env,
+                            volumes={
+                                REMOTE_VOLUME_ROOT: source_snapshot.volume
+                            },
                         ),
-                        app=app,
-                        image=suite_images[suite_cfg.name].image,
-                        name=batch_name,
-                        timeout=suite_cfg.batch_timeout,
-                        cpu=args.sandbox_cpu,
-                        memory=args.sandbox_memory_mb,
-                        env=env,
+                        batch_name=batch_name,
                     )
                     loop = asyncio.get_running_loop()
                     if not embed_node_ids:
@@ -2088,10 +2417,7 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
     results.sort(key=lambda result: (result.suite, result.batch_name))
 
     for collection in suite_collections:
-        suite_startup[collection.suite.name] = (
-            collection.execution_cache_hit,
-            collection.node_id_cache_hit,
-        )
+        suite_startup[collection.suite.name] = collection.node_id_cache_hit
 
     coverage_files = [
         result.coverage_path
@@ -2113,13 +2439,12 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
         log(f"Updated duration cache at {duration_cache_path}.")
     startup_summary = StartupSummary(
         dependency_cache_hit=dependency_resolution.cache_hit,
-        execution_cache_hits={
-            suite_name: execution_cache_hit
-            for suite_name, (execution_cache_hit, _) in suite_startup.items()
-        },
+        source_snapshot_cache_hit=(
+            False if source_snapshot is None else source_snapshot.cache_hit
+        ),
         node_id_cache_hits={
             suite_name: node_id_cache_hit
-            for suite_name, (_, node_id_cache_hit) in suite_startup.items()
+            for suite_name, node_id_cache_hit in suite_startup.items()
         },
         launch_to_first_batch_seconds=(
             0.0
