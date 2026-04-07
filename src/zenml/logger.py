@@ -361,11 +361,16 @@ def init_logging() -> None:
     # Add both handlers to the root logger
     root_logger = logging.getLogger()
 
-    # Console handler - writes to original stdout
-    root_logger.addHandler(get_console_handler())
+    # Skip re-adding handlers if init_logging() has already been called.
+    # Re-entry would otherwise attach duplicate ConsoleHandler/ZenMLLoggingHandler
+    # instances to the root logger and cause duplicate log output.
+    existing_handler_types = {type(h) for h in root_logger.handlers}
+    if ZenMLLoggingHandler not in existing_handler_types:
+        # Console handler - writes to original stdout
+        root_logger.addHandler(get_console_handler())
 
-    # ZenML handler - routes through LoggingContext
-    root_logger.addHandler(get_zenml_handler())
+        # ZenML handler - routes through LoggingContext
+        root_logger.addHandler(get_zenml_handler())
 
     # Mute tensorflow cuda warnings
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
