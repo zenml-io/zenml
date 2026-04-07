@@ -5941,9 +5941,9 @@ class SqlZenStore(BaseZenStore):
                             # This is a regular input artifact, so it is
                             # guaranteed that an upstream step already ran and
                             # produced the artifact.
-                            input_config = step.spec.inputs_v2[input.name][
-                                input.input_index or 0
-                            ]
+                            input_config = step.spec.normalized_inputs[
+                                input.name
+                            ][input.input_index or 0]
                             artifact_node = _get_regular_output_artifact_node(
                                 input_config.step_name,
                                 input_config.output_name,
@@ -6119,7 +6119,7 @@ class SqlZenStore(BaseZenStore):
                     for (
                         input_name,
                         input_configs,
-                    ) in step.spec.inputs_v2.items():
+                    ) in step.spec.normalized_inputs.items():
                         for input_config in input_configs:
                             # This node should always exist, as the step
                             # configurations are sorted and therefore all
@@ -10928,7 +10928,7 @@ class SqlZenStore(BaseZenStore):
 
                         if input_type == StepRunInputArtifactType.STEP_OUTPUT:
                             index = i
-                            input_spec = step_config.spec.inputs_v2[
+                            input_spec = step_config.spec.normalized_inputs[
                                 input_name
                             ][i]
                             chunk_index = input_spec.chunk_index
@@ -11342,7 +11342,7 @@ class SqlZenStore(BaseZenStore):
         """
         if input_name in input_overrides:
             return StepRunInputArtifactType.OVERRIDE
-        elif input_name in step_spec.inputs_v2:
+        elif input_name in step_spec.normalized_inputs:
             return StepRunInputArtifactType.STEP_OUTPUT
         elif input_name in step_config.external_input_artifacts:
             return StepRunInputArtifactType.EXTERNAL
