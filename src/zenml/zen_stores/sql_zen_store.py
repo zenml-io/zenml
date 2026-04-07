@@ -6914,12 +6914,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            self._delete_all_tag_resource_schemas_for_resource(
-                resource_id=run_id,
-                resource_type=TaggableResourceTypes.PIPELINE_RUN,
-                session=session,
-            )
-
             # Delete the pipeline run
             session.delete(existing_run)
             session.commit()
@@ -14692,27 +14686,6 @@ class SqlZenStore(BaseZenStore):
             )
         return schema
 
-    def _delete_all_tag_resource_schemas_for_resource(
-        self,
-        resource_id: UUID,
-        resource_type: TaggableResourceTypes,
-        session: Session,
-    ) -> None:
-        """Deletes all tag resource relationships for a resource.
-
-        Args:
-            resource_id: The ID of the resource whose tag relationships should
-                be deleted.
-            resource_type: The type of the resource.
-            session: The database session to use.
-        """
-        session.exec(
-            delete(TagResourceSchema).where(
-                TagResourceSchema.resource_id == resource_id,
-                TagResourceSchema.resource_type == resource_type.value,
-            )
-        )
-
     def _create_tag_resource_schemas(
         self,
         tag_resources: List[
@@ -15026,21 +14999,20 @@ class SqlZenStore(BaseZenStore):
                 resource relationships.
         """
         for tag_resource in tag_resources:
-            deleted_rows = session.exec(
-                delete(TagResourceSchema).where(
-                    TagResourceSchema.tag_id == tag_resource.tag_id,
-                    TagResourceSchema.resource_id == tag_resource.resource_id,
-                    TagResourceSchema.resource_type
-                    == tag_resource.resource_type.value,
+            try:
+                tag_resource_schema = self._get_tag_resource_schema(
+                    tag_resource=tag_resource,
+                    session=session,
                 )
-            ).rowcount
-
-            if not deleted_rows:
+            except KeyError:
                 logger.warning(
                     f"Tag `{tag_resource.tag_id}` is not currently assigned to "
                     f"{tag_resource.resource_type.value} with ID "
                     f"`{tag_resource.resource_id}`."
                 )
+                continue
+            else:
+                session.delete(tag_resource_schema)
 
         if commit:
             session.commit()

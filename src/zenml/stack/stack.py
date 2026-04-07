@@ -418,11 +418,25 @@ class Stack:
             orchestrator=orchestrator,
             artifact_store=artifact_store,
             container_registry=container_registry,
-            step_operator=step_operator,
+            step_operator=cast(
+                Optional[Union["BaseStepOperator", List["BaseStepOperator"]]],
+                step_operator,
+            ),
             feature_store=feature_store,
             model_deployer=model_deployer,
-            experiment_tracker=experiment_tracker,
-            alerter=alerter,
+            experiment_tracker=cast(
+                Optional[
+                    Union[
+                        "BaseExperimentTracker",
+                        List["BaseExperimentTracker"],
+                    ]
+                ],
+                experiment_tracker,
+            ),
+            alerter=cast(
+                Optional[Union["BaseAlerter", List["BaseAlerter"]]],
+                alerter,
+            ),
             annotator=annotator,
             data_validator=data_validator,
             image_builder=image_builder,
@@ -505,27 +519,49 @@ class Stack:
         Returns:
             A list of attached components of the given type.
         """
-        components_by_type = {
-            StackComponentType.ORCHESTRATOR: [self._orchestrator],
-            StackComponentType.ARTIFACT_STORE: [self._artifact_store],
-            StackComponentType.CONTAINER_REGISTRY: [self._container_registry],
-            StackComponentType.STEP_OPERATOR: self._step_operator,
-            StackComponentType.FEATURE_STORE: [self._feature_store],
-            StackComponentType.MODEL_DEPLOYER: [self._model_deployer],
-            StackComponentType.EXPERIMENT_TRACKER: self._experiment_tracker,
-            StackComponentType.ALERTER: self._alerter,
-            StackComponentType.ANNOTATOR: [self._annotator],
-            StackComponentType.DATA_VALIDATOR: [self._data_validator],
-            StackComponentType.IMAGE_BUILDER: [self._image_builder],
-            StackComponentType.MODEL_REGISTRY: [self._model_registry],
-            StackComponentType.DEPLOYER: [self._deployer],
-            StackComponentType.LOG_STORE: [self._log_store],
-        }
-        return [
-            component
-            for component in components_by_type.get(component_type, [])
-            if component is not None
-        ]
+        if component_type == StackComponentType.ORCHESTRATOR:
+            return [self._orchestrator]
+        if component_type == StackComponentType.ARTIFACT_STORE:
+            return [self._artifact_store]
+        if component_type == StackComponentType.CONTAINER_REGISTRY:
+            return [
+                component
+                for component in [self._container_registry]
+                if component
+            ]
+        if component_type == StackComponentType.STEP_OPERATOR:
+            return cast(List["StackComponent"], self._step_operator)
+        if component_type == StackComponentType.FEATURE_STORE:
+            return [
+                component for component in [self._feature_store] if component
+            ]
+        if component_type == StackComponentType.MODEL_DEPLOYER:
+            return [
+                component for component in [self._model_deployer] if component
+            ]
+        if component_type == StackComponentType.EXPERIMENT_TRACKER:
+            return cast(List["StackComponent"], self._experiment_tracker)
+        if component_type == StackComponentType.ALERTER:
+            return cast(List["StackComponent"], self._alerter)
+        if component_type == StackComponentType.ANNOTATOR:
+            return [component for component in [self._annotator] if component]
+        if component_type == StackComponentType.DATA_VALIDATOR:
+            return [
+                component for component in [self._data_validator] if component
+            ]
+        if component_type == StackComponentType.IMAGE_BUILDER:
+            return [
+                component for component in [self._image_builder] if component
+            ]
+        if component_type == StackComponentType.MODEL_REGISTRY:
+            return [
+                component for component in [self._model_registry] if component
+            ]
+        if component_type == StackComponentType.DEPLOYER:
+            return [component for component in [self._deployer] if component]
+        if component_type == StackComponentType.LOG_STORE:
+            return [component for component in [self._log_store] if component]
+        return []
 
     @property
     def id(self) -> UUID:
@@ -1185,6 +1221,11 @@ class Stack:
                 If the component is used in this step.
             """
             if component.type == StackComponentType.STEP_OPERATOR:
+                if step_config.step_operator is True:
+                    return (
+                        self.step_operator is not None
+                        and component.id == self.step_operator.id
+                    )
                 return step_config.uses_step_operator(component.name)
 
             if component.type == StackComponentType.EXPERIMENT_TRACKER:
