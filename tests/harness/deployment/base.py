@@ -302,8 +302,7 @@ class BaseTestDeployment(ABC):
         # set the ZENML_CONFIG_PATH environment variable to ensure that the
         # deployment uses a config isolated from the main config
         config_path = global_config_path or self.global_config_path()
-        if not config_path.exists():
-            config_path.mkdir(parents=True)
+        config_path.mkdir(parents=True, exist_ok=True)
 
         # save the current global configuration and client singleton instances
         # to restore them later, then reset them

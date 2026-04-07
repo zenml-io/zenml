@@ -457,7 +457,9 @@ def suite_configs_from_args(args: argparse.Namespace) -> List[SuiteConfig]:
                 batch_timeout=batch_timeout,
                 pytest_workers=pytest_workers,
                 pytest_dist=(
-                    args.unit_pytest_dist if suite == "unit" else "worksteal"
+                    args.unit_pytest_dist
+                    if suite == "unit"
+                    else "loadscope"
                 ),
                 pytest_import_mode="importlib",
                 collect_coverage=args.collect_coverage,
