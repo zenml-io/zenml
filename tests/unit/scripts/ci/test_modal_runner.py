@@ -18,6 +18,7 @@ from scripts.ci.modal_runner import (
     ScheduledBatch,
     StartupSummary,
     SuiteConfig,
+    _allocate_fixed_suite_parallelism,
     _allocate_suite_parallelism,
     _allocate_weighted_suite_parallelism,
     _batch_manifest_path,
@@ -180,6 +181,15 @@ def test_allocate_weighted_suite_parallelism_caps_unit_suite() -> None:
         total_parallelism=20,
         unit_max_sandboxes=3,
     ) == [3, 17]
+
+
+def test_allocate_fixed_suite_parallelism_reserves_one_for_unit() -> None:
+    """Unit should get one sandbox and integration should get the remainder."""
+    assert _allocate_fixed_suite_parallelism(
+        suite_names=["unit", "integration"],
+        total_parallelism=20,
+        unit_max_sandboxes=1,
+    ) == [1, 19]
 
 
 def test_queue_batch_count_matches_parallelism() -> None:

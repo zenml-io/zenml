@@ -608,25 +608,24 @@ def _prepare_git_source_snapshot(
         prep_script = """\
 set -euo pipefail
 snapshot_path="${ZENML_GIT_SNAPSHOT_PATH}"
-tmp_snapshot_path="${snapshot_path}.tmp.$$"
-archive_url="${ZENML_GIT_ARCHIVE_URL}"
-commit_sha="${ZENML_GIT_COMMIT_SHA}"
+volume_name="${ZENML_REPO_VOLUME_NAME}"
 
 mkdir -p "$(dirname "$snapshot_path")"
-rm -rf "$tmp_snapshot_path"
 
 python - <<'PY'
 import os
 import pathlib
 import shutil
 import tarfile
-import tempfile
 import urllib.request
+
+import modal
 
 snapshot_path = pathlib.Path(os.environ["ZENML_GIT_SNAPSHOT_PATH"])
 tmp_snapshot_path = pathlib.Path(f"{snapshot_path}.tmp.{os.getpid()}")
 archive_url = os.environ["ZENML_GIT_ARCHIVE_URL"]
 commit_sha = os.environ["ZENML_GIT_COMMIT_SHA"]
+volume_name = os.environ["ZENML_REPO_VOLUME_NAME"]
 
 download_path = snapshot_path.parent / f"{commit_sha}.tar.gz"
 extract_root = snapshot_path.parent / f".extract-{os.getpid()}"
@@ -655,12 +654,14 @@ if snapshot_path.exists():
 tmp_snapshot_path.rename(snapshot_path)
 download_path.unlink(missing_ok=True)
 shutil.rmtree(extract_root, ignore_errors=True)
+modal.Volume.from_name(volume_name).commit()
 PY
 """
         prep_env = {
             "ZENML_GIT_ARCHIVE_URL": archive_url,
             "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
             "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
+            "ZENML_REPO_VOLUME_NAME": volume_name,
         }
         prep_mode = "GitHub archive"
     else:
@@ -672,6 +673,7 @@ snapshot_path="${ZENML_GIT_SNAPSHOT_PATH}"
 tmp_snapshot_path="${snapshot_path}.tmp.$$"
 remote_url="${ZENML_GIT_REMOTE_URL}"
 commit_sha="${ZENML_GIT_COMMIT_SHA}"
+volume_name="${ZENML_REPO_VOLUME_NAME}"
 
 mkdir -p "$(dirname "$mirror_path")" "$(dirname "$snapshot_path")"
 
@@ -692,12 +694,21 @@ git -C "$mirror_path" archive "$commit_sha" | tar -x -C "$tmp_snapshot_path"
 touch "$tmp_snapshot_path/.zenml-source-ready"
 rm -rf "$snapshot_path"
 mv "$tmp_snapshot_path" "$snapshot_path"
+
+python - <<'PY'
+import os
+
+import modal
+
+modal.Volume.from_name(os.environ["ZENML_REPO_VOLUME_NAME"]).commit()
+PY
 """
         prep_env = {
             "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
             "ZENML_GIT_REMOTE_URL": source_ref.remote_url,
             "ZENML_GIT_MIRROR_PATH": mirror_path,
             "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
+            "ZENML_REPO_VOLUME_NAME": volume_name,
         }
         prep_mode = "git mirror fallback"
 
@@ -747,8 +758,6 @@ mv "$tmp_snapshot_path" "$snapshot_path"
             + (f":\n{combined_logs}" if combined_logs else ".")
         )
 
-    volume.commit()
-    volume.reload()
     log(
         "Git source snapshot ready in "
         f"{time.time() - started_at:.1f}s for commit "
@@ -1548,6 +1557,37 @@ def _allocate_weighted_suite_parallelism(
     return allocations
 
 
+def _allocate_fixed_suite_parallelism(
+    *,
+    suite_names: Sequence[str],
+    total_parallelism: int,
+    unit_max_sandboxes: Optional[int],
+) -> list[int]:
+    """Reserve a fixed unit budget and give the remaining slots to integration."""
+    if total_parallelism <= 0:
+        raise ValueError("total_parallelism must be greater than zero")
+
+    if len(suite_names) == 1:
+        return [total_parallelism]
+
+    if set(suite_names) != {"unit", "integration"}:
+        return _allocate_suite_parallelism(
+            suite_count=len(suite_names),
+            total_parallelism=total_parallelism,
+        )
+
+    reserved_unit_parallelism = min(
+        max(1, unit_max_sandboxes or 1),
+        total_parallelism - 1,
+    )
+    allocations = [0] * len(suite_names)
+    allocations[suite_names.index("unit")] = reserved_unit_parallelism
+    allocations[suite_names.index("integration")] = (
+        total_parallelism - reserved_unit_parallelism
+    )
+    return allocations
+
+
 def _finalize_suite_batches(
     *,
     executions: Sequence[BatchExecution],
@@ -1636,57 +1676,6 @@ def _collect_suite(
         estimated_total_duration=estimated_total_duration,
         node_id_cache_hit=node_id_cache_hit,
     )
-
-
-def _wait_for_prelaunch_tasks(
-    *,
-    blocking_future: Any,
-    blocking_label: str,
-    suite_futures: dict[Any, str],
-) -> list[SuiteCollection]:
-    """Wait for one shared prelaunch task and suite collection with progress logs."""
-    from concurrent.futures import FIRST_COMPLETED, wait
-
-    suite_collections: list[SuiteCollection] = []
-    pending_suite_futures = dict(suite_futures)
-    pending_futures = {blocking_future, *pending_suite_futures}
-    blocking_ready = False
-    last_log_at = time.time()
-
-    while pending_futures:
-        done, pending = wait(
-            pending_futures,
-            timeout=1,
-            return_when=FIRST_COMPLETED,
-        )
-        for future in done:
-            if future is blocking_future:
-                future.result()
-                blocking_ready = True
-                continue
-            suite_collections.append(future.result())
-            pending_suite_futures.pop(future, None)
-
-        pending_futures = {
-            future for future in ({blocking_future, *pending_suite_futures}) if not future.done()
-        }
-        if pending_futures and time.time() - last_log_at >= 5:
-            pending_steps: list[str] = []
-            if not blocking_ready:
-                pending_steps.append(blocking_label)
-            if pending_suite_futures:
-                pending_steps.append(
-                    "suite collection for "
-                    + ", ".join(sorted(pending_suite_futures.values()))
-                )
-            log(
-                "Still preparing launch: waiting on "
-                + " and ".join(pending_steps)
-                + "."
-            )
-            last_log_at = time.time()
-
-    return suite_collections
 
 
 def _queue_batch_count(
@@ -1954,6 +1943,40 @@ def _run_suite(
         results=suite_results,
         first_launch_started_at=first_launch_started_at,
     )
+
+
+def _run_suite_when_ready(
+    *,
+    collection_future: Future[SuiteCollection],
+    source_snapshot_future: Future[PreparedGitSourceSnapshot],
+    app: Any,
+    image: Any,
+    artifacts_dir: Path,
+    duration_map: dict[str, float],
+    suite_parallelism: int,
+    sandbox_cpu: float,
+    sandbox_memory_mb: int,
+) -> tuple[SuiteCollection, SuiteRunOutcome]:
+    """Launch one suite as soon as its own prerequisites are ready."""
+    source_snapshot = source_snapshot_future.result()
+    collection = collection_future.result()
+    log(
+        f"Suite '{collection.suite.name}' prerequisites ready. "
+        f"Launching with reserved sandbox budget {suite_parallelism}."
+    )
+    outcome = _run_suite(
+        app=app,
+        image=image,
+        source_snapshot=source_snapshot,
+        suite=collection.suite,
+        artifacts_dir=artifacts_dir,
+        duration_map=duration_map,
+        suite_parallelism=suite_parallelism,
+        node_ids=collection.node_ids,
+        sandbox_cpu=sandbox_cpu,
+        sandbox_memory_mb=sandbox_memory_mb,
+    )
+    return collection, outcome
 
 
 def _save_coverage_data(
@@ -2242,7 +2265,7 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
     if unit_max_sandboxes is None and {
         suite.name for suite in suite_configs
     } == {"unit", "integration"}:
-        unit_max_sandboxes = 2
+        unit_max_sandboxes = 1
     duration_map: dict[str, float]
     duration_source: Optional[Path]
     if args.use_existing_test_durations:
@@ -2313,188 +2336,63 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
                 image=built_dependency_image,
                 source_ref=git_source_ref,
             )
-            suite_collections = _wait_for_prelaunch_tasks(
-                blocking_future=source_snapshot_future,
-                blocking_label="git source snapshot preparation",
-                suite_futures=future_to_suite,
+            suite_parallelism = _allocate_fixed_suite_parallelism(
+                suite_names=[suite.name for suite in suite_configs],
+                total_parallelism=args.max_sandboxes,
+                unit_max_sandboxes=unit_max_sandboxes,
             )
-            source_snapshot = source_snapshot_future.result()
-
-        suite_collections.sort(
-            key=lambda collection: suite_configs.index(collection.suite)
-        )
-        assert source_snapshot is not None
-        log("Prelaunch setup complete. Starting sandbox creation.")
-        suite_parallelism = _allocate_weighted_suite_parallelism(
-            suite_names=[
-                collection.suite.name for collection in suite_collections
-            ],
-            estimated_total_durations=[
-                collection.estimated_total_duration
-                for collection in suite_collections
-            ],
-            total_parallelism=args.max_sandboxes,
-            unit_max_sandboxes=unit_max_sandboxes,
-        )
-        log(
-            "Suite sandbox budgets: "
-            + ", ".join(
-                f"{collection.suite.name}={parallelism}"
-                for collection, parallelism in zip(
-                    suite_collections, suite_parallelism
+            log(
+                "Suite sandbox budgets: "
+                + ", ".join(
+                    f"{suite.name}={parallelism}"
+                    for suite, parallelism in zip(
+                        suite_configs,
+                        suite_parallelism,
+                    )
                 )
+                + "."
             )
-            + "."
-        )
-
-        import asyncio
-
-        async def _run_all_suites() -> List[BatchResult]:
-            all_batches: List[
-                tuple[SuiteConfig, int, ScheduledBatch, Path]
-            ] = []
-            for collection, parallelism in zip(
-                suite_collections, suite_parallelism
-            ):
-                suite_dir = artifacts_dir / collection.suite.name
-                suite_dir.mkdir(parents=True, exist_ok=True)
-                scheduled_batch_count = _queue_batch_count(
-                    suite=collection.suite,
+            suite_run_futures = {
+                executor.submit(
+                    _run_suite_when_ready,
+                    collection_future=collection_future,
+                    source_snapshot_future=source_snapshot_future,
+                    app=app,
+                    image=built_dependency_image,
+                    artifacts_dir=artifacts_dir,
+                    duration_map=duration_map,
                     suite_parallelism=parallelism,
-                    node_ids=collection.node_ids,
+                    sandbox_cpu=args.sandbox_cpu,
+                    sandbox_memory_mb=args.sandbox_memory_mb,
+                ): suite_name
+                for (collection_future, suite_name), parallelism in zip(
+                    future_to_suite.items(),
+                    suite_parallelism,
                 )
-                batches = schedule_batches(
-                    node_ids=list(collection.node_ids),
-                    max_batches=scheduled_batch_count,
-                    durations=duration_map,
-                    default_duration_seconds=collection.suite.default_duration,
-                    group_by_scope=(
-                        collection.suite.pytest_workers > 1
-                        and collection.suite.pytest_dist == "loadscope"
-                    ),
-                )
-                log(
-                    f"Scheduled suite '{collection.suite.name}' into "
-                    f"{len(batches)} batches with max parallelism "
-                    f"{parallelism}."
-                )
-                log(
-                    f"Suite '{collection.suite.name}' settings: "
-                    f"workers={collection.suite.pytest_workers}, "
-                    f"dist={collection.suite.pytest_dist}, "
-                    f"coverage={'on' if collection.suite.collect_coverage else 'off'}."
-                )
-                for i, batch in enumerate(batches):
-                    all_batches.append(
-                        (collection.suite, i + 1, batch, suite_dir)
-                    )
+            }
 
-            total_parallelism = args.max_sandboxes
-            semaphore = asyncio.Semaphore(total_parallelism)
-
-            async def _run_one(
-                suite_cfg: SuiteConfig,
-                batch_index: int,
-                batch: ScheduledBatch,
-                suite_dir: Path,
-            ) -> BatchResult:
-                batch_name = f"{suite_cfg.name}-batch-{batch_index:02d}"
-                async with semaphore:
-                    log(
-                        f"Launching {batch_name} with "
-                        f"{len(batch.node_ids)} tests "
-                        f"(expected {batch.duration_seconds:.1f}s)."
-                    )
-                    _write_batch_manifest(
-                        artifacts_dir=suite_dir,
-                        batch_name=batch_name,
-                        suite_name=suite_cfg.name,
-                        batch=batch,
-                    )
-                    node_ids_b64 = base64.b64encode(
-                        "\n".join(batch.node_ids).encode()
-                    ).decode()
-                    embed_node_ids = (
-                        len(node_ids_b64) < MODAL_ENV_PAYLOAD_MAX_BYTES
-                    )
-                    env = _build_batch_environment(
-                        suite=suite_cfg,
-                        batch_name=batch_name,
-                        source_snapshot=source_snapshot,
-                    )
-                    if embed_node_ids:
-                        env["ZENML_NODE_IDS_B64"] = node_ids_b64
-                    sandbox = await _create_sandbox_with_progress(
-                        create_coro=modal.Sandbox.create.aio(
-                            "bash",
-                            "-lc",
-                            (
-                                'mkdir -p "$ZENML_ARTIFACTS_DIR"\n'
-                                'exec > >(tee "$ZENML_RUN_LOG_PATH") 2>&1\n'
-                                "set -euo pipefail\n"
-                                f"{RUNNER_COMMAND}\n"
-                            ),
-                            app=app,
-                            image=built_dependency_image,
-                            name=batch_name,
-                            timeout=suite_cfg.batch_timeout,
-                            cpu=args.sandbox_cpu,
-                            memory=args.sandbox_memory_mb,
-                            env=env,
-                            volumes={
-                                REMOTE_VOLUME_ROOT: source_snapshot.volume
-                            },
-                        ),
-                        batch_name=batch_name,
-                    )
-                    loop = asyncio.get_running_loop()
-                    if not embed_node_ids:
-                        await loop.run_in_executor(
-                            None,
-                            lambda: _upload_batch_node_ids(
-                                sandbox=sandbox,
-                                batch_name=batch_name,
-                                node_ids=batch.node_ids,
-                            ),
-                        )
-                    execution = BatchExecution(
-                        suite=suite_cfg,
-                        batch_name=batch_name,
-                        scheduled_batch=batch,
-                        sandbox=sandbox,
-                        artifacts_dir=suite_dir,
-                        start_time=time.time(),
-                    )
-                    return await loop.run_in_executor(
-                        None,
-                        _finalize_batch,
-                        execution,
-                    )
-
-            return list(
-                await asyncio.gather(
-                    *[_run_one(s, i, b, d) for s, i, b, d in all_batches]
+            for future in as_completed(suite_run_futures):
+                collection, outcome = future.result()
+                suite_startup[collection.suite.name] = (
+                    collection.node_id_cache_hit
                 )
-            )
+                if (
+                    first_launch_started_at is None
+                    or (
+                        outcome.first_launch_started_at is not None
+                        and outcome.first_launch_started_at
+                        < first_launch_started_at
+                    )
+                ):
+                    first_launch_started_at = outcome.first_launch_started_at
+                results.extend(outcome.results)
 
-        first_launch_started_at = time.time()
-        results = asyncio.run(_run_all_suites())
-        for suite_name in {r.suite for r in results}:
-            suite_results = [r for r in results if r.suite == suite_name]
-            _write_suite_junit(
-                suite_name=suite_name,
-                suite_results=suite_results,
-                suite_dir=artifacts_dir / suite_name,
-            )
-            log(f"Wrote merged JUnit report for suite '{suite_name}'.")
+            source_snapshot = source_snapshot_future.result()
     except InfraFailure:
         log("Encountered a Modal infrastructure failure.")
         raise
 
     results.sort(key=lambda result: (result.suite, result.batch_name))
-
-    for collection in suite_collections:
-        suite_startup[collection.suite.name] = collection.node_id_cache_hit
 
     coverage_files = [
         result.coverage_path
