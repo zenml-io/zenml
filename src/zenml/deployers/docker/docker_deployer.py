@@ -37,6 +37,10 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.container_engines import (
+    DockerContainerEngine,
+    get_container_engine,
+)
 from zenml.deployers.base_deployer import (
     BaseDeployerConfig,
     BaseDeployerFlavor,
@@ -56,14 +60,17 @@ from zenml.deployers.server.entrypoint_configuration import (
     DEPLOYMENT_ID_OPTION,
     DeploymentEntrypointConfiguration,
 )
-from zenml.enums import DeploymentStatus, StackComponentType
+from zenml.enums import (
+    ContainerEngineType,
+    DeploymentStatus,
+    StackComponentType,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     DeploymentOperationalState,
     DeploymentResponse,
 )
 from zenml.stack import Stack, StackValidator
-from zenml.utils import docker_utils
 from zenml.utils.networking_utils import (
     lookup_preferred_or_free_port,
 )
@@ -135,7 +142,7 @@ class DockerDeploymentMetadata(BaseModel):
 class DockerDeployer(ContainerizedDeployer):
     """Deployer responsible for deploying pipelines locally using Docker."""
 
-    _docker_client: Optional[DockerClient] = None
+    _docker_engine: Optional[DockerContainerEngine] = None
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -167,15 +174,26 @@ class DockerDeployer(ContainerizedDeployer):
         )
 
     @property
+    def docker_engine(self) -> DockerContainerEngine:
+        """Initialize and/or return the docker engine.
+
+        Returns:
+            The docker engine.
+        """
+        if self._docker_engine is None:
+            docker_engine = get_container_engine(ContainerEngineType.DOCKER)
+
+            self._docker_engine = cast(DockerContainerEngine, docker_engine)
+        return self._docker_engine
+
+    @property
     def docker_client(self) -> DockerClient:
         """Initialize and/or return the docker client.
 
         Returns:
             The docker client.
         """
-        if self._docker_client is None:
-            self._docker_client = docker_utils.get_docker_client()
-        return self._docker_client
+        return self.docker_engine.client
 
     def _get_container_id(self, deployment: DeploymentResponse) -> str:
         """Get the docker container id associated with a deployment.

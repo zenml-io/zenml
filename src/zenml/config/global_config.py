@@ -42,7 +42,7 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
-from zenml.enums import StoreType
+from zenml.enums import ContainerEngineType, StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
@@ -109,6 +109,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         user_email: Email address associated with this client.
         user_email_opt_in: Whether the user has opted in to email communication.
         analytics_opt_in: If a user agreed to sending analytics or not.
+        container_engines: Engine used for local image operations. When omitted,
+            Docker is tried first then Podman.
         version: Version of ZenML that was last used to create or update the
             global config.
         store: Store configuration.
@@ -120,6 +122,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
+    container_engines: Optional[ContainerEngineType] = None
     version: Optional[str] = None
     store: Optional[SerializeAsAny[StoreConfiguration]] = None
     active_stack_id: Optional[uuid.UUID] = None

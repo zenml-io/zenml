@@ -20,6 +20,7 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from uuid import uuid4
 
+from docker.client import DockerClient
 from docker.errors import ContainerError
 from pydantic import Field
 
@@ -28,8 +29,9 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.container_engines import DockerContainerEngine, get_container_engine
 from zenml.entrypoints import StepEntrypointConfiguration
-from zenml.enums import ExecutionMode, StackComponentType
+from zenml.enums import ContainerEngineType, ExecutionMode, StackComponentType
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     BaseOrchestratorConfig,
@@ -38,7 +40,7 @@ from zenml.orchestrators import (
     SubmissionResult,
 )
 from zenml.stack import Stack, StackValidator
-from zenml.utils import docker_utils, string_utils
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
@@ -54,6 +56,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
+
+    _docker_engine: Optional[DockerContainerEngine] = None
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -83,6 +87,28 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         return StackValidator(
             required_components={StackComponentType.IMAGE_BUILDER}
         )
+
+    @property
+    def docker_engine(self) -> DockerContainerEngine:
+        """Initialize and/or return the docker engine.
+
+        Returns:
+            The docker engine.
+        """
+        if self._docker_engine is None:
+            docker_engine = get_container_engine(ContainerEngineType.DOCKER)
+
+            self._docker_engine = cast(DockerContainerEngine, docker_engine)
+        return self._docker_engine
+
+    @property
+    def docker_client(self) -> DockerClient:
+        """Initialize and/or return the docker client.
+
+        Returns:
+            The docker client.
+        """
+        return self.docker_engine.client
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -140,8 +166,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
-
-        docker_client = docker_utils.get_docker_client()
 
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
@@ -243,7 +267,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             extra_hosts["host.docker.internal"] = "host-gateway"
 
             try:
-                logs = docker_client.containers.run(
+                logs = self.docker_client.containers.run(
                     image=image,
                     entrypoint=entrypoint,
                     command=arguments,
@@ -304,8 +328,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             DynamicPipelineEntrypointConfiguration,
         )
 
-        docker_client = docker_utils.get_docker_client()
-
         settings = cast(
             LocalDockerOrchestratorSettings,
             self.get_settings(snapshot),
@@ -353,7 +375,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
         start_time = time.time()
         try:
-            container = docker_client.containers.run(
+            container = self.docker_client.containers.run(
                 detach=True,
                 image=image,
                 entrypoint=command,

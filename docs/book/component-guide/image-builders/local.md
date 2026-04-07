@@ -4,10 +4,14 @@ description: Building container images locally.
 
 # Local Image Builder
 
-The local image builder is an [image builder](./) flavor that comes built-in with ZenML and uses the local Docker installation on your client machine to build container images.
+The local image builder is an [image builder](./) flavor that comes built-in with ZenML and uses a **container engine** on your client machine (Docker or Podman) to build container images.
+
+### Container engine selection
+
+ZenML picks the engine from global configuration (`container_engine`: `docker`, `podman`, or omitted for auto-detect). You can set the same value via the environment variable `ZENML_CONTAINER_ENGINE`. When auto-detecting, ZenML tries Docker first, then Podman.
 
 {% hint style="info" %}
-ZenML uses the official Docker Python library to build and push your images. This library loads its authentication credentials to push images from the default config location: `$HOME/.docker/config.json`. If your Docker configuration is stored in a different directory, you can use the environment variable `DOCKER_CONFIG` to override this behavior:
+ZenML uses the official Docker Python library (when the engine is Docker) to build and push your images. That library loads push credentials from the default config location: `$HOME/.docker/config.json`. If your Docker configuration is stored in a different directory, you can use the environment variable `DOCKER_CONFIG` to override this behavior:
 
 ```shell
 export DOCKER_CONFIG=/path/to/config_dir

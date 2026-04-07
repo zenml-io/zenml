@@ -194,7 +194,7 @@ class BaseTestDeployment(ABC):
     @staticmethod
     def build_server_image() -> None:
         """Builds the server image locally."""
-        from zenml.utils.docker_utils import build_image
+        from tests.unit.container_engine.docker_utils import build_image
 
         logging.info(
             f"Building ZenML server image '{ZENML_SERVER_IMAGE_NAME}' locally"
@@ -214,7 +214,7 @@ class BaseTestDeployment(ABC):
     @staticmethod
     def build_base_image() -> None:
         """Builds the base image locally."""
-        from zenml.utils.docker_utils import build_image
+        from tests.unit.container_engine.docker_utils import build_image
 
         logging.info(f"Building ZenML base image '{ZENML_IMAGE_NAME}' locally")
 

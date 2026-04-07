@@ -17,9 +17,10 @@ import os
 from typing import IO, Dict, List, Optional, Set, cast
 
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.container_engines import ContainerEngine
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import docker_utils, string_utils
+from zenml.utils import string_utils
 from zenml.utils.archivable import Archivable, ArchiveType
 
 logger = get_logger(__name__)
@@ -131,7 +132,7 @@ class BuildContext(Archivable):
         """
         dockerignore = self.dockerignore_file
         if dockerignore:
-            patterns = docker_utils.parse_dockerignore(dockerignore)
+            patterns = ContainerEngine.parse_dockerignore(dockerignore)
             # Always include the .zen directory
             patterns.append(f"!/{REPOSITORY_DIRECTORY_NAME}")
             return patterns
