@@ -198,29 +198,28 @@ class Stack:
         from zenml.stack import StackComponent
 
         # Run a hydrated list call once to avoid one request per component
-        component_models = pagination_utils.depaginate(
+        hydrated_component_models = pagination_utils.depaginate(
             Client().list_stack_components,
             stack_id=stack_model.id,
             hydrate=True,
         )
+        hydrated_component_models_by_id = {
+            model.id: model for model in hydrated_component_models
+        }
 
         try:
-            component_models_by_id = {
-                model.id: model for model in component_models
-            }
             stack_components: Dict[
                 StackComponentType, List["StackComponent"]
             ] = defaultdict(list)
-            for (
-                component_type,
-                ordered_component_models,
-            ) in stack_model.components.items():
-                for ordered_component_model in ordered_component_models:
-                    hydrated_model = component_models_by_id.get(
-                        ordered_component_model.id
+            for component_type, component_models in stack_model.components.items():
+                for component_model in component_models:
+                    hydrated_model = hydrated_component_models_by_id.get(
+                        component_model.id
                     )
                     if hydrated_model is None:
-                        continue
+                        raise ValueError(
+                            f"Component {component_model.id} not found in the stack."
+                        )
                     stack_components[component_type].append(
                         StackComponent.from_model(hydrated_model)
                     )
@@ -240,7 +239,7 @@ class Stack:
             name=stack_model.name,
             environment=stack_model.environment,
             secrets=stack_model.secrets,
-            components=dict(stack_components),
+            components=stack_components,
         )
         _STACK_CACHE[key] = stack
 
@@ -339,13 +338,11 @@ class Stack:
             _raise_type_error(container_registry, BaseContainerRegistry)
 
         step_operator = components.get(StackComponentType.STEP_OPERATOR)
-        if step_operator is not None:
-            if isinstance(step_operator, list):
-                for so in step_operator:
-                    if not isinstance(so, BaseStepOperator):
-                        _raise_type_error(so, BaseStepOperator)
-            elif not isinstance(step_operator, BaseStepOperator):
-                _raise_type_error(step_operator, BaseStepOperator)
+        if not isinstance(step_operator, list):
+            step_operator = [step_operator]
+        for so in step_operator:
+            if not isinstance(so, BaseStepOperator):
+                _raise_type_error(so, BaseStepOperator)
 
         feature_store = components.get(StackComponentType.FEATURE_STORE)
         if feature_store is not None and not isinstance(
@@ -362,23 +359,19 @@ class Stack:
         experiment_tracker = components.get(
             StackComponentType.EXPERIMENT_TRACKER
         )
-        if experiment_tracker is not None:
-            if isinstance(experiment_tracker, list):
-                for et in experiment_tracker:
-                    if not isinstance(et, BaseExperimentTracker):
-                        _raise_type_error(et, BaseExperimentTracker)
-            elif not isinstance(experiment_tracker, BaseExperimentTracker):
-                _raise_type_error(experiment_tracker, BaseExperimentTracker)
+        if not isinstance(experiment_tracker, list):
+            experiment_tracker = [experiment_tracker]
+        for et in experiment_tracker:
+            if not isinstance(et, BaseExperimentTracker):
+                _raise_type_error(et, BaseExperimentTracker)
 
         alerter = components.get(StackComponentType.ALERTER)
 
-        if alerter is not None:
-            if isinstance(alerter, list):
-                for a in alerter:
-                    if not isinstance(a, BaseAlerter):
-                        _raise_type_error(a, BaseAlerter)
-            elif not isinstance(alerter, BaseAlerter):
-                _raise_type_error(alerter, BaseAlerter)
+        if not isinstance(alerter, list):
+            alerter = [alerter]
+        for a in alerter:
+            if not isinstance(a, BaseAlerter):
+                _raise_type_error(a, BaseAlerter)
 
         annotator = components.get(StackComponentType.ANNOTATOR)
         if annotator is not None and not isinstance(annotator, BaseAnnotator):
@@ -418,25 +411,11 @@ class Stack:
             orchestrator=orchestrator,
             artifact_store=artifact_store,
             container_registry=container_registry,
-            step_operator=cast(
-                Optional[Union["BaseStepOperator", List["BaseStepOperator"]]],
-                step_operator,
-            ),
+            step_operator=step_operator,
             feature_store=feature_store,
             model_deployer=model_deployer,
-            experiment_tracker=cast(
-                Optional[
-                    Union[
-                        "BaseExperimentTracker",
-                        List["BaseExperimentTracker"],
-                    ]
-                ],
-                experiment_tracker,
-            ),
-            alerter=cast(
-                Optional[Union["BaseAlerter", List["BaseAlerter"]]],
-                alerter,
-            ),
+            experiment_tracker=experiment_tracker,
+            alerter=alerter,
             annotator=annotator,
             data_validator=data_validator,
             image_builder=image_builder,
