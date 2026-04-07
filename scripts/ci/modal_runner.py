@@ -1996,9 +1996,11 @@ def _run_suite(
         max_batches=scheduled_batch_count,
         durations=duration_map,
         default_duration_seconds=suite.default_duration,
+        group_by_directory=(suite.name == "integration"),
         group_by_scope=(
-            suite.name == "integration"
-            or (suite.pytest_workers > 1 and suite.pytest_dist == "loadscope")
+            suite.name != "integration"
+            and suite.pytest_workers > 1
+            and suite.pytest_dist == "loadscope"
         ),
         max_group_size=(
             INTEGRATION_SCOPE_CHUNK_SIZE

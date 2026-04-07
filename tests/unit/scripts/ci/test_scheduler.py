@@ -285,6 +285,71 @@ def test_schedule_batches_uses_file_average_for_unknown_tests() -> None:
     ]
 
 
+def test_schedule_batches_groups_by_directory() -> None:
+    """Directory grouping should keep tests from the same folder together."""
+    batches = schedule_batches(
+        [
+            "tests/integration/functional/cli/test_pipeline.py::test_run",
+            "tests/integration/functional/cli/test_stack.py::test_list",
+            "tests/integration/functional/artifacts/test_utils.py::test_save",
+            "tests/integration/functional/artifacts/test_utils.py::test_load",
+        ],
+        max_batches=2,
+        durations={
+            "tests/integration/functional/cli/test_pipeline.py::test_run": 10.0,
+            "tests/integration/functional/cli/test_stack.py::test_list": 5.0,
+            "tests/integration/functional/artifacts/test_utils.py::test_save": 8.0,
+            "tests/integration/functional/artifacts/test_utils.py::test_load": 6.0,
+        },
+        group_by_directory=True,
+    )
+
+    assert len(batches) == 2
+    cli_batch = next(
+        b
+        for b in batches
+        if "tests/integration/functional/cli/" in b.node_ids[0]
+    )
+    artifacts_batch = next(
+        b
+        for b in batches
+        if "tests/integration/functional/artifacts/" in b.node_ids[0]
+    )
+    assert set(cli_batch.node_ids) == {
+        "tests/integration/functional/cli/test_pipeline.py::test_run",
+        "tests/integration/functional/cli/test_stack.py::test_list",
+    }
+    assert set(artifacts_batch.node_ids) == {
+        "tests/integration/functional/artifacts/test_utils.py::test_save",
+        "tests/integration/functional/artifacts/test_utils.py::test_load",
+    }
+
+
+def test_schedule_batches_directory_grouping_splits_large_folders() -> None:
+    """Large directories should be split by duration target."""
+    batches = schedule_batches(
+        [
+            "tests/integration/big_folder/test_a.py::test_one",
+            "tests/integration/big_folder/test_b.py::test_two",
+            "tests/integration/big_folder/test_c.py::test_three",
+            "tests/integration/small_folder/test_d.py::test_four",
+        ],
+        max_batches=3,
+        durations={
+            "tests/integration/big_folder/test_a.py::test_one": 20.0,
+            "tests/integration/big_folder/test_b.py::test_two": 15.0,
+            "tests/integration/big_folder/test_c.py::test_three": 10.0,
+            "tests/integration/small_folder/test_d.py::test_four": 5.0,
+        },
+        group_by_directory=True,
+        max_group_duration_seconds=25.0,
+    )
+
+    assert len(batches) == 3
+    all_node_ids = {nid for b in batches for nid in b.node_ids}
+    assert len(all_node_ids) == 4
+
+
 def test_schedule_batches_defaults_to_individual_nodes() -> None:
     """Default scheduling should not keep class scopes together."""
     batches = schedule_batches(

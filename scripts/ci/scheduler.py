@@ -62,15 +62,21 @@ def schedule_batches(
     durations: Mapping[str, float] | None = None,
     default_duration_seconds: float = DEFAULT_UNIT_TEST_DURATION_SECONDS,
     group_by_scope: bool = False,
+    group_by_directory: bool = False,
     max_group_size: int | None = None,
     max_group_duration_seconds: float | None = None,
 ) -> list[ScheduledBatch]:
     """Group node IDs into balanced batches with an LPT heuristic.
 
     When `group_by_scope=True`, batching happens by pytest-xdist loadscope
-    boundaries rather than by individual node IDs. This aligns the estimated
-    work with how unit tests are actually distributed to workers when we use
-    ``--dist loadscope``.
+    boundaries rather than by individual node IDs.
+
+    When `group_by_directory=True`, tests are grouped by their parent
+    directory. This keeps tests from the same folder together in a batch,
+    providing natural test isolation since tests within a folder typically
+    share fixtures and assumptions. Large directories are split using
+    ``max_group_duration_seconds`` to prevent a single folder from
+    dominating one batch.
     """
     if max_batches <= 0:
         raise ValueError("max_batches must be greater than zero")
@@ -94,7 +100,16 @@ def schedule_batches(
             "max_group_duration_seconds must be greater than zero"
         )
 
-    if group_by_scope:
+    if group_by_directory:
+        grouped_node_ids = _chunk_grouped_node_ids(
+            grouped_node_ids=list(
+                _group_node_ids_by_directory(node_ids).values()
+            ),
+            estimated_durations=estimated_durations,
+            max_group_size=max_group_size,
+            max_group_duration_seconds=max_group_duration_seconds,
+        )
+    elif group_by_scope:
         grouped_node_ids = _chunk_grouped_node_ids(
             grouped_node_ids=list(_group_node_ids_by_scope(node_ids).values()),
             estimated_durations=estimated_durations,
@@ -263,3 +278,22 @@ def _scope_key(node_id: str) -> str:
 def _file_key(node_id: str) -> str:
     """Return the test file path portion of a pytest node ID."""
     return node_id.split("::", 1)[0]
+
+
+def _directory_key(node_id: str) -> str:
+    """Return the parent directory of a pytest node ID's test file."""
+    file_path = node_id.split("::", 1)[0]
+    last_slash = file_path.rfind("/")
+    if last_slash == -1:
+        return file_path
+    return file_path[:last_slash]
+
+
+def _group_node_ids_by_directory(
+    node_ids: Sequence[str],
+) -> dict[str, list[str]]:
+    """Group node IDs by their parent directory."""
+    grouped: dict[str, list[str]] = defaultdict(list)
+    for node_id in node_ids:
+        grouped[_directory_key(node_id)].append(node_id)
+    return grouped
