@@ -52,6 +52,7 @@ DEFAULT_REPO_VOLUME_NAME = "zenml-fast-ci-source-cache"
 REMOTE_VOLUME_ROOT = "/mnt/zenml-fast-ci"
 REMOTE_REPO_CACHE_ROOT = f"{REMOTE_VOLUME_ROOT}/repo-cache"
 REMOTE_REPO_SNAPSHOTS_ROOT = f"{REMOTE_VOLUME_ROOT}/repo-snapshots"
+GIT_SOURCE_CACHE_VERSION = "v3"
 REMOTE_RUNTIME_ROOT = "/tmp/zenml-fast-ci"
 REMOTE_ARTIFACTS_DIR = f"{REMOTE_RUNTIME_ROOT}/artifacts"
 REMOTE_CONFIG_DIR = f"{REMOTE_RUNTIME_ROOT}/config"
@@ -68,6 +69,17 @@ UNIT_QUEUE_DEPTH_MULTIPLIER = 1
 BATCH_MANIFESTS_DIRNAME = "batches"
 BATCH_NODE_UPLOAD_TIMEOUT_SECONDS = 120
 MODAL_ENV_PAYLOAD_MAX_BYTES = 28000  # Modal caps secret values at 32768 bytes
+SPARSE_CHECKOUT_PATHS = (
+    "src",
+    "tests",
+    "scripts",
+    "examples",
+    "templates",
+    "pyproject.toml",
+    "alembic.ini",
+    "README.md",
+    "zen-test",
+)
 
 RUNNER_COMMAND = """\
 test_environment="${ZENML_TEST_ENVIRONMENT}"
@@ -494,18 +506,19 @@ def _git_cache_namespace(remote_url: str) -> str:
     return hashlib.sha256(remote_url.encode("utf-8")).hexdigest()[:16]
 
 
-def _github_archive_url(source_ref: GitSourceRef) -> Optional[str]:
-    """Return a codeload archive URL for GitHub remotes."""
-    if not source_ref.remote_url.startswith("https://github.com/"):
-        return None
+def _git_sparse_checkout_paths() -> tuple[str, ...]:
+    """Return the repository paths materialized for fast-CI sandboxes."""
+    return SPARSE_CHECKOUT_PATHS
 
-    repository_path = source_ref.remote_url.removeprefix(
-        "https://github.com/"
-    ).removesuffix(".git")
-    return (
-        f"https://codeload.github.com/{repository_path}/tar.gz/"
-        f"{source_ref.commit_sha}"
-    )
+
+def _git_source_profile_key() -> str:
+    """Return a versioned cache key for the current source checkout profile."""
+    digest = hashlib.sha256()
+    digest.update(GIT_SOURCE_CACHE_VERSION.encode("utf-8"))
+    for path in _git_sparse_checkout_paths():
+        digest.update(b"\0")
+        digest.update(path.encode("utf-8"))
+    return digest.hexdigest()[:12]
 
 
 def _resolve_git_source_ref() -> GitSourceRef:
@@ -557,26 +570,35 @@ def _resolve_git_source_ref() -> GitSourceRef:
     )
 
 
-def _remote_git_mirror_path(source_ref: GitSourceRef) -> str:
-    """Return the shared mirror path for one remote namespace."""
-    return f"{REMOTE_REPO_CACHE_ROOT}/{source_ref.cache_namespace}/origin.git"
+def _remote_git_repo_path(source_ref: GitSourceRef) -> str:
+    """Return the shared git cache path for one remote namespace."""
+    return (
+        f"{REMOTE_REPO_CACHE_ROOT}/"
+        f"{source_ref.cache_namespace}/{_git_source_profile_key()}/workspace"
+    )
 
 
 def _remote_git_snapshot_path(source_ref: GitSourceRef) -> str:
     """Return the immutable snapshot path for one commit."""
     return (
         f"{REMOTE_REPO_SNAPSHOTS_ROOT}/"
-        f"{source_ref.cache_namespace}/{source_ref.commit_sha}"
+        f"{source_ref.cache_namespace}/{_git_source_profile_key()}/"
+        f"{source_ref.commit_sha}"
     )
 
 
-def _volume_directory_exists(volume: Any, path: str) -> bool:
-    """Return whether a directory exists in the Modal volume."""
+def _volume_directory_contains(
+    volume: Any,
+    *,
+    path: str,
+    expected_name: str,
+) -> bool:
+    """Return whether a directory exists and contains the expected entry."""
     try:
-        volume.listdir(path)
+        entries = volume.listdir(path)
     except Exception:
         return False
-    return True
+    return any(Path(entry.path).name == expected_name for entry in entries)
 
 
 def _prepare_git_source_snapshot(
@@ -591,7 +613,11 @@ def _prepare_git_source_snapshot(
 
     volume = modal.Volume.from_name(volume_name, create_if_missing=True)
     snapshot_path = _remote_git_snapshot_path(source_ref)
-    if _volume_directory_exists(volume, snapshot_path):
+    if _volume_directory_contains(
+        volume,
+        path=snapshot_path,
+        expected_name=".zenml-source-ready",
+    ):
         log(
             "Using cached git source snapshot for commit "
             f"{source_ref.commit_sha[:12]}."
@@ -603,97 +629,48 @@ def _prepare_git_source_snapshot(
             commit_sha=source_ref.commit_sha,
         )
 
-    archive_url = _github_archive_url(source_ref)
-    if archive_url is not None:
-        prep_script = """\
+    repo_path = _remote_git_repo_path(source_ref)
+    sparse_paths = "\n".join(_git_sparse_checkout_paths())
+    prep_script = """\
 set -euo pipefail
+repo_path="${ZENML_GIT_REPO_PATH}"
 snapshot_path="${ZENML_GIT_SNAPSHOT_PATH}"
-volume_name="${ZENML_REPO_VOLUME_NAME}"
-
-mkdir -p "$(dirname "$snapshot_path")"
-
-python - <<'PY'
-import os
-import pathlib
-import shutil
-import tarfile
-import urllib.request
-
-import modal
-
-snapshot_path = pathlib.Path(os.environ["ZENML_GIT_SNAPSHOT_PATH"])
-tmp_snapshot_path = pathlib.Path(f"{snapshot_path}.tmp.{os.getpid()}")
-archive_url = os.environ["ZENML_GIT_ARCHIVE_URL"]
-commit_sha = os.environ["ZENML_GIT_COMMIT_SHA"]
-volume_name = os.environ["ZENML_REPO_VOLUME_NAME"]
-
-download_path = snapshot_path.parent / f"{commit_sha}.tar.gz"
-extract_root = snapshot_path.parent / f".extract-{os.getpid()}"
-
-with urllib.request.urlopen(archive_url, timeout=300) as response:
-    with download_path.open("wb") as output_file:
-        shutil.copyfileobj(response, output_file)
-
-extract_root.mkdir(parents=True, exist_ok=True)
-with tarfile.open(download_path, "r:gz") as archive:
-    archive.extractall(extract_root)
-
-extracted_roots = [path for path in extract_root.iterdir() if path.is_dir()]
-if len(extracted_roots) != 1:
-    raise RuntimeError(
-        f"Expected one extracted root from {archive_url}, got {len(extracted_roots)}"
-    )
-
-tmp_snapshot_path.mkdir(parents=True, exist_ok=True)
-for child in extracted_roots[0].iterdir():
-    shutil.move(str(child), tmp_snapshot_path / child.name)
-
-(tmp_snapshot_path / ".zenml-source-ready").write_text("", encoding="utf-8")
-if snapshot_path.exists():
-    shutil.rmtree(snapshot_path)
-tmp_snapshot_path.rename(snapshot_path)
-download_path.unlink(missing_ok=True)
-shutil.rmtree(extract_root, ignore_errors=True)
-modal.Volume.from_name(volume_name).commit()
-PY
-"""
-        prep_env = {
-            "ZENML_GIT_ARCHIVE_URL": archive_url,
-            "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
-            "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
-            "ZENML_REPO_VOLUME_NAME": volume_name,
-        }
-        prep_mode = "GitHub archive"
-    else:
-        mirror_path = _remote_git_mirror_path(source_ref)
-        prep_script = """\
-set -euo pipefail
-mirror_path="${ZENML_GIT_MIRROR_PATH}"
-snapshot_path="${ZENML_GIT_SNAPSHOT_PATH}"
-tmp_snapshot_path="${snapshot_path}.tmp.$$"
 remote_url="${ZENML_GIT_REMOTE_URL}"
 commit_sha="${ZENML_GIT_COMMIT_SHA}"
 volume_name="${ZENML_REPO_VOLUME_NAME}"
+sparse_paths_file="${ZENML_GIT_SPARSE_PATHS_FILE}"
 
-mkdir -p "$(dirname "$mirror_path")" "$(dirname "$snapshot_path")"
+mkdir -p "$(dirname "$repo_path")" "$(dirname "$snapshot_path")"
 
-if [[ ! -d "$mirror_path" ]]; then
-  git clone --mirror "$remote_url" "$mirror_path"
-else
-  git -C "$mirror_path" remote set-url origin "$remote_url"
+if [[ ! -d "$repo_path/.git" ]]; then
+  git init "$repo_path"
+  git -C "$repo_path" remote add origin "$remote_url"
 fi
 
-if ! git -C "$mirror_path" cat-file -e "${commit_sha}^{commit}" 2>/dev/null; then
-  git -C "$mirror_path" fetch --prune origin
-fi
-git -C "$mirror_path" cat-file -e "${commit_sha}^{commit}"
+git -C "$repo_path" remote set-url origin "$remote_url"
+git -C "$repo_path" config remote.origin.promisor true
+git -C "$repo_path" config remote.origin.partialclonefilter blob:none
 
-rm -rf "$tmp_snapshot_path"
-mkdir -p "$tmp_snapshot_path"
-git -C "$mirror_path" archive "$commit_sha" | tar -x -C "$tmp_snapshot_path"
-touch "$tmp_snapshot_path/.zenml-source-ready"
-rm -rf "$snapshot_path"
-mv "$tmp_snapshot_path" "$snapshot_path"
+if ! git -C "$repo_path" cat-file -e "${commit_sha}^{commit}" 2>/dev/null; then
+  if ! git -C "$repo_path" fetch --prune --filter=blob:none --depth=1 origin "$commit_sha"; then
+    git -C "$repo_path" fetch --prune --filter=blob:none origin
+  fi
+fi
+git -C "$repo_path" cat-file -e "${commit_sha}^{commit}"
+
+if [[ -d "$snapshot_path" && ! -f "$snapshot_path/.zenml-source-ready" ]]; then
+  rm -rf "$snapshot_path"
+fi
+
+git -C "$repo_path" worktree prune
+if [[ ! -d "$snapshot_path" ]]; then
+  git -C "$repo_path" worktree add --force --detach --no-checkout "$snapshot_path" "$commit_sha"
+  git -C "$snapshot_path" sparse-checkout init --cone
+  mapfile -t sparse_paths < "$sparse_paths_file"
+  git -C "$snapshot_path" sparse-checkout set "${sparse_paths[@]}"
+  git -C "$snapshot_path" checkout --force "$commit_sha"
+  touch "$snapshot_path/.zenml-source-ready"
+fi
 
 python - <<'PY'
 import os
@@ -703,14 +680,21 @@ import modal
 modal.Volume.from_name(os.environ["ZENML_REPO_VOLUME_NAME"]).commit()
 PY
 """
-        prep_env = {
-            "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
-            "ZENML_GIT_REMOTE_URL": source_ref.remote_url,
-            "ZENML_GIT_MIRROR_PATH": mirror_path,
-            "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
-            "ZENML_REPO_VOLUME_NAME": volume_name,
-        }
-        prep_mode = "git mirror fallback"
+    prep_env = {
+        "ZENML_GIT_COMMIT_SHA": source_ref.commit_sha,
+        "ZENML_GIT_REMOTE_URL": source_ref.remote_url,
+        "ZENML_GIT_REPO_PATH": repo_path,
+        "ZENML_GIT_SNAPSHOT_PATH": snapshot_path,
+        "ZENML_GIT_SPARSE_PATHS_FILE": "/tmp/zenml-fast-ci-sparse-paths.txt",
+        "ZENML_REPO_VOLUME_NAME": volume_name,
+    }
+    prep_script = (
+        f'cat > "$ZENML_GIT_SPARSE_PATHS_FILE" <<\'__ZENML_SPARSE_PATHS__\'\n'
+        f"{sparse_paths}\n"
+        "__ZENML_SPARSE_PATHS__\n"
+        + prep_script
+    )
+    prep_mode = "incremental git fetch + sparse checkout"
 
     started_at = time.time()
     log(

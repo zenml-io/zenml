@@ -13,7 +13,6 @@ from scripts.ci.modal_runner import (
     RUNNER_EXIT_TEST_FAILURE,
     BatchExecution,
     BatchResult,
-    GitSourceRef,
     PreparedGitSourceSnapshot,
     ScheduledBatch,
     StartupSummary,
@@ -28,7 +27,7 @@ from scripts.ci.modal_runner import (
     _execute_queued_batches,
     _extract_embedded_junit,
     _finalize_batch,
-    _github_archive_url,
+    _git_sparse_checkout_paths,
     _load_cached_node_ids,
     _node_id_cache_path,
     _normalize_git_remote_url,
@@ -90,15 +89,17 @@ def test_normalize_git_remote_url_converts_ssh_to_https() -> None:
     )
 
 
-def test_github_archive_url_uses_exact_commit_tarball() -> None:
-    """GitHub remotes should use a lightweight commit archive URL."""
-    assert _github_archive_url(
-        GitSourceRef(
-            commit_sha="abc123",
-            remote_url="https://github.com/zenml-io/core.git",
-            cache_namespace="cache",
-        )
-    ) == "https://codeload.github.com/zenml-io/core/tar.gz/abc123"
+def test_git_sparse_checkout_paths_keep_fast_ci_runtime_inputs() -> None:
+    """Sparse checkout should include runtime inputs and skip bulky repo areas."""
+    paths = _git_sparse_checkout_paths()
+
+    assert "src" in paths
+    assert "tests" in paths
+    assert "scripts" in paths
+    assert "examples" in paths
+    assert "templates" in paths
+    assert "pyproject.toml" in paths
+    assert "docs" not in paths
 
 
 def test_resolve_git_source_ref_requires_clean_pushed_head(monkeypatch) -> None:
