@@ -1685,14 +1685,17 @@ To avoid this consider setting step parameters only in one place (config or code
                 "not match your local step code."
             )
 
+        spec = step_run.spec
         inputs = {}
         for input_name, input_artifacts in step_run.regular_inputs.items():
-            if len(input_artifacts) > 1:
+            is_scalar = spec.is_scalar_input(input_name)
+
+            if is_scalar:
+                inputs[input_name] = input_artifacts[0].load()
+            else:
                 inputs[input_name] = [
                     artifact.load() for artifact in input_artifacts
                 ]
-            else:
-                inputs[input_name] = input_artifacts[0].load()
 
         if input_overrides:
             inputs.update(input_overrides)
