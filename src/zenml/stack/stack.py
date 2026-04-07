@@ -1218,20 +1218,6 @@ class Stack:
             if _is_active(component)
         ]
 
-    def get_active_components_for_step(
-        self, step_config: "StepConfiguration"
-    ) -> List["StackComponent"]:
-        """Gets all active stack components for a step.
-
-        Args:
-            step_config: Configuration of the step for which to get the active
-                components.
-
-        Returns:
-            List of active stack components.
-        """
-        return self._get_active_components_for_step(step_config)
-
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Prepares running a step.
 
