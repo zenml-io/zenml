@@ -935,16 +935,36 @@ def _collect_node_ids_locally(
             cwd=REPO_ROOT,
             timeout=120,
         )
-    except (subprocess.TimeoutExpired, OSError):
+    except subprocess.TimeoutExpired:
+        log(
+            f"Local pytest collection for suite '{suite}' timed out "
+            "after 120s."
+        )
+        return None
+    except OSError as exc:
+        log(f"Local pytest collection for suite '{suite}' failed: {exc}")
         return None
 
     # 0 = all collected, 1 = some files failed to import (partial collection),
     # 5 = no tests collected. All are usable if we got node IDs.
     if result.returncode not in (0, 1, 5):
+        log(
+            f"Local pytest collection for suite '{suite}' exited with "
+            f"unexpected code {result.returncode}.\n"
+            f"stderr: {result.stderr[-500:] if result.stderr else '(empty)'}"
+        )
         return None
 
     node_ids = _parse_collected_node_ids(result.stdout)
-    return node_ids if node_ids else None
+    if not node_ids:
+        log(
+            f"Local pytest collection for suite '{suite}' produced no "
+            f"node IDs (exit code {result.returncode}).\n"
+            f"stdout tail: {result.stdout[-500:] if result.stdout else '(empty)'}\n"
+            f"stderr tail: {result.stderr[-500:] if result.stderr else '(empty)'}"
+        )
+        return None
+    return node_ids
 
 
 def _parse_collected_node_ids(output: str) -> List[str]:
