@@ -11254,7 +11254,6 @@ class SqlZenStore(BaseZenStore):
                 requested_resources = step_config.config.resource_settings.merged_requested_resources()
                 requested_resources["step_run"] = 1
 
-                # TODO: Optimization: don't create request if no policies?
                 request = self.resource_pools.create_resource_request(
                     session=session,
                     resource_request=ResourceRequestRequest(
