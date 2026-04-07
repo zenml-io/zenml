@@ -65,12 +65,12 @@ REMOTE_COVERAGE_PATH = f"{REMOTE_ARTIFACTS_DIR}/.coverage"
 COVERAGE_FILE_ENV = "COVERAGE_FILE"
 JUNIT_LOG_START = "__MODAL_JUNIT_START__"
 JUNIT_LOG_END = "__MODAL_JUNIT_END__"
-INTEGRATION_QUEUE_DEPTH_MULTIPLIER = 3
+INTEGRATION_QUEUE_DEPTH_MULTIPLIER = 1
 UNIT_QUEUE_DEPTH_MULTIPLIER = 1
 BATCH_MANIFESTS_DIRNAME = "batches"
 BATCH_NODE_UPLOAD_TIMEOUT_SECONDS = 120
 MODAL_ENV_PAYLOAD_MAX_BYTES = 28000  # Modal caps secret values at 32768 bytes
-INTEGRATION_SCOPE_CHUNK_SIZE = 16
+INTEGRATION_SCOPE_CHUNK_SIZE = 64
 SPARSE_CHECKOUT_PATHS = (
     "src",
     "tests",
@@ -1664,9 +1664,12 @@ def _queue_batch_count(
     suite: SuiteConfig,
     suite_parallelism: int,
     node_ids: Sequence[str],
+    has_duration_history: bool = False,
 ) -> int:
     """Choose how many scheduled batches to create before dispatch."""
     if suite.name == "integration":
+        if not has_duration_history:
+            return min(len(node_ids), suite_parallelism)
         return min(
             len(node_ids),
             max(
@@ -1876,10 +1879,12 @@ def _run_suite(
     """Execute one suite end to end inside its sandbox budget."""
     suite_dir = artifacts_dir / suite.name
     suite_dir.mkdir(parents=True, exist_ok=True)
+    has_duration_history = _count_duration_matches(node_ids, duration_map) > 0
     scheduled_batch_count = _queue_batch_count(
         suite=suite,
         suite_parallelism=suite_parallelism,
         node_ids=node_ids,
+        has_duration_history=has_duration_history,
     )
     batches = schedule_batches(
         node_ids=list(node_ids),
@@ -1892,7 +1897,7 @@ def _run_suite(
         ),
         max_group_size=(
             INTEGRATION_SCOPE_CHUNK_SIZE
-            if suite.name == "integration"
+            if suite.name == "integration" and has_duration_history
             else None
         ),
     )

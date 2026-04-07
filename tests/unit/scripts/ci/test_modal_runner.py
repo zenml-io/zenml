@@ -193,8 +193,8 @@ def test_allocate_fixed_suite_parallelism_reserves_one_for_unit() -> None:
     ) == [1, 19]
 
 
-def test_queue_batch_count_uses_extra_queued_integration_batches() -> None:
-    """Integration should create extra queued batches to isolate slow files."""
+def test_queue_batch_count_defaults_to_live_integration_parallelism() -> None:
+    """Integration should not overqueue work without timing history."""
     assert (
         _queue_batch_count(
             suite=SuiteConfig(
@@ -208,8 +208,9 @@ def test_queue_batch_count_uses_extra_queued_integration_batches() -> None:
                 f"tests/integration/test_{index}.py::test_ok"
                 for index in range(30)
             ],
+            has_duration_history=False,
         )
-        == 12
+        == 4
     )
 
 
