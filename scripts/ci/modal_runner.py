@@ -336,13 +336,13 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--unit-batch-timeout",
         type=int,
-        default=300,
+        default=900,
         help="Sandbox timeout in seconds for unit batches.",
     )
     parser.add_argument(
         "--integration-batch-timeout",
         type=int,
-        default=360,
+        default=960,
         help="Sandbox timeout in seconds for integration batches.",
     )
     parser.add_argument(
