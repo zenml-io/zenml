@@ -19,7 +19,16 @@ import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Generator, Optional, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from docker.client import DockerClient
 
@@ -30,8 +39,11 @@ from tests.harness.model import (
     DeploymentStoreConfig,
     ServerType,
 )
+from zenml.config.docker_settings import DockerBuildOptions
 from zenml.constants import ENV_ZENML_CONFIG_PATH
-from zenml.enums import StoreType
+from zenml.container_engines import DockerContainerEngine, get_container_engine
+from zenml.enums import ContainerEngineType, StoreType
+from zenml.image_builders import BuildContext
 
 if TYPE_CHECKING:
     from zenml.client import Client
@@ -67,7 +79,7 @@ class BaseTestDeployment(ABC):
             config: The configuration for the deployment.
         """
         self.config = config
-        self._docker_client: Optional[DockerClient] = None
+        self._container_engine: Optional[DockerContainerEngine] = None
 
     @classmethod
     def register_deployment_class(
@@ -169,33 +181,75 @@ class BaseTestDeployment(ABC):
         cleanup_folder(str(runtime_path))
 
     @property
+    def container_engine(self) -> DockerContainerEngine:
+        """Returns the Docker container engine.
+
+        Returns:
+            The Docker container engine.
+        """
+        if self._container_engine is None:
+            self._container_engine = cast(
+                DockerContainerEngine,
+                get_container_engine(ContainerEngineType.DOCKER),
+            )
+        return self._container_engine
+
+    @property
     def docker_client(self) -> DockerClient:
         """Returns the docker client.
 
         Returns:
-            The docker client.
-
-        Raises:
-            RuntimeError: If Docker is not installed or running on the machine.
+            The docker client
         """
-        if self._docker_client is None:
-            try:
-                # Try to ping Docker, to see if it's installed and running
-                docker_client = DockerClient.from_env()
-                docker_client.ping()
-                self._docker_client = docker_client
-            except Exception as e:
-                raise RuntimeError(
-                    "Docker is not installed or running on this machine",
-                ) from e
+        return self.container_engine.client
 
-        return self._docker_client
+    def build_image(
+        self,
+        image_name: str,
+        dockerfile: str,
+        build_context_root: str,
+        **custom_build_options: Any,
+    ) -> None:
+        """Builds a docker image.
 
-    @staticmethod
-    def build_server_image() -> None:
+        Args:
+            image_name: The name to use for the built docker image.
+            dockerfile: Path to a dockerfile.
+            build_context_root: Path to a directory that will be sent to
+                the Docker daemon as build context.
+            **custom_build_options: Additional build options (for example
+                ``platform``, ``buildargs`` / ``build_args``, ``target``).
+        """
+        dockerfile_contents = Path(dockerfile).read_text()
+        logging.info("Using Dockerfile `%s`.", os.path.abspath(dockerfile))
+
+        build_context = BuildContext(
+            root=build_context_root,
+        )
+        build_context.add_file(dockerfile_contents, "Dockerfile")
+
+        build_option_kwargs = {
+            "rm": False,
+            "pull": True,
+            **custom_build_options,
+        }
+        docker_build_options = DockerBuildOptions(**build_option_kwargs)
+
+        logging.info("Building Docker image `%s`.", image_name)
+        logging.debug("Docker build options: %s", docker_build_options)
+
+        logging.info("Building the image might take a while...")
+
+        self.container_engine.build(
+            image_name=image_name,
+            build_context=build_context,
+            docker_build_options=docker_build_options,
+        )
+
+        logging.info("Finished building Docker image `%s`.", image_name)
+
+    def build_server_image(self) -> None:
         """Builds the server image locally."""
-        from tests.unit.container_engine.docker_utils import build_image
-
         logging.info(
             f"Building ZenML server image '{ZENML_SERVER_IMAGE_NAME}' locally"
         )
@@ -204,23 +258,20 @@ class BaseTestDeployment(ABC):
         docker_file_path = (
             context_root / "docker" / "zenml-server-dev.Dockerfile"
         )
-        build_image(
+        self.build_image(
             image_name=ZENML_SERVER_IMAGE_NAME,
             dockerfile=str(docker_file_path),
             build_context_root=str(context_root),
             platform="linux/amd64",
         )
 
-    @staticmethod
-    def build_base_image() -> None:
+    def build_base_image(self) -> None:
         """Builds the base image locally."""
-        from tests.unit.container_engine.docker_utils import build_image
-
         logging.info(f"Building ZenML base image '{ZENML_IMAGE_NAME}' locally")
 
         context_root = Path(__file__).parents[3]
         docker_file_path = context_root / "docker" / "zenml-dev.Dockerfile"
-        build_image(
+        self.build_image(
             image_name=ZENML_IMAGE_NAME,
             dockerfile=str(docker_file_path),
             build_context_root=str(context_root),
