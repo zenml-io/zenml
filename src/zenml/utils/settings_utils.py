@@ -25,7 +25,7 @@ from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.stack import Stack, StackComponent
+    from zenml.stack import StackComponent
     from zenml.stack.flavor import Flavor
 
 STACK_COMPONENT_REGEX = re.compile(

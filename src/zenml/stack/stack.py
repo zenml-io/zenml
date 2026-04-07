@@ -445,9 +445,7 @@ class Stack:
         return {
             component_type: components
             for component_type in StackComponentType
-            if (
-                components := self.get_components_by_type(component_type)
-            )
+            if (components := self.get_components_by_type(component_type))
         }
 
     @property
