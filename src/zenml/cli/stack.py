@@ -1075,7 +1075,7 @@ def remove_stack_component(
     "set-default",
     help="Set the default component for a repeatable stack component type.",
 )
-@click.argument("stack", type=str, required=True)
+@click.argument("stack", type=str, required=False)
 @click.option(
     "-s",
     "--step_operator",
@@ -1101,7 +1101,7 @@ def remove_stack_component(
     required=False,
 )
 def set_default_stack_component(
-    stack: str,
+    stack: Optional[str] = None,
     step_operator: Optional[str] = None,
     experiment_tracker: Optional[str] = None,
     alerter: Optional[str] = None,
@@ -1109,7 +1109,8 @@ def set_default_stack_component(
     """Set defaults for repeatable stack component types.
 
     Args:
-        stack: Name or ID of the stack to update.
+        stack: Name or ID of the stack to update. If omitted, the active stack
+            is used.
         step_operator: Name or ID of the step operator to promote.
         experiment_tracker: Name or ID of the experiment tracker to promote.
         alerter: Name or ID of the alerter to promote.
