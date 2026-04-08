@@ -95,9 +95,11 @@ pool capacity and follow whatever naming convention the platform agreed on for
 non-standard resources.
 
 Steps also declare whether or not they are **preemptible**. Preemption is the
-ability to stop a running step run before it completes, to free up resources for
+ability to interrupt a running step run before it completes, to free up resources for
 other steps demanding them with a higher priority. Steps that are preemptible
 are not guaranteed to complete if they go outside of their reserved capacity.
+They may be interrupted, re-added to the queue and restarted again later, or
+even cancelled if they are not configured to allow retries.
 
 That is the product-level tradeoff: **preemptible** steps may access more of the
 pool — including capacity that others are not using right now — but another
@@ -109,7 +111,7 @@ for them, so they are not evicted for pool reasons, at the cost of not using the
 
 ### The link: subject policies
 
-**Subject policies** connect pools to execution. A policy binds a **stack
+**Subject policies** connect pools to execution. A policy binds a workload bearing **stack
 component** — today an orchestrator or step operator — to a pool and states what
 subset of that pool’s resources that component may use. Steps stay decoupled
 from a specific pool name: resolution uses the component in the active stack,
@@ -135,6 +137,52 @@ in the same subject policy if they run on the same stack component. So they will
 Together, pools plus policies plus step annotations implement a **shared,
 prioritized, optionally elastic** scheduling story: strict guarantees where
 needed, elastic sharing where teams accept preemption risk.
+
+### What this looks like: three surfaces
+
+**1 — Pool (supply).**  
+Platform ops create a workspace pool, name it whatever helps the org (say
+**datacenter-one**), and record how much of each scarce thing exists there: **10
+GPUs**, **200 CPUs** and **500 GB of memory**. That number is the shared ceiling everyone draws from.
+
+```shell
+zenml resource-pool create datacenter-one \
+  --capacity '{"gpu": 10, "mcpu": 200000, "memory_mb": 5120000}'
+```
+
+**2 — Policy (wiring a stack to a pool).**  
+They attach a **subject policy** so a specific stack component knows which pool
+to use and what slice it may claim. If your pipeline runs on a stack called **prod-stack**, its orchestrator (or step operator) is the component named in
+the policy: “prod-stack’s orchestrator may pull from **datacenter-one**, with
+*this much* reserved and *this much* limit,” and a priority
+versus other stacks.
+
+```shell
+zenml resource-pool attach-policy datacenter-one prod-stack \
+  --priority 10 \
+  --reserved '{"gpu": 4, "mcpu": 8000, "memory_mb": 20480}' \
+  --limit '{"gpu": 6, "mcpu": 16000, "memory_mb": 81920}'
+```
+
+**3 — Step request (what the run asks for).**  
+The data scientist opens a step and says, in effect, **“this step needs three
+GPUs, 1 CPU and 2 GB of memory”** and can be preempted.
+
+```python
+ResourceSettings(
+    gpu_count=3,
+    cpu_count=1,
+    memory="2GiB",
+    preemptible=True,
+)
+```
+
+When they launch a **dynamic** run on **prod-stack**, ZenML turns that into a **resource
+request**: three GPUs, matched against **datacenter-one** through prod-stack’s policy.
+If three are free, the step proceeds; if not, it **waits** in line; if the ask
+breaks the rules (too many GPUs, non-preemptible without reservation), it
+**fails fast** with a clear status. Run and step views show **queued / allocated
+/ rejected** so operators can compare ZenML to the real cluster.
 
 The sections below explain how queues, borrowing, and preemption implement
 that model in ZenML Pro.
