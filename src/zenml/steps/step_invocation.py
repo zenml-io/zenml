@@ -34,7 +34,9 @@ class StepInvocation:
         self,
         id: str,
         step: "BaseStep",
-        input_artifacts: Dict[str, List["StepArtifact"]],
+        input_artifacts: Dict[
+            str, Union["StepArtifact", List["StepArtifact"]]
+        ],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],

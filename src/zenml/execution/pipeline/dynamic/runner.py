@@ -752,7 +752,7 @@ class DynamicPipelineRunner:
                     step_config_overrides=old_config,
                 )
                 logger.warning(
-                    "Configuration for step `%s` changed since the the "
+                    "Configuration for step `%s` changed since the "
                     "orchestration environment was restarted. If the step "
                     "needs to be retried, it will use the old configuration.",
                     step_run.name,
@@ -1314,20 +1314,18 @@ def compile_dynamic_step_invocation(
         ):
             upstream_steps.update(item.step_name for item in value)
 
-    input_artifacts = {}
+    input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]] = {}
     external_artifacts = {}
     for name, value in inputs.items():
         if isinstance(value, OutputArtifact):
-            input_artifacts[name] = [
-                StepArtifact(
-                    invocation_id=value.step_name,
-                    output_name=value.output_name,
-                    annotation=OutputSignature(resolved_annotation=Any),
-                    pipeline=pipeline,
-                    chunk_index=value.chunk_index,
-                    chunk_size=value.chunk_size,
-                )
-            ]
+            input_artifacts[name] = StepArtifact(
+                invocation_id=value.step_name,
+                output_name=value.output_name,
+                annotation=OutputSignature(resolved_annotation=Any),
+                pipeline=pipeline,
+                chunk_index=value.chunk_index,
+                chunk_size=value.chunk_size,
+            )
         elif (
             isinstance(value, list)
             and value
