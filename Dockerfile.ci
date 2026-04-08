@@ -12,18 +12,10 @@ RUN pip install --upgrade wheel pip uv
 
 WORKDIR /app
 
-# Clone the repo into the base image.
-RUN git clone --depth=1 https://github.com/zenml-io/zenml.git .
-
-# Install ZenML in dev mode with all integrations.
-# --system installs into the system Python (no venv).
-RUN scripts/install-zenml-dev.sh --integrations yes --system \
-  && uv pip install --system 'setuptools<82' \
+# Install ZenML + test deps from PyPI for the base image.
+# Source code is overlaid via include_cwd (~35MB upload per run).
+RUN uv pip install --system "zenml[server]" \
+  pytest pytest-xdist pytest-mock pytest-split coverage \
+  pytest-rerunfailures pytest-randomly \
+  'setuptools<82' \
   && pip cache purge 2>/dev/null || true
-
-# Pre-compile bytecode for the heaviest packages.
-RUN python -m compileall \
-      /usr/local/lib/python*/site-packages/zenml \
-      /usr/local/lib/python*/site-packages/sqlmodel \
-      /usr/local/lib/python*/site-packages/pydantic \
-      -q -j 0 2>/dev/null || true
