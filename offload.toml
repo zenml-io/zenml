@@ -4,18 +4,13 @@ test_timeout_secs = 960
 sandbox_project_root = "/app"
 
 [provider]
-type = "modal"
-dockerfile = "Dockerfile.ci"
-include_cwd = true
-cpu_cores = 4.0
-
-[provider.env]
-COVERAGE_CORE = "sysmon"
-PYTHONDONTWRITEBYTECODE = "1"
-PYTHONUNBUFFERED = "1"
-ZENML_DEBUG = "true"
-ZENML_ANALYTICS_OPT_IN = "false"
-AUTO_OPEN_DASHBOARD = "false"
+type = "default"
+prepare_command = "uv run @modal_sandbox.py prepare Dockerfile.ci --cached --include-cwd --sandbox-init-cmd 'cd /app && pip install --no-deps -e . -q'"
+create_command = "uv run @modal_sandbox.py create {image_id} --cpu 8 --memory-gb 16 --env COVERAGE_CORE=sysmon --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false"
+exec_command = "uv run @modal_sandbox.py exec {sandbox_id} {command}"
+destroy_command = "uv run @modal_sandbox.py destroy {sandbox_id}"
+download_command = "uv run @modal_sandbox.py download {sandbox_id} {paths}"
+timeout_secs = 960
 
 [framework]
 type = "pytest"

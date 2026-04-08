@@ -11,6 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CACHE_FILE="$REPO_ROOT/.offload-image-cache"
 FINGERPRINT_FILE="$REPO_ROOT/.offload-deps-fingerprint"
+OUTPUT_DIR="$REPO_ROOT/test-results/modal-fast-ci"
 
 # Compute a fingerprint of files that affect the dependency image.
 current_fingerprint=$(cat \
@@ -30,14 +31,45 @@ if [[ -f "$FINGERPRINT_FILE" ]]; then
 fi
 echo "$current_fingerprint" > "$FINGERPRINT_FILE"
 
-# Get the current commit SHA and remote URL for the sandbox git checkout.
-COMMIT_SHA=$(git rev-parse HEAD)
-REMOTE_URL=$(git remote get-url origin | sed 's|git@github.com:|https://github.com/|')
+echo "[offload] Running tests..."
 
-echo "[offload] Running tests at commit ${COMMIT_SHA:0:12}"
+offload run $no_cache_flag "$@"
+exit_code=$?
 
-offload run \
-    $no_cache_flag \
-    --env "ZENML_CI_COMMIT=$COMMIT_SHA" \
-    --env "ZENML_CI_REMOTE=$REMOTE_URL" \
-    "$@"
+# Clean up per-batch log files -- only keep junit.xml
+rm -rf "$OUTPUT_DIR/logs" "$OUTPUT_DIR/junit-parts" 2>/dev/null
+
+# Print summary from junit.xml
+if [[ -f "$OUTPUT_DIR/junit.xml" ]]; then
+    echo ""
+    echo "=== Test Results ==="
+    # Extract stats from junit.xml
+    python3 -c "
+import xml.etree.ElementTree as ET, sys
+tree = ET.parse('$OUTPUT_DIR/junit.xml')
+root = tree.getroot()
+tests = int(root.get('tests', 0))
+failures = int(root.get('failures', 0))
+errors = int(root.get('errors', 0))
+time_s = float(root.get('time', 0))
+passed = tests - failures - errors
+print(f'Total: {tests}  Passed: {passed}  Failed: {failures}  Errors: {errors}  Time: {time_s:.1f}s')
+if failures or errors:
+    print()
+    print('Failed tests:')
+    for ts in root.iter('testsuite'):
+        for tc in ts.iter('testcase'):
+            fail = tc.find('failure')
+            err = tc.find('error')
+            if fail is not None:
+                print(f'  FAIL  {tc.get(\"name\", \"?\")}')
+                msg = fail.get('message', '')[:200]
+                if msg: print(f'        {msg}')
+            elif err is not None:
+                print(f'  ERROR {tc.get(\"name\", \"?\")}')
+                msg = err.get('message', '')[:200]
+                if msg: print(f'        {msg}')
+" 2>/dev/null || true
+fi
+
+exit $exit_code

@@ -12,10 +12,15 @@ RUN pip install --upgrade wheel pip uv
 
 WORKDIR /app
 
-# Install ZenML + test deps from PyPI for the base image.
-# Source code is overlaid via include_cwd (~35MB upload per run).
-RUN uv pip install --system "zenml[server]" \
-  pytest pytest-xdist pytest-mock pytest-split coverage \
-  pytest-rerunfailures pytest-randomly hypothesis bs4 \
-  'setuptools<82' \
+# Copy everything needed for install-zenml-dev.sh to resolve and install deps.
+# .dockerignore excludes .git, .venv, docs, examples, etc.
+COPY . .
+
+# Install ZenML with all integrations using the same script CI uses.
+RUN scripts/install-zenml-dev.sh --integrations yes --system \
+  && uv pip install --system 'setuptools<82' \
   && pip cache purge 2>/dev/null || true
+
+# Clean up source - it will be re-overlaid by include_cwd with the actual
+# branch code. This keeps the cached layer only containing installed deps.
+RUN rm -rf /app/*
