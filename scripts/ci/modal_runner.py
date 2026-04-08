@@ -2061,12 +2061,26 @@ def _run_suite_when_ready(
     artifacts_dir: Path,
     duration_map: dict[str, float],
     suite_parallelism: int,
+    deselect_prefixes: Sequence[str],
     sandbox_cpu: float,
     sandbox_memory_mb: int,
 ) -> tuple[SuiteCollection, SuiteRunOutcome]:
     """Launch one suite as soon as its own prerequisites are ready."""
     source_snapshot = source_snapshot_future.result()
     collection = collection_future.result()
+    if deselect_prefixes:
+        filtered = _deselect_node_ids(
+            collection.node_ids, deselect_prefixes
+        )
+        removed = len(collection.node_ids) - len(filtered)
+        if removed:
+            log(
+                f"Deselected {removed} tests from suite "
+                f"'{collection.suite.name}'."
+            )
+            collection = dataclasses.replace(
+                collection, node_ids=filtered
+            )
     log(
         f"Suite '{collection.suite.name}' prerequisites ready. "
         f"Launching with reserved sandbox budget {suite_parallelism}."
@@ -2448,32 +2462,8 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
             if args.skip_slow_examples:
                 deselect_prefixes.extend(SLOW_EXAMPLE_TESTS)
 
-            resolved_collections = {}
-            for collection_future, suite_name in future_to_suite.items():
-                collection = collection_future.result()
-                if deselect_prefixes:
-                    filtered = _deselect_node_ids(
-                        collection.node_ids, deselect_prefixes
-                    )
-                    removed = len(collection.node_ids) - len(filtered)
-                    if removed:
-                        log(
-                            f"Deselected {removed} tests from suite "
-                            f"'{suite_name}'."
-                        )
-                        collection = dataclasses.replace(
-                            collection, node_ids=filtered
-                        )
-                resolved_collections[suite_name] = collection
-
-            suite_names = [suite.name for suite in suite_configs]
-            estimated_total_durations = [
-                resolved_collections[name].estimated_total_duration
-                for name in suite_names
-            ]
-            suite_parallelism = _allocate_weighted_suite_parallelism(
-                suite_names=suite_names,
-                estimated_total_durations=estimated_total_durations,
+            suite_parallelism = _allocate_fixed_suite_parallelism(
+                suite_names=[suite.name for suite in suite_configs],
                 total_parallelism=args.max_sandboxes,
                 unit_max_sandboxes=unit_max_sandboxes,
             )
@@ -2498,6 +2488,7 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
                     artifacts_dir=artifacts_dir,
                     duration_map=duration_map,
                     suite_parallelism=parallelism,
+                    deselect_prefixes=deselect_prefixes,
                     sandbox_cpu=args.sandbox_cpu,
                     sandbox_memory_mb=args.sandbox_memory_mb,
                 ): suite_name
