@@ -209,6 +209,13 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
             # everything else is directed to the index.html file that hosts the
             # single-page application - this is to support client-side routing
+
+            # Using get_template + Template.render + HTMLResponse instead of
+            # Jinja2Templates.TemplateResponse. Starlette's _TemplateResponse
+            # path can interact with Jinja 3.1.x template caching around globals
+            # and raise TypeError (e.g. unhashable dict) in some environments.
+            # Explicit load and render preserves the same template context
+            # (request, service_info) that TemplateResponse would set.
             template = templates.get_template("index.html")
             html = template.render(
                 request=request,
