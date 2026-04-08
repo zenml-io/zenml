@@ -51,10 +51,7 @@ jobs:
       - name: Install tooling
         run: |
           python -m pip install --upgrade pip coverage
-          cargo install offload 2>/dev/null || cargo binstall offload --no-confirm 2>/dev/null || {
-            echo "Installing offload from source..."
-            cargo install --git https://github.com/imbue-ai/offload.git
-          }
+          cargo install --git https://github.com/safoinme/offload.git --branch feat/memory-gb-option
       - name: Restore offload image cache
         uses: actions/cache/restore@v4
         with:
