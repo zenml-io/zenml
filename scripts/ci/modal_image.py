@@ -99,7 +99,9 @@ def compute_collection_fingerprint(
     digest.update(f"python={python_version}\n".encode())
     digest.update(f"test_environment={test_environment}\n".encode())
     digest.update(f"suite_name={suite_name}\n".encode())
-    digest.update(f"pytest_import_mode={pytest_import_mode or 'default'}\n".encode())
+    digest.update(
+        f"pytest_import_mode={pytest_import_mode or 'default'}\n".encode()
+    )
 
     for relative_path in collection_fingerprint_paths_for_suite(suite_name):
         _update_digest_for_relative_path(
@@ -316,9 +318,7 @@ def export_dependency_requirements(
         and fingerprint_path.exists()
         and fingerprint_path.read_text(encoding="utf-8").strip() == fingerprint
     ):
-        _log(
-            f"Using cached resolved requirements at {requirements_path}."
-        )
+        _log(f"Using cached resolved requirements at {requirements_path}.")
         return requirements_path
 
     _log("Exporting resolved requirements for the dependency image.")
@@ -356,9 +356,7 @@ def export_dependency_requirements(
             stderr=result.stderr,
         )
     fingerprint_path.write_text(fingerprint, encoding="utf-8")
-    _log(
-        f"Resolved requirements exported in {time.time() - started_at:.1f}s."
-    )
+    _log(f"Resolved requirements exported in {time.time() - started_at:.1f}s.")
     return requirements_path
 
 

@@ -25,7 +25,6 @@ on:
         type: boolean
         required: false
         default: true
-
 jobs:
   modal-fast-ci:
     if: ${{ inputs.use_modal }}
@@ -56,7 +55,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .modal-cache
-          key: modal-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml', 'README.md', 'zen-test', 'scripts/install-zenml-dev.sh') }}
+          key: modal-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
+            'README.md', 'zen-test', 'scripts/install-zenml-dev.sh') }}
       - name: Restore test duration cache
         uses: actions/cache/restore@v4
         with:
@@ -91,7 +91,8 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .modal-cache
-          key: modal-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml', 'README.md', 'zen-test', 'scripts/install-zenml-dev.sh') }}
+          key: modal-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
+            'README.md', 'zen-test', 'scripts/install-zenml-dev.sh') }}
       - name: Save test duration cache
         if: always()
         uses: actions/cache/save@v4
@@ -109,7 +110,6 @@ jobs:
           path: |
             test-results/modal-fast-ci/**
           if-no-files-found: warn
-
   fallback-unit-test:
     needs: modal-fast-ci
     if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' }}
@@ -119,11 +119,8 @@ jobs:
       python-version: ${{ inputs.python-version }}
       reruns: 0
     secrets: inherit
-
   fallback-integration-test:
-    needs:
-      - modal-fast-ci
-      - fallback-unit-test
+    needs: [modal-fast-ci, fallback-unit-test]
     if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' && needs.fallback-unit-test.result == 'success' }}
     uses: ./.github/workflows/integration-test-fast.yml
     with:
@@ -132,7 +129,6 @@ jobs:
       test_environment: default
       reruns: 0
     secrets: inherit
-
   non-modal-unit-test:
     if: ${{ ! inputs.use_modal }}
     uses: ./.github/workflows/unit-test.yml
@@ -141,7 +137,6 @@ jobs:
       python-version: ${{ inputs.python-version }}
       reruns: 0
     secrets: inherit
-
   non-modal-integration-test:
     needs: non-modal-unit-test
     if: ${{ ! inputs.use_modal && needs.non-modal-unit-test.result == 'success' }}

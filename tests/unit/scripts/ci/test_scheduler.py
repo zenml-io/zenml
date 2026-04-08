@@ -98,9 +98,7 @@ def test_schedule_batches_uses_default_duration_for_unknown_tests() -> None:
 
     assert batches == [
         ScheduledBatch(
-            node_ids=(
-                "tests/integration/test_alpha.py::test_a",
-            ),
+            node_ids=("tests/integration/test_alpha.py::test_a",),
             duration_seconds=30.0,
         ),
         ScheduledBatch(
@@ -138,7 +136,9 @@ def test_schedule_batches_limits_batch_count_to_number_of_tests() -> None:
 
 def test_schedule_batches_rejects_non_positive_batch_count() -> None:
     """A non-positive batch count should raise a validation error."""
-    with pytest.raises(ValueError, match="max_batches must be greater than zero"):
+    with pytest.raises(
+        ValueError, match="max_batches must be greater than zero"
+    ):
         schedule_batches(["tests/unit/test_alpha.py::test_a"], max_batches=0)
 
 

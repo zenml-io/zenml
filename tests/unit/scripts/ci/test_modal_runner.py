@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 
 import pytest
-
 from scripts.ci.modal_runner import (
     BATCH_MANIFESTS_DIRNAME,
     JUNIT_LOG_END,
@@ -105,7 +104,9 @@ def test_git_sparse_checkout_paths_keep_fast_ci_runtime_inputs() -> None:
     assert "docs" not in paths
 
 
-def test_resolve_git_source_ref_requires_clean_pushed_head(monkeypatch) -> None:
+def test_resolve_git_source_ref_requires_clean_pushed_head(
+    monkeypatch,
+) -> None:
     """Strict git mode should reject dirty or unpushed work before Modal work."""
     responses = {
         ("status", "--porcelain"): "",
@@ -124,7 +125,9 @@ def test_resolve_git_source_ref_requires_clean_pushed_head(monkeypatch) -> None:
     def fake_run(cmd, **kwargs):
         key = tuple(cmd[1:])
         stdout = responses[key]
-        return type("Result", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
+        return type(
+            "Result", (), {"returncode": 0, "stdout": stdout, "stderr": ""}
+        )()
 
     monkeypatch.setattr("scripts.ci.modal_runner.subprocess.run", fake_run)
 
@@ -970,8 +973,7 @@ def test_execute_queued_batches_respects_parallelism_and_completes_all(
     for i, env in enumerate(captured_envs):
         assert "ZENML_NODE_IDS_B64" in env
         assert (
-            env["PYTHONPATH"]
-            == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123:"
+            env["PYTHONPATH"] == "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123:"
             "/mnt/zenml-fast-ci/repo-snapshots/ns/abc123/src"
         )
         assert (

@@ -171,7 +171,9 @@ def test_write_compiled_requirements_invokes_uv_compile(
         "scripts.install_dev_requirements.write_integration_input_requirements",
         fake_write_integration_input_requirements,
     )
-    monkeypatch.setattr("scripts.install_dev_requirements.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "scripts.install_dev_requirements.subprocess.run", fake_run
+    )
 
     output_path = write_compiled_requirements(
         python_version="3.13",

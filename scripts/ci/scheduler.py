@@ -126,7 +126,9 @@ def schedule_batches(
             (
                 index,
                 scope_node_ids,
-                sum(estimated_durations[node_id] for node_id in scope_node_ids),
+                sum(
+                    estimated_durations[node_id] for node_id in scope_node_ids
+                ),
             )
             for index, scope_node_ids in enumerate(grouped_node_ids)
         ),
@@ -174,7 +176,9 @@ def _parse_json_durations(text: str) -> dict[str, float] | None:
             if isinstance(nested, dict) and all(
                 _looks_like_number(value) for value in nested.values()
             ):
-                return {str(name): float(value) for name, value in nested.items()}
+                return {
+                    str(name): float(value) for name, value in nested.items()
+                }
 
     return None
 

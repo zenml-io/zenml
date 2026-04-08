@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import dataclasses
 import hashlib
 import json
 import os
@@ -14,7 +15,6 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-import dataclasses
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -737,10 +737,9 @@ fi
         "ZENML_GIT_SPARSE_PATHS_FILE": "/tmp/zenml-fast-ci-sparse-paths.txt",
     }
     prep_script = (
-        f'cat > "$ZENML_GIT_SPARSE_PATHS_FILE" <<\'__ZENML_SPARSE_PATHS__\'\n'
+        f"cat > \"$ZENML_GIT_SPARSE_PATHS_FILE\" <<'__ZENML_SPARSE_PATHS__'\n"
         f"{sparse_paths}\n"
-        "__ZENML_SPARSE_PATHS__\n"
-        + prep_script
+        "__ZENML_SPARSE_PATHS__\n" + prep_script
     )
     prep_mode = "incremental git fetch + sparse checkout"
 
@@ -767,8 +766,7 @@ fi
         sandbox.wait()
     except Exception as error:
         raise InfraFailure(
-            "Failed while preparing the git source snapshot: "
-            f"{error}"
+            f"Failed while preparing the git source snapshot: {error}"
         ) from error
 
     stdout = _try_read_sandbox_stdout(sandbox) or ""
@@ -1260,7 +1258,11 @@ def write_summary(
             [
                 f"- Dependency image cache: {'hit' if startup_summary.dependency_cache_hit else 'miss'}",
                 "- Git source snapshot cache: "
-                + ("hit" if startup_summary.source_snapshot_cache_hit else "miss"),
+                + (
+                    "hit"
+                    if startup_summary.source_snapshot_cache_hit
+                    else "miss"
+                ),
                 "- Node ID cache: "
                 + ", ".join(
                     f"`{suite}`={'hit' if hit else 'miss'}"
@@ -1713,9 +1715,7 @@ def _collect_suite(
         node_id_cache_hit = True
     else:
         collect_started_at = time.time()
-        log(
-            f"Collecting pytest node IDs locally for suite '{suite.name}'."
-        )
+        log(f"Collecting pytest node IDs locally for suite '{suite.name}'.")
         node_ids = _collect_node_ids_locally(
             suite=suite.name,
             test_environment=suite.test_environment,
@@ -2069,18 +2069,14 @@ def _run_suite_when_ready(
     source_snapshot = source_snapshot_future.result()
     collection = collection_future.result()
     if deselect_prefixes:
-        filtered = _deselect_node_ids(
-            collection.node_ids, deselect_prefixes
-        )
+        filtered = _deselect_node_ids(collection.node_ids, deselect_prefixes)
         removed = len(collection.node_ids) - len(filtered)
         if removed:
             log(
                 f"Deselected {removed} tests from suite "
                 f"'{collection.suite.name}'."
             )
-            collection = dataclasses.replace(
-                collection, node_ids=filtered
-            )
+            collection = dataclasses.replace(collection, node_ids=filtered)
     log(
         f"Suite '{collection.suite.name}' prerequisites ready. "
         f"Launching with reserved sandbox budget {suite_parallelism}."
@@ -2419,9 +2415,7 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
         ) as executor:
             if dependency_resolution.cache_hit:
                 dependency_image_future: Future[Any] = Future()
-                dependency_image_future.set_result(
-                    dependency_resolution.image
-                )
+                dependency_image_future.set_result(dependency_resolution.image)
             else:
                 dependency_image_future = executor.submit(
                     _build_modal_image,
@@ -2503,13 +2497,10 @@ def run_modal_fast_ci(args: argparse.Namespace) -> RunnerSummary:
                 suite_startup[collection.suite.name] = (
                     collection.node_id_cache_hit
                 )
-                if (
-                    first_launch_started_at is None
-                    or (
-                        outcome.first_launch_started_at is not None
-                        and outcome.first_launch_started_at
-                        < first_launch_started_at
-                    )
+                if first_launch_started_at is None or (
+                    outcome.first_launch_started_at is not None
+                    and outcome.first_launch_started_at
+                    < first_launch_started_at
                 ):
                     first_launch_started_at = outcome.first_launch_started_at
                 results.extend(outcome.results)

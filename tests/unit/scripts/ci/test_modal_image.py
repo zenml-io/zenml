@@ -88,7 +88,9 @@ def test_export_dependency_requirements_uses_install_script(
     (tmp_path / "scripts").mkdir()
     (tmp_path / "src").mkdir(parents=True, exist_ok=True)
     (tmp_path / "src" / "zenml").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "src" / "zenml" / "integrations").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "src" / "zenml" / "integrations").mkdir(
+        parents=True, exist_ok=True
+    )
     (tmp_path / "pyproject.toml").write_text(
         "[project]\nname='zenml'\n", encoding="utf-8"
     )
@@ -149,11 +151,21 @@ def test_export_dependency_requirements_reuses_cached_export(
     (root / "scripts").mkdir()
     (root / "src").mkdir(parents=True, exist_ok=True)
     (root / "src" / "zenml").mkdir(parents=True, exist_ok=True)
-    (root / "src" / "zenml" / "integrations").mkdir(parents=True, exist_ok=True)
-    (root / "pyproject.toml").write_text("[project]\nname='zenml'\n", encoding="utf-8")
-    (root / "scripts" / "install-zenml-dev.sh").write_text("#!/bin/sh\n", encoding="utf-8")
-    (root / "scripts" / "install_dev_requirements.py").write_text("VALUE = 1\n", encoding="utf-8")
-    (root / "src" / "zenml" / "integrations" / "__init__.py").write_text("", encoding="utf-8")
+    (root / "src" / "zenml" / "integrations").mkdir(
+        parents=True, exist_ok=True
+    )
+    (root / "pyproject.toml").write_text(
+        "[project]\nname='zenml'\n", encoding="utf-8"
+    )
+    (root / "scripts" / "install-zenml-dev.sh").write_text(
+        "#!/bin/sh\n", encoding="utf-8"
+    )
+    (root / "scripts" / "install_dev_requirements.py").write_text(
+        "VALUE = 1\n", encoding="utf-8"
+    )
+    (root / "src" / "zenml" / "integrations" / "__init__.py").write_text(
+        "", encoding="utf-8"
+    )
 
     output_path = tmp_path / "requirements.txt"
     output_path.write_text("numpy==2.0.0\n", encoding="utf-8")
