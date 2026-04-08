@@ -73,6 +73,17 @@ def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
                 "admin": {
                     "image_repository": "zenmldocker/prepare-release",
                     "image_tag": f"server-{new_version}",
+                    "environment_vars": {
+                        "ZENML_STORE_BACKUP_STRATEGY": "in-memory",
+                    },
+                    "features": {
+                        "schedules": {
+                            "enabled": False,
+                        },
+                        "resource_pools": {
+                            "enabled": False,
+                        },
+                    },
                 },
             },
         },
