@@ -185,6 +185,9 @@ xfail_strict = true
 norecursedirs = [
     "tests/integration/examples/*", # ignore example folders
 ]
+markers = [
+    "slow: marks tests as slow (deselected in fast CI)",
+]
 
 [tool.coverage.run]
 parallel = true

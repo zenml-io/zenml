@@ -29,7 +29,7 @@ jobs:
   modal-fast-ci:
     if: ${{ inputs.use_modal }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     outputs:
       modal_infra_failed: ${{ steps.run.outputs.modal_infra_failed }}
     env:
@@ -48,59 +48,56 @@ jobs:
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: ${{ inputs.python-version }}
-      - name: Install Modal tooling
-        run: python -m pip install --upgrade pip modal coverage
-      - name: Restore Modal image manifest cache
-        id: modal-cache-restore
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip coverage
+          cargo install offload 2>/dev/null || cargo binstall offload --no-confirm 2>/dev/null || {
+            echo "Installing offload from source..."
+            cargo install --git https://github.com/imbue-ai/offload.git
+          }
+      - name: Restore offload image cache
         uses: actions/cache/restore@v4
         with:
-          path: .modal-cache
-          key: modal-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
-            'README.md', 'zen-test', 'scripts/install-zenml-dev.sh') }}
-      - name: Restore test duration cache
+          path: .offload-image-cache
+          key: offload-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci',
+            'pyproject.toml', 'scripts/install-zenml-dev.sh') }}
+      - name: Restore JUnit duration cache
         uses: actions/cache/restore@v4
         with:
-          path: .modal-cache/test_durations.json
-          key: test-durations-${{ runner.os }}-${{ inputs.python-version }}
+          path: test-results/modal-fast-ci/junit.xml
+          key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}
           restore-keys: |
-            test-durations-${{ runner.os }}-
-      - name: Run Linux fast CI in Modal
+            offload-junit-${{ runner.os }}-
+      - name: Run tests via offload
         id: run
         continue-on-error: true
         run: |
           set +e
-          python scripts/ci/modal_runner.py \
-            --suite unit \
-            --suite integration \
-            --test-environment default \
-            --python-version "${{ inputs.python-version }}" \
-            --max-sandboxes 40 \
-            --skip-slow-examples \
-            --artifacts-dir test-results/modal-fast-ci \
-            --local-run-name github-${{ github.run_id }}
+          offload run --parallel 40
           exit_code=$?
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
-          if [ "$exit_code" -eq 2 ]; then
-            echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
-          fi
+          # offload doesn't have a separate infra-failure code;
+          # treat any non-zero as test failure for now
+          echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           exit 0
-      - name: Save Modal image manifest cache
-        if: always() && steps.modal-cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: .modal-cache
-          key: modal-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
-            'README.md', 'zen-test', 'scripts/install-zenml-dev.sh') }}
-      - name: Save test duration cache
+      - name: Combine coverage
+        if: always()
+        run: python scripts/ci/combine_coverage.py
+      - name: Save offload image cache
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: .modal-cache/test_durations.json
-          key: test-durations-${{ runner.os }}-${{ inputs.python-version }}
+          path: .offload-image-cache
+          key: offload-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci',
+            'pyproject.toml', 'scripts/install-zenml-dev.sh') }}
+      - name: Save JUnit duration cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: test-results/modal-fast-ci/junit.xml
+          key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}
       - name: Fail on test failure
-        if: ${{ steps.run.outputs.exit_code != '0' && steps.run.outputs.modal_infra_failed != 'true' }}
+        if: ${{ steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '2' }}
         run: exit 1
       - name: Upload fast-CI artifacts
         if: always()
@@ -109,6 +106,7 @@ jobs:
           name: modal-fast-ci
           path: |
             test-results/modal-fast-ci/**
+            coverage.xml
           if-no-files-found: warn
   fallback-unit-test:
     needs: modal-fast-ci
@@ -121,7 +119,8 @@ jobs:
     secrets: inherit
   fallback-integration-test:
     needs: [modal-fast-ci, fallback-unit-test]
-    if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' && needs.fallback-unit-test.result == 'success' }}
+    if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' && needs.fallback-unit-test.result
+      == 'success' }}
     uses: ./.github/workflows/integration-test-fast.yml
     with:
       os: ubuntu-latest

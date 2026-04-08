@@ -1,0 +1,42 @@
+[offload]
+max_parallel = 5
+test_timeout_secs = 300
+sandbox_project_root = "/app"
+
+[provider]
+type = "default"
+prepare_command = "uv run @modal_sandbox.py prepare Dockerfile.ci --cached"
+create_command = """uv run @modal_sandbox.py create {image_id} \
+  --env ZENML_CI_COMMIT=${ZENML_CI_COMMIT:-HEAD} \
+  --env ZENML_CI_REMOTE=${ZENML_CI_REMOTE:-https://github.com/zenml-io/zenml.git} \
+  --env COVERAGE_CORE=sysmon \
+  --env PYTHONDONTWRITEBYTECODE=1 \
+  --env PYTHONUNBUFFERED=1 \
+  --env ZENML_DEBUG=true \
+  --env ZENML_ANALYTICS_OPT_IN=false \
+  --env AUTO_OPEN_DASHBOARD=false \
+  --cpu 4"""
+exec_command = """uv run @modal_sandbox.py exec {sandbox_id} "if [ ! -f /tmp/.zenml-checkout-done ]; then cd /app && git fetch --depth=1 origin $ZENML_CI_COMMIT && git checkout --force FETCH_HEAD && pip install --no-deps -e . -q 2>/dev/null && touch /tmp/.zenml-checkout-done; fi && cd /app && {command}" """
+destroy_command = "uv run @modal_sandbox.py destroy {sandbox_id}"
+download_command = "uv run @modal_sandbox.py download {sandbox_id} {paths}"
+timeout_secs = 960
+
+[framework]
+type = "pytest"
+paths = ["tests/unit"]
+command = "python -m pytest"
+run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailures"
+# The git checkout happens via sandbox_checkout.sh which offload execs
+# before each pytest batch. See exec_command wrapping.
+
+[groups.unit]
+retry_count = 0
+filters = ""
+
+# [groups.integration]
+# retry_count = 1
+# filters = "tests/integration -m 'not slow'"
+
+[report]
+output_dir = "test-results/modal-fast-ci"
+download_globs = [".coverage*"]

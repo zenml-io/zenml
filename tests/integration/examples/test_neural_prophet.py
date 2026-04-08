@@ -17,6 +17,7 @@ import pytest
 from tests.integration.examples.utils import run_example
 
 
+@pytest.mark.slow
 def test_example(
     request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
 ) -> None:

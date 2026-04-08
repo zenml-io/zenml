@@ -1,0 +1,29 @@
+ARG PYTHON_VERSION=3.13
+
+FROM python:${PYTHON_VERSION}-slim-bookworm
+
+RUN set -ex \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends git graphviz \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade wheel pip uv
+
+WORKDIR /app
+
+# Clone the repo once into the base image. This layer is cached and only
+# rebuilt when the Dockerfile itself changes.
+RUN git clone --depth=1 https://github.com/zenml-io/zenml.git .
+
+# Install ZenML in dev mode with all integrations.
+RUN scripts/install-zenml-dev.sh --integrations yes --system \
+  && uv pip install --system 'setuptools<82' \
+  && pip cache purge 2>/dev/null || true
+
+# Pre-compile bytecode for the heaviest packages.
+RUN python -m compileall \
+      /usr/local/lib/python*/site-packages/zenml \
+      /usr/local/lib/python*/site-packages/sqlmodel \
+      /usr/local/lib/python*/site-packages/pydantic \
+      -q -j 0 2>/dev/null || true
