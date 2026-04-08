@@ -36,6 +36,7 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
+      PYTHONDONTWRITEBYTECODE: 1
       MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
       MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
     defaults:

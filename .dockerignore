@@ -2,7 +2,9 @@
 .venv
 venv
 __pycache__
+**/__pycache__
 *.pyc
+**/*.pyc
 *.pyo
 node_modules
 .modal-cache
