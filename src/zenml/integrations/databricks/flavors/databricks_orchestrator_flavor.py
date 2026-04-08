@@ -152,12 +152,14 @@ class DatabricksOrchestratorSettings(BaseSettings):
         "cluster as cluster tags. Maximum 25 tags. "
         "Example: {'project': 'recommendation-engine', 'owner': 'data-team'}",
     )
-    access_control_list: Optional[List[DatabricksAccessControlRequest]] = Field(
-        default=None,
-        description="Access control list for the Databricks job. Grants "
-        "permissions to users, groups, or service principals. By default, "
-        "only the job creator (service principal) can access the job. "
-        "Example: [{'group_name': 'users', 'permission_level': 'CAN_VIEW'}]",
+    access_control_list: Optional[List[DatabricksAccessControlRequest]] = (
+        Field(
+            default=None,
+            description="Access control list for the Databricks job. Grants "
+            "permissions to users, groups, or service principals. By default, "
+            "only the job creator (service principal) can access the job. "
+            "Example: [{'group_name': 'users', 'permission_level': 'CAN_VIEW'}]",
+        )
     )
 
     # Job-level execution control

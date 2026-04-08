@@ -14,7 +14,7 @@
 """Databricks utilities."""
 
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from databricks.sdk.service.compute import Library, PythonPyPiLibrary
 from databricks.sdk.service.jobs import PythonWheelTask, TaskDependency
@@ -58,8 +58,12 @@ def convert_step_to_task(
     db_libraries = []
     if libraries:
         for library in libraries:
-            db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
-    db_libraries.append(Library(whl=zenml_project_wheel))
+            if library.endswith(".whl"):
+                db_libraries.append(Library(whl=library))
+            else:
+                db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
+    if zenml_project_wheel:
+        db_libraries.append(Library(whl=zenml_project_wheel))
     db_libraries.append(
         Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
     )
