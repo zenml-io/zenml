@@ -402,3 +402,5 @@ This separation allows you to register flavors even when their dependencies aren
 6. **Document configuration**: Clearly document all configuration options and their defaults.
 
 7. **Keep fetch() simple**: Remember that `fetch()` runs on the server with limited dependencies. Use only built-in Python libraries and HTTP APIs.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

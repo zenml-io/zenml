@@ -60,7 +60,7 @@ def resolve_step_inputs(
 
     steps_to_fetch = set(
         input_.step_name
-        for input_list in step.spec.inputs_v2.values()
+        for input_list in step.spec.normalized_inputs.values()
         for input_ in input_list
     )
     # Remove all the step runs that we've already fetched.
@@ -74,7 +74,7 @@ def resolve_step_inputs(
         )
 
     input_artifacts: Dict[str, List[StepRunInputResponse]] = {}
-    for name, input_list in step.spec.inputs_v2.items():
+    for name, input_list in step.spec.normalized_inputs.items():
         input_artifacts[name] = []
         for index, input_ in enumerate(input_list):
             try:

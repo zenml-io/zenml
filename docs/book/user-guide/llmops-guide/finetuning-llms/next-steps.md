@@ -28,3 +28,5 @@ Some other resources for reading or learning about LLM finetuning that we'd reco
 - [Sam Witteveen's YouTube channel](https://www.youtube.com/@samwitteveenai) -
   videos on a wide range of topics from finetuning to prompt engineering,
   including many examples of LLM finetuning and explorations of the latest base models
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
