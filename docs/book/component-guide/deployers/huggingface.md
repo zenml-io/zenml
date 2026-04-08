@@ -248,3 +248,5 @@ Without this configuration, the Hugging Face Spaces UI will show a blank page or
 * [Docker Spaces Guide](https://huggingface.co/docs/hub/spaces-sdks-docker)
 * [Hugging Face Hardware Options](https://huggingface.co/docs/hub/spaces-gpus)
 * [ZenML Deployment Concepts](https://docs.zenml.io/concepts/deployment)
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

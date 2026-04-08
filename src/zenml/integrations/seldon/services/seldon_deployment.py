@@ -198,7 +198,7 @@ class SeldonDeploymentService(BaseDeploymentService):
         return model_deployer.seldon_client
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the Seldon Core deployment.
+        """Check the current operational state of the Seldon Core deployment.
 
         Returns:
             The operational state of the Seldon Core deployment and a message

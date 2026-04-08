@@ -258,7 +258,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         can be used to access the resource that the connector instance is
         configured to connect to.
 
-        The implementation should assume that the the resource type and resource
+        The implementation should assume that the resource type and resource
         ID configured in the connector instance are both set, valid and ready to
         be used.
 
@@ -285,7 +285,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         to connect to the resource that the connector instance is configured
         to access.
 
-        The implementation should assume that the the resource type and resource
+        The implementation should assume that the resource type and resource
         ID configured in the connector instance are both set, valid and ready to
         be used.
 

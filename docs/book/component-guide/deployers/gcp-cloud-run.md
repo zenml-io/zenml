@@ -219,3 +219,5 @@ Specifying `cpu_count` and `memory` values that are not valid according to these
 * `cpu_count=1.5` and `memory` not specified will be adjusted to `cpu_count=2` and `memory="128MiB"`
 * `cpu_count=6` and `memory="1GB"` will be adjusted to `cpu_count=6` and `memory="4GiB"`
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

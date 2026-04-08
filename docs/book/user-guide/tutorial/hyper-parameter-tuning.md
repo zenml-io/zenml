@@ -122,3 +122,5 @@ For a deeper exploration of how to query past pipeline runs, see the [Inspecting
 * Move the pipeline to a [remote
   orchestrator](https://docs.zenml.io/stacks/orchestrators) to scale out the
   search.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

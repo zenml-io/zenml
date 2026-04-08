@@ -29,6 +29,7 @@ from typing import (
 
 from pydantic import ConfigDict, ValidationError, create_model
 
+from zenml.config.step_configurations import InputSpec
 from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
@@ -91,6 +92,19 @@ class StepArtifact:
             "step only returns a single artifact. For more information on how "
             "to add type annotations to your step to indicate multiple "
             "artifacts visit https://docs.zenml.io/concepts/steps_and_pipelines#multiple-return-values."
+        )
+
+    def to_spec(self) -> InputSpec:
+        """Converts the step artifact to an input spec.
+
+        Returns:
+            The corresponding input spec.
+        """
+        return InputSpec(
+            step_name=self.invocation_id,
+            output_name=self.output_name,
+            chunk_index=self.chunk_index,
+            chunk_size=self.chunk_size,
         )
 
 

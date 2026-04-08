@@ -166,3 +166,5 @@ Databricks provides a unified analytics platform designed specifically for big d
 - Teams that need collaboration features built-in
 - Organizations already using Spark
 - Projects requiring end-to-end governance and security
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

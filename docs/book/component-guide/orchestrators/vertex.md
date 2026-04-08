@@ -615,3 +615,5 @@ When using persistent resources (`persistent_resource_id` specified), you **must
 {% hint style="warning" %}
 Remember that persistent resources continue to incur costs as long as they're running, even when idle. Make sure to monitor your usage and configure appropriate idle timeout periods.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -214,7 +214,7 @@ class ContainerService(BaseService):
         return msg
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the docker container.
+        """Check the current operational state of the docker container.
 
         Returns:
             The operational state of the docker container and a message
