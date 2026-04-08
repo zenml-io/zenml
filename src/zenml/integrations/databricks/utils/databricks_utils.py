@@ -188,7 +188,10 @@ def _get_databricks_libraries(
     db_libraries = []
     if libraries:
         for library in libraries:
-            db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
+            if library.endswith(".whl"):
+                db_libraries.append(Library(whl=library))
+            else:
+                db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
     if zenml_project_wheel:
         db_libraries.append(Library(whl=zenml_project_wheel))
     db_libraries.append(
