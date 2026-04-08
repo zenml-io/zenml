@@ -15,7 +15,7 @@ timeout_secs = 960
 [framework]
 type = "pytest"
 paths = ["tests"]
-command = "python -m pytest"
+command = "python -m pytest -p no:pytest_postgresql"
 run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailures"
 
 [groups.unit]
