@@ -35,6 +35,7 @@
 * [Teams](teams.md)
 * [Snapshots](snapshots.md)
 * [Triggers](triggers.md)
+* [Resource Pools](resource-pools.md)
 
 ## Access Management
 
