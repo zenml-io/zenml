@@ -10297,7 +10297,7 @@ class SqlZenStore(BaseZenStore):
     def _create_stack_compositions(
         self,
         stack_id: UUID,
-        component_ids_by_type: Dict[StackComponentType, Sequence[UUID]],
+        component_ids_by_type: Dict[StackComponentType, List[UUID]],
     ) -> List[StackCompositionSchema]:
         """Create ordered stack composition rows for a stack.
 
