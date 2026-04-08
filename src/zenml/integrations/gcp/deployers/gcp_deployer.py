@@ -1211,7 +1211,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             logger.debug(
                 "Skipping HTTP health check for deployment "
                 f"'{deployment.name}' because the Cloud Run service is "
-                f"not publicly accessible (ingress={settings.ingress!r}, "
+                "not reachable without authentication and/or has "
+                f"restricted ingress (ingress={settings.ingress!r}, "
                 f"allow_unauthenticated={settings.allow_unauthenticated}). "
                 "Relying on Cloud Run API state instead."
             )
