@@ -21,6 +21,5 @@ RUN scripts/install-zenml-dev.sh --integrations yes --system \
   && uv pip install --system 'setuptools<82' \
   && pip cache purge 2>/dev/null || true
 
-# Clean up source - it will be re-overlaid by include_cwd with the actual
-# branch code. This keeps the cached layer only containing installed deps.
+# Source is re-overlaid per run via include_cwd.
 RUN rm -rf /app/*
