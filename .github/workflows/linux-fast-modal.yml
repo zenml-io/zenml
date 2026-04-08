@@ -61,7 +61,7 @@ jobs:
       - name: Install tooling
         run: |
           python -m pip install --upgrade pip uv
-          uv pip install --system coverage pytest pytest-mock click docker pydantic pyyaml
+          uv pip install --system -e ".[dev]" 2>/dev/null || uv pip install --system -e . pytest pytest-mock
           command -v offload || cargo install --git https://github.com/safoinme/offload.git --branch feat/memory-gb-option
       - name: Restore offload image cache
         uses: actions/cache/restore@v4
