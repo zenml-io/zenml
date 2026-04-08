@@ -139,7 +139,7 @@ def upgrade() -> None:
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column(
-            "component_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
+            "component_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
         ),
         sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column(
