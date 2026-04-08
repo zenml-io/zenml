@@ -37,7 +37,7 @@
 * [Triggers](triggers.md)
 * [Resource Pools](resource-pools.md)
   * [Core Concepts](resource-pools-core-concepts.md)
-  * [How Preemption Works](resource-pools-how-preemption-works.md)
+  * [Reconciliation Process](resource-pools-reconciliation.md)
   * [Examples](resource-pools-examples.md)
 
 ## Access Management

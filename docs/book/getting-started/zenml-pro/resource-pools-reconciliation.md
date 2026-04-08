@@ -1,8 +1,8 @@
 ---
 description: >-
-  How preemption works in ZenML Pro.
+  How the resource pool reconciliation process works in ZenML Pro.
 ---
-# How Preemption Works
+# Resource Pool Reconciliation
 
 ## Runtime flow (orchestration)
 
@@ -13,11 +13,8 @@ description: >-
    orchestrator.
 2. Queuing: If capacity is not available immediately, the step can remain
    queued until the reconciler allocates it.
-3. Client wait: For dynamic pipelines, the step launcher polls the
-   resource request until it is allocated (with backoff). If the request is
-   rejected, preempted, or cancelled, the client surfaces an error.
-   When allocation succeeds, the step is published as running and execution
-   proceeds.
+3. Client wait: The step launcher polls the resource request until it is allocated 
+   (with backoff). If the request is not allocated, it is rejected, preempted, or cancelled, the client surfaces an error. When allocation succeeds, the step is published as running and execution proceeds.
 4. Preemption: If the job at the front of the queue still cannot be granted,
    the reconciler may stop other *preemptible* runs in that pool to free units
    (see [How preemption works](#how-preemption-works)). Non-preemptible runs
@@ -25,9 +22,10 @@ description: >-
    per-key demand is **≤ policy reserved** for that key—even when **limit** is
    higher—so they never rely on borrowed capacity that could clash with other
    non-preemptible use on the same component.
-
-`StepRunner` does not duplicate this logic; pooling is enforced at scheduling
-and server side, with the launcher blocking until allocation when required.
+5. Post-preemption retry: after preemption, if the step configuration allows
+retries, the step goes back to the queue and is retried again. If the number of
+retries is exhausted, the step fails. See [Automatic Step Retries](https://docs.zenml.io/how-to/steps-pipelines/advanced_features#automatic-step-retries) for more information.
+6. Deallocation: When the step run completes, the resources are released back to the pool. If the step crashes unexpectedly, the resources are eventually released back to the pool.
 
 ## How preemption works
 
@@ -58,7 +56,7 @@ run as the one to kill.”
    not fix that—you need a higher limit or a smaller request.
 
 Victims are ordered by ascending policy priority, then by allocation time as a
-tie-break; see the resource pool reconciler in ZenML Pro for the exact ordering.
+tie-break.
 
 ### Step-level: `preemptible`
 
@@ -72,15 +70,15 @@ among runs that are allowed to be preempted.
 
 ### After preemption
 
-Affected runs move toward cancelled; a later reconciler pass can grant the
-waiting request. Clients may see failed or preempted steps depending on retries
-and pipeline configuration.
+Preempted step runs are stopped and the resources are released back to the pool.
+The steps are put back into the queue and are retried again. If the number of
+retries is exhausted or the step is not configured to allow retries, the step fails. See [Automatic Step Retries](https://docs.zenml.io/how-to/steps-pipelines/advanced_features#automatic-step-retries) for more information.
 
 ## Policy scenarios (how reserved, limit, and preemptible interact)
 
 For the problems these patterns solve in everyday terms, see
-[What this feature is for](#what-this-feature-is-for).
-
+[Resource pools](resource-pools.md).
+   
 * Fair share plus burst: set **reserved** to the slice you want to account as
   “yours” and **limit** to the most that stack may ever hold. **Preemptible**
   steps can **borrow** idle capacity between reserved and limit (and up to the

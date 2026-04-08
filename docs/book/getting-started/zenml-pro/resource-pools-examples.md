@@ -15,6 +15,9 @@ You will always see three things—the **pool** (shared capacity), the
 * Steps are **preemptible by default** if you omit `preemptible=False`.
 * One step run at a time when we say “no other work is running,” so you can
   focus on a single decision.
+* Every key in a policy’s `reserved` and `limit` must exist on the pool’s
+  **capacity**. You cannot meter a resource in policy that the pool does not
+  define.
 
 For definitions of reserved, limit, and priority, see
 [Core concepts](resource-pools-core-concepts.md). For preemption ordering, see
@@ -50,7 +53,8 @@ The pool must define capacity for **bounded** keys such as `gpu` and
 `tensorrt_sessions`. If the pool has **no** row for `mcpu`, `memory_mb`, or
 `step_run`, that dimension is **unbounded at the pool layer** (see the
 examples below). For everything else, a missing pool row means **zero**
-capacity.
+capacity. If you want a **policy** to set `reserved` / `limit` on a key, that
+key must appear on the pool first—policy keys are always a subset of pool keys.
 
 ---
 
@@ -281,10 +285,11 @@ this pattern. CPU and memory remain **informational** unless you add rows later.
 
 ---
 
-### Non-preemptible CPU inside policy reserved (GPU-only pool)
+### Non-preemptible CPU inside policy reserved
 
-**Story:** The pool has no `mcpu` row (unbounded at pool layer), but the policy
-meters `mcpu`. Non-preemptible CPU demand must fit **reserved**.
+**Story:** You cap milli-CPU on the **pool**, then split it with **reserved** /
+**limit** on the policy. Non-preemptible CPU demand must fit **reserved** per
+key.
 
 **Pool**
 
@@ -292,7 +297,8 @@ meters `mcpu`. Non-preemptible CPU demand must fit **reserved**.
 {
   "name": "training",
   "capacity": {
-    "gpu": 4
+    "gpu": 4,
+    "mcpu": 32000
   }
 }
 ```
@@ -339,7 +345,36 @@ and `gpu` is valid.
 
 ### Non-preemptible CPU over policy reserved
 
-**Pool** and **policy** — same as the previous example.
+**Pool**
+
+```json
+{
+  "name": "training",
+  "capacity": {
+    "gpu": 4,
+    "mcpu": 32000
+  }
+}
+```
+
+**Policy**
+
+```json
+{
+  "pool": "training",
+  "component": "k8s-orch",
+  "component_type": "orchestrator",
+  "priority": 10,
+  "reserved": {
+    "gpu": 2,
+    "mcpu": 4000
+  },
+  "limit": {
+    "gpu": 4,
+    "mcpu": 32000
+  }
+}
+```
 
 **Step**
 
@@ -358,14 +393,14 @@ def exceeds_reserved_cpu() -> None:
 ```
 
 **Outcome:** **Rejected**. `cpu_count=8` → `mcpu` **8000** > reserved **4000**;
-non-preemptible work cannot borrow toward **limit**, even though the pool never
-defined `mcpu`.
+non-preemptible work cannot borrow toward **limit** on `mcpu`.
 
 ---
 
 ### Preemptible CPU burst with policy `mcpu` rows
 
-**Pool** and **policy** — same as the previous example (policy includes `mcpu`).
+**Pool** and **policy** — same as *Non-preemptible CPU inside policy reserved*
+(pool includes `gpu` and `mcpu`; policy sets both keys).
 
 **Step**
 
@@ -482,7 +517,7 @@ orchestrator run at once. Each step always requests one `step_run`.
   "name": "training",
   "capacity": {
     "gpu": 16,
-    "step_run": 20
+    "step_run": 10
   }
 }
 ```
@@ -497,11 +532,11 @@ orchestrator run at once. Each step always requests one `step_run`.
   "priority": 10,
   "reserved": {
     "gpu": 8,
-    "step_run": 10
+    "step_run": 4
   },
   "limit": {
     "gpu": 16,
-    "step_run": 20
+    "step_run": 4
   }
 }
 ```
