@@ -60,7 +60,8 @@ jobs:
           key: cargo-offload-${{ runner.os }}-${{ hashFiles('.github/workflows/linux-fast-modal.yml') }}
       - name: Install tooling
         run: |
-          python -m pip install --upgrade pip coverage uv pytest
+          python -m pip install --upgrade pip uv
+          uv pip install --system coverage pytest pytest-mock click docker pydantic pyyaml
           command -v offload || cargo install --git https://github.com/safoinme/offload.git --branch feat/memory-gb-option
       - name: Restore offload image cache
         uses: actions/cache/restore@v4
