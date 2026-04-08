@@ -115,6 +115,11 @@ For a deeper exploration of how to query past pipeline runs, see the [Inspecting
 
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## Next steps
 
 * Replace the simple grid‑search with a more sophisticated tuner (e.g. `sklearn.model_selection.GridSearchCV` or [Optuna](https://optuna.org/)).
