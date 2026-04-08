@@ -58,11 +58,13 @@ jobs:
             ~/.cargo/git
             ~/.cargo/bin/offload
           key: cargo-offload-${{ runner.os }}-${{ hashFiles('.github/workflows/linux-fast-modal.yml') }}
-      - name: Install tooling
+      - name: Install ZenML and test deps
         run: |
           python -m pip install --upgrade pip uv
-          uv pip install --system -e ".[dev]" 2>/dev/null || uv pip install --system -e . pytest pytest-mock
-          command -v offload || cargo install --git https://github.com/safoinme/offload.git --branch feat/memory-gb-option
+          scripts/install-zenml-dev.sh --system --integrations no
+          uv pip install --system 'setuptools<82'
+      - name: Install offload
+        run: command -v offload || cargo install --git https://github.com/safoinme/offload.git --branch feat/memory-gb-option
       - name: Restore offload image cache
         uses: actions/cache/restore@v4
         with:
