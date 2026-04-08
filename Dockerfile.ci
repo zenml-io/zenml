@@ -4,7 +4,7 @@ FROM python:${PYTHON_VERSION}-slim-bookworm
 
 RUN set -ex \
   && apt-get update \
-  && apt-get install -y --no-install-recommends git graphviz \
+  && apt-get install -y --no-install-recommends git graphviz build-essential \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 
@@ -12,11 +12,11 @@ RUN pip install --upgrade wheel pip uv
 
 WORKDIR /app
 
-# Clone the repo once into the base image. This layer is cached and only
-# rebuilt when the Dockerfile itself changes.
+# Clone the repo into the base image.
 RUN git clone --depth=1 https://github.com/zenml-io/zenml.git .
 
 # Install ZenML in dev mode with all integrations.
+# --system installs into the system Python (no venv).
 RUN scripts/install-zenml-dev.sh --integrations yes --system \
   && uv pip install --system 'setuptools<82' \
   && pip cache purge 2>/dev/null || true
