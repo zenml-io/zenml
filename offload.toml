@@ -1,6 +1,6 @@
 [offload]
-max_parallel = 5
-test_timeout_secs = 300
+max_parallel = 30
+test_timeout_secs = 960
 sandbox_project_root = "/app"
 
 [provider]
@@ -19,17 +19,17 @@ AUTO_OPEN_DASHBOARD = "false"
 
 [framework]
 type = "pytest"
-paths = ["tests/unit"]
+paths = ["tests/unit", "tests/integration"]
 command = "python -m pytest"
 run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailures"
 
 [groups.unit]
 retry_count = 0
-filters = ""
+filters = "tests/unit"
 
-# [groups.integration]
-# retry_count = 1
-# filters = "tests/integration -m 'not slow'"
+[groups.integration]
+retry_count = 1
+filters = "tests/integration -m 'not slow'"
 
 [report]
 output_dir = "test-results/modal-fast-ci"

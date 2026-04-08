@@ -16,6 +16,6 @@ WORKDIR /app
 # Source code is overlaid via include_cwd (~35MB upload per run).
 RUN uv pip install --system "zenml[server]" \
   pytest pytest-xdist pytest-mock pytest-split coverage \
-  pytest-rerunfailures pytest-randomly \
+  pytest-rerunfailures pytest-randomly hypothesis bs4 \
   'setuptools<82' \
   && pip cache purge 2>/dev/null || true
