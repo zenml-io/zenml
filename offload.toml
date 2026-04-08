@@ -14,7 +14,7 @@ timeout_secs = 960
 
 [framework]
 type = "pytest"
-paths = ["tests/unit", "tests/integration"]
+paths = ["tests"]
 command = "python -m pytest"
 run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailures"
 
