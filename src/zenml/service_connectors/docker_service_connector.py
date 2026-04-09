@@ -315,7 +315,7 @@ class DockerServiceConnector(ServiceConnector):
             is_available, error_message = engine.check_availability()
             if not is_available:
                 raise RuntimeError(
-                    f"The container engine is not available: {error_message}"
+                    f"No container engine available: {error_message}"
                 )
 
         return [resource_id] if resource_id else []
