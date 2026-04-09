@@ -1,7 +1,7 @@
 """add resource pools [b0ba2c3800e3].
 
 Revision ID: b0ba2c3800e3
-Revises: 0.94.1
+Revises: 0.94.2
 Create Date: 2026-03-26 10:01:45.886453
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b0ba2c3800e3"
-down_revision = "0.94.1"
+down_revision = "0.94.2"
 branch_labels = None
 depends_on = None
 
