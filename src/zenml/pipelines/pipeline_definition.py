@@ -1382,7 +1382,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def add_step_invocation(
         self,
         step: "BaseStep",
-        input_artifacts: Dict[str, List[StepArtifact]],
+        input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],
@@ -1432,8 +1432,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "A step invocation can only be added to an active pipeline."
             )
 
-        for artifact_list in input_artifacts.values():
-            for artifact in artifact_list:
+        for artifact_or_list in input_artifacts.values():
+            for artifact in (
+                artifact_or_list
+                if isinstance(artifact_or_list, list)
+                else [artifact_or_list]
+            ):
                 if artifact.pipeline is not self:
                     raise RuntimeError(
                         "Got invalid input artifact for invocation of step "

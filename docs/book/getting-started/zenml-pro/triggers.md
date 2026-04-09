@@ -1,4 +1,4 @@
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration---
+---
 description: Trigger pipelines by schedule or event.
 icon: server
 ---
