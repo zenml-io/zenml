@@ -74,8 +74,8 @@ def _error_response(
     content: dict[str, Any] = {"detail": detail}
     try:
         ctx = structlog.contextvars.get_contextvars()
-        if rid := ctx.get("request_id"):
-            content["request_id"] = rid
+        if request_id := ctx.get("request_id"):
+            content["request_id"] = request_id
     except Exception:
         pass
     return JSONResponse(status_code=status_code, content=content)
