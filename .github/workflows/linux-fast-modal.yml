@@ -89,6 +89,30 @@ jobs:
           # treat any non-zero as test failure for now
           echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           exit 0
+      - name: Print test failures
+        if: always()
+        run: |
+          python -c "
+          import xml.etree.ElementTree as ET, glob, sys
+          files = glob.glob('test-results/**/junit.xml', recursive=True)
+          if not files:
+              print('No JUnit XML found'); sys.exit(0)
+          failures = []
+          for f in files:
+              for tc in ET.parse(f).iter('testcase'):
+                  for fail in tc.findall('failure'):
+                      failures.append((tc.get('classname',''), tc.get('name',''), fail.text or ''))
+                  for err in tc.findall('error'):
+                      failures.append((tc.get('classname',''), tc.get('name',''), err.text or ''))
+          if not failures:
+              print('All tests passed!'); sys.exit(0)
+          print(f'\n::error::{len(failures)} test failure(s):\n')
+          for cls, name, msg in failures:
+              print(f'FAILED {cls}::{name}')
+              for line in msg.strip().splitlines()[-20:]:
+                  print(f'  {line}')
+              print()
+          "
       - name: Combine coverage
         if: always()
         run: python scripts/ci/combine_coverage.py
