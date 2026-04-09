@@ -46,6 +46,7 @@ from zenml.client_lazy_loader import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
+    ReplayRunConfiguration,
 )
 from zenml.config.source import Source
 from zenml.constants import (
@@ -5010,6 +5011,74 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
             include_full_metadata=include_full_metadata,
         )
+
+    @_fail_for_sql_zen_store
+    def replay_pipeline_run(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        run_configuration: ReplayRunConfiguration
+        | Dict[str, Any]
+        | None = None,
+        config_path: Optional[str] = None,
+        project: Optional[Union[str, UUID]] = None,
+        synchronous: bool = False,
+    ) -> PipelineRunResponse:
+        """Replay a pipeline run via the server.
+
+        Args:
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run to
+                replay.
+            run_configuration: Optional replay configuration. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `ReplayRunConfiguration` object. Either this or the
+                configuration in code can be specified.
+            project: The project name/ID to filter by.
+            synchronous: If `True`, this method will wait until the replayed run
+                finishes.
+
+        Raises:
+            RuntimeError: If both a config path and run configuration are
+                specified.
+
+        Returns:
+            The replayed pipeline run.
+        """
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = ReplayRunConfiguration.from_yaml(config_path)
+        elif not run_configuration:
+            run_configuration = ReplayRunConfiguration()
+
+        if isinstance(run_configuration, Dict):
+            run_configuration = ReplayRunConfiguration.model_validate(
+                run_configuration
+            )
+
+        original_run = self.get_pipeline_run(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        replayed_run = self.zen_store.replay_run(
+            run_id=original_run.id,
+            run_configuration=run_configuration,
+        )
+
+        if synchronous:
+            from zenml.pipelines.run_utils import (
+                wait_for_pipeline_run_to_finish,
+            )
+
+            replayed_run = wait_for_pipeline_run_to_finish(
+                run_id=replayed_run.id
+            )
+
+        return replayed_run
 
     def list_pipeline_runs(
         self,

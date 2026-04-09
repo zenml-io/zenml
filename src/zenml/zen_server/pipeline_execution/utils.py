@@ -30,6 +30,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
+    ReplayRunConfiguration,
 )
 from zenml.config.step_configurations import Step, StepConfigurationUpdate
 from zenml.constants import (
@@ -171,13 +172,66 @@ def create_snapshot_from_source(
         template_id=template_id,
     )
     ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
+
+    if isinstance(run_configuration, ReplayRunConfiguration):
+        snapshot_request = adjust_snapshot_request_for_replay(
+            snapshot_request=snapshot_request,
+            replay_configuration=run_configuration,
+        )
+
     return zen_store().create_snapshot(snapshot_request)
+
+
+def adjust_snapshot_request_for_replay(
+    snapshot_request: PipelineSnapshotRequest,
+    replay_configuration: ReplayRunConfiguration,
+) -> PipelineSnapshotRequest:
+    """Adjust the snapshot request for a replay run.
+
+    Args:
+        snapshot_request: The snapshot request to adjust.
+        replay_configuration: The replay configuration.
+
+    Raises:
+        ValueError: If input overrides are provided for a static pipeline.
+
+    Returns:
+        The adjusted snapshot request.
+    """
+    pipeline_config_update = {}
+
+    if replay_configuration.input_overrides:
+        if not snapshot_request.is_dynamic:
+            raise ValueError(
+                "Input overrides are only supported for dynamic pipelines."
+            )
+        parameters = snapshot_request.pipeline_configuration.parameters or {}
+        parameters.update(replay_configuration.input_overrides)
+        pipeline_config_update["parameters"] = parameters
+
+    pipeline_config_update.update(
+        replay_configuration.model_dump(
+            exclude_none=True,
+            include={
+                "steps_to_skip",
+                "skip_successful_steps",
+                "step_input_overrides",
+            },
+        )
+    )
+
+    snapshot_request.pipeline_configuration = (
+        snapshot_request.pipeline_configuration.model_copy(
+            update=pipeline_config_update
+        )
+    )
+    return snapshot_request
 
 
 def run_snapshot(
     snapshot: PipelineSnapshotResponse,
     auth_context: AuthContext,
-    request: PipelineSnapshotRunRequest,
+    request: Optional[PipelineSnapshotRunRequest] = None,
     sync: bool = False,
     template_id: Optional[UUID] = None,
     create_new_snapshot: bool = True,
@@ -185,6 +239,8 @@ def run_snapshot(
     wait_runner_pod: bool = True,
     trigger_id: UUID | None = None,
     trigger_execution_info: TriggerExecutionInfo | None = None,
+    replay_configuration: Optional[ReplayRunConfiguration] = None,
+    original_run: Optional[PipelineRunResponse] = None,
 ) -> PipelineRunResponse:
     """Run a snapshot from the server.
 
@@ -200,26 +256,37 @@ def run_snapshot(
         wait_runner_pod: Whether to wait for runner pod completion.
         trigger_id: The trigger ID that generated the snapshot run (optional).
         trigger_execution_info: Extra (trigger-related) information about the trigger run (optional).
+        replay_configuration: The replay configuration.
+        original_run: The original run.
 
     Raises:
         MaxConcurrentTasksError: If the maximum number of concurrent run
             snapshot tasks is reached.
+        ValueError: If no original run is provided for a replay run.
 
     Returns:
         ID of the new pipeline run.
     """
+    if replay_configuration and not original_run:
+        raise ValueError("Original run is required to replay a pipeline run.")
+
+    run_configuration: Optional[PipelineRunConfiguration] = (
+        replay_configuration
+        or (request.run_configuration if request else None)
+    )
+
     if not implicit_auth_context:
         set_auth_context(auth_context)
     logger.info("Current auth context: %s", get_auth_context())
     build, stack, zenml_version = validate_snapshot_for_server_execution(
         snapshot=snapshot,
-        run_configuration=request.run_configuration,
+        run_configuration=run_configuration,
     )
 
     if create_new_snapshot:
         target_snapshot = create_snapshot_from_source(
             snapshot=snapshot,
-            run_configuration=request.run_configuration,
+            run_configuration=run_configuration,
             template_id=template_id,
             stack=stack,
         )
@@ -227,7 +294,7 @@ def run_snapshot(
         target_snapshot = snapshot
 
     trigger_info = None
-    if request.step_run:
+    if request and request.step_run:
         trigger_info = PipelineRunTriggerInfo(
             step_run_id=request.step_run,
         )
@@ -236,6 +303,7 @@ def run_snapshot(
         snapshot=target_snapshot,
         trigger_info=trigger_info,
         logs=LogsRequest(source=LOGS_RUNNER_SOURCE),
+        original_run_id=original_run.id if original_run else None,
     )
 
     if trigger_id:
@@ -266,8 +334,13 @@ def run_snapshot(
         stack=stack, build=build, zenml_version=zenml_version
     )
 
-    workload_id = placeholder_run.id if trigger_id else target_snapshot.id
-    workload_type = WorkloadType.RUN if trigger_id else WorkloadType.SNAPSHOT
+    is_replay = replay_configuration is not None
+    workload_id = (
+        placeholder_run.id if trigger_id or is_replay else target_snapshot.id
+    )
+    workload_type = (
+        WorkloadType.RUN if trigger_id or is_replay else WorkloadType.SNAPSHOT
+    )
 
     def _task() -> None:
         with track_handler(

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline run configuration class."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Set, Union
 from uuid import UUID
 
 from pydantic import Field, SerializeAsAny
@@ -136,4 +136,26 @@ class PipelineRunConfiguration(
     execution_mode: Optional[ExecutionMode] = Field(
         default=None,
         description="The execution mode for the pipeline run.",
+    )
+
+
+class ReplayRunConfiguration(PipelineRunConfiguration):
+    """Configuration for replaying a pipeline run."""
+
+    skip_successful_steps: Optional[bool] = Field(
+        default=None,
+        description="Whether to skip successful steps of the original run.",
+    )
+    steps_to_skip: Optional[Set[str]] = Field(
+        default=None,
+        description="The steps to skip when replaying the pipeline.",
+    )
+    input_overrides: Optional[Mapping[str, Any]] = Field(
+        default=None,
+        description="The pipeline input overrides. Only supported for "
+        "dynamic pipelines.",
+    )
+    step_input_overrides: Optional[Mapping[str, Mapping[str, UUID]]] = Field(
+        default=None,
+        description="The step input overrides for the pipeline run.",
     )

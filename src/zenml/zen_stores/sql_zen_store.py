@@ -128,6 +128,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
+    ReplayRunConfiguration,
 )
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
@@ -5436,6 +5437,24 @@ class SqlZenStore(BaseZenStore):
         """
         raise NotImplementedError(
             "Running a snapshot is not possible with a local store."
+        )
+
+    def replay_run(
+        self,
+        run_id: UUID,
+        run_configuration: ReplayRunConfiguration,
+    ) -> NoReturn:
+        """Replay a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to replay.
+            run_configuration: Replay configuration.
+
+        Raises:
+            NotImplementedError: Always.
+        """
+        raise NotImplementedError(
+            "Replaying a pipeline run is not possible with a local store."
         )
 
     # -------------------- Deployments --------------------

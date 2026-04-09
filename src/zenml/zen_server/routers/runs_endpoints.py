@@ -18,6 +18,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
+from zenml.config.pipeline_run_configuration import ReplayRunConfiguration
 from zenml.constants import (
     API,
     DISABLE_HEARTBEAT,
@@ -26,6 +27,8 @@ from zenml.constants import (
     LOGS_RUNNER_SOURCE,
     PIPELINE_CONFIGURATION,
     REFRESH,
+    REPLAY,
+    RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
     RUNS,
     STATUS,
     STEPS,
@@ -57,6 +60,9 @@ from zenml.zen_server.auth import (
     authorize,
 )
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -67,6 +73,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
+    verify_permission,
     verify_permission_for_model,
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
@@ -595,3 +602,66 @@ def disable_run_heartbeat(
     verify_permission_for_model(run, action=Action.UPDATE)
 
     zen_store().disable_run_heartbeat(run_id=run_id)
+
+
+if server_config().workload_manager_enabled:
+
+    @router.post(
+        "/{run_id}" + REPLAY,
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
+    )
+    @async_fastapi_endpoint_wrapper
+    def replay_run(
+        run_id: UUID,
+        run_configuration: Optional[ReplayRunConfiguration] = None,
+        auth_context: AuthContext = Security(authorize),
+    ) -> PipelineRunResponse:
+        """Replay a specific pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to replay.
+            run_configuration: The replay configuration.
+            auth_context: The authentication context.
+
+        Raises:
+            RuntimeError: If the run does not have a snapshot.
+
+        Returns:
+            The replayed pipeline run.
+        """
+        from zenml.zen_server.pipeline_execution.utils import (
+            run_snapshot,
+        )
+
+        run = verify_permissions_and_get_entity(
+            id=run_id,
+            get_method=zen_store().get_run,
+            hydrate=True,
+        )
+
+        if not run.snapshot:
+            raise RuntimeError("Cannot replay a run without a snapshot.")
+
+        verify_permission(
+            resource_type=ResourceType.PIPELINE_SNAPSHOT,
+            action=Action.CREATE,
+            project_id=run.project_id,
+        )
+        verify_permission(
+            resource_type=ResourceType.PIPELINE_RUN,
+            action=Action.CREATE,
+            project_id=run.project_id,
+        )
+
+        check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
+
+        return run_snapshot(
+            snapshot=run.snapshot,
+            auth_context=auth_context,
+            replay_configuration=run_configuration,
+            original_run=run,
+        )
