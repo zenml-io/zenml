@@ -332,7 +332,7 @@ class Stack:
                 raise ValueError("Multiple orchestrators are not supported.")
             orchestrator = orchestrator[0]
 
-        if not isinstance(orchestrator, BaseOrchestrator):
+        if orchestrator and not isinstance(orchestrator, BaseOrchestrator):
             _raise_type_error(orchestrator, BaseOrchestrator)
 
         # Artifact Store
@@ -341,7 +341,7 @@ class Stack:
             if len(artifact_store) > 1:
                 raise ValueError("Multiple artifact stores are not supported.")
             artifact_store = artifact_store[0]
-        if not isinstance(artifact_store, BaseArtifactStore):
+        if artifact_store and not isinstance(artifact_store, BaseArtifactStore):
             _raise_type_error(artifact_store, BaseArtifactStore)
 
         # Container Registry
@@ -354,7 +354,7 @@ class Stack:
                     "Multiple container registries are not supported."
                 )
             container_registry = container_registry[0]
-        if not isinstance(container_registry, BaseContainerRegistry):
+        if container_registry and not isinstance(container_registry, BaseContainerRegistry):
             _raise_type_error(container_registry, BaseContainerRegistry)
 
         # Step Operator
@@ -371,7 +371,7 @@ class Stack:
             if len(feature_store) > 1:
                 raise ValueError("Multiple feature stores are not supported.")
             feature_store = feature_store[0]
-        if not isinstance(feature_store, BaseFeatureStore):
+        if feature_store and not isinstance(feature_store, BaseFeatureStore):
             _raise_type_error(feature_store, BaseFeatureStore)
 
         # Model Deployer
@@ -380,7 +380,7 @@ class Stack:
             if len(model_deployer) > 1:
                 raise ValueError("Multiple model deployers are not supported.")
             model_deployer = model_deployer[0]
-        if not isinstance(model_deployer, BaseModelDeployer):
+        if model_deployer and not isinstance(model_deployer, BaseModelDeployer):
             _raise_type_error(model_deployer, BaseModelDeployer)
 
         # Experiment Tracker
@@ -410,7 +410,7 @@ class Stack:
             if len(annotator) > 1:
                 raise ValueError("Multiple annotators are not supported.")
             annotator = annotator[0]
-        if not isinstance(annotator, BaseAnnotator):
+        if annotator and not isinstance(annotator, BaseAnnotator):
             _raise_type_error(annotator, BaseAnnotator)
 
         # Data Validator
@@ -419,7 +419,7 @@ class Stack:
             if len(data_validator) > 1:
                 raise ValueError("Multiple data validators are not supported.")
             data_validator = data_validator[0]
-        if not isinstance(data_validator, BaseDataValidator):
+        if data_validator and not isinstance(data_validator, BaseDataValidator):
             _raise_type_error(data_validator, BaseDataValidator)
 
         # Image Builder
@@ -428,7 +428,7 @@ class Stack:
             if len(image_builder) > 1:
                 raise ValueError("Multiple image builders are not supported.")
             image_builder = image_builder[0]
-        if not isinstance(image_builder, BaseImageBuilder):
+        if image_builder and not isinstance(image_builder, BaseImageBuilder):
             _raise_type_error(image_builder, BaseImageBuilder)
 
         # Model Registry
@@ -439,7 +439,7 @@ class Stack:
                     "Multiple model registries are not supported."
                 )
             model_registry = model_registry[0]
-        if not isinstance(model_registry, BaseModelRegistry):
+        if model_registry and not isinstance(model_registry, BaseModelRegistry):
             _raise_type_error(model_registry, BaseModelRegistry)
 
         # Deployer
@@ -448,7 +448,7 @@ class Stack:
             if len(deployer) > 1:
                 raise ValueError("Multiple deployers are not supported.")
             deployer = deployer[0]
-        if not isinstance(deployer, BaseDeployer):
+        if deployer and not isinstance(deployer, BaseDeployer):
             _raise_type_error(deployer, BaseDeployer)
 
         # Log Store
@@ -457,7 +457,7 @@ class Stack:
             if len(log_store) > 1:
                 raise ValueError("Multiple log stores are not supported.")
             log_store = log_store[0]
-        if not isinstance(log_store, BaseLogStore):
+        if log_store and not isinstance(log_store, BaseLogStore):
             _raise_type_error(log_store, BaseLogStore)
 
         return Stack(
