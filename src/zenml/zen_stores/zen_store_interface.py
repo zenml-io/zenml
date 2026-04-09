@@ -1845,13 +1845,19 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
     @abstractmethod
     def attach_trigger_to_snapshot(
-        self, trigger_id: UUID, snapshot_id: UUID
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
     ) -> None:
         """Attaches (links) a trigger to a snapshot.
 
         Args:
             trigger_id: The ID of the trigger.
             snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs.
+            allow_replace: Allow replacement if attachment already exists.
 
         Raises:
             KeyError: if the entities don't exist.

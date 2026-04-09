@@ -244,3 +244,5 @@ Deleting a user removes their account but does not delete resources they created
 - [Organizations](organization.md)
 - [Personal Access Tokens](personal-access-tokens.md)
 - [Service Accounts](service-accounts.md)
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

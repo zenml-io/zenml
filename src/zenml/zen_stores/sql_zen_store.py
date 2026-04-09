@@ -125,7 +125,9 @@ from zenml.analytics.utils import (
 )
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+)
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.source import Source
@@ -6192,9 +6194,9 @@ class SqlZenStore(BaseZenStore):
                             # This is a regular input artifact, so it is
                             # guaranteed that an upstream step already ran and
                             # produced the artifact.
-                            input_config = step.spec.inputs_v2[input.name][
-                                input.input_index or 0
-                            ]
+                            input_config = step.spec.normalized_inputs[
+                                input.name
+                            ][input.input_index or 0]
                             artifact_node = _get_regular_output_artifact_node(
                                 input_config.step_name,
                                 input_config.output_name,
@@ -6370,7 +6372,7 @@ class SqlZenStore(BaseZenStore):
                     for (
                         input_name,
                         input_configs,
-                    ) in step.spec.inputs_v2.items():
+                    ) in step.spec.normalized_inputs.items():
                         for input_config in input_configs:
                             # This node should always exist, as the step
                             # configurations are sorted and therefore all
@@ -7972,13 +7974,19 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def attach_trigger_to_snapshot(
-        self, trigger_id: UUID, snapshot_id: UUID
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
     ) -> None:
         """Attaches (links) a trigger to a snapshot.
 
         Args:
             trigger_id: The ID of the trigger.
             snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs.
+            allow_replace: Allow replacement if attachment already exists.
 
         Raises:
             IllegalOperationError: if the trigger is archived.
@@ -8026,16 +8034,27 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the entities don't exist.
         """
         with Session(self.engine) as session:
-            assoc = session.get(
-                TriggerSnapshotSchema, (trigger_id, snapshot_id)
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
             )
 
-            if assoc is None:
+            tbd = [
+                snapshot.id
+                for snapshot in trigger.snapshots
+                if snapshot_id in {snapshot.id, snapshot.source_snapshot_id}
+            ]
+
+            if not tbd:
                 raise KeyError(
-                    f"No snapshot {snapshot_id} association found for trigger {trigger_id}"
+                    f"Snapshot {snapshot_id} is not attached to trigger {trigger_id}"
                 )
 
-            session.delete(assoc)
+            for sid in tbd:
+                assoc = session.get(TriggerSnapshotSchema, (trigger_id, sid))
+                session.delete(assoc)
+
             session.commit()
 
     def create_trigger_execution(
@@ -8243,6 +8262,7 @@ class SqlZenStore(BaseZenStore):
                 # Soft deletion - set is_archived
                 schedule.is_archived = True
                 schedule.active = False
+                schedule.name = f"{schedule.name}_{uuid.uuid4()}"
                 session.add(schedule)
 
             session.commit()
@@ -11162,7 +11182,7 @@ class SqlZenStore(BaseZenStore):
 
                         if input_type == StepRunInputArtifactType.STEP_OUTPUT:
                             index = i
-                            input_spec = step_config.spec.inputs_v2[
+                            input_spec = step_config.spec.normalized_inputs[
                                 input_name
                             ][i]
                             chunk_index = input_spec.chunk_index
@@ -11604,7 +11624,7 @@ class SqlZenStore(BaseZenStore):
         """
         if input_name in input_overrides:
             return StepRunInputArtifactType.OVERRIDE
-        elif input_name in step_spec.inputs_v2:
+        elif input_name in step_spec.normalized_inputs:
             return StepRunInputArtifactType.STEP_OUTPUT
         elif input_name in step_config.external_input_artifacts:
             return StepRunInputArtifactType.EXTERNAL

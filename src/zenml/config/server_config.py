@@ -253,6 +253,8 @@ class ServerConfiguration(BaseModel):
             value should be lower than the client's request timeout.
         api_transaction_cleanup_interval: The interval in seconds between
             cleanup batches.
+        dashboard_files_path: The path to the dashboard files directory. If not
+            specified, the built-in dashboard files will be used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -365,6 +367,7 @@ class ServerConfiguration(BaseModel):
     file_download_size_limit: int = (
         DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT
     )
+    dashboard_files_path: Optional[str] = None
 
     _deployment_id: Optional[UUID] = None
 

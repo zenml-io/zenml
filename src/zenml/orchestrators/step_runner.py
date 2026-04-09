@@ -471,7 +471,16 @@ class StepRunner:
             if arg in input_artifacts:
                 artifact_list = input_artifacts[arg]
 
-                if len(artifact_list) == 1:
+                if (
+                    arg not in self._step.spec.inputs
+                    or self._step.spec.is_scalar_input(arg)
+                ):
+                    # External/lazy loaded artifacts can never be collections,
+                    # so we can safely load them as a scalar artifact.
+                    if len(artifact_list) != 1:
+                        raise StepInterfaceError(
+                            f"Expected a single artifact for step input `{arg}`."
+                        )
                     function_params[arg] = self._load_input_artifact(
                         artifact_list[0], arg_type
                     )

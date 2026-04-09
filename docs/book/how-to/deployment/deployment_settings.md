@@ -1081,3 +1081,5 @@ components using the following `DeploymentSettings` fields:
 
 Both accept loadable sources or objects. We cover how to implement custom
 runner flavors and services in a dedicated guide.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

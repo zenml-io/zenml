@@ -2,12 +2,21 @@
 requires = ["uv_build >= 0.8.17, <0.9.0"]
 build-backend = "uv_build"
 
+[tool.uv]
+# Supply chain security: ignore Python packages published in the last 3 days.
+# Most compromised packages get detected and yanked within hours; this rolling
+# window blocks the majority of supply chain attacks automatically.
+# Override for a single install: uv add <pkg> --exclude-newer "0 days"
+# NOTE: when a version is filtered out, uv does NOT mention it — resolution
+# just fails with "no compatible version found". Keep this in mind when debugging.
+exclude-newer = "3 days"
+
 [tool.uv.build-backend]
 module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.94.1"
+version = "0.94.2"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"

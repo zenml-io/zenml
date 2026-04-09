@@ -72,3 +72,5 @@ Within the `VLLMDeploymentService` you can configure:
 * `tokenizer_mode`: The tokenizer mode. Allowed choices: ['auto', 'slow', 'mistral']
 * `dtype`: Data type for model weights and activations. Allowed choices: ['auto', 'half', 'float16', 'bfloat16', 'float', 'float32']
 * `revision`: The specific model version to use. It can be a branch name, a tag name, or a commit id. If unspecified, will use the default version.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

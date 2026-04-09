@@ -34,6 +34,7 @@ from zenml.models import (
     ArtifactVersionResponse,
     StepRunResponse,
 )
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.execution.pipeline.dynamic.outputs import (
@@ -281,9 +282,17 @@ def load_step_run_outputs(step_run_id: UUID) -> "StepRunOutputs":
     else:
         # Make sure we return them in the same order as they're defined in the
         # step configuration, as we don't enforce any ordering in the DB.
-        return tuple(
-            _convert_output_artifact(
-                output_name=name, artifact=output_artifacts[name]
+        outputs = []
+
+        for template_name in step_run.config.outputs.keys():
+            name = string_utils.format_name_template(
+                template_name,
+                substitutions=step_run.config.substitutions,
             )
-            for name in step_run.config.outputs.keys()
-        )
+            outputs.append(
+                _convert_output_artifact(
+                    output_name=template_name, artifact=output_artifacts[name]
+                )
+            )
+
+        return tuple(outputs)

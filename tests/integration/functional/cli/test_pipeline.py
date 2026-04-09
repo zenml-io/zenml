@@ -123,6 +123,9 @@ def test_pipeline_schedule_delete(clean_client_with_scheduled_run):
     )
     assert len(existing_schedules) == 1
 
+    assert existing_schedules.items[0].name.startswith(schedule_name)
+    assert existing_schedules.items[0].name != schedule_name
+
     existing_schedules = clean_client_with_scheduled_run.list_schedules()
     assert len(existing_schedules) == 0
 

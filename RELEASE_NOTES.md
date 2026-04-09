@@ -4,6 +4,39 @@
 
 ---
 
+# 0.94.2
+
+## What's Changed
+* Add version 0.94.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4630
+* Add 0.94.1 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4632
+* Optuna Hyperparameter Tuning with ZenML by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4545
+* Renamed helm chart top-level key from `zenml` to `server`, maintains backwards compatibility by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4637
+* Hydra Config Management with ZenML by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4544
+* Bugfix/archived schedule issues by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4641
+* Follow snapshot.source pattern for triggered runs by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4610
+* Only group minor/patch dependabot action updates by @strickvl in https://github.com/zenml-io/zenml/pull/4653
+* Bump core GitHub Actions to latest major versions by @strickvl in https://github.com/zenml-io/zenml/pull/4655
+* Bump minor/patch GitHub Action versions by @strickvl in https://github.com/zenml-io/zenml/pull/4654
+* Dynamically reduce chunk size if running into 414 error by @schustmi in https://github.com/zenml-io/zenml/pull/4553
+* Bump cloud provider GitHub Actions to latest major versions by @strickvl in https://github.com/zenml-io/zenml/pull/4656
+* Bump third-party GitHub Actions to latest major versions by @strickvl in https://github.com/zenml-io/zenml/pull/4657
+* Bump the all-actions group across 1 directory with 7 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4666
+* Fix incorrect version comments on SHA-pinned GitHub Actions by @strickvl in https://github.com/zenml-io/zenml/pull/4667
+* Configurable dashboard files directory by @schustmi in https://github.com/zenml-io/zenml/pull/4660
+* Add extra analytics coverage by @strickvl in https://github.com/zenml-io/zenml/pull/4677
+* Add Kitaru mention to README by @strickvl in https://github.com/zenml-io/zenml/pull/4688
+* Allow artifact name substitutions for dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4668
+* Fix duplicate 'the the' typos in docstrings and log messages by @strickvl in https://github.com/zenml-io/zenml/pull/4681
+* Fix broken filter snapshots by trigger by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4693
+* Differentiate scalar input artifacts against single item lists by @schustmi in https://github.com/zenml-io/zenml/pull/4679
+* Fix deployer dashboard HTML when Jinja2/Starlette template loading breaks by @stefannica in https://github.com/zenml-io/zenml/pull/4649
+* Add supply chain security cooldowns for Dependabot and uv by @strickvl in https://github.com/zenml-io/zenml/pull/4659
+
+## New Contributors
+* @amitvikramraj made their first contribution in https://github.com/zenml-io/zenml/pull/4545
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.1...0.94.2
+
 # 0.94.1
 
 ## What's Changed
@@ -7040,7 +7073,7 @@ zenml init
 * Run pre commit in local environment by @schustmi in https://github.com/zenml-io/zenml/pull/260
 * Hamza/eng 269 move beam out by @htahir1 in https://github.com/zenml-io/zenml/pull/262
 * Update docs by @alex-zenml in https://github.com/zenml-io/zenml/pull/261
-* Hamza/update readme with contribitions by @htahir1 in https://github.com/zenml-io/zenml/pull/271
+* Hamza/update readme with contributions by @htahir1 in https://github.com/zenml-io/zenml/pull/271
 * Hamza/eng 256 backoff analytics by @htahir1 in https://github.com/zenml-io/zenml/pull/270
 * Add spellcheck by @alex-zenml in https://github.com/zenml-io/zenml/pull/264
 * Using the pipeline run name to explicitly access when explaining the … by @AlexejPenner in https://github.com/zenml-io/zenml/pull/263

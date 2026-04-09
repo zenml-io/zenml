@@ -249,3 +249,5 @@ By following these practices, you can create ZenML pipelines that efficiently ha
 
 * Check out the [big‑data scaling strategies](manage-big-data.md) tutorial to see how to process datasets that no longer fit in memory.
 * Combine custom datasets with the [hyper‑parameter tuning](hyper-parameter-tuning.md) tutorial to experiment on multiple data sources at scale.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
