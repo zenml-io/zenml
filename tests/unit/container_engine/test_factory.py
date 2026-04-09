@@ -28,10 +28,10 @@ from zenml.enums import ContainerEngineType
 
 def _mock_global_config(
     mocker,
-    container_engines: ContainerEngineType | None,
+    container_engine: ContainerEngineType | None,
 ) -> None:
     mock_gc = MagicMock()
-    mock_gc.container_engines = container_engines
+    mock_gc.container_engine = container_engine
     mocker.patch(
         "zenml.container_engines.factory.GlobalConfiguration",
         return_value=mock_gc,

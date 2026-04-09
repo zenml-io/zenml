@@ -228,13 +228,13 @@ class DockerServiceConnector(ServiceConnector):
 
         registry = self._parse_resource_id(self.resource_id)
 
-        container_engines = get_container_engine()
-        container_engines.login(
+        container_engine = get_container_engine()
+        container_engine.login(
             username=self.config.username.get_secret_value(),
             password=self.config.password.get_secret_value(),
             registry=registry,
         )
-        return container_engines
+        return container_engine
 
     def _configure_local_client(
         self,
@@ -251,8 +251,8 @@ class DockerServiceConnector(ServiceConnector):
         assert self.resource_id is not None
         registry = self._parse_resource_id(self.resource_id)
 
-        container_engines = get_container_engine()
-        container_engines.login(
+        container_engine = get_container_engine()
+        container_engine.login(
             username=cfg.username.get_secret_value(),
             password=cfg.password.get_secret_value(),
             registry=registry,

@@ -43,7 +43,7 @@ def get_container_engine(
         RuntimeError: If the requested engine is unavailable or neither
             engine works in auto mode.
     """
-    requested = engine_type or GlobalConfiguration().container_engines
+    requested = engine_type or GlobalConfiguration().container_engine
     if not requested:
         choices = [ContainerEngineType.DOCKER, ContainerEngineType.PODMAN]
     else:
@@ -65,8 +65,7 @@ def get_container_engine(
 
     raise RuntimeError(
         "No container engine is available. Install and start Docker, or "
-        "install Podman, or set `container_engines` in the global ZenML "
-        "configuration (or environment variable ZENML_CONTAINER_ENGINE)."
+        "install Podman."
     )
 
 
