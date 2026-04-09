@@ -27,6 +27,15 @@ retries, the step goes back to the queue and is retried again. If the number of
 retries is exhausted, the step fails. See [Automatic Step Retries](https://docs.zenml.io/how-to/steps-pipelines/advanced_features#automatic-step-retries) for more information.
 6. Deallocation: When the step run completes, the resources are released back to the pool. If the step crashes unexpectedly, the resources are eventually released back to the pool.
 
+{% hint style="warning" %}
+If the resource requester (orchestrator or step operator) has more than one
+policy attached to more than one pool, the same logical request may appear in
+several pool queues, but reconciliation still grants at most one active
+allocation. Eligibility is computed separately per pool against the entire
+resource request; the system never assigns part of a step’s demand to one pool
+and the rest to another.
+{% endhint %}
+
 ## How preemption works
 
 **When.** Preemption runs only when the next queued request for a pool cannot be

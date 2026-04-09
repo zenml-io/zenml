@@ -97,6 +97,18 @@ zenml resource-pool list-policies --component my-k8s-orch
 zenml resource-pool detach-policy training-gpus my-k8s-orch
 ```
 
+{% hint style="warning" %}
+A single orchestrator or step operator may have **several policies** attached,
+each pointing at a **different pool**. The server still treats each step as one
+**resource request**. Eligibility and allocation are evaluated **per pool**
+against the **full** set of requested keys: the step may be queued on more than
+one pool, but at most **one** pool ends up owning the active allocation. ZenML
+does **not** split a request across pools (for example GPUs from one pool and
+`mcpu` from another). Every key in the request must be satisfiable from the
+**same** pool and policy that wins. See
+[Examples — Multiple pools and multi-key requests](resource-pools-examples.md#multiple-pools-and-multi-key-requests).
+{% endhint %}
+
 ## Resource requests
 
 For eligible runs, the server builds a **resource request** from the step’s
@@ -211,5 +223,5 @@ zenml resource-pool requests training-gpus --view all
 
 * [Resource pools](resource-pools.md) — overview and UX story
 * [Examples](resource-pools-examples.md) — scenarios and outcomes
-* [How preemption works](resource-pools-examples.md#how-preemption-works) —
-  behavior and ordering
+* [How preemption works](resource-pools-preemption.md) — behavior and ordering
+* [Resource pool reconciliation](resource-pools-reconciliation.md) — runtime flow

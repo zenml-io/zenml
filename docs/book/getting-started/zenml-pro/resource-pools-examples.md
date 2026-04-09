@@ -18,6 +18,9 @@ orchestrator or step operator may use that pool), and the step
 * Every key in a policy’s `reserved` and `limit` must exist on the pool’s
   capacity. You cannot meter a resource in policy that the pool does not
   define.
+* If one orchestrator or step operator has policies to several pools, the step
+  still receives at most one allocation from one pool. The whole request must be
+  eligible on that pool; resources are not split across pools for a single step.
 
 For definitions of reserved, limit, and priority, see
 [Core concepts](resource-pools-core-concepts.md). For preemption ordering, see
@@ -976,6 +979,13 @@ use preemptible Prod work if policy allows.
 ---
 
 ## Multiple pools and multi-key requests
+
+{% hint style="warning" %}
+Several policies on the same stack component mean several pools may try
+to satisfy the same resource request, but only one pool can win.
+Every key in the request must pass that pool’s checks; ZenML does not take
+`gpu` from one pool and `mcpu` from another for one step.
+{% endhint %}
 
 ### Two pools on one orchestrator—primary pool wins
 
