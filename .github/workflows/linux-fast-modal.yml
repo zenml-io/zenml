@@ -79,40 +79,15 @@ jobs:
             offload-junit-${{ runner.os }}-
       - name: Run tests via offload
         id: run
-        continue-on-error: true
         run: |
           set +e
-          offload run --parallel 40
-          exit_code=$?
-          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
-          # offload doesn't have a separate infra-failure code;
-          # treat any non-zero as test failure for now
+          offload run --parallel 40 2>&1 | grep -v 'No historical duration for test'
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
           echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           exit 0
-      - name: Print test failures
+      - name: Save caches
         if: always()
-        run: |
-          python -c "
-          import xml.etree.ElementTree as ET, glob, sys
-          files = glob.glob('test-results/**/junit.xml', recursive=True)
-          if not files:
-              print('No JUnit XML found'); sys.exit(0)
-          failures = []
-          for f in files:
-              for tc in ET.parse(f).iter('testcase'):
-                  for fail in tc.findall('failure'):
-                      failures.append((tc.get('classname',''), tc.get('name',''), fail.text or ''))
-                  for err in tc.findall('error'):
-                      failures.append((tc.get('classname',''), tc.get('name',''), err.text or ''))
-          if not failures:
-              print('All tests passed!'); sys.exit(0)
-          print(f'\n::error::{len(failures)} test failure(s):\n')
-          for cls, name, msg in failures:
-              print(f'FAILED {cls}::{name}')
-              for line in msg.strip().splitlines()[-20:]:
-                  print(f'  {line}')
-              print()
-          "
+        run: echo "Caches saved in post-run steps below"
       - name: Combine coverage
         if: always()
         run: python scripts/ci/combine_coverage.py
@@ -129,9 +104,6 @@ jobs:
         with:
           path: test-results/modal-fast-ci/junit.xml
           key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id }}
-      - name: Fail on test failure
-        if: ${{ steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '2' }}
-        run: exit 1
       - name: Upload fast-CI artifacts
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
@@ -141,6 +113,31 @@ jobs:
             test-results/modal-fast-ci/**
             coverage.xml
           if-no-files-found: warn
+      - name: Print test failures and exit
+        if: ${{ steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '2' }}
+        run: |
+          python -c "
+          import xml.etree.ElementTree as ET, glob, sys
+          files = glob.glob('test-results/**/junit.xml', recursive=True)
+          if not files:
+              print('No JUnit XML found'); sys.exit(1)
+          failures = []
+          for f in files:
+              for tc in ET.parse(f).iter('testcase'):
+                  for fail in tc.findall('failure'):
+                      failures.append((tc.get('classname',''), tc.get('name',''), fail.text or ''))
+                  for err in tc.findall('error'):
+                      failures.append((tc.get('classname',''), tc.get('name',''), err.text or ''))
+          if not failures:
+              print('All tests passed!'); sys.exit(0)
+          print(f'\n::error::{len(failures)} test failure(s):\n')
+          for cls, name, msg in failures:
+              print(f'FAILED {cls}::{name}')
+              for line in msg.strip().splitlines()[-20:]:
+                  print(f'  {line}')
+              print()
+          sys.exit(1)
+          "
   fallback-unit-test:
     needs: modal-fast-ci
     if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' }}
