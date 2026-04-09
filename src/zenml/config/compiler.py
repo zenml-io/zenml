@@ -98,8 +98,8 @@ class Compiler:
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
-        convert_component_shortcut_settings_keys(
-            pipeline.configuration.settings, stack=stack
+        settings_utils.normalize_stack_component_setting_keys(
+            pipeline.configuration.settings, components_by_type=stack.components
         )
 
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
@@ -261,7 +261,7 @@ class Compiler:
             if not component.settings_class:
                 continue
 
-            settings_key = settings_utils.get_stack_component_setting_key(
+            settings_key = settings_utils.get_stack_component_name_setting_key(
                 component
             )
             default_settings = self._get_default_settings(component)
@@ -553,8 +553,8 @@ class Compiler:
             # pipeline function) after all other step-specific configurations.
             step._merge_dynamic_configuration()
 
-            convert_component_shortcut_settings_keys(
-                step.configuration.settings, stack=stack
+            settings_utils.normalize_stack_component_setting_keys(
+                step.configuration.settings, components_by_type=stack.components
             )
             step_secrets = secret_utils.resolve_and_verify_secrets(
                 step.configuration.secrets
@@ -739,40 +739,6 @@ class Compiler:
             parameters=pipeline._parameters,
             input_schema=input_schema,
         )
-
-
-def convert_component_shortcut_settings_keys(
-    settings: Dict[str, "BaseSettings"], stack: "Stack"
-) -> None:
-    """Convert component shortcut settings keys.
-
-    Args:
-        settings: Dictionary of settings.
-        stack: The stack that the pipeline will run on.
-
-    Raises:
-        ValueError: If stack component settings were defined both using the
-            full and the shortcut key.
-    """
-    for component_type, components in stack.components.items():
-        shortcut_key = str(component_type)
-        if component_settings := settings.pop(shortcut_key, None):
-            if len(components) > 1:
-                raise ValueError(
-                    "Unable to convert shortcut settings key for stack with "
-                    f"multiple components of type {component_type}."
-                )
-
-            component = components[0]
-            key = settings_utils.get_stack_component_setting_key(component)
-            if key in settings:
-                raise ValueError(
-                    f"Duplicate settings provided for your {shortcut_key} "
-                    f"using the keys {shortcut_key} and {key}. Remove settings "
-                    "for one of them to fix this error."
-                )
-
-            settings[key] = component_settings
 
 
 def finalize_environment_variables(

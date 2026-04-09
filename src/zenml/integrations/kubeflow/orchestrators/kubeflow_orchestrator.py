@@ -883,9 +883,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         run = Client().get_pipeline_run(run_id)
 
-        settings_key = settings_utils.get_stack_component_setting_key(self)
-        run_settings = self.settings_class.model_validate(
-            run.config.model_dump().get(settings_key, self.config)
+        run_settings = cast(
+            KubeflowOrchestratorSettings,
+            self.get_settings(run),
         )
         user_namespace = run_settings.user_namespace
 

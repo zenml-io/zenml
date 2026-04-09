@@ -930,10 +930,41 @@ class Stack:
             All setting classes and their respective keys.
         """
         setting_classes = {}
-        for component in self.all_components:
-            if component.settings_class:
-                key = settings_utils.get_stack_component_setting_key(component)
-                setting_classes[key] = component.settings_class
+        for component_type, components in self.components.items():
+            components_with_settings = [
+                component
+                for component in components
+                if component.settings_class
+            ]
+            if not components_with_settings:
+                continue
+
+            default_component = components[0]
+            if default_component.settings_class:
+                setting_classes[str(component_type)] = (
+                    default_component.settings_class
+                )
+
+            flavor_groups: Dict[str, List["StackComponent"]] = defaultdict(
+                list
+            )
+            for component in components_with_settings:
+                setting_classes[
+                    settings_utils.get_stack_component_name_setting_key(
+                        component
+                    )
+                ] = component.settings_class
+                flavor_groups[component.flavor].append(component)
+
+            for flavor_components in flavor_groups.values():
+                if len(flavor_components) == 1:
+                    component = flavor_components[0]
+                    setting_classes[
+                        settings_utils.get_stack_component_setting_key(
+                            component
+                        )
+                    ] = component.settings_class
+    
         return setting_classes
 
     @property

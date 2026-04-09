@@ -562,7 +562,7 @@ def run_as_single_step_pipeline(
     pipeline_settings: Any = {}
     if "synchronous" in type(orchestrator.config).model_fields:
         # Make sure the orchestrator runs sync so we stream the logs
-        key = settings_utils.get_stack_component_setting_key(orchestrator)
+        key = settings_utils.get_stack_component_name_setting_key(orchestrator)
         pipeline_settings[key] = BaseSettings(synchronous=True)
 
     @pipeline(

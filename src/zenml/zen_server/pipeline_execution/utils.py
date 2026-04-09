@@ -435,7 +435,13 @@ def ensure_async_orchestrator(
     flavor = Flavor.from_model(flavors[0])
 
     if "synchronous" in flavor.config_class.model_fields:
-        key = settings_utils.get_flavor_setting_key(flavor)
+        settings_utils.normalize_stack_component_setting_keys(
+            settings=snapshot.pipeline_configuration.settings,
+            components_by_type=stack.components,
+        )
+        key = settings_utils.get_stack_component_name_setting_key(
+            orchestrator
+        )
 
         if settings := snapshot.pipeline_configuration.settings.get(key):
             settings_dict = settings.model_dump()
@@ -545,8 +551,9 @@ def snapshot_request_from_source_snapshot(
         pipeline_update_exclude.add("parameters")
 
     if config.settings:
-        convert_component_shortcut_settings_keys(
-            settings=config.settings, stack=source_snapshot.stack
+        settings_utils.normalize_stack_component_setting_keys(
+            settings=config.settings,
+            components_by_type=source_snapshot.stack.components,
         )
 
     pipeline_update = config.model_dump(
@@ -579,9 +586,9 @@ def snapshot_request_from_source_snapshot(
             invocation_id, StepConfigurationUpdate()
         )
         if step_update_model.settings:
-            convert_component_shortcut_settings_keys(
+            settings_utils.normalize_stack_component_setting_keys(
                 settings=step_update_model.settings,
-                stack=source_snapshot.stack,
+                components_by_type=source_snapshot.stack.components,
             )
         step_update = step_update_model.model_dump(
             # Get rid of deprecated name to prevent overriding the step name
@@ -721,43 +728,6 @@ def get_pipeline_run_analytics_metadata(
         "pipeline_run_id": str(run_id),
         "source_snapshot_id": str(source_snapshot_id),
     }
-
-
-def convert_component_shortcut_settings_keys(
-    settings: Dict[str, "BaseSettings"], stack: "StackResponse"
-) -> None:
-    """Convert component shortcut settings keys.
-
-    Args:
-        settings: Dictionary of settings.
-        stack: The stack response.
-
-    Raises:
-        ValueError: If the shortcut key is ambiguous because the stack has
-            multiple components of the same type.
-        ValueError: If stack component settings were defined both using the
-            full and the shortcut key.
-    """
-    for component_type, component_list in stack.components.items():
-        shortcut_key = str(component_type)
-        if component_settings := settings.pop(shortcut_key, None):
-            if len(component_list) > 1:
-                raise ValueError(
-                    "Unable to convert shortcut settings key for stack with "
-                    f"multiple components of type {component_type}."
-                )
-
-            key = f"{component_type}.{component_list[0].flavor_name}"
-            if key in settings:
-                raise ValueError(
-                    f"Duplicate settings provided for your {shortcut_key} "
-                    f"using the keys {shortcut_key} and {key}. Remove settings "
-                    "for one of them to fix this error."
-                )
-
-            settings[key] = component_settings
-
-
 def validate_snapshot_for_server_execution(
     snapshot: PipelineSnapshotResponse,
     run_configuration: Optional[PipelineRunConfiguration] = None,
