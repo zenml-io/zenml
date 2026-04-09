@@ -743,7 +743,7 @@ class StepLauncher:
 
         Raises:
             RuntimeError: If the resource request was not found, or
-            was rejected, preempted, or cancelled.
+                was rejected, preempted, or cancelled.
         """
         resource_request = step_run_info.step_run.resource_request
         if not resource_request:

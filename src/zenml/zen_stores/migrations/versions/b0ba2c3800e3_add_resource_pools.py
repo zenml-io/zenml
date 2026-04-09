@@ -138,9 +138,7 @@ def upgrade() -> None:
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
-        sa.Column(
-            "component_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-        ),
+        sa.Column("component_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column(
             "preemption_initiated_by_id",
