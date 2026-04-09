@@ -82,7 +82,7 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          offload run --parallel 40
+          offload run --parallel 40 2> >(grep -v 'No historical duration for test' >&2)
           exit_code=$?
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
           # offload doesn't have a separate infra-failure code;
