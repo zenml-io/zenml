@@ -15,7 +15,7 @@
 
 import os
 from datetime import timedelta
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, List, Optional, Tuple, Union
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -119,7 +119,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             # instance is created and this call will have no effect
             current_store._delete_credentials_file()
 
-        cls._clear(store)  # type: ignore[arg-type]
+        cls._clear(store)
         if store:
             store._save_credentials()
 
@@ -130,7 +130,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         Returns:
             The singleton instance of the CredentialsStore.
         """
-        return cast(CredentialsStore, cls._instance())
+        return cls._instance()
 
     @property
     def _credentials_file(self) -> str:
@@ -616,13 +616,14 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
         if server_url in self.credentials:
             credential = self.credentials[server_url]
-            if (
-                not credential.api_key
-                and not credential.username
-                and not credential.password is not None
-            ):
+            has_api_key = credential.api_key is not None
+            has_password_credentials = (
+                credential.username is not None
+                and credential.password is not None
+            )
+            if not has_api_key and not has_password_credentials:
                 # Only delete the credential entry if there is no API key or
-                # username/password to fall back on
+                # username/password to fall back on.
                 del self.credentials[server_url]
             else:
                 credential.api_token = None

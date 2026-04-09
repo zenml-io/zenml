@@ -511,6 +511,7 @@ def connect_to_pro_server(
                 f"running. Visit the ZenML Pro dashboard to manage the server "
                 f"status at: {server.dashboard_url}"
             )
+            return
     else:
         cli_utils.error(
             f"Your `{server.name}` ZenML Pro server is currently "
@@ -518,13 +519,23 @@ def connect_to_pro_server(
             "new server by visiting the ZenML Pro dashboard at "
             f"{server.dashboard_organization_url}."
         )
+        return
+
+    server_url_for_connection = server.url
+    if server_url_for_connection is None:
+        cli_utils.error(
+            f"The ZenML Pro server '{server.name}' does not currently expose "
+            "a usable server URL. Please manage the server state via the "
+            f"ZenML Pro dashboard at {server.dashboard_url}."
+        )
+        return
 
     cli_utils.declare(
         f"Connecting to ZenML Pro server: '{server.name}' [{str(server.id)}] "
     )
 
     connect_to_server(
-        server.url,
+        server_url_for_connection,
         api_key=api_key,
         pro_server=True,
         verify_ssl=verify_ssl,
@@ -533,7 +544,7 @@ def connect_to_pro_server(
 
     # Update the stored server info with more accurate data taken from the
     # ZenML Pro workspace object.
-    credentials_store.update_server_info(server.url, server)
+    credentials_store.update_server_info(server_url_for_connection, server)
 
     cli_utils.success(f"✔ Connected to ZenML Pro server: {server.name}.")
 

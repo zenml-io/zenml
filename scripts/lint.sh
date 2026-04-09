@@ -58,4 +58,6 @@ ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" -
 ruff format $SRC  --check
 
 # check type annotations
-mypy $SRC_NO_TESTS
+PHASE_1_MYPY_EXCLUDE='src/zenml/login/|src/zenml/cli/login\.py'
+uv run ty check src/zenml/login src/zenml/cli/login.py
+uv run mypy --exclude "$PHASE_1_MYPY_EXCLUDE" $SRC_NO_TESTS

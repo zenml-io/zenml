@@ -205,7 +205,14 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
             exc: the exception converted from an error response, if one
                 is returned from the server.
         """
-        if 200 <= response.status_code < 300:
+        status_code = response.status_code
+        if status_code is None:
+            raise RuntimeError(
+                "Error retrieving from API. The response did not include an "
+                f"HTTP status code. Response body:\n{response.text}"
+            )
+
+        if 200 <= status_code < 300:
             try:
                 payload: Json = response.json()
                 return payload
@@ -214,19 +221,19 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
                     "Bad response from API. Expected json, got\n"
                     f"{response.text}"
                 )
-        elif response.status_code >= 400:
+        elif status_code >= 400:
             exc = exception_from_response(response)
             if exc is not None:
                 raise exc
             else:
                 raise RuntimeError(
-                    f"{response.status_code} HTTP Error received from server: "
+                    f"{status_code} HTTP Error received from server: "
                     f"{response.text}"
                 )
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "
-                f"{response.status_code} with body:\n{response.text}"
+                f"{status_code} with body:\n{response.text}"
             )
 
     def _request(

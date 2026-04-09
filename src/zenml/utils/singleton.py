@@ -14,7 +14,9 @@
 """Utility class to turn classes into singleton classes."""
 
 import contextvars
-from typing import Any, Optional, cast
+from typing import Any, Optional, TypeVar, cast
+
+SingletonInstance = TypeVar("SingletonInstance")
 
 
 class SingletonMetaClass(type):
@@ -38,6 +40,8 @@ class SingletonMetaClass(type):
     ```
     """
 
+    _singleton_instance: object | None = None
+
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
         """Initialize a singleton class.
 
@@ -46,9 +50,11 @@ class SingletonMetaClass(type):
             **kwargs: Additional keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        cls.__singleton_instance: Optional["SingletonMetaClass"] = None
+        cls._singleton_instance = None
 
-    def __call__(cls, *args: Any, **kwargs: Any) -> "SingletonMetaClass":
+    def __call__(
+        cls: type[SingletonInstance], *args: Any, **kwargs: Any
+    ) -> SingletonInstance:
         """Create or return the singleton instance.
 
         Args:
@@ -58,28 +64,37 @@ class SingletonMetaClass(type):
         Returns:
             The singleton instance.
         """
-        if not cls.__singleton_instance:
-            cls.__singleton_instance = cast(
-                "SingletonMetaClass", super().__call__(*args, **kwargs)
+        meta_cls = cast("SingletonMetaClass", cls)
+        if meta_cls._singleton_instance is None:
+            meta_cls._singleton_instance = cast(
+                object, type.__call__(cls, *args, **kwargs)
             )
 
-        return cls.__singleton_instance
+        return cast(SingletonInstance, meta_cls._singleton_instance)
 
-    def _clear(cls, instance: Optional["SingletonMetaClass"] = None) -> None:
+    def _clear(
+        cls: type[SingletonInstance],
+        instance: Optional[SingletonInstance] = None,
+    ) -> None:
         """Clear or replace the singleton instance.
 
         Args:
             instance: The new singleton instance.
         """
-        cls.__singleton_instance = instance
+        cast("SingletonMetaClass", cls)._singleton_instance = instance
 
-    def _instance(cls) -> Optional["SingletonMetaClass"]:
+    def _instance(
+        cls: type[SingletonInstance],
+    ) -> Optional[SingletonInstance]:
         """Get the singleton instance.
 
         Returns:
             The singleton instance.
         """
-        return cls.__singleton_instance
+        return cast(
+            Optional[SingletonInstance],
+            cast("SingletonMetaClass", cls)._singleton_instance,
+        )
 
     def _exists(cls) -> bool:
         """Check if the singleton instance exists.
@@ -87,7 +102,7 @@ class SingletonMetaClass(type):
         Returns:
             `True` if the singleton instance exists, `False` otherwise.
         """
-        return cls.__singleton_instance is not None
+        return cls._singleton_instance is not None
 
 
 class ThreadLocalSingleton(type):

@@ -141,6 +141,7 @@ dev = [
     "coverage[toml]>=5.5,<6.0.0",
     "pytest>=7.4.0,<8.0.0",
     "mypy==1.18.1",
+    "ty==0.0.29",
     "pre-commit",
     "pyment>=0.3.3,<0.4.0",
     "tox>=3.24.3",
@@ -294,6 +295,17 @@ convention = "google"
 [tool.bandit]
 skips = ["B615"]
 
+[tool.ty.terminal]
+error-on-warning = true
+
+[tool.ty.environment]
+python-version = "3.10"
+python-platform = "all"
+
+[tool.ty.rules]
+unresolved-import = "ignore"
+possibly-missing-import = "ignore"
+
 [tool.mypy]
 
 plugins = ["pydantic.mypy"]
@@ -301,6 +313,10 @@ plugins = ["pydantic.mypy"]
 strict = true
 namespace_packages = true
 show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["zenml.login.*", "zenml.cli.login"]
+follow_imports = "skip"
 
 # import all google, transformers and datasets files as `Any`
 [[tool.mypy.overrides]]
