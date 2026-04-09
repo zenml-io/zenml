@@ -160,10 +160,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       # Sign in to Google
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.GCP_CLOUDBUILD_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
         with:
-          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
-          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
           project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
       # Submit the Cloudbuild job
       - name: Build docker images
@@ -208,6 +209,7 @@ jobs:
     env:
       ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
       ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
+      ZENML_ACTIVE_PROJECT_ID: ${{ secrets.RELEASE_TENANT_PROJECT_ID }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     strategy:
       fail-fast: false
