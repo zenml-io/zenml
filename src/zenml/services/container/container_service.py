@@ -19,7 +19,7 @@ import sys
 import tempfile
 import time
 from abc import abstractmethod
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple, cast
 
 import docker.errors as docker_errors
 from docker.client import DockerClient
@@ -30,15 +30,18 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE,
 )
-from zenml.enums import ServiceState
+from zenml.container_engines import (
+    DockerContainerEngine,
+    check_container_engine,
+    get_container_engine,
+)
+from zenml.enums import ContainerEngineType, ServiceState
 from zenml.logger import get_logger
 from zenml.services.container.container_service_endpoint import (
     ContainerServiceEndpoint,
 )
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceStatus
-from zenml.utils import docker_utils
-from zenml.utils.docker_utils import check_docker
 from zenml.utils.io_utils import (
     create_dir_recursive_if_not_exists,
     get_global_config_directory,
@@ -173,7 +176,20 @@ class ContainerService(BaseService):
     # TODO [ENG-705]: allow multiple endpoints per service
     endpoint: Optional[ContainerServiceEndpoint] = None
 
-    _docker_client: Optional[DockerClient] = None
+    _docker_engine: Optional[DockerContainerEngine] = None
+
+    @property
+    def docker_engine(self) -> DockerContainerEngine:
+        """Initialize and/or return the docker engine.
+
+        Returns:
+            The docker engine.
+        """
+        if self._docker_engine is None:
+            docker_engine = get_container_engine(ContainerEngineType.DOCKER)
+
+            self._docker_engine = cast(DockerContainerEngine, docker_engine)
+        return self._docker_engine
 
     @property
     def docker_client(self) -> DockerClient:
@@ -182,11 +198,7 @@ class ContainerService(BaseService):
         Returns:
             The docker client.
         """
-        if self._docker_client is None:
-            self._docker_client = (
-                docker_utils._try_get_docker_client_from_env()
-            )
-        return self._docker_client
+        return self.docker_engine.client
 
     @property
     def container_id(self) -> str:
@@ -222,8 +234,14 @@ class ContainerService(BaseService):
             description of the error, if one is encountered).
         """
         # Check if Docker is available first
-        if not check_docker():
-            return (ServiceState.INACTIVE, "Docker daemon is not running")
+        is_available, error_message = check_container_engine(
+            ContainerEngineType.DOCKER
+        )
+        if not is_available:
+            return (
+                ServiceState.INACTIVE,
+                f"Docker daemon is not running: {error_message}",
+            )
 
         container: Optional[Container] = None
         try:
