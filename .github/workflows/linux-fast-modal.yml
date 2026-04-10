@@ -61,9 +61,13 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ~/.cargo/bin/offload
-          key: cargo-offload-${{ runner.os }}-${{ hashFiles('.github/workflows/linux-fast-modal.yml') }}
+          # Cache invalidates only when the offload source pin changes,
+          # not on every workflow edit. Bump the version suffix below
+          # whenever a new offload commit needs to be picked up.
+          key: cargo-offload-${{ runner.os }}-feat-max-batch-duration-v1
       - name: Install offload
-        run: command -v offload || cargo install --git https://github.com/safoinme/offload.git --branch feat/memory-gb-option
+        run: command -v offload || cargo install --git https://github.com/safoinme/offload.git
+          --branch feat/max-batch-duration
       - name: Restore offload image cache
         uses: actions/cache/restore@v4
         with:
@@ -103,7 +107,8 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: test-results/modal-fast-ci/junit.xml
-          key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id }}
+          key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id
+            }}
       - name: Upload fast-CI artifacts
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0

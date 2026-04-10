@@ -11,23 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from pathlib import Path
+
 from zenml.image_builders import BaseImageBuilder, BuildContext
 from zenml.io import fileio
 
 
-def _get_build_context() -> BuildContext:
-    """Get a build context for testing.
+def test_upload_build_context(tmp_path: Path) -> None:
+    """Test that the build context is uploaded correctly.
 
-    Returns:
-        A build context.
+    Uses a small temporary directory rather than the current working
+    directory, which would otherwise tar the entire ZenML repo and make
+    this unit test take several minutes.
     """
-    return BuildContext(root=".", dockerignore_file=None)
+    (tmp_path / "Dockerfile").write_text("FROM scratch\n")
+    (tmp_path / "app.txt").write_text("hello world\n")
 
+    build_context = BuildContext(root=str(tmp_path), dockerignore_file=None)
 
-def test_upload_build_context() -> None:
-    """Test that the build context is uploaded correctly."""
     filepath = BaseImageBuilder._upload_build_context(
-        build_context=_get_build_context(),
+        build_context=build_context,
         parent_path_directory_name="pytest-contexts",
     )
     assert fileio.exists(filepath)
