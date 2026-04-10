@@ -22,7 +22,6 @@ from zenml.stack.authentication_mixin import (
     AuthenticationConfigMixin,
     AuthenticationMixin,
 )
-from zenml.utils import docker_utils
 
 
 class BaseContainerRegistryConfig(AuthenticationConfigMixin):
@@ -36,18 +35,6 @@ class BaseContainerRegistry(AuthenticationMixin):
 
     def prepare_image_push(self, image_name: str) -> None:
         """Conduct necessary checks/preparations before an image gets pushed."""
-
-    def push_image(self, image_name: str) -> str:
-        """Pushes a Docker image."""
-        if not image_name.startswith(self.config.uri):
-            raise ValueError(
-                f"Docker image `{image_name}` does not belong to container "
-                f"registry `{self.config.uri}`."
-            )
-
-        self.prepare_image_push(image_name)
-        return docker_utils.push_image(image_name)
-
 
 class BaseContainerRegistryFlavor(Flavor):
     """Base flavor for container registries."""

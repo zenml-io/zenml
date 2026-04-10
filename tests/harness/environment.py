@@ -284,7 +284,7 @@ class TestEnvironment:
                 components.append(component_model)
 
             if build_base_image:
-                BaseTestDeployment.build_base_image()
+                self.deployment.build_base_image()
 
     def deprovision(self) -> None:
         """Deprovision all stack components for this environment.
