@@ -5846,6 +5846,10 @@ class SqlZenStore(BaseZenStore):
                     node_metadata["resolution"] = condition.resolution
                 if condition.question:
                     node_metadata["question"] = condition.question
+                if condition.resolved_at:
+                    node_metadata["resolved_at"] = (
+                        condition.resolved_at.isoformat()
+                    )
 
                 helper.add_wait_condition_node(
                     node_id=helper.get_wait_condition_node_id(condition.name),
