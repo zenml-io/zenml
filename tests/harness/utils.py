@@ -265,6 +265,45 @@ def build_client_template_dir(template_dir: Path) -> Path:
         # default project/stack/user are materialized inside the
         # template tree.
         _ = client.zen_store
+
+        # Seed the per-component `local_stores/<UUID>` directories.
+        # `LocalArtifactStore.path` creates the UUID subdir lazily on
+        # first property access, but we deliberately avoid going
+        # through `client.active_stack` here because that calls
+        # `Stack.from_model(...)` which populates a module-level
+        # `_STACK_CACHE` in src/zenml/stack/stack.py. A cached Stack
+        # instance holds already-initialized component objects, so a
+        # subsequent test that mocks `BaseArtifactStore._register`
+        # and then calls `active_stack.artifact_store` would hit the
+        # cache instead of constructing a fresh instance — breaking
+        # e.g. test_register_artifact_store_filesystem.
+        #
+        # Query the DB directly through the zen_store instead: list
+        # the default stack's artifact store components and create
+        # each `local_stores_path / <component_id>` folder. No
+        # Stack.from_model, no BaseArtifactStore.__init__, no
+        # _STACK_CACHE population.
+        try:
+            from zenml.enums import StackComponentType
+            from zenml.models import ComponentFilter
+
+            local_stores_root = Path(gc.local_stores_path)
+            filter_model = ComponentFilter(
+                type=StackComponentType.ARTIFACT_STORE,
+            )
+            components = client.zen_store.list_stack_components(
+                component_filter_model=filter_model,
+            )
+            for component in components.items:
+                (local_stores_root / str(component.id)).mkdir(
+                    parents=True, exist_ok=True
+                )
+        except Exception as e:  # noqa: BLE001
+            logging.warning(
+                "Failed to pre-create artifact store path in "
+                "template: %s",
+                e,
+            )
     finally:
         os.chdir(orig_cwd)
         if orig_config_path is not None:
@@ -319,6 +358,23 @@ def clean_default_client_session(
     GlobalConfiguration._reset_instance()
     Client._reset_instance()
 
+    # src/zenml/stack/stack.py keeps a module-level `_STACK_CACHE`
+    # keyed on `(stack_id, updated)` that hands out the *same*
+    # Stack instance — and therefore the same pre-initialized
+    # BaseArtifactStore — across tests that happen to see the same
+    # default-stack model. Any test that mocks
+    # `BaseArtifactStore._register` expects `active_stack.artifact_store`
+    # to run `__init__` fresh; with the cache populated from an
+    # earlier test (or from the template build) the mock would never
+    # fire. Flush it at the start of every clean_client to guarantee
+    # each test gets a fresh Stack.
+    try:
+        from zenml.stack.stack import _STACK_CACHE
+
+        _STACK_CACHE.clear()
+    except Exception:  # noqa: BLE001
+        pass
+
     # change the working directory to a fresh temp path
     tmp_path = tmp_path_factory.mktemp("pytest-clean-client")
     os.chdir(tmp_path)
@@ -367,22 +423,14 @@ def clean_default_client_session(
         client = Client()
         _ = client.zen_store
 
-        if used_template:
-            # `LocalArtifactStore.path` creates its `local_stores/<UUID>`
-            # directory lazily on first read. The template only contains
-            # `local_stores/default_zen_store/` (the SQLite DB location),
-            # so force-create the per-component directory here to match
-            # what a fresh init would leave on disk. Otherwise helpers
-            # like `_test_materializer` which call
-            # `TemporaryDirectory(dir=artifact_store.path)` fail with
-            # FileNotFoundError on the first invocation.
-            try:
-                artifact_store_path = client.active_stack.artifact_store.path
-                Path(artifact_store_path).mkdir(parents=True, exist_ok=True)
-            except Exception as e:
-                logging.warning(
-                    "Failed to pre-create artifact store path: %s", e
-                )
+        # Note: the `local_stores/<UUID>` per-component directory is
+        # seeded inside `build_client_template_dir` (once, at session
+        # start) and copied here via `shutil.copytree` above. We
+        # deliberately avoid touching `client.active_stack` here
+        # because that instantiates the Stack and calls
+        # `BaseArtifactStore._register()` before per-test mocks can
+        # patch it (breaking tests like
+        # test_register_artifact_store_filesystem).
 
         logging.info(f"Tests are running in clean environment: {tmp_path}")
 
