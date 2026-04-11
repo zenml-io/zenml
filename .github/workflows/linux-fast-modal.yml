@@ -104,8 +104,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .offload-image-cache
-          key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci',
-            'pyproject.toml', 'scripts/install-zenml-dev.sh') }}
+          key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
+            hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
+            }}
       - name: Restore JUnit duration cache
         uses: actions/cache/restore@v4
         with:
@@ -115,9 +116,19 @@ jobs:
             offload-junit-${{ runner.os }}-
       - name: Run tests via offload
         id: run
+        # `-v` switches offload's tracing subscriber from WARN to
+        # INFO so sandbox creation, per-batch [BATCH START] /
+        # [BATCH COMPLETE fused=...] lines, and the orchestrator
+        # summary all stream into the CI log. `stdbuf -oL` forces
+        # line-buffered stdout on both offload and grep so that
+        # output is visible live instead of appearing in one
+        # buffered dump at the end of the step (the previous
+        # `grep` without `--line-buffered` block-buffered because
+        # stdout wasn't a tty).
         run: |
           set +e
-          offload run --parallel 40 2>&1 | grep -v 'No historical duration for test'
+          stdbuf -oL -eL offload -v run --parallel 40 2>&1 \
+            | stdbuf -oL grep -v 'No historical duration for test'
           echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
           echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           exit 0
@@ -129,8 +140,9 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .offload-image-cache
-          key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci',
-            'pyproject.toml', 'scripts/install-zenml-dev.sh') }}
+          key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
+            hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
+            }}
       - name: Save JUnit duration cache
         if: always()
         uses: actions/cache/save@v4
