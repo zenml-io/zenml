@@ -221,4 +221,8 @@ AGENTS.override.md
 .offload-image-cache
 .offload-deps-fingerprint
 test-results/
+# Legacy per-repo modal offload cache (pre-dates the offload Rust
+# tool, no longer read by anything). Kept out of the tree in case a
+# stale copy lingers on someone's checkout.
+.modal-cache/
 # PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow
