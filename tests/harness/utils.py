@@ -297,8 +297,7 @@ def build_client_template_dir(template_dir: Path) -> Path:
                 )
         except Exception as e:  # noqa: BLE001
             logging.warning(
-                "Failed to pre-create artifact store path in "
-                "template: %s",
+                "Failed to pre-create artifact store path in template: %s",
                 e,
             )
     finally:

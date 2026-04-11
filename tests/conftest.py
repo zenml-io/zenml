@@ -33,6 +33,31 @@ from tests.harness.utils import (
     environment_session,
 )
 from tests.venv_clone_utils import clone_virtualenv
+
+# Pre-warm the full flavor-registry import graph so every module it
+# touches — including `zenml.log_stores` → `OtelLogStore` → `opentelemetry`
+# and the lazy `zenml.deployers` / `zenml.image_builders` chain — lands
+# in `sys.modules` *before* any test runs.
+#
+# Otherwise `tests/unit/utils/test_source_utils.py::test_user_source_loading_prepends_source_root`
+# patches `sys.path = []` and — if something later triggers a fresh
+# `SqlZenStore` construction in the same pytest process (e.g. via a
+# session-scoped fixture that lazily accesses `GlobalConfiguration().zen_store`) —
+# `_sync_flavors()` hits `FlavorRegistry().builtin_flavors` for the
+# first time with no path to resolve `opentelemetry` (and several
+# other transitive deps) from. That raises `ModuleNotFoundError`
+# mid-migration, leaving the DB tables stamped at alembic head but
+# flavors unsynced; every subsequent test that calls
+# `_get_or_create_default_stack` then fails with "Missing flavor local
+# for component default" / "No user account 'default'" / "No project
+# is currently set as active". Touching the property here caches the
+# whole dependency graph up front, so no later sys.path mock can
+# break it.
+from zenml.stack.flavor_registry import FlavorRegistry as _FlavorRegistry
+
+_ = _FlavorRegistry().builtin_flavors
+del _FlavorRegistry
+
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,

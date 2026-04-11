@@ -64,8 +64,7 @@ jobs:
         with:
           path: /opt/uv-cache
           key: uv-fast-modal-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
-            'scripts/install-zenml-dev.sh')
-            }}
+            'scripts/install-zenml-dev.sh') }}
           restore-keys: |
             uv-fast-modal-${{ runner.os }}-${{ inputs.python-version }}-
             uv-fast-modal-${{ runner.os }}-
