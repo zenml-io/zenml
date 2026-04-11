@@ -216,9 +216,72 @@ def clean_project_session(
     client.delete_project(project_name)
 
 
+def build_client_template_dir(template_dir: Path) -> Path:
+    """Materialize a clean ZenML client tree at `template_dir`.
+
+    Runs the full Client/GlobalConfiguration init once (alembic
+    migrations, default project, default stack) and leaves the
+    resulting `zenml/` subtree on disk so that subsequent
+    [`clean_default_client_session`][] calls can copy it instead of
+    paying the ~15-20s init cost per test.
+
+    The function is idempotent in the sense that the singletons it
+    touches are restored before returning, so it is safe to call
+    once at session start.
+
+    Args:
+        template_dir: Directory where the template should be created.
+            A `zenml/` subdirectory will be populated inside it.
+
+    Returns:
+        The same `template_dir` path, for convenience.
+    """
+    template_dir.mkdir(parents=True, exist_ok=True)
+    template_zenml = template_dir / "zenml"
+    if template_zenml.exists():
+        return template_dir
+
+    original_config = GlobalConfiguration.get_instance()
+    original_client = Client.get_instance()
+    original_credentials = CredentialsStore.get_instance()
+    orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
+    orig_cwd = os.getcwd()
+
+    try:
+        CredentialsStore.reset_instance()
+        GlobalConfiguration._reset_instance()
+        Client._reset_instance()
+
+        os.chdir(template_dir)
+        os.environ[ENV_ZENML_CONFIG_PATH] = str(template_zenml)
+        os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+
+        gc = GlobalConfiguration()
+        gc.analytics_opt_in = False
+        client = Client()
+        # The template directory isn't itself a ZenML repo root, so
+        # Client()._sanitize_config() never touches the store. Force
+        # zen_store init explicitly so that the SQLite DB and the
+        # default project/stack/user are materialized inside the
+        # template tree.
+        _ = client.zen_store
+    finally:
+        os.chdir(orig_cwd)
+        if orig_config_path is not None:
+            os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
+        elif ENV_ZENML_CONFIG_PATH in os.environ:
+            del os.environ[ENV_ZENML_CONFIG_PATH]
+        GlobalConfiguration._reset_instance(original_config)
+        Client._reset_instance(original_client)
+        CredentialsStore.reset_instance(original_credentials)
+
+    return template_dir
+
+
 @contextmanager
 def clean_default_client_session(
     tmp_path_factory: pytest.TempPathFactory,
+    template_dir: Optional[Path] = None,
 ) -> Generator[Client, None, None]:
     """Context manager to initialize and use a clean local default ZenML client.
 
@@ -227,6 +290,11 @@ def clean_default_client_session(
 
     Args:
         tmp_path_factory: A pytest fixture that provides a temporary directory.
+        template_dir: Optional directory containing a pre-built `zenml/`
+            template (see [`build_client_template_dir`][]). When supplied,
+            the template is copied into the per-test directory instead of
+            running the full alembic migration cycle, reducing per-test
+            setup from ~15-20s to ~0.1s.
 
     Yields:
         A clean ZenML client.
@@ -247,6 +315,38 @@ def clean_default_client_session(
     tmp_path = tmp_path_factory.mktemp("pytest-clean-client")
     os.chdir(tmp_path)
 
+    template_zenml = (
+        template_dir / "zenml" if template_dir is not None else None
+    )
+    used_template = (
+        template_zenml is not None and template_zenml.exists()
+    )
+    orig_disable_migration = os.getenv(
+        "DISABLE_DATABASE_MIGRATION"
+    )
+    if used_template:
+        # Copy the pre-migrated template instead of running fresh init.
+        shutil.copytree(template_zenml, tmp_path / "zenml")
+        # The template's config.yaml has absolute paths baked in
+        # (database/url/backup_directory all point to the template
+        # directory the template was built in). Without rewriting,
+        # every test would read/write the template DB instead of its
+        # own copy, leaking state across tests. Substitute the
+        # template's absolute prefix with this test's tmp_path so
+        # paths inside the copied config.yaml resolve to the per-test
+        # DB and backup dir.
+        config_yaml = tmp_path / "zenml" / "config.yaml"
+        if config_yaml.exists():
+            old_prefix = str(template_dir)
+            new_prefix = str(tmp_path)
+            config_yaml.write_text(
+                config_yaml.read_text().replace(old_prefix, new_prefix)
+            )
+        # The template DB is already at head; alembic.upgrade() takes
+        # ~17s even for a no-op upgrade because it still scans the full
+        # history, so explicitly skip migration on the per-test DB.
+        os.environ["DISABLE_DATABASE_MIGRATION"] = "true"
+
     os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
 
@@ -265,6 +365,14 @@ def clean_default_client_session(
         os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
     else:
         del os.environ[ENV_ZENML_CONFIG_PATH]
+
+    if used_template:
+        if orig_disable_migration is not None:
+            os.environ["DISABLE_DATABASE_MIGRATION"] = (
+                orig_disable_migration
+            )
+        else:
+            os.environ.pop("DISABLE_DATABASE_MIGRATION", None)
 
     # restore the global configuration, the client and the credentials store
     GlobalConfiguration._reset_instance(original_config)

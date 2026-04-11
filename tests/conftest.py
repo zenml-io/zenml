@@ -26,6 +26,7 @@ from pytest_mock import MockerFixture
 
 from tests.harness.environment import TestEnvironment
 from tests.harness.utils import (
+    build_client_template_dir,
     check_test_requirements,
     clean_default_client_session,
     clean_project_session,
@@ -201,15 +202,59 @@ def module_clean_project(
         yield client
 
 
+@pytest.fixture(scope="session")
+def _zenml_client_template(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Path:
+    """Build a clean ZenML client tree once per pytest session.
+
+    Subsequent `clean_client` / `module_clean_client` fixtures copy
+    this template into their per-test directory instead of paying
+    the ~15-20s alembic migration + default-stack/project init cost
+    that `Client()` runs from scratch. With ~218 tests across the
+    suite using `clean_client`, that turns roughly an hour of
+    cumulative setup work into ~20 seconds of one-time work plus
+    ~0.1s per test.
+
+    The session scope means the template is built once per pytest
+    *process* — i.e., once per offload batch, not once per CI job.
+    Tests still get a fresh, isolated SQLite DB; only the migration
+    work is amortized.
+
+    A `ZENML_CLIENT_TEMPLATE_DIR` environment variable can override
+    the location, allowing the template to be baked into the CI
+    Docker image for further savings (skipping even the per-batch
+    cost). When set and the directory already contains `zenml/`,
+    no rebuild happens.
+
+    Args:
+        tmp_path_factory: Pytest TempPathFactory used to create the
+            session-scoped directory if no override is provided.
+
+    Returns:
+        The directory containing the `zenml/` template tree.
+    """
+    override = os.environ.get("ZENML_CLIENT_TEMPLATE_DIR")
+    if override:
+        template_dir = Path(override)
+    else:
+        template_dir = tmp_path_factory.mktemp(
+            "zenml-client-template", numbered=False
+        )
+    return build_client_template_dir(template_dir)
+
+
 @pytest.fixture
 def clean_client(
+    _zenml_client_template: Path,
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
     """Fixture to get and use a clean local client with its own global
     configuration and isolated SQLite database for an individual test.
 
     Args:
-        request: Pytest FixtureRequest object
+        _zenml_client_template: Session-scoped template providing a
+            pre-migrated SQLite DB and global config to copy from.
         tmp_path_factory: Pytest TempPathFactory in order to create a new
             temporary directory
 
@@ -218,6 +263,7 @@ def clean_client(
     """
     with clean_default_client_session(
         tmp_path_factory=tmp_path_factory,
+        template_dir=_zenml_client_template,
     ) as client:
         yield client
 
@@ -250,13 +296,15 @@ def clean_client_with_repo(
 
 @pytest.fixture(scope="module")
 def module_clean_client(
+    _zenml_client_template: Path,
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
     """Fixture to get and use a clean local client with its own global
     configuration and isolated SQLite database for a test module.
 
     Args:
-        request: Pytest FixtureRequest object
+        _zenml_client_template: Session-scoped template providing a
+            pre-migrated SQLite DB and global config to copy from.
         tmp_path_factory: Pytest TempPathFactory in order to create a new
             temporary directory
 
@@ -265,6 +313,7 @@ def module_clean_client(
     """
     with clean_default_client_session(
         tmp_path_factory=tmp_path_factory,
+        template_dir=_zenml_client_template,
     ) as client:
         yield client
 
