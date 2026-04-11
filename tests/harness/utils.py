@@ -423,15 +423,6 @@ def clean_default_client_session(
         client = Client()
         _ = client.zen_store
 
-        # Note: the `local_stores/<UUID>` per-component directory is
-        # seeded inside `build_client_template_dir` (once, at session
-        # start) and copied here via `shutil.copytree` above. We
-        # deliberately avoid touching `client.active_stack` here
-        # because that instantiates the Stack and calls
-        # `BaseArtifactStore._register()` before per-test mocks can
-        # patch it (breaking tests like
-        # test_register_artifact_store_filesystem).
-
         logging.info(f"Tests are running in clean environment: {tmp_path}")
 
         yield client
