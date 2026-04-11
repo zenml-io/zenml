@@ -126,7 +126,7 @@ jobs:
         # stdout wasn't a tty).
         run: |
           set +e
-          stdbuf -oL -eL offload -v run --parallel 40 2>&1 \
+          stdbuf -oL -eL offload -v run --parallel 20 2>&1 \
             | stdbuf -oL grep -v 'No historical duration for test'
           exit_code="${PIPESTATUS[0]}"
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"

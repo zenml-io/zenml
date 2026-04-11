@@ -1,5 +1,5 @@
 [offload]
-max_parallel = 30
+max_parallel = 20
 test_timeout_secs = 960
 # Cap on cumulative historical duration per batch (LPT bin-packing).
 # 10s (the offload default) over-fragments large suites into many small
@@ -23,7 +23,7 @@ type = "default"
 #     create_command --env flags below) and copies from there
 #     instead of paying the ~17s clean_client init cost per batch.
 prepare_command = "uv run @modal_sandbox.py prepare Dockerfile.ci --cached --include-cwd --sandbox-init-cmd 'cd /app && pip install --no-deps -e . -q && python scripts/ci/build_zenml_template.py /opt/zenml-template'"
-create_command = "uv run @modal_sandbox.py create {image_id} --cpu 8 --memory-gb 16 --env COVERAGE_CORE=sysmon --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false --env ZENML_CLIENT_TEMPLATE_DIR=/opt/zenml-template"
+create_command = "uv run @modal_sandbox.py create {image_id} --cpu 2 --memory-gb 4 --env COVERAGE_CORE=sysmon --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false --env ZENML_CLIENT_TEMPLATE_DIR=/opt/zenml-template"
 # The high-frequency per-batch commands use system python3 instead of
 # `uv run` to skip uv's PEP 723 metadata resolve + virtualenv stat
 # dance on every invocation (~1-2s saved per call). Requires the CI
