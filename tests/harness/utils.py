@@ -405,19 +405,39 @@ def clean_default_client_session(
                 config_yaml.write_text(
                     config_yaml.read_text().replace(old_prefix, new_prefix)
                 )
-            # The template DB is already at head; alembic.upgrade() takes
-            # ~17s even for a no-op upgrade because it still scans the full
-            # history, so explicitly skip migration on the per-test DB.
-            os.environ["DISABLE_DATABASE_MIGRATION"] = "true"
 
         os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
         os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
 
-        # initialize the global config client and store at the new path
-        gc = GlobalConfiguration()
-        gc.analytics_opt_in = False
-        client = Client()
-        _ = client.zen_store
+        # initialize the global config client and store at the new path.
+        #
+        # When we're copying a pre-migrated template, the template DB is
+        # already at head and `alembic.upgrade()` would be a no-op — but
+        # it still takes ~17s because alembic's environment construction
+        # imports every migration script in the tree. Skip that cold
+        # scan by setting DISABLE_DATABASE_MIGRATION, then immediately
+        # restore the previous value BEFORE yielding to the test body.
+        # Keeping the env var set during `yield` would be a trap: any
+        # test code (or autouse fixture) that happens to create a fresh
+        # SqlZenStore during the test would also skip migrations and
+        # end up with an empty DB, producing cascading "Missing flavor
+        # local" / "No user account 'default'" failures in unrelated
+        # tests in the same pytest process.
+        if used_template:
+            os.environ["DISABLE_DATABASE_MIGRATION"] = "true"
+        try:
+            gc = GlobalConfiguration()
+            gc.analytics_opt_in = False
+            client = Client()
+            _ = client.zen_store
+        finally:
+            if used_template:
+                if orig_disable_migration is not None:
+                    os.environ["DISABLE_DATABASE_MIGRATION"] = (
+                        orig_disable_migration
+                    )
+                else:
+                    os.environ.pop("DISABLE_DATABASE_MIGRATION", None)
 
         logging.info(f"Tests are running in clean environment: {tmp_path}")
 
@@ -429,6 +449,9 @@ def clean_default_client_session(
         else:
             os.environ.pop(ENV_ZENML_CONFIG_PATH, None)
 
+        # Defensive: the env var should already be restored by the
+        # inner try/finally above, but make absolutely sure in case a
+        # future refactor breaks that scoping.
         if orig_disable_migration is not None:
             os.environ["DISABLE_DATABASE_MIGRATION"] = orig_disable_migration
         else:
