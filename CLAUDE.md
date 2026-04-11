@@ -65,7 +65,7 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
   - Automatically fixes and formats code using ruff and yamlfix
 - Check code quality with: `bash scripts/lint.sh`
   - Unlike format.sh, this doesn't auto-fix issues
-  - Runs mypy type checking on the codebase
+  - Runs Ruff, pydoclint (on `src/zenml tests/harness`), yamlfix, zizmor, and mypy
   - Note: Full mypy check is slow on the entire codebase
   - For faster checks, run mypy directly on specific files: `mypy src/zenml/path/to/file.py`
 - The primary code style is enforced by ruff, configured in `pyproject.toml`
