@@ -335,10 +335,16 @@ def clean_default_client_session(
         # template's absolute prefix with this test's tmp_path so
         # paths inside the copied config.yaml resolve to the per-test
         # DB and backup dir.
+        #
+        # Both prefixes must be passed through Path.resolve() so that
+        # symlinks (notably macOS's /tmp -> /private/tmp) are
+        # canonicalized identically: zenml stores the resolved path
+        # in config.yaml, so old_prefix has to match that form, not
+        # the unresolved value the caller may have passed in.
         config_yaml = tmp_path / "zenml" / "config.yaml"
         if config_yaml.exists():
-            old_prefix = str(template_dir)
-            new_prefix = str(tmp_path)
+            old_prefix = str(Path(template_dir).resolve())
+            new_prefix = str(Path(tmp_path).resolve())
             config_yaml.write_text(
                 config_yaml.read_text().replace(old_prefix, new_prefix)
             )

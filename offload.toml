@@ -12,8 +12,18 @@ sandbox_project_root = "/app"
 
 [provider]
 type = "default"
-prepare_command = "uv run @modal_sandbox.py prepare Dockerfile.ci --cached --include-cwd --sandbox-init-cmd 'cd /app && pip install --no-deps -e . -q'"
-create_command = "uv run @modal_sandbox.py create {image_id} --cpu 8 --memory-gb 16 --env COVERAGE_CORE=sysmon --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false"
+# sandbox_init_cmd runs once during image prep (after include_cwd
+# overlays the source over /app) and bakes its result into the
+# image, so every sandbox spawned from that image starts with:
+#   - zenml installed editable from the freshly-overlaid source
+#   - a pre-migrated SQLite template + global config under
+#     /opt/zenml-template/, materialized by the build_zenml_template.py
+#     helper. The _zenml_client_template pytest fixture honors
+#     ZENML_CLIENT_TEMPLATE_DIR (set on every sandbox via the
+#     create_command --env flags below) and copies from there
+#     instead of paying the ~17s clean_client init cost per batch.
+prepare_command = "uv run @modal_sandbox.py prepare Dockerfile.ci --cached --include-cwd --sandbox-init-cmd 'cd /app && pip install --no-deps -e . -q && python scripts/ci/build_zenml_template.py /opt/zenml-template'"
+create_command = "uv run @modal_sandbox.py create {image_id} --cpu 8 --memory-gb 16 --env COVERAGE_CORE=sysmon --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false --env ZENML_CLIENT_TEMPLATE_DIR=/opt/zenml-template"
 exec_command = "uv run @modal_sandbox.py exec {sandbox_id} {command}"
 destroy_command = "uv run @modal_sandbox.py destroy {sandbox_id}"
 download_command = "uv run @modal_sandbox.py download {sandbox_id} {paths}"
