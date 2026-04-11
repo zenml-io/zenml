@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Focused local helper for docstring checks only.
+# CI runs pydoclint through scripts/lint.sh instead.
 set -e
 set -x
 
