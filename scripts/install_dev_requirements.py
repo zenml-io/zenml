@@ -67,7 +67,6 @@ TARGET_PLATFORM_BY_OS = {
     "darwin": "macos",
     "macos": "macos",
 }
-DEFAULT_MODAL_LINUX_PLATFORM = "x86_64-manylinux_2_35"
 
 
 def current_python_version() -> str:

@@ -61,14 +61,9 @@ filters = "tests/unit"
 # of whether anything actually fails. Keep this at 0 and rely on
 # pytest-rerunfailures (or post-hoc CI rerun) for true flakes.
 retry_count = 0
-# pyproject.toml has `norecursedirs = ["tests/integration/examples/*"]`
-# which silently does nothing — pytest matches norecursedirs against
-# directory basenames, not glob paths, so example tests still get
-# collected. The heavy ones (test_scipy, test_sklearn) take 60-66s
-# each, and they aren't supposed to run in fast CI (they're a
-# regression suite for the example pipelines). Exclude here so we
-# don't have to risk touching pyproject.toml.
-filters = "tests/integration --ignore=tests/integration/examples -m 'not slow'"
+# Keep the fast path close to the existing integration coverage and
+# exclude only tests that are explicitly marked slow.
+filters = "tests/integration -m 'not slow'"
 
 [report]
 output_dir = "test-results/modal-fast-ci"

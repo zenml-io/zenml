@@ -46,7 +46,7 @@ locally once the Modal credentials are available:
 ```bash
 export MODAL_TOKEN_ID=...
 export MODAL_TOKEN_SECRET=...
-scripts/run-fast-ci-modal.sh
+scripts/run-fast-ci-offload.sh
 ```
 
 This is the closest pre-push check to the fast CI path. It runs only the Linux

@@ -18,6 +18,7 @@ import pytest
 from tests.integration.examples.utils import run_example
 
 
+@pytest.mark.slow
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the kubeflow_pipelines_orchestration example.
 

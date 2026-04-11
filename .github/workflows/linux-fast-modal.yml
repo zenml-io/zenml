@@ -129,8 +129,13 @@ jobs:
           set +e
           stdbuf -oL -eL offload -v run --parallel 40 2>&1 \
             | stdbuf -oL grep -v 'No historical duration for test'
-          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-          echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
+          exit_code="${PIPESTATUS[0]}"
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          if [ "$exit_code" = "2" ]; then
+            echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
+          fi
           exit 0
       - name: Save caches
         if: always()
