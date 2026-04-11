@@ -251,6 +251,9 @@ class BaseOrchestrator(StackComponent, ABC):
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
+
+        Returns:
+            An optional iterator of step metadata dictionaries.
         """
 
     def run(
@@ -583,6 +586,9 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             step_run: The step run.
 
+        Returns:
+            The execution status of the isolated step run.
+
         Raises:
             NotImplementedError: If the orchestrator does not implement this
                 method.
@@ -827,6 +833,10 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             run: A pipeline run response to fetch its status.
             include_steps: If True, also fetch the status of individual steps.
+
+        Returns:
+            A tuple of the pipeline run status and an optional dictionary of
+            step statuses.
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base

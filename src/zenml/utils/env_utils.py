@@ -333,6 +333,9 @@ class ConfigBase(BaseModel, ABC):
 
         Returns:
             A list of prefixes to use for env var name resolution.
+
+        Raises:
+            NotImplementedError: If the method is not implemented.
         """
         raise NotImplementedError
 

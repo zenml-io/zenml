@@ -1195,8 +1195,9 @@ def http_authentication(
     Returns:
         The authentication context reflecting the authenticated user.
 
-    # noqa: DAR401
-    """
+    Raises:
+        HTTPException: If the credentials are invalid.
+    """  # noqa: DOC503
     try:
         return authenticate_credentials(
             user_name_or_id=credentials.username, password=credentials.password
@@ -1252,8 +1253,9 @@ def oauth2_authentication(
     Returns:
         The authentication context reflecting the authenticated user.
 
-    # noqa: DAR401
-    """
+    Raises:
+        HTTPException: If the credentials are invalid.
+    """  # noqa: DOC503
     csrf_token = request.headers.get("X-CSRF-Token")
     try:
         auth_context = authenticate_credentials(

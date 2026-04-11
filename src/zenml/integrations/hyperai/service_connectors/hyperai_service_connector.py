@@ -329,6 +329,9 @@ class HyperAIServiceConnector(ServiceConnector):
                 supports multiple instances.
             kwargs: Additional implementation specific keyword arguments to use.
 
+        Returns:
+            The auto-configured connector instance.
+
         Raises:
             NotImplementedError: If the connector auto-configuration fails or
                 is not supported.

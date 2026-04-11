@@ -1206,11 +1206,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             Step statuses are not supported for SageMaker, so step_statuses_dict will always be None.
 
         Raises:
-            AssertionError: If the run was not executed by to this orchestrator.
-            ValueError: If it fetches an unknown state or if we can not fetch
-                the orchestrator run ID.
-            ValueError: If the orchestrator run ID cannot be used to identify
-                the pipeline type.
+            ValueError: If it fetches an unknown state, if we can not fetch
+                the orchestrator run ID, or if the orchestrator run ID cannot
+                be used to identify the pipeline type.
         """
         # Make sure that the stack exists and is accessible
         if run.stack is None:

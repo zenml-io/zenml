@@ -257,8 +257,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
 
         Raises:
             ValueError: if `dataset_name` or `settings` aren't provided.
-            RuntimeError: if the workspace creation fails.
-            RuntimeError: if the dataset creation fails.
+            RuntimeError: if the workspace or dataset creation fails.
         """
         dataset_name = kwargs.get("dataset_name")
         settings = kwargs.get("settings")
@@ -310,6 +309,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
             records: The records to add to the dataset.
             workspace: The name of the workspace. By default, the first available.
             mapping: The mapping of the records to the dataset fields. By default, None.
+
+        Returns:
+            The dataset after records have been logged.
 
         Raises:
             RuntimeError: If the records cannot be loaded to Argilla.

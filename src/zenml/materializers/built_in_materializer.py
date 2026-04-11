@@ -224,7 +224,7 @@ def _all_serializable(iterable: Iterable[Any]) -> bool:
     """For an iterable, check whether all of its elements are JSON-serializable.
 
     Args:
-        iterable (Iterable): The iterable to check.
+        iterable: The iterable to check.
 
     Returns:
         True if all elements are JSON-serializable, else False.
