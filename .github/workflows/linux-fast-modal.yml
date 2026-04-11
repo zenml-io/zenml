@@ -88,10 +88,18 @@ jobs:
           # Cache invalidates only when the offload source pin changes,
           # not on every workflow edit. Bump the version suffix below
           # whenever a new offload commit needs to be picked up.
-          key: cargo-offload-${{ runner.os }}-feat-max-batch-duration-v1
+          key: cargo-offload-${{ runner.os }}-feat-max-batch-duration-v2
       - name: Install offload
         run: command -v offload || cargo install --git https://github.com/safoinme/offload.git
           --branch feat/max-batch-duration
+      # offload.toml's high-frequency per-batch commands invoke
+      # modal_sandbox.py via `python3` instead of `uv run` to skip
+      # uv's PEP 723 resolve on every call (~1-2s saved per batch).
+      # That requires `modal`, `click`, and `dockerfile-parse` to
+      # already be importable from the runner's system python.
+      # Pinned to match modal_sandbox.py's inline metadata header.
+      - name: Install modal_sandbox.py deps
+        run: uv pip install --system "modal==1.4.1" "click>=8.0" "dockerfile-parse>=2.0.0"
       - name: Restore offload image cache
         uses: actions/cache/restore@v4
         with:
