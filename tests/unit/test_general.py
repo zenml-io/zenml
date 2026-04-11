@@ -29,6 +29,47 @@ def test_debug_mode_enabled_for_tests():
     assert os.environ[ENV_ZENML_DEBUG] == "true"
 
 
+# ---------------------------------------------------------------------
+# BEGIN INTENTIONAL CI VERIFICATION FAILURES — REMOVE BEFORE MERGE
+# ---------------------------------------------------------------------
+# Three deliberately-broken tests used to verify end-to-end that the
+# Modal fast CI pipeline actually executes tests remotely and surfaces
+# failures in GitHub Actions. Each hits a different failure mode:
+#   1. plain AssertionError
+#   2. uncaught exception
+#   3. hostname assertion — should fail in Modal (Linux sandbox) but
+#      would also fail locally on macOS, so it also proves the remote
+#      sandbox is Linux and not the dev laptop
+# Delete this whole block once we've confirmed the Modal run reports
+# exactly three failures from this file.
+def test_ci_verification_assert_false():
+    """Intentional failure — remove after CI verification."""
+    assert False, "CI verification: plain assert False"
+
+
+def test_ci_verification_raises_exception():
+    """Intentional failure — remove after CI verification."""
+    raise RuntimeError("CI verification: uncaught exception")
+
+
+def test_ci_verification_runs_on_linux_sandbox():
+    """Intentional failure — remove after CI verification.
+
+    Asserts the runtime is *not* Linux so we can see it fail on Modal
+    and thereby prove the sandbox platform is Linux (if this test
+    somehow passed, it would mean Modal wasn't running it).
+    """
+    import platform
+
+    assert platform.system() != "Linux", (
+        f"CI verification: running on {platform.system()} — "
+        "expected Linux sandbox, so the assertion is intentionally inverted"
+    )
+# ---------------------------------------------------------------------
+# END INTENTIONAL CI VERIFICATION FAILURES
+# ---------------------------------------------------------------------
+
+
 def _test_materializer(
     step_output: Any,
     step_output_type: Optional[Type[Any]] = None,
