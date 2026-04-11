@@ -116,9 +116,6 @@ jobs:
       - name: Save caches
         if: always()
         run: echo "Caches saved in post-run steps below"
-      - name: Combine coverage
-        if: always()
-        run: python scripts/ci/combine_coverage.py
       - name: Save offload image cache
         if: always()
         uses: actions/cache/save@v4
@@ -138,9 +135,7 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
         with:
           name: modal-fast-ci
-          path: |
-            test-results/modal-fast-ci/**
-            coverage.xml
+          path: test-results/modal-fast-ci/**
           if-no-files-found: warn
       - name: Print test failures and exit
         if: ${{ steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '2' }}
