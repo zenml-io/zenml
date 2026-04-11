@@ -208,24 +208,12 @@ def _zenml_client_template(
 ) -> Path:
     """Build a clean ZenML client tree once per pytest session.
 
-    Subsequent `clean_client` / `module_clean_client` fixtures copy
-    this template into their per-test directory instead of paying
-    the ~15-20s alembic migration + default-stack/project init cost
-    that `Client()` runs from scratch. With ~218 tests across the
-    suite using `clean_client`, that turns roughly an hour of
-    cumulative setup work into ~20 seconds of one-time work plus
-    ~0.1s per test.
-
-    The session scope means the template is built once per pytest
-    *process* — i.e., once per offload batch, not once per CI job.
-    Tests still get a fresh, isolated SQLite DB; only the migration
-    work is amortized.
-
-    A `ZENML_CLIENT_TEMPLATE_DIR` environment variable can override
-    the location, allowing the template to be baked into the CI
-    Docker image for further savings (skipping even the per-batch
-    cost). When set and the directory already contains `zenml/`,
-    no rebuild happens.
+    `clean_client` / `module_clean_client` copy this template into
+    their per-test directory instead of paying the ~15-20s alembic
+    migration + default-stack/project init cost on every test.
+    `ZENML_CLIENT_TEMPLATE_DIR` can point at a pre-built template
+    (e.g. baked into the CI image) to skip even the once-per-process
+    build.
 
     Args:
         tmp_path_factory: Pytest TempPathFactory used to create the

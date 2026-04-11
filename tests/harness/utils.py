@@ -222,19 +222,16 @@ def build_client_template_dir(template_dir: Path) -> Path:
     Runs the full Client/GlobalConfiguration init once (alembic
     migrations, default project, default stack) and leaves the
     resulting `zenml/` subtree on disk so that subsequent
-    [`clean_default_client_session`][] calls can copy it instead of
-    paying the ~15-20s init cost per test.
-
-    The function is idempotent in the sense that the singletons it
-    touches are restored before returning, so it is safe to call
-    once at session start.
+    `clean_default_client_session` calls can copy it instead of paying
+    the ~15-20s init cost per test. No-op if the template already
+    exists.
 
     Args:
         template_dir: Directory where the template should be created.
             A `zenml/` subdirectory will be populated inside it.
 
     Returns:
-        The same `template_dir` path, for convenience.
+        `template_dir`.
     """
     template_dir.mkdir(parents=True, exist_ok=True)
     template_zenml = template_dir / "zenml"
@@ -386,7 +383,6 @@ def clean_default_client_session(
 
     try:
         if used_template:
-            # Copy the pre-migrated template instead of running fresh init.
             shutil.copytree(template_zenml, tmp_path / "zenml")
             # The template's config.yaml has absolute paths baked in
             # (database/url/backup_directory all point to the template
