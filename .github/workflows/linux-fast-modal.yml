@@ -96,7 +96,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .offload-image-cache
-          key: offload-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci',
+          key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci',
             'pyproject.toml', 'scripts/install-zenml-dev.sh') }}
       - name: Restore JUnit duration cache
         uses: actions/cache/restore@v4
@@ -121,7 +121,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .offload-image-cache
-          key: offload-image-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci',
+          key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci',
             'pyproject.toml', 'scripts/install-zenml-dev.sh') }}
       - name: Save JUnit duration cache
         if: always()

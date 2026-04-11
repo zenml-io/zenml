@@ -300,12 +300,20 @@ def clean_default_client_session(
         A clean ZenML client.
     """
     # save the current global configuration and client singleton instances
-    # to restore them later, then reset them
+    # to restore them later, then reset them. Everything between here and
+    # the `finally` must be unwound no matter what: previous versions of
+    # this function relied on code-after-yield, which does not run if the
+    # body raises. That meant a single failing test could leak the
+    # DISABLE_DATABASE_MIGRATION env var into every subsequent test in the
+    # same batch, causing cascading "Missing flavor local" / "No user
+    # account 'default'" failures when later tests tried to initialize a
+    # fresh SqlZenStore with migrations effectively disabled.
     orig_cwd = os.getcwd()
     original_config = GlobalConfiguration.get_instance()
     original_client = Client.get_instance()
     orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
     original_credentials = CredentialsStore.get_instance()
+    orig_disable_migration = os.getenv("DISABLE_DATABASE_MIGRATION")
 
     CredentialsStore.reset_instance()
     GlobalConfiguration._reset_instance()
@@ -318,76 +326,89 @@ def clean_default_client_session(
     template_zenml = (
         template_dir / "zenml" if template_dir is not None else None
     )
-    used_template = (
-        template_zenml is not None and template_zenml.exists()
-    )
-    orig_disable_migration = os.getenv(
-        "DISABLE_DATABASE_MIGRATION"
-    )
-    if used_template:
-        # Copy the pre-migrated template instead of running fresh init.
-        shutil.copytree(template_zenml, tmp_path / "zenml")
-        # The template's config.yaml has absolute paths baked in
-        # (database/url/backup_directory all point to the template
-        # directory the template was built in). Without rewriting,
-        # every test would read/write the template DB instead of its
-        # own copy, leaking state across tests. Substitute the
-        # template's absolute prefix with this test's tmp_path so
-        # paths inside the copied config.yaml resolve to the per-test
-        # DB and backup dir.
-        #
-        # Both prefixes must be passed through Path.resolve() so that
-        # symlinks (notably macOS's /tmp -> /private/tmp) are
-        # canonicalized identically: zenml stores the resolved path
-        # in config.yaml, so old_prefix has to match that form, not
-        # the unresolved value the caller may have passed in.
-        config_yaml = tmp_path / "zenml" / "config.yaml"
-        if config_yaml.exists():
-            old_prefix = str(Path(template_dir).resolve())
-            new_prefix = str(Path(tmp_path).resolve())
-            config_yaml.write_text(
-                config_yaml.read_text().replace(old_prefix, new_prefix)
-            )
-        # The template DB is already at head; alembic.upgrade() takes
-        # ~17s even for a no-op upgrade because it still scans the full
-        # history, so explicitly skip migration on the per-test DB.
-        os.environ["DISABLE_DATABASE_MIGRATION"] = "true"
+    used_template = template_zenml is not None and template_zenml.exists()
 
-    os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
-    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+    try:
+        if used_template:
+            # Copy the pre-migrated template instead of running fresh init.
+            shutil.copytree(template_zenml, tmp_path / "zenml")
+            # The template's config.yaml has absolute paths baked in
+            # (database/url/backup_directory all point to the template
+            # directory the template was built in). Without rewriting,
+            # every test would read/write the template DB instead of its
+            # own copy, leaking state across tests. Substitute the
+            # template's absolute prefix with this test's tmp_path so
+            # paths inside the copied config.yaml resolve to the per-test
+            # DB and backup dir.
+            #
+            # Both prefixes must be passed through Path.resolve() so that
+            # symlinks (notably macOS's /tmp -> /private/tmp) are
+            # canonicalized identically: zenml stores the resolved path
+            # in config.yaml, so old_prefix has to match that form, not
+            # the unresolved value the caller may have passed in.
+            config_yaml = tmp_path / "zenml" / "config.yaml"
+            if config_yaml.exists():
+                old_prefix = str(Path(template_dir).resolve())
+                new_prefix = str(Path(tmp_path).resolve())
+                config_yaml.write_text(
+                    config_yaml.read_text().replace(old_prefix, new_prefix)
+                )
+            # The template DB is already at head; alembic.upgrade() takes
+            # ~17s even for a no-op upgrade because it still scans the full
+            # history, so explicitly skip migration on the per-test DB.
+            os.environ["DISABLE_DATABASE_MIGRATION"] = "true"
 
-    # initialize the global config client and store at the new path
-    gc = GlobalConfiguration()
-    gc.analytics_opt_in = False
-    client = Client()
-    _ = client.zen_store
+        os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
+        os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
 
-    logging.info(f"Tests are running in clean environment: {tmp_path}")
+        # initialize the global config client and store at the new path
+        gc = GlobalConfiguration()
+        gc.analytics_opt_in = False
+        client = Client()
+        _ = client.zen_store
 
-    yield client
+        if used_template:
+            # `LocalArtifactStore.path` creates its `local_stores/<UUID>`
+            # directory lazily on first read. The template only contains
+            # `local_stores/default_zen_store/` (the SQLite DB location),
+            # so force-create the per-component directory here to match
+            # what a fresh init would leave on disk. Otherwise helpers
+            # like `_test_materializer` which call
+            # `TemporaryDirectory(dir=artifact_store.path)` fail with
+            # FileNotFoundError on the first invocation.
+            try:
+                artifact_store_path = client.active_stack.artifact_store.path
+                Path(artifact_store_path).mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                logging.warning(
+                    "Failed to pre-create artifact store path: %s", e
+                )
 
-    # restore the global configuration path
-    if orig_config_path:
-        os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
-    else:
-        del os.environ[ENV_ZENML_CONFIG_PATH]
+        logging.info(f"Tests are running in clean environment: {tmp_path}")
 
-    if used_template:
+        yield client
+    finally:
+        # restore the global configuration path
+        if orig_config_path is not None:
+            os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
+        else:
+            os.environ.pop(ENV_ZENML_CONFIG_PATH, None)
+
         if orig_disable_migration is not None:
-            os.environ["DISABLE_DATABASE_MIGRATION"] = (
-                orig_disable_migration
-            )
+            os.environ["DISABLE_DATABASE_MIGRATION"] = orig_disable_migration
         else:
             os.environ.pop("DISABLE_DATABASE_MIGRATION", None)
 
-    # restore the global configuration, the client and the credentials store
-    GlobalConfiguration._reset_instance(original_config)
-    Client._reset_instance(original_client)
-    CredentialsStore.reset_instance(original_credentials)
+        # restore the global configuration, the client and the
+        # credentials store
+        GlobalConfiguration._reset_instance(original_config)
+        Client._reset_instance(original_client)
+        CredentialsStore.reset_instance(original_credentials)
 
-    # remove all traces, and change working directory back to base path
-    os.chdir(orig_cwd)
-    cleanup_folder(str(tmp_path))
+        # remove all traces, and change working directory back to base
+        # path
+        os.chdir(orig_cwd)
+        cleanup_folder(str(tmp_path))
 
 
 def check_test_requirements(
