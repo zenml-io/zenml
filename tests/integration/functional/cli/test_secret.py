@@ -90,7 +90,7 @@ def test_list_secret_works():
     # Save original _original_stdout for cleanup
     original_stdout = zenml_cli._original_stdout
 
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     try:
         with cleanup_secrets() as secret_name:
             # Capture clean_output writes by replacing _original_stdout
