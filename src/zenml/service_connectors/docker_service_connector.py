@@ -17,16 +17,18 @@ The Docker Service Connector is responsible for authenticating with a Docker
 (or compatible) registry.
 """
 
+import os
 import re
-import subprocess
 from typing import Any, List, Optional
 
-from docker.client import DockerClient
-from docker.errors import DockerException
 from pydantic import Field
 
-from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
-from zenml.exceptions import AuthorizationException
+from zenml.constants import (
+    DOCKER_REGISTRY_RESOURCE_TYPE,
+    DOCKERHUB_REGISTRY_URI,
+    ENV_ZENML_SERVER,
+)
+from zenml.container_engines import get_container_engine
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -37,7 +39,6 @@ from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
     ServiceConnector,
 )
-from zenml.utils import docker_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 
@@ -65,7 +66,6 @@ class DockerConfiguration(DockerCredentials):
 
 
 DOCKER_CONNECTOR_TYPE = "docker"
-DOCKER_REGISTRY_NAME = "docker.io"
 
 
 class DockerAuthenticationMethods(StrEnum):
@@ -78,16 +78,13 @@ DOCKER_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
     name="Docker Service Connector",
     connector_type=DOCKER_CONNECTOR_TYPE,
     description="""
-The ZenML Docker Service Connector allows authenticating with a Docker or OCI
-container registry and managing Docker clients for the registry. 
+The ZenML Docker Service Connector authenticates to a Docker or OCI container
+registry. Connecting logs the active engine into that registry,
+then returns a reusable container engine (Docker or Podman, following global
+ZenML configuration) for linked stack components.
 
-This connector provides pre-authenticated python-docker Python clients to Stack
-Components that are linked to it.
-
-No Python packages are required for this Service Connector. All prerequisites
-are included in the base ZenML Python package. Docker needs to be installed on
-environments where container images are built and pushed to the target container
-registry.
+No extra Python packages are required beyond the base ZenML install. Install
+Docker or Podman on machines that build or push images to the registry.
 """,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
     emoji=":whale:",
@@ -108,8 +105,8 @@ registry server.
             resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             description="""
 Allows users to access a Docker or OCI compatible container registry as a
-resource. When used by connector consumers, they are provided a
-pre-authenticated python-docker client instance.
+resource. When used by connector consumers, the connector performs registry
+login and provides a container engine instance.
 
 The resource name identifies a Docker/OCI registry using one of the following
 formats (the repository name is optional).
@@ -180,8 +177,8 @@ class DockerServiceConnector(ServiceConnector):
                 "generic OCI registry URI: http[s]://host[:port][/<repository-name>]"
             )
 
-        if registry == f"index.{DOCKER_REGISTRY_NAME}":
-            registry = DOCKER_REGISTRY_NAME
+        if registry == f"index.{DOCKERHUB_REGISTRY_URI}":
+            registry = DOCKERHUB_REGISTRY_URI
         return registry
 
     def _canonical_resource_id(
@@ -210,113 +207,56 @@ class DockerServiceConnector(ServiceConnector):
             The default resource ID for the resource type.
         """
         return self._canonical_resource_id(
-            resource_type, self.config.registry or DOCKER_REGISTRY_NAME
+            resource_type,
+            self.config.registry or DOCKERHUB_REGISTRY_URI,
         )
-
-    def _authorize_client(
-        self,
-        docker_client: DockerClient,
-        resource_id: str,
-    ) -> None:
-        """Authorize a Docker client to have access to the configured Docker registry.
-
-        Args:
-            docker_client: The Docker client to authenticate.
-            resource_id: The resource ID to authorize the client for.
-
-        Raises:
-            AuthorizationException: If the client could not be authenticated.
-        """
-        cfg = self.config
-        registry = self._parse_resource_id(resource_id)
-
-        try:
-            docker_client.login(
-                username=cfg.username.get_secret_value(),
-                password=cfg.password.get_secret_value(),
-                registry=registry
-                if registry != DOCKER_REGISTRY_NAME
-                else None,
-                reauth=True,
-            )
-        except DockerException as e:
-            raise AuthorizationException(
-                f"failed to authenticate with Docker registry {registry}: {e}"
-            )
 
     def _connect_to_resource(
         self,
         **kwargs: Any,
     ) -> Any:
-        """Authenticate and connect to a Docker/OCI registry.
-
-        Initialize, authenticate and return a python-docker client.
+        """Authenticate and return a container engine for this registry.
 
         Args:
             kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
-            An authenticated python-docker client object.
+            Any: Authenticated container engine for the registry.
         """
         assert self.resource_id is not None
 
-        # The reason we need to configure the local client here instead of
-        # using the `docker_client.login(...)` method is the following:
-        # When calling the login method on the python client, it stores the
-        # credentials in memory, but doesn't actually use them in future calls
-        # to push/pull images in case a credential store or credential helper is
-        # configured. If the cred store/helper contains invalid/expired
-        # credentials for the registry, these calls will fail.
-        # This solution is not ideal as we're now replacing potentially
-        # long-lived credentials in the cred store with our short lived ones,
-        # but the best we can do without modifying the docker library.
-        self._configure_local_client()
-        docker_client = docker_utils._try_get_docker_client_from_env()
-        self._authorize_client(docker_client, self.resource_id)
+        registry = self._parse_resource_id(self.resource_id)
 
-        return docker_client
+        container_engine = get_container_engine()
+        container_engine.login(
+            username=self.config.username.get_secret_value(),
+            password=self.config.password.get_secret_value(),
+            registry=registry,
+        )
+        return container_engine
 
     def _configure_local_client(
         self,
         **kwargs: Any,
     ) -> None:
-        """Configure the local Docker client to authenticate to a Docker/OCI registry.
+        """Log the active container engine into the registry via CLI config.
 
         Args:
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
-
-        Raises:
-            AuthorizationException: If authentication failed.
         """
-        # Call the docker CLI to authenticate to the Docker registry
         cfg = self.config
 
         assert self.resource_id is not None
         registry = self._parse_resource_id(self.resource_id)
 
-        docker_login_cmd = [
-            "docker",
-            "login",
-            "-u",
-            cfg.username.get_secret_value(),
-            "--password-stdin",
-        ]
-        if registry != DOCKER_REGISTRY_NAME:
-            docker_login_cmd.append(registry)
-
-        try:
-            subprocess.run(
-                docker_login_cmd,
-                check=True,
-                input=cfg.password.get_secret_value().encode(),
-            )
-        except subprocess.CalledProcessError as e:
-            raise AuthorizationException(
-                f"Failed to authenticate to Docker registry "
-                f"'{self.resource_id}': {e}"
-            ) from e
+        container_engine = get_container_engine()
+        container_engine.login(
+            username=cfg.username.get_secret_value(),
+            password=cfg.password.get_secret_value(),
+            registry=registry,
+        )
 
     @classmethod
     def _auto_configure(
@@ -363,19 +303,19 @@ class DockerServiceConnector(ServiceConnector):
 
         Returns:
             The name of the Docker registry that this connector can access.
+
+        Raises:
+            RuntimeError: If the container engine is unavailable during
+                verification on a non-server client.
         """
         # The docker server isn't available on the ZenML server, so we can't
         # verify the credentials there.
-        try:
-            docker_client = DockerClient.from_env()
-        except DockerException as e:
-            logger.warning(
-                f"Failed to connect to Docker daemon: {e}"
-                f"\nSkipping Docker connector verification."
-            )
-        else:
-            assert resource_id is not None
-            self._authorize_client(docker_client, resource_id)
-            docker_client.close()
+        if ENV_ZENML_SERVER not in os.environ:
+            engine = get_container_engine()
+            is_available, error_message = engine.check_availability()
+            if not is_available:
+                raise RuntimeError(
+                    f"No container engine available: {error_message}"
+                )
 
         return [resource_id] if resource_id else []

@@ -242,7 +242,7 @@ class BaseService(BaseTypedModel):
 
     @abstractmethod
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the external service.
+        """Check the current operational state of the external service.
 
         This method should be overridden by subclasses that implement
         concrete service tracking functionality.
