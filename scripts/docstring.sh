@@ -7,4 +7,4 @@ DOCSTRING_SRC=${1:-"src/zenml tests/harness"}
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 
-darglint -v 2 $DOCSTRING_SRC
+pydoclint $DOCSTRING_SRC

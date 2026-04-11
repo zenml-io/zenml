@@ -28,7 +28,7 @@ All reusable workflows use `secrets: inherit` for centralized secret management.
 ### ci-fast.yml (Every PR)
 
 Runs automatically on all PRs and pushes to main:
-- Docstring linting (darglint)
+- Docstring linting (pydoclint)
 - Spellcheck
 - SQLite migration testing
 - Linting (ubuntu, Python 3.11)
