@@ -98,14 +98,12 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         run: |
           set -euo pipefail
-
           if [[ -z "${MODAL_TOKEN_ID:-}" || -z "${MODAL_TOKEN_SECRET:-}" ]]; then
             echo "::warning::Modal credentials are unavailable; falling back to standard CI."
             echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
             echo "run_modal=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
           if ! command -v offload >/dev/null 2>&1; then
             if ! cargo install --git https://github.com/safoinme/offload.git --rev 9d4275c84a81299555e3d020e4e18df1803e6831; then
               echo "::warning::Unable to install pinned offload; falling back to standard CI."
@@ -127,7 +125,6 @@ jobs:
             echo "run_modal=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
           echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           echo "run_modal=true" >> "$GITHUB_OUTPUT"
       - name: Restore offload image cache
@@ -188,50 +185,40 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-
           junit_file="test-results/modal-fast-ci/junit.xml"
           offload_log="test-results/modal-fast-ci/offload.log"
           modal_infra_failed=false
           test_failed=false
           junit_cache_safe=false
-
           is_offload_prepare_failure() {
             if [[ ! -f "$offload_log" ]]; then
               return 1
             fi
-
             grep -Eq \
               'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed' \
               "$offload_log"
           }
-
           if [[ "${{ steps.setup_environment.outcome }}" != "success" ]]; then
             echo "::warning::setup_environment failed; falling back to standard CI."
             modal_infra_failed=true
           fi
-
           if [[ "${{ steps.install_rust.outcome }}" != "success" ]]; then
             echo "::warning::Install Rust failed; falling back to standard CI."
             modal_infra_failed=true
           fi
-
           if [[ "${{ steps.prepare.outcome }}" == "failure" ]]; then
             echo "::warning::Modal runtime preparation failed; falling back to standard CI."
             modal_infra_failed=true
           fi
-
           if [[ "${{ steps.prepare.outputs.modal_infra_failed }}" == "true" ]]; then
             modal_infra_failed=true
           fi
-
           if [[ "${{ steps.run.outputs.modal_infra_failed }}" == "true" ]]; then
             modal_infra_failed=true
           fi
-
           if [[ "$modal_infra_failed" != "true" && "${{ steps.prepare.outputs.run_modal }}" == "true" ]]; then
             exit_code="${{ steps.run.outputs.exit_code }}"
             run_started_at="${{ steps.run.outputs.run_started_at }}"
-
             if [[ -z "$exit_code" ]]; then
               echo "::error::offload did not report an exit code."
               test_failed=true
@@ -257,7 +244,6 @@ jobs:
               test_failed=true
             else
               printf '%s\n' "$summary_output"
-
               if [[ "$exit_code" == "0" ]]; then
                 junit_cache_safe=true
                 if [[ "$summary_output" == *"Failed tests:"* ]]; then
@@ -273,7 +259,6 @@ jobs:
               fi
             fi
           fi
-
           echo "modal_infra_failed=$modal_infra_failed" >> "$GITHUB_OUTPUT"
           echo "test_failed=$test_failed" >> "$GITHUB_OUTPUT"
           echo "junit_cache_safe=$junit_cache_safe" >> "$GITHUB_OUTPUT"

@@ -36,7 +36,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
 from zenml.login.credentials_store import CredentialsStore
 from zenml.stack.stack import Stack
-from zenml.utils.client_template_utils import build_client_template_dir
 
 
 def cleanup_folder(path: str) -> None:

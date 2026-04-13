@@ -53,9 +53,7 @@ def test_clean_default_client_session_rewrites_template_paths_and_restores_env(
             "count", clear_calls["count"] + 1
         )
     )
-    monkeypatch.setitem(
-        sys.modules, "zenml.stack.stack", stack_module
-    )
+    monkeypatch.setitem(sys.modules, "zenml.stack.stack", stack_module)
 
     class FakeGlobalConfiguration:
         def __init__(self) -> None:
@@ -90,9 +88,13 @@ def test_clean_default_client_session_rewrites_template_paths_and_restores_env(
         def reset_instance(cls, instance: object | None = None) -> None:
             del instance
 
-    monkeypatch.setattr(harness_utils, "GlobalConfiguration", FakeGlobalConfiguration)
+    monkeypatch.setattr(
+        harness_utils, "GlobalConfiguration", FakeGlobalConfiguration
+    )
     monkeypatch.setattr(harness_utils, "Client", FakeClient)
-    monkeypatch.setattr(harness_utils, "CredentialsStore", FakeCredentialsStore)
+    monkeypatch.setattr(
+        harness_utils, "CredentialsStore", FakeCredentialsStore
+    )
 
     with harness_utils.clean_default_client_session(
         tmp_path_factory=session_factory,

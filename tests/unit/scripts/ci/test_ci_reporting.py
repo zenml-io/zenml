@@ -29,7 +29,9 @@ def test_print_summary_handles_testsuites_root(
     assert print_summary(junit_path) == 0
 
     captured = capsys.readouterr()
-    assert "Total: 2  Passed: 1  Failed: 1  Errors: 0  Time: 1.5s" in captured.out
+    assert (
+        "Total: 2  Passed: 1  Failed: 1  Errors: 0  Time: 1.5s" in captured.out
+    )
     assert "FAIL  suite::fails" in captured.out
 
 
