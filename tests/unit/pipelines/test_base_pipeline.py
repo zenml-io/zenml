@@ -679,7 +679,7 @@ def test_running_pipeline_creates_and_uses_placeholder_run(
     # assert run.deployment_id
 
 
-def test_rerunning_deloyment_does_not_fail(
+def test_rerunning_deployment_does_not_fail(
     mocker,
     clean_client,
     empty_pipeline,  # noqa: F811

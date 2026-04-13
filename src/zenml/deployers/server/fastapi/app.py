@@ -115,7 +115,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         Raises:
             ValueError: If the index HTML file is not found in the dashboard
                 files path.
-        """
+        """  # noqa: DOC502
         dashboard_files_path = self.dashboard_files_path()
         if not dashboard_files_path or not os.path.isdir(dashboard_files_path):
             return []

@@ -734,9 +734,8 @@ def convert_component_shortcut_settings_keys(
 
     Raises:
         ValueError: If the shortcut key is ambiguous because the stack has
-            multiple components of the same type.
-        ValueError: If stack component settings were defined both using the
-            full and the shortcut key.
+            multiple components of the same type, or if stack component
+            settings were defined both using the full and the shortcut key.
     """
     for component_type, component_list in stack.components.items():
         shortcut_key = str(component_type)
