@@ -647,3 +647,10 @@ class TriggerRunConcurrency(StrEnum):
 
     SKIP = "skip"
     SUBMIT = "submit"
+
+
+class ContainerEngineType(StrEnum):
+    """Container engine types."""
+
+    DOCKER = "docker"
+    PODMAN = "podman"
