@@ -1173,13 +1173,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if snapshot.stack is not None:
                 logger.info(f"Using stack: `{snapshot.stack.name}`")
 
-                for (
-                    component_type,
-                    component_models,
-                ) in snapshot.stack.components.items():
-                    logger.info(
-                        f"  {component_type.value}: `{component_models[0].name}`"
-                    )
+                for component_type, components in snapshot.stack.components.items():
+                    for component in components:
+                        logger.info(
+                            f"  {component_type.value}: `{component.name}`"
+                        )
         except Exception as e:
             logger.debug(f"Logging pipeline snapshot metadata failed: {e}")
 
