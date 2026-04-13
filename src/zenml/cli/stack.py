@@ -557,14 +557,12 @@ def register_stack(
             (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
         ]:
             if component_names_:
-                components.setdefault(component_type_, []).extend(
-                    [
-                        client.get_stack_component(
-                            component_type_, component_name_
-                        ).id
-                        for component_name_ in component_names_
-                    ]
-                )
+                components[component_type_] = [
+                    client.get_stack_component(
+                        component_type_, component_name_
+                    ).id
+                    for component_name_ in component_names_
+                ]
 
         try:
             created_stack = client.zen_store.create_stack(
