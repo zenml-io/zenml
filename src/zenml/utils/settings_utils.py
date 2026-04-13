@@ -98,7 +98,8 @@ def _get_component_flavor(
 def resolve_stack_component_setting_key(
     key: str,
     components_by_type: Mapping[
-        StackComponentType, Sequence[Union["StackComponent", ComponentResponse]]
+        StackComponentType,
+        Sequence[Union["StackComponent", ComponentResponse]],
     ],
 ) -> str:
     """Resolves a setting selector to a canonical component key.
@@ -161,7 +162,8 @@ def resolve_stack_component_setting_key(
 def normalize_stack_component_setting_keys(
     settings: Dict[str, "BaseSettings"],
     components_by_type: Mapping[
-        StackComponentType, Sequence[Union["StackComponent", ComponentResponse]]
+        StackComponentType,
+        Sequence[Union["StackComponent", ComponentResponse]],
     ],
 ) -> None:
     """Normalizes component settings keys to canonical component keys.
