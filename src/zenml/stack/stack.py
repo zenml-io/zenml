@@ -263,10 +263,7 @@ class Stack:
         cls,
         id: UUID,
         name: str,
-        components: Mapping[
-            StackComponentType,
-            Union["StackComponent", List["StackComponent"]],
-        ],
+        components: Mapping[StackComponentType, List["StackComponent"]],
         environment: Optional[Dict[str, str]] = None,
         secrets: Optional[List[UUID]] = None,
     ) -> "Stack":
@@ -326,39 +323,35 @@ class Stack:
 
         # Orchestrator
         orchestrator = components.get(StackComponentType.ORCHESTRATOR)
-        if isinstance(orchestrator, list):
-            if len(orchestrator) > 1:
-                raise ValueError("Multiple orchestrators are not supported.")
-            orchestrator = orchestrator[0]
+        if not orchestrator:
+            raise ValueError("No orchestrator found in the stack.")
+        if len(orchestrator) > 1:
+            raise ValueError("Multiple orchestrators are not supported.")
 
-        if orchestrator and not isinstance(orchestrator, BaseOrchestrator):
-            _raise_type_error(orchestrator, BaseOrchestrator)
+        if not isinstance(orchestrator[0], BaseOrchestrator):
+            _raise_type_error(orchestrator[0], BaseOrchestrator)
 
         # Artifact Store
         artifact_store = components.get(StackComponentType.ARTIFACT_STORE)
-        if isinstance(artifact_store, list):
-            if len(artifact_store) > 1:
-                raise ValueError("Multiple artifact stores are not supported.")
-            artifact_store = artifact_store[0]
-        if artifact_store and not isinstance(
-            artifact_store, BaseArtifactStore
-        ):
-            _raise_type_error(artifact_store, BaseArtifactStore)
+        if not artifact_store:
+            raise ValueError("No artifact store found in the stack.")
+        if len(artifact_store) > 1:
+            raise ValueError("Multiple artifact stores are not supported.")
+
+        if not isinstance(artifact_store[0], BaseArtifactStore):
+            _raise_type_error(artifact_store[0], BaseArtifactStore)
 
         # Container Registry
         container_registry = components.get(
             StackComponentType.CONTAINER_REGISTRY
         )
-        if isinstance(container_registry, list):
+        if container_registry:
             if len(container_registry) > 1:
                 raise ValueError(
                     "Multiple container registries are not supported."
                 )
-            container_registry = container_registry[0]
-        if container_registry and not isinstance(
-            container_registry, BaseContainerRegistry
-        ):
-            _raise_type_error(container_registry, BaseContainerRegistry)
+            if not isinstance(container_registry[0], BaseContainerRegistry):
+                _raise_type_error(container_registry[0], BaseContainerRegistry)
 
         # Step Operator
         step_operator = components.get(StackComponentType.STEP_OPERATOR)
@@ -370,23 +363,20 @@ class Stack:
 
         # Feature Store
         feature_store = components.get(StackComponentType.FEATURE_STORE)
-        if isinstance(feature_store, list):
+        if feature_store:
             if len(feature_store) > 1:
                 raise ValueError("Multiple feature stores are not supported.")
-            feature_store = feature_store[0]
-        if feature_store and not isinstance(feature_store, BaseFeatureStore):
-            _raise_type_error(feature_store, BaseFeatureStore)
+
+            if not isinstance(feature_store[0], BaseFeatureStore):
+                _raise_type_error(feature_store[0], BaseFeatureStore)
 
         # Model Deployer
         model_deployer = components.get(StackComponentType.MODEL_DEPLOYER)
-        if isinstance(model_deployer, list):
+        if model_deployer:
             if len(model_deployer) > 1:
                 raise ValueError("Multiple model deployers are not supported.")
-            model_deployer = model_deployer[0]
-        if model_deployer and not isinstance(
-            model_deployer, BaseModelDeployer
-        ):
-            _raise_type_error(model_deployer, BaseModelDeployer)
+            if not isinstance(model_deployer[0], BaseModelDeployer):
+                _raise_type_error(model_deployer[0], BaseModelDeployer)
 
         # Experiment Tracker
         experiment_tracker = components.get(
@@ -411,78 +401,78 @@ class Stack:
 
         # Annotator
         annotator = components.get(StackComponentType.ANNOTATOR)
-        if isinstance(annotator, list):
+        if annotator:
             if len(annotator) > 1:
                 raise ValueError("Multiple annotators are not supported.")
-            annotator = annotator[0]
-        if annotator and not isinstance(annotator, BaseAnnotator):
-            _raise_type_error(annotator, BaseAnnotator)
+            if not isinstance(annotator[0], BaseAnnotator):
+                _raise_type_error(annotator[0], BaseAnnotator)
 
         # Data Validator
         data_validator = components.get(StackComponentType.DATA_VALIDATOR)
-        if isinstance(data_validator, list):
+        if data_validator:
             if len(data_validator) > 1:
                 raise ValueError("Multiple data validators are not supported.")
-            data_validator = data_validator[0]
-        if data_validator and not isinstance(
-            data_validator, BaseDataValidator
-        ):
-            _raise_type_error(data_validator, BaseDataValidator)
+            if not isinstance(data_validator[0], BaseDataValidator):
+                _raise_type_error(data_validator[0], BaseDataValidator)
 
         # Image Builder
         image_builder = components.get(StackComponentType.IMAGE_BUILDER)
-        if isinstance(image_builder, list):
+        if image_builder:
             if len(image_builder) > 1:
                 raise ValueError("Multiple image builders are not supported.")
-            image_builder = image_builder[0]
-        if image_builder and not isinstance(image_builder, BaseImageBuilder):
-            _raise_type_error(image_builder, BaseImageBuilder)
+
+            if not isinstance(image_builder[0], BaseImageBuilder):
+                _raise_type_error(image_builder[0], BaseImageBuilder)
 
         # Model Registry
         model_registry = components.get(StackComponentType.MODEL_REGISTRY)
-        if isinstance(model_registry, list):
+        if model_registry:
             if len(model_registry) > 1:
                 raise ValueError(
                     "Multiple model registries are not supported."
                 )
-            model_registry = model_registry[0]
-        if model_registry and not isinstance(
-            model_registry, BaseModelRegistry
-        ):
-            _raise_type_error(model_registry, BaseModelRegistry)
+            if not isinstance(model_registry[0], BaseModelRegistry):
+                _raise_type_error(model_registry[0], BaseModelRegistry)
 
         # Deployer
         deployer = components.get(StackComponentType.DEPLOYER)
-        if isinstance(deployer, list):
+        if deployer:
             if len(deployer) > 1:
                 raise ValueError("Multiple deployers are not supported.")
-            deployer = deployer[0]
-        if deployer and not isinstance(deployer, BaseDeployer):
-            _raise_type_error(deployer, BaseDeployer)
+            if not isinstance(deployer[0], BaseDeployer):
+                _raise_type_error(deployer[0], BaseDeployer)
 
         # Log Store
         log_store = components.get(StackComponentType.LOG_STORE)
-        if isinstance(log_store, list):
+        if log_store:
             if len(log_store) > 1:
                 raise ValueError("Multiple log stores are not supported.")
-            log_store = log_store[0]
-        if log_store and not isinstance(log_store, BaseLogStore):
-            _raise_type_error(log_store, BaseLogStore)
+            if not isinstance(log_store[0], BaseLogStore):
+                _raise_type_error(log_store[0], BaseLogStore)
 
         return Stack(
             id=id,
             name=name,
             environment=environment,
             secrets=secrets,
-            orchestrator=orchestrator,
-            artifact_store=artifact_store,
-            container_registry=container_registry,
+            orchestrator=orchestrator[0],
+            artifact_store=artifact_store[0],
+            container_registry=cast(
+                Optional["BaseContainerRegistry"],
+                container_registry[0] if container_registry else None,
+            ),
             step_operator=cast(
                 Optional[Union["BaseStepOperator", List["BaseStepOperator"]]],
                 step_operator,
             ),
-            feature_store=feature_store,
-            model_deployer=model_deployer,
+            feature_store=cast(
+                Optional["BaseFeatureStore"],
+                feature_store[0] if feature_store else None,
+            ),
+            model_deployer=cast(
+                Optional["BaseModelDeployer"],
+                model_deployer[0] if model_deployer else None,
+            ),
             experiment_tracker=cast(
                 Optional[
                     Union[
@@ -496,12 +486,27 @@ class Stack:
                 Optional[Union["BaseAlerter", List["BaseAlerter"]]],
                 alerter,
             ),
-            annotator=annotator,
-            data_validator=data_validator,
-            image_builder=image_builder,
-            model_registry=model_registry,
-            deployer=deployer,
-            log_store=log_store,
+            annotator=cast(
+                Optional["BaseAnnotator"], annotator[0] if annotator else None
+            ),
+            data_validator=cast(
+                Optional["BaseDataValidator"],
+                data_validator[0] if data_validator else None,
+            ),
+            image_builder=cast(
+                Optional["BaseImageBuilder"],
+                image_builder[0] if image_builder else None,
+            ),
+            model_registry=cast(
+                Optional["BaseModelRegistry"],
+                model_registry[0] if model_registry else None,
+            ),
+            deployer=cast(
+                Optional["BaseDeployer"], deployer[0] if deployer else None
+            ),
+            log_store=cast(
+                Optional["BaseLogStore"], log_store[0] if log_store else None
+            ),
         )
 
     @property
