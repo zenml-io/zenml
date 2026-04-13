@@ -16,11 +16,11 @@
 import re
 from typing import (
     TYPE_CHECKING,
-    Any,
     Dict,
     Mapping,
     Sequence,
     Type,
+    Union,
 )
 
 from zenml.config.constants import (
@@ -29,6 +29,7 @@ from zenml.config.constants import (
     RESOURCE_SETTINGS_KEY,
 )
 from zenml.enums import StackComponentType
+from zenml.models.v2.core.component import ComponentResponse
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -53,7 +54,7 @@ def get_stack_component_setting_key(stack_component: "StackComponent") -> str:
 
 
 def get_stack_component_name_setting_key(
-    stack_component: "StackComponent",
+    stack_component: Union[StackComponent, ComponentResponse],
 ) -> str:
     """Gets the canonical name-scoped setting key for a stack component.
 
@@ -78,7 +79,9 @@ def get_flavor_setting_key(flavor: "Flavor") -> str:
     return f"{flavor.type}.{flavor.name}"
 
 
-def _get_component_flavor(component: Any) -> str:
+def _get_component_flavor(
+    component: Union[StackComponent, ComponentResponse],
+) -> str:
     """Gets the flavor name for a runtime or response component.
 
     Args:
@@ -87,22 +90,22 @@ def _get_component_flavor(component: Any) -> str:
     Returns:
         The component flavor.
     """
-    if hasattr(component, "flavor"):
+    if isinstance(component, StackComponent):
         return component.flavor
     return component.flavor_name
 
 
 def resolve_stack_component_setting_key(
     key: str,
-    components_by_type: Mapping[StackComponentType, Sequence[Any]],
+    components_by_type: Mapping[
+        StackComponentType, Sequence[Union[StackComponent, ComponentResponse]]
+    ],
 ) -> str:
     """Resolves a setting selector to a canonical component key.
 
     Args:
         key: The user-provided settings key.
         components_by_type: Components grouped by type.
-        get_component_name: Function to get a component name.
-        get_component_flavor: Function to get a component flavor.
 
     Returns:
         The canonical `type:name` key for the resolved component.
@@ -157,7 +160,9 @@ def resolve_stack_component_setting_key(
 
 def normalize_stack_component_setting_keys(
     settings: Dict[str, "BaseSettings"],
-    components_by_type: Mapping[StackComponentType, Sequence[Any]],
+    components_by_type: Mapping[
+        StackComponentType, Sequence[Union[StackComponent, ComponentResponse]]
+    ],
 ) -> None:
     """Normalizes component settings keys to canonical component keys.
 
@@ -167,7 +172,6 @@ def normalize_stack_component_setting_keys(
 
     Raises:
         ValueError: If a selector does not resolve to exactly one component.
-        ValueError: If multiple selectors resolve to the same component.
     """
     resolved_settings: Dict[str, "BaseSettings"] = {}
     resolved_from: Dict[str, str] = {}

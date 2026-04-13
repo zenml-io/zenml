@@ -190,6 +190,7 @@ class Stack:
 
         Raises:
             ImportError: If a stack component's dependencies cannot be imported.
+            ValueError: If a stack component is not found in the stack.
         """
         global _STACK_CACHE
         key = (stack_model.id, stack_model.updated)
