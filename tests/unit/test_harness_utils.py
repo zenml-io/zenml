@@ -35,6 +35,7 @@ def test_clean_default_client_session_rewrites_template_paths_and_restores_env(
     template_root = template_dir.resolve()
     session_root = tmp_path / "clean-client-session"
     session_factory = _DummyTmpPathFactory(session_root)
+    client_root = session_root / "pytest-clean-client"
 
     (template_zenml / "config.yaml").write_text(
         "database: {root}/zenml.db\nbackup_directory: {root}/backup\n".format(
@@ -99,12 +100,12 @@ def test_clean_default_client_session_rewrites_template_paths_and_restores_env(
     ) as client:
         assert isinstance(client, FakeClient)
         assert clear_calls["count"] == 1
-        assert Path(os.environ[ENV_ZENML_CONFIG_PATH]) == session_root / "zenml"
+        assert Path(os.environ[ENV_ZENML_CONFIG_PATH]) == client_root / "zenml"
         assert os.getenv("DISABLE_DATABASE_MIGRATION") == "sentinel"
 
-        rewritten_config = (session_root / "zenml" / "config.yaml").read_text()
+        rewritten_config = (client_root / "zenml" / "config.yaml").read_text()
         assert str(template_root) not in rewritten_config
-        assert str(session_root.resolve()) in rewritten_config
+        assert str(client_root.resolve()) in rewritten_config
 
     assert os.getenv(ENV_ZENML_CONFIG_PATH) == "original-config-path"
     assert os.getenv("DISABLE_DATABASE_MIGRATION") == "sentinel"
