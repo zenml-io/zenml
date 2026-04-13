@@ -286,11 +286,9 @@ class StepRunRequestFactory:
             request: The request to populate.
 
         Raises:
-            RuntimeError: If the pipeline run is not a replayed run.
-            RuntimeError: If no step run is found for the step in the original
-                run.
-            RuntimeError: If the step wasn't successfully completed in the
-                original run.
+            RuntimeError: If the pipeline run is not a replayed run, if no
+                step run is found for the step in the original run, or if
+                the step wasn't successfully completed in the original run.
         """
         if not self.pipeline_run.original_run:
             raise RuntimeError(

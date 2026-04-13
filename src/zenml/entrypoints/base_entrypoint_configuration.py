@@ -162,10 +162,9 @@ class BaseEntrypointConfiguration(ABC):
         Returns:
             Dictionary of the parsed arguments.
 
-        # noqa: DAR402
         Raises:
             ValueError: If the arguments are not valid.
-        """
+        """  # noqa: DOC502
 
         class _CustomParser(argparse.ArgumentParser):
             """Argument parser subclass that suppresses some argparse logs.

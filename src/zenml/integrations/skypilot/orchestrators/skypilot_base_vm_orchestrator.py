@@ -183,6 +183,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If the code is running in a notebook.
             ValueError: If cluster reuse is requested without a cluster name.
+            Exception: If the pipeline run fails.
 
         Returns:
             Optional submission result.
