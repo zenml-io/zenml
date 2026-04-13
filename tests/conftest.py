@@ -33,6 +33,23 @@ from tests.harness.utils import (
     environment_session,
 )
 from tests.venv_clone_utils import clone_virtualenv
+from zenml.artifact_stores.local_artifact_store import (
+    LocalArtifactStore,
+    LocalArtifactStoreConfig,
+)
+from zenml.client import Client
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+    BaseContainerRegistryConfig,
+)
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.stack.flavor_registry import FlavorRegistry as _FlavorRegistry
+from zenml.stack.stack import Stack
+from zenml.stack.stack_component import (
+    StackComponentConfig,
+    StackComponentType,
+)
 
 # Pre-warm the full flavor-registry import graph so every module it
 # touches — including `zenml.log_stores` → `OtelLogStore` → `opentelemetry`
@@ -53,27 +70,8 @@ from tests.venv_clone_utils import clone_virtualenv
 # is currently set as active". Touching the property here caches the
 # whole dependency graph up front, so no later sys.path mock can
 # break it.
-from zenml.stack.flavor_registry import FlavorRegistry as _FlavorRegistry
-
 _ = _FlavorRegistry().builtin_flavors
 del _FlavorRegistry
-
-from zenml.artifact_stores.local_artifact_store import (
-    LocalArtifactStore,
-    LocalArtifactStoreConfig,
-)
-from zenml.client import Client
-from zenml.container_registries.base_container_registry import (
-    BaseContainerRegistry,
-    BaseContainerRegistryConfig,
-)
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
-from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.stack.stack import Stack
-from zenml.stack.stack_component import (
-    StackComponentConfig,
-    StackComponentType,
-)
 
 DEFAULT_ENVIRONMENT_NAME = "default"
 

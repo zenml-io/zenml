@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-
 from scripts.ci.print_junit_summary import print_summary
 
 
