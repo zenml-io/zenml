@@ -608,6 +608,7 @@ class StepType(StrEnum):
 
     TOOL_CALL = "tool_call"
     LLM_CALL = "llm_call"
+    MEMORY_CALL = "memory_call"
 
 
 class GroupType(StrEnum):
