@@ -146,7 +146,7 @@ dev = [
     "tox>=3.24.3",
     "hypothesis>=6.43.1",
     "typing-extensions>=3.7.4",
-    "darglint>=1.8.1",
+    "pydoclint>=0.8.3",
     "pytest-randomly>=3.10.1,<4.0.0",
     "pytest-mock>=3.6.1,<4.0.0",
     "pytest-clarity>=1.0.1,<2.0.0",
@@ -298,6 +298,19 @@ max-complexity = 18
 [tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.
 convention = "google"
+
+[tool.pydoclint]
+style = "google"
+arg-type-hints-in-docstring = false
+arg-type-hints-in-signature = true
+check-return-types = false
+check-yield-types = false
+allow-init-docstring = true
+check-class-attributes = false
+check-arg-order = false
+omit-stars-when-documenting-varargs = true
+baseline = "pydoclint-baseline.txt"
+auto-regenerate-baseline = true
 
 [tool.bandit]
 skips = ["B615"]

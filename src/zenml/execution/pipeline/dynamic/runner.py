@@ -668,13 +668,12 @@ class DynamicPipelineRunner:
             group: The group information for this step.
             concurrent: Whether to launch the step concurrently.
 
-        # noqa: DAR401
         Raises:
             BaseException: If the step failed.
 
         Returns:
             The step run outputs or a future for the step run outputs.
-        """
+        """  # noqa: DOC502, DOC503
         step = step.copy()
         step_config = None
         if self._run and self._run.triggered_by_deployment:

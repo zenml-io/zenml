@@ -122,8 +122,8 @@ class KanikoImageBuilder(BaseImageBuilder):
             The Docker image repo digest.
 
         Raises:
-            RuntimeError: If no container registry is passed.
-            RuntimeError: If the upload to the artifact store has failed.
+            RuntimeError: If no container registry is passed or if the
+                upload to the artifact store has failed.
         """
         self._check_prerequisites()
         if not container_registry:
