@@ -89,7 +89,7 @@ jobs:
           # Cache invalidates only when the offload source pin changes,
           # not on every workflow edit. Bump the version suffix below
           # whenever the pinned offload commit changes.
-          key: cargo-offload-${{ runner.os }}-9d4275c84a81299555e3d020e4e18df1803e6831-v1
+          key: cargo-offload-${{ runner.os }}-178f31bd36c52d730f14e79d151e35d796b099c2-v1
       - name: Prepare Modal runtime
         id: prepare
         if: ${{ steps.setup_environment.outcome == 'success' && steps.install_rust.outcome == 'success' }}
@@ -105,7 +105,7 @@ jobs:
             exit 0
           fi
           if ! command -v offload >/dev/null 2>&1; then
-            if ! cargo install --git https://github.com/safoinme/offload.git --rev 9d4275c84a81299555e3d020e4e18df1803e6831; then
+            if ! cargo install --git https://github.com/safoinme/offload.git --rev 178f31bd36c52d730f14e79d151e35d796b099c2; then
               echo "::warning::Unable to install pinned offload; falling back to standard CI."
               echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
               echo "run_modal=false" >> "$GITHUB_OUTPUT"

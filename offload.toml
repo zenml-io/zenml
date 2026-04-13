@@ -36,7 +36,7 @@ create_command = "uv run @modal_sandbox.py create {image_id} --cpu 2 --memory-gb
 # exec_and_fetch_command is the fused fast path: runs pytest AND
 # fetches the junit.xml in a single Python process (one Modal SDK
 # import + Sandbox.from_id round-trip instead of two). See
-# commit 9d4275c84a81299555e3d020e4e18df1803e6831 for the supporting
+# commit 178f31bd36c52d730f14e79d151e35d796b099c2 for the supporting
 # Sandbox trait method. exec_command + download_command remain as
 # the safety fallback if the sandbox returns Ok(None). Keep the
 # download_command log line intact so CI shows when the fused path
