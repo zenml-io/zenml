@@ -958,21 +958,25 @@ class Stack:
                 list
             )
             for component in components_with_settings:
+                settings_cls = component.settings_class
+                assert settings_cls is not None
                 setting_classes[
                     settings_utils.get_stack_component_name_setting_key(
                         component
                     )
-                ] = component.settings_class
+                ] = settings_cls
                 flavor_groups[component.flavor].append(component)
 
             for flavor_components in flavor_groups.values():
                 if len(flavor_components) == 1:
                     component = flavor_components[0]
+                    settings_cls = component.settings_class
+                    assert settings_cls is not None
                     setting_classes[
                         settings_utils.get_stack_component_setting_key(
                             component
                         )
-                    ] = component.settings_class
+                    ] = settings_cls
 
         return setting_classes
 
