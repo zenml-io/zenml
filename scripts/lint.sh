@@ -14,6 +14,8 @@ ruff check $SRC_NO_TESTS
 # TODO: Fix docstrings in tests and examples and remove the `--extend-ignore D` flag
 ruff check $TESTS_EXAMPLES --extend-ignore D --extend-exclude "*.ipynb"
 
+pydoclint $SRC_NO_TESTS
+
 # Flag checks for skipping optional linters
 SKIP_YAMLFIX=false
 SKIP_ZIZMOR=false

@@ -1031,7 +1031,7 @@ def install_packages(
         use_uv: Whether to use uv for package installation.
 
     Raises:
-        e: If the package installation fails.
+        subprocess.CalledProcessError: If the package installation fails.
     """
     if "neptune" in packages:
         declare(

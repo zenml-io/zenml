@@ -72,7 +72,7 @@ from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, settings_utils
+from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunResponse, PipelineSnapshotResponse

@@ -1766,7 +1766,7 @@ def validate_name(ctx: click.Context, param: str, value: str) -> str:
         The validated value.
 
     Raises:
-        BadParameter: If the name is invalid.
+        click.BadParameter: If the name is invalid.
     """
     if not value:
         return value
@@ -1847,7 +1847,7 @@ def deploy(
         set_stack: Immediately set the deployed stack as active.
 
     Raises:
-        Abort: If the user aborts the deployment.
+        click.Abort: If the user aborts the deployment.
         KeyboardInterrupt: If the user interrupts the deployment.
     """
     stack_name = stack_name or f"zenml-{provider}-stack"
@@ -2170,8 +2170,8 @@ def _get_stack_component_info(
         The info model of the stack component.
 
     Raises:
-        ValueError: If the cloud provider is not supported.
-        ValueError: If the component type is not supported.
+        ValueError: If the cloud provider or component type is not
+            supported.
     """
     from rich.prompt import Prompt
 

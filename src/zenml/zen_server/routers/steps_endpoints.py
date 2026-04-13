@@ -129,7 +129,6 @@ def create_run_step(
 
     Args:
         step: The run step to create.
-        _: Authentication context.
 
     Returns:
         The created run step.

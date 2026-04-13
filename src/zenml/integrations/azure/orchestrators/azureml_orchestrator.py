@@ -740,7 +740,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             Step statuses are not supported for AzureML, so step_statuses_dict will always be None.
 
         Raises:
-            AssertionError: If the run was not executed by to this orchestrator.
             ValueError: If it fetches an unknown state or if we can not fetch
                 the orchestrator run ID.
         """

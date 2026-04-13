@@ -461,8 +461,7 @@ class StepLauncher:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
-
-        """
+        """  # noqa: DOC501
         from zenml.deployers.server import runtime
 
         step_run_info = StepRunInfo(
@@ -554,14 +553,13 @@ class StepLauncher:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
 
-        # noqa: DAR401
         Raises:
             RuntimeError: If trying to use a step operator that does not support
                 running asynchronously in a dynamic pipeline.
             NotImplementedError: If the step operator does not implement the
                 `submit(...)` or `launch(...)` methods.
             BaseException: If the step run failed.
-        """
+        """  # noqa: DOC502, DOC503
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
@@ -661,10 +659,9 @@ class StepLauncher:
         Args:
             step_run_info: Additional information needed to run the step.
 
-        # noqa: DAR401
         Raises:
             BaseException: If the step run failed.
-        """
+        """  # noqa: DOC502, DOC503
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,

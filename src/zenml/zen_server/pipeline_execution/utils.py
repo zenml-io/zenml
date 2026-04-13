@@ -439,9 +439,7 @@ def ensure_async_orchestrator(
             settings=snapshot.pipeline_configuration.settings,
             components_by_type=stack.components,
         )
-        key = settings_utils.get_stack_component_name_setting_key(
-            orchestrator
-        )
+        key = settings_utils.get_stack_component_name_setting_key(orchestrator)
 
         if settings := snapshot.pipeline_configuration.settings.get(key):
             settings_dict = settings.model_dump()
@@ -728,6 +726,8 @@ def get_pipeline_run_analytics_metadata(
         "pipeline_run_id": str(run_id),
         "source_snapshot_id": str(source_snapshot_id),
     }
+
+
 def validate_snapshot_for_server_execution(
     snapshot: PipelineSnapshotResponse,
     run_configuration: Optional[PipelineRunConfiguration] = None,

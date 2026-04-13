@@ -271,8 +271,6 @@ class Stack:
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
-        # noqa: DAR402
-
         Args:
             id: Unique ID of the stack.
             name: The name of the stack.
@@ -291,7 +289,7 @@ class Stack:
         Raises:
             TypeError: If a required component is missing or a component
                 doesn't inherit from the expected base class.
-        """
+        """  # noqa: DOC502
         from zenml.alerter import BaseAlerter
         from zenml.annotators import BaseAnnotator
         from zenml.artifact_stores import BaseArtifactStore
@@ -341,7 +339,9 @@ class Stack:
             if len(artifact_store) > 1:
                 raise ValueError("Multiple artifact stores are not supported.")
             artifact_store = artifact_store[0]
-        if artifact_store and not isinstance(artifact_store, BaseArtifactStore):
+        if artifact_store and not isinstance(
+            artifact_store, BaseArtifactStore
+        ):
             _raise_type_error(artifact_store, BaseArtifactStore)
 
         # Container Registry
@@ -354,7 +354,9 @@ class Stack:
                     "Multiple container registries are not supported."
                 )
             container_registry = container_registry[0]
-        if container_registry and not isinstance(container_registry, BaseContainerRegistry):
+        if container_registry and not isinstance(
+            container_registry, BaseContainerRegistry
+        ):
             _raise_type_error(container_registry, BaseContainerRegistry)
 
         # Step Operator
@@ -380,7 +382,9 @@ class Stack:
             if len(model_deployer) > 1:
                 raise ValueError("Multiple model deployers are not supported.")
             model_deployer = model_deployer[0]
-        if model_deployer and not isinstance(model_deployer, BaseModelDeployer):
+        if model_deployer and not isinstance(
+            model_deployer, BaseModelDeployer
+        ):
             _raise_type_error(model_deployer, BaseModelDeployer)
 
         # Experiment Tracker
@@ -419,7 +423,9 @@ class Stack:
             if len(data_validator) > 1:
                 raise ValueError("Multiple data validators are not supported.")
             data_validator = data_validator[0]
-        if data_validator and not isinstance(data_validator, BaseDataValidator):
+        if data_validator and not isinstance(
+            data_validator, BaseDataValidator
+        ):
             _raise_type_error(data_validator, BaseDataValidator)
 
         # Image Builder
@@ -439,7 +445,9 @@ class Stack:
                     "Multiple model registries are not supported."
                 )
             model_registry = model_registry[0]
-        if model_registry and not isinstance(model_registry, BaseModelRegistry):
+        if model_registry and not isinstance(
+            model_registry, BaseModelRegistry
+        ):
             _raise_type_error(model_registry, BaseModelRegistry)
 
         # Deployer
@@ -964,7 +972,7 @@ class Stack:
                             component
                         )
                     ] = component.settings_class
-    
+
         return setting_classes
 
     @property
@@ -1012,7 +1020,7 @@ class Stack:
         # noqa: DAR402
         Raises:
             StackValidationError: If a secret is missing.
-        """
+        """  # noqa: DOC502
         env_value = os.getenv(
             ENV_ZENML_SECRET_VALIDATION_LEVEL,
             default=SecretValidationLevel.SECRET_AND_KEY_EXISTS.value,

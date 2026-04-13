@@ -100,7 +100,8 @@ class Compiler:
             pipeline=pipeline, config=run_configuration
         )
         settings_utils.normalize_stack_component_setting_keys(
-            pipeline.configuration.settings, components_by_type=stack.components
+            pipeline.configuration.settings,
+            components_by_type=stack.components,
         )
 
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
@@ -549,7 +550,8 @@ class Compiler:
             step._merge_dynamic_configuration()
 
             settings_utils.normalize_stack_component_setting_keys(
-                step.configuration.settings, components_by_type=stack.components
+                step.configuration.settings,
+                components_by_type=stack.components,
             )
             step_secrets = secret_utils.resolve_and_verify_secrets(
                 step.configuration.secrets

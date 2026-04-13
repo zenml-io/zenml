@@ -137,9 +137,7 @@ def resolve_stack_component_setting_key(
         ]
     else:
         matches = [
-            component
-            for component in components
-            if component.name == selector
+            component for component in components if component.name == selector
         ]
 
     if len(matches) != 1:
