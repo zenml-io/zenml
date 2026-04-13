@@ -163,9 +163,12 @@ jobs:
         run: |
           set -euo pipefail
           run_started_at="$(date +%s)"
+          offload_log="test-results/modal-fast-ci/offload.log"
+          mkdir -p "$(dirname "$offload_log")"
           echo "run_started_at=$run_started_at" >> "$GITHUB_OUTPUT"
           set +e
           stdbuf -oL -eL offload -v run --parallel 20 2>&1 \
+            | tee "$offload_log" \
             | stdbuf -oL grep -v 'No historical duration for test'
           exit_code="${PIPESTATUS[0]}"
           set -e
@@ -187,9 +190,20 @@ jobs:
           set -euo pipefail
 
           junit_file="test-results/modal-fast-ci/junit.xml"
+          offload_log="test-results/modal-fast-ci/offload.log"
           modal_infra_failed=false
           test_failed=false
           junit_cache_safe=false
+
+          is_offload_prepare_failure() {
+            if [[ ! -f "$offload_log" ]]; then
+              return 1
+            fi
+
+            grep -Eq \
+              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed' \
+              "$offload_log"
+          }
 
           if [[ "${{ steps.setup_environment.outcome }}" != "success" ]]; then
             echo "::warning::setup_environment failed; falling back to standard CI."
@@ -222,11 +236,21 @@ jobs:
               echo "::error::offload did not report an exit code."
               test_failed=true
             elif [[ ! -f "$junit_file" ]]; then
-              echo "::error::offload exited with $exit_code but no JUnit XML was produced."
-              test_failed=true
+              if is_offload_prepare_failure; then
+                echo "::warning::offload failed before executing tests; falling back to standard CI."
+                modal_infra_failed=true
+              else
+                echo "::error::offload exited with $exit_code but no JUnit XML was produced."
+                test_failed=true
+              fi
             elif [[ -z "$run_started_at" || "$(stat -c %Y "$junit_file")" -lt "$run_started_at" ]]; then
-              echo "::error::offload did not write a fresh JUnit XML for this run."
-              test_failed=true
+              if is_offload_prepare_failure; then
+                echo "::warning::offload failed during environment preparation; falling back to standard CI."
+                modal_infra_failed=true
+              else
+                echo "::error::offload did not write a fresh JUnit XML for this run."
+                test_failed=true
+              fi
             elif ! summary_output="$(python3 scripts/ci/print_junit_summary.py "$junit_file" 2>&1)"; then
               echo "::error::Failed to parse JUnit XML at $junit_file."
               printf '%s\n' "$summary_output"
