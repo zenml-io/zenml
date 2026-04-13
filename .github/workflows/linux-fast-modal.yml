@@ -27,18 +27,16 @@ on:
         default: true
 jobs:
   modal-fast-ci:
-    if: ${{ inputs.use_modal }}
+    if: ${{ inputs.use_modal && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      modal_infra_failed: ${{ steps.run.outputs.modal_infra_failed }}
+      modal_infra_failed: ${{ steps.classify.outputs.modal_infra_failed }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       PYTHONDONTWRITEBYTECODE: 1
-      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
     defaults:
       run:
         shell: bash
@@ -69,6 +67,8 @@ jobs:
             uv-fast-modal-${{ runner.os }}-${{ inputs.python-version }}-
             uv-fast-modal-${{ runner.os }}-
       - name: Setup environment
+        id: setup_environment
+        continue-on-error: true
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ inputs.python-version }}
@@ -76,6 +76,8 @@ jobs:
           os: ubuntu-latest
           install_integrations: 'no'
       - name: Install Rust
+        id: install_rust
+        continue-on-error: true
         uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -86,19 +88,48 @@ jobs:
             ~/.cargo/bin/offload
           # Cache invalidates only when the offload source pin changes,
           # not on every workflow edit. Bump the version suffix below
-          # whenever a new offload commit needs to be picked up.
-          key: cargo-offload-${{ runner.os }}-feat-max-batch-duration-v2
-      - name: Install offload
-        run: command -v offload || cargo install --git https://github.com/safoinme/offload.git
-          --branch feat/max-batch-duration
-      # offload.toml's high-frequency per-batch commands invoke
-      # modal_sandbox.py via `python3` instead of `uv run` to skip
-      # uv's PEP 723 resolve on every call (~1-2s saved per batch).
-      # That requires `modal`, `click`, and `dockerfile-parse` to
-      # already be importable from the runner's system python.
-      # Pinned to match modal_sandbox.py's inline metadata header.
-      - name: Install modal_sandbox.py deps
-        run: uv pip install --system "modal==1.4.1" "click>=8.0" "dockerfile-parse>=2.0.0"
+          # whenever the pinned offload commit changes.
+          key: cargo-offload-${{ runner.os }}-9d4275c84a81299555e3d020e4e18df1803e6831-v1
+      - name: Prepare Modal runtime
+        id: prepare
+        if: ${{ steps.setup_environment.outcome == 'success' && steps.install_rust.outcome == 'success' }}
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${MODAL_TOKEN_ID:-}" || -z "${MODAL_TOKEN_SECRET:-}" ]]; then
+            echo "::warning::Modal credentials are unavailable; falling back to standard CI."
+            echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
+            echo "run_modal=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! command -v offload >/dev/null 2>&1; then
+            if ! cargo install --git https://github.com/safoinme/offload.git --rev 9d4275c84a81299555e3d020e4e18df1803e6831; then
+              echo "::warning::Unable to install pinned offload; falling back to standard CI."
+              echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
+              echo "run_modal=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          # offload.toml's high-frequency per-batch commands invoke
+          # modal_sandbox.py via `python3` instead of `uv run` to skip
+          # uv's PEP 723 resolve on every call (~1-2s saved per batch).
+          # That requires the checked-in runner dependencies in
+          # scripts/ci/modal_sandbox_requirements.txt to already be
+          # importable from the runner's system python.
+          if ! uv pip install --system -r scripts/ci/modal_sandbox_requirements.txt; then
+            echo "::warning::Unable to install Modal runtime dependencies; falling back to standard CI."
+            echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
+            echo "run_modal=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
+          echo "run_modal=true" >> "$GITHUB_OUTPUT"
       - name: Restore offload image cache
         uses: actions/cache/restore@v4
         with:
@@ -115,6 +146,11 @@ jobs:
             offload-junit-${{ runner.os }}-
       - name: Run tests via offload
         id: run
+        if: ${{ steps.prepare.outputs.run_modal == 'true' }}
+        continue-on-error: true
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         # `-v` switches offload's tracing subscriber from WARN to
         # INFO so sandbox creation, per-batch [BATCH START] /
         # [BATCH COMPLETE fused=...] lines, and the orchestrator
@@ -125,22 +161,100 @@ jobs:
         # `grep` without `--line-buffered` block-buffered because
         # stdout wasn't a tty).
         run: |
+          set -euo pipefail
+          run_started_at="$(date +%s)"
+          echo "run_started_at=$run_started_at" >> "$GITHUB_OUTPUT"
           set +e
           stdbuf -oL -eL offload -v run --parallel 20 2>&1 \
             | stdbuf -oL grep -v 'No historical duration for test'
           exit_code="${PIPESTATUS[0]}"
+          set -e
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          # offload currently uses 0 for a completed test run and 2 for
+          # infrastructure/setup failures that should fall back to the
+          # standard CI path. Any other nonzero code is treated as a real
+          # test failure and must not be converted into fallback.
           if [ "$exit_code" = "2" ]; then
             echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
           else
             echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           fi
-          exit 0
-      - name: Save caches
+          exit "$exit_code"
+      - name: Classify Modal result
+        id: classify
         if: always()
-        run: echo "Caches saved in post-run steps below"
+        run: |
+          set -euo pipefail
+
+          junit_file="test-results/modal-fast-ci/junit.xml"
+          modal_infra_failed=false
+          test_failed=false
+          junit_cache_safe=false
+
+          if [[ "${{ steps.setup_environment.outcome }}" != "success" ]]; then
+            echo "::warning::setup_environment failed; falling back to standard CI."
+            modal_infra_failed=true
+          fi
+
+          if [[ "${{ steps.install_rust.outcome }}" != "success" ]]; then
+            echo "::warning::Install Rust failed; falling back to standard CI."
+            modal_infra_failed=true
+          fi
+
+          if [[ "${{ steps.prepare.outcome }}" == "failure" ]]; then
+            echo "::warning::Modal runtime preparation failed; falling back to standard CI."
+            modal_infra_failed=true
+          fi
+
+          if [[ "${{ steps.prepare.outputs.modal_infra_failed }}" == "true" ]]; then
+            modal_infra_failed=true
+          fi
+
+          if [[ "${{ steps.run.outputs.modal_infra_failed }}" == "true" ]]; then
+            modal_infra_failed=true
+          fi
+
+          if [[ "$modal_infra_failed" != "true" && "${{ steps.prepare.outputs.run_modal }}" == "true" ]]; then
+            exit_code="${{ steps.run.outputs.exit_code }}"
+            run_started_at="${{ steps.run.outputs.run_started_at }}"
+
+            if [[ -z "$exit_code" ]]; then
+              echo "::error::offload did not report an exit code."
+              test_failed=true
+            elif [[ ! -f "$junit_file" ]]; then
+              echo "::error::offload exited with $exit_code but no JUnit XML was produced."
+              test_failed=true
+            elif [[ -z "$run_started_at" || "$(stat -c %Y "$junit_file")" -lt "$run_started_at" ]]; then
+              echo "::error::offload did not write a fresh JUnit XML for this run."
+              test_failed=true
+            elif ! summary_output="$(python3 scripts/ci/print_junit_summary.py "$junit_file" 2>&1)"; then
+              echo "::error::Failed to parse JUnit XML at $junit_file."
+              printf '%s\n' "$summary_output"
+              test_failed=true
+            else
+              printf '%s\n' "$summary_output"
+
+              if [[ "$exit_code" == "0" ]]; then
+                junit_cache_safe=true
+                if [[ "$summary_output" == *"Failed tests:"* ]]; then
+                  echo "::error::offload reported success, but the JUnit XML still contains failures."
+                  junit_cache_safe=false
+                  test_failed=true
+                fi
+              else
+                test_failed=true
+                if [[ "$summary_output" != *"Failed tests:"* ]]; then
+                  echo "::error::offload exited with $exit_code but the fresh JUnit XML contains no failures."
+                fi
+              fi
+            fi
+          fi
+
+          echo "modal_infra_failed=$modal_infra_failed" >> "$GITHUB_OUTPUT"
+          echo "test_failed=$test_failed" >> "$GITHUB_OUTPUT"
+          echo "junit_cache_safe=$junit_cache_safe" >> "$GITHUB_OUTPUT"
       - name: Save offload image cache
-        if: always()
+        if: ${{ always() && steps.prepare.outputs.run_modal == 'true' }}
         uses: actions/cache/save@v4
         with:
           path: .offload-image-cache
@@ -148,7 +262,7 @@ jobs:
             hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
             }}
       - name: Save JUnit duration cache
-        if: always()
+        if: ${{ always() && steps.classify.outputs.junit_cache_safe == 'true' }}
         uses: actions/cache/save@v4
         with:
           path: test-results/modal-fast-ci/junit.xml
@@ -161,31 +275,12 @@ jobs:
           name: modal-fast-ci
           path: test-results/modal-fast-ci/**
           if-no-files-found: warn
-      - name: Print test failures and exit
-        if: ${{ steps.run.outputs.exit_code != '0' && steps.run.outputs.exit_code != '2' }}
+      - name: Exit with classified status
+        if: always()
         run: |
-          python -c "
-          import xml.etree.ElementTree as ET, glob, sys
-          files = glob.glob('test-results/**/junit.xml', recursive=True)
-          if not files:
-              print('No JUnit XML found'); sys.exit(1)
-          failures = []
-          for f in files:
-              for tc in ET.parse(f).iter('testcase'):
-                  for fail in tc.findall('failure'):
-                      failures.append((tc.get('classname',''), tc.get('name',''), fail.text or ''))
-                  for err in tc.findall('error'):
-                      failures.append((tc.get('classname',''), tc.get('name',''), err.text or ''))
-          if not failures:
-              print('All tests passed!'); sys.exit(0)
-          print(f'\n::error::{len(failures)} test failure(s):\n')
-          for cls, name, msg in failures:
-              print(f'FAILED {cls}::{name}')
-              for line in msg.strip().splitlines()[-20:]:
-                  print(f'  {line}')
-              print()
-          sys.exit(1)
-          "
+          if [[ "${{ steps.classify.outputs.test_failed }}" == "true" ]]; then
+            exit 1
+          fi
   fallback-unit-test:
     needs: modal-fast-ci
     if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' }}

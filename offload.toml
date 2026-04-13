@@ -23,24 +23,27 @@ type = "default"
 #     create_command --env flags below) and copies from there
 #     instead of paying the ~17s clean_client init cost per batch.
 prepare_command = "uv run @modal_sandbox.py prepare Dockerfile.ci --cached --include-cwd --sandbox-init-cmd 'cd /app && pip install --no-deps -e . -q && python scripts/ci/build_zenml_template.py /opt/zenml-template'"
-create_command = "uv run @modal_sandbox.py create {image_id} --cpu 2 --memory-gb 4 --env COVERAGE_CORE=sysmon --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false --env ZENML_CLIENT_TEMPLATE_DIR=/opt/zenml-template"
+create_command = "uv run @modal_sandbox.py create {image_id} --cpu 2 --memory-gb 4 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false --env ZENML_CLIENT_TEMPLATE_DIR=/opt/zenml-template"
 # The high-frequency per-batch commands use system python3 instead of
 # `uv run` to skip uv's PEP 723 metadata resolve + virtualenv stat
 # dance on every invocation (~1-2s saved per call). Requires the CI
-# workflow to pre-install `modal`, `click`, and `dockerfile-parse`
-# into the runner's system Python before offload is executed. The
-# one-off prepare/create/destroy commands stay on `uv run` so the
-# env isolation is preserved where it matters.
+# workflow to pre-install the checked-in runner dependencies from
+# `scripts/ci/modal_sandbox_requirements.txt` into the system Python
+# before offload is executed. The one-off prepare/create/destroy
+# commands stay on `uv run` so the env isolation is preserved where
+# it matters.
 #
 # exec_and_fetch_command is the fused fast path: runs pytest AND
 # fetches the junit.xml in a single Python process (one Modal SDK
 # import + Sandbox.from_id round-trip instead of two). See
-# safoinme/offload feat/max-batch-duration for the supporting
+# commit 9d4275c84a81299555e3d020e4e18df1803e6831 for the supporting
 # Sandbox trait method. exec_command + download_command remain as
-# the safety fallback if the sandbox returns Ok(None).
+# the safety fallback if the sandbox returns Ok(None). Keep the
+# download_command log line intact so CI shows when the fused path
+# had to fall back to a second round-trip.
 exec_command = "python3 @modal_sandbox.py exec {sandbox_id} {command}"
 destroy_command = "uv run @modal_sandbox.py destroy {sandbox_id}"
-download_command = "python3 @modal_sandbox.py download {sandbox_id} {paths}"
+download_command = "printf '[offload] exec_and_fetch returned no inline artifacts; falling back to download_command.\\n' >&2; python3 @modal_sandbox.py download {sandbox_id} {paths}"
 exec_and_fetch_command = "python3 @modal_sandbox.py exec-and-fetch {sandbox_id} {command} --fetch {fetch}"
 timeout_secs = 960
 

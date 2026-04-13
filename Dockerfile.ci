@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION=3.13
 
-FROM python:${PYTHON_VERSION}-slim-bookworm
+FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 
 RUN set -ex \
   && apt-get update \
@@ -13,13 +13,25 @@ RUN pip install --upgrade wheel pip uv
 WORKDIR /app
 
 # Copy everything needed for install-zenml-dev.sh to resolve and install deps.
-# .dockerignore excludes .git, .venv, docs, examples, etc.
+# The allowlist in .dockerignore keeps hidden workspace junk out of the image.
 COPY . .
 
 # Install ZenML with all integrations using the same script CI uses.
 RUN scripts/install-zenml-dev.sh --integrations yes --system \
   && uv pip install --system 'setuptools<82' \
-  && pip cache purge 2>/dev/null || true
+  && { pip cache purge 2>/dev/null || true; }
 
-# Source is re-overlaid per run via include_cwd.
-RUN rm -rf /app/*
+FROM python:${PYTHON_VERSION}-slim-bookworm
+
+RUN set -ex \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends git graphviz \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+
+# The runtime image only needs the installed toolchain and Python packages.
+# offload overlays the current repo into /app for each run, so keeping the
+# copied build context in the final image just adds dead weight.
+COPY --from=builder /usr/local /usr/local
+
+WORKDIR /app

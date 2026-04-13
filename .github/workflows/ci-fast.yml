@@ -8,6 +8,13 @@ on:
     paths-ignore:
       - docs/**
       - '*'
+      - '!Dockerfile.ci'
+      - '!.dockerignore'
+      - '!offload.toml'
+      - '!scripts/ci/**'
+      - '!scripts/run-fast-ci-offload.sh'
+      - '!.github/workflows/ci-fast.yml'
+      - '!.github/workflows/linux-fast-modal.yml'
       - '!pyproject.toml'
       - '**.md'
       - .github/workflows/claude.yml
@@ -17,6 +24,13 @@ on:
     paths-ignore:
       - docs/**
       - '*'
+      - '!Dockerfile.ci'
+      - '!.dockerignore'
+      - '!offload.toml'
+      - '!scripts/ci/**'
+      - '!scripts/run-fast-ci-offload.sh'
+      - '!.github/workflows/ci-fast.yml'
+      - '!.github/workflows/linux-fast-modal.yml'
       - '!pyproject.toml'
       - '**.md'
       - .github/workflows/claude.yml
@@ -111,7 +125,7 @@ jobs:
     uses: ./.github/workflows/linux-fast-modal.yml
     with:
       python-version: '3.13'
-      use_modal: true
+      use_modal: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     secrets: inherit
   ubuntu-latest-docker-integration-test:
     needs: [linting]

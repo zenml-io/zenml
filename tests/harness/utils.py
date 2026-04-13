@@ -36,6 +36,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
 from zenml.login.credentials_store import CredentialsStore
 from zenml.stack.stack import Stack
+from zenml.utils.client_template_utils import build_client_template_dir
 
 
 def cleanup_folder(path: str) -> None:
@@ -59,6 +60,14 @@ def cleanup_folder(path: str) -> None:
             )
     else:
         shutil.rmtree(path)
+
+
+def _restore_env_var(name: str, value: Optional[str]) -> None:
+    """Restore an environment variable to its previous value."""
+    if value is not None:
+        os.environ[name] = value
+    else:
+        os.environ.pop(name, None)
 
 
 @contextmanager
@@ -216,103 +225,6 @@ def clean_project_session(
     client.delete_project(project_name)
 
 
-def build_client_template_dir(template_dir: Path) -> Path:
-    """Materialize a clean ZenML client tree at `template_dir`.
-
-    Runs the full Client/GlobalConfiguration init once (alembic
-    migrations, default project, default stack) and leaves the
-    resulting `zenml/` subtree on disk so that subsequent
-    `clean_default_client_session` calls can copy it instead of paying
-    the ~15-20s init cost per test. No-op if the template already
-    exists.
-
-    Args:
-        template_dir: Directory where the template should be created.
-            A `zenml/` subdirectory will be populated inside it.
-
-    Returns:
-        `template_dir`.
-    """
-    template_dir.mkdir(parents=True, exist_ok=True)
-    template_zenml = template_dir / "zenml"
-    if template_zenml.exists():
-        return template_dir
-
-    original_config = GlobalConfiguration.get_instance()
-    original_client = Client.get_instance()
-    original_credentials = CredentialsStore.get_instance()
-    orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
-    orig_cwd = os.getcwd()
-
-    try:
-        CredentialsStore.reset_instance()
-        GlobalConfiguration._reset_instance()
-        Client._reset_instance()
-
-        os.chdir(template_dir)
-        os.environ[ENV_ZENML_CONFIG_PATH] = str(template_zenml)
-        os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
-
-        gc = GlobalConfiguration()
-        gc.analytics_opt_in = False
-        client = Client()
-        # The template directory isn't itself a ZenML repo root, so
-        # Client()._sanitize_config() never touches the store. Force
-        # zen_store init explicitly so that the SQLite DB and the
-        # default project/stack/user are materialized inside the
-        # template tree.
-        _ = client.zen_store
-
-        # Seed the per-component `local_stores/<UUID>` directories.
-        # `LocalArtifactStore.path` creates the UUID subdir lazily on
-        # first property access, but we deliberately avoid going
-        # through `client.active_stack` here because that calls
-        # `Stack.from_model(...)` which populates a module-level
-        # `_STACK_CACHE` in src/zenml/stack/stack.py. A cached Stack
-        # instance holds already-initialized component objects, so a
-        # subsequent test that mocks `BaseArtifactStore._register`
-        # and then calls `active_stack.artifact_store` would hit the
-        # cache instead of constructing a fresh instance — breaking
-        # e.g. test_register_artifact_store_filesystem.
-        #
-        # Query the DB directly through the zen_store instead: list
-        # the default stack's artifact store components and create
-        # each `local_stores_path / <component_id>` folder. No
-        # Stack.from_model, no BaseArtifactStore.__init__, no
-        # _STACK_CACHE population.
-        try:
-            from zenml.enums import StackComponentType
-            from zenml.models import ComponentFilter
-
-            local_stores_root = Path(gc.local_stores_path)
-            filter_model = ComponentFilter(
-                type=StackComponentType.ARTIFACT_STORE,
-            )
-            components = client.zen_store.list_stack_components(
-                component_filter_model=filter_model,
-            )
-            for component in components.items:
-                (local_stores_root / str(component.id)).mkdir(
-                    parents=True, exist_ok=True
-                )
-        except Exception as e:  # noqa: BLE001
-            logging.warning(
-                "Failed to pre-create artifact store path in template: %s",
-                e,
-            )
-    finally:
-        os.chdir(orig_cwd)
-        if orig_config_path is not None:
-            os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
-        elif ENV_ZENML_CONFIG_PATH in os.environ:
-            del os.environ[ENV_ZENML_CONFIG_PATH]
-        GlobalConfiguration._reset_instance(original_config)
-        Client._reset_instance(original_client)
-        CredentialsStore.reset_instance(original_credentials)
-
-    return template_dir
-
-
 @contextmanager
 def clean_default_client_session(
     tmp_path_factory: pytest.TempPathFactory,
@@ -334,15 +246,10 @@ def clean_default_client_session(
     Yields:
         A clean ZenML client.
     """
-    # save the current global configuration and client singleton instances
-    # to restore them later, then reset them. Everything between here and
-    # the `finally` must be unwound no matter what: previous versions of
-    # this function relied on code-after-yield, which does not run if the
-    # body raises. That meant a single failing test could leak the
-    # DISABLE_DATABASE_MIGRATION env var into every subsequent test in the
-    # same batch, causing cascading "Missing flavor local" / "No user
-    # account 'default'" failures when later tests tried to initialize a
-    # fresh SqlZenStore with migrations effectively disabled.
+    # Save the singleton state we need to restore later, then reset it.
+    # The setup and teardown around the yield must both be exception-safe:
+    # leaving singleton state or DISABLE_DATABASE_MIGRATION behind would
+    # leak one test's local database configuration into the next one.
     orig_cwd = os.getcwd()
     original_config = GlobalConfiguration.get_instance()
     original_client = Client.get_instance()
@@ -368,8 +275,11 @@ def clean_default_client_session(
         from zenml.stack.stack import _STACK_CACHE
 
         _STACK_CACHE.clear()
-    except Exception:  # noqa: BLE001
-        pass
+    except (AttributeError, ImportError) as exc:
+        logging.warning(
+            "Failed to clear the stack cache before creating a clean client: %s",
+            exc,
+        )
 
     # change the working directory to a fresh temp path
     tmp_path = tmp_path_factory.mktemp("pytest-clean-client")
@@ -431,30 +341,25 @@ def clean_default_client_session(
             _ = client.zen_store
         finally:
             if used_template:
-                if orig_disable_migration is not None:
-                    os.environ["DISABLE_DATABASE_MIGRATION"] = (
-                        orig_disable_migration
-                    )
-                else:
-                    os.environ.pop("DISABLE_DATABASE_MIGRATION", None)
+                _restore_env_var(
+                    "DISABLE_DATABASE_MIGRATION",
+                    orig_disable_migration,
+                )
 
         logging.info(f"Tests are running in clean environment: {tmp_path}")
 
         yield client
     finally:
         # restore the global configuration path
-        if orig_config_path is not None:
-            os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
-        else:
-            os.environ.pop(ENV_ZENML_CONFIG_PATH, None)
+        _restore_env_var(ENV_ZENML_CONFIG_PATH, orig_config_path)
 
         # Defensive: the env var should already be restored by the
         # inner try/finally above, but make absolutely sure in case a
         # future refactor breaks that scoping.
-        if orig_disable_migration is not None:
-            os.environ["DISABLE_DATABASE_MIGRATION"] = orig_disable_migration
-        else:
-            os.environ.pop("DISABLE_DATABASE_MIGRATION", None)
+        _restore_env_var(
+            "DISABLE_DATABASE_MIGRATION",
+            orig_disable_migration,
+        )
 
         # restore the global configuration, the client and the
         # credentials store

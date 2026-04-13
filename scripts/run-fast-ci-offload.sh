@@ -31,19 +31,38 @@ if [[ -f "$FINGERPRINT_FILE" ]]; then
 fi
 echo "$current_fingerprint" > "$FINGERPRINT_FILE"
 
+rm -f "$JUNIT_FILE"
+
 echo "[offload] Running tests..."
 
+set +e
 offload run "${offload_flags[@]}" "$@"
-exit_code=$?
+offload_exit_code=$?
+set -e
 
 # Clean up per-batch log files -- only keep junit.xml
 rm -rf "$OUTPUT_DIR/logs" "$OUTPUT_DIR/junit-parts"
 
 # Print summary
+summary_exit_code=0
 if [[ -f "$JUNIT_FILE" ]]; then
     echo ""
     echo "=== Test Results ==="
-    python3 "$SCRIPT_DIR/ci/print_junit_summary.py" "$JUNIT_FILE" || true
+    if python3 "$SCRIPT_DIR/ci/print_junit_summary.py" "$JUNIT_FILE"; then
+        :
+    else
+        summary_exit_code=$?
+        echo "[offload] Failed to print JUnit summary for $JUNIT_FILE." >&2
+    fi
+elif [[ "$offload_exit_code" -eq 0 ]]; then
+    echo "[offload] Tests completed but no JUnit report was produced at $JUNIT_FILE." >&2
+    summary_exit_code=1
+else
+    echo "[offload] Tests failed before JUnit report was produced." >&2
 fi
 
-exit $exit_code
+if [[ "$offload_exit_code" -ne 0 ]]; then
+    exit "$offload_exit_code"
+fi
+
+exit "$summary_exit_code"
