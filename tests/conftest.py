@@ -26,13 +26,13 @@ from pytest_mock import MockerFixture
 
 from tests.harness.environment import TestEnvironment
 from tests.harness.utils import (
-    build_client_template_dir,
     check_test_requirements,
     clean_default_client_session,
     clean_project_session,
     environment_session,
 )
 from tests.venv_clone_utils import clone_virtualenv
+from zenml.utils.client_template_utils import build_client_template_dir
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
