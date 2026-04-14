@@ -4369,7 +4369,7 @@ class Client(metaclass=ClientMetaClass):
         active: bool = True,
         concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
     ) -> PlatformEventTriggerResponse:
-        """Create a native schedule trigger.
+        """Create a platform event trigger.
 
         Args:
             name: The name of the trigger.
@@ -4412,7 +4412,7 @@ class Client(metaclass=ClientMetaClass):
         target_events: list[SourceEvent] | None = None,
         concurrency: TriggerRunConcurrency | None = None,
     ) -> PlatformEventTriggerResponse:
-        """Update a native schedule trigger.
+        """Update a platform event trigger.
 
         Args:
             trigger_id: The ID of the trigger.
@@ -4451,7 +4451,7 @@ class Client(metaclass=ClientMetaClass):
     def get_platform_event_trigger(
         self, trigger_id: UUID
     ) -> PlatformEventTriggerResponse:
-        """Retrieve a trigger by trigger ID.
+        """Retrieve a platform event trigger by trigger ID.
 
         Args:
             trigger_id: The id of the trigger.
@@ -4483,7 +4483,6 @@ class Client(metaclass=ClientMetaClass):
         active: bool | None = None,
         concurrency: str | None = None,
         is_archived: bool = False,
-        next_occurrence: datetime | None = None,
         pipeline_id: str | UUID | None = None,
         snapshot_id: str | UUID | None = None,
     ) -> Page[PlatformEventTriggerResponse]:
@@ -4496,20 +4495,19 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or]
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
-            id: Use the id of schedule to filter by.
+            id: Use the id of trigger to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            name: The name of the schedule.
-            active: The active status of the schedule.
-            concurrency: The concurrency of the schedule.
-            is_archived: The archived status of the schedule.
-            flavor: The flavor of the schedule.
-            next_occurrence: The next occurrence of the schedule.
+            name: The name of the trigger.
+            active: The active status of the trigger.
+            concurrency: The concurrency of the trigger.
+            is_archived: The archived status of the trigger.
+            flavor: The flavor of the trigger.
             pipeline_id: Filter triggers by pipeline with attached snapshots.
             snapshot_id: Filter triggers by attached snapshot.
 
         Returns:
-            A Page of ScheduleTriggerResponse objects.
+            A Page of PlatformEventTriggerResponse objects.
         """
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
@@ -4530,7 +4528,7 @@ class Client(metaclass=ClientMetaClass):
                 page=page,
                 size=size,
                 logical_operator=logical_operator,
-                next_occurrence=next_occurrence,
+                next_occurrence=None,
                 pipeline_id=str(pipeline_id) if pipeline_id else None,
                 snapshot_id=str(snapshot_id) if snapshot_id else None,
             )
@@ -4569,7 +4567,7 @@ class Client(metaclass=ClientMetaClass):
         """Attaches a trigger to a snapshot.
 
         'Attaching' a trigger to a snapshot means that on each trigger event ( e.g. each
-        occurrence of a schedule) the snapshot will be executed.
+        occurrence of a schedule or on each platform event) the snapshot will be executed.
 
         Args:
             trigger_id: The ID of the trigger.
