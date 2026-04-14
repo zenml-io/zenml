@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     ClassVar,
     Dict,
@@ -820,12 +821,14 @@ class TriggerExecution(BaseModel):
     info: TriggerExecutionInfo | None = None
 
 
-TRIGGER_UPDATE_TYPE_UNION: TypeAlias = (
-    ScheduleTriggerUpdate | PlatformEventTriggerUpdate
-)
-TRIGGER_CREATE_TYPE_UNION: TypeAlias = (
-    ScheduleTriggerRequest | PlatformEventTriggerRequest
-)
+TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[
+    ScheduleTriggerUpdate | PlatformEventTriggerUpdate,
+    Field(discriminator="type"),
+]
+TRIGGER_CREATE_TYPE_UNION: TypeAlias = Annotated[
+    ScheduleTriggerRequest | PlatformEventTriggerRequest,
+    Field(discriminator="type"),
+]
 TRIGGER_RETURN_TYPE_UNION: TypeAlias = (
     ScheduleTriggerResponse | PlatformEventTriggerResponse
 )
