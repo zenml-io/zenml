@@ -164,7 +164,7 @@ class TriggerSchema(NamedSchema, table=True):
             nullable=True,
             default=None,
         ),
-        description="The event source(e.g. pipeline:<uuid>. Applicable for platform events.",
+        description="The target events of the trigger (e.g. event:run_completed). Applicable for platform events.",
     )
 
     @property
