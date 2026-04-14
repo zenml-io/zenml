@@ -371,7 +371,7 @@ class ServerConfiguration(BaseModel):
 
     _deployment_id: Optional[UUID] = None
 
-    event_handlers: list[str] = []
+    event_handler_sources: list[str] = []
 
     @model_validator(mode="before")
     @classmethod
@@ -489,7 +489,7 @@ class ServerConfiguration(BaseModel):
 
         return value
 
-    @field_validator("event_handlers", mode="before")
+    @field_validator("event_handler_sources", mode="before")
     @classmethod
     def _convert_event_handlers(cls, value: Any) -> list[str]:
         """Convert comma-separated value to list of strings.

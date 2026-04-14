@@ -15,9 +15,9 @@
 
 from contextlib import nullcontext
 
+from zenml.dispatcher import EventDispatcher
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
-from zenml.zen_server.dispatcher.utils import handle_run_status_update
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
@@ -276,6 +276,7 @@ from zenml.models import (
     PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     PipelineUpdate,
+    PlatformEventTriggerResponse,
     ProjectFilter,
     ProjectRequest,
     ProjectResponse,
@@ -8113,7 +8114,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_id: UUID,
         conditions: list[dict[str, str]],
-    ) -> list[TRIGGER_RETURN_TYPE_UNION]:
+    ) -> list[PlatformEventTriggerResponse]:
         """Matches incoming events against platform-event triggers.
 
         Custom utility, existing only in SqlZenStore.
@@ -8148,7 +8149,7 @@ class SqlZenStore(BaseZenStore):
             )
 
             return [
-                row.to_model(include_metadata=True, include_resources=True)
+                row.to_model(include_metadata=True, include_resources=True)  # type: ignore[misc]
                 for row in session.exec(stmt).all()
             ]
 
@@ -11910,7 +11911,9 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         if not did_update:
             return
-        handle_run_status_update(pipeline_run)
+        EventDispatcher.get_event_dispatcher().handle_run_status_update(
+            pipeline_run
+        )
         new_status = ExecutionStatus(pipeline_run.status)
 
         if new_status.is_finished and pipeline_run.end_time:

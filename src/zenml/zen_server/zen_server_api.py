@@ -95,7 +95,6 @@ from zenml.zen_server.secure_headers import (
 )
 from zenml.zen_server.utils import (
     cleanup_request_manager,
-    initialize_event_dispatcher,
     initialize_feature_gate,
     initialize_rbac,
     initialize_request_manager,
@@ -103,6 +102,7 @@ from zenml.zen_server.utils import (
     initialize_snapshot_executor,
     initialize_workload_manager,
     initialize_zen_store,
+    register_event_handlers,
     server_config,
     snapshot_executor,
     start_event_loop_lag_monitor,
@@ -150,6 +150,20 @@ def validation_exception_handler(
     return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
 
 
+def _register_running_loop(app_: FastAPI) -> None:
+    """Persists the running asyncio event loop to app state.
+
+    Note: Usable in cases where get_running_loop() is required
+    from threaded code.
+
+    Args:
+        app_: The FastAPI app.
+    """
+    import asyncio
+
+    app_.state.loop = asyncio.get_running_loop()
+
+
 @app.on_event("startup")
 async def initialize() -> None:
     """Initialize the ZenML server."""
@@ -169,7 +183,6 @@ async def initialize() -> None:
     initialize_workload_manager()
     initialize_resource_pool_store()
     initialize_snapshot_executor()
-    initialize_event_dispatcher()
     initialize_secure_headers()
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
@@ -178,6 +191,9 @@ async def initialize() -> None:
 
     if logger.isEnabledFor(logging.DEBUG):
         start_event_loop_lag_monitor()
+
+    _register_running_loop(app)
+    await register_event_handlers()
 
 
 @app.on_event("shutdown")
