@@ -134,7 +134,7 @@ def my_step():
 This approach allows you to use different components for different steps in your pipeline while also customizing their runtime behavior.
 
 {% hint style="info" %}
-If your stack contains multiple step operators, `@step(step_operator=True)` uses the default step operator, which is the first attached step operator of that type in the stack. If your stack contains multiple experiment trackers, `@step(experiment_tracker=True)` activates all attached experiment trackers for that step.
+If your stack contains multiple step operators, `@step(step_operator=True)` uses the default step operator, which is the first attached step operator in the stack. If your stack contains multiple experiment trackers, `@step(experiment_tracker=True)` activates all attached experiment trackers for that step.
 {% endhint %}
 
 ## Types of Settings
