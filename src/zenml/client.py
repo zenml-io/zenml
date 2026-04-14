@@ -71,7 +71,6 @@ from zenml.enums import (
     RunWaitConditionResolution,
     ServiceState,
     SorterOps,
-    SourceEvent,
     SourceType,
     StackComponentType,
     StoreType,
@@ -4364,7 +4363,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         source_type: SourceType,
         source_id: UUID,
-        target_events: list[SourceEvent],
+        target_events: list[str],
         project_id: str | UUID | None = None,
         active: bool = True,
         concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
@@ -4409,7 +4408,7 @@ class Client(metaclass=ClientMetaClass):
         active: bool | None = None,
         source_type: SourceType | None = None,
         source_id: UUID | None = None,
-        target_events: list[SourceEvent] | None = None,
+        target_events: list[str] | None = None,
         concurrency: TriggerRunConcurrency | None = None,
     ) -> PlatformEventTriggerResponse:
         """Update a platform event trigger.

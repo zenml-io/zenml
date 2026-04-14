@@ -34,11 +34,11 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
-    SourceEvent,
     SourceType,
     TriggerFlavor,
     TriggerRunConcurrency,
     TriggerType,
+    PLATFORM_EVENT_REGISTRY,
 )
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
@@ -655,23 +655,11 @@ class SourceEntity(BaseModel):
     id: UUID
 
 
-SOURCE_TYPE_EVENT_MAPPING = {
-    SourceType.PIPELINE.value: {
-        SourceEvent.RUN_FAILED.value,
-        SourceEvent.RUN_COMPLETED.value,
-    },
-    SourceType.PIPELINE_RUN: {
-        SourceEvent.COMPLETED.value,
-        SourceEvent.FAILED.value,
-    },
-}
-
-
 class PlatformEventTrigger(BaseModel):
     """Base class for event-specific parameters."""
 
     source_entity: SourceEntity
-    target_events: list[SourceEvent]
+    target_events: list[str]
 
     @model_validator(mode="after")
     def validate_event_type(self) -> "PlatformEventTrigger":
@@ -683,14 +671,19 @@ class PlatformEventTrigger(BaseModel):
         Raises:
             ValueError: If type/event combination is invalid.
         """
-        if any(
-            event.value
-            not in SOURCE_TYPE_EVENT_MAPPING.get(self.source_entity.type, {})
-            for event in self.target_events
-        ):
-            raise ValueError(
-                f"Events {[e.value for e in self.target_events]} is not compatible with source {self.source_entity.type}"
-            )
+
+        event_enum = PLATFORM_EVENT_REGISTRY[self.source_entity.type]
+
+        for event in self.target_events:
+
+            try:
+                event_enum(event)
+            except ValueError:
+                allowed = [e.value for e in event_enum]
+                raise ValueError(
+                    f"Invalid event '{event}' for source_type '{self.source_entity.type}'. "
+                    f"Allowed events: {allowed}"
+                )
 
         return self
 
@@ -722,7 +715,7 @@ class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
         return {
             "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
             "target_events": " ".join(
-                f"event:{event.value}" for event in self.target_events
+                f"event:{event}" for event in self.target_events
             ),
         }
 
@@ -754,7 +747,7 @@ class PlatformEventTriggerUpdate(TriggerUpdate, PlatformEventTrigger):
         return {
             "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
             "target_events": " ".join(
-                event.value for event in self.target_events
+                f"event:{event}" for event in self.target_events
             ),
         }
 
@@ -797,7 +790,7 @@ class PlatformEventTriggerResponse(
         return self.get_body().source_entity.id
 
     @property
-    def target_events(self) -> list[SourceEvent]:
+    def target_events(self) -> list[str]:
         """Implements the `target_events` property.
 
         Returns:

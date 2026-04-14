@@ -5,7 +5,6 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.enums import (
-    SourceEvent,
     SourceType,
     TriggerFlavor,
     TriggerRunConcurrency,
@@ -191,7 +190,7 @@ def test_platform_event_valid_and_inheritance():
         type=TriggerType.PLATFORM_EVENT,
         flavor=TriggerFlavor.PLATFORM_EVENT,
         source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
-        target_events=[SourceEvent.COMPLETED],
+        target_events=["completed"],
     )
     assert req.name == "evt"
     assert req.source_entity.type == SourceType.PIPELINE_RUN
@@ -202,7 +201,7 @@ def test_platform_event_valid_and_inheritance():
         type=TriggerType.PLATFORM_EVENT,
         flavor=TriggerFlavor.PLATFORM_EVENT,
         source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
-        target_events=[SourceEvent.COMPLETED],
+        target_events=["completed"],
     )
     assert upd.source_entity.type == SourceType.PIPELINE_RUN
 
@@ -218,7 +217,7 @@ def test_platform_event_valid_and_inheritance():
         concurrency=TriggerRunConcurrency.SKIP,
         is_archived=False,
         source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
-        target_events=[SourceEvent.COMPLETED],
+        target_events=["completed"],
     )
     assert body.source_entity.type == SourceType.PIPELINE_RUN
 
@@ -233,7 +232,7 @@ def test_platform_event_invalid_combinations():
             type=TriggerType.PLATFORM_EVENT,
             flavor=TriggerFlavor.PLATFORM_EVENT,
             source_entity={"type": SourceType.PIPELINE, "id": uuid4()},
-            target_events=[SourceEvent.COMPLETED],
+            target_events=["completed"],
         )
 
     # invalid: pipeline_run + RUN_COMPLETED
@@ -245,5 +244,5 @@ def test_platform_event_invalid_combinations():
             type=TriggerType.PLATFORM_EVENT,
             flavor=TriggerFlavor.PLATFORM_EVENT,
             source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
-            target_events=[SourceEvent.RUN_COMPLETED],
+            target_events=["run_completed"],
         )

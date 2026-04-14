@@ -661,17 +661,26 @@ class ContainerEngineType(StrEnum):
     PODMAN = "podman"
 
 
-class SourceEvent(StrEnum):
-    """Base class representing a SourceEvent."""
-
-    COMPLETED = "completed"
-    FAILED = "failed"
-    RUN_COMPLETED = "run_completed"
-    RUN_FAILED = "run_failed"
-
-
 class SourceType(StrEnum):
     """Enum representing the source type."""
 
     PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
+
+
+class PipelineEvent(StrEnum):
+    """Enum representing platform target events for pipelines."""
+    RUN_COMPLETED = "run_completed"
+    RUN_FAILED = "run_failed"
+
+
+class PipelineRunEvent(StrEnum):
+    """Enum representing platform target events for pipeline runs."""
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+PLATFORM_EVENT_REGISTRY: dict[SourceType, type[StrEnum]] = {
+    SourceType.PIPELINE: PipelineEvent,
+    SourceType.PIPELINE_RUN: PipelineRunEvent,
+}
