@@ -91,6 +91,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+    from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
     from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 
 
@@ -300,6 +301,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
     )
 
+    trigger_execution: Optional["TriggerExecutionSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "lazy": "select",
+        },
+    )
+
     # Needed for cascade deletion
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
@@ -376,6 +383,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
                     joinedload(jl_arg(PipelineRunSchema.trigger)),
+                    selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
                 ]
             )
 
@@ -685,6 +693,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 enable_heartbeat=self.enable_heartbeat,
                 exception_info=json.loads(self.exception_info)
                 if self.exception_info
+                else None,
+                trigger_execution_info=self.trigger_execution.to_model().info
+                if self.trigger_execution
                 else None,
             )
 

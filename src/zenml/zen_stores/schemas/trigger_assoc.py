@@ -13,14 +13,16 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Triggers Associations."""
 
+import json
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import UniqueConstraint
-from sqlmodel import Field, Relationship, SQLModel
+from sqlalchemy import TEXT, Column, String, UniqueConstraint
+from sqlmodel import Field, SQLModel
 
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.models import TriggerExecution
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 
@@ -101,9 +103,26 @@ class TriggerExecutionSchema(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=utc_now)
 
-    # TriggerExecution -> 1 PipelineRun
-    pipeline_run: "PipelineRunSchema" = Relationship(
-        sa_relationship_kwargs={
-            "lazy": "select",
-        },
+    info: str | None = Field(
+        sa_column=Column(
+            String(length=TEXT_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
+            nullable=True,
+            default=None,
+        ),
+        description="JSON object - extra info on trigger execution.",
     )
+
+    def to_model(
+        self,
+    ) -> TriggerExecution:
+        """Converts to Pydantic response model.
+
+        Returns:
+            A TriggerExecution object.
+        """
+        return TriggerExecution(
+            trigger_id=self.trigger_id,
+            pipeline_run_id=self.pipeline_run_id,
+            created_at=self.created_at,
+            info=json.loads(self.info) if self.info else None,
+        )

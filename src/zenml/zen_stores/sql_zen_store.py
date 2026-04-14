@@ -449,7 +449,10 @@ if TYPE_CHECKING:
     from concurrent.futures import Future
 
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
-    from zenml.models.v2.core.triggers import UnScopedTriggerFilter
+    from zenml.models.v2.core.triggers import (
+        TriggerExecutionInfo,
+        UnScopedTriggerFilter,
+    )
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -8064,6 +8067,7 @@ class SqlZenStore(BaseZenStore):
         self,
         trigger_id: UUID,
         pipeline_run_id: UUID,
+        info: "TriggerExecutionInfo | None" = None,
     ) -> None:
         """Creates a trigger execution object.
 
@@ -8072,6 +8076,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             pipeline_run_id: The ID of the pipeline run.
+            info: Additional information about the trigger execution (e.g. upstream run id).
 
         Raises:
             KeyError: if the entities don't exist.
@@ -8098,6 +8103,7 @@ class SqlZenStore(BaseZenStore):
             new_assoc = TriggerExecutionSchema(
                 trigger_id=trigger_id,
                 pipeline_run_id=pipeline_run_id,
+                info=info.model_dump_json() if info is not None else None,
             )
 
             session.add(new_assoc)
