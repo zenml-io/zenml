@@ -10244,11 +10244,11 @@ class SqlZenStore(BaseZenStore):
                 session.add(new_stack_schema)
                 session.flush()
 
-                for composition in self._create_stack_compositions(
+                self._add_stack_compositions(
                     stack_id=new_stack_schema.id,
                     component_ids_by_type=components_mapping,
-                ):
-                    session.add(composition)
+                    session=session,
+                )
 
                 self._link_secrets_to_resource(
                     resource=new_stack_schema,
@@ -10302,28 +10302,25 @@ class SqlZenStore(BaseZenStore):
                 )
                 raise
 
-    def _create_stack_compositions(
+    def _add_stack_compositions(
         self,
         stack_id: UUID,
         component_ids_by_type: Dict[StackComponentType, List[UUID]],
-    ) -> List[StackCompositionSchema]:
-        """Create ordered stack composition rows for a stack.
+        session: Session,
+    ) -> None:
+        """Create and persist stack composition rows for a stack.
 
         Args:
             stack_id: The ID of the stack the compositions belong to.
             component_ids_by_type: Ordered component IDs grouped by type. The
                 first component ID of each type becomes the default.
-
-        Returns:
-            The stack composition rows to persist.
+            session: The session in which to persist the rows.
         """
-        compositions = []
-
         for component_type, component_ids in component_ids_by_type.items():
             default_component_id = component_ids[0] if component_ids else None
 
             for component_id in component_ids:
-                compositions.append(
+                session.add(
                     StackCompositionSchema(
                         stack_id=stack_id,
                         component_id=component_id,
@@ -10334,8 +10331,6 @@ class SqlZenStore(BaseZenStore):
                         ),
                     )
                 )
-
-        return compositions
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -10448,11 +10443,11 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
 
-                for composition in self._create_stack_compositions(
+                self._add_stack_compositions(
                     stack_id=existing_stack.id,
                     component_ids_by_type=component_ids_by_type,
-                ):
-                    session.add(composition)
+                    session=session,
+                )
 
             self._link_secrets_to_resource(
                 resource=existing_stack,
