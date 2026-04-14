@@ -94,7 +94,7 @@ def _get_step_operator(
     if step_operator is None:
         raise RuntimeError(
             f"No step operator named '{step_operator_name}' found in active "
-            f"stack '{stack.name}'. Available step operators: {stack.step_operators.keys()}."
+            f"stack '{stack.name}'. Available step operators: {list(stack.step_operators)}."
         )
 
     return step_operator
