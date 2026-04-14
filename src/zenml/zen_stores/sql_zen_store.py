@@ -11526,8 +11526,10 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
+            execution_status = ExecutionStatus(existing_step_run.status)
             if (
-                ExecutionStatus(existing_step_run.status).is_finished
+                execution_status.is_finished
+                or execution_status == ExecutionStatus.RETRYING
                 and self.resource_pools_enabled
             ):
                 self.resource_pools.release_step_run_resources(
