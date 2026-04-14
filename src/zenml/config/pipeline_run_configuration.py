@@ -150,12 +150,7 @@ class ReplayRunConfiguration(PipelineRunConfiguration):
         default=None,
         description="The steps to skip when replaying the pipeline.",
     )
-    input_overrides: Optional[Mapping[str, Any]] = Field(
-        default=None,
-        description="The pipeline input overrides. Only supported for "
-        "dynamic pipelines.",
-    )
-    step_input_overrides: Optional[Mapping[str, Mapping[str, UUID]]] = Field(
+    step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]] = Field(
         default=None,
         description="The step input overrides for the pipeline run.",
     )

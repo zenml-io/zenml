@@ -166,66 +166,74 @@ def create_snapshot_from_source(
     Returns:
         A new pipeline snapshot response.
     """
+    if isinstance(run_configuration, ReplayRunConfiguration):
+        run_configuration = _maybe_upload_step_input_overrides(
+            run_configuration=run_configuration,
+            stack=stack,
+        )
+
     snapshot_request = snapshot_request_from_source_snapshot(
         source_snapshot=snapshot,
         config=run_configuration or PipelineRunConfiguration(),
         template_id=template_id,
     )
     ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
-
-    if isinstance(run_configuration, ReplayRunConfiguration):
-        snapshot_request = adjust_snapshot_request_for_replay(
-            snapshot_request=snapshot_request,
-            replay_configuration=run_configuration,
-        )
-
     return zen_store().create_snapshot(snapshot_request)
 
 
-def adjust_snapshot_request_for_replay(
-    snapshot_request: PipelineSnapshotRequest,
-    replay_configuration: ReplayRunConfiguration,
-) -> PipelineSnapshotRequest:
-    """Adjust the snapshot request for a replay run.
+def _maybe_upload_step_input_overrides(
+    run_configuration: ReplayRunConfiguration,
+    stack: StackResponse,
+) -> ReplayRunConfiguration:
+    """Maybe upload step input overrides for a replay run.
 
     Args:
-        snapshot_request: The snapshot request to adjust.
-        replay_configuration: The replay configuration.
-
-    Raises:
-        ValueError: If input overrides are provided for a static pipeline.
+        run_configuration: The run configuration.
+        stack: The stack for the run.
 
     Returns:
-        The adjusted snapshot request.
+        The run configuration with the step input overrides uploaded.
     """
-    pipeline_config_update = {}
+    from zenml.artifacts.external_artifact import ExternalArtifact
+    from zenml.artifacts.utils import load_artifact_store
 
-    if replay_configuration.input_overrides:
-        if not snapshot_request.is_dynamic:
-            raise ValueError(
-                "Input overrides are only supported for dynamic pipelines."
-            )
-        parameters = snapshot_request.pipeline_configuration.parameters or {}
-        parameters.update(replay_configuration.input_overrides)
-        pipeline_config_update["parameters"] = parameters
+    if not run_configuration.step_input_overrides:
+        return run_configuration
 
-    pipeline_config_update.update(
-        replay_configuration.model_dump(
-            exclude_none=True,
-            include={
-                "steps_to_skip",
-                "skip_successful_steps",
-                "step_input_overrides",
-            },
-        )
+    if all(
+        isinstance(value, UUID)
+        for overrides in run_configuration.step_input_overrides.values()
+        for value in overrides.values()
+    ):
+        return run_configuration
+
+    artifact_store = load_artifact_store(
+        stack.components[StackComponentType.ARTIFACT_STORE][0].id,
+        zen_store=zen_store(),
     )
 
-    snapshot_request.pipeline_configuration = (
-        snapshot_request.pipeline_configuration.model_copy(
-            update=pipeline_config_update
-        )
+    override_ids: Dict[str, Dict[str, UUID]] = {}
+
+    for (
+        invocation_id,
+        overrides,
+    ) in run_configuration.step_input_overrides.items():
+        override_ids[invocation_id] = {}
+        for input_name, value in overrides.items():
+            # We treat UUIDs as already uploaded artifact versions, and for the
+            # rest we try to upload them to the artifact store.
+            if isinstance(value, UUID):
+                artifact_version_id = value
+            else:
+                artifact_version_id = ExternalArtifact(
+                    value=value
+                ).upload_by_value(artifact_store=artifact_store)
+
+            override_ids[invocation_id][input_name] = artifact_version_id
+
+    return run_configuration.model_copy(
+        update={"step_input_overrides": override_ids}
     )
-    return snapshot_request
 
 
 def run_snapshot(
