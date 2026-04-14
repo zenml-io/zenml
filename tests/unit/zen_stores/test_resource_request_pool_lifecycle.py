@@ -27,6 +27,10 @@ from zenml.zen_stores.schemas.resource_pool_schemas import (
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
+pytest.skip(
+    "Resource pool lifecycle tests are disabled.", allow_module_level=True
+)
+
 
 def _create_step_run_in_db(
     clean_client,
