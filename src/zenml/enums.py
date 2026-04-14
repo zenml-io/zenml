@@ -670,12 +670,14 @@ class SourceType(StrEnum):
 
 class PipelineEvent(StrEnum):
     """Enum representing platform target events for pipelines."""
+
     RUN_COMPLETED = "run_completed"
     RUN_FAILED = "run_failed"
 
 
 class PipelineRunEvent(StrEnum):
     """Enum representing platform target events for pipeline runs."""
+
     COMPLETED = "completed"
     FAILED = "failed"
 

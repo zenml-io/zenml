@@ -362,3 +362,18 @@ def detach_trigger_from_snapshot(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
     )
+
+
+@router.get("supported-events", responses={422: error_response})
+def list_supported_events(source_type: SourceType) -> list[str]:
+    """Helper endpoint. Returns a list of supported events for a source type.
+
+    Args:
+        source_type: A source type.
+
+    Returns:
+        A list of supported events for the source type.
+    """
+    from zenml.utils.trigger_utils import list_supported_events
+
+    return list_supported_events(source_type=source_type)

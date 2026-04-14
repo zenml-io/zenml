@@ -4279,6 +4279,9 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The trigger response.
+
+        Raises:
+            ValueError: If the trigger is not of schedule type.
         """
         trigger = self.zen_store.get_trigger(trigger_id=trigger_id)
 
@@ -4457,6 +4460,9 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The trigger response.
+
+        Raises:
+            ValueError: If the trigger is not of platform event type.
         """
         trigger = self.zen_store.get_trigger(trigger_id=trigger_id)
 
@@ -4501,7 +4507,6 @@ class Client(metaclass=ClientMetaClass):
             active: The active status of the trigger.
             concurrency: The concurrency of the trigger.
             is_archived: The archived status of the trigger.
-            flavor: The flavor of the trigger.
             pipeline_id: Filter triggers by pipeline with attached snapshots.
             snapshot_id: Filter triggers by attached snapshot.
 

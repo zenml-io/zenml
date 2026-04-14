@@ -34,11 +34,11 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
+    PLATFORM_EVENT_REGISTRY,
     SourceType,
     TriggerFlavor,
     TriggerRunConcurrency,
     TriggerType,
-    PLATFORM_EVENT_REGISTRY,
 )
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
@@ -671,11 +671,9 @@ class PlatformEventTrigger(BaseModel):
         Raises:
             ValueError: If type/event combination is invalid.
         """
-
         event_enum = PLATFORM_EVENT_REGISTRY[self.source_entity.type]
 
         for event in self.target_events:
-
             try:
                 event_enum(event)
             except ValueError:

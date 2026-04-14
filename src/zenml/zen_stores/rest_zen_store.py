@@ -2493,6 +2493,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The created trigger.
+
+        Raises:
+            ValueError: If an unexpected payload is retrieved.
         """
         body: dict[str, Any] = self.post(TRIGGERS, body=trigger)  # type: ignore[assignment]
 
