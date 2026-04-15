@@ -115,9 +115,9 @@ Build the complete NO_PROXY list
 {{- end -}}
 {{- end -}}
 {{- /* Add the gateway hostname if specified */ -}}
-{{- if .Values.zenml.gateway.host -}}
-{{- if not (contains .Values.zenml.gateway.host $noProxy) -}}
-{{- $noProxy = printf "%s,%s" $noProxy .Values.zenml.gateway.host -}}
+{{- if $server.gateway.host -}}
+{{- if not (contains $server.gateway.host $noProxy) -}}
+{{- $noProxy = printf "%s,%s" $noProxy $server.gateway.host -}}
 {{- end -}}
 {{- end -}}
 {{- range $server.proxy.additionalNoProxy -}}

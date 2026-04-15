@@ -4,7 +4,7 @@ description: Migrate ZenML Helm deployments from Ingress to Kubernetes Gateway A
 
 # Migrate to Gateway API
 
-Gateway API is the Kubernetes networking successor to the legacy Ingress model. If you currently expose ZenML through `zenml.ingress`, this guide shows how to migrate to `zenml.gateway` with minimal downtime.
+Gateway API is the Kubernetes networking successor to the legacy Ingress model. If you currently expose ZenML through `server.ingress`, this guide shows how to migrate to `server.gateway` with minimal downtime.
 
 ## Why migrate
 
@@ -15,9 +15,11 @@ Gateway API is the Kubernetes networking successor to the legacy Ingress model. 
 ## Prerequisites
 
 - Kubernetes 1.26+
-- A Gateway API implementation installed in the cluster (Envoy Gateway, Istio, NGINX Gateway Fabric, GKE Gateway)
-- A `Gateway` resource already provisioned and reachable
+- A Gateway API implementation with `v1` CRDs available (for example, `gateway.networking.k8s.io/v1` for `Gateway` and `HTTPRoute`; Envoy Gateway, Istio, NGINX Gateway Fabric, GKE Gateway)
+- A `Gateway` resource already provisioned and reachable using the installed Gateway API `v1` CRDs
 - DNS access for cutover planning
+
+> ZenML renders `HTTPRoute` resources with `apiVersion: gateway.networking.k8s.io/v1`. Clusters that only have older Gateway API CRDs installed (for example, `v1beta1`) must upgrade those CRDs before enabling `server.gateway`.
 
 ## Migration overview
 
@@ -33,7 +35,7 @@ Gateway API is the Kubernetes networking successor to the legacy Ingress model. 
 ### Before (Ingress)
 
 ```yaml
-zenml:
+server:
   ingress:
     enabled: true
     host: zenml.example.com
@@ -42,7 +44,7 @@ zenml:
 ### After (Gateway API)
 
 ```yaml
-zenml:
+server:
   ingress:
     enabled: false
   gateway:
@@ -81,7 +83,7 @@ Create a GKE-managed `Gateway` and map your external DNS hostnames to the provis
 You can add custom annotations to the `HTTPRoute` resource:
 
 ```yaml
-zenml:
+server:
   gateway:
     enabled: true
     annotations:
@@ -124,7 +126,7 @@ If migration introduces a new load balancer:
 2. Set Helm values back to ingress mode:
 
 ```yaml
-zenml:
+server:
   ingress:
     enabled: true
     host: zenml.example.com

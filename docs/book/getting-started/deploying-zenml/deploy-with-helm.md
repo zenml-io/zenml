@@ -291,7 +291,7 @@ ZenML also supports Kubernetes Gateway API through `HTTPRoute` resources. This i
 Use the following values pattern:
 
 ```yaml
-zenml:
+server:
   ingress:
     enabled: false
   gateway:
@@ -305,7 +305,7 @@ zenml:
     path: /
 ```
 
-> **Important:** `zenml.ingress.enabled` and `zenml.gateway.enabled` are mutually exclusive.
+> **Important:** `server.ingress.enabled` and `server.gateway.enabled` are mutually exclusive. The chart will fail to render if both are `true`.
 
 For a full migration flow (prerequisites, rollout strategy, TLS options, DNS cutover, and rollback), see [Migrate to Gateway API](migrate-to-gateway-api.md).
 
