@@ -53,6 +53,7 @@ from zenml.deployers.server.fastapi.adapters import (
     FastAPIEndpointAdapter,
     FastAPIMiddlewareAdapter,
 )
+from zenml.deployers.streaming import create_stream_queue, iter_sse_events
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -102,6 +103,44 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             ),
             native=True,
         )
+
+    def _build_stream_invoke_endpoint(self) -> Any:
+        """Create the FastAPI endpoint used for streamed pipeline invocation.
+
+        Returns:
+            A callable endpoint that streams lifecycle events as SSE.
+        """
+        from fastapi.responses import StreamingResponse
+
+        PipelineInvokeRequest, _ = self.service.get_pipeline_invoke_models()
+
+        def _stream_invoke_endpoint(
+            request: PipelineInvokeRequest,  # type: ignore[valid-type]
+        ) -> StreamingResponse:
+            event_queue = create_stream_queue()
+            execution_future = self._executor.submit(
+                self.service.execute_pipeline_streamed,
+                request,
+                event_queue,
+            )
+
+            # TODO: Once we upgrade to FastAPI 0.135.0, we should use the
+            # builtin SSE functionality. See
+            # https://fastapi.tiangolo.com/tutorial/server-sent-events/
+            return StreamingResponse(
+                iter_sse_events(
+                    event_queue=event_queue,
+                    producer_future=execution_future,
+                ),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",
+                },
+            )
+
+        return _stream_invoke_endpoint
 
     def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
         """Get the dashboard endpoints specs.

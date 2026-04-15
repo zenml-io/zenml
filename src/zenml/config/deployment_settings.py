@@ -494,6 +494,7 @@ DEFAULT_DEPLOYMENT_APP_API_URL_PATH = ""
 DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH = "/docs"
 DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH = "/redoc"
 DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH = "/invoke"
+DEFAULT_DEPLOYMENT_APP_STREAM_INVOKE_URL_PATH = "/invoke_stream"
 DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH = "/health"
 DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH = "/info"
 DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH = "/metrics"
@@ -506,14 +507,24 @@ class DeploymentDefaultEndpoints(IntFlag):
     DOCS = auto()
     REDOC = auto()
     INVOKE = auto()
+    STREAM_INVOKE = auto()
     HEALTH = auto()
     INFO = auto()
     METRICS = auto()
     DASHBOARD = auto()
 
     DOC = DOCS | REDOC
-    API = INVOKE | HEALTH | INFO | METRICS
-    ALL = DOCS | REDOC | INVOKE | HEALTH | INFO | METRICS | DASHBOARD
+    API = STREAM_INVOKE | INVOKE | HEALTH | INFO | METRICS
+    ALL = (
+        DOCS
+        | REDOC
+        | STREAM_INVOKE
+        | INVOKE
+        | HEALTH
+        | INFO
+        | METRICS
+        | DASHBOARD
+    )
 
 
 class DeploymentDefaultMiddleware(IntFlag):
@@ -542,6 +553,7 @@ class DeploymentSettings(BaseSettings):
     `app_version` and `app_kwargs`
     * the URL paths for the various built-in endpoints: `root_url_path`,
     `api_url_path`, `docs_url_path`, `redoc_url_path`, `invoke_url_path`,
+    `stream_invoke_url_path`,
     `health_url_path`, `info_url_path` and `metrics_url_path`
     * the location of dashboard static files can be provided to replace the
     default UI that is included with the deployment ASGI application:
@@ -602,6 +614,7 @@ class DeploymentSettings(BaseSettings):
         redoc_url_path: URL path for the Redoc documentation endpoint.
         api_url_path: URL path for the API endpoints.
         invoke_url_path: URL path for the API invoke endpoint.
+        stream_invoke_url_path: URL path for the streaming API invoke endpoint.
         health_url_path: URL path for the API health check endpoint.
         info_url_path: URL path for the API info endpoint.
         metrics_url_path: URL path for the API metrics endpoint.
@@ -671,6 +684,7 @@ class DeploymentSettings(BaseSettings):
     docs_url_path: str = DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH
     redoc_url_path: str = DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH
     invoke_url_path: str = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
+    stream_invoke_url_path: str = DEFAULT_DEPLOYMENT_APP_STREAM_INVOKE_URL_PATH
     health_url_path: str = DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH
     info_url_path: str = DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH
     metrics_url_path: str = DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH
