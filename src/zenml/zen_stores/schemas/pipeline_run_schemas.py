@@ -340,12 +340,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         options = []
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(PipelineRunSchema.run_metadata)),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend([
+                selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
+            ])
 
         if include_resources:
             options.extend(
@@ -383,7 +381,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
                     joinedload(jl_arg(PipelineRunSchema.trigger)),
-                    selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
                 ]
             )
 
