@@ -233,14 +233,14 @@ class StackSchema(NamedSchema, table=True):
         """
         options = []
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(StackSchema.components)).joinedload(
-        #                 jl_arg(StackComponentSchema.flavor_schema)
-        #             ),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    joinedload(
+                        jl_arg(StackSchema.stack_compositions)
+                    ).joinedload(jl_arg(StackCompositionSchema.component))
+                ]
+            )
 
         if include_resources:
             options.extend([joinedload(jl_arg(StackSchema.user))])
