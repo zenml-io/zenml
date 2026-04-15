@@ -11530,8 +11530,7 @@ class SqlZenStore(BaseZenStore):
             if (
                 execution_status.is_finished
                 or execution_status == ExecutionStatus.RETRYING
-                and self.resource_pools_enabled
-            ):
+            ) and self.resource_pools_enabled:
                 self.resource_pools.release_step_run_resources(
                     session, existing_step_run.id
                 )
