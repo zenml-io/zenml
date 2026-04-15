@@ -18,6 +18,7 @@ from typing import (
     TYPE_CHECKING,
     Dict,
     Mapping,
+    Optional,
     Sequence,
     Type,
     Union,
@@ -29,12 +30,15 @@ from zenml.config.constants import (
     RESOURCE_SETTINGS_KEY,
 )
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.models.v2.core.component import ComponentResponse
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.stack import StackComponent
     from zenml.stack.flavor import Flavor
+
+logger = get_logger(__name__)
 
 STACK_COMPONENT_REGEX = re.compile(
     "(" + "|".join(StackComponentType.values()) + r")([.:].+)?"
@@ -90,6 +94,8 @@ def _get_component_flavor(
     Returns:
         The component flavor.
     """
+    from zenml.stack import StackComponent
+
     if isinstance(component, StackComponent):
         return component.flavor
     return component.flavor_name
@@ -101,7 +107,7 @@ def resolve_stack_component_setting_key(
         StackComponentType,
         Sequence[Union["StackComponent", ComponentResponse]],
     ],
-) -> str:
+) -> Optional[str]:
     """Resolves a setting selector to a canonical component key.
 
     Args:
@@ -109,10 +115,12 @@ def resolve_stack_component_setting_key(
         components_by_type: Components grouped by type.
 
     Returns:
-        The canonical `type:name` key for the resolved component.
+        The canonical `type:name` key for the resolved component. Returns
+        `None` if an explicit name/flavor selector doesn't match any component.
 
     Raises:
-        ValueError: If the selector does not resolve to exactly one component.
+        ValueError: If the selector resolves ambiguously or if a shortcut key
+            cannot be resolved.
     """
     if not is_stack_component_setting_key(key):
         raise ValueError(f"Invalid stack component setting key `{key}`.")
@@ -151,6 +159,14 @@ def resolve_stack_component_setting_key(
                 f"`{key}` because the stack has no default component of type "
                 f"{component_type}."
             )
+        if len(matches) == 0:
+            logger.warning(
+                "Ignoring settings key `%s` because it doesn't match any "
+                "attached %s component.",
+                key,
+                component_type.value,
+            )
+            return None
         raise ValueError(
             "Unable to resolve settings key "
             f"`{key}` because it matched {len(matches)} components."
@@ -177,6 +193,7 @@ def normalize_stack_component_setting_keys(
     """
     resolved_settings: Dict[str, "BaseSettings"] = {}
     resolved_from: Dict[str, str] = {}
+    ignored_keys = []
 
     for key, component_settings in settings.items():
         if not is_stack_component_setting_key(key):
@@ -186,6 +203,9 @@ def normalize_stack_component_setting_keys(
             key=key,
             components_by_type=components_by_type,
         )
+        if resolved_key is None:
+            ignored_keys.append(key)
+            continue
         if existing_key := resolved_from.get(resolved_key):
             raise ValueError(
                 "Duplicate settings provided using the keys "
@@ -197,6 +217,9 @@ def normalize_stack_component_setting_keys(
         resolved_settings[resolved_key] = component_settings
 
     for key in list(resolved_from.values()):
+        settings.pop(key, None)
+
+    for key in ignored_keys:
         settings.pop(key, None)
 
     settings.update(resolved_settings)

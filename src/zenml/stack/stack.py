@@ -763,7 +763,7 @@ class Stack:
         )
 
         if not DebugModeContext.is_active():
-            return self.orchestrator
+            return self._get_default_component(StackComponentType.ORCHESTRATOR)
 
         now = utc_now()
 
@@ -778,8 +778,12 @@ class Stack:
             updated=now,
             # Use the environment and secrets of the actual orchestrator in
             # the debug case
-            environment=self.orchestrator.environment,
-            secrets=self.orchestrator.secrets,
+            environment=self._get_default_component(
+                StackComponentType.ORCHESTRATOR
+            ).environment,
+            secrets=self._get_default_component(
+                StackComponentType.ORCHESTRATOR
+            ).secrets,
         )
 
     @property

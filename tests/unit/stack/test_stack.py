@@ -349,10 +349,7 @@ def test_get_step_run_metadata(
     mocker.patch.object(
         stack,
         "_get_active_components_for_step",
-        return_value={
-            StackComponentType.ORCHESTRATOR: local_orchestrator,
-            StackComponentType.ARTIFACT_STORE: local_artifact_store,
-        },
+        return_value=[local_orchestrator, local_artifact_store],
     )
     run_metadata = stack.get_step_run_metadata(info=MockStepInfo())
     assert len(run_metadata) == 2
@@ -389,10 +386,7 @@ def test_get_step_run_metadata_never_raises_errors(
     mocker.patch.object(
         stack,
         "_get_active_components_for_step",
-        return_value={
-            StackComponentType.ORCHESTRATOR: local_orchestrator,
-            StackComponentType.ARTIFACT_STORE: local_artifact_store,
-        },
+        return_value=[local_orchestrator, local_artifact_store],
     )
     run_metadata = stack.get_step_run_metadata(info=MockStepInfo())
     assert len(run_metadata) == 0
