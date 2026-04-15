@@ -763,9 +763,18 @@ class Stack:
         )
 
         if not DebugModeContext.is_active():
-            return self._get_default_component(StackComponentType.ORCHESTRATOR)
+            orchestrator = self._get_default_component(
+                StackComponentType.ORCHESTRATOR
+            )
+            assert orchestrator is not None
+            return cast(LocalOrchestrator, orchestrator)
 
         now = utc_now()
+
+        default_orchestrator = self._get_default_component(
+            StackComponentType.ORCHESTRATOR
+        )
+        assert default_orchestrator is not None
 
         return LocalOrchestrator(
             id=UUID("00000000-0000-0000-0000-000000000000"),
@@ -778,12 +787,8 @@ class Stack:
             updated=now,
             # Use the environment and secrets of the actual orchestrator in
             # the debug case
-            environment=self._get_default_component(
-                StackComponentType.ORCHESTRATOR
-            ).environment,
-            secrets=self._get_default_component(
-                StackComponentType.ORCHESTRATOR
-            ).secrets,
+            environment=default_orchestrator.environment,
+            secrets=default_orchestrator.secrets,
         )
 
     @property
