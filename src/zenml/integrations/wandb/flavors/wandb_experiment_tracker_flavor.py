@@ -45,6 +45,11 @@ class WandbExperimentTrackerSettings(BaseSettings):
     run_name: Optional[str] = Field(
         None, description="The Wandb run name to use for tracking experiments."
     )
+    project_name: Optional[str] = Field(
+        None,
+        description="Name of an existing Wandb project to log experiments to. "
+        "If not specified, a default project will be used.",
+    )
     tags: List[str] = Field(
         default_factory=list,
         description="Tags to attach to the Wandb run for categorization and filtering.",
@@ -106,11 +111,6 @@ class WandbExperimentTrackerConfig(
         None,
         description="Name of an existing Wandb entity (team or user account) "
         "to log experiments to.",
-    )
-    project_name: Optional[str] = Field(
-        None,
-        description="Name of an existing Wandb project to log experiments to. "
-        "If not specified, a default project will be used.",
     )
 
 

@@ -90,7 +90,9 @@ class WandbExperimentTracker(BaseExperimentTracker):
         wandb_run_name = (
             settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
         )
-        self._initialize_wandb(run_name=wandb_run_name, tags=tags, info=info)
+        self._initialize_wandb(
+            run_name=wandb_run_name, tags=tags, settings=settings
+        )
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
@@ -112,18 +114,19 @@ class WandbExperimentTracker(BaseExperimentTracker):
             run_url = current_wandb_run.get_url()
             run_name = current_wandb_run.name
 
+        settings = cast(
+            WandbExperimentTrackerSettings, self.get_settings(info)
+        )
+
         # If the URL cannot be retrieved, use the default run URL
         default_run_url = (
             f"https://wandb.ai/{self.config.entity}/"
-            f"{self.config.project_name}/runs/"
+            f"{settings.project_name}/runs/"
         )
         run_url = run_url or default_run_url
 
         # If the run name cannot be retrieved, use the default run name
         default_run_name = f"{info.run_name}_{info.pipeline_step_name}"
-        settings = cast(
-            WandbExperimentTrackerSettings, self.get_settings(info)
-        )
         run_name = run_name or settings.run_name or default_run_name
 
         return {
@@ -143,27 +146,24 @@ class WandbExperimentTracker(BaseExperimentTracker):
 
     def _initialize_wandb(
         self,
-        info: "StepRunInfo",
         run_name: str,
         tags: List[str],
+        settings: WandbExperimentTrackerSettings,
     ) -> None:
         """Initializes a wandb run.
 
         Args:
-            info: Step run information.
             run_name: Name of the wandb run to create.
             tags: Tags to attach to the wandb run.
+            settings: Merged stack and runtime settings (including project name).
         """
         logger.info(
             f"Initializing wandb with entity {self.config.entity}, project "
-            f"name: {self.config.project_name}, run_name: {run_name}."
-        )
-        settings = cast(
-            WandbExperimentTrackerSettings, self.get_settings(info)
+            f"name: {settings.project_name}, run_name: {run_name}."
         )
         wandb.init(
             entity=self.config.entity,
-            project=self.config.project_name,
+            project=settings.project_name,
             name=run_name,
             tags=tags,
             settings=settings.settings,
@@ -172,9 +172,9 @@ class WandbExperimentTracker(BaseExperimentTracker):
         if settings.enable_weave:
             import weave
 
-            if self.config.project_name:
+            if settings.project_name:
                 logger.info("Initializing weave")
-                weave.init(project_name=self.config.project_name)
+                weave.init(project_name=settings.project_name)
             else:
                 logger.info(
                     "Weave enabled but no project_name specified. "
