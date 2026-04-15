@@ -691,7 +691,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 exception_info=json.loads(self.exception_info)
                 if self.exception_info
                 else None,
-                trigger_execution_info=self.trigger_execution.info
+                trigger_execution_info=json.loads(self.trigger_execution.info)
                 if self.trigger_execution
                 else None,
             )
