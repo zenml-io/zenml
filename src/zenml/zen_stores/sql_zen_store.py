@@ -4390,9 +4390,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             logs_schema.pipeline_run_id = logs_update.pipeline_run_id
-            logs_schema.log_key = (
-                f"{logs_update.pipeline_run_id}-{logs_schema.source}"
-            )
 
         if logs_update.step_run_id:
             self._get_reference_schema_by_id(
@@ -4402,9 +4399,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             logs_schema.step_run_id = logs_update.step_run_id
-            logs_schema.log_key = (
-                f"{logs_update.step_run_id}-{logs_schema.source}"
-            )
 
         session.add(logs_schema)
         session.commit()

@@ -489,7 +489,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             resources = StepRunResponseResources(
                 user=self.user.to_model() if self.user else None,
                 model_version=model_version,
-                log_collection=[log.to_model() for log in self.logs],
+                log_collection=[
+                    log.to_model()
+                    for log in sorted(self.logs, key=lambda log: log.created)
+                ],
                 inputs=input_artifacts,
                 outputs=output_artifacts,
             )
