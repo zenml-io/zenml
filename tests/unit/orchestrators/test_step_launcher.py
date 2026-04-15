@@ -33,7 +33,7 @@ def test_step_operator_validation(local_stack, sample_step_operator):
             stack=local_stack, step_operator_name="step_operator"
         )
 
-    components = local_stack.components_v2
+    components = local_stack._components
     components[StackComponentType.STEP_OPERATOR] = [sample_step_operator]
     stack_with_step_operator = Stack.from_components_v2(
         id=uuid4(), name="", components=components

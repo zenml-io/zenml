@@ -681,31 +681,14 @@ class Stack:
             A dictionary of all components of the stack.
         """
         logger.warning(
-            "The property `Stack.components` has been deprecated. "
-            "It is returning only the default/first component of each type."
-            "Please use `Stack.components_v2` instead."
+            "The property `Stack.components` has been deprecated and will "
+            "be removed in a future version. For now, it is returning only "
+            "the default/first component of each type."
         )
         return {
             component_type: component_list[0]
             for component_type, component_list in self._components.items()
             if component_list
-        }
-
-    @property
-    def components_v2(
-        self,
-    ) -> Dict[StackComponentType, List["StackComponent"]]:
-        """All attached components of the stack grouped by type.
-
-        Returns:
-            A dictionary of all attached stack components grouped by type. The
-            first component in each list is the default component for that
-            type.
-        """
-        return {
-            component_type: list(components)
-            for component_type in StackComponentType
-            if (components := self.get_components_by_type(component_type))
         }
 
     @property
@@ -717,7 +700,7 @@ class Stack:
         """
         return [
             component
-            for components in self.components_v2.values()
+            for components in self._components.values()
             for component in components
         ]
 
@@ -993,10 +976,10 @@ class Stack:
         Returns:
             The log store of the stack.
         """
-        if StackComponentType.LOG_STORE not in self.components_v2:
+        if StackComponentType.LOG_STORE not in self._components:
             self.validate_log_store()
 
-        assert self.components_v2.get(StackComponentType.LOG_STORE, [])
+        assert self._components.get(StackComponentType.LOG_STORE, None)
 
         return cast(
             "BaseLogStore",
@@ -1017,7 +1000,7 @@ class Stack:
                 ],
                 sort_keys=True,
             )
-            for component_type, components in self.components_v2.items()
+            for component_type, components in self._components.items()
         }
         component_dict.update({"name": self.name})
         return component_dict
@@ -1133,7 +1116,7 @@ class Stack:
             All setting classes and their respective keys.
         """
         setting_classes = {}
-        for component_type, components in self.components_v2.items():
+        for component_type, components in self._components.items():
             components_with_settings = [
                 component
                 for component in components
@@ -1187,7 +1170,7 @@ class Stack:
             component_type.value: ",".join(
                 dict.fromkeys(component.flavor for component in components)
             )
-            for component_type, components in self.components_v2.items()
+            for component_type, components in self._components.items()
         }
 
     @property

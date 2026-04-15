@@ -101,7 +101,7 @@ class Compiler:
         )
         settings_utils.normalize_stack_component_setting_keys(
             pipeline.configuration.settings,
-            components_by_type=stack.components_v2,
+            components_by_type=stack._components,
         )
 
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
@@ -551,7 +551,7 @@ class Compiler:
 
             settings_utils.normalize_stack_component_setting_keys(
                 step.configuration.settings,
-                components_by_type=stack.components_v2,
+                components_by_type=stack._components,
             )
             step_secrets = secret_utils.resolve_and_verify_secrets(
                 step.configuration.secrets

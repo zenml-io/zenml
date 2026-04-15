@@ -90,7 +90,7 @@ def test_stack_returns_all_its_components(
         StackComponentType.ARTIFACT_STORE: [local_artifact_store],
     }
     assert all(
-        stack.components_v2[component_type] == component
+        stack._components[component_type] == component
         for component_type, component in expected_components.items()
     )
 
@@ -108,7 +108,7 @@ def test_stack_returns_all_its_components(
     ]
 
     assert all(
-        stack.components_v2[component_type] == component
+        stack._components[component_type] == component
         for component_type, component in expected_components.items()
     )
 
