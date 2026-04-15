@@ -363,4 +363,9 @@ async def catch_all(request: Request, file_path: str) -> Any:
 
     # everything else is directed to the index.html file that hosts the
     # single-page application
+    if not os.path.isfile(os.path.join(dashboard_directory(), "index.html")):
+        raise HTTPException(
+            status_code=404,
+            detail="Dashboard assets are not installed.",
+        )
     return templates.TemplateResponse("index.html", {"request": request})
