@@ -262,6 +262,9 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             data_type: The type of the data to load.
             index: The index of the item to load.
 
+        Returns:
+            The loaded item.
+
         Raises:
             NotImplementedError: If the materializer does not support item
                 loading.
