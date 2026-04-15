@@ -264,6 +264,8 @@ def get_runtime_secret_environment(
     secrets = list(reversed(config.secrets))
     secrets.extend(stack.secrets)
 
+    from zenml.stack import Stack
+
     if isinstance(stack, Stack):
         for component in stack.all_components:
             secrets.extend(component.secrets)
