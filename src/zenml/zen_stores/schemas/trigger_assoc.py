@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Triggers Associations."""
 
-import json
 from datetime import datetime
 from uuid import UUID
 

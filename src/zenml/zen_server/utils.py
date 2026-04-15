@@ -842,14 +842,8 @@ async def register_event_handlers() -> None:
                 continue
             else:
                 try:
-                    event_handler = event_handler_cls.create()
-
-                    if inspect.isawaitable(event_handler):
-                        event_handler = await event_handler
-
-                    EventDispatcher.get_event_dispatcher().register_event_handler(
-                        event_handler
-                    )
+                    event_handler = await event_handler_cls.create()
+                    EventDispatcher().register_event_handler(event_handler)
                 except Exception as exc:
                     logger.exception(
                         f"Failed to register event handler {source}",

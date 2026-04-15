@@ -40,7 +40,7 @@ class EventHandler(ABC):
 
     @staticmethod
     @abstractmethod
-    def create() -> "EventHandler":
+    async def create() -> "EventHandler":
         """Factory method.
 
         Returns:

@@ -13,33 +13,23 @@
 #  permissions and limitations under the License.
 """Event dispatcher base functionality."""
 
-import atexit
 import logging
 import threading
-from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable
 
 from zenml.dispatcher.handler import EventHandler
+from zenml.utils.singleton import SingletonMetaClass
 from zenml.zen_stores.schemas import PipelineRunSchema
 
 logger = logging.getLogger(__name__)
 
 
-class EventDispatcher:
+class EventDispatcher(metaclass=SingletonMetaClass):
     """Event Dispatcher class."""
-
-    _instance: "EventDispatcher | None " = None
-    _instance_lock = threading.Lock()
 
     def __init__(self) -> None:
         """Event Dispatcher constructor."""
         self._event_handlers: list[EventHandler] = []
         self._handlers_lock = threading.Lock()
-        self._executor = ThreadPoolExecutor(
-            max_workers=8,
-            thread_name_prefix="event-dispatcher",
-        )
-        atexit.register(self.shutdown)
 
     def register_event_handler(self, event_handler: EventHandler) -> None:
         """Register an event handler.
@@ -49,53 +39,6 @@ class EventDispatcher:
         """
         with self._handlers_lock:
             self._event_handlers.append(event_handler)
-
-    def submit(
-        self,
-        func: Callable[..., Any],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Future[Any]:
-        """Submit work to be executed asynchronously.
-
-        Args:
-            func: Callable to execute.
-            *args: Positional arguments.
-            **kwargs: Keyword arguments.
-
-        Returns:
-            A Future representing the execution.
-        """
-        future = self._executor.submit(
-            self._safe_invoke, func, *args, **kwargs
-        )
-        future.add_done_callback(self._log_future_exception)
-        return future
-
-    def _safe_invoke(
-        self,
-        func: Callable[..., Any],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Any:
-        """Safely invoke a callable."""
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            logger.exception(
-                "Asynchronous dispatcher task failed: %s",
-                getattr(func, "__qualname__", repr(func)),
-            )
-            raise
-
-    @staticmethod
-    def _log_future_exception(future: Future[Any]) -> None:
-        """Log unexpected future failures."""
-        exc = future.exception()
-        if exc is not None:
-            logger.exception(
-                "Unexpected event dispatcher future failure.", exc_info=exc
-            )
 
     def handle_run_status_update(
         self,
@@ -111,45 +54,14 @@ class EventDispatcher:
         Args:
             run: A PipelineRunSchema object (with a status change).
         """
-        with self._handlers_lock:
-            handlers = list(self._event_handlers)
-
-        if not handlers:
+        if not self._event_handlers:
             return
 
-        for event_handler in handlers:
+        for event_handler in self._event_handlers:
             logger.debug(
                 "Event handler: %s picking up %s status change to %s",
                 event_handler.__class__.__name__,
                 run.id,
                 run.status,
             )
-            self.submit(
-                event_handler.handle_run_status_update,
-                run=run,
-            )
-
-    def shutdown(self, wait: bool = True) -> None:
-        """Shutdown the dispatcher.
-
-        Args:
-            wait: Flag indicating whether to wait for shutdown.
-        """
-        try:
-            self._executor.shutdown(wait=wait)
-        except Exception as exc:
-            logger.exception("Failed to shutdown executor", exc_info=exc)
-
-    @staticmethod
-    def get_event_dispatcher() -> "EventDispatcher":
-        """Getter utility - returns a fresh or cached EventDispatcher.
-
-        Returns:
-            An EventDispatcher instance.
-        """
-        if not EventDispatcher._instance:
-            with EventDispatcher._instance_lock:
-                if not EventDispatcher._instance:
-                    EventDispatcher._instance = EventDispatcher()
-
-        return EventDispatcher._instance
+            event_handler.handle_run_status_update(run)

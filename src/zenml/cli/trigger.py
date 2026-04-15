@@ -23,7 +23,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.console import console
-from zenml.enums import CliCategories, TriggerRunConcurrency, SourceType
+from zenml.enums import CliCategories, SourceType, TriggerRunConcurrency
 from zenml.logger import get_logger
 from zenml.models import TriggerFilter
 from zenml.utils.time_utils import iso8601_to_utc_naive
@@ -386,7 +386,6 @@ def list_supported_events(source_type: SourceType) -> None:
     Args:
         source_type: The source type.
     """
-
     from zenml.utils.trigger_utils import list_supported_events
 
     click.echo(
@@ -405,7 +404,7 @@ def list_supported_events(source_type: SourceType) -> None:
     "--target_events",
     type=str,
     multiple=True,
-    help="Use `list-supported-events` to view supported events by source type."
+    help="Use `list-supported-events` to view supported events by source type.",
 )
 @click.option(
     "--concurrency",
@@ -432,7 +431,6 @@ def create_platform_event(
         active: The active status of the trigger.
         concurrency: Option controlling the concurrency of the trigger.
     """
-
     if not target_events:
         cli_utils.error("You must specify at least one target event.")
 
@@ -467,13 +465,13 @@ def create_platform_event(
     "--target_events",
     type=str,
     multiple=True,
-    help="Use `list-supported-events` to view supported events by source type."
+    help="Use `list-supported-events` to view supported events by source type.",
 )
 def update_platform_event_trigger(
     trigger_id: UUID,
     name: str | None = None,
     active: bool | None = None,
-    concurrency: str | None = None,
+    concurrency: TriggerRunConcurrency | None = None,
 ) -> None:
     """Update a platform event trigger.
 
@@ -540,7 +538,6 @@ def list_platform_events(
         output_format,
         empty_message="No triggers found for the given filters.",
     )
-
 
 
 for group in [schedule, platform_event]:

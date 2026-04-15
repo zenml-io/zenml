@@ -11911,9 +11911,7 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         if not did_update:
             return
-        EventDispatcher.get_event_dispatcher().handle_run_status_update(
-            pipeline_run
-        )
+        EventDispatcher().handle_run_status_update(run=pipeline_run)
         new_status = ExecutionStatus(pipeline_run.status)
 
         if new_status.is_finished and pipeline_run.end_time:
