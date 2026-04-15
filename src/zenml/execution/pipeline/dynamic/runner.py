@@ -227,6 +227,7 @@ class DynamicPipelineRunner:
         self._steps_to_monitor: Dict[str, "StepRunResponse"] = {}
 
         self._shutdown_requested = False
+        self._prevent_new_startups = False
         self._monitoring_event = threading.Event()
         self._startup_event = threading.Event()
         self._dependency_graph = InvocationDependencyGraph()
@@ -490,7 +491,7 @@ class DynamicPipelineRunner:
             self._snapshot.pipeline_configuration.execution_mode
             == ExecutionMode.FAIL_FAST
         )
-        while not self._shutdown_requested:
+        while not self._prevent_new_startups:
             self._startup_event.clear()
 
             ready_step_node_ids = (
@@ -694,16 +695,15 @@ class DynamicPipelineRunner:
                         "was aborted.",
                         self._run.id,
                     )
+                    self._finalize_in_progress_work()
                 except Exception as e:
+                    self._finalize_in_progress_work()
                     exception_info = (
                         exception_utils.collect_exception_information(
                             exception=e,
                             user_func=self.pipeline.entrypoint,
                         )
                     )
-                    # TODO: this call already invalidates the token, so
-                    # the steps will keep running but won't be able to
-                    # report their status back to ZenML.
                     publish_failed_pipeline_run(
                         self._run.id, exception_info=exception_info
                     )
@@ -720,7 +720,6 @@ class DynamicPipelineRunner:
                         )
 
                     self._executor.shutdown(wait=True, cancel_futures=True)
-                    self._maybe_stop_isolated_steps()
                     monitoring_thread.join()
                     startup_thread.join()
 
@@ -1347,16 +1346,16 @@ class DynamicPipelineRunner:
         """
         return self._future_registry.has_in_progress_work()
 
-    def _shutdown(self) -> None:
-        """Shutdown the runner.
+    def _cancel_new_startup_work(self) -> None:
+        """Cancel pending startup work without stopping monitoring.
 
-        This wakes any background loops so they can observe the shutdown flag
-        and exit cleanly.
+        This keeps the monitoring loop alive while already-started isolated
+        steps finish and publish their terminal state.
         """
-        if self._shutdown_requested:
+        if self._prevent_new_startups:
             return
 
-        self._shutdown_requested = True
+        self._prevent_new_startups = True
 
         for node in self._dependency_graph.list_nodes(
             states={NodeState.PENDING, NodeState.READY}
@@ -1369,16 +1368,36 @@ class DynamicPipelineRunner:
                 self._future_registry.cancel_map_startup(map_id=node.node_id)
 
         self._startup_event.set()
-        self._monitoring_event.set()
 
     def _raise_if_startup_cancelled(self) -> None:
-        """Abort startup work once runner shutdown has started.
+        """Abort startup work once startup has been cancelled.
 
         Raises:
-            StartupCancelled: If the runner is shutting down.
+            StartupCancelled: If startup has been cancelled.
+        """
+        if self._prevent_new_startups:
+            raise StartupCancelled(
+                "Dynamic pipeline runner is not starting new work."
+            )
+
+    def _finalize_in_progress_work(self) -> None:
+        """Finalize in-progress work before runner shutdown."""
+        self._cancel_new_startup_work()
+        self._maybe_stop_isolated_steps()
+        self._future_registry.await_all_no_raise()
+
+    def _shutdown(self) -> None:
+        """Shutdown the runner.
+
+        This wakes any background loops so they can observe the shutdown flag
+        and exit cleanly.
         """
         if self._shutdown_requested:
-            raise StartupCancelled("Dynamic pipeline runner is shutting down.")
+            return
+
+        self._shutdown_requested = True
+        self._cancel_new_startup_work()
+        self._monitoring_event.set()
 
     # Concurrent step lifecycle
 

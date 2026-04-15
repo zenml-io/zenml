@@ -21,6 +21,9 @@ from zenml.execution.pipeline.dynamic.outputs import (
     StepExecutionFuture,
     StepFuture,
 )
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class StartupCancelled(Exception):
@@ -188,6 +191,18 @@ class FutureRegistry:
         """Wait for all tracked futures to finish."""
         for future in self._get_all_futures():
             future.wait()
+
+    def await_all_no_raise(self) -> None:
+        """Wait for all tracked futures to finish without raising.
+
+        This is used during runner cleanup so secondary step failures do not
+        replace the primary pipeline outcome.
+        """
+        for future in self._get_all_futures():
+            try:
+                future.wait()
+            except Exception:
+                pass
 
     def has_in_progress_work(self) -> bool:
         """Check whether any tracked future is still running.
