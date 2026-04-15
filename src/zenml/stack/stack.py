@@ -592,9 +592,7 @@ class Stack:
         model_registry = components.get(StackComponentType.MODEL_REGISTRY)
         if model_registry:
             if len(model_registry) > 1:
-                raise TypeError(
-                    "Multiple model registries are not supported."
-                )
+                raise TypeError("Multiple model registries are not supported.")
             if not isinstance(model_registry[0], BaseModelRegistry):
                 _raise_type_error(model_registry[0], BaseModelRegistry)
 
