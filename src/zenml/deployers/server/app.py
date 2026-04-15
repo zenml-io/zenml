@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base deployment app runner."""
 
-import concurrent.futures
 import os
 import re
 from abc import ABC, abstractmethod
@@ -50,7 +49,6 @@ from zenml.config import (
     MiddlewareSpec,
 )
 from zenml.config.source import SourceOrObject
-from zenml.constants import handle_int_env_var
 from zenml.deployers.server.adapters import (
     EndpointAdapter,
     MiddlewareAdapter,
@@ -76,8 +74,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ZENML_DEPLOYMENT_ID_ENV_VAR = "ZENML_DEPLOYMENT_ID"
-ZENML_STREAM_THREAD_POOL_SIZE_ENV_VAR = "ZENML_STREAM_THREAD_POOL_SIZE"
-DEFAULT_ZENML_STREAM_THREAD_POOL_SIZE = 4
 
 
 class BaseDeploymentAppRunner(ABC):
@@ -156,14 +152,6 @@ class BaseDeploymentAppRunner(ABC):
         self.endpoints: List[EndpointSpec] = []
         self.middlewares: List[MiddlewareSpec] = []
         self.extensions: List[AppExtensionSpec] = []
-
-        thread_pool_size = handle_int_env_var(
-            ZENML_STREAM_THREAD_POOL_SIZE_ENV_VAR,
-            DEFAULT_ZENML_STREAM_THREAD_POOL_SIZE,
-        )
-        self._executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=thread_pool_size
-        )
 
     @property
     def asgi_app(self) -> ASGIApplication:
@@ -361,18 +349,14 @@ class BaseDeploymentAppRunner(ABC):
     def _build_stream_invoke_endpoint(self) -> Callable[..., Any]:
         """Create the endpoint used to invoke a streamed pipeline deployment.
 
-        Returns:
-            A callable endpoint that streams lifecycle events.
+        Raises:
+            NotImplementedError: If the method is not implemented.
         """
-
-        def _unsupported_stream_endpoint(*args: Any, **kwargs: Any) -> Any:
-            raise NotImplementedError(
-                f"Streaming invoke endpoint is not supported by "
-                f"{self.__class__.__name__}. Override "
-                "`_build_stream_invoke_endpoint` to enable it."
-            )
-
-        return _unsupported_stream_endpoint
+        raise NotImplementedError(
+            f"Streaming invoke endpoint is not supported by "
+            f"{self.__class__.__name__}. Override "
+            "`_build_stream_invoke_endpoint` to enable it."
+        )
 
     def dashboard_files_path(self) -> Optional[str]:
         """Get the absolute path of the dashboard files directory.
@@ -794,7 +778,6 @@ class BaseDeploymentAppRunner(ABC):
             Exception: If the service cleanup fails.
         """
         self._run_shutdown_hook()
-        self._executor.shutdown(wait=True)
 
         logger.info("🛑 Cleaning up the pipeline deployment service...")
         try:

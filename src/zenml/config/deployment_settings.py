@@ -525,6 +525,7 @@ class DeploymentDefaultEndpoints(IntFlag):
         | METRICS
         | DASHBOARD
     )
+    DEFAULT_ENABLED = ALL ^ STREAM_INVOKE
 
 
 class DeploymentDefaultMiddleware(IntFlag):
@@ -673,7 +674,7 @@ class DeploymentSettings(BaseSettings):
     app_kwargs: Dict[str, Any] = {}
 
     include_default_endpoints: DeploymentDefaultEndpoints = (
-        DeploymentDefaultEndpoints.ALL
+        DeploymentDefaultEndpoints.DEFAULT_ENABLED
     )
     include_default_middleware: DeploymentDefaultMiddleware = (
         DeploymentDefaultMiddleware.ALL

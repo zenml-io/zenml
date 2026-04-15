@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Pipeline deployment service."""
 
-import queue
 import time
 import traceback
 from abc import ABC, abstractmethod
@@ -46,10 +45,11 @@ from zenml.deployers.server.models import (
     SnapshotInfo,
 )
 from zenml.deployers.streaming import (
-    StreamEvent,
     StreamEventType,
+    StreamState,
+    close_stream,
+    publish_event,
     register_stream,
-    unregister_stream,
 )
 from zenml.deployers.utils import (
     deployment_snapshot_request_from_source_snapshot,
@@ -166,13 +166,14 @@ class BasePipelineDeploymentService(ABC):
     def execute_pipeline_streamed(
         self,
         request: BaseDeploymentInvocationRequest,
-        event_queue: queue.Queue[StreamEvent],
-    ) -> None:
+        stream_state: StreamState,
+    ) -> BaseDeploymentInvocationResponse:
         """Execute the deployment and publish lifecycle events.
 
         Args:
             request: Runtime parameters supplied by the caller.
-            event_queue: Queue used to publish stream lifecycle and final events.
+            stream_state: Shared state used to coordinate stream lifecycle and
+                event delivery.
 
         Raises:
             NotImplementedError: If the method is not implemented.
@@ -382,28 +383,33 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
     def execute_pipeline_streamed(
         self,
         request: BaseDeploymentInvocationRequest,
-        event_queue: queue.Queue[StreamEvent],
-    ) -> None:
+        stream_state: StreamState,
+    ) -> BaseDeploymentInvocationResponse:
         """Execute the deployment and publish stream events.
 
         Args:
             request: Runtime parameters supplied by the caller.
-            event_queue: Queue used to publish stream lifecycle and final events.
+            stream_state: Shared state used to coordinate stream lifecycle and
+                event delivery.
+
+        Returns:
+            A BaseDeploymentInvocationResponse describing the execution result.
         """
-        self._execute_pipeline_internal(
-            request=request, event_queue=event_queue
+        return self._execute_pipeline_internal(
+            request=request, stream_state=stream_state
         )
 
     def _execute_pipeline_internal(
         self,
         request: BaseDeploymentInvocationRequest,
-        event_queue: Optional[queue.Queue[StreamEvent]] = None,
+        stream_state: Optional[StreamState] = None,
     ) -> BaseDeploymentInvocationResponse:
         """Execute the pipeline with optional lifecycle event emission.
 
         Args:
             request: Runtime parameters supplied by the caller.
-            event_queue: Optional queue used to emit lifecycle stream events.
+            stream_state: Optional shared state used to emit lifecycle stream
+                events.
 
         Returns:
             A BaseDeploymentInvocationResponse describing the execution result.
@@ -415,6 +421,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         logger.info("Starting pipeline execution")
 
         placeholder_run: Optional[PipelineRunResponse] = None
+        response: Optional[BaseDeploymentInvocationResponse] = None
         try:
             # Create a placeholder run separately from the actual execution,
             # so that we have a run ID to include in the response even if the
@@ -425,19 +432,17 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 )
             )
 
-            if event_queue:
-                register_stream(
-                    run_id=placeholder_run.id, event_queue=event_queue
-                )
-                event_queue.put(
-                    StreamEvent(
-                        event_type=StreamEventType.RUN_STARTED,
-                        data={
-                            "run_id": str(placeholder_run.id),
-                            "run_name": placeholder_run.name,
-                            "run_index": placeholder_run.index,
-                        },
-                    )
+            if stream_state and register_stream(
+                run_id=placeholder_run.id, stream_state=stream_state
+            ):
+                publish_event(
+                    stream_state=stream_state,
+                    event_type=StreamEventType.RUN_STARTED,
+                    payload={
+                        "run_id": str(placeholder_run.id),
+                        "run_name": placeholder_run.name,
+                        "run_index": placeholder_run.index,
+                    },
                 )
 
             captured_outputs = self._execute_with_orchestrator(
@@ -455,13 +460,6 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 start_time=start_time,
                 resolved_params=parameters,
             )
-            if event_queue:
-                event_queue.put(
-                    StreamEvent(
-                        event_type=StreamEventType.RUN_FINISHED,
-                        data=response.model_dump(mode="json"),
-                    )
-                )
             return response
         except Exception as e:
             logger.exception("❌ Pipeline execution failed")
@@ -472,17 +470,16 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 resolved_params=parameters,
                 error=e,
             )
-            if event_queue:
-                event_queue.put(
-                    StreamEvent(
-                        event_type=StreamEventType.RUN_FINISHED,
-                        data=response.model_dump(mode="json"),
-                    )
-                )
             return response
         finally:
-            if event_queue and placeholder_run:
-                unregister_stream(run_id=placeholder_run.id)
+            if stream_state:
+                if response is not None:
+                    publish_event(
+                        stream_state=stream_state,
+                        event_type=StreamEventType.RUN_FINISHED,
+                        payload=response.model_dump(mode="json"),
+                    )
+                close_stream(stream_state=stream_state)
 
     def get_service_info(self) -> ServiceInfo:
         """Get service information.

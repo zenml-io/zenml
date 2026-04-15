@@ -51,6 +51,8 @@ from zenml.deployers.local.local_deployer import (
     LocalDeployerSettings,
 )
 
+from zenml.deployers.streaming import stream
+
 __all__ = [
     "BaseDeployer",
     "BaseDeployerFlavor",
@@ -64,4 +66,5 @@ __all__ = [
     "LocalDeployerConfig",
     "LocalDeployerFlavor",
     "LocalDeployerSettings",
+    "stream",
 ]

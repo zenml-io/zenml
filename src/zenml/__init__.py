@@ -70,7 +70,6 @@ from zenml.steps.utils import log_step_metadata
 from zenml.utils.metadata_utils import log_metadata, bulk_log_metadata
 from zenml.utils.tag_utils import Tag, add_tags, remove_tags
 from zenml.execution.pipeline.dynamic.utils import unmapped, wait
-from zenml.deployers.streaming import stream
 
 __all__ = [
     "add_tags",
@@ -93,7 +92,6 @@ __all__ = [
     "register_artifact",
     "show",
     "step",
-    "stream",
     "unmapped",
     "wait",
 ]

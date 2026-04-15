@@ -14,6 +14,7 @@
 """FastAPI application for running ZenML pipeline deployments."""
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from genericpath import isdir, isfile
 from typing import Any, AsyncGenerator, Dict, List, Optional, cast
@@ -28,7 +29,12 @@ from fastapi import (
     Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -53,7 +59,7 @@ from zenml.deployers.server.fastapi.adapters import (
     FastAPIEndpointAdapter,
     FastAPIMiddlewareAdapter,
 )
-from zenml.deployers.streaming import create_stream_queue, iter_sse_events
+from zenml.deployers.streaming import create_stream_state, iter_sse_events
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -61,6 +67,20 @@ logger = get_logger(__name__)
 
 class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
     """FastAPI deployment app runner."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the FastAPI deployment app runner.
+
+        Args:
+            *args: Positional arguments forwarded to the base app runner.
+            **kwargs: Keyword arguments forwarded to the base app runner.
+        """
+        super().__init__(*args, **kwargs)
+        # Limit concurrent executions to the thread pool size which configures
+        # the amount of concurrent requests that the deployment allows.
+        self._executor = ThreadPoolExecutor(
+            max_workers=self.settings.thread_pool_size
+        )
 
     @property
     def flavor(cls) -> "BaseDeploymentAppRunnerFlavor":
@@ -110,18 +130,16 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         Returns:
             A callable endpoint that streams lifecycle events as SSE.
         """
-        from fastapi.responses import StreamingResponse
-
         PipelineInvokeRequest, _ = self.service.get_pipeline_invoke_models()
 
         def _stream_invoke_endpoint(
             request: PipelineInvokeRequest,  # type: ignore[valid-type]
         ) -> StreamingResponse:
-            event_queue = create_stream_queue()
+            stream_state = create_stream_state()
             execution_future = self._executor.submit(
                 self.service.execute_pipeline_streamed,
                 request,
-                event_queue,
+                stream_state,
             )
 
             # TODO: Once we upgrade to FastAPI 0.135.0, we should use the
@@ -129,7 +147,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             # https://fastapi.tiangolo.com/tutorial/server-sent-events/
             return StreamingResponse(
                 iter_sse_events(
-                    event_queue=event_queue,
+                    stream_state=stream_state,
                     producer_future=execution_future,
                 ),
                 media_type="text/event-stream",
@@ -373,3 +391,8 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         yield
 
         self.shutdown()
+
+    def shutdown(self) -> None:
+        """Shutdown the FastAPI deployment app."""
+        self._executor.shutdown(wait=True, cancel_futures=True)
+        super().shutdown()
