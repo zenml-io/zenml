@@ -23,12 +23,15 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.console import console
-from zenml.enums import CliCategories, TriggerRunConcurrency
+from zenml.enums import CliCategories, TriggerRunConcurrency, SourceType
 from zenml.logger import get_logger
 from zenml.models import TriggerFilter
 from zenml.utils.time_utils import iso8601_to_utc_naive
 
 logger = get_logger(__name__)
+
+
+# CLI groups
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -41,9 +44,12 @@ def schedule() -> None:
     """Commands for schedule triggers."""
 
 
-@cli.group()
+@trigger.group()
 def platform_event() -> None:
-    """Commands for platform events."""
+    """Commands for platform events triggers."""
+
+
+# SCHEDULE commands
 
 
 @schedule.command("create", help="Create a new schedule trigger.")
@@ -223,15 +229,18 @@ def list_schedules(
         **kwargs: Keyword arguments to filter the schedules.
     """
     client = Client()
-    with console.status("Listing schedules...\n"):
+    with console.status("Listing triggers...\n"):
         schedules = client.list_schedule_triggers(**kwargs)
 
     cli_utils.print_page(
         schedules,
         columns,
         output_format,
-        empty_message="No schedule triggers found for the given filters.",
+        empty_message="No triggers found for the given filters.",
     )
+
+
+# COMMON COMMANDS
 
 
 def make_delete_command() -> click.Command:
@@ -364,6 +373,174 @@ def make_detach_command() -> click.Command:
     f = click.argument("snapshot_id", type=UUID)(f)
 
     return click.command("detach", help="Detach trigger from snapshot")(f)
+
+
+# PLATFORM EVENT COMMANDS
+
+
+@platform_event.command()
+@click.argument("source_type", type=click.Choice(SourceType.values()))
+def list_supported_events(source_type: SourceType) -> None:
+    """List supported target events by SourceType.
+
+    Args:
+        source_type: The source type.
+    """
+
+    from zenml.utils.trigger_utils import list_supported_events
+
+    click.echo(
+        f"Support events for {source_type}:",
+    )
+
+    for index, e in enumerate(list_supported_events(source_type=source_type)):
+        click.echo(f"{index + 1}) {e}")
+
+
+@platform_event.command("create", help="Create a new platform event trigger.")
+@click.argument("name", type=str)
+@click.argument("source_type", type=click.Choice(SourceType.values()))
+@click.argument("source_id", type=UUID)
+@click.option(
+    "--target_events",
+    type=str,
+    multiple=True,
+    help="Use `list-supported-events` to view supported events by source type."
+)
+@click.option(
+    "--concurrency",
+    type=click.Choice(TriggerRunConcurrency.values()),
+    help="Option to control the concurrency of the trigger.",
+    default=TriggerRunConcurrency.SKIP.value,
+)
+@click.option("--active", type=bool, default=True)
+def create_platform_event(
+    name: str,
+    active: bool,
+    concurrency: str,
+    source_type: SourceType,
+    source_id: UUID,
+    target_events: list[str],
+) -> None:
+    """Create a platform event trigger.
+
+    Args:
+        name: The name of the trigger.
+        source_type: The source type of the trigger.
+        source_id: The source ID of the trigger.
+        target_events: The trigger target events.
+        active: The active status of the trigger.
+        concurrency: Option controlling the concurrency of the trigger.
+    """
+
+    if not target_events:
+        cli_utils.error("You must specify at least one target event.")
+
+    try:
+        s = Client().create_platform_event_trigger(
+            name=name,
+            active=active,
+            concurrency=TriggerRunConcurrency(concurrency),
+            source_id=source_id,
+            source_type=source_type,
+            target_events=target_events,
+        )
+    except Exception as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Created platform event '{s.id}'.")
+
+
+@platform_event.command("update", help="Update a platform event trigger.")
+@click.argument("trigger_id", type=UUID)
+@click.option("--name", type=str)
+@click.option("--active", type=bool)
+@click.option(
+    "--concurrency",
+    type=click.Choice(TriggerRunConcurrency.values()),
+    help="Option to control the concurrency of the trigger.",
+    default=TriggerRunConcurrency.SKIP.value,
+)
+@click.option("--source_type", type=click.Choice(SourceType.values()))
+@click.option("--source_id", type=UUID)
+@click.option(
+    "--target_events",
+    type=str,
+    multiple=True,
+    help="Use `list-supported-events` to view supported events by source type."
+)
+def update_platform_event_trigger(
+    trigger_id: UUID,
+    name: str | None = None,
+    active: bool | None = None,
+    concurrency: str | None = None,
+) -> None:
+    """Update a platform event trigger.
+
+    Args:
+        trigger_id: The ID of the platform event.
+        name: The new name of the trigger.
+        active: The new active status of the trigger.
+        concurrency: Option controlling the concurrency of the trigger.
+
+    """
+    options = [
+        name,
+        active,
+        concurrency,
+    ]
+
+    if not any(option is not None for option in options):
+        cli_utils.declare("No update requested.")
+        return
+
+    try:
+        Client().update_platform_event_trigger(
+            trigger_id=trigger_id,
+            name=name,
+            active=active,
+            concurrency=concurrency,
+        )
+    except Exception as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Updated platform event '{trigger_id}'.")
+
+
+@platform_event.command("list", help="List available platform event triggers.")
+@cli_utils.list_options(
+    TriggerFilter,
+    default_columns=[
+        "id",
+        "name",
+        "active",
+        "is_archived",
+        "concurrency",
+    ],
+)
+def list_platform_events(
+    columns: str,
+    output_format: cli_utils.OutputFormat,
+    **kwargs: Any,
+) -> None:
+    """List all platform event triggers that fulfill the filter requirements.
+
+    Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
+        **kwargs: Keyword arguments to filter the platform event triggers.
+    """
+    client = Client()
+    with console.status("Listing triggers...\n"):
+        events = client.list_platform_event_triggers(**kwargs)
+
+    cli_utils.print_page(
+        events,
+        columns,
+        output_format,
+        empty_message="No triggers found for the given filters.",
+    )
+
 
 
 for group in [schedule, platform_event]:
