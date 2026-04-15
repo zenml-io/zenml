@@ -225,6 +225,8 @@ def get_runtime_environment(
     """
     environment = {}
 
+    from zenml.stack import Stack
+
     if isinstance(stack, Stack):
         for component in stack.all_components:
             environment.update(component.environment)
