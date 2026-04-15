@@ -157,3 +157,5 @@ def upload_model_with_connector(model):
 * Explore [authentication methods](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) for different cloud providers 
 * Understand how to [reference secrets in stack configuration](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration)
 * Read our [blog post](https://www.zenml.io/blog/how-to-simplify-authentication-in-machine-learning-pipelines-for-mlops) on how service connectors simplify authentication in ML pipelines
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

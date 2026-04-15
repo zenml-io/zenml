@@ -230,8 +230,6 @@ class Stack:
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
-        # noqa: DAR402
-
         Args:
             id: Unique ID of the stack.
             name: The name of the stack.
@@ -247,7 +245,7 @@ class Stack:
         Raises:
             TypeError: If a required component is missing or a component
                 doesn't inherit from the expected base class.
-        """
+        """  # noqa: DOC502
         from zenml.alerter import BaseAlerter
         from zenml.annotators import BaseAnnotator
         from zenml.artifact_stores import BaseArtifactStore
@@ -736,7 +734,7 @@ class Stack:
         # noqa: DAR402
         Raises:
             StackValidationError: If a secret is missing.
-        """
+        """  # noqa: DOC502
         env_value = os.getenv(
             ENV_ZENML_SECRET_VALIDATION_LEVEL,
             default=SecretValidationLevel.SECRET_AND_KEY_EXISTS.value,

@@ -64,8 +64,8 @@ def build_foreign_key_field(
         SQLModel foreign key field.
 
     Raises:
-        ValueError: If the ondelete and nullable arguments are not compatible.
-        ValueError: If the foreign key constraint name is too long.
+        ValueError: If the ondelete and nullable arguments are not compatible,
+            or if the foreign key constraint name is too long.
     """
     if not nullable and ondelete == "SET NULL":
         raise ValueError(

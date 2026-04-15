@@ -34,3 +34,5 @@ In ZenML Pro, use Personal Access Tokens or organization‑level service account
 - 401 Unauthorized: verify you’re using the correct base URL, the token hasn’t expired, and the header is `Authorization: Bearer <token>`.
 - Automation fails after 1 hour: check the expiration date of the PAT or API key and rotate it if it has expired.
 - Can’t find Run Template endpoints: they exist on the Workspace/OSS API, not on `cloudapi.zenml.io`.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

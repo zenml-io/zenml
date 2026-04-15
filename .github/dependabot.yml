@@ -11,7 +11,12 @@ updates:
     reviewers: [strickvl]
     labels: [dependencies, internal, no-release-notes]
     groups:
-      all-actions:
+      minor-and-patch:
         patterns:
           - '*'
+        update-types:
+          - minor
+          - patch
+    cooldown:
+      default-days: 7
     target-branch: develop

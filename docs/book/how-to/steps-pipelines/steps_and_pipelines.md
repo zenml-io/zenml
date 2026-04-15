@@ -280,3 +280,5 @@ ZenML uses the following convention to differentiate between a single output of 
 Steps and Pipelines provide a flexible, powerful way to build machine learning workflows in ZenML. This guide covered the basic concepts of creating steps and pipelines, managing inputs and outputs, and working with parameters.
 
 For more advanced features, check out the [Advanced Features](advanced_features.md) guide. For configuration using YAML files, see [Configuration with YAML](yaml_configuration.md).
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

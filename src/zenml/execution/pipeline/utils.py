@@ -78,11 +78,10 @@ def submit_pipeline(
         stack: The stack on which to submit the snapshot.
         placeholder_run: An optional placeholder run for the snapshot.
 
-    # noqa: DAR401
     Raises:
         BaseException: Any exception that happened while submitting or running
             (in case it happens synchronously) the pipeline.
-    """
+    """  # noqa: DOC502, DOC503
     # Prevent execution of nested pipelines which might lead to
     # unexpected behavior
     with prevent_pipeline_execution():
@@ -127,8 +126,8 @@ def compute_invocation_id(
 
     Raises:
         RuntimeError: If no ID suffix is allowed and an invocation for the
-            same ID already exists.
-        RuntimeError: If no unique invocation ID can be found.
+            same ID already exists, or if no unique invocation ID can be
+            found.
 
     Returns:
         The invocation ID.
@@ -160,9 +159,9 @@ def skip_steps_and_prune_snapshot(
         pipeline_run: The pipeline run to skip steps for.
 
     Raises:
-        RuntimeError: If the pipeline run is not a replayed run.
-        RuntimeError: If a step has an upstream step that is not skipped.
-        RuntimeError: If a step run request cannot be populated.
+        RuntimeError: If the pipeline run is not a replayed run, if a step
+            has an upstream step that is not skipped, or if a step run
+            request cannot be populated.
 
     Returns:
         Whether a pipeline run is still required.

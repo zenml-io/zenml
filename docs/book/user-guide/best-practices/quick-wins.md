@@ -929,3 +929,5 @@ echo "Reports generated: prod_stacks.json and stack_summary.csv"
 ```
 
 Learn more: [Environment Variables](https://docs.zenml.io/reference/environment-variables#cli-output-formatting)
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

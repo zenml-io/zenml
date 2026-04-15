@@ -1,4 +1,4 @@
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration---
+---
 description: Trigger pipelines by schedule or event.
 icon: server
 ---
@@ -257,3 +257,5 @@ better suited for production workloads:
 * Visibility
   * Triggers: Extended dashboard visibility and management.
   * OS Schedules: Limited dashboard exposure.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

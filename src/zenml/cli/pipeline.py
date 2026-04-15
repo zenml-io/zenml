@@ -1241,6 +1241,9 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
 
     Args:
         run_name_or_id: The name or ID of the pipeline run to resume.
+
+    Raises:
+        Exception: If resuming the pipeline run fails.
     """
     try:
         client = Client()
@@ -1308,6 +1311,7 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
 
     Raises:
         RuntimeError: If retrying the run fails.
+        Exception: If retrying the pipeline run fails.
     """
     try:
         client = Client()

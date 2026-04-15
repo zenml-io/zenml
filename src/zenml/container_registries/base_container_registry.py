@@ -27,10 +27,9 @@ from zenml.stack.authentication_mixin import (
     AuthenticationMixin,
 )
 from zenml.stack.flavor import Flavor
-from zenml.utils import docker_utils
 
 if TYPE_CHECKING:
-    from docker.client import DockerClient
+    pass
 
 
 class BaseContainerRegistryConfig(AuthenticationConfigMixin):
@@ -81,7 +80,7 @@ class BaseContainerRegistryConfig(AuthenticationConfigMixin):
 class BaseContainerRegistry(AuthenticationMixin):
     """Base class for all ZenML container registries."""
 
-    _docker_client: Optional["DockerClient"] = None
+    _credentials: Optional[Tuple[str, str]] = None
 
     @property
     def config(self) -> BaseContainerRegistryConfig:
@@ -116,6 +115,10 @@ class BaseContainerRegistry(AuthenticationMixin):
         if secret:
             return secret.username, secret.password
 
+        # Refresh the credentials also if the connector has expired
+        if self._credentials and not self.connector_has_expired():
+            return self._credentials
+
         connector = self.get_connector()
         if connector:
             from zenml.service_connectors.docker_service_connector import (
@@ -123,54 +126,14 @@ class BaseContainerRegistry(AuthenticationMixin):
             )
 
             if isinstance(connector, DockerServiceConnector):
-                return (
+                self._credentials = (
                     connector.config.username.get_secret_value(),
                     connector.config.password.get_secret_value(),
                 )
 
+                return self._credentials
+
         return None
-
-    @property
-    def docker_client(self) -> "DockerClient":
-        """Returns a Docker client for this container registry.
-
-        Returns:
-            The Docker client.
-
-        Raises:
-            RuntimeError: If the connector does not return a Docker client.
-        """
-        from docker.client import DockerClient
-
-        # Refresh the client also if the connector has expired
-        if self._docker_client and not self.connector_has_expired():
-            return self._docker_client
-
-        connector = self.get_connector()
-        if connector:
-            client = connector.connect()
-            if not isinstance(client, DockerClient):
-                raise RuntimeError(
-                    f"Expected a DockerClient while trying to use the "
-                    f"linked connector, but got {type(client)}."
-                )
-            self._docker_client = client
-        else:
-            self._docker_client = (
-                docker_utils._try_get_docker_client_from_env()
-            )
-
-            credentials = self.credentials
-            if credentials:
-                username, password = credentials
-                self._docker_client.login(
-                    username=username,
-                    password=password,
-                    registry=self.config.uri,
-                    reauth=True,
-                )
-
-        return self._docker_client
 
     def is_valid_image_name_for_registry(self, image_name: str) -> bool:
         """Check if the image name is valid for the container registry.
@@ -200,49 +163,6 @@ class BaseContainerRegistry(AuthenticationMixin):
         Args:
             image_name: Name of the docker image that will be pushed.
         """
-
-    def push_image(self, image_name: str) -> str:
-        """Pushes a docker image.
-
-        Args:
-            image_name: Name of the docker image that will be pushed.
-
-        Returns:
-            The Docker repository digest of the pushed image.
-
-        Raises:
-            ValueError: If the image name is not associated with this
-                container registry.
-        """
-        if not self.is_valid_image_name_for_registry(image_name):
-            raise ValueError(
-                f"Docker image `{image_name}` does not belong to container "
-                f"registry `{self.config.uri}`."
-            )
-
-        self.prepare_image_push(image_name)
-        return docker_utils.push_image(
-            image_name, docker_client=self.docker_client
-        )
-
-    def get_image_repo_digest(self, image_name: str) -> Optional[str]:
-        """Get the repository digest of an image.
-
-        Args:
-            image_name: The name of the image.
-
-        Returns:
-            The repository digest of the image.
-        """
-        if not self.is_valid_image_name_for_registry(image_name):
-            return None
-
-        try:
-            metadata = self.docker_client.images.get_registry_data(image_name)
-        except Exception:
-            return None
-
-        return cast(str, metadata.id.split(":")[-1])
 
 
 class BaseContainerRegistryFlavor(Flavor):

@@ -5846,6 +5846,10 @@ class SqlZenStore(BaseZenStore):
                     node_metadata["resolution"] = condition.resolution
                 if condition.question:
                     node_metadata["question"] = condition.question
+                if condition.resolved_at:
+                    node_metadata["resolved_at"] = (
+                        condition.resolved_at.isoformat()
+                    )
 
                 helper.add_wait_condition_node(
                     node_id=helper.get_wait_condition_node_id(condition.name),
@@ -5941,9 +5945,9 @@ class SqlZenStore(BaseZenStore):
                             # This is a regular input artifact, so it is
                             # guaranteed that an upstream step already ran and
                             # produced the artifact.
-                            input_config = step.spec.inputs_v2[input.name][
-                                input.input_index or 0
-                            ]
+                            input_config = step.spec.normalized_inputs[
+                                input.name
+                            ][input.input_index or 0]
                             artifact_node = _get_regular_output_artifact_node(
                                 input_config.step_name,
                                 input_config.output_name,
@@ -6119,7 +6123,7 @@ class SqlZenStore(BaseZenStore):
                     for (
                         input_name,
                         input_configs,
-                    ) in step.spec.inputs_v2.items():
+                    ) in step.spec.normalized_inputs.items():
                         for input_config in input_configs:
                             # This node should always exist, as the step
                             # configurations are sorted and therefore all
@@ -6648,10 +6652,8 @@ class SqlZenStore(BaseZenStore):
             pre_creation_hook: Optional function to run before creating the
                 pipeline run.
 
-        # noqa: DAR401
         Raises:
             EntityExistsError: If a run with the same name already exists.
-            RuntimeError: If the run fetching failed unexpectedly.
 
         Returns:
             The pipeline run, and a boolean indicating whether the run was
@@ -8089,8 +8091,9 @@ class SqlZenStore(BaseZenStore):
             backup: Whether to back up the values in the backup secrets store,
                 if configured.
 
-        # noqa: DAR401
-        """
+        Raises:
+            Exception: If the secret values cannot be stored.
+        """  # noqa: DOC502
 
         def do_backup() -> bool:
             """Backs up the values of a secret in the configured backup secrets store.
@@ -8168,8 +8171,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The values of the secret.
 
-        # noqa: DAR401
-        """
+        Raises:
+            Exception: If the secret values cannot be retrieved.
+        """  # noqa: DOC502
         try:
             return self.secrets_store.get_secret_values(
                 secret_id=secret_id,
@@ -8254,8 +8258,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The updated values.
 
-        # noqa: DAR401
-        """
+        Raises:
+            Exception: If the secret values cannot be updated.
+        """  # noqa: DOC502
         try:
             existing_values = self._get_secret_values(
                 secret_id=secret_id, use_backup=backup
@@ -8343,8 +8348,9 @@ class SqlZenStore(BaseZenStore):
             delete_backup: Whether to delete the backup values of the secret
                 from the backup secrets store, if configured.
 
-        # noqa: DAR401
-        """
+        Raises:
+            Exception: If the secret values cannot be deleted.
+        """  # noqa: DOC502
 
         def do_delete_backup() -> bool:
             """Deletes the backup values of a secret in the configured backup secrets store.
@@ -8502,7 +8508,7 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created secret schema.
-        """
+        """  # noqa: DOC501
         new_secret = SecretSchema.from_request(
             secret,
             internal=internal,
@@ -8852,11 +8858,12 @@ class SqlZenStore(BaseZenStore):
                 this flag effectively moves all secrets from the primary secrets
                 store to the backup secrets store.
 
-        # noqa: DAR401
         Raises:
             BackupSecretsStoreNotConfiguredError: if no backup secrets store is
                 configured.
-        """
+            Exception: If a secret backup operation fails and
+                ignore_errors is False.
+        """  # noqa: DOC502
         if not self.backup_secrets_store:
             raise BackupSecretsStoreNotConfiguredError(
                 "Unable to backup secrets: No backup secrets store is "
@@ -8918,11 +8925,12 @@ class SqlZenStore(BaseZenStore):
                 this flag effectively moves all secrets from the backup secrets
                 store to the primary secrets store.
 
-        # noqa: DAR401
         Raises:
             BackupSecretsStoreNotConfiguredError: if no backup secrets store is
                 configured.
-        """
+            Exception: If a secret restore operation fails and
+                ignore_errors is False.
+        """  # noqa: DOC502
         if not self.backup_secrets_store:
             raise BackupSecretsStoreNotConfiguredError(
                 "Unable to restore secrets: No backup secrets store is "
@@ -10541,6 +10549,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             provider: The stack deployment provider.
 
+        Returns:
+            Information about the stack deployment provider.
+
         Raises:
             NotImplementedError: Stack deployments are not supported by the
                 local ZenML deployment.
@@ -10561,6 +10572,9 @@ class SqlZenStore(BaseZenStore):
             provider: The stack deployment provider.
             stack_name: The name of the stack.
             location: The location where the stack should be deployed.
+
+        Returns:
+            The stack deployment configuration.
 
         Raises:
             NotImplementedError: Stack deployments are not supported by the
@@ -10584,6 +10598,9 @@ class SqlZenStore(BaseZenStore):
             stack_name: The name of the stack.
             location: The location where the stack should be deployed.
             date_start: The date when the deployment started.
+
+        Returns:
+            The deployed stack or None if no matching stack was found.
 
         Raises:
             NotImplementedError: Stack deployments are not supported by the
@@ -10928,7 +10945,7 @@ class SqlZenStore(BaseZenStore):
 
                         if input_type == StepRunInputArtifactType.STEP_OUTPUT:
                             index = i
-                            input_spec = step_config.spec.inputs_v2[
+                            input_spec = step_config.spec.normalized_inputs[
                                 input_name
                             ][i]
                             chunk_index = input_spec.chunk_index
@@ -11342,7 +11359,7 @@ class SqlZenStore(BaseZenStore):
         """
         if input_name in input_overrides:
             return StepRunInputArtifactType.OVERRIDE
-        elif input_name in step_spec.inputs_v2:
+        elif input_name in step_spec.normalized_inputs:
             return StepRunInputArtifactType.STEP_OUTPUT
         elif input_name in step_config.external_input_artifacts:
             return StepRunInputArtifactType.EXTERNAL
@@ -11864,9 +11881,6 @@ class SqlZenStore(BaseZenStore):
     ) -> UserResponse:
         """Gets a specific user, when no id is specified the active user is returned.
 
-        # noqa: DAR401
-        # noqa: DAR402
-
         Raises a KeyError in case a user with that name or id does not exist.
 
         For backwards-compatibility reasons, this method can also be called
@@ -11883,7 +11897,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If the user does not exist.
-        """
+        """  # noqa: DOC502
         with Session(self.engine) as session:
             if user_name_or_id is None:
                 user_name_or_id = self._get_active_user(session=session).id

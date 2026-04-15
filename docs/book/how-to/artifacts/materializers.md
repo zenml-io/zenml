@@ -417,3 +417,5 @@ When working with materializers:
 ## Conclusion
 
 Materializers are a powerful part of ZenML's artifact system, enabling proper storage and handling of any data type. By creating custom materializers for your specific data structures, you ensure that your ML pipelines are robust, efficient, and can handle any data type required by your workflows. 
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

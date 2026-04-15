@@ -52,7 +52,7 @@ class VertexExperimentTrackerSettings(BaseSettings):
 
     @field_validator("experiment", mode="before")
     def _validate_experiment(cls, value: str) -> str:
-        """Validates the experiment name matches the the allowed format.
+        """Validates the experiment name matches the allowed format.
 
         Args:
             value: The experiment.

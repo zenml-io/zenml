@@ -44,11 +44,11 @@ class UUIDMaterializer(BaseMaterializer):
         super().__init__(uri, artifact_store)
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
 
-    def load(self, _: Type[uuid.UUID]) -> uuid.UUID:
+    def load(self, data_type: Type[uuid.UUID]) -> uuid.UUID:
         """Read UUID from artifact store.
 
         Args:
-            _: The type of the data to be loaded.
+            data_type: The type of the data to be loaded.
 
         Returns:
             The loaded UUID.

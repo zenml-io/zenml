@@ -403,9 +403,8 @@ class Pipeline:
                 pipeline.
             secrets: Secrets to set as environment variables when running this
                 pipeline.
-            settings: Settings for this pipeline.
             enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
-            settings: settings for this pipeline.
+            settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
@@ -1386,7 +1385,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def add_step_invocation(
         self,
         step: "BaseStep",
-        input_artifacts: Dict[str, List[StepArtifact]],
+        input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],
@@ -1415,9 +1414,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 ID.
 
         Raises:
-            RuntimeError: If the method is called on an inactive pipeline.
-            RuntimeError: If the invocation was called with an artifact from
-                a different pipeline.
+            RuntimeError: If the method is called on an inactive pipeline or
+                if the invocation was called with an artifact from a different
+                pipeline.
 
         Returns:
             The step invocation ID.
@@ -1436,8 +1435,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "A step invocation can only be added to an active pipeline."
             )
 
-        for artifact_list in input_artifacts.values():
-            for artifact in artifact_list:
+        for artifact_or_list in input_artifacts.values():
+            for artifact in (
+                artifact_or_list
+                if isinstance(artifact_or_list, list)
+                else [artifact_or_list]
+            ):
                 if artifact.pipeline is not self:
                     raise RuntimeError(
                         "Got invalid input artifact for invocation of step "
