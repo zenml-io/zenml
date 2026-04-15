@@ -35,7 +35,9 @@ def test_initializing_a_stack_from_components(
         StackComponentType.ARTIFACT_STORE: local_artifact_store,
     }
 
-    stack = Stack.from_components(id=uuid4(), name="", components=components)
+    stack = Stack.from_components_v2(
+        id=uuid4(), name="", components=components
+    )
 
     assert stack.orchestrator is local_orchestrator
     assert stack.artifact_store is local_artifact_store
@@ -46,14 +48,16 @@ def test_initializing_a_stack_from_components(
         local_container_registry
     )
 
-    stack = Stack.from_components(id=uuid4(), name="", components=components)
+    stack = Stack.from_components_v2(
+        id=uuid4(), name="", components=components
+    )
     assert stack.container_registry is local_container_registry
 
 
 def test_initializing_a_stack_with_missing_components():
     """Tests that initializing a stack with missing components fails."""
     with pytest.raises(TypeError):
-        Stack.from_components(id=uuid4(), name="", components={}).validate()
+        Stack.from_components_v2(id=uuid4(), name="", components={}).validate()
 
 
 def test_initializing_a_stack_with_wrong_components(local_orchestrator):
@@ -65,7 +69,7 @@ def test_initializing_a_stack_with_wrong_components(local_orchestrator):
     }
 
     with pytest.raises(TypeError):
-        Stack.from_components(
+        Stack.from_components_v2(
             id=uuid4(), name="", components=components
         ).validate()
 
@@ -86,7 +90,7 @@ def test_stack_returns_all_its_components(
         StackComponentType.ARTIFACT_STORE: [local_artifact_store],
     }
     assert all(
-        stack.components[component_type] == component
+        stack.components_v2[component_type] == component
         for component_type, component in expected_components.items()
     )
 
@@ -104,7 +108,7 @@ def test_stack_returns_all_its_components(
     ]
 
     assert all(
-        stack.components[component_type] == component
+        stack.components_v2[component_type] == component
         for component_type, component in expected_components.items()
     )
 
