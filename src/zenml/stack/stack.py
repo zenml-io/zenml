@@ -488,9 +488,9 @@ class Stack:
         # Orchestrator
         orchestrator = components.get(StackComponentType.ORCHESTRATOR)
         if not orchestrator:
-            raise ValueError("No orchestrator found in the stack.")
+            raise TypeError("No orchestrator found in the stack.")
         if len(orchestrator) > 1:
-            raise ValueError("Multiple orchestrators are not supported.")
+            raise TypeError("Multiple orchestrators are not supported.")
 
         if not isinstance(orchestrator[0], BaseOrchestrator):
             _raise_type_error(orchestrator[0], BaseOrchestrator)
@@ -498,9 +498,9 @@ class Stack:
         # Artifact Store
         artifact_store = components.get(StackComponentType.ARTIFACT_STORE)
         if not artifact_store:
-            raise ValueError("No artifact store found in the stack.")
+            raise TypeError("No artifact store found in the stack.")
         if len(artifact_store) > 1:
-            raise ValueError("Multiple artifact stores are not supported.")
+            raise TypeError("Multiple artifact stores are not supported.")
 
         if not isinstance(artifact_store[0], BaseArtifactStore):
             _raise_type_error(artifact_store[0], BaseArtifactStore)
@@ -511,7 +511,7 @@ class Stack:
         )
         if container_registry:
             if len(container_registry) > 1:
-                raise ValueError(
+                raise TypeError(
                     "Multiple container registries are not supported."
                 )
             if not isinstance(container_registry[0], BaseContainerRegistry):
@@ -529,7 +529,7 @@ class Stack:
         feature_store = components.get(StackComponentType.FEATURE_STORE)
         if feature_store:
             if len(feature_store) > 1:
-                raise ValueError("Multiple feature stores are not supported.")
+                raise TypeError("Multiple feature stores are not supported.")
 
             if not isinstance(feature_store[0], BaseFeatureStore):
                 _raise_type_error(feature_store[0], BaseFeatureStore)
@@ -538,7 +538,7 @@ class Stack:
         model_deployer = components.get(StackComponentType.MODEL_DEPLOYER)
         if model_deployer:
             if len(model_deployer) > 1:
-                raise ValueError("Multiple model deployers are not supported.")
+                raise TypeError("Multiple model deployers are not supported.")
             if not isinstance(model_deployer[0], BaseModelDeployer):
                 _raise_type_error(model_deployer[0], BaseModelDeployer)
 
@@ -567,7 +567,7 @@ class Stack:
         annotator = components.get(StackComponentType.ANNOTATOR)
         if annotator:
             if len(annotator) > 1:
-                raise ValueError("Multiple annotators are not supported.")
+                raise TypeError("Multiple annotators are not supported.")
             if not isinstance(annotator[0], BaseAnnotator):
                 _raise_type_error(annotator[0], BaseAnnotator)
 
@@ -575,7 +575,7 @@ class Stack:
         data_validator = components.get(StackComponentType.DATA_VALIDATOR)
         if data_validator:
             if len(data_validator) > 1:
-                raise ValueError("Multiple data validators are not supported.")
+                raise TypeError("Multiple data validators are not supported.")
             if not isinstance(data_validator[0], BaseDataValidator):
                 _raise_type_error(data_validator[0], BaseDataValidator)
 
@@ -583,7 +583,7 @@ class Stack:
         image_builder = components.get(StackComponentType.IMAGE_BUILDER)
         if image_builder:
             if len(image_builder) > 1:
-                raise ValueError("Multiple image builders are not supported.")
+                raise TypeError("Multiple image builders are not supported.")
 
             if not isinstance(image_builder[0], BaseImageBuilder):
                 _raise_type_error(image_builder[0], BaseImageBuilder)
@@ -592,7 +592,7 @@ class Stack:
         model_registry = components.get(StackComponentType.MODEL_REGISTRY)
         if model_registry:
             if len(model_registry) > 1:
-                raise ValueError(
+                raise TypeError(
                     "Multiple model registries are not supported."
                 )
             if not isinstance(model_registry[0], BaseModelRegistry):
@@ -602,7 +602,7 @@ class Stack:
         deployer = components.get(StackComponentType.DEPLOYER)
         if deployer:
             if len(deployer) > 1:
-                raise ValueError("Multiple deployers are not supported.")
+                raise TypeError("Multiple deployers are not supported.")
             if not isinstance(deployer[0], BaseDeployer):
                 _raise_type_error(deployer[0], BaseDeployer)
 
@@ -610,7 +610,7 @@ class Stack:
         log_store = components.get(StackComponentType.LOG_STORE)
         if log_store:
             if len(log_store) > 1:
-                raise ValueError("Multiple log stores are not supported.")
+                raise TypeError("Multiple log stores are not supported.")
             if not isinstance(log_store[0], BaseLogStore):
                 _raise_type_error(log_store[0], BaseLogStore)
 
