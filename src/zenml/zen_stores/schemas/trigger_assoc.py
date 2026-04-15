@@ -21,7 +21,6 @@ from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
-from zenml.models import TriggerExecution
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
@@ -111,18 +110,3 @@ class TriggerExecutionSchema(SQLModel, table=True):
         ),
         description="JSON object - extra info on trigger execution.",
     )
-
-    def to_model(
-        self,
-    ) -> TriggerExecution:
-        """Converts to Pydantic response model.
-
-        Returns:
-            A TriggerExecution object.
-        """
-        return TriggerExecution(
-            trigger_id=self.trigger_id,
-            pipeline_run_id=self.pipeline_run_id,
-            created_at=self.created_at,
-            info=json.loads(self.info) if self.info else None,
-        )

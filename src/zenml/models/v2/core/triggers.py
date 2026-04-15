@@ -803,15 +803,6 @@ class TriggerExecutionInfo(BaseModel):
     upstream_run_id: UUID | None = None
 
 
-class TriggerExecution(BaseModel):
-    """Class representing a trigger execution."""
-
-    trigger_id: UUID
-    pipeline_run_id: UUID
-    created_at: datetime
-    info: TriggerExecutionInfo | None = None
-
-
 TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[
     ScheduleTriggerUpdate | PlatformEventTriggerUpdate,
     Field(discriminator="type"),

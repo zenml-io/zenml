@@ -367,7 +367,6 @@ from zenml.models.v2.core.triggers import (
     TRIGGER_UPDATE_TYPE_UNION,
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
-    TriggerExecution,
     TriggerExecutionInfo,
 )
 from zenml.models.v2.misc.param_groups import (
@@ -970,6 +969,5 @@ __all__ = [
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",
     "SourceEntity",
-    "TriggerExecution",
     "TriggerExecutionInfo",
 ]
