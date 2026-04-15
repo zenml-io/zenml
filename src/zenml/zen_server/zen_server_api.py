@@ -150,20 +150,6 @@ def validation_exception_handler(
     return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
 
 
-def _register_running_loop(app_: FastAPI) -> None:
-    """Persists the running asyncio event loop to app state.
-
-    Note: Usable in cases where get_running_loop() is required
-    from threaded code.
-
-    Args:
-        app_: The FastAPI app.
-    """
-    import asyncio
-
-    app_.state.loop = asyncio.get_running_loop()
-
-
 @app.on_event("startup")
 async def initialize() -> None:
     """Initialize the ZenML server."""
@@ -192,7 +178,6 @@ async def initialize() -> None:
     if logger.isEnabledFor(logging.DEBUG):
         start_event_loop_lag_monitor()
 
-    _register_running_loop(app)
     await register_event_handlers()
 
 
