@@ -41,6 +41,11 @@ def schedule() -> None:
     """Commands for schedule triggers."""
 
 
+@cli.group()
+def platform_event() -> None:
+    """Commands for platform events."""
+
+
 @schedule.command("create", help="Create a new schedule trigger.")
 @click.argument("name", type=str)
 @click.option(
@@ -194,103 +199,6 @@ def update_schedule_trigger(
         cli_utils.declare(f"Updated schedule '{schedule_id}'.")
 
 
-@schedule.command("delete", help="Delete a schedule trigger.")
-@click.argument("schedule_id", type=UUID)
-@click.option(
-    "--soft",
-    type=bool,
-    default=True,
-    help="Deletion mode. Soft deletion will archive the trigger preserving historical references. "
-    "Hard deletion (soft=false) will purge the trigger along with its associated references "
-    "(recommended only for retention). ",
-)
-def delete_schedule_trigger(schedule_id: UUID, soft: bool = True) -> None:
-    """Delete a schedule trigger.
-
-    Args:
-        schedule_id: The ID of the schedule.
-        soft: Deletion mode.
-    """
-    try:
-        Client().delete_trigger(trigger_id=schedule_id, soft=soft)
-    except Exception as e:
-        cli_utils.exception(e)
-    else:
-        cli_utils.declare(f"Deleted schedule '{schedule_id}'.")
-
-
-@schedule.command("attach", help="Attach schedule to snapshot")
-@click.argument("schedule_id", type=UUID)
-@click.argument("snapshot_id", type=UUID)
-@click.option(
-    "--config",
-    "-c",
-    "config_path",
-    type=click.Path(exists=True, dir_okay=False),
-    required=False,
-    help="Path to config file (PipelineRunConfiguration) for triggered runs.",
-)
-@click.option(
-    "--allow-replace",
-    type=click.BOOL,
-    required=False,
-    help="Allow replacement if attachment already exists.",
-    is_flag=True,
-)
-def attach_schedule_trigger(
-    schedule_id: UUID,
-    snapshot_id: UUID,
-    config_path: str | None = None,
-    allow_replace: bool = False,
-) -> None:
-    """Attach a schedule to a snapshot.
-
-    Args:
-        schedule_id: The ID of the schedule.
-        snapshot_id: The ID of the snapshot.
-        config_path: The path to the config file to use.
-        allow_replace: Allow replacement if attachment already exists.
-    """
-    try:
-        Client().attach_trigger_to_snapshot(
-            trigger_id=schedule_id,
-            pipeline_snapshot_id=snapshot_id,
-            run_configuration=PipelineRunConfiguration.from_yaml(config_path)
-            if config_path
-            else None,
-            allow_replace=allow_replace,
-        )
-    except Exception as e:
-        cli_utils.exception(e)
-    else:
-        cli_utils.declare(
-            f"Attached schedule '{schedule_id}' to snapshot '{snapshot_id}'."
-        )
-
-
-@schedule.command("detach", help="Detach schedule from snapshot")
-@click.argument("schedule_id", type=UUID)
-@click.argument("snapshot_id", type=UUID)
-def detach_schedule_trigger(schedule_id: UUID, snapshot_id: UUID) -> None:
-    """Detach a schedule from a snapshot.
-
-    Args:
-        schedule_id: The ID of the schedule.
-        snapshot_id: The ID of the snapshot.
-    """
-    try:
-        Client().detach_trigger_from_snapshot(
-            trigger_id=schedule_id,
-            pipeline_snapshot_id=snapshot_id,
-        )
-    except Exception as e:
-        cli_utils.exception(e)
-    else:
-        cli_utils.declare(
-            f"Detached schedule '{schedule_id}' from snapshot '{snapshot_id}'."
-        )
-
-
 @schedule.command("list", help="List available schedules.")
 @cli_utils.list_options(
     TriggerFilter,
@@ -324,3 +232,141 @@ def list_schedules(
         output_format,
         empty_message="No schedule triggers found for the given filters.",
     )
+
+
+def make_delete_command() -> click.Command:
+    """Delete command factory function.
+
+    Returns:
+        A Click.command for the delete method
+    """
+
+    def delete_trigger(trigger_id: UUID, soft: bool = True) -> None:
+        """Delete a trigger trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Deletion mode.
+        """
+        try:
+            Client().delete_trigger(trigger_id=trigger_id, soft=soft)
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.declare(f"Deleted trigger '{trigger_id}'.")
+
+    f = delete_trigger
+
+    f = click.argument("trigger_id", type=UUID)(f)
+    f = click.option(
+        "--soft",
+        type=bool,
+        default=True,
+        help="Deletion mode. Soft deletion will archive the trigger preserving historical references. "
+        "Hard deletion (soft=false) will purge the trigger along with its associated references "
+        "(recommended only for retention). ",
+    )(f)
+
+    return click.command(name="delete", help="Delete a trigger.")(f)
+
+
+def make_attach_command() -> click.Command:
+    """Attach command factory function.
+
+    Returns:
+        A Click.command for the attach method
+    """
+
+    def attach_trigger(
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        config_path: str | None = None,
+        allow_replace: bool = False,
+    ) -> None:
+        """Attach a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+            config_path: The path to the config file to use.
+            allow_replace: Allow replacement if attachment already exists.
+        """
+        try:
+            Client().attach_trigger_to_snapshot(
+                trigger_id=trigger_id,
+                pipeline_snapshot_id=snapshot_id,
+                run_configuration=PipelineRunConfiguration.from_yaml(
+                    config_path
+                )
+                if config_path
+                else None,
+                allow_replace=allow_replace,
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.declare(
+                f"Attached trigger '{trigger_id}' to snapshot '{snapshot_id}'."
+            )
+
+    f = attach_trigger
+
+    f = click.argument("trigger_id", type=UUID)(f)
+    f = click.argument("snapshot_id", type=UUID)(f)
+    f = click.option(
+        "--config",
+        "-c",
+        "config_path",
+        type=click.Path(exists=True, dir_okay=False),
+        required=False,
+        help="Path to config file (PipelineRunConfiguration) for triggered runs.",
+    )(f)
+    f = click.option(
+        "--allow-replace",
+        type=click.BOOL,
+        required=False,
+        help="Allow replacement if attachment already exists.",
+        is_flag=True,
+    )(f)
+
+    return click.command("attach", help="Attach trigger to snapshot")(f)
+
+
+def make_detach_command() -> click.Command:
+    """Detach command factory function.
+
+    Returns:
+        A Click.command for the detach method
+    """
+
+    def detach_trigger(trigger_id: UUID, snapshot_id: UUID) -> None:
+        """Detach a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+        """
+        try:
+            Client().detach_trigger_from_snapshot(
+                trigger_id=trigger_id,
+                pipeline_snapshot_id=snapshot_id,
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.declare(
+                f"Detached trigger '{trigger_id}' from snapshot '{snapshot_id}'."
+            )
+
+    f = detach_trigger
+
+    f = click.argument("trigger_id", type=UUID)(f)
+    f = click.argument("snapshot_id", type=UUID)(f)
+
+    return click.command("detach", help="Detach trigger from snapshot")(f)
+
+
+for group in [schedule, platform_event]:
+    group.add_command(make_delete_command())
+    group.add_command(make_attach_command())
+    group.add_command(make_detach_command())
