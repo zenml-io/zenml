@@ -31,8 +31,8 @@ def test_initializing_a_stack_from_components(
 ):
     """Tests that a stack can be initialized from a dict of components."""
     components = {
-        StackComponentType.ORCHESTRATOR: local_orchestrator,
-        StackComponentType.ARTIFACT_STORE: local_artifact_store,
+        StackComponentType.ORCHESTRATOR: [local_orchestrator],
+        StackComponentType.ARTIFACT_STORE: [local_artifact_store],
     }
 
     stack = Stack.from_components_v2(
@@ -45,7 +45,7 @@ def test_initializing_a_stack_from_components(
 
     # check that it also works with optional container registry
     components[StackComponentType.CONTAINER_REGISTRY] = (
-        local_container_registry
+        [local_container_registry]
     )
 
     stack = Stack.from_components_v2(
