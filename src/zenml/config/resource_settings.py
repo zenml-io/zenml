@@ -192,8 +192,19 @@ class ResourceSettings(BaseSettings):
         """
         # To detect whether this config is empty (= no values specified), we
         # check if there are any attributes which are explicitly set to any
-        # value other than `None`.
-        return len(self.model_dump(exclude_unset=True, exclude_none=True)) == 0
+        # value other than `None`. Exclude preemptible and pool_resources
+        # because they are not part of the set of unified resource settings
+        # that are understood and applied by orchestrators and step operators.
+        return (
+            len(
+                self.model_dump(
+                    exclude_unset=True,
+                    exclude_none=True,
+                    exclude={"preemptible", "pool_resources"},
+                )
+            )
+            == 0
+        )
 
     def get_memory(
         self, unit: Union[str, ByteUnit] = ByteUnit.GB
