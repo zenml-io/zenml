@@ -95,7 +95,7 @@ For example, with the configuration above (2 CPUs and 32GB memory), the minimum 
 This will run `my_modal_step` on a Modal instance with 1 A100 GPU, 2 CPUs, and
 32GB of CPU memory.
 
-Check out the [Modal docs](https://modal.com/docs/reference/modal.gpu) for the
+Check out the [Modal docs](https://modal.com/docs/guide/gpu) for the
 full list of supported GPU types and the [SDK
 docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html)
 for more details on the available settings.

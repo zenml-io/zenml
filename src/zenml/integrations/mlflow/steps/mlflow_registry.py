@@ -66,10 +66,10 @@ def mlflow_register_model_step(
         metadata: A list of metadata to associate with the model version
 
     Raises:
-        ValueError: If the model registry is not an MLflow model registry.
-        ValueError: If the experiment tracker is not an MLflow experiment tracker.
-        RuntimeError: If no model source URI is provided and no model is found.
-        RuntimeError: If no run ID is provided and no run is found.
+        ValueError: If the model registry or experiment tracker is not an
+            MLflow instance.
+        RuntimeError: If no model source URI is provided and no model is
+            found, or if no run ID is provided and no run is found.
     """
     # get the experiment tracker and check if it is an MLflow experiment tracker.
     experiment_tracker = Client().active_stack.experiment_tracker

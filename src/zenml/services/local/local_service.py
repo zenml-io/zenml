@@ -271,7 +271,7 @@ class LocalDaemonService(BaseService):
         return msg
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the daemon process.
+        """Check the current operational state of the daemon process.
 
         Returns:
             The operational state of the daemon process and a message

@@ -83,7 +83,7 @@ class LogsRequest(ProjectScopedRequest):
         Raises:
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
-        """
+        """  # noqa: DOC502
         if value is not None:
             assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
                 "The length of the value for this field can not "

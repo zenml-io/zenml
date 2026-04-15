@@ -226,3 +226,5 @@ For the best AI-assisted ZenML development experience, combine:
 3. **Agent Skills** - For guided implementation of features
 
 This gives your AI assistant access to documentation, your actual ZenML data, and structured workflows for making changes.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

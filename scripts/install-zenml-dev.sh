@@ -170,6 +170,14 @@ install_integrations() {
     # need to uninstall this library for now until the changes make it into
     # fastapi and then need to bump the fastapi version to resolve this.
     uv pip uninstall $PIP_ARGS multipart
+
+    # `docstring_parser_fork` (required by pydoclint) ships under the same
+    # `docstring_parser/` namespace as the upstream `docstring-parser` package.
+    # Some integration dependencies pull in upstream `docstring-parser`, which
+    # then overwrites the fork's files on disk and breaks `pydoclint` with an
+    # `ImportError: cannot import name 'DocstringYields'`. Force-reinstall the
+    # fork last so its files win the namespace collision.
+    uv pip install $PIP_ARGS --force-reinstall --no-deps "docstring_parser_fork"
 }
 
 set -x

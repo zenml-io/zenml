@@ -32,6 +32,21 @@ rules:
   artipacked:
     disable: true
 
+  # secrets-outside-env: Secrets used without dedicated GitHub Environments.
+  # Disabled: 89 findings across 15+ workflows. Adding GitHub Environments
+  # requires coordinating environment protection rules and is a significant
+  # change. Address incrementally in a dedicated PR.
+  # TODO: Add GitHub Environments to workflows that use secrets (see  # 4664)
+  secrets-outside-env:
+    disable: true
+
+  # superfluous-actions: Actions that duplicate built-in runner functionality.
+  # These are peter-evans/create-or-update-comment and peter-evans/find-comment
+  # which could be replaced with `gh pr comment` / `gh issue comment`.
+  # TODO: Replace with gh CLI equivalents (see  # 4664)
+  superfluous-actions:
+    disable: true
+
   # Detect dangerous template expansions
   # Ignores: Low-confidence findings for step outputs used in github-script
   # (step outputs within same workflow are trusted)

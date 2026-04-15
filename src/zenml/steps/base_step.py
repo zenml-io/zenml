@@ -368,7 +368,7 @@ class BaseStep:
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[
-        Dict[str, List["StepArtifact"]],
+        Dict[str, Union["StepArtifact", List["StepArtifact"]]],
         Dict[str, Union["ExternalArtifact", "ArtifactVersionResponse"]],
         Dict[str, "ModelVersionDataLazyLoader"],
         Dict[str, "ClientLazyLoader"],
@@ -404,7 +404,7 @@ class BaseStep:
                 f"Wrong arguments when calling step '{self.name}': {e}"
             ) from e
 
-        artifacts = {}
+        artifacts: Dict[str, Union["StepArtifact", List["StepArtifact"]]] = {}
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ] = {}
@@ -417,7 +417,7 @@ class BaseStep:
             self.entrypoint_definition.validate_input(key=key, value=value)
 
             if isinstance(value, StepArtifact):
-                artifacts[key] = [value]
+                artifacts[key] = value
                 if key in self.configuration.parameters:
                     logger.warning(
                         "Got duplicate value for step input %s, using value "
@@ -533,8 +533,12 @@ class BaseStep:
 
         upstream_steps = {
             artifact.invocation_id
-            for artifact_list in input_artifacts.values()
-            for artifact in artifact_list
+            for artifact_or_list in input_artifacts.values()
+            for artifact in (
+                artifact_or_list
+                if isinstance(artifact_or_list, list)
+                else [artifact_or_list]
+            )
         }
         if isinstance(after, str):
             upstream_steps.add(after)
@@ -1378,7 +1382,9 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _validate_inputs(
         self,
-        input_artifacts: Dict[str, List["StepArtifact"]],
+        input_artifacts: Dict[
+            str, Union["StepArtifact", List["StepArtifact"]]
+        ],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
@@ -1412,7 +1418,9 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _finalize_configuration(
         self,
-        input_artifacts: Dict[str, List["StepArtifact"]],
+        input_artifacts: Dict[
+            str, Union["StepArtifact", List["StepArtifact"]]
+        ],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
@@ -1677,14 +1685,17 @@ To avoid this consider setting step parameters only in one place (config or code
                 "not match your local step code."
             )
 
+        spec = step_run.spec
         inputs = {}
         for input_name, input_artifacts in step_run.regular_inputs.items():
-            if len(input_artifacts) > 1:
+            is_scalar = spec.is_scalar_input(input_name)
+
+            if is_scalar:
+                inputs[input_name] = input_artifacts[0].load()
+            else:
                 inputs[input_name] = [
                     artifact.load() for artifact in input_artifacts
                 ]
-            else:
-                inputs[input_name] = input_artifacts[0].load()
 
         if input_overrides:
             inputs.update(input_overrides)

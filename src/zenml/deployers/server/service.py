@@ -550,8 +550,8 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             The in-memory outputs of the execution.
 
         Raises:
-            RuntimeError: If the orchestrator has not been initialized.
-            RuntimeError: If the pipeline cannot be executed.
+            RuntimeError: If the orchestrator has not been initialized or if
+                the pipeline cannot be executed.
         """
         logging_context = setup_logging_context(
             source="deployment",

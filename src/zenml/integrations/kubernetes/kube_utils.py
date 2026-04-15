@@ -92,7 +92,7 @@ class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: igno
 
         Returns:
             On pod conditions.
-        """
+        """  # noqa: DOC106, DOC107
         return self._on_pod_conditions
 
     @on_pod_conditions.setter
@@ -101,7 +101,7 @@ class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: igno
 
         Args:
             on_pod_conditions: On pod conditions.
-        """
+        """  # noqa: DOC106, DOC107
         self._on_pod_conditions = on_pod_conditions
 
 

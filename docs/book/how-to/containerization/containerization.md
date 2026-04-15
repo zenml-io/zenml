@@ -141,7 +141,7 @@ def my_pipeline(...):
     ...
 ```
 
-For the default local image builder, these options are passed to the [`docker build` command](https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build).
+For the default local image builder with the **Docker** engine, these options are passed to the Docker build API (or to the `docker build` CLI if you enabled subprocess mode on the local image builder). With the **Podman** engine, builds always use the Podman CLI and the same option mapping as subprocess mode on Docker.
 
 {% hint style="info" %}
 If you're running your pipelines on MacOS with ARM architecture, the local Docker caching does not work unless you specify the target platform of the image:
@@ -640,11 +640,29 @@ If you want to ignore untracked files, you can set the `ZENML_CODE_REPOSITORY_IG
 
 ## Image Build Location
 
-By default, execution environments are created locally using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](https://docs.zenml.io/stacks/image-builders), a special [stack component](https://docs.zenml.io/stacks), allowing users to build and push Docker images in a different specialized _image builder environment_.
+By default, execution environments are created on your machine using a **local container engine** (see [Choosing the Container Engine](#choosing-the-container-engine) below). ZenML also offers [image builders](https://docs.zenml.io/stacks/image-builders), a special [stack component](https://docs.zenml.io/stacks), so you can build and push images in a different specialized _image builder environment_ instead.
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](https://docs.zenml.io/stacks/image-builders/local) to retain consistency across all builds. In this case, the image builder environment is the same as the [client environment](https://docs.zenml.io/user-guides/best-practices/configure-python-environments#client-environment-or-the-runner-environment).
 
 You don't need to directly interact with any image builder in your code. As long as the image builder that you want to use is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), it will be used automatically by any component that needs to build container images.
+
+### Choosing the Container Engine
+
+ZenML uses the container engine (**Docker** or **Podman** currently) available on your machine for work that happens locally: building and pushing images with the [local image builder](https://docs.zenml.io/stacks/image-builders/local), preparing pipeline images before remote runs, and similar client-side steps. This is a global setting of your ZenML client.
+
+**Default behavior:** if you do not configure an engine, ZenML **auto-selects**: it tries **Docker** first, then **Podman** if Docker is not available. So on a typical developer laptop with Docker Desktop, **Docker is used** without any extra configuration.
+
+**To pin an engine**, use the environment variable **`ZENML_CONTAINER_ENGINE`** set to `docker` or `podman`.
+
+For example, to use Podman everywhere on that machine:
+
+```shell
+export ZENML_CONTAINER_ENGINE=podman
+```
+
+Parts of ZenML that require the Docker daemon API (for example the [local Docker orchestrator](https://docs.zenml.io/stacks/orchestrators/local-docker)) still expect Docker; switching the global engine to Podman affects local image build/push and client-side image preparation, not those Docker-only features.
+
+More detail on credentials, subprocess builds, and prerequisites is on the [local image builder](https://docs.zenml.io/stacks/image-builders/local) page.
 
 ## Container User Permissions
 
@@ -674,3 +692,5 @@ When you set the `user` parameter:
 11. **Run containers as non-root users** when possible to improve security.
 
 By following these practices, you can optimize your Docker builds in ZenML and create a more efficient workflow.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

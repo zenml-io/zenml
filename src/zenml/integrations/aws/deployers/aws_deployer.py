@@ -570,7 +570,7 @@ class AWSDeployer(ContainerizedDeployer):
             The secret ARN.
 
         Raises:
-            ClientError: If the secret cannot be updated.
+            ClientError: If an unexpected AWS API error occurs.
             DeployerError: If secret creation/update fails.
         """
         try:
@@ -711,8 +711,9 @@ class AWSDeployer(ContainerizedDeployer):
             The ARN of the created/updated auto-scaling configuration.
 
         Raises:
-            ClientError: If the auto-scaling configuration cannot be described.
-            DeployerError: If auto-scaling configuration creation/update fails.
+            ClientError: If an unexpected AWS API error occurs.
+            DeployerError: If auto-scaling configuration creation/update
+                fails.
         """
         try:
             metadata = AppRunnerDeploymentMetadata.from_deployment(deployment)
@@ -904,7 +905,8 @@ class AWSDeployer(ContainerizedDeployer):
             The App Runner service dictionary, or None if it doesn't exist.
 
         Raises:
-            ClientError: If the App Runner service cannot be described.
+            ClientError: If the App Runner service cannot be described
+                and the error is not a ResourceNotFoundException.
         """
         existing_metadata = AppRunnerDeploymentMetadata.from_deployment(
             deployment
@@ -1607,7 +1609,9 @@ class AWSDeployer(ContainerizedDeployer):
             DeploymentNotFoundError: If the deployment is not found.
             DeploymentLogsNotFoundError: If the logs are not found.
             DeployerError: If an unexpected error occurs.
-            RuntimeError: If the service name is not found in the deployment metadata.
+            RuntimeError: If the service name is not found in the deployment
+                metadata.
+            ClientError: If a CloudWatch API call fails.
         """
         if follow:
             raise NotImplementedError(

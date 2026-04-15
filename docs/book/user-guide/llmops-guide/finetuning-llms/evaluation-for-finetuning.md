@@ -89,7 +89,7 @@ When using Generalized evals, it's important to consider their limitations and c
 
 - [prodigy-evaluate](https://github.com/explosion/prodigy-evaluate?tab=readme-ov-file)
 - [ragas](https://docs.ragas.io/en/stable/getstarted/)
-- [giskard](https://docs.giskard.ai/en/stable/getting_started/quickstart/quickstart_llm.html)
+- [giskard](https://docs.giskard.ai/oss)
 - [langcheck](https://github.com/citadel-ai/langcheck)
 - [nervaluate](https://github.com/MantisAI/nervaluate) (for NER)
 
@@ -118,3 +118,5 @@ assess the impact of changes and identify areas that require attention. Again,
 as with everything else, don't let perfect be the enemy of the good; a simple
 dashboard using  simple technology with a few key metrics is better than no
 dashboard at all.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

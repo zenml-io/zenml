@@ -21,3 +21,5 @@ We'll go through the following steps in this guide:
 This guide is slightly different from the others in that we don't follow a specific use case as the model for finetuning LLMs. The actual steps needed to finetune an LLM are not that complex, but the important part is to understand when you might need to finetune an LLM, how to evaluate the performance of what you do as well as decisions around what data to use and so on.
 
 To follow along with the example explained in this guide, please follow the instructions in [the `llm-lora-finetuning` repository](https://github.com/zenml-io/zenml-projects/tree/main/gamesense) where the full code is also available. This code can be run locally (if you have a GPU attached to your machine) or using cloud compute as you prefer.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
