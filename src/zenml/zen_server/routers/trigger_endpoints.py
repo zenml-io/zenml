@@ -85,12 +85,12 @@ def verify_permissions_for_source_entity(
     if source_type == SourceType.PIPELINE:
         verify_permission_for_model(
             model=zen_store().get_pipeline(source_id),
-            action=Action.READ,
+            action=Action.UPDATE,
         )
     elif source_type == SourceType.PIPELINE_RUN:
         verify_permission_for_model(
             model=zen_store().get_run(run_id=source_id),
-            action=Action.READ,
+            action=Action.UPDATE,
         )
     else:
         raise ValueError(f"Unexpected source type: {format(source_type)}")
@@ -227,7 +227,7 @@ def update_trigger(
 @async_fastapi_endpoint_wrapper
 def delete_trigger(
     trigger_id: UUID,
-    soft: bool,
+    soft: bool = True,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific trigger using its unique id.
@@ -362,18 +362,3 @@ def detach_trigger_from_snapshot(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
     )
-
-
-@router.get("supported-events", responses={422: error_response})
-def list_supported_events(source_type: SourceType) -> list[str]:
-    """Helper endpoint. Returns a list of supported events for a source type.
-
-    Args:
-        source_type: A source type.
-
-    Returns:
-        A list of supported events for the source type.
-    """
-    from zenml.utils.trigger_utils import list_supported_events
-
-    return list_supported_events(source_type=source_type)

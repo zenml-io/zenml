@@ -58,10 +58,17 @@ class EventDispatcher(metaclass=SingletonMetaClass):
             return
 
         for event_handler in self._event_handlers:
-            logger.debug(
-                "Event handler: %s picking up %s status change to %s",
-                event_handler.__class__.__name__,
-                run.id,
-                run.status,
-            )
-            event_handler.handle_run_status_update(run)
+            try:
+                logger.debug(
+                    "Event handler: %s picking up %s status change to %s",
+                    event_handler.__class__.__name__,
+                    run.id,
+                    run.status,
+                )
+                event_handler.handle_run_status_update(run)
+            except Exception as exc:
+                logger.exception(
+                    "%s failed to handle update",
+                    event_handler.__class__.__name__,
+                    exc_info=exc,
+                )

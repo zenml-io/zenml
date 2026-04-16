@@ -65,7 +65,7 @@ def platform_event() -> None:
 @click.option("--interval", type=int)
 @click.option(
     "--run_once_start_time",
-    type=bool,
+    type=str,
     help="One-off execution time (ISO 8601 format)",
 )
 @click.option(
@@ -135,7 +135,7 @@ def create_schedule(
 @click.option("--interval", type=int)
 @click.option(
     "--run_once_start_time",
-    type=bool,
+    type=str,
     help="One-off execution time (ISO 8601 format)",
 )
 @click.option(
@@ -148,6 +148,11 @@ def create_schedule(
     type=str,
     help="The end time of the schedule (ISO 8601 format).",
 )
+@click.option(
+    "--concurrency",
+    type=click.Choice(TriggerRunConcurrency.values()),
+    help="Option to control the concurrency of the trigger.",
+)
 def update_schedule_trigger(
     schedule_id: UUID,
     name: str | None = None,
@@ -157,6 +162,7 @@ def update_schedule_trigger(
     run_once_start_time: str | None = None,
     start_time: str | None = None,
     end_time: str | None = None,
+    concurrency: str | None = None,
 ) -> None:
     """Update a schedule trigger.
 
@@ -169,6 +175,7 @@ def update_schedule_trigger(
         start_time: The new start time of the trigger.
         end_time: The new end time of the trigger.
         run_once_start_time: The new run_once_start_time of the trigger.
+        concurrency: The new concurrency of the trigger.
     """
     options = [
         name,
@@ -178,6 +185,7 @@ def update_schedule_trigger(
         start_time,
         end_time,
         run_once_start_time,
+        concurrency,
     ]
 
     if not any(option is not None for option in options):
@@ -198,6 +206,9 @@ def update_schedule_trigger(
             if start_time
             else None,
             end_time=iso8601_to_utc_naive(end_time) if end_time else None,
+            concurrency=TriggerRunConcurrency(concurrency)
+            if concurrency
+            else None,
         )
     except Exception as e:
         cli_utils.exception(e)
@@ -457,7 +468,6 @@ def create_platform_event(
     "--concurrency",
     type=click.Choice(TriggerRunConcurrency.values()),
     help="Option to control the concurrency of the trigger.",
-    default=TriggerRunConcurrency.SKIP.value,
 )
 @click.option("--source_type", type=click.Choice(SourceType.values()))
 @click.option("--source_id", type=UUID)
@@ -474,7 +484,7 @@ def update_platform_event_trigger(
     source_id: UUID | None = None,
     target_events: list[str] | None = None,
     active: bool | None = None,
-    concurrency: TriggerRunConcurrency | None = None,
+    concurrency: str | None = None,
 ) -> None:
     """Update a platform event trigger.
 
@@ -503,7 +513,9 @@ def update_platform_event_trigger(
             trigger_id=trigger_id,
             name=name,
             active=active,
-            concurrency=concurrency,
+            concurrency=TriggerRunConcurrency(concurrency)
+            if concurrency
+            else None,
             source_id=source_id,
             source_type=source_type,
             target_events=target_events,

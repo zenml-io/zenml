@@ -1,7 +1,7 @@
 """Add trigger execution info [7464581d8249].
 
 Revision ID: 7464581d8249
-Revises: 77c8a1f91ab4
+Revises: 0.94.2
 Create Date: 2026-04-09 17:02:42.217862
 
 """

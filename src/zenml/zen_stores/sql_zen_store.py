@@ -7951,6 +7951,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             soft: Flag deciding whether to soft delete the trigger.
+
+        Raises:
+            IllegalOperationError: On archival if trigger is already archived.
         """
         with Session(self.engine) as session:
             # Check if trigger with the given ID exists
@@ -8132,6 +8135,9 @@ class SqlZenStore(BaseZenStore):
             A list of PlatformEventTriggerResponse objects matching the conditions.
         """
         from zenml.enums import TriggerType
+
+        if not conditions:
+            return []
 
         with Session(self.engine) as session:
             trigger_filters = [

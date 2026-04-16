@@ -661,7 +661,7 @@ class PlatformEventTrigger(BaseModel):
     """Base class for event-specific parameters."""
 
     source_entity: SourceEntity
-    target_events: list[str]
+    target_events: list[str] = Field(min_length=1)
 
     @model_validator(mode="after")
     def validate_event_type(self) -> "PlatformEventTrigger":
