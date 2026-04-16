@@ -42,6 +42,7 @@ from zenml.constants import (
     READY,
 )
 from zenml.enums import SourceContextTypes
+from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.request_management import RequestContext
 from zenml.zen_server.secure_headers import (
@@ -55,7 +56,7 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 def _error_response(

@@ -22,7 +22,6 @@ from uuid import UUID, uuid4
 
 import anyio.to_thread
 import requests
-import structlog
 from anyio import CapacityLimiter
 from cachetools.func import ttl_cache
 from fastapi import Depends, Response
@@ -58,6 +57,7 @@ from zenml.exceptions import (
     CredentialsNotValid,
     OAuthError,
 )
+from zenml.logger import get_logger
 from zenml.models import (
     APIKey,
     APIKeyInternalResponse,
@@ -87,7 +87,7 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 class AuthContext(BaseModel):

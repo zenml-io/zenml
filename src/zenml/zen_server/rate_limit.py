@@ -29,12 +29,12 @@ from typing import (
     cast,
 )
 
-import structlog
 from starlette.requests import Request
 
+from zenml.logger import get_logger
 from zenml.zen_server.utils import server_config
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
 
 
