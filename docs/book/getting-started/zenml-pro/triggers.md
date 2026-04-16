@@ -13,13 +13,19 @@ In the [snapshots](./snapshots.md) section, you learned how to prepare snapshots
 the dashboard, CLI, or SDK. In many cases, however, pipelines need to run automatically - either on a schedule or in 
 response to an event.
 
-Triggers enable this behavior. A Trigger is a configuration that defines one or more events that automatically 
-start a pipeline.
+Triggers enable this behavior. A trigger is a configuration that defines one or more conditions under 
+which a pipeline is automatically started.
 
 ## Schedule Triggers
 
-*Schedule* triggers enable users to define and manage an execution schedule. See below a comprehensive list of the
-schedule configuration options:
+*Schedule Triggers* allow pipelines to run automatically based on time-based rules, such as fixed intervals
+or cron expressions. They are ideal for recurring workflows, on a predictable timeline, like daily retraining, 
+batch processing, or periodic data ingestion.
+
+When defining a scheduled trigger, you can configure both when and how your pipeline runs. Choose between 
+one-off executions, interval-based schedules, or cron expressions for fine-grained timing control. 
+Additional options, such as time boundaries, concurrency limits, and activation settings, let you 
+tailor the trigger to your workflow requirements.
 
 | Attribute           | Description                                                  | Notes                        |
 |---------------------|--------------------------------------------------------------|------------------------------|
@@ -106,7 +112,7 @@ Via the CLI:
 zenml trigger schedule detach "<TRIGGER_ID>" "<SNAPSHOT_ID>" --config=<path-to-your-config>.yml
 ~~~
 
-Triggers can be *detached* from snapshots as well.
+To stop a trigger from launching runs for a specific snapshot, you can *detach* the trigger from that snapshot.
 
 Via the SDK:
 
@@ -259,3 +265,126 @@ better suited for production workloads:
   * OS Schedules: Limited dashboard exposure.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+
+
+## Platform Event Triggers
+
+*Platform Event Triggers* extend ZenML’s trigger system by enabling pipelines to run automatically in response
+to events occurring within the ZenML platform itself. Instead of relying on time-based schedules, these
+triggers allow users to define downstream pipeline executions that react to lifecycle events, such as
+the completion of another pipeline. This makes it easy to build event-driven workflows where pipelines are 
+seamlessly chained based on platform activity.
+
+When defining a platform event trigger, you configure what resource to listen to and which events should 
+initiate a pipeline run. The source_type and source_id identify the ZenML entity you want to react 
+to (e.g., a specific pipeline), while target_events define the events of interest (e.g., completed or failed). 
+Additional options, such as activation state and concurrency behavior, allow you to control how the 
+trigger operates within your workflow.
+
+| Attribute     | Description                                               | Notes                              |
+|---------------|-----------------------------------------------------------|------------------------------------|
+| name          | The name of the trigger                                   | Unique within project              |
+| source_type   | The type of ZenML entity to listen to (e.g., pipeline)    | Defines the event source category  |
+| source_id     | The unique identifier of the source entity                | e.g., a specific pipeline ID       |
+| target_events | List of events that will activate the trigger             | e.g., `completed`, `failed`        |
+| active        | Status of the trigger (active/inactive)                   | -                                  |
+| concurrency   | Option to control how concurrent runs should be handled   | Skip is the default option         |
+
+You can manage platform event triggers using the same set of commands (create, update, attach, detach, list, delete) 
+as for schedule triggers. While some parameters and responses differ slightly, additional utilities are 
+available to help you work more effectively with this trigger type.
+
+### Create Platform Event Trigger
+
+Let's start by creating a Platform Event Trigger. In this example, we want to react to the successful 
+completion of a specific pipeline.
+
+Via the SDK:
+
+```python
+from zenml.client import Client
+from zenml.enums import PipelineEvent
+from zenml.utils.trigger_utils import create_platform_event_trigger
+
+source_pipeline = Client().get_pipeline(name_id_or_prefix="hello-pipeline")
+
+trigger = create_platform_event_trigger(
+    name="on-hello-pipeline-complete",
+    source_pipeline_id=source_pipeline.id,
+    target_events=[PipelineEvent.RUN_COMPLETED],
+)
+```
+
+Via the CLI:
+
+The SDK provides helpful overloads that guide you toward valid configurations by suggesting the supported target 
+events for a given source type as you type. To improve discoverability in the CLI, an additional helper 
+command is available:
+
+```bash
+zenml trigger platform-event list-supported-events pipeline
+```
+
+Then we can create the trigger as follows:
+
+```bash
+zenml trigger platform-event create "on-hello-pipeline-complete" pipeline <pipeline ID> --target_events=run_completed
+```
+
+### Update Platform Event Triggers
+
+Let's continue by updating our existing trigger. In this example, we want to add multiple target events. 
+The trigger initially reacted to successful completion, and we will now extend it to react to failures as well.
+
+Via the SDK:
+
+```python
+from zenml.client import Client
+from zenml.enums import PipelineEvent
+from zenml.utils.trigger_utils import update_platform_event_trigger
+
+trigger_id = Client().get_platform_event_trigger(trigger_id="<trigger_id>").id
+
+trigger = update_platform_event_trigger(
+    trigger_id=trigger_id,
+    target_events=[PipelineEvent.RUN_FAILED, PipelineEvent.RUN_COMPLETED]
+)
+```
+
+Via the CLI:
+
+```bash
+zenml trigger platform-event update <trigger_id> --target_events=run_completed --target_events=run_failed
+```
+
+### Remaining Platform Event Trigger operations
+
+The remaining operations (view, attach, detach, and delete) do not differ significantly from schedule triggers. 
+In the CLI, they are grouped under a different command namespace, but the syntax remains the same. 
+You can explore the available platform event trigger commands with:
+
+```bash
+zenml trigger platform-event
+```
+
+To view platform event triggers via the SDK:
+
+```python
+from zenml.client import Client
+
+# GET by ID
+trigger = Client().get_platform_event_trigger(trigger_id="<trigger_id>")
+
+# List with filtering & sorting
+triggers = Client().list_platform_event_triggers()
+```
+
+To attach, detach, and delete triggers via the SDK, the methods are shared across all trigger types:
+
+```python
+from zenml.client import Client
+
+Client().attach_trigger_to_snapshot(trigger_id="<trigger_id>", pipeline_snapshot_id="<snapshot_id>")
+Client().detach_trigger_from_snapshot(trigger_id="<trigger_id>", pipeline_snapshot_id="<snapshot_id>")
+Client().delete_trigger(trigger_id="<trigger_id>")
+```
