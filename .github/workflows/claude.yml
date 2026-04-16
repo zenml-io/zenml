@@ -80,11 +80,11 @@ jobs:
             CODE REVIEW GUIDELINES (use when reviewing PRs):
             Focus on ensuring the changes are sound, clean, intentional, and void of regressions.
             REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+            PR NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
             Context:
             - You can fetch additional PR context via:
-              - gh pr view ${{ github.event.pull_request.number }} --json title,body,author,headRefName,baseRefName,commits
-              - gh pr diff ${{ github.event.pull_request.number }} --name-only
+              - gh pr view ${{ github.event.issue.number || github.event.pull_request.number }} --json title,body,author,headRefName,baseRefName,commits
+              - gh pr diff ${{ github.event.issue.number || github.event.pull_request.number }} --name-only
             - Use the repository's CLAUDE.md (if present) and existing code patterns for conventions.
             Primary Review Goals:
             1) Verify Change Correctness
@@ -115,7 +115,7 @@ jobs:
                - Documentation gaps for complex logic
             Documentation & Release Notes Review:
             - Determine if user-facing behavior, APIs, CLI commands/flags, configuration options, or defaults have changed.
-            - Heuristics (run): gh pr diff ${{ github.event.pull_request.number }} --name-only
+            - Heuristics (run): gh pr diff ${{ github.event.issue.number || github.event.pull_request.number }} --name-only
               - If code changes are present under src/ or cli/ or other user-facing modules but docs/ are not updated, flag as "docs update needed".
               - If docs/ changes exist, check if they match the code changes and are placed in the correct sections (e.g., docs/book/, docs/how-to/, docs/reference/).
               - If CLI or config flags changed, ensure corresponding docs and examples are updated (including any README or quickstart sections if applicable).
