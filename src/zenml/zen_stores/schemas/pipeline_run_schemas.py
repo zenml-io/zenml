@@ -304,6 +304,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     trigger_execution: Optional["TriggerExecutionSchema"] = Relationship(
         sa_relationship_kwargs={
             "lazy": "select",
+            "uselist": False,
+            "passive_deletes": "all",
         },
     )
 
