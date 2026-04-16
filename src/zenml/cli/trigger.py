@@ -320,8 +320,8 @@ def make_attach_command() -> click.Command:
 
     f = attach_trigger
 
-    f = click.argument("trigger_id", type=UUID)(f)
     f = click.argument("snapshot_id", type=UUID)(f)
+    f = click.argument("trigger_id", type=UUID)(f)
     f = click.option(
         "--config",
         "-c",
@@ -369,8 +369,8 @@ def make_detach_command() -> click.Command:
 
     f = detach_trigger
 
-    f = click.argument("trigger_id", type=UUID)(f)
     f = click.argument("snapshot_id", type=UUID)(f)
+    f = click.argument("trigger_id", type=UUID)(f)
 
     return click.command("detach", help="Detach trigger from snapshot")(f)
 
