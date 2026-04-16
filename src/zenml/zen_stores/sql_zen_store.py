@@ -7964,6 +7964,10 @@ class SqlZenStore(BaseZenStore):
                 # Hard delete the schedule
                 session.delete(trigger)
             else:
+                if trigger.is_archived:
+                    raise IllegalOperationError(
+                        f"Trigger {trigger_id} is already archived."
+                    )
                 # Soft deletion - set is_archived
                 trigger.is_archived = True
                 trigger.active = False
