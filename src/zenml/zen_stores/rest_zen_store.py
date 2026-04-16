@@ -2588,9 +2588,11 @@ class RestZenStore(BaseZenStore):
             ValueError: In case of bad response.
         """
         body: dict[str, Any] = self.put(  # type: ignore[assignment]
-            f"{TRIGGERS}/{trigger_id}", body=trigger_update, params=None
+            f"{TRIGGERS}/{trigger_id}",
+            body=trigger_update,
+            params=None,
+            exclude_unset=False,
         )
-
         try:
             response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
             return response_model.model_validate(body)
@@ -5155,6 +5157,7 @@ class RestZenStore(BaseZenStore):
         body: Optional[BaseModel] = None,
         params: Optional[Dict[str, Any]] = None,
         timeout: Optional[int] = None,
+        exclude_unset: bool = True,
         **kwargs: Any,
     ) -> Json:
         """Make a PUT request to the given endpoint path.
@@ -5164,13 +5167,16 @@ class RestZenStore(BaseZenStore):
             body: The body to send.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
+            exclude_unset: Exclude unset fields, defaults to True.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
         json = (
-            body.model_dump(mode="json", exclude_unset=True) if body else None
+            body.model_dump(mode="json", exclude_unset=exclude_unset)
+            if body
+            else None
         )
         return self._request(
             "PUT",

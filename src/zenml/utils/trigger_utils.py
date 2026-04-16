@@ -86,7 +86,7 @@ def create_platform_event_trigger(
         source_pipeline_run_id,
     ]
 
-    if sum(1 if option is not None else 0 for option in options) > 0:
+    if sum(1 if option is not None else 0 for option in options) > 1:
         raise ValueError("You can not provide more than 1 source option")
     elif source_pipeline_id is not None:
         source_type = SourceType.PIPELINE

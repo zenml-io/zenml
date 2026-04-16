@@ -215,6 +215,8 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
     CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "type",
+        "flavor",
+        "next_occurrence",
     ]
 
     pipeline_id: str | None = Field(

@@ -470,6 +470,9 @@ def create_platform_event(
 def update_platform_event_trigger(
     trigger_id: UUID,
     name: str | None = None,
+    source_type: SourceType | None = None,
+    source_id: UUID | None = None,
+    target_events: list[str] | None = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
 ) -> None:
@@ -478,6 +481,9 @@ def update_platform_event_trigger(
     Args:
         trigger_id: The ID of the platform event.
         name: The new name of the trigger.
+        source_type: The source type of the trigger.
+        source_id: The source ID of the trigger.
+        target_events: The trigger target events.
         active: The new active status of the trigger.
         concurrency: Option controlling the concurrency of the trigger.
 
@@ -498,6 +504,9 @@ def update_platform_event_trigger(
             name=name,
             active=active,
             concurrency=concurrency,
+            source_id=source_id,
+            source_type=source_type,
+            target_events=target_events,
         )
     except Exception as e:
         cli_utils.exception(e)

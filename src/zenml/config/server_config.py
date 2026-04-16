@@ -500,6 +500,9 @@ class ServerConfiguration(BaseModel):
         Returns:
             A list of event handlers or an empty list.
         """
+        if isinstance(value, list):
+            return value
+
         if isinstance(value, str):
             return [i.strip() for i in value.strip().split(",")]
 
