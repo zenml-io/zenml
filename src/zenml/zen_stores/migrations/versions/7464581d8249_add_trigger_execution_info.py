@@ -1,7 +1,7 @@
 """Add trigger execution info [7464581d8249].
 
 Revision ID: 7464581d8249
-Revises: 0.94.2
+Revises: b0ba2c3800e3
 Create Date: 2026-04-09 17:02:42.217862
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy import VARCHAR
 
 # revision identifiers, used by Alembic.
 revision = "7464581d8249"
-down_revision = "0.94.2"
+down_revision = "b0ba2c3800e3"
 branch_labels = None
 depends_on = None
 
