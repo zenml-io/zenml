@@ -319,6 +319,10 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="Extra information for trigger execution like upstream_run_id etc.",
     )
+    pipeline_id: UUID | None = Field(
+        default=None,
+        title="The ID of the pipeline this run is associated with.",
+    )
 
 
 class PipelineRunResponseResources(ProjectScopedResponseResources):
@@ -727,6 +731,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().active_wait_condition
+
+    @property
+    def pipeline_id(self) -> UUID | None:
+        """The `pipeline_id` property.
+
+        Returns:
+            The ID of the pipeline this run is associated with.
+        """
+        return self.get_metadata().pipeline_id
 
 
 # ------------------ Filter Model ------------------

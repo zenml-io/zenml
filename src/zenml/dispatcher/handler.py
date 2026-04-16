@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 
-from zenml.zen_stores.schemas import PipelineRunSchema
+from zenml.models import PipelineRunResponse
 
 
 class EventHandler(ABC):
@@ -24,7 +24,7 @@ class EventHandler(ABC):
     @abstractmethod
     def handle_run_status_update(
         self,
-        run: PipelineRunSchema,
+        run: PipelineRunResponse,
     ) -> None:
         """Handle a status update on a PipelineRun object.
 
@@ -34,7 +34,7 @@ class EventHandler(ABC):
         signature with generic methods.
 
         Args:
-            run: A PipelineRunSchema object (with a status change).
+            run: A PipelineRunResponse object (with a status change).
         """
         pass
 

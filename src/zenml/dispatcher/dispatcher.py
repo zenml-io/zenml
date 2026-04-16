@@ -17,8 +17,8 @@ import logging
 import threading
 
 from zenml.dispatcher.handler import EventHandler
+from zenml.models import PipelineRunResponse
 from zenml.utils.singleton import SingletonMetaClass
-from zenml.zen_stores.schemas import PipelineRunSchema
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class EventDispatcher(metaclass=SingletonMetaClass):
 
     def handle_run_status_update(
         self,
-        run: PipelineRunSchema,
+        run: PipelineRunResponse,
     ) -> None:
         """Handle a status update on a PipelineRun object.
 
@@ -52,7 +52,7 @@ class EventDispatcher(metaclass=SingletonMetaClass):
         signature with generic methods.
 
         Args:
-            run: A PipelineRunSchema object (with a status change).
+            run: A PipelineRunResponse object (with a status change).
         """
         if not self._event_handlers:
             return

@@ -696,6 +696,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 trigger_execution_info=json.loads(self.trigger_execution.info)
                 if self.trigger_execution and self.trigger_execution.info
                 else None,
+                pipeline_id=self.pipeline_id,
             )
 
         resources = None
