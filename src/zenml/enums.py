@@ -85,6 +85,7 @@ class ExecutionStatus(StrEnum):
 
     INITIALIZING = "initializing"
     PROVISIONING = "provisioning"
+    QUEUED = "queued"
     RUNNING = "running"
     FAILED = "failed"
     COMPLETED = "completed"
@@ -94,6 +95,8 @@ class ExecutionStatus(StrEnum):
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    CANCELLING = "cancelling"
+    CANCELLED = "cancelled"
     PAUSED = "paused"
     RESUMING = "resuming"
     STOPPED = "stopped"
@@ -113,6 +116,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.SKIPPED,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
+            ExecutionStatus.CANCELLED,
         }
 
     @property
@@ -135,7 +139,7 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a failed execution.
         """
-        return self in {ExecutionStatus.FAILED}
+        return self in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
 
 
 class LoggingLevels(Enum):
@@ -616,6 +620,18 @@ class GroupType(StrEnum):
 
     MANUAL = "manual"
     MAP = "map"
+
+
+class ResourceRequestStatus(StrEnum):
+    """Resource request statuses."""
+
+    PENDING = "pending"
+    ALLOCATED = "allocated"
+    PREEMPTING = "preempting"
+    PREEMPTED = "preempted"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+    RELEASED = "released"
 
 
 class TriggerType(StrEnum):

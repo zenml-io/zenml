@@ -158,9 +158,12 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsStoreInterface,
+)
 
 
-class ZenStoreInterface(ABC):
+class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
     """ZenML store interface.
 
     All ZenML stores must implement the methods in this interface.

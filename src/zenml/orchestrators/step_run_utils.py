@@ -276,6 +276,16 @@ class StepRunRequestFactory:
                 if request.docstring is None:
                     request.docstring = cached_step_run.docstring
 
+        if (
+            request.status != ExecutionStatus.CACHED
+            and self.snapshot.is_dynamic
+        ):
+            if step.config.step_operator:
+                assert self.stack.step_operator
+                request.resource_requester = self.stack.step_operator.id
+            else:
+                request.resource_requester = self.stack.orchestrator.id
+
     def _populate_skipped_step(
         self,
         request: StepRunRequest,
