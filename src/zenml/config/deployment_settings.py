@@ -507,11 +507,11 @@ class DeploymentDefaultEndpoints(IntFlag):
     DOCS = auto()
     REDOC = auto()
     INVOKE = auto()
-    STREAM_INVOKE = auto()
     HEALTH = auto()
     INFO = auto()
     METRICS = auto()
     DASHBOARD = auto()
+    STREAM_INVOKE = auto()
 
     DOC = DOCS | REDOC
     API = STREAM_INVOKE | INVOKE | HEALTH | INFO | METRICS

@@ -54,12 +54,13 @@ from zenml.deployers.streaming import (
 from zenml.deployers.utils import (
     deployment_snapshot_request_from_source_snapshot,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
     PipelineRunTriggerInfo,
+    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
@@ -420,42 +421,64 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         start_time = time.time()
         logger.info("Starting pipeline execution")
 
-        placeholder_run: Optional[PipelineRunResponse] = None
         response: Optional[BaseDeploymentInvocationResponse] = None
+        run: Optional[PipelineRunResponse] = None
+        resume = False
         try:
-            # Create a placeholder run separately from the actual execution,
-            # so that we have a run ID to include in the response even if the
-            # pipeline execution fails.
-            placeholder_run, deployment_snapshot = (
-                self._prepare_execute_with_orchestrator(
-                    resolved_params=parameters,
+            if request.run_id:
+                resume = True
+                run = self._client.zen_store.update_run(
+                    run_id=request.run_id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.RESUMING,
+                        status_reason="Pipeline execution resumed by user.",
+                    ),
                 )
-            )
+                deployment_snapshot = run.snapshot
+                assert deployment_snapshot
+            else:
+                # Create a placeholder run separately from the actual execution,
+                # so that we have a run ID to include in the response even if the
+                # pipeline execution fails.
+                run, deployment_snapshot = (
+                    self._prepare_execute_with_orchestrator(
+                        resolved_params=parameters,
+                    )
+                )
 
             if stream_state and register_stream(
-                run_id=placeholder_run.id, stream_state=stream_state
+                run_id=run.id, stream_state=stream_state
             ):
                 publish_event(
                     stream_state=stream_state,
                     event_type=StreamEventType.RUN_STARTED,
                     payload={
-                        "run_id": str(placeholder_run.id),
-                        "run_name": placeholder_run.name,
-                        "run_index": placeholder_run.index,
+                        "run_id": str(run.id),
+                        "run_name": run.name,
+                        "run_index": run.index,
                     },
                 )
 
             captured_outputs = self._execute_with_orchestrator(
-                placeholder_run=placeholder_run,
+                placeholder_run=run,
                 deployment_snapshot=deployment_snapshot,
                 resolved_params=parameters,
                 skip_artifact_materialization=request.skip_artifact_materialization,
+                resume=resume,
             )
 
-            # Map outputs using fast (in-memory) or slow (artifact) path
-            mapped_outputs = self._map_outputs(captured_outputs)
+            run = Client().get_pipeline_run(
+                name_id_or_prefix=run.id,
+                hydrate=True,
+            )
+
+            mapped_outputs = None
+
+            if run.status.is_successful:
+                mapped_outputs = self._map_outputs(captured_outputs)
+
             response = self._build_response(
-                placeholder_run=placeholder_run,
+                placeholder_run=run,
                 mapped_outputs=mapped_outputs,
                 start_time=start_time,
                 resolved_params=parameters,
@@ -464,7 +487,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         except Exception as e:
             logger.exception("❌ Pipeline execution failed")
             response = self._build_response(
-                placeholder_run=placeholder_run,
+                placeholder_run=run,
                 mapped_outputs=None,
                 start_time=start_time,
                 resolved_params=parameters,
@@ -623,6 +646,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         deployment_snapshot: PipelineSnapshotResponse,
         resolved_params: Dict[str, Any],
         skip_artifact_materialization: bool,
+        resume: bool = False,
     ) -> Optional[Dict[str, Dict[str, Any]]]:
         """Run the snapshot via the orchestrator and return the concrete run.
 
@@ -633,6 +657,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             resolved_params: Normalized pipeline parameters.
             skip_artifact_materialization: Whether runtime should skip artifact
                 materialization.
+            resume: Whether to resume the pipeline execution.
 
         Returns:
             The in-memory outputs of the execution.
@@ -672,12 +697,18 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
             captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
             try:
-                # Use the new deployment snapshot with pre-configured settings
-                orchestrator.run(
-                    snapshot=deployment_snapshot,
-                    stack=active_stack,
-                    placeholder_run=placeholder_run,
-                )
+                if resume:
+                    orchestrator.resume_run(
+                        snapshot=deployment_snapshot,
+                        stack=active_stack,
+                        run=placeholder_run,
+                    )
+                else:
+                    orchestrator.run(
+                        snapshot=deployment_snapshot,
+                        stack=active_stack,
+                        placeholder_run=placeholder_run,
+                    )
 
                 # Capture in-memory outputs before stopping the runtime context
                 if runtime.is_active():

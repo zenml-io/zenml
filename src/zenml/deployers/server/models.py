@@ -65,6 +65,9 @@ class BaseDeploymentInvocationRequest(BaseModel):
         title="Whether to keep outputs in memory for fast access instead of "
         "storing them as artifacts.",
     )
+    run_id: Optional[UUID] = Field(
+        default=None, title="The ID of the pipeline run to resume."
+    )
 
 
 class BaseDeploymentInvocationResponse(BaseModel):
