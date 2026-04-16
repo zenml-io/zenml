@@ -4,6 +4,7 @@ import pytest
 
 from zenml.utils import native_schedules
 
+
 def _freeze_now(monkeypatch: pytest.MonkeyPatch, frozen: dt.datetime) -> None:
     """Patch the module-local datetime.now() used in native_schedules."""
 
@@ -162,18 +163,14 @@ def test_timezone_agnostic_edge_cases(
                 start=dt.datetime(
                     2026, 1, 1, 10, 0, 0, tzinfo=dt.timezone.utc
                 ),
-                base=dt.datetime(
-                    2026, 1, 1, 10, 7, 0, tzinfo=dt.timezone.utc
-                ),
+                base=dt.datetime(2026, 1, 1, 10, 7, 0, tzinfo=dt.timezone.utc),
             ),
         },
         {
             "name": "next_occurrence_for_cron with aware base",
             "call": lambda: native_schedules.next_occurrence_for_cron(
                 expression="0 * * * *",
-                base=dt.datetime(
-                    2026, 1, 1, 10, 7, 0, tzinfo=dt.timezone.utc
-                ),
+                base=dt.datetime(2026, 1, 1, 10, 7, 0, tzinfo=dt.timezone.utc),
             ),
         },
         {

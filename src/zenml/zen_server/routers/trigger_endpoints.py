@@ -271,6 +271,11 @@ def attach_trigger_to_snapshot(
 
     snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
 
+    if trigger.project_id != snapshot.project_id:
+        raise IllegalOperationError(
+            "Trigger and snapshot must be in the same project"
+        )
+
     snapshot_replaced_id = None
 
     for s in trigger.snapshots:
