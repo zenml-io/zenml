@@ -22,12 +22,12 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from uuid import UUID, uuid4
 
-import structlog
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.exceptions import EntityExistsError
+from zenml.logger import get_logger
 from zenml.models import ApiTransactionRequest, ApiTransactionUpdate
 from zenml.utils.json_utils import pydantic_encoder
 from zenml.utils.time_utils import utc_now
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from zenml.zen_server.auth import AuthContext
 
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 class RequestContext:

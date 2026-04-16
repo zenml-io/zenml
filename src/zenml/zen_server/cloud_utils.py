@@ -7,7 +7,6 @@ from threading import RLock
 from typing import Any, Dict, Optional
 
 import requests
-import structlog
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.config.server_config import ServerProConfiguration
@@ -15,6 +14,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     SubscriptionUpgradeRequiredError,
 )
+from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.utils import (
     get_system_metrics,
@@ -22,7 +22,7 @@ from zenml.zen_server.utils import (
     server_config,
 )
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
 

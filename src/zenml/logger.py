@@ -85,16 +85,20 @@ class _ZenMLStdoutStream:
         sys.stdout.flush()
 
 
-def get_logger(logger_name: str) -> logging.Logger:
-    """Get a stdlib logger by name.
+def get_logger(logger_name: str) -> structlog.stdlib.BoundLogger:
+    """Get a structlog-wrapped logger by name.
+
+    The returned ``BoundLogger`` wraps a stdlib logger, so it supports
+    the same API (``info``, ``debug``, ``warning``, ``exception``, …) plus
+    structured keyword arguments (``logger.info("event", key=value)``).
 
     Args:
         logger_name: Name of logger to initialize.
 
     Returns:
-        A logger object.
+        A structlog BoundLogger backed by the stdlib logger hierarchy.
     """
-    return logging.getLogger(logger_name)
+    return structlog.get_logger(logger_name)
 
 
 def _add_step_name_processor(
@@ -120,6 +124,7 @@ def _add_step_name_processor(
             if step_context:
                 event_dict["step"] = step_context.step_name
     except Exception:
+        # If we can't get step context, just use the original message
         pass
     return event_dict
 
@@ -295,6 +300,7 @@ def get_console_handler() -> logging.Handler:
         A console handler using structlog's ProcessorFormatter.
     """
     shared_processors: list[structlog.types.Processor] = [
+        # injects bind_contextvars() fields (request_id, method, etc.)
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
@@ -303,8 +309,8 @@ def get_console_handler() -> logging.Handler:
     ]
 
     json_mode = _is_json_format()
-
     if json_mode:
+        # JSONRenderer can't handle raw exc_info; pre-format it
         shared_processors.append(structlog.processors.format_exc_info)
         renderer: structlog.types.Processor = (
             structlog.processors.JSONRenderer()
@@ -319,6 +325,7 @@ def get_console_handler() -> logging.Handler:
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
             renderer,
         ],
+        # processes stdlib LogRecords (e.g. from alembic) through the same pipeline
         foreign_pre_chain=shared_processors,
     )
 
@@ -358,16 +365,23 @@ def init_logging() -> None:
 
     # Processors shared between structlog-native loggers and Python's logging library.
     shared_processors: list[structlog.types.Processor] = [
+        # injects any bind_contextvars() fields (request_id, method, path, etc.) into the event dict automatically
         structlog.contextvars.merge_contextvars,
+        # injects step=<name> during step execution
         _add_step_name_processor,
+        # interpolates %s-style positional args into the event string. Without this, logger.info("msg %s", arg) would render the literal %s.
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        # adds the logger name to the event dict, e.g.: logger=zenml.zen_server.middleware field
         structlog.stdlib.add_logger_name,
+        # adds the log level to the event dict
         structlog.stdlib.add_log_level,
+        # formats timestamps in ISO 8601 format, e.g.: 2026-04-16T12:00:00.000000Z
         structlog.processors.TimeStamper(fmt="iso"),
+        # renders stack_info if present
         structlog.processors.StackInfoRenderer(),
     ]
 
     json_mode = _is_json_format()
-
     if json_mode:
         # JSONRenderer doesn't handle exc_info; pre-format it.
         shared_processors.append(structlog.processors.format_exc_info)
@@ -380,13 +394,17 @@ def init_logging() -> None:
             colors=not ZENML_LOGGING_COLORS_DISABLED,
         )
 
+    # Configure structlog
     structlog.configure(
         processors=[
             *shared_processors,
+            # stashes the event dict on the LogRecord for ProcessorFormatter
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
+        # BoundLogger mirrors logging.Logger API + structured kwargs
         wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,
+        # creates real stdlib loggers so records flow through stdlib handlers
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
 
@@ -397,6 +415,7 @@ def init_logging() -> None:
         ],
         foreign_pre_chain=shared_processors,
         # ^^^foreign_pre_chain is used to process logs that come from Python's logging library.
+        # processes stdlib LogRecords (uvicorn, SQLAlchemy, etc.) through the same pipeline
     )
 
     # Console handler — writes to original stdout to bypass the
@@ -407,10 +426,14 @@ def init_logging() -> None:
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
     root_logger.addHandler(console_handler)
+    # routes records to LoggingContext for step log persistence
     root_logger.addHandler(get_zenml_handler())
+    # copies structlog contextvars onto LogRecord for OTel export
     root_logger.addFilter(_ContextVarsFilter())
     root_logger.setLevel(level.value)
 
+    # must run after handlers are attached so any init-time stdout
+    # writes hit a fully configured logging system
     wrap_stdout_stderr()
 
     # Mute tensorflow cuda warnings
