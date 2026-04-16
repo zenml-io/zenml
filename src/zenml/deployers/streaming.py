@@ -296,15 +296,15 @@ def publish_event(
     return True
 
 
-def stream(data: Any) -> bool:
-    """Publish an event for the active step run.
+def emit_event(data: Any) -> bool:
+    """Emit an event for the active step run.
 
     Args:
-        data: JSON-serializable payload to publish.
+        data: JSON-serializable payload to emit.
 
     Returns:
-        True if the event was published, False if there was no open stream to
-        publish to.
+        True if the event was emitted, False if there was no open stream to
+        emit to.
     """
     from zenml.steps import get_step_context
 
