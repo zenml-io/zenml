@@ -29,6 +29,7 @@ from typing import (
 )
 from uuid import UUID
 
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import ArtifactVersionResponse, StepRunResponse
 from zenml.utils import exception_utils
@@ -168,8 +169,16 @@ class _IsolatedStepFuture(BaseFuture):
         if self._finished_step_run is not None:
             return False
 
-        if self._wrapped and not self._wrapped.done():
-            return True
+        if self._wrapped:
+            if not self._wrapped.done():
+                # Waiting for the step run to be launched.
+                return True
+
+            try:
+                self._wrapped.result()
+            except BaseException:
+                # Launching the step run failed or was cancelled.
+                return False
 
         step_run = get_latest_step_run(
             self.pipeline_run_id, self.invocation_id, hydrate=False
@@ -185,6 +194,7 @@ class _IsolatedStepFuture(BaseFuture):
         Raises:
             BaseException: Any exception that happened while waiting for the
                 step to finish.
+            RuntimeError: If the step was stopped.
 
         Returns:
             The result of the step future.
@@ -207,7 +217,10 @@ class _IsolatedStepFuture(BaseFuture):
             )
             self._finished_step_run = step_run
 
-        if step_run.status.is_failed:
+        if (
+            step_run.status.is_failed
+            or step_run.status == ExecutionStatus.STOPPED
+        ):
             raise exception_utils.reconstruct_exception(
                 exception_info=step_run.exception_info,
                 fallback_message=(

@@ -207,17 +207,23 @@ class DynamicPipelineRunner:
 
         self._snapshot = snapshot
         self._pipeline: Optional["DynamicPipeline"] = None
+        self._fail_fast = (
+            snapshot.pipeline_configuration.execution_mode
+            == ExecutionMode.FAIL_FAST
+        )
 
         worker_count = handle_int_env_var(
             ENV_ZENML_DYNAMIC_PIPELINE_WORKER_COUNT, default=10
         )
         self._executor = ThreadPoolExecutor(max_workers=worker_count)
+
+        stack = Stack.from_model(snapshot.stack)
         if orchestrator:
             self._orchestrator = orchestrator
         else:
-            self._orchestrator = Stack.from_model(snapshot.stack).orchestrator
+            self._orchestrator = stack.orchestrator
 
-        self._step_operator = Stack.from_model(snapshot.stack).step_operator
+        self._step_operator = stack.step_operator
         self._invocation_id_lock = threading.Lock()
         self._invocation_ids: Set[str] = set()
 
@@ -227,7 +233,8 @@ class DynamicPipelineRunner:
         self._steps_to_monitor: Dict[str, "StepRunResponse"] = {}
 
         self._shutdown_requested = False
-        self._prevent_new_startups = False
+        self._failure_detected = False
+        self._failure_lock = threading.Lock()
         self._monitoring_event = threading.Event()
         self._startup_event = threading.Event()
         self._dependency_graph = InvocationDependencyGraph()
@@ -353,8 +360,6 @@ class DynamicPipelineRunner:
                     continue
 
                 step_run = Client().get_run_step(step_run.id)
-                # Store the refreshed step run
-                self._steps_to_monitor[invocation_id] = step_run
 
                 db_status = step_run.status
 
@@ -365,7 +370,9 @@ class DynamicPipelineRunner:
                 ]:
                     # Step is running in the DB and we have no information on
                     # the infra side, so we wait for the next
-                    # monitoring interval to check again.
+                    # monitoring interval to check again. We store the
+                    # refreshed step run to have the most up to date status.
+                    self._steps_to_monitor[invocation_id] = step_run
                     continue
 
                 self._steps_to_monitor.pop(invocation_id, None)
@@ -455,7 +462,9 @@ class DynamicPipelineRunner:
                             remaining_retries,
                         )
 
-                    if remaining_retries > 0:
+                    if remaining_retries > 0 and not self._failure_detected:
+                        # If there was a failure already, we do not want to
+                        # start any new work no matter the execution mode.
                         step = Step(
                             spec=step_run.spec,
                             config=step_run.config,
@@ -487,66 +496,47 @@ class DynamicPipelineRunner:
 
     def _startup_loop(self) -> None:
         """Startup loop."""
-        fail_fast = (
-            self._snapshot.pipeline_configuration.execution_mode
-            == ExecutionMode.FAIL_FAST
-        )
-        while not self._prevent_new_startups:
-            self._startup_event.clear()
-
-            ready_step_node_ids = (
-                self._dependency_graph.list_ready_step_node_ids()
-            )
-            if ready_step_node_ids:
-                logger.debug(
-                    "Startup loop picked ready step nodes: %s",
-                    ready_step_node_ids,
-                )
-
-            for node_id in ready_step_node_ids:
-                step_node = self._dependency_graph.get_step_node(
-                    node_id=node_id
-                )
-                try:
-                    self._handle_step_ready(node=step_node)
-                except Exception as e:
-                    self._handle_step_startup_failed(
-                        invocation_id=node_id, exception=e
-                    )
-                    logger.exception(
-                        "Failed to start concurrent step `%s`.",
-                        node_id,
-                    )
-                    if fail_fast:
-                        self._shutdown()
-                        return
-
-            ready_map_node_ids = (
-                self._dependency_graph.list_ready_map_node_ids()
-            )
-            if ready_map_node_ids:
-                logger.debug(
-                    "Startup loop picked ready map nodes: %s",
-                    ready_map_node_ids,
-                )
-
-            for node_id in ready_map_node_ids:
-                map_node = self._dependency_graph.get_map_node(node_id=node_id)
-                try:
-                    self._handle_map_ready(node=map_node)
-                except Exception as e:
-                    self._handle_map_expansion_failed(
-                        map_id=node_id, exception=e
-                    )
-                    logger.exception(
-                        "Failed to start concurrent map `%s`.",
-                        node_id,
-                    )
-                    if fail_fast:
-                        self._shutdown()
-                        return
-
+        while not self._failure_detected and not self._shutdown_requested:
             self._startup_event.wait(timeout=None)
+
+            while not self._failure_detected and not self._shutdown_requested:
+                node = self._dependency_graph.get_ready_node()
+                if node is None:
+                    # Clear and immediately re-check to avoid missing work that
+                    # becomes ready concurrently with this transition to waiting.
+                    self._startup_event.clear()
+                    node = self._dependency_graph.get_ready_node()
+                    if node is None:
+                        break
+
+                node_id = node.node_id
+                try:
+                    if isinstance(node, StepNode):
+                        self._handle_step_ready(node=node)
+                    elif isinstance(node, MapNode):
+                        self._handle_map_ready(node=node)
+                except Exception as e:
+                    if isinstance(node, StepNode):
+                        self._handle_step_startup_failed(
+                            invocation_id=node_id, exception=e
+                        )
+                        logger.exception(
+                            "Failed to start concurrent step `%s`.",
+                            node_id,
+                        )
+                    elif isinstance(node, MapNode):
+                        self._handle_map_expansion_failed(
+                            map_id=node_id, exception=e
+                        )
+                        logger.exception(
+                            "Failed to start concurrent map `%s`.",
+                            node_id,
+                        )
+
+                    # ONLY FAIL_FAST and STOP_ON_FAILURE execution modes are
+                    # supported for dynamic pipelines. In both cases, we do not
+                    # allow starting any new steps after any failure.
+                    return
 
     def _start_startup_loop(self) -> threading.Thread:
         """Start the startup loop.
@@ -564,25 +554,22 @@ class DynamicPipelineRunner:
         startup_thread.start()
         return startup_thread
 
-    def _maybe_stop_isolated_steps(self) -> None:
-        """Maybe stop all isolated in progress steps.
+    def _register_isolated_step_for_monitoring(
+        self, invocation_id: str, step_run: "StepRunResponse"
+    ) -> None:
+        """Register an isolated step for monitoring.
 
-        This method will only stop concurrent isolated steps if the execution
-        mode is FAIL_FAST.
+        Args:
+            invocation_id: The step invocation ID.
+            step_run: The step run response to monitor.
         """
-        if (
-            self._snapshot.pipeline_configuration.execution_mode
-            != ExecutionMode.FAIL_FAST
-        ):
-            return
+        self._steps_to_monitor[invocation_id] = step_run
 
-        logger.info("Stopping isolated steps.")
-
-        for step_run in list(self._steps_to_monitor.values()):
+        if self._failure_detected and self._fail_fast:
             try:
                 self._stop_isolated_step(step_run)
             except Exception:
-                logger.exception("Failed to stop step `%s`.", step_run.name)
+                logger.exception("Failed to stop step `%s`.", invocation_id)
 
     def _get_isolated_step_infra_status(
         self, step_run: "StepRunResponse"
@@ -600,18 +587,6 @@ class DynamicPipelineRunner:
             return self._step_operator.get_status(step_run)
         else:
             return self._orchestrator.get_isolated_step_status(step_run)
-
-    def _stop_isolated_step(self, step_run: "StepRunResponse") -> None:
-        """Stop an isolated step.
-
-        Args:
-            step_run: The step run to stop.
-        """
-        if step_run.config.step_operator:
-            assert self._step_operator
-            self._step_operator.cancel(step_run)
-        else:
-            self._orchestrator.stop_isolated_step(step_run)
 
     def run_pipeline(self) -> None:
         """Run the pipeline.
@@ -689,15 +664,17 @@ class DynamicPipelineRunner:
                     self.await_all_futures()
                 except _WaitConditionPollTimeout:
                     logger.info("Pausing pipeline run `%s`.", self._run.id)
+                    return
                 except _WaitConditionAborted:
                     logger.info(
                         "Stopping pipeline run `%s` because a wait condition "
                         "was aborted.",
                         self._run.id,
                     )
-                    self._finalize_in_progress_work()
+                    self._abort_and_drain("Wait condition aborted.")
+                    return
                 except Exception as e:
-                    self._finalize_in_progress_work()
+                    self._abort_and_drain("Pipeline function failed.")
                     exception_info = (
                         exception_utils.collect_exception_information(
                             exception=e,
@@ -709,8 +686,6 @@ class DynamicPipelineRunner:
                     )
                     raise
                 finally:
-                    self._shutdown()
-
                     if not self._run.triggered_by_deployment:
                         # Only run the cleanup hook if the run is not
                         # triggered by a deployment, as the deployment
@@ -720,6 +695,10 @@ class DynamicPipelineRunner:
                         )
 
                     self._executor.shutdown(wait=True, cancel_futures=True)
+
+                    self._shutdown_requested = True
+                    self._startup_event.set()
+                    self._monitoring_event.set()
                     monitoring_thread.join()
                     startup_thread.join()
 
@@ -909,7 +888,6 @@ class DynamicPipelineRunner:
                     step_run.id,
                     remaining_retries,
                 )
-                self._steps_to_monitor[invocation_id] = step_run
                 execution_future = _IsolatedStepFuture(
                     pipeline_run_id=self._run.id,
                     invocation_id=invocation_id,
@@ -922,6 +900,10 @@ class DynamicPipelineRunner:
                 self._register_concurrent_step_invocation(
                     future=monitoring_future,
                     initial_state=NodeState.RUNNING,
+                )
+                self._register_isolated_step_for_monitoring(
+                    invocation_id=invocation_id,
+                    step_run=step_run,
                 )
                 self._handle_step_running(invocation_id=invocation_id)
                 if concurrent:
@@ -1336,7 +1318,8 @@ class DynamicPipelineRunner:
 
     def await_all_futures(self) -> None:
         """Await all tracked futures."""
-        self._future_registry.await_all()
+        for future in self._future_registry.get_all_futures():
+            future.wait()
 
     def has_in_progress_work(self) -> bool:
         """Check if there is any in-progress tracked work.
@@ -1346,58 +1329,84 @@ class DynamicPipelineRunner:
         """
         return self._future_registry.has_in_progress_work()
 
-    def _cancel_new_startup_work(self) -> None:
-        """Cancel pending startup work without stopping monitoring.
+    # Failure/Shutdown handling
 
-        This keeps the monitoring loop alive while already-started isolated
-        steps finish and publish their terminal state.
+    def _on_failure_detected(self, failure_reason: str) -> None:
+        """Handle any failure that happens during pipeline execution.
+
+        This method
+        - cancels all in-progress startup work
+        - sets a flag that prevents any new startup work from being started
+        - stops all isolated steps in the FAIL_FAST execution mode
+
+        Args:
+            failure_reason: The failure reason.
         """
-        if self._prevent_new_startups:
-            return
+        with self._failure_lock:
+            if self._failure_detected:
+                return
+            self._failure_detected = True
 
-        self._prevent_new_startups = True
+        exception: Optional[StartupCancelled] = None
+        if failure_reason:
+            exception = StartupCancelled(failure_reason)
 
         for node in self._dependency_graph.list_nodes(
             states={NodeState.PENDING, NodeState.READY}
         ):
             if isinstance(node, StepNode):
                 self._future_registry.cancel_step_startup(
-                    invocation_id=node.node_id
+                    invocation_id=node.node_id, exception=exception
                 )
             elif isinstance(node, MapNode):
-                self._future_registry.cancel_map_startup(map_id=node.node_id)
+                self._future_registry.cancel_map_startup(
+                    map_id=node.node_id, exception=exception
+                )
 
         self._startup_event.set()
 
+        if self._fail_fast:
+            for step_run in list(self._steps_to_monitor.values()):
+                try:
+                    self._stop_isolated_step(step_run)
+                except Exception:
+                    logger.exception(
+                        "Failed to stop step `%s`.", step_run.name
+                    )
+
+        self._monitoring_event.set()
+
+    def _stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stop an isolated step.
+
+        Args:
+            step_run: The step run to stop.
+        """
+        if step_run.config.step_operator:
+            assert self._step_operator
+            self._step_operator.cancel(step_run)
+        else:
+            self._orchestrator.stop_isolated_step(step_run)
+
     def _raise_if_startup_cancelled(self) -> None:
-        """Abort startup work once startup has been cancelled.
+        """Abort startup work once a failure has been detected.
 
         Raises:
-            StartupCancelled: If startup has been cancelled.
+            StartupCancelled: If a failure has been detected.
         """
-        if self._prevent_new_startups:
+        if self._failure_detected:
             raise StartupCancelled(
                 "Dynamic pipeline runner is not starting new work."
             )
 
-    def _finalize_in_progress_work(self) -> None:
-        """Finalize in-progress work before runner shutdown."""
-        self._cancel_new_startup_work()
-        self._maybe_stop_isolated_steps()
-        self._future_registry.await_all_no_raise()
+    def _abort_and_drain(self, failure_reason: str) -> None:
+        """Trigger the failure path and wait for in-flight work to finish.
 
-    def _shutdown(self) -> None:
-        """Shutdown the runner.
-
-        This wakes any background loops so they can observe the shutdown flag
-        and exit cleanly.
+        Args:
+            failure_reason: Human-readable description of why we are aborting.
         """
-        if self._shutdown_requested:
-            return
-
-        self._shutdown_requested = True
-        self._cancel_new_startup_work()
-        self._monitoring_event.set()
+        self._on_failure_detected(failure_reason=failure_reason)
+        self._future_registry.await_all_no_raise()
 
     # Concurrent step lifecycle
 
@@ -1426,6 +1435,20 @@ class DynamicPipelineRunner:
             )
         else:
             upstream_node_ids = None
+
+        if self._failure_detected and initial_state in {
+            None,
+            NodeState.PENDING,
+            NodeState.READY,
+        }:
+            # This is a future that requires startup but startup has already
+            # been cancelled.
+            future._cancel_startup(
+                StartupCancelled(
+                    f"Startup for step `{future.invocation_id}` was cancelled."
+                )
+            )
+            return
 
         self._future_registry.register_step_future(
             invocation_id=future.invocation_id, future=future
@@ -1482,6 +1505,8 @@ class DynamicPipelineRunner:
             orchestrator=self._orchestrator,
         )
 
+        # This error will be caught by the startup loop and set as a startup
+        # failure on the future.
         self._raise_if_startup_cancelled()
 
         execution_future: StepExecutionFuture
@@ -1517,16 +1542,26 @@ class DynamicPipelineRunner:
         """
 
         def _launch_no_wait() -> StepRunResponse:
-            step_run = launch_step(
-                snapshot=self._snapshot,
-                step=step,
-                orchestrator_run_id=self._orchestrator_run_id,
-                # The monitoring loop is responsible for monitoring and retrying
-                # steps.
-                wait=False,
-                retry=False,
+            try:
+                step_run = launch_step(
+                    snapshot=self._snapshot,
+                    step=step,
+                    orchestrator_run_id=self._orchestrator_run_id,
+                    # The monitoring loop is responsible for monitoring and retrying
+                    # steps.
+                    wait=False,
+                    retry=False,
+                )
+            except BaseException as e:
+                self._handle_step_execution_failed(
+                    invocation_id=step.spec.invocation_id
+                )
+                raise e
+
+            self._register_isolated_step_for_monitoring(
+                invocation_id=step.spec.invocation_id,
+                step_run=step_run,
             )
-            self._steps_to_monitor[step.spec.invocation_id] = step_run
             return step_run
 
         concurrent_future = self._executor.submit(
@@ -1552,9 +1587,16 @@ class DynamicPipelineRunner:
         """
 
         def _launch_and_wait() -> StepRunResponse:
-            step_run = self._run_sync_step(
-                step=step, remaining_retries=remaining_retries
-            )
+            try:
+                step_run = self._run_sync_step(
+                    step=step, remaining_retries=remaining_retries
+                )
+            except BaseException as e:
+                self._handle_step_execution_failed(
+                    invocation_id=step.spec.invocation_id
+                )
+                raise e
+
             self._on_step_finished(step_run=step_run)
             return step_run
 
@@ -1610,6 +1652,9 @@ class DynamicPipelineRunner:
             node_id=invocation_id
         )
         self._handle_graph_update(nodes_ready)
+        self._on_failure_detected(
+            failure_reason=f"Step `{invocation_id}` startup failed."
+        )
 
     def _on_step_finished(self, step_run: "StepRunResponse") -> None:
         """Handle a terminal step run.
@@ -1657,6 +1702,9 @@ class DynamicPipelineRunner:
             node_id=invocation_id
         )
         self._handle_graph_update(nodes_ready)
+        self._on_failure_detected(
+            failure_reason=f"Step `{invocation_id}` failed."
+        )
 
     # Concurrent map lifecycle
 
@@ -1681,6 +1729,14 @@ class DynamicPipelineRunner:
         upstream_node_ids = _collect_upstream_node_ids(
             inputs=inputs, after=after
         )
+
+        if self._failure_detected:
+            future._cancel_startup(
+                StartupCancelled(
+                    f"Startup for map expansion `{node_id}` was cancelled."
+                )
+            )
+            return
 
         self._future_registry.register_map_future(
             map_id=node_id, future=future
@@ -1721,6 +1777,8 @@ class DynamicPipelineRunner:
             type=GroupType.MAP,
         )
 
+        # This error will be caught by the startup loop and set as a startup
+        # failure on the future.
         self._raise_if_startup_cancelled()
 
         step_futures = [
@@ -1780,6 +1838,9 @@ class DynamicPipelineRunner:
         )
         nodes_ready = self._dependency_graph.mark_node_failed(node_id=map_id)
         self._handle_graph_update(nodes_ready)
+        self._on_failure_detected(
+            failure_reason=f"Map expansion `{map_id}` failed."
+        )
 
 
 def compile_dynamic_step_invocation(

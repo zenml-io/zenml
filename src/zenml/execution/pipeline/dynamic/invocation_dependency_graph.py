@@ -260,31 +260,25 @@ class InvocationDependencyGraph:
                 if states is None or node.state in states
             ]
 
-    def list_ready_step_node_ids(self) -> List[str]:
-        """List all ready step node IDs.
+    def get_ready_node(self) -> Optional[AnyNode]:
+        """Get one ready node in insertion order.
+
+        Step nodes are prioritized over map nodes.
 
         Returns:
-            The ready step node IDs in insertion order.
+            A ready node if one exists, otherwise `None`.
         """
         with self._lock:
-            return [
-                node_id
-                for node_id, node in self._nodes.items()
-                if isinstance(node, StepNode) and node.state == NodeState.READY
-            ]
+            ready_map_node: Optional[MapNode] = None
+            for node in self._nodes.values():
+                if node.state != NodeState.READY:
+                    continue
+                if isinstance(node, StepNode):
+                    return node
+                if isinstance(node, MapNode) and ready_map_node is None:
+                    ready_map_node = node
 
-    def list_ready_map_node_ids(self) -> List[str]:
-        """List all ready map node IDs.
-
-        Returns:
-            The ready map node IDs in insertion order.
-        """
-        with self._lock:
-            return [
-                node_id
-                for node_id, node in self._nodes.items()
-                if isinstance(node, MapNode) and node.state == NodeState.READY
-            ]
+            return ready_map_node
 
     def mark_node_starting(self, node_id: str) -> bool:
         """Mark a node as starting.
@@ -506,7 +500,7 @@ class InvocationDependencyGraph:
         return self._set_node_state(node_id=map_node_id, state=aggregate_state)
 
     def _maybe_mark_node_ready(self, node_id: str) -> bool:
-        """Mark a pending node as ready when all upstream nodes are terminal.
+        """Mark a pending node as ready when all upstream nodes succeeded.
 
         Args:
             node_id: The node ID.
@@ -519,7 +513,7 @@ class InvocationDependencyGraph:
             return False
 
         if not all(
-            self._get_node(node_id=upstream_id).is_terminal
+            self._get_node(node_id=upstream_id).state == NodeState.SUCCEEDED
             for upstream_id in node.upstream_ids
         ):
             return False

@@ -14,7 +14,7 @@
 """Future registry for dynamic pipeline execution."""
 
 import threading
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from zenml.execution.pipeline.dynamic.outputs import (
     MapResultsFuture,
@@ -175,11 +175,11 @@ class FutureRegistry:
             future = self.get_map_future(map_id=map_id)
             future._set_startup_failed(exception)
 
-    def _get_all_futures(self) -> List[Union[StepFuture, MapResultsFuture]]:
+    def get_all_futures(self) -> List[Union[StepFuture, MapResultsFuture]]:
         """Return all tracked futures.
 
         Returns:
-            The tracked futures.
+            A snapshot of all tracked futures.
         """
         with self._lock:
             return [
@@ -187,18 +187,13 @@ class FutureRegistry:
                 *self._map_futures.values(),
             ]
 
-    def await_all(self) -> None:
-        """Wait for all tracked futures to finish."""
-        for future in self._get_all_futures():
-            future.wait()
-
     def await_all_no_raise(self) -> None:
         """Wait for all tracked futures to finish without raising.
 
         This is used during runner cleanup so secondary step failures do not
         replace the primary pipeline outcome.
         """
-        for future in self._get_all_futures():
+        for future in self.get_all_futures():
             try:
                 future.wait()
             except Exception:
@@ -210,32 +205,42 @@ class FutureRegistry:
         Returns:
             True if any tracked future is still running, False otherwise.
         """
-        return any(future.running() for future in self._get_all_futures())
+        return any(future.running() for future in self.get_all_futures())
 
-    def cancel_step_startup(self, invocation_id: str) -> None:
+    def cancel_step_startup(
+        self,
+        invocation_id: str,
+        exception: Optional[StartupCancelled] = None,
+    ) -> None:
         """Cancel startup for a specific step invocation.
 
         Args:
             invocation_id: The step invocation ID.
+            exception: Optional exception to set on the future. If not
+                provided, a generic cancellation exception is used.
         """
+        exception = exception or StartupCancelled(
+            f"Startup for step `{invocation_id}` was cancelled."
+        )
         with self._lock:
             step_future = self.get_step_future(invocation_id=invocation_id)
-            step_future._cancel_startup(
-                StartupCancelled(
-                    f"Startup for step `{invocation_id}` was cancelled."
-                )
-            )
+            step_future._cancel_startup(exception)
 
-    def cancel_map_startup(self, map_id: str) -> None:
+    def cancel_map_startup(
+        self,
+        map_id: str,
+        exception: Optional[StartupCancelled] = None,
+    ) -> None:
         """Cancel startup for a specific map expansion.
 
         Args:
             map_id: The map ID.
+            exception: Optional exception to set on the future. If not
+                provided, a generic cancellation exception is used.
         """
+        exception = exception or StartupCancelled(
+            f"Startup for map expansion `{map_id}` was cancelled."
+        )
         with self._lock:
             map_future = self.get_map_future(map_id=map_id)
-            map_future._cancel_startup(
-                StartupCancelled(
-                    f"Startup for map expansion `{map_id}` was cancelled."
-                )
-            )
+            map_future._cancel_startup(exception)
