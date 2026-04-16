@@ -43,7 +43,6 @@ def upgrade() -> None:
             unique=False,
         )
 
-
     with op.batch_alter_table("trigger_execution", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(

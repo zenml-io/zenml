@@ -341,9 +341,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         options = []
 
         if include_metadata:
-            options.extend([
-                selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
-            ])
+            options.extend(
+                [
+                    selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
+                ]
+            )
 
         if include_resources:
             options.extend(
@@ -692,7 +694,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.exception_info
                 else None,
                 trigger_execution_info=json.loads(self.trigger_execution.info)
-                if self.trigger_execution
+                if self.trigger_execution and self.trigger_execution.info
                 else None,
             )
 

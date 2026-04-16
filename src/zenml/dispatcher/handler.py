@@ -29,7 +29,7 @@ class EventHandler(ABC):
         """Handle a status update on a PipelineRun object.
 
         Note: Status updates are a run-specific concept. This
-        method is non-generalisable across types by design. To support richer events
+        method is non-generalizable across types by design. To support richer events
         like `creation` or `deletion` of a resource we should extend the interface
         signature with generic methods.
 
