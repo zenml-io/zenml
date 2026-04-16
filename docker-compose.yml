@@ -143,15 +143,19 @@ services:
       ZENML_SECRETS_STORE_TYPE: sql
       ZENML_SECRETS_STORE_ENCRYPTION_KEY: dummy_zenml_secrets_store_encryption_key
 
-      # OpenTelemetry configuration
-      OTEL_SERVICE_NAME: zenml-server
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel_lgtm:4318
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
-      OTEL_LOGS_EXPORTER: otlp
+      # # OpenTelemetry Auto instrumentation configuration
+      # OTEL_SERVICE_NAME: zenml-server
+      # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel_lgtm:4318
+      # OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      # OTEL_TRACES_EXPORTER: otlp
+      # OTEL_METRICS_EXPORTER: otlp
+      # OTEL_LOGS_EXPORTER: otlp
+      # OTEL_PYTHON_LOG_LEVEL: debug
       # OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: true
-      OTEL_PYTHON_LOG_LEVEL: debug
+      # OpenTelemetry programmatic configuration (read by ServerConfiguration)
+      ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel_lgtm:4318
+      ZENML_SERVER_OTEL_SERVICE_NAME: zenml-server
+      ZENML_SERVER_OTEL_PYTHON_LOG_LEVEL: debug
 
   zenml_dashboard:
     image: node:22-slim
