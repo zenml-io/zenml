@@ -100,6 +100,7 @@ def test_resource_config_memory_conversion():
 def test_pool_resources_empty_dict_merges_to_empty() -> None:
     """Empty pool_resources is accepted; merged map has no keys from the map."""
     rs = ResourceSettings(pool_resources={})
+    assert rs.empty is True
     assert rs.merged_requested_resources() == {}
 
 
@@ -141,7 +142,11 @@ def test_merged_requested_resources_legacy_equivalent() -> None:
     }
 
 
-def test_empty_property_includes_pool_resources() -> None:
-    """empty is False when only pool_resources is set."""
+def test_empty_property_excludes_pool_resources() -> None:
+    """empty stays True when only pool_resources is set.
+
+    pool_resources are for resource-pool scheduling; they are not part of the
+    generic resource fields that orchestrators and step operators consume.
+    """
     rs = ResourceSettings(pool_resources={"x": 1})
-    assert rs.empty is False
+    assert rs.empty is True

@@ -185,7 +185,13 @@ class ResourceSettings(BaseSettings):
 
     @property
     def empty(self) -> bool:
-        """Returns if this object is "empty" (=no values configured) or not.
+        """Returns if this object is "empty" or not.
+
+        A ResourceSettings instance is considered empty if none of the
+        generic resource-related values are configured. This excludes the
+        preemptible flag and the pool_resources map, which are only relevant
+        for resource pool scheduling and currently ignored by workload
+        scheduling stack components like orchestrators and step operators.
 
         Returns:
             `True` if no values were configured, `False` otherwise.
