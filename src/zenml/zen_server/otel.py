@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """OpenTelemetry instrumentation for the ZenML server.
 
-Activates only when OTEL_EXPORTER_OTLP_ENDPOINT is set, so it is a
-no-op in environments without a collector.
+Activates only when ``otel_exporter_otlp_endpoint`` is configured in
+``ServerConfiguration`` (env: ``ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT``).
+Without it the server runs with zero OTel overhead.
 
 Why programmatic instrumentation instead of auto-instrumentation?
 
@@ -41,7 +42,6 @@ Ref:
 """
 
 import logging
-import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -95,14 +95,18 @@ class _OTelSanitizeFilter(logging.Filter):
 def configure_otel(app: "FastAPI") -> None:
     """Set up OpenTelemetry tracing, metrics, and log export.
 
-    Reads standard OTEL_* environment variables for endpoint, protocol,
-    and service name.  If OTEL_EXPORTER_OTLP_ENDPOINT is not set the
-    function returns immediately so the server runs without OTel overhead.
+    Reads OTel settings from ``ServerConfiguration`` (which in turn reads
+    ``ZENML_SERVER_OTEL_*`` environment variables).  If the OTLP endpoint
+    is not configured the function returns immediately so the server runs
+    without OTel overhead.
 
     Args:
         app: The FastAPI application instance to instrument.
     """
-    endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+    from zenml.zen_server.utils import server_config
+
+    config = server_config()
+    endpoint = config.otel_exporter_otlp_endpoint
     if not endpoint:
         return
 
@@ -134,30 +138,36 @@ def configure_otel(app: "FastAPI") -> None:
         )
         return
 
-    service_name = os.environ.get("OTEL_SERVICE_NAME", "zenml-server")
-    resource = Resource.create({"service.name": service_name})
+    resource = Resource.create({"service.name": config.otel_service_name})
 
     # --- Traces ---
     tracer_provider = TracerProvider(resource=resource)
-    tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    tracer_provider.add_span_processor(
+        BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces"))
+    )
     trace.set_tracer_provider(tracer_provider)
 
     # --- Metrics ---
     from opentelemetry import metrics
 
-    reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+    reader = PeriodicExportingMetricReader(
+        OTLPMetricExporter(endpoint=f"{endpoint}/v1/metrics")
+    )
     meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
     metrics.set_meter_provider(meter_provider)
 
     # --- Logs ---
     logger_provider = LoggerProvider(resource=resource)
     logger_provider.add_log_record_processor(
-        BatchLogRecordProcessor(OTLPLogExporter())
+        BatchLogRecordProcessor(
+            OTLPLogExporter(endpoint=f"{endpoint}/v1/logs")
+        )
     )
     set_logger_provider(logger_provider)
 
-    log_level_name = os.environ.get("OTEL_PYTHON_LOG_LEVEL", "INFO").upper()
-    otel_log_level = getattr(logging, log_level_name, logging.INFO)
+    otel_log_level = getattr(
+        logging, config.otel_python_log_level.upper(), logging.INFO
+    )
     otel_handler = LoggingHandler(
         level=otel_log_level,
         logger_provider=logger_provider,
