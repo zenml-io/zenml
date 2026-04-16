@@ -134,7 +134,7 @@ class AppInfo(BaseModel):
     docs_url_path: str
     redoc_url_path: str
     invoke_url_path: str
-    stream_invoke_url_path: str
+    stream_invoke_url_path: Optional[str] = None
     health_url_path: str
     info_url_path: str
     metrics_url_path: str

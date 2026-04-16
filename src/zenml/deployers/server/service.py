@@ -32,6 +32,7 @@ from pydantic import BaseModel, WithJsonSchema
 
 import zenml.pipelines.run_utils as run_utils
 from zenml.client import Client
+from zenml.config import DeploymentDefaultEndpoints
 from zenml.deployers.server import runtime
 from zenml.deployers.server.models import (
     AppInfo,
@@ -47,7 +48,6 @@ from zenml.deployers.server.models import (
 from zenml.deployers.streaming import (
     StreamEventType,
     StreamState,
-    close_stream,
     publish_event,
     register_stream,
 )
@@ -175,6 +175,9 @@ class BasePipelineDeploymentService(ABC):
             request: Runtime parameters supplied by the caller.
             stream_state: Shared state used to coordinate stream lifecycle and
                 event delivery.
+
+        Returns:
+            A BaseDeploymentInvocationResponse describing the execution result.
 
         Raises:
             NotImplementedError: If the method is not implemented.
@@ -502,7 +505,6 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                         event_type=StreamEventType.RUN_FINISHED,
                         payload=response.model_dump(mode="json"),
                     )
-                close_stream(stream_state=stream_state)
 
     def get_service_info(self) -> ServiceInfo:
         """Get service information.
@@ -513,6 +515,11 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         uptime = time.time() - self.service_start_time
         settings = self.app_runner.settings
         api_urlpath = f"{self.app_runner.settings.root_url_path}{self.app_runner.settings.api_url_path}"
+        stream_invoke_url_path = None
+        if settings.endpoint_enabled(DeploymentDefaultEndpoints.STREAM_INVOKE):
+            stream_invoke_url_path = (
+                api_urlpath + settings.stream_invoke_url_path
+            )
         return ServiceInfo(
             deployment=DeploymentInfo(
                 id=self.deployment.id,
@@ -536,8 +543,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 docs_url_path=settings.docs_url_path,
                 redoc_url_path=settings.redoc_url_path,
                 invoke_url_path=api_urlpath + settings.invoke_url_path,
-                stream_invoke_url_path=api_urlpath
-                + settings.stream_invoke_url_path,
+                stream_invoke_url_path=stream_invoke_url_path,
                 health_url_path=api_urlpath + settings.health_url_path,
                 info_url_path=api_urlpath + settings.info_url_path,
                 metrics_url_path=api_urlpath + settings.metrics_url_path,

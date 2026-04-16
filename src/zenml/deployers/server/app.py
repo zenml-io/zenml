@@ -349,6 +349,9 @@ class BaseDeploymentAppRunner(ABC):
     def _build_stream_invoke_endpoint(self) -> Callable[..., Any]:
         """Create the endpoint used to invoke a streamed pipeline deployment.
 
+        Returns:
+            A callable endpoint that streams lifecycle events.
+
         Raises:
             NotImplementedError: If the method is not implemented.
         """
@@ -417,14 +420,23 @@ class BaseDeploymentAppRunner(ABC):
         if self.settings.endpoint_enabled(
             DeploymentDefaultEndpoints.STREAM_INVOKE
         ):
-            specs.append(
-                EndpointSpec(
-                    path=f"{self.settings.api_url_path}{self.settings.stream_invoke_url_path}",
-                    method=EndpointMethod.POST,
-                    handler=self._build_stream_invoke_endpoint(),
-                    auth_required=True,
+            try:
+                stream_handler = self._build_stream_invoke_endpoint()
+            except NotImplementedError:
+                logger.warning(
+                    "Skipping stream invoke endpoint because %s does not "
+                    "implement `_build_stream_invoke_endpoint`.",
+                    self.__class__.__name__,
                 )
-            )
+            else:
+                specs.append(
+                    EndpointSpec(
+                        path=f"{self.settings.api_url_path}{self.settings.stream_invoke_url_path}",
+                        method=EndpointMethod.POST,
+                        handler=stream_handler,
+                        auth_required=True,
+                    )
+                )
 
         if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.INVOKE):
             specs.append(

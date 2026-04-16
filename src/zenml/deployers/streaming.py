@@ -84,6 +84,9 @@ def get_stream_state(run_id: UUID) -> Optional["StreamState"]:
 
     Args:
         run_id: The run ID used as stream key.
+
+    Returns:
+        The stream state registered for the run ID if it exists, otherwise None.
     """
     with _stream_registry_lock:
         return _stream_registry.get(run_id, None)
@@ -122,7 +125,10 @@ def close_stream(stream_state: "StreamState") -> None:
 
     if run_id:
         with _stream_registry_lock:
-            _stream_registry.pop(run_id, None)
+            # Avoid unregistering a newer stream accidentally if another
+            # invocation reused the same run ID in the meantime.
+            if _stream_registry.get(run_id) is stream_state:
+                _stream_registry.pop(run_id, None)
 
 
 def format_sse_event(event: StreamEvent) -> str:
@@ -134,7 +140,10 @@ def format_sse_event(event: StreamEvent) -> str:
     Returns:
         A string chunk formatted as an SSE event.
     """
-    return f"event: {event.event_type.value}\ndata: {event.payload}\n\n"
+    payload = event.payload.replace("\r\n", "\n").replace("\r", "\n")
+    data_lines = payload.splitlines() or [""]
+    serialized_data = "\n".join(f"data: {line}" for line in data_lines)
+    return f"event: {event.event_type.value}\n{serialized_data}\n\n"
 
 
 def _set_terminal_event(
@@ -154,6 +163,19 @@ def _set_terminal_event(
             return False
         stream_state.terminal_event = terminal_event
     return True
+
+
+def _has_terminal_event(stream_state: "StreamState") -> bool:
+    """Check if a terminal event exists for a stream state.
+
+    Args:
+        stream_state: Shared stream state for this invocation.
+
+    Returns:
+        True if a terminal event exists, False otherwise.
+    """
+    with stream_state.lock:
+        return stream_state.terminal_event is not None
 
 
 def _build_fallback_run_finished_event(
@@ -213,7 +235,9 @@ def iter_sse_events(
         while True:
             queue_item: Optional[StreamEvent] = None
 
-            if producer_future.done():
+            if producer_future.done() and not _has_terminal_event(
+                stream_state
+            ):
                 _set_terminal_event(
                     stream_state=stream_state,
                     terminal_event=_build_fallback_run_finished_event(
@@ -264,6 +288,9 @@ def publish_event(
 
     Returns:
         True if the event was queued, False otherwise.
+
+    Raises:
+        ValueError: If the payload cannot be serialized as JSON.
     """
     try:
         serialized_payload = json.dumps(payload, default=pydantic_encoder)
