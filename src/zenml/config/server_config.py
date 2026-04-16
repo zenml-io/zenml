@@ -297,6 +297,7 @@ class ServerConfiguration(BaseModel):
     feature_gate_implementation_source: Optional[str] = None
     reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
+    resource_pool_implementation_source: Optional[str] = None
     max_concurrent_snapshot_runs: int = (
         DEFAULT_ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS
     )
@@ -530,6 +531,15 @@ class ServerConfiguration(BaseModel):
             Whether workload management is enabled on the server or not.
         """
         return self.workload_manager_implementation_source is not None
+
+    @property
+    def resource_pool_enabled(self) -> bool:
+        """Whether resource pool store is enabled on the server or not.
+
+        Returns:
+            Whether resource pool store is enabled on the server or not.
+        """
+        return self.resource_pool_implementation_source is not None
 
     def get_jwt_token_issuer(self) -> str:
         """Get the JWT token issuer.
