@@ -156,6 +156,25 @@ def validation_exception_handler(
 @app.on_event("startup")
 async def initialize() -> None:
     """Initialize the ZenML server."""
+    # On startup uvicorn installs its own handlers and formatters on three loggers:
+    #
+    #   "uvicorn"        – parent logger (propagate=False by default)
+    #   "uvicorn.error"  – server lifecycle and internal errors
+    #   "uvicorn.access" – per-request access log
+    #
+    # These handlers use uvicorn's own formatters, so their output bypasses
+    # structlog's ProcessorFormatter and appears as raw unstructured lines
+    # alongside the structured logs from the rest of the application.
+    #
+    # Strip them and enable propagation so all uvicorn records flow
+    # through the root logger's structlog ProcessorFormatter and OTel.
+    for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
+        # clear uvicorn handlers to avoid double logging
+        _uvicorn_logger.handlers.clear()
+        # propagate uvicorn logs to the root logger
+        _uvicorn_logger.propagate = True
+
     cfg = server_config()
     # Set the maximum number of worker threads
     to_thread.current_default_thread_limiter().total_tokens = (
