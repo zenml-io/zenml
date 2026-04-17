@@ -140,7 +140,8 @@ snapshot and attaching the new one.
 As with on-demand execution, scheduling requires snapshots with a **remote stack** with at least:
 - Remote orchestrator
 - Remote artifact store
-- Container registry
+- Container registry 
+{% endhint %}
 
 ### Update schedules
 
@@ -388,3 +389,34 @@ Client().attach_trigger_to_snapshot(trigger_id="<trigger_id>", pipeline_snapshot
 Client().detach_trigger_from_snapshot(trigger_id="<trigger_id>", pipeline_snapshot_id="<snapshot_id>")
 Client().delete_trigger(trigger_id="<trigger_id>")
 ```
+
+### Upstream information
+
+When a downstream pipeline is executed, it can be useful to access information about the upstream run 
+that triggered it. The following example shows how to retrieve this information within a running pipeline step:
+
+
+```python
+from zenml import step, get_step_context
+from zenml.utils.trigger_utils import get_upstream_run
+
+@step
+def my_step():
+    current_run = get_step_context().pipeline_run
+    upstream_run = get_upstream_run(pipeline_run=current_run)
+    print(f"Upstream run ID: {upstream_run.id} name: {upstream_run.name}")
+```
+
+### Chaining pipelines with triggers
+
+Platform Event Triggers can be used to build simple multi-pipeline workflows by chaining pipelines together. 
+For example, you can configure a trigger so that when Pipeline A completes, it starts Pipeline B, which in 
+turn can trigger Pipeline C. This enables lightweight orchestration patterns directly within ZenML, allowing you 
+to break down complex workflows into smaller, reusable pipeline components that execute in sequence based on platform events.
+
+{% hint style="warning" %}
+However, care must be taken when designing such workflows. Since cyclic dependencies are not currently validated, 
+it is possible to create loops where pipelines continuously trigger each other (for example, Pipeline 
+A triggers B, and B triggers A). This can lead to unintended behavior such as infinite execution cycles and 
+resource exhaustion. Users should ensure that their trigger configurations form an acyclic graph and avoid circular dependencies.
+{% endhint %}

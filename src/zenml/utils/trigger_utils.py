@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions to manage platform event triggers."""
 
+import logging
 from typing import overload
 from uuid import UUID
 
@@ -26,7 +27,9 @@ from zenml.enums import (
     SourceType,
     TriggerRunConcurrency,
 )
-from zenml.models import PlatformEventTriggerResponse
+from zenml.models import PipelineRunResponse, PlatformEventTriggerResponse
+
+logger = logging.getLogger(__name__)
 
 
 # create pipeline trigger overload
@@ -216,3 +219,35 @@ def list_supported_events(
         A list of supported events for the source type.
     """
     return PLATFORM_EVENT_REGISTRY[source_type].values()
+
+
+def get_upstream_run(
+    pipeline_run: PipelineRunResponse,
+) -> PipelineRunResponse | None:
+    """Helper function to resolve upstream runs safely.
+
+    Args:
+        pipeline_run: Current pipeline run.
+
+    Returns:
+        Upstream run if available, None otherwise.
+    """
+    info = pipeline_run.trigger_execution_info
+
+    if info is None:
+        return None
+
+    if info.upstream_run_id is None:
+        return None
+
+    try:
+        return Client().get_pipeline_run(
+            name_id_or_prefix=info.upstream_run_id
+        )
+    except Exception as exc:
+        logger.error(
+            "Failed to get upstream run: %s",
+            info.upstream_run_id,
+            exc_info=exc,
+        )
+        return None
