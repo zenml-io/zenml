@@ -306,7 +306,7 @@ def load_step_run_outputs(step_run_id: UUID) -> "StepRunOutputs":
 def collect_futures(
     inputs: Optional[Dict[str, Any]] = ...,
     after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = ...,
-    expand_map_results: Literal[True] = True,
+    expand_map_results: Literal[True] = ...,
 ) -> List["BaseStepFuture"]: ...
 
 
@@ -314,7 +314,7 @@ def collect_futures(
 def collect_futures(
     inputs: Optional[Dict[str, Any]] = ...,
     after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = ...,
-    expand_map_results: Literal[False] = False,
+    expand_map_results: Literal[False] = ...,
 ) -> List["AnyStepFuture"]: ...
 
 

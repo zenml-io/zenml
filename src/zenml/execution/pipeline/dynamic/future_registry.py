@@ -14,6 +14,7 @@
 """Future registry for dynamic pipeline execution."""
 
 import threading
+import time
 from typing import Dict, List, Optional, Union
 
 from zenml.execution.pipeline.dynamic.outputs import (
@@ -188,12 +189,30 @@ class FutureRegistry:
             ]
 
     def await_all_no_raise(self) -> None:
-        """Wait for all tracked futures to finish without raising.
+        """Wait for all tracked futures to finish without raising."""
+        futures = self.get_all_futures()
 
-        This is used during runner cleanup so secondary step failures do not
-        replace the primary pipeline outcome.
-        """
-        for future in self.get_all_futures():
+        # Poll all futures concurrently before awaiting each of them. This
+        # avoids long cumulative waits when individual futures use backoff-based
+        # polling internally.
+        poll_interval_seconds = 2.0
+        while True:
+            any_running = False
+            for future in futures:
+                try:
+                    if future.running():
+                        any_running = True
+                        break
+                except Exception:
+                    # We still fall back to `wait()` below for this future.
+                    continue
+
+            if not any_running:
+                break
+
+            time.sleep(poll_interval_seconds)
+
+        for future in futures:
             try:
                 future.wait()
             except Exception:
