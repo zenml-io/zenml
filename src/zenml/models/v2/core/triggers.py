@@ -70,7 +70,10 @@ class TriggerBase(BaseModel, ABC):
         max_length=STR_FIELD_MAX_LENGTH,
         description="The name of the trigger.",
     )
-    active: bool
+    active: bool = Field(
+        default=True,
+        description="Whether the trigger should be active.",
+    )
     type: TriggerType
     concurrency: TriggerRunConcurrency = Field(
         default=TriggerRunConcurrency.SKIP,
