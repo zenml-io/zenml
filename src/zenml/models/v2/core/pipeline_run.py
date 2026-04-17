@@ -71,7 +71,10 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
-    from zenml.models.v2.core.triggers import TRIGGER_RETURN_TYPE_UNION
+    from zenml.models.v2.core.triggers import (
+        TRIGGER_RETURN_TYPE_UNION,
+        TriggerExecutionInfo,
+    )
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -311,6 +314,14 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     exception_info: Optional[ExceptionInfo] = Field(
         default=None,
         title="The exception information of the pipeline run.",
+    )
+    trigger_execution_info: Optional["TriggerExecutionInfo"] = Field(
+        default=None,
+        title="Extra information for trigger execution like upstream_run_id etc.",
+    )
+    pipeline_id: UUID | None = Field(
+        default=None,
+        title="The ID of the pipeline this run is associated with.",
     )
 
 
@@ -695,6 +706,15 @@ class PipelineRunResponse(
         return self.get_resources().trigger
 
     @property
+    def trigger_execution_info(self) -> Optional["TriggerExecutionInfo"]:
+        """The `trigger_execution_info` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().trigger_execution_info
+
+    @property
     def original_run(self) -> Optional["PipelineRunResponse"]:
         """The `original_run` property.
 
@@ -711,6 +731,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().active_wait_condition
+
+    @property
+    def pipeline_id(self) -> UUID | None:
+        """The `pipeline_id` property.
+
+        Returns:
+            The ID of the pipeline this run is associated with.
+        """
+        return self.get_metadata().pipeline_id
 
 
 # ------------------ Filter Model ------------------

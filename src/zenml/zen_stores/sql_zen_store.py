@@ -15,6 +15,7 @@
 
 from contextlib import nullcontext
 
+from zenml.dispatcher import EventDispatcher
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
@@ -275,6 +276,7 @@ from zenml.models import (
     PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     PipelineUpdate,
+    PlatformEventTriggerResponse,
     ProjectFilter,
     ProjectRequest,
     ProjectResponse,
@@ -448,7 +450,10 @@ if TYPE_CHECKING:
     from concurrent.futures import Future
 
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
-    from zenml.models.v2.core.triggers import UnScopedTriggerFilter
+    from zenml.models.v2.core.triggers import (
+        TriggerExecutionInfo,
+        UnScopedTriggerFilter,
+    )
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -7946,6 +7951,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             soft: Flag deciding whether to soft delete the trigger.
+
+        Raises:
+            IllegalOperationError: On archival if trigger is already archived.
         """
         with Session(self.engine) as session:
             # Check if trigger with the given ID exists
@@ -7959,6 +7967,10 @@ class SqlZenStore(BaseZenStore):
                 # Hard delete the schedule
                 session.delete(trigger)
             else:
+                if trigger.is_archived:
+                    raise IllegalOperationError(
+                        f"Trigger {trigger_id} is already archived."
+                    )
                 # Soft deletion - set is_archived
                 trigger.is_archived = True
                 trigger.active = False
@@ -8063,6 +8075,7 @@ class SqlZenStore(BaseZenStore):
         self,
         trigger_id: UUID,
         pipeline_run_id: UUID,
+        info: "TriggerExecutionInfo | None" = None,
     ) -> None:
         """Creates a trigger execution object.
 
@@ -8071,6 +8084,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             pipeline_run_id: The ID of the pipeline run.
+            info: Additional information about the trigger execution (e.g. upstream run id).
 
         Raises:
             KeyError: if the entities don't exist.
@@ -8097,10 +8111,57 @@ class SqlZenStore(BaseZenStore):
             new_assoc = TriggerExecutionSchema(
                 trigger_id=trigger_id,
                 pipeline_run_id=pipeline_run_id,
+                info=info.model_dump_json() if info is not None else None,
             )
 
             session.add(new_assoc)
             session.commit()
+
+    def match_event_to_triggers(
+        self,
+        project_id: UUID,
+        conditions: list[dict[str, str]],
+    ) -> list[PlatformEventTriggerResponse]:
+        """Matches incoming events against platform-event triggers.
+
+        Custom utility, existing only in SqlZenStore.
+
+        Args:
+            project_id: The ID of the project.
+            conditions: A list of conditional dictionaries.
+                For example, {"source_entity": pipeline:<ID>, "target_events": "run_completed"}.
+
+        Returns:
+            A list of PlatformEventTriggerResponse objects matching the conditions.
+        """
+        from zenml.enums import TriggerType
+
+        if not conditions:
+            return []
+
+        with Session(self.engine) as session:
+            trigger_filters = [
+                and_(
+                    TriggerSchema.source_entity == condition["source_entity"],
+                    col(TriggerSchema.target_events).like(
+                        f"%{condition['target_events']}%"
+                    ),
+                )
+                for condition in conditions
+            ]
+
+            stmt = select(TriggerSchema).where(
+                col(TriggerSchema.type) == TriggerType.PLATFORM_EVENT.value,
+                col(TriggerSchema.project_id) == project_id,
+                col(TriggerSchema.is_archived).is_(False),
+                col(TriggerSchema.active).is_(True),
+                or_(*trigger_filters),
+            )
+
+            return [
+                row.to_model(include_metadata=True, include_resources=True)  # type: ignore[misc]
+                for row in session.exec(stmt).all()
+            ]
 
     # ----------------------------- Schedules -----------------------------
 
@@ -11860,7 +11921,9 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         if not did_update:
             return
-
+        EventDispatcher().handle_run_status_update(
+            run=pipeline_run.to_model(include_metadata=True)
+        )
         new_status = ExecutionStatus(pipeline_run.status)
 
         if new_status.is_finished and pipeline_run.end_time:

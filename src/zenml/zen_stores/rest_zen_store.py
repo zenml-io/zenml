@@ -2493,12 +2493,17 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The created trigger.
+
+        Raises:
+            ValueError: If an unexpected payload is retrieved.
         """
-        return self._create_resource(
-            resource=trigger,
-            route=TRIGGERS,
-            response_model=TRIGGER_RETURN_TYPE_UNION,
-        )
+        body: dict[str, Any] = self.post(TRIGGERS, body=trigger)  # type: ignore[assignment]
+
+        try:
+            response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
+            return response_model.model_validate(body)
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
 
     def get_trigger(
         self, trigger_id: UUID, hydrate: bool = True
@@ -2515,8 +2520,6 @@ class RestZenStore(BaseZenStore):
         Raises:
             ValueError: In case of bad response.
         """
-        from zenml.triggers.registry import TYPE_TO_RESPONSE_MAPPING
-
         body: dict[str, Any] = self.get(  # type: ignore[assignment]
             f"{TRIGGERS}/{str(trigger_id)}", params={"hydrate": hydrate}
         )
@@ -2544,8 +2547,6 @@ class RestZenStore(BaseZenStore):
         Raises:
             ValueError: In case of bad response.
         """
-        from zenml.triggers.registry import TYPE_TO_RESPONSE_MAPPING
-
         body: dict[str, Any] = self.get(  # type: ignore[assignment]
             TRIGGERS,
             params={
@@ -2587,9 +2588,11 @@ class RestZenStore(BaseZenStore):
             ValueError: In case of bad response.
         """
         body: dict[str, Any] = self.put(  # type: ignore[assignment]
-            f"{TRIGGERS}/{trigger_id}", body=trigger_update, params=None
+            f"{TRIGGERS}/{trigger_id}",
+            body=trigger_update,
+            params=None,
+            exclude_unset=False,
         )
-
         try:
             response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
             return response_model.model_validate(body)
@@ -5154,6 +5157,7 @@ class RestZenStore(BaseZenStore):
         body: Optional[BaseModel] = None,
         params: Optional[Dict[str, Any]] = None,
         timeout: Optional[int] = None,
+        exclude_unset: bool = True,
         **kwargs: Any,
     ) -> Json:
         """Make a PUT request to the given endpoint path.
@@ -5163,13 +5167,16 @@ class RestZenStore(BaseZenStore):
             body: The body to send.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
+            exclude_unset: Exclude unset fields, defaults to True.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
         json = (
-            body.model_dump(mode="json", exclude_unset=True) if body else None
+            body.model_dump(mode="json", exclude_unset=exclude_unset)
+            if body
+            else None
         )
         return self._request(
             "PUT",
