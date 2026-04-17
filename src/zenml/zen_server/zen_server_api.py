@@ -102,6 +102,7 @@ from zenml.zen_server.utils import (
     initialize_snapshot_executor,
     initialize_workload_manager,
     initialize_zen_store,
+    register_event_handlers,
     server_config,
     snapshot_executor,
     start_event_loop_lag_monitor,
@@ -176,6 +177,8 @@ async def initialize() -> None:
 
     if logger.isEnabledFor(logging.DEBUG):
         start_event_loop_lag_monitor()
+
+    await register_event_handlers()
 
 
 @app.on_event("shutdown")

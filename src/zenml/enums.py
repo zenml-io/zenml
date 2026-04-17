@@ -637,13 +637,15 @@ class ResourceRequestStatus(StrEnum):
 class TriggerType(StrEnum):
     """Enum representing fundamental trigger types."""
 
-    SCHEDULE = "schedule"  # TODO: Extend with Webhook
+    SCHEDULE = "schedule"
+    PLATFORM_EVENT = "platform_event"
 
 
 class TriggerFlavor(StrEnum):
     """Enum representing trigger flavors."""
 
-    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors
+    NATIVE_SCHEDULE = "native schedule"
+    PLATFORM_EVENT = "platform event"
 
 
 class TriggerRunConcurrency(StrEnum):
@@ -658,3 +660,30 @@ class ContainerEngineType(StrEnum):
 
     DOCKER = "docker"
     PODMAN = "podman"
+
+
+class SourceType(StrEnum):
+    """Enum representing the source type."""
+
+    PIPELINE = "pipeline"
+    PIPELINE_RUN = "pipeline_run"
+
+
+class PipelineEvent(StrEnum):
+    """Enum representing platform target events for pipelines."""
+
+    RUN_COMPLETED = "run_completed"
+    RUN_FAILED = "run_failed"
+
+
+class PipelineRunEvent(StrEnum):
+    """Enum representing platform target events for pipeline runs."""
+
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+PLATFORM_EVENT_REGISTRY: dict[SourceType, type[StrEnum]] = {
+    SourceType.PIPELINE: PipelineEvent,
+    SourceType.PIPELINE_RUN: PipelineRunEvent,
+}

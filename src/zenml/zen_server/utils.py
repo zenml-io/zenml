@@ -817,3 +817,35 @@ def get_current_request_context() -> RequestContext:
         The current request context.
     """
     return request_manager().current_request
+
+
+async def register_event_handlers() -> None:
+    """Register event handlers to the event dispatcher."""
+    from zenml.dispatcher import EventDispatcher, EventHandler
+
+    if server_config().event_handler_sources:
+        from zenml.utils import source_utils
+
+        for source in server_config().event_handler_sources:
+            logger.info("Registering event handler %s", source)
+
+            try:
+                event_handler_cls: type[EventHandler] = (
+                    source_utils.load_and_validate_class(
+                        source=source, expected_class=EventHandler
+                    )
+                )
+            except Exception as exc:
+                logger.exception(
+                    f"Failed to load event handler {source}", exc_info=exc
+                )
+                continue
+            else:
+                try:
+                    event_handler = await event_handler_cls.create()
+                    EventDispatcher().register_event_handler(event_handler)
+                except Exception as exc:
+                    logger.exception(
+                        f"Failed to register event handler {source}",
+                        exc_info=exc,
+                    )
