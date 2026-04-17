@@ -137,8 +137,7 @@ def test_generate_config_schema_reuses_and_renames_step_defs():
 
 
 def test_generate_config_schema_with_parameter_spec_and_no_config_parameters():
-    """Schema generation must not crash when a step carries a
-    `parameter_spec` without matching `config.parameters`.
+    """Schema generation handles a parameter_spec with empty config.parameters.
 
     The step-level `{step_name}_parameters` `$def` is only created when
     `step.config.parameters` is truthy. A step whose spec was loaded from
@@ -159,9 +158,7 @@ def test_generate_config_schema_with_parameter_spec_and_no_config_parameters():
             },
         ),
         config=StepConfiguration(name="my_step", parameters={}),
-        step_config_overrides=StepConfiguration(
-            name="my_step", parameters={}
-        ),
+        step_config_overrides=StepConfiguration(name="my_step", parameters={}),
     )
     snapshot = SimpleNamespace(
         is_dynamic=False,
