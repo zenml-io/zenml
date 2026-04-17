@@ -134,3 +134,45 @@ def test_generate_config_schema_reuses_and_renames_step_defs():
         ]["config"]["$ref"]
         == "#/$defs/conflicting_step__NestedConfig"
     )
+
+
+def test_generate_config_schema_with_parameter_spec_and_no_config_parameters():
+    """Schema generation must not crash when a step carries a
+    `parameter_spec` without matching `config.parameters`.
+
+    The step-level `{step_name}_parameters` `$def` is only created when
+    `step.config.parameters` is truthy. A step whose spec was loaded from
+    a stored snapshot (for example when regenerating a config schema from
+    an existing template) may expose a `parameter_spec` while having an
+    empty `config.parameters`; the schema substitution path must handle
+    that case gracefully instead of raising `KeyError`.
+    """
+    step = Step(
+        spec=StepSpec(
+            source="module.step",
+            upstream_steps=[],
+            invocation_id="my_step",
+            parameter_spec={
+                "type": "object",
+                "properties": {"a": {"type": "integer"}},
+                "required": ["a"],
+            },
+        ),
+        config=StepConfiguration(name="my_step", parameters={}),
+        step_config_overrides=StepConfiguration(
+            name="my_step", parameters={}
+        ),
+    )
+    snapshot = SimpleNamespace(
+        is_dynamic=False,
+        build=SimpleNamespace(stack=SimpleNamespace(components=[])),
+    )
+
+    # Must not raise `KeyError('my_step_parameters')`.
+    schema = generate_config_schema(
+        snapshot=snapshot,
+        pipeline_configuration=PipelineConfiguration(name="pipeline"),
+        step_configurations={"my_step": step},
+    )
+
+    assert "$defs" in schema

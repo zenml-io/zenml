@@ -405,7 +405,11 @@ def _replace_step_parameter_definitions(
         step_schema.setdefault("properties", {})["parameters"] = (
             parameter_schema
         )
-        # Remove the original parameter schema #def that we just replaced
-        root_definitions.pop(f"{step_name}_parameters")
+        # The `{step_name}_parameters` entry is only added to `$defs` when
+        # the step has configured parameters (see the `create_model` call
+        # above). Steps that carry a `parameter_spec` without matching
+        # `config.parameters` - for example templates regenerated from a
+        # stored spec - never produced that entry, so pop defensively.
+        root_definitions.pop(f"{step_name}_parameters", None)
 
     return schema
