@@ -162,6 +162,13 @@ dev = [
     # which in turn makes the Modal fast-CI job run ~200 fewer tests than it
     # thinks (discovery runs on the CI runner, not inside the sandbox).
     "beautifulsoup4>=4.0.0",
+    # ipython is an unconditional top-level import of
+    # `zenml.utils.visualization_utils`, which the same
+    # test_visualization_utils.py module imports from. IPython is otherwise
+    # only pulled in by the heavier integration extras, which the fast-CI
+    # host install deliberately omits (`install-zenml-dev.sh --integrations
+    # no`). Keep it here so discovery on the host can import the module.
+    "ipython",
     "mkdocs>=1.6.1,<2.0.0",
     "mkdocs-material==9.6.8",
     "mkdocs-awesome-pages-plugin>=2.10.1,<3.0.0",
