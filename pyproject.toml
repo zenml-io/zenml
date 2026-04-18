@@ -156,6 +156,12 @@ dev = [
     "pytest-rerunfailures>=13.0,<14.0.0",
     "pytest-split>=0.10.0,<0.11.0",
     "pytest-xdist>=3.6.0,<4.0.0",
+    # beautifulsoup4 is consumed by the HTML-output unit tests in
+    # tests/unit/utils/test_visualization_utils.py. Without it, those tests
+    # fail to import and pytest silently drops them during `--collect-only`,
+    # which in turn makes the Modal fast-CI job run ~200 fewer tests than it
+    # thinks (discovery runs on the CI runner, not inside the sandbox).
+    "beautifulsoup4>=4.0.0",
     "mkdocs>=1.6.1,<2.0.0",
     "mkdocs-material==9.6.8",
     "mkdocs-awesome-pages-plugin>=2.10.1,<3.0.0",
