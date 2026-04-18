@@ -85,6 +85,7 @@ class ExecutionStatus(StrEnum):
 
     INITIALIZING = "initializing"
     PROVISIONING = "provisioning"
+    QUEUED = "queued"
     RUNNING = "running"
     FAILED = "failed"
     COMPLETED = "completed"
@@ -94,6 +95,8 @@ class ExecutionStatus(StrEnum):
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    CANCELLING = "cancelling"
+    CANCELLED = "cancelled"
     PAUSED = "paused"
     RESUMING = "resuming"
     STOPPED = "stopped"
@@ -113,6 +116,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.SKIPPED,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
+            ExecutionStatus.CANCELLED,
         }
 
     @property
@@ -135,7 +139,7 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a failed execution.
         """
-        return self in {ExecutionStatus.FAILED}
+        return self in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
 
 
 class LoggingLevels(Enum):
@@ -617,16 +621,30 @@ class GroupType(StrEnum):
     MAP = "map"
 
 
+class ResourceRequestStatus(StrEnum):
+    """Resource request statuses."""
+
+    PENDING = "pending"
+    ALLOCATED = "allocated"
+    PREEMPTING = "preempting"
+    PREEMPTED = "preempted"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+    RELEASED = "released"
+
+
 class TriggerType(StrEnum):
     """Enum representing fundamental trigger types."""
 
-    SCHEDULE = "schedule"  # TODO: Extend with Webhook
+    SCHEDULE = "schedule"
+    PLATFORM_EVENT = "platform_event"
 
 
 class TriggerFlavor(StrEnum):
     """Enum representing trigger flavors."""
 
-    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors
+    NATIVE_SCHEDULE = "native schedule"
+    PLATFORM_EVENT = "platform event"
 
 
 class TriggerRunConcurrency(StrEnum):
@@ -641,3 +659,30 @@ class ContainerEngineType(StrEnum):
 
     DOCKER = "docker"
     PODMAN = "podman"
+
+
+class SourceType(StrEnum):
+    """Enum representing the source type."""
+
+    PIPELINE = "pipeline"
+    PIPELINE_RUN = "pipeline_run"
+
+
+class PipelineEvent(StrEnum):
+    """Enum representing platform target events for pipelines."""
+
+    RUN_COMPLETED = "run_completed"
+    RUN_FAILED = "run_failed"
+
+
+class PipelineRunEvent(StrEnum):
+    """Enum representing platform target events for pipeline runs."""
+
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+PLATFORM_EVENT_REGISTRY: dict[SourceType, type[StrEnum]] = {
+    SourceType.PIPELINE: PipelineEvent,
+    SourceType.PIPELINE_RUN: PipelineRunEvent,
+}

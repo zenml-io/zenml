@@ -35,6 +35,10 @@
 * [Teams](teams.md)
 * [Snapshots](snapshots.md)
 * [Triggers](triggers.md)
+* [Resource Pools](resource-pools.md)
+  * [Core Concepts](resource-pools-core-concepts.md)
+  * [Reconciliation Process](resource-pools-reconciliation.md)
+  * [Examples](resource-pools-examples.md)
 
 ## Access Management
 
