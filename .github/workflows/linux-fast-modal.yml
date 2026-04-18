@@ -170,15 +170,16 @@ jobs:
           exit_code="${PIPESTATUS[0]}"
           set -e
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
-          # offload currently uses 0 for a completed test run and 2 for
-          # infrastructure/setup failures that should fall back to the
-          # standard CI path. Any other nonzero code is treated as a real
-          # test failure and must not be converted into fallback.
-          if [ "$exit_code" = "2" ]; then
-            echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
-          fi
+          # offload exit-code contract (see offload/src/orchestrator.rs):
+          #   0 = all tests passed
+          #   1 = one or more tests failed, or expected tests were never run
+          #   2 = all tests passed, but one or more were flaky (pass on retry)
+          # None of these signal infrastructure failure: that's detected
+          # separately via `is_offload_prepare_failure` on the offload log and
+          # via the fresh-junit check below. Both 0 and 2 mean the Modal run
+          # produced a trustworthy result and we should NOT fall back to the
+          # standard CI path.
+          echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           exit "$exit_code"
       - name: Classify Modal result
         id: classify
@@ -244,8 +245,15 @@ jobs:
               test_failed=true
             else
               printf '%s\n' "$summary_output"
-              if [[ "$exit_code" == "0" ]]; then
+              # Exit 0 = clean pass; exit 2 = pass with flakes (retry succeeded).
+              # Both indicate a trustworthy, complete run and are safe to
+              # cache the JUnit file from. Exit 1 (or anything else) means
+              # real failures or missing tests.
+              if [[ "$exit_code" == "0" || "$exit_code" == "2" ]]; then
                 junit_cache_safe=true
+                if [[ "$exit_code" == "2" ]]; then
+                  echo "::notice::offload reported flaky tests (passed on retry); treating run as successful."
+                fi
                 if [[ "$summary_output" == *"Failed tests:"* ]]; then
                   echo "::error::offload reported success, but the JUnit XML still contains failures."
                   junit_cache_safe=false
