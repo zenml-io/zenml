@@ -135,12 +135,27 @@ jobs:
             hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
             }}
       - name: Restore JUnit duration cache
+        id: restore_junit_cache
         uses: actions/cache/restore@v4
         with:
           path: test-results/modal-fast-ci/junit.xml
           key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}
           restore-keys: |
             offload-junit-${{ runner.os }}-
+      - name: Seed JUnit durations from baseline if cache missed
+        # The offload scheduler uses junit.xml to drive LPT bin-packing.
+        # Without historical durations it falls back to 1s/test, which packs
+        # the heavy test_model_version* cluster into a single batch and
+        # produces a ~410s tail. `ci/baseline-junit.xml` is a trimmed
+        # duration map from a known-good run; seed it whenever the actions
+        # cache missed so every fresh branch / dep-bump starts warm.
+        if: ${{ steps.prepare.outputs.run_modal == 'true' && steps.restore_junit_cache.outputs.cache-hit
+          != 'true' && hashFiles('ci/baseline-junit.xml') != '' }}
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/modal-fast-ci
+          cp ci/baseline-junit.xml test-results/modal-fast-ci/junit.xml
+          echo "::notice::Seeded offload scheduler with ci/baseline-junit.xml ($(wc -c < test-results/modal-fast-ci/junit.xml) bytes)"
       - name: Run tests via offload
         id: run
         if: ${{ steps.prepare.outputs.run_modal == 'true' }}
