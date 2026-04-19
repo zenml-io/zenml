@@ -12,7 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""Helpers for building reusable ZenML client templates."""
+"""Test-only helper for materializing a reusable ZenML client template.
+
+The ``build_client_template_dir`` function runs the full
+Client/GlobalConfiguration bring-up (alembic migrations, default
+project/user/stack) into a target directory once, so the pytest
+``clean_client`` fixture can copy the resulting tree instead of paying
+the ~17s init cost on every test.
+
+This lives under ``tests/harness/`` because it mutates test-only
+singleton state (GlobalConfiguration, Client, CredentialsStore) and is
+never imported by the ``zenml`` runtime package. CI also imports it
+from ``scripts/ci/build_zenml_template.py`` to bake the template into
+the Modal sandbox image at build time.
+"""
 
 import logging
 import os

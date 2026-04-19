@@ -29,7 +29,11 @@ jobs:
   modal-fast-ci:
     if: ${{ inputs.use_modal && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Fail fast if Modal stalls. The offload run itself has a 16-minute
+    # per-test timeout (test_timeout_secs in offload.toml); a 15-minute
+    # job wall clock is a tight-but-safe ceiling once the image cache is
+    # warm. Bump this if we intentionally add heavier fast-CI coverage.
+    timeout-minutes: 15
     outputs:
       modal_infra_failed: ${{ steps.classify.outputs.modal_infra_failed }}
     env:
@@ -58,7 +62,7 @@ jobs:
       # dep set; restore-keys lets stale caches still pre-warm pip
       # downloads on dep bumps.
       - name: Restore uv cache
-        uses: actions/cache@v4
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: /opt/uv-cache
           key: uv-fast-modal-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
@@ -78,9 +82,9 @@ jobs:
       - name: Install Rust
         id: install_rust
         continue-on-error: true
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8  # stable
       - name: Cache cargo registry
-        uses: actions/cache@v4
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: |
             ~/.cargo/registry
@@ -128,7 +132,7 @@ jobs:
           echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           echo "run_modal=true" >> "$GITHUB_OUTPUT"
       - name: Restore offload image cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
@@ -136,7 +140,7 @@ jobs:
             }}
       - name: Restore JUnit duration cache
         id: restore_junit_cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: test-results/modal-fast-ci/junit.xml
           key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}
@@ -178,8 +182,9 @@ jobs:
           offload_log="test-results/modal-fast-ci/offload.log"
           mkdir -p "$(dirname "$offload_log")"
           echo "run_started_at=$run_started_at" >> "$GITHUB_OUTPUT"
+          # max_parallel lives in offload.toml; don't duplicate it here.
           set +e
-          stdbuf -oL -eL offload -v run --parallel 20 2>&1 \
+          stdbuf -oL -eL offload -v run 2>&1 \
             | tee "$offload_log" \
             | stdbuf -oL grep -v 'No historical duration for test'
           exit_code="${PIPESTATUS[0]}"
@@ -287,7 +292,7 @@ jobs:
           echo "junit_cache_safe=$junit_cache_safe" >> "$GITHUB_OUTPUT"
       - name: Save offload image cache
         if: ${{ always() && steps.prepare.outputs.run_modal == 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
@@ -295,7 +300,7 @@ jobs:
             }}
       - name: Save JUnit duration cache
         if: ${{ always() && steps.classify.outputs.junit_cache_safe == 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: test-results/modal-fast-ci/junit.xml
           key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id
@@ -313,6 +318,10 @@ jobs:
           if [[ "${{ steps.classify.outputs.test_failed }}" == "true" ]]; then
             exit 1
           fi
+  # Fallback path when Modal infra is unavailable (missing credentials,
+  # offload install failure, sandbox prep failure). These inherit the
+  # default rerun policy from unit-test.yml / integration-test-fast.yml
+  # so genuine flakes in the fallback path still get retried.
   fallback-unit-test:
     needs: modal-fast-ci
     if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' }}
@@ -320,7 +329,6 @@ jobs:
     with:
       os: ubuntu-latest
       python-version: ${{ inputs.python-version }}
-      reruns: 0
     secrets: inherit
   fallback-integration-test:
     needs: [modal-fast-ci, fallback-unit-test]
@@ -331,15 +339,15 @@ jobs:
       os: ubuntu-latest
       python-version: ${{ inputs.python-version }}
       test_environment: default
-      reruns: 0
     secrets: inherit
+  # Non-Modal path for fork PRs (no Modal secrets) — use the standard
+  # unit/integration workflows directly.
   non-modal-unit-test:
     if: ${{ ! inputs.use_modal }}
     uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
       python-version: ${{ inputs.python-version }}
-      reruns: 0
     secrets: inherit
   non-modal-integration-test:
     needs: non-modal-unit-test
@@ -349,5 +357,4 @@ jobs:
       os: ubuntu-latest
       python-version: ${{ inputs.python-version }}
       test_environment: default
-      reruns: 0
     secrets: inherit

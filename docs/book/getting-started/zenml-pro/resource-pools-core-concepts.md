@@ -223,5 +223,5 @@ zenml resource-pool requests training-gpus --view all
 
 * [Resource pools](resource-pools.md) — overview and UX story
 * [Examples](resource-pools-examples.md) — scenarios and outcomes
-* [How preemption works](resource-pools-preemption.md) — behavior and ordering
+* How preemption works — behavior and ordering (documentation forthcoming)
 * [Resource pool reconciliation](resource-pools-reconciliation.md) — runtime flow
