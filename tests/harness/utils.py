@@ -317,9 +317,7 @@ def clean_default_client_session(
                     old_prefix = str(template_dir.resolve())
                     new_prefix = str(tmp_path.resolve())
                     config_yaml.write_text(
-                        config_yaml.read_text().replace(
-                            old_prefix, new_prefix
-                        )
+                        config_yaml.read_text().replace(old_prefix, new_prefix)
                     )
 
         os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
