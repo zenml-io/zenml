@@ -33,6 +33,7 @@ from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
+from zenml.zen_server.otel import sanitize_log_record_for_otel
 
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogExporter
@@ -247,6 +248,7 @@ class OtelLogStore(BaseLogStore):
             if self._handler is None:
                 raise RuntimeError("OpenTelemetry provider is not initialized")
 
+            sanitize_log_record_for_otel(record)
             emit_kwargs = self._handler._translate(record)
             emit_kwargs["attributes"].update(origin.metadata)
             if metadata:
