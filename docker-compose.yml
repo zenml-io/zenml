@@ -124,6 +124,7 @@ services:
       retries: 3
     restart: on-failure
     environment:
+      ZENML_LOGGING_FORMAT: console # json; default is console; logs are exported as JSON to the backend
       ZENML_LOGGING_VERBOSITY: DEBUG
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEFAULT_PROJECT_NAME: default

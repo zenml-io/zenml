@@ -49,18 +49,41 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 _OTEL_SAFE_TYPES = (type(None), bool, bytes, int, float, str, list, tuple)
+
+
+def sanitize_log_record_for_otel(record: logging.LogRecord) -> None:
+    """Strip non-serializable private attributes from a LogRecord.
+
+    structlog's ``ProcessorFormatter.wrap_for_formatter`` stashes internal
+    objects (e.g. ``_logger``, ``_record``) on the LogRecord.  OTel's
+    ``LoggingHandler`` iterates over the record's attributes and tries
+    to serialize every value — non-primitive private attributes cause a warning
+    on every single log line.
+
+    This helper removes any ``_``-prefixed attribute whose value is not an OTel-safe
+    primitive type, so it can be called before any OTel serialization step.
+
+    Args:
+        record: The log record to sanitize (mutated in place).
+    """
+    for key in list(record.__dict__):
+        if key.startswith("_") and not isinstance(
+            record.__dict__[key], _OTEL_SAFE_TYPES
+        ):
+            del record.__dict__[key]
 
 
 class _OTelSanitizeFilter(logging.Filter):
     """Strip non-serializable attributes from LogRecords before OTel export.
 
     When structlog's ProcessorFormatter processes a log record, it attaches an
-    internal _logger attribute (a BoundLoggerFilteringAtLevel wrapper) to the
-    LogRecord object. OTel's LoggingHandler then iterates over record.__dict__
-    to convert all attributes into OTLP log record attributes, and it only knows
-    how to serialize primitives (str, int, float, bool, bytes, list, tuple). When
-    it hits the _logger object, it emits a warning like:
+    internal _logger attribute to the LogRecord object. OTel's LoggingHandler
+    then iterates over record.__dict__ to convert all attributes into OTLP log
+    record attributes, and it only knows how to serialize primitives
+    (str, int, float, bool, bytes, list, tuple). When it hits the _logger object,
+    it emits a warning like:
 
     ``Failed to encode attribute _logger of type BoundLoggerFilteringAtLevel``
 
@@ -84,11 +107,7 @@ class _OTelSanitizeFilter(logging.Filter):
         Returns:
             Always True — records are never dropped, only cleaned.
         """
-        for key in list(record.__dict__):
-            if key.startswith("_") and not isinstance(
-                record.__dict__[key], _OTEL_SAFE_TYPES
-            ):
-                del record.__dict__[key]
+        sanitize_log_record_for_otel(record)
         return True
 
 

@@ -11,22 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Logger Implementation.
-
-structlog is configured as a ProcessorFormatter for stdlib logging so
-that every existing ``logging.getLogger()`` call — including those from
-third-party libraries such as uvicorn, SQLAlchemy and FastAPI — flows
-through the same processor pipeline.
-
-Output format is controlled by ``ZENML_LOGGING_FORMAT``:
-  * ``"console"`` (default for CLI/SDK) — colored key=value via
-    ``structlog.dev.ConsoleRenderer``
-  * ``"json"`` (default when ``ZENML_SERVER`` is set) — one JSON object
-    per line via ``structlog.processors.JSONRenderer``
-"""
+"""Logger Implementation."""
 
 import logging
 import os
+import re
 import sys
 from contextvars import ContextVar
 from typing import Any, Optional
@@ -88,15 +77,15 @@ class _ZenMLStdoutStream:
 def get_logger(logger_name: str) -> structlog.stdlib.BoundLogger:
     """Get a structlog-wrapped logger by name.
 
-    The returned ``BoundLogger`` wraps a stdlib logger, so it supports
-    the same API (``info``, ``debug``, ``warning``, ``exception``, …) plus
-    structured keyword arguments (``logger.info("event", key=value)``).
+    The returned logger object is fully compatible with the stdlib
+    logging API. And it supports extra keyword arguments, e.g.:
+    ``logger.info("event", key=value)``.
 
     Args:
         logger_name: Name of logger to initialize.
 
     Returns:
-        A structlog BoundLogger backed by the stdlib logger hierarchy.
+        A structlog logger object
     """
     return structlog.get_logger(logger_name)
 
@@ -129,6 +118,130 @@ def _add_step_name_processor(
     return event_dict
 
 
+_GREY = "\x1b[90m"
+_WHITE = "\x1b[37m"
+_YELLOW = "\x1b[33m"
+_RED = "\x1b[31m"
+_BOLD_RED = "\x1b[31;1m"
+_PURPLE = "\x1b[38;5;105m"
+_BLUE = "\x1b[34m"
+_RESET = "\x1b[0m"
+
+_LEVEL_COLORS: dict[str, str] = {
+    "debug": _GREY,
+    "info": _WHITE,
+    "warning": _YELLOW,
+    "error": _RED,
+    "critical": _BOLD_RED,
+}
+
+_BACKTICK_PATTERN = r"`([^`]*)`"
+_URL_PATTERN = r"https?://[^\s)\"'>]+"
+
+
+class _ConsoleRenderer:
+    """Structlog renderer for all client-side console output.
+
+    * ``INFO+`` -- bare event message with level coloring and
+      backtick / URL highlights
+
+    * ``DEBUG`` -- delegates to ``structlog.dev.ConsoleRenderer`` for the
+      full structured layout, but wraps DEBUG-level lines in grey so
+      framework noise fades into the background.
+    """
+
+    def __init__(self, debug_mode: bool) -> None:
+        self._debug_mode = debug_mode
+        if debug_mode:
+            self._colored = structlog.dev.ConsoleRenderer(
+                colors=not ZENML_LOGGING_COLORS_DISABLED,
+            )
+            self._uncolored = structlog.dev.ConsoleRenderer(colors=False)
+
+    def __call__(
+        self,
+        _logger: Any,
+        _method_name: str,
+        event_dict: structlog.types.EventDict,
+    ) -> str:
+        """Format a single log event.
+
+        Args:
+            _logger: The wrapped logger object.
+            _method_name: The log method called.
+            event_dict: The event dictionary being processed.
+
+        Returns:
+            The formatted message string.
+        """
+        if self._debug_mode:
+            return self._format_debug_logs(_logger, _method_name, event_dict)
+        return self._format_log_message(event_dict)
+
+    def _format_log_message(
+        self, event_dict: structlog.types.EventDict
+    ) -> str:
+        """Bare message with level coloring and backtick/URL highlights."""
+        message = str(event_dict.get("event", ""))
+
+        if ZENML_LOGGING_COLORS_DISABLED:
+            return message
+
+        level = str(event_dict.get("level", "info"))
+        level_color = _LEVEL_COLORS.get(level, "")
+        message = level_color + message + _RESET
+        return self._colorize_highlights(message, level_color)
+
+    def _format_debug_logs(
+        self,
+        _logger: Any,
+        _method_name: str,
+        event_dict: structlog.types.EventDict,
+    ) -> str:
+        """ConsoleRenderer layout with DEBUG lines greyed out."""
+        if ZENML_LOGGING_COLORS_DISABLED:
+            return str(self._uncolored(_logger, _method_name, event_dict))
+
+        level = str(event_dict.get("level", "info"))
+        if level == "debug":
+            formatted = str(self._uncolored(_logger, _method_name, event_dict))
+            formatted = _GREY + formatted + _RESET
+            return self._colorize_highlights(formatted, _GREY)
+
+        formatted = str(self._colored(_logger, _method_name, event_dict))
+        level_color = _LEVEL_COLORS.get(level, _WHITE)
+        return self._colorize_highlights(formatted, level_color)
+
+    @staticmethod
+    def _colorize_highlights(text: str, base_color: str) -> str:
+        """Highlight backtick-quoted text in purple and URLs in blue."""
+        for quoted in re.findall(_BACKTICK_PATTERN, text):
+            text = text.replace(
+                "`" + quoted + "`",
+                _RESET + _PURPLE + quoted + base_color,
+            )
+        for url in re.findall(_URL_PATTERN, text):
+            text = text.replace(
+                url,
+                _RESET + _BLUE + url + base_color,
+            )
+        return text
+
+
+def _is_json_format() -> bool:
+    """Decide whether to emit JSON or console output.
+
+    Returns:
+        True when the output format should be JSON.
+    """
+    fmt = os.environ.get(ENV_ZENML_LOGGING_FORMAT, "").lower()
+    if fmt == "json":
+        return True
+    if fmt == "console":
+        return False
+    return handle_bool_env_var(ENV_ZENML_SERVER, False)
+
+
 def get_logging_level() -> LoggingLevels:
     """Get logging level from the env variable.
 
@@ -153,35 +266,27 @@ def get_logging_level() -> LoggingLevels:
     return LoggingLevels[verbosity]
 
 
-def set_root_verbosity() -> None:
-    """Set the root verbosity."""
+def set_root_verbosity() -> LoggingLevels:
+    """Set the root verbosity.
+
+    Returns:
+        The active logging level.
+    """
     level = get_logging_level()
     if level != LoggingLevels.NOTSET:
         if ENABLE_RICH_TRACEBACK:
             rich_tb_install(show_locals=(level == LoggingLevels.DEBUG))
 
         logging.root.setLevel(level=level.value)
-        get_logger(__name__).debug(
+        logging.getLogger(__name__).debug(
             f"Logging set to level: {logging.getLevelName(level.value)}"
         )
     else:
         logging.disable(sys.maxsize)
         logging.getLogger().disabled = True
-        get_logger(__name__).debug("Logging NOTSET")
+        logging.getLogger(__name__).debug("Logging NOTSET")
 
-
-def _is_json_format() -> bool:
-    """Decide whether to emit JSON or console output.
-
-    Returns:
-        True when the output format should be JSON.
-    """
-    fmt = os.environ.get(ENV_ZENML_LOGGING_FORMAT, "").lower()
-    if fmt == "json":
-        return True
-    if fmt == "console":
-        return False
-    return handle_bool_env_var(ENV_ZENML_SERVER, False)
+    return level
 
 
 def _wrapped_write(original_write: Any, stream_name: str) -> Any:
@@ -250,6 +355,29 @@ def wrap_stdout_stderr() -> None:
         _stderr_wrapped = True
 
 
+class ZenMLLoggingHandler(logging.Handler):
+    """Custom handler that routes logs through LoggingContext."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit a log record through LoggingContext.
+
+        Args:
+            record: The log record to emit.
+        """
+        from zenml.utils.logging_utils import LoggingContext
+
+        LoggingContext.emit(record)
+
+
+def get_zenml_handler() -> logging.Handler:
+    """Get ZenML handler that routes logs through LoggingContext.
+
+    Returns:
+        A ZenML handler.
+    """
+    return ZenMLLoggingHandler()
+
+
 class _ContextVarsFilter(logging.Filter):
     """Copies structlog contextvars into LogRecord attributes.
 
@@ -276,18 +404,34 @@ class _ContextVarsFilter(logging.Filter):
         return True
 
 
-class ZenMLLoggingHandler(logging.Handler):
-    """Custom handler that routes logs through LoggingContext."""
+def _choose_renderer(level: LoggingLevels) -> structlog.types.Processor:
+    """Pick the right renderer based on environment and log level.
 
-    def emit(self, record: logging.LogRecord) -> None:
-        """Emit a log record through LoggingContext.
+    Three rendering modes:
 
-        Args:
-            record: The log record to emit.
-        """
-        from zenml.utils.logging_utils import LoggingContext
+    * JSON -- server default, ``ZENML_LOGGING_FORMAT=json``
+    * Console -- server with ``ZENML_LOGGING_FORMAT=console`` override.
+    * Client -- ``_ConsoleRenderer``: formatter log messages at ``INFO+``, structured
+      output with greyed-out ``DEBUG`` lines.
 
-        LoggingContext.emit(record)
+    Args:
+        level: The active logging level.
+
+    Returns:
+        A structlog processor that renders the final output string.
+    """
+    # Server-side default, or ZENML_LOGGING_FORMAT=json: machine-readable JSON lines
+    if _is_json_format():
+        return structlog.processors.JSONRenderer()
+
+    # Server with ZENML_LOGGING_FORMAT=console: structured key=value output
+    if handle_bool_env_var(ENV_ZENML_SERVER, False):
+        return structlog.dev.ConsoleRenderer(
+            colors=not ZENML_LOGGING_COLORS_DISABLED,
+        )
+
+    # Client-side: bare messages at INFO+, greyed-out DEBUG lines at DEBUG verbosity
+    return _ConsoleRenderer(debug_mode=(level == LoggingLevels.DEBUG))
 
 
 def get_console_handler() -> logging.Handler:
@@ -308,17 +452,13 @@ def get_console_handler() -> logging.Handler:
         structlog.processors.StackInfoRenderer(),
     ]
 
+    level = get_logging_level()
     json_mode = _is_json_format()
     if json_mode:
         # JSONRenderer can't handle raw exc_info; pre-format it
         shared_processors.append(structlog.processors.format_exc_info)
-        renderer: structlog.types.Processor = (
-            structlog.processors.JSONRenderer()
-        )
-    else:
-        renderer = structlog.dev.ConsoleRenderer(
-            colors=not ZENML_LOGGING_COLORS_DISABLED,
-        )
+
+    renderer = _choose_renderer(level)
 
     formatter = structlog.stdlib.ProcessorFormatter(
         processors=[
@@ -334,15 +474,6 @@ def get_console_handler() -> logging.Handler:
     return handler
 
 
-def get_zenml_handler() -> logging.Handler:
-    """Get ZenML handler that routes logs through LoggingContext.
-
-    Returns:
-        A ZenML handler.
-    """
-    return ZenMLLoggingHandler()
-
-
 def init_logging() -> None:
     """Initialize the ZenML logging system using structlog.
 
@@ -353,15 +484,16 @@ def init_logging() -> None:
     Output format is JSON when running inside the server (or when
     ``ZENML_LOGGING_FORMAT=json``), otherwise colored console output.
     """
-    level = get_logging_level()
-
+    level = set_root_verbosity()
     if level == LoggingLevels.NOTSET:
-        logging.disable(sys.maxsize)
-        logging.getLogger().disabled = True
+        # Route structlog through stdlib so the disabled root
+        # logger silences everything. Without this, structlog's default
+        # PrintLogger would leak to stdout.
+        structlog.configure(
+            wrapper_class=structlog.stdlib.BoundLogger,
+            logger_factory=structlog.stdlib.LoggerFactory(),
+        )
         return
-
-    if ENABLE_RICH_TRACEBACK:
-        rich_tb_install(show_locals=(level == LoggingLevels.DEBUG))
 
     # Processors shared between structlog-native loggers and Python's logging library.
     shared_processors: list[structlog.types.Processor] = [
@@ -371,13 +503,10 @@ def init_logging() -> None:
         _add_step_name_processor,
         # interpolates %s-style positional args into the event string. Without this, logger.info("msg %s", arg) would render the literal %s.
         structlog.stdlib.PositionalArgumentsFormatter(),
-        # adds the logger name to the event dict, e.g.: logger=zenml.zen_server.middleware field
+        # adds logger name, log level, timestamp, stack_info
         structlog.stdlib.add_logger_name,
-        # adds the log level to the event dict
         structlog.stdlib.add_log_level,
-        # formats timestamps in ISO 8601 format, e.g.: 2026-04-16T12:00:00.000000Z
         structlog.processors.TimeStamper(fmt="iso"),
-        # renders stack_info if present
         structlog.processors.StackInfoRenderer(),
     ]
 
@@ -385,14 +514,6 @@ def init_logging() -> None:
     if json_mode:
         # JSONRenderer doesn't handle exc_info; pre-format it.
         shared_processors.append(structlog.processors.format_exc_info)
-        renderer: structlog.types.Processor = (
-            structlog.processors.JSONRenderer()
-        )
-    else:
-        # ConsoleRenderer handles exc_info itself (with Rich pretty-printing).
-        renderer = structlog.dev.ConsoleRenderer(
-            colors=not ZENML_LOGGING_COLORS_DISABLED,
-        )
 
     # Configure structlog
     structlog.configure(
@@ -408,6 +529,7 @@ def init_logging() -> None:
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
 
+    renderer = _choose_renderer(level)
     formatter = structlog.stdlib.ProcessorFormatter(
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
@@ -423,13 +545,22 @@ def init_logging() -> None:
     console_handler = logging.StreamHandler(_ZenMLStdoutStream())
     console_handler.setFormatter(formatter)
 
+    # Copies structlog contextvars onto LogRecord for OTel export.
+    # Must live on the handler, not the root logger: Python's logging
+    # module does NOT run root-logger filters on records propagated
+    # from child loggers, so a filter on root would silently skip
+    # every ZenML log (they all come from child loggers like
+    # "zenml.pipelines.pipeline_definition").
+    ctx_filter = _ContextVarsFilter()
+    console_handler.addFilter(ctx_filter)
+
+    zenml_handler = get_zenml_handler()
+    zenml_handler.addFilter(ctx_filter)
+
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
     root_logger.addHandler(console_handler)
-    # routes records to LoggingContext for step log persistence
-    root_logger.addHandler(get_zenml_handler())
-    # copies structlog contextvars onto LogRecord for OTel export
-    root_logger.addFilter(_ContextVarsFilter())
+    root_logger.addHandler(zenml_handler)
     root_logger.setLevel(level.value)
 
     # must run after handlers are attached so any init-time stdout
