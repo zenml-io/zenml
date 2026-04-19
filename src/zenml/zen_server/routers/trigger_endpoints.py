@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     PIPELINE_SNAPSHOTS,
     SCHEDULE_FEATURE,
+    TRIGGER_SNAPSHOT_DISPATCH_STATE,
     TRIGGERS,
     VERSION_1,
 )
@@ -368,6 +369,53 @@ def detach_trigger_from_snapshot(
         snapshot_id=snapshot_id,
     )
 
+@router.delete(
+    TRIGGERS
+    + "/{trigger_id}"
+    + PIPELINE_SNAPSHOTS
+    + "/{snapshot_id}"
+    + TRIGGER_SNAPSHOT_DISPATCH_STATE,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def clear_trigger_snapshot_dispatch_error(
+    trigger_id: UUID,
+    snapshot_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Clears recorded dispatch error details for a trigger-snapshot link.
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def clear_trigger_snapshot_dispatch_error(
+    trigger_id: UUID,
+    snapshot_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Clears recorded dispatch error details for a trigger-snapshot link.
+
+    Args:
+        trigger_id: The ID of the trigger.
+        snapshot_id: The ID of the snapshot.
+    """
+    trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
+
+    verify_permission_for_model(
+        model=trigger,
+        action=Action.UPDATE,
+    )
+
+    verify_permission_for_model(
+        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
+        action=Action.READ,
+    )
+
+    zen_store().clear_trigger_snapshot_dispatch_error(
+        trigger_id=trigger_id,
+        snapshot_id=snapshot_id,
+    )
 
 @router.get(
     "/supported-events",

@@ -354,6 +354,8 @@ from zenml.models.v2.core.triggers import (
     TriggerResponseMetadata,
     TriggerResponseResources,
     TriggerFilter,
+    TriggerSnapshotDispatchState,
+    TriggerDispatchStatusCode,
     ScheduleTriggerRequest,
     ScheduleTriggerResponseBody,
     ScheduleTriggerResponse,
@@ -914,6 +916,8 @@ __all__ = [
     "TriggerResponseMetadata",
     "TriggerResponseResources",
     "TriggerFilter",
+    "TriggerSnapshotDispatchState",
+    "TriggerDispatchStatusCode",
     # V2 Misc
     "AuthenticationMethodModel",
     "DeployedStack",

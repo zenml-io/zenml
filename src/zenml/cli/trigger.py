@@ -386,6 +386,43 @@ def make_detach_command() -> click.Command:
     return click.command("detach", help="Detach trigger from snapshot")(f)
 
 
+def make_clear_dispatch_error_command() -> click.Command:
+    """Create a command for clearing trigger dispatch error details.
+
+    Returns:
+        A Click command for dispatch error acknowledgement.
+    """
+
+    def clear_dispatch_error(trigger_id: UUID, snapshot_id: UUID) -> None:
+        """Clear recorded dispatch error details for a trigger-snapshot link.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+        """
+        try:
+            Client().clear_trigger_snapshot_dispatch_error(
+                trigger_id=trigger_id,
+                pipeline_snapshot_id=snapshot_id,
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.declare(
+                "Cleared dispatch error details for "
+                f"trigger '{trigger_id}' and snapshot '{snapshot_id}'."
+            )
+
+    f = clear_dispatch_error
+    f = click.argument("snapshot_id", type=UUID)(f)
+    f = click.argument("trigger_id", type=UUID)(f)
+
+    return click.command(
+        "clear-dispatch-error",
+        help="Acknowledge and clear dispatch error details.",
+    )(f)
+
+
 # PLATFORM EVENT COMMANDS
 
 
@@ -426,11 +463,11 @@ def list_supported_events(source_type: SourceType) -> None:
 @click.option("--active", type=bool, default=True)
 def create_platform_event(
     name: str,
-    active: bool,
-    concurrency: str,
     source_type: SourceType,
     source_id: UUID,
     target_events: list[str],
+    active: bool,
+    concurrency: str,
 ) -> None:
     """Create a platform event trigger.
 
@@ -496,7 +533,6 @@ def update_platform_event_trigger(
         target_events: The trigger target events.
         active: The new active status of the trigger.
         concurrency: Option controlling the concurrency of the trigger.
-
     """
     options = [
         name,
@@ -565,3 +601,4 @@ for group in [schedule, platform_event]:
     group.add_command(make_delete_command())
     group.add_command(make_attach_command())
     group.add_command(make_detach_command())
+    group.add_command(make_clear_dispatch_error_command())

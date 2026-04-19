@@ -1878,6 +1878,14 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
             KeyError: if the entities don't exist.
         """
 
+    @abstractmethod
+    def clear_trigger_snapshot_dispatch_error(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+    ) -> None:
+        """Clear recorded dispatch error details for a trigger-snapshot link."""
+
     # -------------------- Schedules --------------------
 
     @abstractmethod

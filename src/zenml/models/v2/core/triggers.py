@@ -15,6 +15,7 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+from enum import StrEnum
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -50,6 +51,115 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
 )
+from zenml.utils.time_utils import utc_now
+
+# ----------- DISPATCH STATE MODELS ------------------ #
+
+
+class TriggerDispatchStatusCode(StrEnum):
+    """User-facing dispatch status values for trigger-snapshot execution."""
+
+    SUCCESS = "SUCCESS"
+    SKIPPED_CONCURRENCY = "SKIPPED_CONCURRENCY"
+    ERROR = "ERROR"
+
+
+class TriggerSnapshotDispatchState(BaseModel):
+    """User-facing trigger dispatch state stored on trigger-snapshot links.
+
+    Persisted only for paths where a concrete ``(trigger_id, snapshot_id)``
+    association row exists; unattributable exits stay in structured logs.
+    """
+
+    MESSAGE_MAX_LENGTH: ClassVar[int] = 4096
+    ERROR_TYPE_MAX_LENGTH: ClassVar[int] = 255
+
+    last_status: TriggerDispatchStatusCode
+    last_error_message: str | None = Field(
+        default=None,
+        max_length=MESSAGE_MAX_LENGTH,
+        description=(
+            "Friendly user-facing message describing the latest error."
+        ),
+    )
+    last_error_type: str | None = Field(
+        default=None,
+        max_length=ERROR_TYPE_MAX_LENGTH,
+        description="Implementation-level error classifier.",
+    )
+    last_error_at: datetime | None = Field(
+        default=None,
+        description="Timestamp of the latest recorded error.",
+    )
+    last_error_count: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Count of consecutive occurrences for the latest error type."
+        ),
+    )
+
+    @field_validator("last_error_message", mode="before")
+    @classmethod
+    def _truncate_message(cls, value: Any) -> Any:
+        """Truncate message payloads to storage-safe length.
+
+        Args:
+            value: Incoming message value.
+
+        Returns:
+            Possibly truncated message value.
+        """
+        if isinstance(value, str):
+            return value[: cls.MESSAGE_MAX_LENGTH]
+        return value
+
+    @model_validator(mode="after")
+    def _set_error_defaults(self) -> "TriggerSnapshotDispatchState":
+        """Initialize default error metadata for freshly created errors.
+
+        Returns:
+            The validated state.
+        """
+        if self.last_status != TriggerDispatchStatusCode.ERROR:
+            return self
+        if self.last_error_count == 0:
+            self.last_error_count = 1
+        if self.last_error_at is None:
+            self.last_error_at = utc_now()
+        return self
+
+    def apply_new_state(
+        self,
+        new_state: "TriggerSnapshotDispatchState",
+    ) -> None:
+        """Apply a new dispatch state on top of this persisted state.
+
+        Args:
+            new_state: Newly reported dispatch state.
+        """
+        if new_state.last_status == TriggerDispatchStatusCode.ERROR:
+            if (
+                self.last_status == TriggerDispatchStatusCode.ERROR
+                and self.last_error_type == new_state.last_error_type
+            ):
+                self.last_error_count += 1
+            else:
+                self.last_error_count = 1
+
+            self.last_error_message = new_state.last_error_message
+            self.last_error_type = new_state.last_error_type
+            self.last_error_at = new_state.last_error_at or utc_now()
+
+        self.last_status = new_state.last_status
+
+    def clear_error_details(self) -> None:
+        """Clear stored error details while keeping the last status."""
+        self.last_error_message = None
+        self.last_error_type = None
+        self.last_error_at = None
+        self.last_error_count = 0
+
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -169,6 +279,9 @@ class TriggerResponseResources(ProjectScopedResponseResources):
     executable_snapshots: list["PipelineSnapshotResponse"] = []
     user: Optional["UserResponse"] = None
     latest_run: Optional["PipelineRunResponse"] = None
+    snapshot_dispatch_states: dict[UUID, TriggerSnapshotDispatchState] = Field(
+        default_factory=dict
+    )
 
 
 class UnScopedTriggerFilter(BaseFilter):

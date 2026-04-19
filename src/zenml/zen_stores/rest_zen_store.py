@@ -117,6 +117,7 @@ from zenml.constants import (
     STEPS,
     TAG_RESOURCES,
     TAGS,
+    TRIGGER_SNAPSHOT_DISPATCH_STATE,
     TRIGGERS,
     USERS,
     VERSION_1,
@@ -2371,7 +2372,6 @@ class RestZenStore(BaseZenStore):
         """
         self.put(
             path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
-            timeout=10,
         )
 
     def create_run_wait_condition(
@@ -2630,7 +2630,6 @@ class RestZenStore(BaseZenStore):
         self.put(
             path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
             body=run_configuration,
-            timeout=5,
             params={"allow_replace": allow_replace},
         )
 
@@ -2645,7 +2644,24 @@ class RestZenStore(BaseZenStore):
         """
         self.delete(
             path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
-            timeout=5,
+        )
+
+    def clear_trigger_snapshot_dispatch_error(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+    ) -> None:
+        """Clear dispatch error details for a trigger_snapshot association.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+        """
+        self.delete(
+            path=(
+                f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/"
+                f"{snapshot_id}{TRIGGER_SNAPSHOT_DISPATCH_STATE}"
+            ),
         )
 
     # ----------------------------- Schedules -----------------------------
