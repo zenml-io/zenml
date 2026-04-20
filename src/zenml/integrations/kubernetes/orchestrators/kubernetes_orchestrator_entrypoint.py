@@ -885,11 +885,16 @@ def main() -> None:
 
             # If any steps failed and the pipeline run is still in a transient
             # state, we need to mark it as failed.
-            if pipeline_failed and pipeline_run.status in {
-                ExecutionStatus.INITIALIZING,
-                ExecutionStatus.RUNNING,
-            }:
-                publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+            if pipeline_failed:
+                # refresh the run
+                pipeline_run = client.get_pipeline_run(pipeline_run.id)
+
+                if pipeline_run.status in {
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                }:
+                    publish_utils.publish_failed_pipeline_run(pipeline_run.id)
         except AuthorizationException:
             # If a step of the pipeline failed or all of them completed
             # successfully, the pipeline run will be finished and the API token
