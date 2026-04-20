@@ -265,23 +265,30 @@ def make_delete_command() -> click.Command:
         A Click.command for the delete method
     """
 
-    def delete_trigger(trigger_name_or_id: str, soft: bool = True) -> None:
-        """Delete a trigger trigger.
+    def delete_trigger(
+        trigger_name_or_id: str, hard: bool = False, archived: bool = False
+    ) -> None:
+        """Delete a trigger.
 
         Args:
             trigger_name_or_id: The name or ID of the trigger.
-            soft: Deletion mode.
+            hard: Deletion mode.
+            archived: Whether to delete an archived trigger.
         """
         try:
             trigger_id = (
                 Client()
                 .get_schedule_trigger(
                     trigger_name_id_or_prefix=trigger_name_or_id,
+                    allow_name_prefix_match=False,
+                    is_archived=archived,
                     hydrate=False,
                 )
                 .id
             )
-            Client().delete_trigger(trigger_id=trigger_id, soft=soft)
+            Client().delete_trigger(
+                trigger_id=trigger_id, soft=not hard and not archived
+            )
         except Exception as e:
             cli_utils.exception(e)
         else:
@@ -291,12 +298,19 @@ def make_delete_command() -> click.Command:
 
     f = click.argument("trigger_name_or_id", type=str)(f)
     f = click.option(
-        "--soft",
-        type=bool,
-        default=True,
-        help="Deletion mode. Soft deletion will archive the trigger preserving historical references. "
-        "Hard deletion (soft=false) will purge the trigger along with its associated references "
-        "(recommended only for retention). ",
+        "--hard",
+        "-h",
+        is_flag=True,
+        help="Deletion mode. Hard deletion will purge the trigger along with "
+        "its associated references (recommended only for retention). Soft "
+        "deletion (default) will archive the trigger preserving historical "
+        "references.",
+    )(f)
+    f = click.option(
+        "--archived",
+        "-a",
+        is_flag=True,
+        help="Whether to delete archived triggers.",
     )(f)
 
     return click.command(name="delete", help="Delete a trigger.")(f)
@@ -328,6 +342,7 @@ def make_attach_command() -> click.Command:
                 Client()
                 .get_schedule_trigger(
                     trigger_name_id_or_prefix=trigger_name_or_id,
+                    allow_name_prefix_match=False,
                     hydrate=False,
                 )
                 .id
@@ -336,6 +351,7 @@ def make_attach_command() -> click.Command:
                 Client()
                 .get_snapshot(
                     name_id_or_prefix=snapshot_name_or_id,
+                    allow_prefix_match=False,
                     hydrate=False,
                 )
                 .id
@@ -402,6 +418,7 @@ def make_detach_command() -> click.Command:
                 Client()
                 .get_schedule_trigger(
                     trigger_name_id_or_prefix=trigger_name_or_id,
+                    allow_name_prefix_match=False,
                     hydrate=False,
                 )
                 .id
@@ -410,6 +427,7 @@ def make_detach_command() -> click.Command:
                 Client()
                 .get_snapshot(
                     name_id_or_prefix=snapshot_name_or_id,
+                    allow_prefix_match=False,
                     hydrate=False,
                 )
                 .id
@@ -455,6 +473,7 @@ def make_clear_dispatch_error_command() -> click.Command:
                 Client()
                 .get_schedule_trigger(
                     trigger_name_id_or_prefix=trigger_name_or_id,
+                    allow_name_prefix_match=False,
                     hydrate=False,
                 )
                 .id
@@ -463,6 +482,7 @@ def make_clear_dispatch_error_command() -> click.Command:
                 Client()
                 .get_snapshot(
                     name_id_or_prefix=snapshot_name_or_id,
+                    allow_prefix_match=False,
                     hydrate=False,
                 )
                 .id

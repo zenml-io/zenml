@@ -4244,7 +4244,8 @@ class Client(metaclass=ClientMetaClass):
             The updated trigger.
         """
         trigger = self.get_schedule_trigger(
-            trigger_name_id_or_prefix=trigger_name_id_or_prefix
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            allow_name_prefix_match=False,
         )
 
         response = self.zen_store.update_trigger(
@@ -4305,7 +4306,10 @@ class Client(metaclass=ClientMetaClass):
                 trigger_id=trigger_id,
                 hydrate=hydrate,
             )
-            if not isinstance(trigger, ScheduleTriggerResponse):
+            if (
+                not isinstance(trigger, ScheduleTriggerResponse)
+                or trigger.is_archived != is_archived
+            ):
                 raise KeyError(
                     f"No schedule trigger found for ID `{trigger_id}`."
                 )
@@ -4318,6 +4322,7 @@ class Client(metaclass=ClientMetaClass):
                 is_archived=is_archived,
             ),
         )
+
         trigger = self._get_entity_by_id_or_name_or_prefix(
             get_method=_get_schedule_trigger_by_id,
             list_method=list_method,
@@ -4477,7 +4482,8 @@ class Client(metaclass=ClientMetaClass):
             The updated trigger.
         """
         trigger = self.get_platform_event_trigger(
-            trigger_name_id_or_prefix=trigger_name_id_or_prefix
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            allow_name_prefix_match=False,
         )
 
         response = self.zen_store.update_trigger(
@@ -4533,7 +4539,10 @@ class Client(metaclass=ClientMetaClass):
                 trigger_id=trigger_id,
                 hydrate=hydrate,
             )
-            if not isinstance(trigger, PlatformEventTriggerResponse):
+            if (
+                not isinstance(trigger, PlatformEventTriggerResponse)
+                or trigger.is_archived != is_archived
+            ):
                 raise KeyError(
                     f"No platform event trigger found for ID `{trigger_id}`."
                 )

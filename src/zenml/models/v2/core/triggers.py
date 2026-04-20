@@ -269,6 +269,11 @@ class TriggerResponseResources(ProjectScopedResponseResources):
 class UnScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        "is_archived",
+    ]
+
     name: str | None = Field(
         default=None,
         description="The name of the trigger.",
@@ -279,7 +284,10 @@ class UnScopedTriggerFilter(BaseFilter):
     )
     is_archived: bool = Field(
         default=False,
-        description="Whether the trigger should be archived.",
+        description=(
+            "Restrict results to archived or non-archived triggers. Applied as "
+            "a global scope filter independently of logical_operator."
+        ),
     )
     flavor: TriggerFlavor | str | None = Field(
         default=None,
@@ -300,11 +308,29 @@ class UnScopedTriggerFilter(BaseFilter):
         default=None, description="The trigger concurrency."
     )
 
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query=query, table=table)
+        return query.where(getattr(table, "is_archived") == self.is_archived)
+
 
 class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
     """Public class for filtering triggers."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *UnScopedTriggerFilter.FILTER_EXCLUDE_FIELDS,
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_id",
         "snapshot_id",
@@ -353,7 +379,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
             TriggerSnapshotSchema,
         )
 
-        query = ProjectScopedFilter.apply_filter(self, query, table)
+        query = super().apply_filter(query, table)
 
         if self.filter_by_snapshot:
             query = query.join(

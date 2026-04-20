@@ -369,21 +369,13 @@ def detach_trigger_from_snapshot(
         snapshot_id=snapshot_id,
     )
 
+
 @router.delete(
     TRIGGERS
     + "/{trigger_id}"
     + PIPELINE_SNAPSHOTS
     + "/{snapshot_id}"
     + TRIGGER_SNAPSHOT_DISPATCH_STATE,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def clear_trigger_snapshot_dispatch_error(
-    trigger_id: UUID,
-    snapshot_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> None:
-    """Clears recorded dispatch error details for a trigger-snapshot link.
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -414,6 +406,7 @@ def clear_trigger_snapshot_dispatch_error(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
     )
+
 
 @router.get(
     "/supported-events",
