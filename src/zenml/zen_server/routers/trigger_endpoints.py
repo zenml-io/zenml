@@ -400,8 +400,6 @@ def clear_trigger_snapshot_dispatch_error(
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
-    check_entitlement(feature=SCHEDULE_FEATURE)
-
     verify_permission_for_model(
         model=trigger,
         action=Action.UPDATE,

@@ -91,13 +91,6 @@ class TriggerSnapshotDispatchState(BaseModel):
         default=None,
         description="Timestamp of the latest recorded error.",
     )
-    last_error_count: int = Field(
-        default=0,
-        ge=0,
-        description=(
-            "Count of consecutive occurrences for the latest error type."
-        ),
-    )
 
     @field_validator("last_error_message", mode="before")
     @classmethod
@@ -123,8 +116,6 @@ class TriggerSnapshotDispatchState(BaseModel):
         """
         if self.last_status != TriggerDispatchStatusCode.ERROR:
             return self
-        if self.last_error_count == 0:
-            self.last_error_count = 1
         if self.last_error_at is None:
             self.last_error_at = utc_now()
         return self
@@ -139,14 +130,6 @@ class TriggerSnapshotDispatchState(BaseModel):
             new_state: Newly reported dispatch state.
         """
         if new_state.last_status == TriggerDispatchStatusCode.ERROR:
-            if (
-                self.last_status == TriggerDispatchStatusCode.ERROR
-                and self.last_error_type == new_state.last_error_type
-            ):
-                self.last_error_count += 1
-            else:
-                self.last_error_count = 1
-
             self.last_error_message = new_state.last_error_message
             self.last_error_type = new_state.last_error_type
             self.last_error_at = new_state.last_error_at or utc_now()
@@ -158,7 +141,6 @@ class TriggerSnapshotDispatchState(BaseModel):
         self.last_error_message = None
         self.last_error_type = None
         self.last_error_at = None
-        self.last_error_count = 0
 
 
 if TYPE_CHECKING:
