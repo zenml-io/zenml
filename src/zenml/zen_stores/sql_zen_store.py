@@ -8148,6 +8148,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             trigger_id: Trigger ID.
             snapshot_id: Display/source snapshot ID.
+
+        Raises:
+            KeyError: If the snapshot is not attached to the trigger.
         """
         with Session(self.engine) as session:
             trigger = self._get_schema_by_id(
