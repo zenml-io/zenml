@@ -680,7 +680,7 @@ class PlatformEventTrigger(BaseModel):
 
         for event in self.target_events:
             try:
-                event_enum(event)
+                event_enum(event)  # type: ignore[abstract]
             except ValueError:
                 allowed = [e.value for e in event_enum]
                 raise ValueError(

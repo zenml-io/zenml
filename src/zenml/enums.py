@@ -16,7 +16,7 @@
 import logging
 from enum import Enum
 
-from zenml.utils.enum_utils import StrEnum
+from zenml.utils.enum_utils import DescribedValuesEnum, StrEnum
 
 
 class ArtifactType(StrEnum):
@@ -668,21 +668,45 @@ class SourceType(StrEnum):
     PIPELINE_RUN = "pipeline_run"
 
 
-class PipelineEvent(StrEnum):
+class PipelineEvent(DescribedValuesEnum):
     """Enum representing platform target events for pipelines."""
 
     RUN_COMPLETED = "run_completed"
     RUN_FAILED = "run_failed"
 
+    @classmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
 
-class PipelineRunEvent(StrEnum):
+        Returns:
+            An dictionary with descriptions for each enum value.
+        """
+        return {
+            cls.RUN_COMPLETED: "A pipeline run of the source pipeline has completed successfully.",
+            cls.RUN_FAILED: "A pipeline run of the source pipeline has failed.",
+        }
+
+
+class PipelineRunEvent(DescribedValuesEnum):
     """Enum representing platform target events for pipeline runs."""
 
     COMPLETED = "completed"
     FAILED = "failed"
 
+    @classmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
 
-PLATFORM_EVENT_REGISTRY: dict[SourceType, type[StrEnum]] = {
+        Returns:
+            An dictionary with descriptions for each enum value.
+        """
+        return {
+            cls.COMPLETED: "Source pipeline run completed successfully.",
+            cls.FAILED: "Source pipeline run failed.",
+        }
+
+
+PLATFORM_EVENT_REGISTRY: dict[SourceType, type[DescribedValuesEnum]] = {
     SourceType.PIPELINE: PipelineEvent,
     SourceType.PIPELINE_RUN: PipelineRunEvent,
 }

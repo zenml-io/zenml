@@ -62,7 +62,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=API + VERSION_1 + TRIGGERS,
+    prefix=API + VERSION_1,
     tags=["triggers"],
     responses={401: error_response, 403: error_response},
 )
@@ -97,7 +97,7 @@ def verify_permissions_for_source_entity(
 
 
 @router.post(
-    "",
+    TRIGGERS,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -128,7 +128,7 @@ def create_trigger(
 
 
 @router.get(
-    "",
+    TRIGGERS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -159,7 +159,7 @@ def list_triggers(
 
 
 @router.get(
-    "/{trigger_id}",
+    TRIGGERS + "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -186,7 +186,7 @@ def get_trigger(
 
 
 @router.put(
-    "/{trigger_id}",
+    TRIGGERS + "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -221,7 +221,7 @@ def update_trigger(
 
 
 @router.delete(
-    "/{trigger_id}",
+    TRIGGERS + "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -245,7 +245,7 @@ def delete_trigger(
 
 
 @router.put(
-    "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
+    TRIGGERS + "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -336,7 +336,7 @@ def attach_trigger_to_snapshot(
 
 
 @router.delete(
-    "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
+    TRIGGERS + "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -367,3 +367,25 @@ def detach_trigger_from_snapshot(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
     )
+
+
+@router.get(
+    "/supported-events",
+    responses={422: error_response},
+)
+def list_supported_events(
+    source_type: SourceType,
+) -> list[dict[str, str | None]]:
+    """Helper endpoint. Lists supported events by source type.
+
+    Args:
+        source_type: The source type.
+
+    Returns:
+        A list of {"value": "", "description": ""} objects.
+    """
+    from zenml.enums import PLATFORM_EVENT_REGISTRY
+
+    if source_type not in PLATFORM_EVENT_REGISTRY:
+        return []
+    return PLATFORM_EVENT_REGISTRY[source_type].described_values()
