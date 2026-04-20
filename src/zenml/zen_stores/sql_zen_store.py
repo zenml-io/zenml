@@ -8147,29 +8147,42 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             trigger_id: Trigger ID.
-            snapshot_id: Snapshot ID.
+            snapshot_id: Display/source snapshot ID.
         """
         with Session(self.engine) as session:
-            self._get_schema_by_id(
+            trigger = self._get_schema_by_id(
                 resource_id=trigger_id,
                 schema_class=TriggerSchema,
                 session=session,
             )
-            row = self._get_trigger_snapshot_association(
-                trigger_id=trigger_id,
-                snapshot_id=snapshot_id,
-                session=session,
-            )
-            state = row.parsed_dispatch_state
-            if state is None:
-                return
 
-            state.clear_error_details()
+            executable_snapshot_ids = [
+                snapshot.id
+                for snapshot in trigger.snapshots
+                if snapshot.source_snapshot_id == snapshot_id
+            ]
 
-            raw = state.model_dump_json()
+            if not executable_snapshot_ids:
+                raise KeyError(
+                    f"Snapshot {snapshot_id} is not attached to trigger "
+                    f"{trigger_id}"
+                )
 
-            row.dispatch_state = raw
-            session.add(row)
+            for executable_snapshot_id in executable_snapshot_ids:
+                row = self._get_trigger_snapshot_association(
+                    trigger_id=trigger_id,
+                    snapshot_id=executable_snapshot_id,
+                    session=session,
+                )
+                state = row.parsed_dispatch_state
+                if state is None:
+                    continue
+
+                state.clear_error_details()
+
+                row.dispatch_state = state.model_dump_json()
+                session.add(row)
+
             session.commit()
 
     def create_trigger_execution(

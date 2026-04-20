@@ -4216,7 +4216,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_schedule_trigger(
         self,
-        trigger_id: UUID,
+        trigger_name_id_or_prefix: Union[str, UUID],
         name: str | None = None,
         active: bool | None = None,
         cron_expression: str | None = None,
@@ -4229,7 +4229,8 @@ class Client(metaclass=ClientMetaClass):
         """Update a native schedule trigger.
 
         Args:
-            trigger_id: The ID of the trigger.
+            trigger_name_id_or_prefix: The name, ID, or ID prefix of the
+                trigger.
             name: The new name of the trigger.
             active: The new active status of the trigger.
             cron_expression: The new cron_expression of the trigger.
@@ -4242,10 +4243,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated trigger.
         """
-        trigger = self.get_schedule_trigger(trigger_id=trigger_id)
+        trigger = self.get_schedule_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix
+        )
 
         response = self.zen_store.update_trigger(
-            trigger_id=trigger_id,
+            trigger_id=trigger.id,
             trigger_update=ScheduleTriggerUpdate(
                 name=name or trigger.name,
                 active=active if active is not None else trigger.active,
@@ -4270,12 +4273,23 @@ class Client(metaclass=ClientMetaClass):
         return response
 
     def get_schedule_trigger(
-        self, trigger_id: UUID
+        self,
+        trigger_name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = True,
+        is_archived: bool = False,
     ) -> ScheduleTriggerResponse:
-        """Retrieve a trigger by trigger ID.
+        """Retrieve a schedule trigger by name, ID, or prefix.
 
         Args:
-            trigger_id: The id of the trigger.
+            trigger_name_id_or_prefix: The name, ID, or ID prefix of the
+                trigger.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            project: The project name/ID to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+            is_archived: Flag whether to include archived triggers.
 
         Returns:
             The trigger response.
@@ -4283,11 +4297,40 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If the trigger is not of schedule type.
         """
-        trigger = self.zen_store.get_trigger(trigger_id=trigger_id)
+
+        def _get_schedule_trigger_by_id(
+            trigger_id: UUID, hydrate: bool = True
+        ) -> BaseIdentifiedResponse:
+            trigger = self.zen_store.get_trigger(
+                trigger_id=trigger_id,
+                hydrate=hydrate,
+            )
+            if not isinstance(trigger, ScheduleTriggerResponse):
+                raise KeyError(
+                    f"No schedule trigger found for ID `{trigger_id}`."
+                )
+            return trigger
+
+        list_method = cast(
+            Callable[..., Page[BaseIdentifiedResponse]],
+            functools.partial(
+                self.list_schedule_triggers,
+                is_archived=is_archived,
+            ),
+        )
+        trigger = self._get_entity_by_id_or_name_or_prefix(
+            get_method=_get_schedule_trigger_by_id,
+            list_method=list_method,
+            name_id_or_prefix=trigger_name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            project=project,
+            hydrate=hydrate,
+        )
 
         if not isinstance(trigger, ScheduleTriggerResponse):
             raise ValueError(
-                f"Found trigger {trigger.id} of incompatible type ({trigger.type} found {TriggerType.SCHEDULE} expected)."
+                f"Found trigger {trigger.id} of incompatible type "
+                f"(expected {TriggerType.SCHEDULE})."
             )
 
         return trigger
@@ -4311,6 +4354,7 @@ class Client(metaclass=ClientMetaClass):
         next_occurrence: datetime | None = None,
         pipeline_id: str | UUID | None = None,
         snapshot_id: str | UUID | None = None,
+        hydrate: bool = True,
     ) -> Page[ScheduleTriggerResponse]:
         """List schedule triggers.
 
@@ -4332,6 +4376,8 @@ class Client(metaclass=ClientMetaClass):
             next_occurrence: The next occurrence of the schedule.
             pipeline_id: Filter triggers by pipeline with attached snapshots.
             snapshot_id: Filter triggers by attached snapshot.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A Page of ScheduleTriggerResponse objects.
@@ -4358,7 +4404,8 @@ class Client(metaclass=ClientMetaClass):
                 next_occurrence=next_occurrence,
                 pipeline_id=str(pipeline_id) if pipeline_id else None,
                 snapshot_id=str(snapshot_id) if snapshot_id else None,
-            )
+            ),
+            hydrate=hydrate,
         )
 
     def create_platform_event_trigger(
@@ -4406,7 +4453,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_platform_event_trigger(
         self,
-        trigger_id: UUID,
+        trigger_name_id_or_prefix: Union[str, UUID],
         name: str | None = None,
         active: bool | None = None,
         source_type: SourceType | None = None,
@@ -4417,7 +4464,8 @@ class Client(metaclass=ClientMetaClass):
         """Update a platform event trigger.
 
         Args:
-            trigger_id: The ID of the trigger.
+            trigger_name_id_or_prefix: The name, ID, or ID prefix of the
+                trigger.
             name: The new name of the trigger.
             active: The new active status of the trigger.
             concurrency: The new trigger run concurrency.
@@ -4428,10 +4476,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated trigger.
         """
-        trigger = self.get_platform_event_trigger(trigger_id=trigger_id)
+        trigger = self.get_platform_event_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix
+        )
 
         response = self.zen_store.update_trigger(
-            trigger_id=trigger_id,
+            trigger_id=trigger.id,
             trigger_update=PlatformEventTriggerUpdate(
                 name=name or trigger.name,
                 active=active if active is not None else trigger.active,
@@ -4451,12 +4501,23 @@ class Client(metaclass=ClientMetaClass):
         return response
 
     def get_platform_event_trigger(
-        self, trigger_id: UUID
+        self,
+        trigger_name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = True,
+        is_archived: bool = False,
     ) -> PlatformEventTriggerResponse:
-        """Retrieve a platform event trigger by trigger ID.
+        """Retrieve a platform event trigger by name, ID, or prefix.
 
         Args:
-            trigger_id: The id of the trigger.
+            trigger_name_id_or_prefix: The name, ID, or ID prefix of the
+                trigger.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            project: The project name/ID to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+            is_archived: Flag whether to include archived triggers.
 
         Returns:
             The trigger response.
@@ -4464,7 +4525,35 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If the trigger is not of platform event type.
         """
-        trigger = self.zen_store.get_trigger(trigger_id=trigger_id)
+
+        def _get_platform_event_trigger_by_id(
+            trigger_id: UUID, hydrate: bool = True
+        ) -> BaseIdentifiedResponse:
+            trigger = self.zen_store.get_trigger(
+                trigger_id=trigger_id,
+                hydrate=hydrate,
+            )
+            if not isinstance(trigger, PlatformEventTriggerResponse):
+                raise KeyError(
+                    f"No platform event trigger found for ID `{trigger_id}`."
+                )
+            return trigger
+
+        list_method = cast(
+            Callable[..., Page[BaseIdentifiedResponse]],
+            functools.partial(
+                self.list_platform_event_triggers,
+                is_archived=is_archived,
+            ),
+        )
+        trigger = self._get_entity_by_id_or_name_or_prefix(
+            get_method=_get_platform_event_trigger_by_id,
+            list_method=list_method,
+            name_id_or_prefix=trigger_name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            project=project,
+            hydrate=hydrate,
+        )
 
         if not isinstance(trigger, PlatformEventTriggerResponse):
             raise ValueError(
@@ -4490,6 +4579,7 @@ class Client(metaclass=ClientMetaClass):
         is_archived: bool = False,
         pipeline_id: str | UUID | None = None,
         snapshot_id: str | UUID | None = None,
+        hydrate: bool = True,
     ) -> Page[PlatformEventTriggerResponse]:
         """List platform event triggers.
 
@@ -4509,6 +4599,8 @@ class Client(metaclass=ClientMetaClass):
             is_archived: The archived status of the trigger.
             pipeline_id: Filter triggers by pipeline with attached snapshots.
             snapshot_id: Filter triggers by attached snapshot.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A Page of PlatformEventTriggerResponse objects.
@@ -4535,7 +4627,8 @@ class Client(metaclass=ClientMetaClass):
                 next_occurrence=None,
                 pipeline_id=str(pipeline_id) if pipeline_id else None,
                 snapshot_id=str(snapshot_id) if snapshot_id else None,
-            )
+            ),
+            hydrate=hydrate,
         )
 
     def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
