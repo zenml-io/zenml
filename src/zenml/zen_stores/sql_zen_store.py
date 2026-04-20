@@ -351,6 +351,7 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerDispatchStatusCode,
     TriggerFilter,
     TriggerRequest,
     TriggerSnapshotDispatchState,
@@ -8181,9 +8182,11 @@ class SqlZenStore(BaseZenStore):
                 if state is None:
                     continue
 
-                state.clear_error_details()
-
-                row.dispatch_state = state.model_dump_json()
+                if state.last_status == TriggerDispatchStatusCode.ERROR:
+                    row.dispatch_state = None
+                else:
+                    state.clear_error_details()
+                    row.dispatch_state = state.model_dump_json()
                 session.add(row)
 
             session.commit()
