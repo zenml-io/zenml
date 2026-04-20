@@ -675,7 +675,7 @@ class PipelineEvent(DescribedValuesEnum):
     RUN_FAILED = "run_failed"
 
     @classmethod
-    def value_index(cls) -> dict[str, str]:
+    def value_description_index(cls) -> dict[str, str]:
         """Helper utility to describe enum values.
 
         Returns:
@@ -694,7 +694,7 @@ class PipelineRunEvent(DescribedValuesEnum):
     FAILED = "failed"
 
     @classmethod
-    def value_index(cls) -> dict[str, str]:
+    def value_description_index(cls) -> dict[str, str]:
         """Helper utility to describe enum values.
 
         Returns:

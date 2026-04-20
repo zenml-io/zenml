@@ -42,7 +42,7 @@ class DummyEnum(DescribedValuesEnum):
     C = "c"
 
     @classmethod
-    def value_index(cls) -> dict[str, str | None]:
+    def value_description_index(cls) -> dict[str, str | None]:
         return {
             cls.A: "Value A description",
             cls.B: "Value B description",

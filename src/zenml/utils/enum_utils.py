@@ -57,7 +57,7 @@ class DescribedValuesEnum(StrEnum, metaclass=ABCEnumMeta):
 
     @classmethod
     @abstractmethod
-    def value_index(cls) -> dict[str, str]:
+    def value_description_index(cls) -> dict[str, str]:
         """Helper utility to describe enum values.
 
         Returns:
@@ -72,7 +72,7 @@ class DescribedValuesEnum(StrEnum, metaclass=ABCEnumMeta):
         Returns:
             A list of dictionary objects with descriptions.
         """
-        idx = cls.value_index()
+        idx = cls.value_description_index()
 
         return [
             {"value": value, "description": idx.get(value)}
