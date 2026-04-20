@@ -5368,6 +5368,16 @@ class SqlZenStore(BaseZenStore):
                 snapshot.source_snapshot_id = None
                 session.add(snapshot)
 
+            # Remove the attached trigger snapshots
+
+            session.execute(
+                delete(TriggerSnapshotSchema).where(
+                    col(TriggerSnapshotSchema.snapshot_id).in_(
+                        [s.id for s in snapshots]
+                    )
+                )
+            )
+
             session.commit()
 
     def run_snapshot(
