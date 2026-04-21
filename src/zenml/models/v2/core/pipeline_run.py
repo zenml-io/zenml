@@ -243,6 +243,10 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     index: int = Field(
         title="The unique index of the run within the pipeline."
     )
+    pipeline_id: UUID | None = Field(
+        default=None,
+        title="The ID of the pipeline this run is associated with.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -318,10 +322,6 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     trigger_execution_info: Optional["TriggerExecutionInfo"] = Field(
         default=None,
         title="Extra information for trigger execution like upstream_run_id etc.",
-    )
-    pipeline_id: UUID | None = Field(
-        default=None,
-        title="The ID of the pipeline this run is associated with.",
     )
 
 
@@ -739,7 +739,7 @@ class PipelineRunResponse(
         Returns:
             The ID of the pipeline this run is associated with.
         """
-        return self.get_metadata().pipeline_id
+        return self.get_body().pipeline_id
 
 
 # ------------------ Filter Model ------------------
