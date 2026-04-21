@@ -503,8 +503,6 @@ def run_logs(
                 )
         else:
             raise ValueError("Either source or logs_id must be provided.")
-    else:
-        raise KeyError(f"No logs found for run {run_id}.")
 
     # Handle runner logs from workload manager
     if source == LOGS_RUNNER_SOURCE or (
