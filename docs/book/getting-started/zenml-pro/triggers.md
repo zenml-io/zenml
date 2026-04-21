@@ -27,16 +27,17 @@ one-off executions, interval-based schedules, or cron expressions for fine-grain
 Additional options, such as time boundaries, concurrency limits, and activation settings, let you 
 tailor the trigger to your workflow requirements.
 
-| Attribute           | Description                                                  | Notes                        |
-|---------------------|--------------------------------------------------------------|------------------------------|
-| name                | The name of the schedule                                     | Unique within project        |
-| cron_expression     | A cron expression describing your schedule's frequency       | Standard 5-field cron format |
-| interval            | An interval (in seconds) describing the schedule's frequency | Combined with start_time     |
-| run_once_start_time | One-off execution at a specific time in the future           | UTC                          |
-| start_time          | The beginning of the schedule                                | UTC                          |
-| end_time            | The end time of the schedule                                 | UTC                          |
-| active              | Status of the schedule (active/inactive)                     | -                            |
-| concurrency         | Option to control how concurrent runs should be handled      | Skip is the default option   |
+| Attribute           | Description                                                             | Notes                        |
+|---------------------|-------------------------------------------------------------------------|------------------------------|
+| name                | The name of the schedule                                                | Unique within project        |
+| cron_expression     | A cron expression describing your schedule's frequency                  | Standard 5-field cron format |
+| interval            | An interval (in seconds) describing the schedule's frequency            | Combined with start_time     |
+| run_once_start_time | One-off execution at a specific time in the future                      | UTC                          |
+| start_time          | The beginning of the schedule                                           | UTC                          |
+| end_time            | The end time of the schedule                                            | UTC                          |
+| active              | Status of the schedule (active/inactive)                                | -                            |
+| concurrency         | Option to control how concurrent runs should be handled                 | Skip is the default option   |
+| max_runs            | Option to control maximum runs (per attached snapshot) for the schedule | -                            |
 
 ### Create a schedule
 
