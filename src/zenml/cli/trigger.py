@@ -82,6 +82,11 @@ def platform_event() -> None:
     type=str,
     help="The end time of the schedule (ISO 8601 format).",
 )
+@click.option(
+    "--max-runs",
+    type=int,
+    help="The maximum number of runs to execute with this schedule",
+)
 def create_schedule(
     name: str,
     active: bool,
@@ -91,6 +96,7 @@ def create_schedule(
     run_once_start_time: str | None = None,
     start_time: str | None = None,
     end_time: str | None = None,
+    max_runs: int | None = None,
 ) -> None:
     """Create a schedule trigger.
 
@@ -103,6 +109,7 @@ def create_schedule(
         start_time: The start time of the trigger.
         end_time: The end time of the trigger.
         run_once_start_time: The run_once_start_time of the trigger.
+        max_runs: The maximum number of runs to execute with this schedule.
     """
     options = [cron_expression, interval, run_once_start_time]
 
@@ -124,6 +131,7 @@ def create_schedule(
             if start_time
             else None,
             end_time=iso8601_to_utc_naive(end_time) if end_time else None,
+            max_runs=max_runs,
         )
     except Exception as e:
         cli_utils.exception(e)
@@ -157,6 +165,11 @@ def create_schedule(
     type=click.Choice(TriggerRunConcurrency.values()),
     help="Option to control the concurrency of the trigger.",
 )
+@click.option(
+    "--max-runs",
+    type=int,
+    help="The maximum number of runs to execute with this schedule",
+)
 def update_schedule_trigger(
     schedule_name_or_id: str,
     name: str | None = None,
@@ -167,6 +180,7 @@ def update_schedule_trigger(
     start_time: str | None = None,
     end_time: str | None = None,
     concurrency: str | None = None,
+    max_runs: int | None = None,
 ) -> None:
     """Update a schedule trigger.
 
@@ -180,6 +194,7 @@ def update_schedule_trigger(
         end_time: The new end time of the trigger.
         run_once_start_time: The new run_once_start_time of the trigger.
         concurrency: The new concurrency of the trigger.
+        max_runs: The new maximum number of runs to execute with this schedule.
     """
     options = [
         name,
@@ -190,6 +205,7 @@ def update_schedule_trigger(
         end_time,
         run_once_start_time,
         concurrency,
+        max_runs,
     ]
 
     if not any(option is not None for option in options):
@@ -213,6 +229,7 @@ def update_schedule_trigger(
             concurrency=TriggerRunConcurrency(concurrency)
             if concurrency
             else None,
+            max_runs=max_runs,
         )
     except Exception as e:
         cli_utils.exception(e)
