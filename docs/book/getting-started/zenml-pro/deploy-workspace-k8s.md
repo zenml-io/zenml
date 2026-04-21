@@ -274,7 +274,26 @@ To login to a workspace with the ZenML CLI:
 zenml login <WORKSPACE_NAME>
 ```
 
-### (Optional) Enable Snapshot Support / Workload Manager
+### (Optional) Opt-in Workspace Server Features
+
+Several ZenML Pro capabilities are not turned on by the default Helm
+installation. They need extra infrastructure, Helm `workerDeployments`, or
+environment variables. Many are **paid add-ons** on top of the base plan—see the
+[pricing page](https://www.zenml.io/pricing)—and must be licensed and enabled
+for your organization before they work end-to-end.
+
+| Guide | What it enables |
+|-------|-----------------|
+| [Enable Snapshot Support](deploy-workspace-snapshots.md) | Workload manager for running pipelines from the ZenML Pro UI (runner jobs in Kubernetes) |
+| [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md) | Scheduler and executor workers plus Redis for [schedule](triggers.md#schedule-triggers) and [platform event](triggers.md#platform-event-triggers) triggers (**requires snapshot support above**) |
+| [Enable Resource Pools](deploy-workspace-resource-pools.md) | Resource pool reconciler worker for [resource pools](resource-pools.md) |
+
+Deploy [snapshot support](deploy-workspace-snapshots.md) before you rely on
+[event triggers and schedules](deploy-workspace-event-triggers-and-schedules.md)
+end-to-end: triggers run against pipeline snapshots, which need the workload
+manager to execute on the cluster.
+
+#### (Optional) Snapshot Support / Workload Manager
 
 The Workspace Server includes a workload manager feature that enables running pipelines directly from the ZenML Pro UI. This requires the workspace server to have access to a Kubernetes cluster where ad-hoc runner pods can be created.
 
@@ -282,7 +301,7 @@ The Workspace Server includes a workload manager feature that enables running pi
 The workload manager feature and snapshots are only available from ZenML workspace server version 0.90.0 onwards.
 {% endhint %}
 
-If you want to enable snapshot support for the ZenML Pro workspace server, you need to follow the instructions in the [Enable Snapshot Support](deploy-workspace-snapshots.md) guide.
+If you want to enable snapshot support for the ZenML Pro workspace server, follow the [Enable Snapshot Support](deploy-workspace-snapshots.md) guide.
 
 ## Day 2 Operations
 
