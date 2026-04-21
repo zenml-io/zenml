@@ -5046,6 +5046,36 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return session.exec(query).first() is not None
 
+    def _drop_snapshot_trigger_assoc(
+        self,
+        snapshot_id: UUID,
+        session: Session,
+    ) -> None:
+        """Drops any trigger associations linked to a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot (to be deleted or un-named).
+            session: SQLAlchemy session
+        """
+
+        linked_snapshot_ids = session.exec(
+            select(PipelineSnapshotSchema.id).where(
+                PipelineSnapshotSchema.source_snapshot_id == snapshot_id
+            )
+        ).all()
+
+        # Remove the attached trigger snapshots
+
+        if not linked_snapshot_ids:
+            return
+
+        session.execute(
+            delete(TriggerSnapshotSchema).where(
+                col(TriggerSnapshotSchema.snapshot_id).in_(linked_snapshot_ids)
+            )
+        )
+        session.commit()
+
     def _remove_name_from_snapshot(
         self, session: Session, pipeline_id: UUID, name: str
     ) -> None:
@@ -5056,15 +5086,24 @@ class SqlZenStore(BaseZenStore):
             pipeline_id: The pipeline ID of the snapshot.
             name: The name of the snapshot.
         """
-        query = (
-            update(PipelineSnapshotSchema)
-            .where(
+        existing = session.exec(
+            select(PipelineSnapshotSchema).where(
                 col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
                 col(PipelineSnapshotSchema.name) == name,
             )
-            .values(name=None)
+        ).first()
+
+        if not existing:
+            return
+
+        existing.name = None
+
+        session.add(existing)
+
+        self._drop_snapshot_trigger_assoc(
+            snapshot_id=existing.id,
+            session=session,
         )
-        session.execute(query)
 
     def create_snapshot(
         self,
@@ -5335,6 +5374,12 @@ class SqlZenStore(BaseZenStore):
                 resources=snapshot,
                 session=session,
             )
+
+            if snapshot.name is None:
+                self._drop_snapshot_trigger_assoc(
+                    snapshot_id=snapshot.id,
+                    session=session,
+                )
 
             session.refresh(snapshot)
             return snapshot.to_model(
