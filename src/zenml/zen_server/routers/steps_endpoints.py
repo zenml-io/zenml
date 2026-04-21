@@ -352,4 +352,4 @@ def get_step_logs(
         else:
             raise ValueError("Either source or logs_id must be provided.")
     else:
-        raise KeyError(f"No logss found for step {step_id}.")
+        raise KeyError(f"No logs found for step {step_id}.")

@@ -503,7 +503,7 @@ def run_logs(
         raise KeyError(f"No logs found for run {run_id}.")
 
     # Handle runner logs from workload manager
-    if logs.source == LOGS_RUNNER_SOURCE:
+    if source == LOGS_RUNNER_SOURCE or logs.source == LOGS_RUNNER_SOURCE:
         if run.snapshot:
             snapshot = run.snapshot
 
