@@ -44,8 +44,10 @@ def next_occurrence_for_interval(
     )
 
     return (
-        start + timedelta(seconds=(in_between_intervals + 1) * interval)
-    ).replace(second=0, microsecond=0)
+        (start + timedelta(seconds=(in_between_intervals + 1) * interval))
+        .replace(second=0, microsecond=0)
+        .replace(tzinfo=None)
+    )
 
 
 def next_occurrence_for_cron(
@@ -65,7 +67,7 @@ def next_occurrence_for_cron(
     else:
         base = base.replace(tzinfo=timezone.utc)
 
-    return croniter(expression, base).get_next(datetime)
+    return croniter(expression, base).get_next(datetime).replace(tzinfo=None)
 
 
 def calculate_first_occurrence(
@@ -85,6 +87,12 @@ def calculate_first_occurrence(
     Returns:
         The first occurrence of a schedule.
     """
+    if start_time is not None:
+        start_time = start_time.replace(tzinfo=None)
+
+    if run_once_start_time is not None:
+        run_once_start_time = run_once_start_time.replace(tzinfo=None)
+
     now_plus_1_sec = datetime.now(timezone.utc).replace(
         tzinfo=None
     ) + timedelta(seconds=1)
@@ -113,4 +121,4 @@ def calculate_first_occurrence(
     else:
         return None
 
-    return next_occurrence
+    return next_occurrence.replace(tzinfo=None)

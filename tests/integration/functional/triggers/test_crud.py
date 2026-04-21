@@ -4,6 +4,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from tests.integration.functional.utils import sample_name
+from zenml import (
+    PlatformEventTriggerRequest,
+    PlatformEventTriggerResponse,
+    PlatformEventTriggerUpdate,
+)
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
@@ -20,7 +25,7 @@ from zenml.models import (
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
-def test_crud_happy_path(clean_client):
+def test_schedule_crud_happy_path(clean_client):
     project = clean_client.active_project
     store = clean_client.zen_store
 
@@ -82,6 +87,68 @@ def test_crud_happy_path(clean_client):
         assert (
             updated_trigger.next_occurrence != t.next_occurrence
         )  # next occurrence has been updated
+
+
+def test_event_crud_happy_path(clean_client):
+
+    from zenml.enums import PipelineEvent, SourceType, TriggerRunConcurrency
+    from zenml.models import SourceEntity
+
+    project = clean_client.active_project
+    store = clean_client.zen_store
+
+    pipeline_model = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("trigger-test-pipeline"),
+            project=project.id,
+        )
+    )
+
+    trigger = PlatformEventTriggerRequest(
+        name=sample_name("platform-test-trigger"),
+        source_entity=SourceEntity(
+            type=SourceType.PIPELINE,
+            id=pipeline_model.id,
+        ),
+        target_events=[PipelineEvent.RUN_COMPLETED],
+        concurrency=TriggerRunConcurrency.SUBMIT,
+        project=project.id,
+    )
+
+    trigger_response = store.create_trigger(trigger)
+
+    assert not trigger_response.is_archived
+    assert isinstance(trigger_response, PlatformEventTriggerResponse)
+
+    get_response = store.get_trigger(trigger_response.id)
+
+    assert trigger_response.model_dump() == get_response.model_dump()
+
+    update = PlatformEventTriggerUpdate(
+        name=get_response.name,
+        source_entity=SourceEntity(
+            type=SourceType.PIPELINE,
+            id=pipeline_model.id,
+        ),
+        target_events=[
+            PipelineEvent.RUN_COMPLETED,
+            PipelineEvent.RUN_FAILED,
+        ],
+        concurrency=TriggerRunConcurrency.SUBMIT,
+    )
+
+    updated_response = store.update_trigger(
+        trigger_id=trigger_response.id,
+        trigger_update=update,
+    )
+
+    assert updated_response.target_events == update.target_events
+
+    store.delete_trigger(trigger_response.id, soft=True)
+
+    get_response = store.get_trigger(trigger_response.id)
+
+    assert get_response.is_archived
 
 
 def test_snapshot_associations(clean_client):

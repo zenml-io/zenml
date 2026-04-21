@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+from contextlib import nullcontext
+
+from zenml.dispatcher import EventDispatcher
+from zenml.models.v2.core.step_run import StepHeartbeatResponse
+from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsSQLStoreInterface,
+)
+
 try:
     import sqlalchemy  # noqa
 except ImportError:
@@ -37,7 +47,6 @@ import sys
 import time
 import uuid
 from collections import defaultdict
-from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -152,6 +161,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    ResourceRequestStatus,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -266,12 +276,24 @@ from zenml.models import (
     PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     PipelineUpdate,
+    PlatformEventTriggerResponse,
     ProjectFilter,
     ProjectRequest,
     ProjectResponse,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
+    ResourcePoolFilter,
+    ResourcePoolRequest,
+    ResourcePoolResponse,
+    ResourcePoolSubjectPolicyFilter,
+    ResourcePoolSubjectPolicyRequest,
+    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolSubjectPolicyUpdate,
+    ResourcePoolUpdate,
+    ResourceRequestFilter,
+    ResourceRequestRequest,
+    ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -339,7 +361,6 @@ from zenml.models import (
     UserScopedRequest,
     UserUpdate,
 )
-from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -350,7 +371,6 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
-from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.utils.string_utils import (
     format_name_template,
@@ -366,7 +386,6 @@ from zenml.zen_stores.dag_generator import DAGGeneratorHelper
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
-from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 from zenml.zen_stores.schemas import (
     APIKeySchema,
     ApiTransactionResultSchema,
@@ -431,7 +450,10 @@ if TYPE_CHECKING:
     from concurrent.futures import Future
 
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
-    from zenml.models.v2.core.triggers import UnScopedTriggerFilter
+    from zenml.models.v2.core.triggers import (
+        TriggerExecutionInfo,
+        UnScopedTriggerFilter,
+    )
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -1043,6 +1065,7 @@ class SqlZenStore(BaseZenStore):
     _should_send_user_enriched_events: bool = False
     _cached_onboarding_state: Optional[Set[str]] = None
     _default_user: Optional[UserResponse] = None
+    _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1070,6 +1093,43 @@ class SqlZenStore(BaseZenStore):
             The backup secrets store associated with this store.
         """
         return self._backup_secrets_store
+
+    @property
+    def resource_pools_enabled(self) -> bool:
+        """Whether the resource pools functionality is enabled.
+
+        Returns:
+            True if the resource pools functionality is enabled, False otherwise.
+        """
+        return self._resource_pools is not None
+
+    @property
+    def resource_pools(self) -> ResourcePoolsSQLStoreInterface:
+        """The resource pools store associated with this store.
+
+        Returns:
+            The resource pools store associated with this store.
+
+        Raises:
+            NotImplementedError: If the resource pool functionality is not
+                enabled
+        """
+        if not self._resource_pools:
+            raise NotImplementedError(
+                "Resource pool functionality is not enabled"
+            )
+        return self._resource_pools
+
+    @resource_pools.setter
+    def resource_pools(
+        self, resource_pools: ResourcePoolsSQLStoreInterface
+    ) -> None:
+        """Set the resource pools store.
+
+        Args:
+            resource_pools: The resource pools store to set.
+        """
+        self._resource_pools = resource_pools
 
     @property
     def engine(self) -> Engine:
@@ -1112,6 +1172,14 @@ class SqlZenStore(BaseZenStore):
         if not self._alembic:
             raise ValueError("Store not initialized")
         return self._alembic
+
+    def get_session(self) -> Session:
+        """Get a new session for the SQL ZenML store.
+
+        Returns:
+            A new session for the SQL ZenML store.
+        """
+        return Session(self.engine)
 
     def _send_user_enriched_events_if_necessary(self) -> None:
         """Send user enriched event for all existing users."""
@@ -3534,7 +3602,6 @@ class SqlZenStore(BaseZenStore):
 
             session.add(new_component)
             session.commit()
-
             session.refresh(new_component)
 
             return new_component.to_model(
@@ -3684,6 +3751,7 @@ class SqlZenStore(BaseZenStore):
 
             session.add(existing_component)
             session.commit()
+            session.refresh(existing_component)
 
             return existing_component.to_model(
                 include_metadata=True, include_resources=True
@@ -3794,6 +3862,196 @@ class SqlZenStore(BaseZenStore):
                 f"with name '{name}': Found an existing "
                 f"component with the same name and type."
             )
+
+    # -------------------- Resource Pools -------------
+
+    def create_resource_pool(
+        self, resource_pool: ResourcePoolRequest
+    ) -> ResourcePoolResponse:
+        """Create a resource pool.
+
+        Args:
+            resource_pool: The resource pool to create.
+
+        Returns:
+            The created resource pool.
+        """
+        return self.resource_pools.create_resource_pool(resource_pool)
+
+    def get_resource_pool(
+        self, resource_pool_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolResponse:
+        """Get a resource pool by ID.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource pool.
+        """
+        return self.resource_pools.get_resource_pool(
+            resource_pool_id, hydrate=hydrate
+        )
+
+    def list_resource_pools(
+        self, filter_model: ResourcePoolFilter, hydrate: bool = False
+    ) -> Page[ResourcePoolResponse]:
+        """List all resource pools matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all resource pools matching the filter criteria.
+        """
+        return self.resource_pools.list_resource_pools(
+            filter_model, hydrate=hydrate
+        )
+
+    def update_resource_pool(
+        self, resource_pool_id: UUID, update: ResourcePoolUpdate
+    ) -> ResourcePoolResponse:
+        """Update an existing resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to update.
+            update: The update to be applied to the resource pool.
+
+        Returns:
+            The updated resource pool.
+        """
+        return self.resource_pools.update_resource_pool(
+            resource_pool_id, update
+        )
+
+    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
+        """Delete a resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to delete.
+        """
+        self.resource_pools.delete_resource_pool(resource_pool_id)
+
+    def create_resource_pool_subject_policy(
+        self, policy: ResourcePoolSubjectPolicyRequest
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Create a resource pool subject policy.
+
+        Args:
+            policy: The policy to create.
+
+        Returns:
+            The created policy.
+        """
+        return self.resource_pools.create_resource_pool_subject_policy(policy)
+
+    def get_resource_pool_subject_policy(
+        self, policy_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Get a resource pool subject policy by ID.
+
+        Args:
+            policy_id: The ID of the policy to get.
+            hydrate: Whether to include metadata fields.
+
+        Returns:
+            The requested policy.
+        """
+        return self.resource_pools.get_resource_pool_subject_policy(
+            policy_id, hydrate=hydrate
+        )
+
+    def list_resource_pool_subject_policies(
+        self,
+        filter_model: ResourcePoolSubjectPolicyFilter,
+        hydrate: bool = False,
+    ) -> Page[ResourcePoolSubjectPolicyResponse]:
+        """List resource pool subject policies.
+
+        Args:
+            filter_model: All filter parameters including pagination params.
+            hydrate: Whether to include metadata fields.
+
+        Returns:
+            Matching policies.
+        """
+        return self.resource_pools.list_resource_pool_subject_policies(
+            filter_model, hydrate=hydrate
+        )
+
+    def update_resource_pool_subject_policy(
+        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Update an existing resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to update.
+            update: The update model.
+
+        Returns:
+            The updated policy.
+        """
+        return self.resource_pools.update_resource_pool_subject_policy(
+            policy_id, update
+        )
+
+    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
+        """Delete a resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to delete.
+        """
+        self.resource_pools.delete_resource_pool_subject_policy(policy_id)
+
+    # -------------------- Resource Requests -------------
+
+    def get_resource_request(
+        self, resource_request_id: UUID, hydrate: bool = True
+    ) -> ResourceRequestResponse:
+        """Get a resource request by ID.
+
+        Args:
+            resource_request_id: The ID of the resource request to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource request.
+        """
+        return self.resource_pools.get_resource_request(
+            resource_request_id, hydrate=hydrate
+        )
+
+    def list_resource_requests(
+        self, filter_model: ResourceRequestFilter, hydrate: bool = False
+    ) -> Page[ResourceRequestResponse]:
+        """List all resource requests matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all resource requests matching the filter criteria.
+        """
+        return self.resource_pools.list_resource_requests(
+            filter_model, hydrate=hydrate
+        )
+
+    def delete_resource_request(self, resource_request_id: UUID) -> None:
+        """Delete a resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to delete.
+        """
+        self.resource_pools.delete_resource_request(resource_request_id)
 
     # -------------------------- Devices -------------------------
 
@@ -7687,6 +7945,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             soft: Flag deciding whether to soft delete the trigger.
+
+        Raises:
+            IllegalOperationError: On archival if trigger is already archived.
         """
         with Session(self.engine) as session:
             # Check if trigger with the given ID exists
@@ -7700,6 +7961,10 @@ class SqlZenStore(BaseZenStore):
                 # Hard delete the schedule
                 session.delete(trigger)
             else:
+                if trigger.is_archived:
+                    raise IllegalOperationError(
+                        f"Trigger {trigger_id} is already archived."
+                    )
                 # Soft deletion - set is_archived
                 trigger.is_archived = True
                 trigger.active = False
@@ -7804,6 +8069,7 @@ class SqlZenStore(BaseZenStore):
         self,
         trigger_id: UUID,
         pipeline_run_id: UUID,
+        info: "TriggerExecutionInfo | None" = None,
     ) -> None:
         """Creates a trigger execution object.
 
@@ -7812,6 +8078,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             trigger_id: The ID of the trigger.
             pipeline_run_id: The ID of the pipeline run.
+            info: Additional information about the trigger execution (e.g. upstream run id).
 
         Raises:
             KeyError: if the entities don't exist.
@@ -7838,10 +8105,57 @@ class SqlZenStore(BaseZenStore):
             new_assoc = TriggerExecutionSchema(
                 trigger_id=trigger_id,
                 pipeline_run_id=pipeline_run_id,
+                info=info.model_dump_json() if info is not None else None,
             )
 
             session.add(new_assoc)
             session.commit()
+
+    def match_event_to_triggers(
+        self,
+        project_id: UUID,
+        conditions: list[dict[str, str]],
+    ) -> list[PlatformEventTriggerResponse]:
+        """Matches incoming events against platform-event triggers.
+
+        Custom utility, existing only in SqlZenStore.
+
+        Args:
+            project_id: The ID of the project.
+            conditions: A list of conditional dictionaries.
+                For example, {"source_entity": pipeline:<ID>, "target_events": "run_completed"}.
+
+        Returns:
+            A list of PlatformEventTriggerResponse objects matching the conditions.
+        """
+        from zenml.enums import TriggerType
+
+        if not conditions:
+            return []
+
+        with Session(self.engine) as session:
+            trigger_filters = [
+                and_(
+                    TriggerSchema.source_entity == condition["source_entity"],
+                    col(TriggerSchema.target_events).like(
+                        f"%{condition['target_events']}%"
+                    ),
+                )
+                for condition in conditions
+            ]
+
+            stmt = select(TriggerSchema).where(
+                col(TriggerSchema.type) == TriggerType.PLATFORM_EVENT.value,
+                col(TriggerSchema.project_id) == project_id,
+                col(TriggerSchema.is_archived).is_(False),
+                col(TriggerSchema.active).is_(True),
+                or_(*trigger_filters),
+            )
+
+            return [
+                row.to_model(include_metadata=True, include_resources=True)  # type: ignore[misc]
+                for row in session.exec(stmt).all()
+            ]
 
     # ----------------------------- Schedules -----------------------------
 
@@ -10616,19 +10930,14 @@ class SqlZenStore(BaseZenStore):
             The created step run.
 
         Raises:
-            ValueError: If trying to create a step run with a retried status.
-            EntityExistsError: if the step run already exists or a log entry
+            EntityExistsError: If the step run already exists or a log entry
                 with the same source already exists within the scope of the
                 same step.
-            IllegalOperationError: if the pipeline run is stopped or stopping.
+            IllegalOperationError: If the pipeline run is stopped or stopping.
         """
-        if step_run.status in {
-            ExecutionStatus.RETRIED,
-            ExecutionStatus.RETRYING,
-        }:
-            raise ValueError(
-                "Retrying/retried status can not be set manually."
-            )
+        self._verify_step_status_transition(
+            current_status=None, new_status=step_run.status
+        )
 
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
@@ -10679,8 +10988,14 @@ class SqlZenStore(BaseZenStore):
             # try to acquire more exclusive locks
             session.commit()
 
-            # Acquire exclusive lock on the pipeline run to prevent deadlocks
-            # during insertion
+            # Acquire exclusive lock on the snapshot and run to prevent
+            # deadlocks during insertion
+            assert run.snapshot_id
+            session.exec(
+                select(PipelineSnapshotSchema.id)
+                .with_for_update()
+                .where(PipelineSnapshotSchema.id == run.snapshot_id)
+            )
             session.exec(
                 select(PipelineRunSchema.id)
                 .with_for_update()
@@ -11018,6 +11333,39 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.refresh(step_schema)
 
+            if (
+                self.resource_pools_enabled
+                and step_schema.status
+                in {
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                }
+                and step_run.resource_requester
+            ):
+                requested_resources = step_config.config.resource_settings.merged_requested_resources()
+                requested_resources["step_run"] = 1
+
+                request = self.resource_pools.create_resource_request(
+                    session=session,
+                    resource_request=ResourceRequestRequest(
+                        user=step_run.user,
+                        component_id=step_run.resource_requester,
+                        step_run_id=step_schema.id,
+                        requested_resources=requested_resources,
+                        preemptible=step_config.config.resource_settings.preemptible,
+                    ),
+                )
+                if (
+                    request is not None
+                    and request.status != ResourceRequestStatus.ALLOCATED
+                ):
+                    step_schema.status = ExecutionStatus.QUEUED.value
+                    session.add(step_schema)
+                    session.commit()
+
+                session.refresh(step_schema)
+
             return step_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -11189,20 +11537,9 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
 
-        Raises:
-            ValueError: If trying to update the step status to retried.
-
         Returns:
             The updated step run.
         """
-        if step_run_update.status in {
-            ExecutionStatus.RETRYING,
-            ExecutionStatus.RETRIED,
-        }:
-            raise ValueError(
-                "Retrying/retried status can not be set manually."
-            )
-
         with Session(self.engine) as session:
             # Check if the step exists
             existing_step_run = self._get_schema_by_id(
@@ -11211,18 +11548,16 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if (
-                existing_step_run.status == ExecutionStatus.RETRIED.value
-                and step_run_update.status == ExecutionStatus.FAILED
-            ):
-                raise ValueError(
-                    "The status of retried step runs can not be updated."
+            if step_run_update.status:
+                self._verify_step_status_transition(
+                    current_status=ExecutionStatus(existing_step_run.status),
+                    new_status=step_run_update.status,
                 )
 
-            if (
-                existing_step_run.is_retriable
-                and step_run_update.status == ExecutionStatus.FAILED
-            ):
+            if existing_step_run.is_retriable and step_run_update.status in {
+                ExecutionStatus.FAILED,
+                ExecutionStatus.CANCELLED,
+            }:
                 # This step will be retried by the orchestrator, so we
                 # set its status accordingly.
                 step_run_update.status = ExecutionStatus.RETRYING
@@ -11262,6 +11597,15 @@ class SqlZenStore(BaseZenStore):
                 )
             session.commit()
             session.refresh(existing_step_run)
+
+            execution_status = ExecutionStatus(existing_step_run.status)
+            if (
+                execution_status.is_finished
+                or execution_status == ExecutionStatus.RETRYING
+            ) and self.resource_pools_enabled:
+                self.resource_pools.release_step_run_resources(
+                    session, existing_step_run.id
+                )
 
             self._update_pipeline_run_status(
                 pipeline_run_id=existing_step_run.pipeline_run_id,
@@ -11571,7 +11915,9 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         if not did_update:
             return
-
+        EventDispatcher().handle_run_status_update(
+            run=pipeline_run.to_model(include_metadata=True)
+        )
         new_status = ExecutionStatus(pipeline_run.status)
 
         if new_status.is_finished and pipeline_run.end_time:
@@ -11633,6 +11979,60 @@ class SqlZenStore(BaseZenStore):
             self._update_onboarding_state(
                 completed_steps=completed_onboarding_steps, session=session
             )
+
+    def _verify_step_status_transition(
+        self,
+        current_status: Optional[ExecutionStatus],
+        new_status: ExecutionStatus,
+    ) -> None:
+        """Verify the transition of the status of a step.
+
+        This method should only be used to verify user-provided statuses.
+
+        Args:
+            current_status: The current status of the step run.
+            new_status: The new status of the step run.
+
+        Raises:
+            IllegalOperationError: If the status transition is invalid.
+        """
+        if new_status in {
+            ExecutionStatus.RETRYING,
+            ExecutionStatus.RETRIED,
+            ExecutionStatus.CANCELLING,
+            ExecutionStatus.QUEUED,
+        }:
+            raise IllegalOperationError(
+                f"Execution status `{new_status}` cannot be set manually."
+            )
+
+        if not current_status:
+            return
+
+        if current_status.is_finished:
+            raise IllegalOperationError(
+                "The status of finished steps can not be updated."
+            )
+
+        if current_status == ExecutionStatus.STOPPING:
+            if new_status not in {
+                ExecutionStatus.STOPPED,
+                ExecutionStatus.FAILED,
+            }:
+                raise IllegalOperationError(
+                    "Stopping steps can not be transitioned to status "
+                    f"`{new_status}`."
+                )
+
+        if current_status == ExecutionStatus.CANCELLING:
+            if new_status not in {
+                ExecutionStatus.CANCELLED,
+                ExecutionStatus.FAILED,
+            }:
+                raise IllegalOperationError(
+                    "Cancelling steps can not be transitioned to status "
+                    f"`{new_status}`"
+                )
 
     # ----------------------------- Users -----------------------------
 

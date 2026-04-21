@@ -23,6 +23,7 @@ from uuid import UUID, uuid4
 import anyio.to_thread
 import requests
 from anyio import CapacityLimiter
+from cachetools.func import ttl_cache
 from fastapi import Depends, Response
 from fastapi.security import (
     HTTPBasic,
@@ -75,7 +76,6 @@ from zenml.models import (
     UserUpdate,
 )
 from zenml.utils.time_utils import utc_now
-from zenml.zen_server.cache import cache_result
 from zenml.zen_server.csrf import CSRFToken
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.jwt import JWTToken
@@ -205,6 +205,7 @@ def authenticate_credentials(
     Raises:
         CredentialsNotValid: If the credentials are invalid.
     """
+    config = server_config()
     user: Optional[UserAuthModel] = None
     auth_context: Optional[AuthContext] = None
     if user_name_or_id:
@@ -312,7 +313,7 @@ def authenticate_credentials(
             raise CredentialsNotValid(error)
 
         if (
-            server_config().auth_scheme == AuthScheme.EXTERNAL
+            config.auth_scheme == AuthScheme.EXTERNAL
             and not user_model.external_user_id
             and not user_model.is_service_account
         ):
@@ -332,7 +333,7 @@ def authenticate_credentials(
 
         device_model: Optional[OAuthDeviceInternalResponse] = None
         if decoded_token.device_id:
-            if server_config().auth_scheme in [
+            if config.auth_scheme in [
                 AuthScheme.NO_AUTH,
                 AuthScheme.EXTERNAL,
             ]:
@@ -399,7 +400,10 @@ def authenticate_credentials(
             # of the schedule active status to avoid unnecessary database
             # queries.
 
-            @cache_result(expiry=30)
+            @ttl_cache(
+                maxsize=config.memcache_max_capacity,
+                ttl=config.memcache_default_expiry,
+            )
             def get_schedule_active(schedule_id: UUID) -> Optional[bool]:
                 """Get the active status of a schedule.
 
@@ -442,7 +446,10 @@ def authenticate_credentials(
             # not concluded. We use a cached version of the pipeline run status
             # to avoid unnecessary database queries.
 
-            @cache_result(expiry=30)
+            @ttl_cache(
+                maxsize=config.memcache_max_capacity,
+                ttl=config.memcache_default_expiry,
+            )
             def check_if_pipeline_run_in_progress(
                 pipeline_run_id: UUID,
             ) -> Tuple[Optional[bool], Optional[datetime]]:
@@ -520,7 +527,7 @@ def authenticate_credentials(
         # continue without any credentials (i.e. no password, activation
         # token or access token) is if authentication is explicitly disabled
         # by setting the auth_scheme to NO_AUTH.
-        if server_config().auth_scheme != AuthScheme.NO_AUTH:
+        if config.auth_scheme != AuthScheme.NO_AUTH:
             error = "Authentication error: no credentials provided"
             logger.error(error)
             raise CredentialsNotValid(error)
