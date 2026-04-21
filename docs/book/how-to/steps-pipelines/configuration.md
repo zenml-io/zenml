@@ -143,7 +143,9 @@ Settings in ZenML are categorized into three main types:
 
 * **General settings** that can be used on all ZenML pipelines:
   * `DockerSettings` for container configuration
-  * `ResourceSettings` for CPU, memory, and GPU allocation
+  * `ResourceSettings` for CPU, memory, and GPU allocation (on ZenML Pro, the same
+    fields drive [resource pools](https://docs.zenml.io/pro/core-concepts/resource-pools)
+    for workspace quotas, queuing, and preemption)
   * `DeploymentSettings` for pipeline deployment configuration - can only be set at the pipeline level
 
 * **Stack-component-specific settings** for configuring behaviors of components in your stack:
@@ -194,6 +196,12 @@ simple_ml_pipeline.configuration.settings["resources"]
 ### Resource Settings
 
 Resource settings allow you to specify the CPU, memory, and GPU requirements for your steps.
+
+On **ZenML Pro**, those declarations are also what the **resource pool** feature
+uses: for eligible dynamic pipelines, the server builds resource
+requests from your merged `ResourceSettings` (including `pool_resources` and
+`preemptible`), matches them against workspace pools and policies on your stack’s
+orchestrator or step operator, and may queue or preempt work accordingly. For more information on how this feature works, see [ZenML Pro Resource Pools](https://docs.zenml.io/pro/core-concepts/resource-pools).
 
 ```python
 from zenml.config import ResourceSettings

@@ -15,6 +15,8 @@
 
 from zenml.enums import TriggerType
 from zenml.models.v2.core.triggers import (
+    PlatformEventTriggerResponse,
+    PlatformEventTriggerResponseBody,
     ScheduleTriggerResponse,
     ScheduleTriggerResponseBody,
 )
@@ -23,10 +25,14 @@ from zenml.models.v2.core.triggers import (
 
 TYPE_TO_RESPONSE_BODY_MAPPING = {
     TriggerType.SCHEDULE.value: ScheduleTriggerResponseBody,
+    TriggerType.PLATFORM_EVENT.value: PlatformEventTriggerResponseBody,
 }
 
-TYPE_TO_RESPONSE_MAPPING = {
+TYPE_TO_RESPONSE_MAPPING: dict[
+    str, type[ScheduleTriggerResponse | PlatformEventTriggerResponse]
+] = {
     TriggerType.SCHEDULE.value: ScheduleTriggerResponse,
+    TriggerType.PLATFORM_EVENT.value: PlatformEventTriggerResponse,
 }
 
 # Union type objects - should be extended with the future type classes (e.g. Webhook)

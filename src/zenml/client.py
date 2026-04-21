@@ -71,6 +71,7 @@ from zenml.enums import (
     RunWaitConditionResolution,
     ServiceState,
     SorterOps,
+    SourceType,
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
@@ -143,10 +144,21 @@ from zenml.models import (
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
+    PlatformEventTriggerRequest,
+    PlatformEventTriggerResponse,
+    PlatformEventTriggerUpdate,
     ProjectFilter,
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
+    ResourcePoolFilter,
+    ResourcePoolRequest,
+    ResourcePoolResponse,
+    ResourcePoolSubjectPolicyFilter,
+    ResourcePoolSubjectPolicyRequest,
+    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolSubjectPolicyUpdate,
+    ResourcePoolUpdate,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -183,6 +195,7 @@ from zenml.models import (
     ServiceResponse,
     ServiceType,
     ServiceUpdate,
+    SourceEntity,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -2247,6 +2260,284 @@ class Client(metaclass=ClientMetaClass):
             component.name,
         )
 
+    # -------------------------------- Resource Pools --------------------------
+
+    def create_resource_pool(
+        self,
+        name: str,
+        capacity: Dict[str, int],
+        description: Optional[str] = None,
+    ) -> ResourcePoolResponse:
+        """Create a resource pool.
+
+        Args:
+            name: The name of the resource pool.
+            capacity: The capacity of the resource pool.
+            description: The description of the resource pool.
+
+        Returns:
+            The created resource pool.
+        """
+        request = ResourcePoolRequest(
+            name=name,
+            description=description,
+            capacity=capacity,
+        )
+        return self.zen_store.create_resource_pool(resource_pool=request)
+
+    def get_resource_pool(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
+    ) -> ResourcePoolResponse:
+        """Get a resource pool.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the resource pool to
+                get.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource pool.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_resource_pool,
+            list_method=self.list_resource_pools,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
+
+    def list_resource_pools(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        hydrate: bool = False,
+    ) -> Page[ResourcePoolResponse]:
+        """Lists resource pools.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of resource pool to filter by.
+            created: Filter by creation time.
+            updated: Filter by last updated time.
+            name: The name of the resource pool to filter by.
+            user: The ID of name of the user to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of resource pools.
+        """
+        filter_model = ResourcePoolFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            id=id,
+            name=name,
+            created=created,
+            updated=updated,
+            user=user,
+        )
+
+        return self.zen_store.list_resource_pools(
+            filter_model=filter_model, hydrate=hydrate
+        )
+
+    def update_resource_pool(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        description: Optional[str] = None,
+        capacity: Optional[Dict[str, int]] = None,
+    ) -> ResourcePoolResponse:
+        """Update a resource pool.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the resource pool to
+                update.
+            description: The new description of the resource pool.
+            capacity: The new capacity of the resource pool. Setting a value to
+                0 will remove the resource from the pool.
+
+        Returns:
+            The updated resource pool.
+        """
+        resource_pool = self.get_resource_pool(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        update_model = ResourcePoolUpdate(
+            description=description,
+            capacity=capacity,
+        )
+
+        return self.zen_store.update_resource_pool(
+            resource_pool_id=resource_pool.id,
+            update=update_model,
+        )
+
+    def delete_resource_pool(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete a resource pool.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the resource pool to
+                delete.
+        """
+        resource_pool = self.get_resource_pool(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        self.zen_store.delete_resource_pool(resource_pool_id=resource_pool.id)
+
+    def create_resource_pool_subject_policy(
+        self,
+        component_id: UUID,
+        pool_id: UUID,
+        priority: int,
+        reserved: Optional[Dict[str, int]] = None,
+        limit: Optional[Dict[str, int]] = None,
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Create a resource pool subject policy.
+
+        Args:
+            component_id: The component ID this policy applies to.
+            pool_id: The pool ID this policy belongs to.
+            priority: The policy priority.
+            reserved: Optional reserved resources by key.
+            limit: Optional resource limits by key.
+
+        Returns:
+            The created policy.
+        """
+        request = ResourcePoolSubjectPolicyRequest(
+            component_id=component_id,
+            pool_id=pool_id,
+            priority=priority,
+            reserved=reserved,
+            limit=limit,
+        )
+        return self.zen_store.create_resource_pool_subject_policy(
+            policy=request
+        )
+
+    def get_resource_pool_subject_policy(
+        self, policy_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Get a resource pool subject policy by ID.
+
+        Args:
+            policy_id: The ID of the policy to fetch.
+            hydrate: Whether to include metadata in the response.
+
+        Returns:
+            The requested policy.
+        """
+        return self.zen_store.get_resource_pool_subject_policy(
+            policy_id=policy_id, hydrate=hydrate
+        )
+
+    def list_resource_pool_subject_policies(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        user: Optional[Union[UUID, str]] = None,
+        pool_id: Optional[Union[UUID, str]] = None,
+        component_id: Optional[Union[UUID, str]] = None,
+        priority: Optional[Union[int, str]] = None,
+        hydrate: bool = False,
+    ) -> Page[ResourcePoolSubjectPolicyResponse]:
+        """List resource pool subject policies.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use.
+            id: Filter by policy ID.
+            created: Filter by creation time.
+            updated: Filter by last update time.
+            user: Filter by user name/ID.
+            pool_id: Filter by resource pool name/ID.
+            component_id: Filter by component name/ID.
+            priority: Filter by priority.
+            hydrate: Whether to include metadata in the response.
+
+        Returns:
+            A page of matching policies.
+        """
+        filter_model = ResourcePoolSubjectPolicyFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            user=user,
+            pool_id=pool_id,
+            component_id=component_id,
+            priority=priority,
+        )
+        return self.zen_store.list_resource_pool_subject_policies(
+            filter_model=filter_model, hydrate=hydrate
+        )
+
+    def update_resource_pool_subject_policy(
+        self,
+        policy_id: UUID,
+        priority: Optional[int] = None,
+        reserved: Optional[Dict[str, int]] = None,
+        limit: Optional[Dict[str, int]] = None,
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Update a resource pool subject policy.
+
+        Args:
+            policy_id: The policy ID.
+            priority: Updated priority.
+            reserved: Updated reserved resources by key.
+            limit: Updated limits by key.
+
+        Returns:
+            The updated policy.
+        """
+        update = ResourcePoolSubjectPolicyUpdate(
+            priority=priority, reserved=reserved, limit=limit
+        )
+        return self.zen_store.update_resource_pool_subject_policy(
+            policy_id=policy_id, update=update
+        )
+
+    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
+        """Delete a resource pool subject policy.
+
+        Args:
+            policy_id: The policy ID.
+        """
+        self.zen_store.delete_resource_pool_subject_policy(policy_id=policy_id)
+
     # --------------------------------- Flavors --------------------------------
 
     def create_flavor(
@@ -3929,7 +4220,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created trigger.
         """
-        return self.zen_store.create_trigger(
+        trigger = self.zen_store.create_trigger(
             trigger=ScheduleTriggerRequest(
                 project=project_id or self.active_project.id,
                 name=name,
@@ -3944,6 +4235,10 @@ class Client(metaclass=ClientMetaClass):
                 start_time=start_time,
             )
         )
+
+        assert isinstance(trigger, ScheduleTriggerResponse)
+
+        return trigger
 
     def update_schedule_trigger(
         self,
@@ -3973,9 +4268,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated trigger.
         """
-        trigger = self.zen_store.get_trigger(trigger_id)
+        trigger = self.get_schedule_trigger(trigger_id=trigger_id)
 
-        return self.zen_store.update_trigger(
+        response = self.zen_store.update_trigger(
             trigger_id=trigger_id,
             trigger_update=ScheduleTriggerUpdate(
                 name=name or trigger.name,
@@ -3996,6 +4291,10 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
 
+        assert isinstance(response, ScheduleTriggerResponse)
+
+        return response
+
     def get_schedule_trigger(
         self, trigger_id: UUID
     ) -> ScheduleTriggerResponse:
@@ -4006,8 +4305,18 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The trigger response.
+
+        Raises:
+            ValueError: If the trigger is not of schedule type.
         """
-        return self.zen_store.get_trigger(trigger_id=trigger_id)
+        trigger = self.zen_store.get_trigger(trigger_id=trigger_id)
+
+        if not isinstance(trigger, ScheduleTriggerResponse):
+            raise ValueError(
+                f"Found trigger {trigger.id} of incompatible type ({trigger.type} found {TriggerType.SCHEDULE} expected)."
+            )
+
+        return trigger
 
     def list_schedule_triggers(
         self,
@@ -4053,7 +4362,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of ScheduleTriggerResponse objects.
         """
-        return self.zen_store.list_triggers(
+        return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
                 user=user,
@@ -4073,6 +4382,183 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 next_occurrence=next_occurrence,
+                pipeline_id=str(pipeline_id) if pipeline_id else None,
+                snapshot_id=str(snapshot_id) if snapshot_id else None,
+            )
+        )
+
+    def create_platform_event_trigger(
+        self,
+        name: str,
+        source_type: SourceType,
+        source_id: UUID,
+        target_events: list[str],
+        project_id: str | UUID | None = None,
+        active: bool = True,
+        concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+    ) -> PlatformEventTriggerResponse:
+        """Create a platform event trigger.
+
+        Args:
+            name: The name of the trigger.
+            source_type: The source type of the trigger. (e.g. Pipeline Run).
+            source_id: The source ID of the trigger. (e.g. Pipeline Run ID).
+            target_events: The events to react for the trigger source(e.g. Pipeline run completed).
+            project_id: The project ID.
+            active: Whether the trigger should be activated on creation.
+            concurrency: Option controlling trigger run concurrency behavior (SKIP, SUBMIT, etc.).
+
+        Returns:
+            The created trigger.
+        """
+        trigger = self.zen_store.create_trigger(
+            trigger=PlatformEventTriggerRequest(
+                project=project_id or self.active_project.id,
+                name=name,
+                flavor=TriggerFlavor.PLATFORM_EVENT,
+                active=active,
+                concurrency=concurrency,
+                source_entity=SourceEntity(
+                    id=source_id,
+                    type=source_type,
+                ),
+                target_events=target_events,
+            )
+        )
+
+        assert isinstance(trigger, PlatformEventTriggerResponse)
+
+        return trigger
+
+    def update_platform_event_trigger(
+        self,
+        trigger_id: UUID,
+        name: str | None = None,
+        active: bool | None = None,
+        source_type: SourceType | None = None,
+        source_id: UUID | None = None,
+        target_events: list[str] | None = None,
+        concurrency: TriggerRunConcurrency | None = None,
+    ) -> PlatformEventTriggerResponse:
+        """Update a platform event trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            name: The new name of the trigger.
+            active: The new active status of the trigger.
+            concurrency: The new trigger run concurrency.
+            source_type: The source type of the trigger. (e.g. Pipeline Run).
+            source_id: The source ID of the trigger. (e.g. Pipeline Run ID).
+            target_events: The events to react for the trigger source(e.g. Pipeline run completed).
+
+        Returns:
+            The updated trigger.
+        """
+        trigger = self.get_platform_event_trigger(trigger_id=trigger_id)
+
+        response = self.zen_store.update_trigger(
+            trigger_id=trigger_id,
+            trigger_update=PlatformEventTriggerUpdate(
+                name=name or trigger.name,
+                active=active if active is not None else trigger.active,
+                concurrency=concurrency
+                if concurrency is not None
+                else trigger.concurrency,
+                source_entity=SourceEntity(
+                    type=source_type or trigger.source_type,
+                    id=source_id or trigger.source_id,
+                ),
+                target_events=target_events or trigger.target_events,
+            ),
+        )
+
+        assert isinstance(response, PlatformEventTriggerResponse)
+
+        return response
+
+    def get_platform_event_trigger(
+        self, trigger_id: UUID
+    ) -> PlatformEventTriggerResponse:
+        """Retrieve a platform event trigger by trigger ID.
+
+        Args:
+            trigger_id: The id of the trigger.
+
+        Returns:
+            The trigger response.
+
+        Raises:
+            ValueError: If the trigger is not of platform event type.
+        """
+        trigger = self.zen_store.get_trigger(trigger_id=trigger_id)
+
+        if not isinstance(trigger, PlatformEventTriggerResponse):
+            raise ValueError(
+                f"Found trigger {trigger.id} of incompatible type ({trigger.type} found {TriggerType.PLATFORM_EVENT} expected)."
+            )
+
+        return trigger
+
+    def list_platform_event_triggers(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        user: str | UUID | None = None,
+        project: UUID | str | None = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        active: bool | None = None,
+        concurrency: str | None = None,
+        is_archived: bool = False,
+        pipeline_id: str | UUID | None = None,
+        snapshot_id: str | UUID | None = None,
+    ) -> Page[PlatformEventTriggerResponse]:
+        """List platform event triggers.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            project: The project name/ID to filter by.
+            user: Filter by user name/ID.
+            id: Use the id of trigger to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the trigger.
+            active: The active status of the trigger.
+            concurrency: The concurrency of the trigger.
+            is_archived: The archived status of the trigger.
+            pipeline_id: Filter triggers by pipeline with attached snapshots.
+            snapshot_id: Filter triggers by attached snapshot.
+
+        Returns:
+            A Page of PlatformEventTriggerResponse objects.
+        """
+        return self.zen_store.list_triggers(  # type: ignore[return-value]
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                user=user,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                active=active,
+                concurrency=TriggerRunConcurrency(concurrency)
+                if concurrency
+                else None,
+                is_archived=is_archived,
+                flavor=TriggerFlavor.PLATFORM_EVENT,
+                type=TriggerType.PLATFORM_EVENT,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                next_occurrence=None,
                 pipeline_id=str(pipeline_id) if pipeline_id else None,
                 snapshot_id=str(snapshot_id) if snapshot_id else None,
             )
@@ -4111,7 +4597,7 @@ class Client(metaclass=ClientMetaClass):
         """Attaches a trigger to a snapshot.
 
         'Attaching' a trigger to a snapshot means that on each trigger event ( e.g. each
-        occurrence of a schedule) the snapshot will be executed.
+        occurrence of a schedule or on each platform event) the snapshot will be executed.
 
         Args:
             trigger_id: The ID of the trigger.

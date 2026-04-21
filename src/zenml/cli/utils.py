@@ -2056,6 +2056,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
     if status in {
         ExecutionStatus.INITIALIZING,
         ExecutionStatus.PROVISIONING,
+        ExecutionStatus.QUEUED,
         ExecutionStatus.RESUMING,
         ExecutionStatus.RETRYING,
     }:
@@ -2068,7 +2069,12 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
         return ":white_check_mark:"
     if status == ExecutionStatus.CACHED:
         return ":package:"
-    if status == ExecutionStatus.STOPPED or status == ExecutionStatus.STOPPING:
+    if status in {
+        ExecutionStatus.STOPPED,
+        ExecutionStatus.STOPPING,
+        ExecutionStatus.CANCELLING,
+        ExecutionStatus.CANCELLED,
+    }:
         return ":stop_sign:"
     if status == ExecutionStatus.PAUSED:
         return ":pause_button:"

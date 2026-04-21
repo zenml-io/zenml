@@ -23,7 +23,7 @@ from uuid import UUID
 
 from packaging import version
 
-from zenml import LogsRequest
+from zenml import LogsRequest, TriggerExecutionInfo
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.config.base_settings import BaseSettings
@@ -184,6 +184,7 @@ def run_snapshot(
     implicit_auth_context: bool = True,
     wait_runner_pod: bool = True,
     trigger_id: UUID | None = None,
+    trigger_execution_info: TriggerExecutionInfo | None = None,
 ) -> PipelineRunResponse:
     """Run a snapshot from the server.
 
@@ -198,6 +199,7 @@ def run_snapshot(
         implicit_auth_context: Whether to use implicit auth context or create an explicit new one.
         wait_runner_pod: Whether to wait for runner pod completion.
         trigger_id: The trigger ID that generated the snapshot run (optional).
+        trigger_execution_info: Extra (trigger-related) information about the trigger run (optional).
 
     Raises:
         MaxConcurrentTasksError: If the maximum number of concurrent run
@@ -240,6 +242,7 @@ def run_snapshot(
         zen_store().create_trigger_execution(
             trigger_id=trigger_id,
             pipeline_run_id=placeholder_run.id,
+            info=trigger_execution_info,
         )
 
     report_usage(

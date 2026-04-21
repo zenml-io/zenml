@@ -76,6 +76,10 @@ class TriggerSchema(NamedSchema, table=True):
             table_name=__tablename__,
             column_names=["flavor", "next_occurrence"],
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["flavor", "source_entity"],
+        ),
     )
 
     # -------------------- BASE FIELDS
@@ -147,6 +151,20 @@ class TriggerSchema(NamedSchema, table=True):
         nullable=True,
         default=None,
         description="The next occurrence. Applicable for schedules.",
+    )
+
+    source_entity: str | None = Field(
+        sa_column=Column(VARCHAR(255), default=None, nullable=True),
+        description="The event source(e.g. pipeline:<uuid>. Applicable for platform events.",
+    )
+
+    target_events: str | None = Field(
+        sa_column=Column(
+            String(length=TEXT_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
+            nullable=True,
+            default=None,
+        ),
+        description="The target events of the trigger (e.g. event:run_completed). Applicable for platform events.",
     )
 
     @property

@@ -319,6 +319,34 @@ from zenml.models.v2.core.stack import (
     StackResponseMetadata,
     StackResponseResources
 )
+from zenml.models.v2.core.resource_pool import (
+    ResourcePoolRequest,
+    ResourcePoolUpdate,
+    ResourcePoolFilter,
+    ResourcePoolResponse,
+    ResourcePoolResponseBody,
+    ResourcePoolResponseMetadata,
+    ResourcePoolResponseResources,
+    ResourcePoolAllocation,
+    ResourcePoolQueueItem,
+)
+from zenml.models.v2.core.resource_pool_subject_policy import (
+    ResourcePoolSubjectPolicyFilter,
+    ResourcePoolSubjectPolicyRequest,
+    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolSubjectPolicyResponseBody,
+    ResourcePoolSubjectPolicyResponseMetadata,
+    ResourcePoolSubjectPolicyResponseResources,
+    ResourcePoolSubjectPolicyUpdate,
+)
+from zenml.models.v2.core.resource_request import (
+    ResourceRequestRequest,
+    ResourceRequestFilter,
+    ResourceRequestResponse,
+    ResourceRequestResponseBody,
+    ResourceRequestResponseMetadata,
+    ResourceRequestResponseResources,
+)
 from zenml.models.v2.core.triggers import (
     TriggerRequest,
     TriggerUpdate,
@@ -330,9 +358,16 @@ from zenml.models.v2.core.triggers import (
     ScheduleTriggerResponseBody,
     ScheduleTriggerResponse,
     ScheduleTriggerUpdate,
+    PlatformEventTriggerRequest,
+    PlatformEventTriggerUpdate,
+    PlatformEventTriggerResponse,
+    PlatformEventTriggerResponseBody,
+    PlatformEventTrigger,
+    SourceEntity,
     TRIGGER_UPDATE_TYPE_UNION,
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
+    TriggerExecutionInfo,
 )
 from zenml.models.v2.misc.param_groups import (
     PipelineRunIdentifier,
@@ -549,6 +584,21 @@ ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
 ResourcesInfo.model_rebuild()
+ResourcePoolResponseBody.model_rebuild()
+ResourcePoolResponseMetadata.model_rebuild()
+ResourcePoolResponseResources.model_rebuild()
+ResourcePoolResponse.model_rebuild()
+ResourceRequestResponseBody.model_rebuild()
+ResourceRequestResponseMetadata.model_rebuild()
+ResourceRequestResponseResources.model_rebuild()
+ResourceRequestResponse.model_rebuild()
+ResourcePoolAllocation.model_rebuild()
+ResourcePoolQueueItem.model_rebuild()
+ResourcePoolSubjectPolicyRequest.model_rebuild()
+ResourcePoolSubjectPolicyResponseBody.model_rebuild()
+ResourcePoolSubjectPolicyResponseMetadata.model_rebuild()
+ResourcePoolSubjectPolicyResponseResources.model_rebuild()
+ResourcePoolSubjectPolicyResponse.model_rebuild()
 TriggerRequest.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -557,6 +607,11 @@ ScheduleTriggerRequest.model_rebuild()
 ScheduleTriggerResponse.model_rebuild()
 ScheduleTriggerResponseBody.model_rebuild()
 ScheduleTriggerUpdate.model_rebuild()
+PlatformEventTrigger.model_rebuild()
+PlatformEventTriggerRequest.model_rebuild()
+PlatformEventTriggerUpdate.model_rebuild()
+PlatformEventTriggerResponse.model_rebuild()
+PlatformEventTriggerResponseBody.model_rebuild()
 
 
 __all__ = [
@@ -736,6 +791,28 @@ __all__ = [
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
     "PipelineRunTriggerInfo",
+    "ResourcePoolRequest",
+    "ResourcePoolUpdate",
+    "ResourcePoolFilter",
+    "ResourcePoolResponse",
+    "ResourcePoolResponseBody",
+    "ResourcePoolResponseMetadata",
+    "ResourcePoolResponseResources",
+    "ResourcePoolAllocation",
+    "ResourcePoolQueueItem",
+    "ResourcePoolSubjectPolicyFilter",
+    "ResourcePoolSubjectPolicyRequest",
+    "ResourcePoolSubjectPolicyResponse",
+    "ResourcePoolSubjectPolicyResponseBody",
+    "ResourcePoolSubjectPolicyResponseMetadata",
+    "ResourcePoolSubjectPolicyResponseResources",
+    "ResourcePoolSubjectPolicyUpdate",
+    "ResourceRequestRequest",
+    "ResourceRequestFilter",
+    "ResourceRequestResponse",
+    "ResourceRequestResponseBody",
+    "ResourceRequestResponseMetadata",
+    "ResourceRequestResponseResources",
     "RunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",
@@ -883,7 +960,14 @@ __all__ = [
     "ScheduleTriggerResponse",
     "ScheduleTriggerResponseBody",
     "ScheduleTriggerUpdate",
+    "PlatformEventTriggerRequest",
+    "PlatformEventTriggerUpdate",
+    "PlatformEventTriggerResponse",
+    "PlatformEventTriggerResponseBody",
+    "PlatformEventTrigger",
     "TRIGGER_UPDATE_TYPE_UNION",
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",
+    "SourceEntity",
+    "TriggerExecutionInfo",
 ]
