@@ -1,7 +1,7 @@
 """remove logs log_key column [e6dfd46db163].
 
 Revision ID: e6dfd46db163
-Revises: 0.94.2
+Revises: 7464581d8249
 Create Date: 2026-04-15 14:58:30.098379
 
 Drops ``unique_log_key`` and the ``log_key`` column. Log rows are still keyed by
@@ -18,7 +18,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e6dfd46db163"
-down_revision = "0.94.2"
+down_revision = "7464581d8249"
 branch_labels = None
 depends_on = None
 
