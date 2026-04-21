@@ -487,6 +487,10 @@ def run_logs(
     if run.log_collection:
         if source:
             logs = search_logs_by_source(run.log_collection, source)
+            # We make an exception for runner logs here. In the legacy case,
+            # we don't have a logs response for the runner logs source, so we
+            # need to handle it separately. They have only been added to the log
+            # collection for runs with version >0.94.0.
             if logs is None and source != LOGS_RUNNER_SOURCE:
                 raise KeyError(
                     f"No logs found for source '{source}' in run {run_id}"
@@ -503,16 +507,12 @@ def run_logs(
         raise KeyError(f"No logs found for run {run_id}.")
 
     # Handle runner logs from workload manager
-    if source == LOGS_RUNNER_SOURCE or logs.source == LOGS_RUNNER_SOURCE:
+    if source == LOGS_RUNNER_SOURCE or (
+        logs and logs.source == LOGS_RUNNER_SOURCE
+    ):
         if run.snapshot:
             snapshot = run.snapshot
 
-            # The runner source is explicitly added to the log collection for runs
-            # with version >0.94.0. For legacy runs, we didn't specify that
-            # explicitly and instead rely on source snapshot or trigger existence.
-            runner_logs_response = search_logs_by_source(
-                run.log_collection or [], LOGS_RUNNER_SOURCE
-            )
             is_legacy_run_with_runner_logs = (
                 snapshot.template_id
                 or snapshot.source_snapshot_id
@@ -520,8 +520,10 @@ def run_logs(
             )
 
             if (
-                runner_logs_response or is_legacy_run_with_runner_logs
-            ) and server_config().workload_manager_enabled:
+                logs
+                or is_legacy_run_with_runner_logs
+                and server_config().workload_manager_enabled
+            ):
                 from zenml.log_stores.artifact.artifact_log_store import (
                     parse_log_entry,
                 )
@@ -558,7 +560,7 @@ def run_logs(
             "The run does not have a snapshot, thus the runner logs are not available."
         )
 
-    else:
+    if logs:
         fetch_logs(
             logs=logs,
             zen_store=store,
