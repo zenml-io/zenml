@@ -64,6 +64,14 @@ class TriggerDispatchStatusCode(StrEnum):
     ERROR = "ERROR"
 
 
+class TriggerDispatchErrorSeverity(StrEnum):
+    """Severity levels for trigger dispatch errors."""
+
+    MINOR = "Minor"
+    MAJOR = "Major"
+    CRITICAL = "Critical"
+
+
 class TriggerSnapshotDispatchState(BaseModel):
     """User-facing trigger dispatch state stored on trigger-snapshot links.
 
@@ -73,8 +81,13 @@ class TriggerSnapshotDispatchState(BaseModel):
 
     MESSAGE_MAX_LENGTH: ClassVar[int] = 4096
     ERROR_TYPE_MAX_LENGTH: ClassVar[int] = 255
+    STACK_TRACE_MAX_LENGTH: ClassVar[int] = 16_384
 
     last_status: TriggerDispatchStatusCode
+    last_status_at: datetime | None = Field(
+        default=None,
+        description="Timestamp of the latest recorded status transition.",
+    )
     last_error_message: str | None = Field(
         default=None,
         max_length=MESSAGE_MAX_LENGTH,
@@ -87,9 +100,23 @@ class TriggerSnapshotDispatchState(BaseModel):
         max_length=ERROR_TYPE_MAX_LENGTH,
         description="Implementation-level error classifier.",
     )
+    last_error_severity: TriggerDispatchErrorSeverity | None = Field(
+        default=None,
+        description="Severity level of the latest error.",
+    )
+    last_error_stack_trace: str | None = Field(
+        default=None,
+        max_length=STACK_TRACE_MAX_LENGTH,
+        description="Stack trace accompanying the last error",
+    )
     last_error_at: datetime | None = Field(
         default=None,
         description="Timestamp of the latest recorded error.",
+    )
+    last_error_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of times the latest error type occurred consecutively.",
     )
 
     @field_validator("last_error_message", mode="before")
@@ -107,6 +134,21 @@ class TriggerSnapshotDispatchState(BaseModel):
             return value[: cls.MESSAGE_MAX_LENGTH]
         return value
 
+    @field_validator("last_error_stack_trace", mode="before")
+    @classmethod
+    def _truncate_stack_trace_tail(cls, value: Any) -> Any:
+        """Trim stack traces to keep the most relevant bottom entries.
+
+        Args:
+            value: Incoming stack trace.
+
+        Returns:
+            Possibly tail-trimmed stack trace.
+        """
+        if isinstance(value, str):
+            return value[-cls.STACK_TRACE_MAX_LENGTH :]
+        return value
+
     @model_validator(mode="after")
     def _set_error_defaults(self) -> "TriggerSnapshotDispatchState":
         """Initialize default error metadata for freshly created errors.
@@ -114,10 +156,13 @@ class TriggerSnapshotDispatchState(BaseModel):
         Returns:
             The validated state.
         """
-        if self.last_status != TriggerDispatchStatusCode.ERROR:
-            return self
-        if self.last_error_at is None:
-            self.last_error_at = utc_now()
+        if self.last_status_at is None:
+            self.last_status_at = utc_now()
+        if self.last_status == TriggerDispatchStatusCode.ERROR:
+            if self.last_error_count == 0:
+                self.last_error_count = 1
+            if self.last_error_at is None:
+                self.last_error_at = utc_now()
         return self
 
     def apply_new_state(
@@ -130,17 +175,30 @@ class TriggerSnapshotDispatchState(BaseModel):
             new_state: Newly reported dispatch state.
         """
         if new_state.last_status == TriggerDispatchStatusCode.ERROR:
+            if (
+                self.last_status == TriggerDispatchStatusCode.ERROR
+                and self.last_error_type == new_state.last_error_type
+            ):
+                self.last_error_count += 1
+            else:
+                self.last_error_count = 1
             self.last_error_message = new_state.last_error_message
             self.last_error_type = new_state.last_error_type
+            self.last_error_severity = new_state.last_error_severity
+            self.last_error_stack_trace = new_state.last_error_stack_trace
             self.last_error_at = new_state.last_error_at or utc_now()
 
         self.last_status = new_state.last_status
+        self.last_status_at = new_state.last_status_at or utc_now()
 
     def clear_error_details(self) -> None:
         """Clear stored error details while keeping the last status."""
         self.last_error_message = None
         self.last_error_type = None
+        self.last_error_severity = None
+        self.last_error_stack_trace = None
         self.last_error_at = None
+        self.last_error_count = 0
 
 
 if TYPE_CHECKING:

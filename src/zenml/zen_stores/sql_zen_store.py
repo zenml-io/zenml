@@ -8132,6 +8132,8 @@ class SqlZenStore(BaseZenStore):
             if previous_state is not None:
                 previous_state.apply_new_state(new_state=state)
                 final_state = previous_state
+            elif final_state.last_status_at is None:
+                final_state.last_status_at = utc_now()
 
             raw = final_state.model_dump_json()
 
