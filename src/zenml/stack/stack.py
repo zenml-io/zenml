@@ -195,7 +195,6 @@ class Stack:
 
         Raises:
             ImportError: If a stack component's dependencies cannot be imported.
-            ValueError: If a stack component is not found in the stack.
         """
         global _STACK_CACHE
         key = (stack_model.id, stack_model.updated)
@@ -212,23 +211,13 @@ class Stack:
         )
 
         try:
-            hydrated_component_models_by_id = {
-                model.id: model for model in hydrated_component_models
-            }
             stack_components: Dict[
                 StackComponentType, List["StackComponent"]
             ] = defaultdict(list)
 
-            for component_model in hydrated_component_models:
-                hydrated_model = hydrated_component_models_by_id.get(
-                    component_model.id
-                )
-                if hydrated_model is None:
-                    raise ValueError(
-                        f"Component {component_model.id} not found in the stack."
-                    )
-                stack_components[component_model.type].append(
-                    StackComponent.from_model(hydrated_model)
+            for component in hydrated_component_models:
+                stack_components[component.type].append(
+                    StackComponent.from_model(component)
                 )
         except ImportError as e:
             stack_hint = (
