@@ -487,7 +487,7 @@ def run_logs(
     if run.log_collection:
         if source:
             logs = search_logs_by_source(run.log_collection, source)
-            if logs is None:
+            if logs is None and source != LOGS_RUNNER_SOURCE:
                 raise KeyError(
                     f"No logs found for source '{source}' in run {run_id}"
                 )
