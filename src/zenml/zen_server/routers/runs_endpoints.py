@@ -559,7 +559,7 @@ def run_logs(
         )
 
     if logs:
-        fetch_logs(
+        return fetch_logs(
             logs=logs,
             zen_store=store,
             limit=LOGS_MAX_ENTRIES_PER_REQUEST,
