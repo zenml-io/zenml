@@ -294,13 +294,20 @@ The per-feature guides show the exact YAML.
 | Guide | What it enables | What it deploys | Minimum workspace server version |
 |-------|-----------------|-----------------|----------------------------------|
 | [Enable Snapshot Support](deploy-workspace-snapshots.md) | [Snapshots](snapshots.md) | Workload manager: server env vars and RBAC so the workspace can create "runner Jobs" in Kubernetes | 0.90.0 |
-| [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md) | [Schedule triggers](triggers.md#schedule-triggers), [platform event triggers](triggers.md#platform-event-triggers) | **Scheduler** and **executor** microservices, **Redis** message broker; requires [snapshot support](deploy-workspace-snapshots.md) to run attached snapshots | 0.94.3 |
+| [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md) | [Schedule triggers](triggers.md#schedule-triggers), [platform event triggers](triggers.md#platform-event-triggers) | **Scheduler** and **executor** microservices, **Redis** (broker URL via **`secretEnvironment`**); **`server.secretEnvironment`** **`ZENML_REDIS_BROKER_URL`** for platform events; requires [snapshot support](deploy-workspace-snapshots.md) to run attached snapshots | 0.94.3 |
 | [Enable Resource Pools](deploy-workspace-resource-pools.md) | [Resource pools](resource-pools.md) | **Resource pool reconciler** microservice | 0.94.3 |
 
 Deploy [snapshot support](deploy-workspace-snapshots.md) before you rely on
 [event triggers and schedules](deploy-workspace-event-triggers-and-schedules.md)
 end-to-end: triggers run against pipeline snapshots, which need the workload
 manager to execute on the cluster.
+
+**Platform event triggers** also require **`ZENML_REDIS_BROKER_URL`** on the
+main workspace server, set through **`server.secretEnvironment`** (or
+**`server.environmentSecretKeyRefs`**) rather than plain `server.environment`,
+because broker URLs may contain credentials. Schedule-only triggers do not
+need Redis on the server. See
+[Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md).
 
 ## Day 2 Operations
 

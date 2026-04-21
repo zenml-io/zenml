@@ -100,9 +100,10 @@ workerDeployments:
         cpu: 500m
         memory: 512Mi
     environment:
-      ZENML_REDIS_BROKER_URL: redis://zenml-redis:6379/0
       ZENML_STORE_POOL_SIZE: "1"
       ZENML_STORE_MAX_OVERFLOW: "1"
+    secretEnvironment:
+      ZENML_REDIS_BROKER_URL: redis://zenml-redis:6379/0
     livenessProbe:
       httpGet:
         path: /health
@@ -133,10 +134,11 @@ workerDeployments:
         cpu: 500m
         memory: 1024Mi
     environment:
-      ZENML_REDIS_BROKER_URL: redis://zenml-redis:6379/0
       ZENML_CONSUMER_WORKER_POOL_SIZE: "16"
       ZENML_STORE_POOL_SIZE: "1"
       ZENML_STORE_MAX_OVERFLOW: "8"
+    secretEnvironment:
+      ZENML_REDIS_BROKER_URL: redis://zenml-redis:6379/0
     livenessProbe:
       httpGet:
         path: /health
@@ -155,18 +157,26 @@ workerDeployments:
       failureThreshold: 3
 ```
 
+For platform event triggers, the workspace **API server** must use the
+**same** Redis broker URL so it can publish pipeline lifecycle events (for
+example run completion) to Redis Streams for the executor to consume. Define
+this as a Kubernetes Secret in `server.secretEnvironment` and merge with
+any keys you already set:
+
+```yaml
+server:
+  secretEnvironment:
+    ZENML_REDIS_BROKER_URL: redis://zenml-redis:6379/0
+```
+
 ### Environment variables (reference)
 
 | Variable | Where | Purpose |
 |----------|--------|---------|
-| `ZENML_REDIS_BROKER_URL` | scheduler, executor | Redis connection URL for the broker |
+| `ZENML_REDIS_BROKER_URL` | scheduler, executor, API server | Redis connection URL for the broker |
 | `ZENML_STORE_POOL_SIZE` | scheduler, executor | SQLAlchemy pool size (defaults apply if unset) |
 | `ZENML_STORE_MAX_OVERFLOW` | scheduler, executor | SQLAlchemy max overflow for the store connection pool |
 | `ZENML_CONSUMER_WORKER_POOL_SIZE` | executor | Async pool size for dispatch processing in the executor microservice |
-
-Optional tuning for the scheduler loop uses environment variables with the
-`ZENML_SCHEDULER_` prefix (for example polling frequency). Check the release
-notes for your workspace server version if you need non-default behavior.
 
 ## Apply the change
 
