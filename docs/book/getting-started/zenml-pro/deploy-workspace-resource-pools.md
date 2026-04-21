@@ -1,7 +1,7 @@
 ---
 description: >-
-  Enable the ZenML Pro resource pool reconciler worker for self-hosted workspace
-  servers on Kubernetes.
+  Enable the ZenML Pro resource pool reconciler microservice for self-hosted
+  workspace servers on Kubernetes.
 layout:
   title:
     visible: true
@@ -22,7 +22,7 @@ keys, and related limits) for dynamic pipelines. Keeping pool state
 consistent uses a background **reconciler** process in ZenML Pro.
 
 On **Kubernetes** self-hosted deployments, you enable that process by adding
-a Helm **worker** deployment named `resource-pool-reconciler` that runs
+a microservice (the resource pool reconciler) that runs
 `plugins start-resource-pool-reconciler` (same image as the workspace server).
 
 {% hint style="warning" %}
@@ -33,8 +33,8 @@ you need entitlements enabled for your license.
 {% endhint %}
 
 {% hint style="warning" %}
-Deploy this worker only for workspace servers installed with the ZenML Helm
-chart on Kubernetes. Other platforms (for example AWS ECS) are not covered
+Deploy this microservice only for workspace servers installed with the ZenML
+Helm chart on Kubernetes. Other platforms (for example AWS ECS) are not covered
 here.
 {% endhint %}
 
@@ -43,25 +43,30 @@ here.
 - Resource pools apply to
   [dynamic pipelines](https://docs.zenml.io/how-to/steps-pipelines/dynamic_pipelines).
   Ensure your teams understand that contract before enabling the reconciler.
-- Enough cluster resources for one extra Deployment (see the example `resources`
-  below).
+- Enough cluster resources for one extra microservice (see the example
+  `resources` below).
 
 ## What to configure in Helm
 
-Merge a `workerDeployments` entry into your workspace values file next to
-your existing `server:` configuration. The worker uses the same container
-image as the ZenML Pro server by default; it overrides the entrypoint to run
+The ZenML Helm chart deploys optional background processes as additional
+microservices, each declared under the `workerDeployments` key in your
+workspace `values.yaml`. Each map entry becomes its own Kubernetes
+Deployment.
+
+Add the **resource pool reconciler** under `workerDeployments` next to your
+existing `server:` configuration. That microservice uses the same container
+image as the ZenML Pro server by default and overrides the entrypoint to run
 the reconciler.
 
-Set SQLAlchemy pool sizes appropriate for a dedicated worker pod. The example
-below is a reasonable starting point; adjust `resources` and probes for your
+Set SQLAlchemy pool sizes appropriate for a dedicated pod. The example below
+is a reasonable starting point; adjust `resources` and probes for your
 environment.
 
 {% hint style="warning" %}
-The **resource pool reconciler** must always run as a **single replica** with a
-**`Recreate`** rollout strategy. Do not scale it horizontally or switch to
-`RollingUpdate`; multiple reconciler pods or overlapping rollouts can corrupt
-or confuse pool reconciliation.
+The **resource pool reconciler** microservice must always run as a **single
+replica** with a **`Recreate`** rollout strategy. Do not scale it horizontally
+or switch to `RollingUpdate`; multiple reconciler pods or overlapping
+rollouts can corrupt or confuse pool reconciliation.
 {% endhint %}
 
 ```yaml
@@ -105,7 +110,7 @@ workerDeployments:
 
 | Variable | Purpose |
 |----------|---------|
-| `ZENML_STORE_POOL_SIZE` | SQLAlchemy pool size for store access in the worker |
+| `ZENML_STORE_POOL_SIZE` | SQLAlchemy pool size for store access in this microservice |
 | `ZENML_STORE_MAX_OVERFLOW` | SQLAlchemy max overflow for the store connection pool |
 
 ## Apply the change

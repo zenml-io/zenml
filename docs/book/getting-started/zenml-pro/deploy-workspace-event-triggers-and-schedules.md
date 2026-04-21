@@ -1,7 +1,7 @@
 ---
 description: >-
-  Enable ZenML Pro event triggers and schedules (scheduler and executor workers)
-  for self-hosted workspace servers on Kubernetes.
+  Enable ZenML Pro event triggers and schedules (scheduler and executor
+  microservices) for self-hosted workspace servers on Kubernetes.
 layout:
   title:
     visible: true
@@ -22,7 +22,7 @@ cron or interval. [Platform event triggers](triggers.md#platform-event-triggers)
 run pipelines when lifecycle events occur in the ZenML platform (for example
 after another pipeline completes). On self-hosted workspaces, both are part
 of the same opt-in capability and use the same background infrastructure:
-two Helm **worker** deployments—the **scheduler** and the **executor**—plus a
+two additional microservices—the **scheduler** and the **executor**—plus a
 **Redis** broker that connects them.
 
 {% hint style="warning" %}
@@ -34,8 +34,8 @@ need entitlements enabled for your license.
 {% endhint %}
 
 {% hint style="warning" %}
-Deploy these workers only for workspace servers installed with the ZenML Helm
-chart on Kubernetes. Other platforms (for example AWS ECS) are not covered
+Deploy these microservices only for workspace servers installed with the ZenML
+Helm chart on Kubernetes. Other platforms (for example AWS ECS) are not covered
 here.
 {% endhint %}
 
@@ -55,23 +55,29 @@ first if you have not configured it yet.
   executor use Redis Streams as a message broker. Use a URL such as
   `redis://<redis-host>:6379/0`, or `rediss://<redis-host>:<port>/0` when Redis
   requires TLS.
-- Enough cluster resources for two additional Deployments (see the example
-  `resources` below).
+- Enough cluster resources for the two microservices below (see the example
+  `resources`).
 
 ## What to configure in Helm
 
-Merge a `workerDeployments` block into your workspace values file next to
-your existing `server:` configuration. Workers use the same container image
-as the ZenML Pro server by default; they override the entrypoint to run the
-`plugins` helper with the subcommands below.
+The ZenML Helm chart deploys optional background processes as additional
+microservices, each declared under the `workerDeployments` key in your
+workspace `values.yaml`. Each map entry becomes its own Kubernetes
+Deployment.
 
-The example below shows both workers enabled: they use the `plugins` command
-with `start-scheduler` and `start-executor`, share `ZENML_REDIS_BROKER_URL`,
-and set SQLAlchemy pool sizes appropriate for dedicated worker pods. Adjust
-`resources`, probes, and pool sizes to match your cluster and load.
+Add a `workerDeployments` block next to your existing `server:` configuration.
+Each microservice uses the same container image as the ZenML Pro server by
+default and overrides the entrypoint to run the `plugins` helper with the
+subcommands below.
+
+The example enables both the **scheduler** and **executor** microservices:
+they use the `plugins` command with `start-scheduler` and `start-executor`,
+share `ZENML_REDIS_BROKER_URL`, and set SQLAlchemy pool sizes appropriate for
+dedicated pods. Adjust `resources`, probes, and pool sizes to match your
+cluster and load.
 
 {% hint style="warning" %}
-The **scheduler** worker must always run as a **single replica** with a
+The **scheduler** microservice must always run as a **single replica** with a
 **`Recreate`** rollout strategy. Do not scale it horizontally or switch to
 `RollingUpdate`; multiple scheduler pods or overlapping rollouts can break
 schedule and event dispatch.
@@ -156,7 +162,7 @@ workerDeployments:
 | `ZENML_REDIS_BROKER_URL` | scheduler, executor | Redis connection URL for the broker |
 | `ZENML_STORE_POOL_SIZE` | scheduler, executor | SQLAlchemy pool size (defaults apply if unset) |
 | `ZENML_STORE_MAX_OVERFLOW` | scheduler, executor | SQLAlchemy max overflow for the store connection pool |
-| `ZENML_CONSUMER_WORKER_POOL_SIZE` | executor | Async worker pool size for consuming dispatch messages |
+| `ZENML_CONSUMER_WORKER_POOL_SIZE` | executor | Async pool size for dispatch processing in the executor microservice |
 
 Optional tuning for the scheduler loop uses environment variables with the
 `ZENML_SCHEDULER_` prefix (for example polling frequency). Check the release
