@@ -567,7 +567,7 @@ def run_logs(
             limit=LOGS_MAX_ENTRIES_PER_REQUEST,
         )
 
-    raise KeyError(f"No logs found for source '{source}' in run {run_id}")
+    raise KeyError(f"No logs found in run {run_id}.")
 
 
 @router.put(
