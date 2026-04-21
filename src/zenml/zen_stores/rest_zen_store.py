@@ -2646,22 +2646,21 @@ class RestZenStore(BaseZenStore):
             path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
         )
 
-    def clear_trigger_snapshot_dispatch_error(
+    def clear_trigger_dispatch_error(
         self,
         trigger_id: UUID,
-        snapshot_id: UUID,
+        snapshot_id: UUID | None = None,
     ) -> None:
-        """Clear dispatch error details for a trigger_snapshot association.
+        """Clear dispatch error details for trigger dispatch associations.
 
         Args:
             trigger_id: The ID of the trigger.
-            snapshot_id: The ID of the snapshot.
+            snapshot_id: Optional snapshot ID filter.
         """
+        params = {"snapshot_id": str(snapshot_id)} if snapshot_id else None
         self.delete(
-            path=(
-                f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/"
-                f"{snapshot_id}{TRIGGER_SNAPSHOT_DISPATCH_STATE}"
-            ),
+            path=f"{TRIGGERS}/{trigger_id}{TRIGGER_SNAPSHOT_DISPATCH_STATE}",
+            params=params,
         )
 
     # ----------------------------- Schedules -----------------------------

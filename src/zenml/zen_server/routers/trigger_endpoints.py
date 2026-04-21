@@ -371,24 +371,21 @@ def detach_trigger_from_snapshot(
 
 
 @router.delete(
-    TRIGGERS
-    + "/{trigger_id}"
-    + PIPELINE_SNAPSHOTS
-    + "/{snapshot_id}"
-    + TRIGGER_SNAPSHOT_DISPATCH_STATE,
+    TRIGGERS + "/{trigger_id}" + TRIGGER_SNAPSHOT_DISPATCH_STATE,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
-def clear_trigger_snapshot_dispatch_error(
+def clear_trigger_dispatch_error(
     trigger_id: UUID,
-    snapshot_id: UUID,
+    snapshot_id: UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Clears recorded dispatch error details for a trigger-snapshot link.
+    """Clears recorded dispatch errors for one or all trigger snapshots.
 
     Args:
         trigger_id: The ID of the trigger.
-        snapshot_id: The ID of the snapshot.
+        snapshot_id: Optional snapshot ID. If omitted all trigger snapshot
+            dispatch errors are cleared.
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
@@ -397,12 +394,7 @@ def clear_trigger_snapshot_dispatch_error(
         action=Action.UPDATE,
     )
 
-    verify_permission_for_model(
-        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
-        action=Action.READ,
-    )
-
-    zen_store().clear_trigger_snapshot_dispatch_error(
+    zen_store().clear_trigger_dispatch_error(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
     )

@@ -1879,12 +1879,19 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     @abstractmethod
-    def clear_trigger_snapshot_dispatch_error(
+    def clear_trigger_dispatch_error(
         self,
         trigger_id: UUID,
-        snapshot_id: UUID,
+        snapshot_id: UUID | None = None,
     ) -> None:
-        """Clear recorded dispatch error details for a trigger-snapshot link."""
+        """Clear recorded dispatch errors for a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: Optional snapshot ID. If provided, clear only this
+                snapshot association. If omitted, clear all associated
+                snapshot dispatch errors for the trigger.
+        """
 
     # -------------------- Schedules --------------------
 

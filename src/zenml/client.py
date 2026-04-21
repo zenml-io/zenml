@@ -4706,21 +4706,22 @@ class Client(metaclass=ClientMetaClass):
             trigger_id=trigger_id, snapshot_id=pipeline_snapshot_id
         )
 
-    def clear_trigger_snapshot_dispatch_error(
+    def clear_trigger_dispatch_error(
         self,
         trigger_id: UUID,
-        pipeline_snapshot_id: UUID,
+        pipeline_snapshot_id: UUID | None = None,
     ) -> None:
-        """Acknowledge and clear dispatch error details for a trigger-snapshot.
+        """Acknowledge and clear dispatch errors for a trigger.
 
-        This does not remove the full dispatch state; it only clears recorded
-        error fields that power alarm-style UX.
+        If a snapshot ID is provided, only the corresponding trigger-snapshot
+        dispatch state is cleared. If omitted, dispatch errors for all attached
+        snapshots are cleared.
 
         Args:
             trigger_id: The ID of the trigger.
-            pipeline_snapshot_id: The ID of the attached snapshot.
+            pipeline_snapshot_id: Optional attached snapshot ID.
         """
-        self.zen_store.clear_trigger_snapshot_dispatch_error(
+        self.zen_store.clear_trigger_dispatch_error(
             trigger_id=trigger_id,
             snapshot_id=pipeline_snapshot_id,
         )

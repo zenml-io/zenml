@@ -8141,16 +8141,16 @@ class SqlZenStore(BaseZenStore):
             session.add(row)
             session.commit()
 
-    def clear_trigger_snapshot_dispatch_error(
+    def clear_trigger_dispatch_error(
         self,
         trigger_id: UUID,
-        snapshot_id: UUID,
+        snapshot_id: UUID | None = None,
     ) -> None:
-        """Clear only dispatch error details on a trigger-snapshot link.
+        """Clear dispatch errors for one or all trigger snapshot associations.
 
         Args:
             trigger_id: Trigger ID.
-            snapshot_id: Display/source snapshot ID.
+            snapshot_id: Optional display/source snapshot ID.
 
         Raises:
             KeyError: If the snapshot is not attached to the trigger.
@@ -8162,17 +8162,21 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            executable_snapshot_ids = [
-                snapshot.id
-                for snapshot in trigger.snapshots
-                if snapshot.source_snapshot_id == snapshot_id
-            ]
-
-            if not executable_snapshot_ids:
-                raise KeyError(
-                    f"Snapshot {snapshot_id} is not attached to trigger "
-                    f"{trigger_id}"
-                )
+            if snapshot_id is None:
+                executable_snapshot_ids = [
+                    snapshot.id for snapshot in trigger.snapshots
+                ]
+            else:
+                executable_snapshot_ids = [
+                    snapshot.id
+                    for snapshot in trigger.snapshots
+                    if snapshot.source_snapshot_id == snapshot_id
+                ]
+                if not executable_snapshot_ids:
+                    raise KeyError(
+                        f"Snapshot {snapshot_id} is not attached to trigger "
+                        f"{trigger_id}"
+                    )
 
             for executable_snapshot_id in executable_snapshot_ids:
                 row = self._get_trigger_snapshot_association(

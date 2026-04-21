@@ -355,6 +355,7 @@ from zenml.models.v2.core.triggers import (
     TriggerResponseResources,
     TriggerFilter,
     TriggerSnapshotDispatchState,
+    TriggerDispatchErrorSeverity,
     TriggerDispatchStatusCode,
     ScheduleTriggerRequest,
     ScheduleTriggerResponseBody,
@@ -917,6 +918,7 @@ __all__ = [
     "TriggerResponseResources",
     "TriggerFilter",
     "TriggerSnapshotDispatchState",
+    "TriggerDispatchErrorSeverity",
     "TriggerDispatchStatusCode",
     # V2 Misc
     "AuthenticationMethodModel",

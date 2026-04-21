@@ -452,21 +452,22 @@ def make_detach_command() -> click.Command:
     return click.command("detach", help="Detach trigger from snapshot")(f)
 
 
-def make_clear_dispatch_error_command() -> click.Command:
+def make_clear_errors_command() -> click.Command:
     """Create a command for clearing trigger dispatch error details.
 
     Returns:
         A Click command for dispatch error acknowledgement.
     """
 
-    def clear_dispatch_error(
-        trigger_name_or_id: str, snapshot_name_or_id: str
+    def clear_errors(
+        trigger_name_or_id: str,
+        snapshot_name_or_id: str | None = None,
     ) -> None:
-        """Clear recorded dispatch error details for a trigger-snapshot link.
+        """Clear recorded dispatch errors for one or all trigger snapshots.
 
         Args:
             trigger_name_or_id: The name or ID of the trigger.
-            snapshot_name_or_id: The name or ID of the snapshot.
+            snapshot_name_or_id: Optional name or ID of a specific snapshot.
         """
         try:
             trigger_id = (
@@ -478,35 +479,43 @@ def make_clear_dispatch_error_command() -> click.Command:
                 )
                 .id
             )
-            snapshot_id = (
-                Client()
-                .get_snapshot(
-                    name_id_or_prefix=snapshot_name_or_id,
-                    allow_prefix_match=False,
-                    hydrate=False,
+            snapshot_id = None
+            if snapshot_name_or_id is not None:
+                snapshot_id = (
+                    Client()
+                    .get_snapshot(
+                        name_id_or_prefix=snapshot_name_or_id,
+                        allow_prefix_match=False,
+                        hydrate=False,
+                    )
+                    .id
                 )
-                .id
-            )
-            Client().clear_trigger_snapshot_dispatch_error(
+            Client().clear_trigger_dispatch_error(
                 trigger_id=trigger_id,
                 pipeline_snapshot_id=snapshot_id,
             )
         except Exception as e:
             cli_utils.exception(e)
         else:
-            cli_utils.declare(
-                "Cleared dispatch error details for "
-                f"trigger '{trigger_name_or_id}' and snapshot "
-                f"'{snapshot_name_or_id}'."
-            )
+            if snapshot_name_or_id is None:
+                cli_utils.declare(
+                    "Cleared dispatch error details for all snapshots attached "
+                    f"to trigger '{trigger_name_or_id}'."
+                )
+            else:
+                cli_utils.declare(
+                    "Cleared dispatch error details for "
+                    f"trigger '{trigger_name_or_id}' and snapshot "
+                    f"'{snapshot_name_or_id}'."
+                )
 
-    f = clear_dispatch_error
-    f = click.argument("snapshot_name_or_id", type=str)(f)
+    f = clear_errors
+    f = click.argument("snapshot_name_or_id", type=str, required=False)(f)
     f = click.argument("trigger_name_or_id", type=str)(f)
 
     return click.command(
-        "clear-dispatch-error",
-        help="Acknowledge and clear dispatch error details.",
+        "clear-errors",
+        help="Acknowledge and clear status errors.",
     )(f)
 
 
@@ -688,4 +697,4 @@ for group in [schedule, platform_event]:
     group.add_command(make_delete_command())
     group.add_command(make_attach_command())
     group.add_command(make_detach_command())
-    group.add_command(make_clear_dispatch_error_command())
+    group.add_command(make_clear_errors_command())
