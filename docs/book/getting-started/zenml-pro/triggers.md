@@ -231,6 +231,50 @@ Via the CLI:
 zenml trigger schedule list --active=true
 ~~~
 
+### Stopping Criteria
+
+You can control when a schedule stops by limiting it in time or by number of runs. This helps avoid unintended 
+long-running schedules and gives you tighter control over resource usage.
+
+#### `end_time`
+
+Defines the point in time after which the schedule will no longer trigger runs. 
+The schedule remains visible but inactive for future executions.
+
+~~~python
+from datetime import datetime, timedelta
+from zenml.client import Client
+
+client = Client()
+
+client.create_schedule_trigger(
+    name="limited-schedule",
+    cron_expression="0 0 * * *",
+    end_time=datetime.now() + timedelta(days=2),
+)
+~~~
+
+#### `max_runs`
+
+Limits how many times a schedule can trigger a pipeline. Once the limit is reached, no further runs are scheduled. 
+Note that this limit applies per attached snapshot, for example, with a limit of 2 and two attached snapshots, you will see a total of 4 runs.
+
+~~~python
+from zenml.client import Client
+
+client = Client()
+
+client.create_schedule_trigger(
+    name="limited-schedule",
+    cron_expression="0 0 * * *",
+    max_runs=24,
+)
+~~~
+
+#### Combined usage
+
+If both are set, the schedule stops when the first condition is reached (time or run limit).
+
 #### Clear dispatch errors
 
 To clear stored dispatch error details after the issue is resolved, use the SDK
