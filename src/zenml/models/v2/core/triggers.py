@@ -61,6 +61,7 @@ class TriggerDispatchStatusCode(StrEnum):
 
     SUCCESS = "SUCCESS"
     SKIPPED_CONCURRENCY = "SKIPPED_CONCURRENCY"
+    SKIPPED_MAX_RUNS = "SKIPPED_MAX_RUNS"
     ERROR = "ERROR"
 
 
@@ -510,6 +511,11 @@ class ScheduleTrigger(BaseModel):
         default=None,
         description="Scheduling option: Execute once on selected start time.",
     )
+    max_runs: int | None = Field(
+        default=None,
+        description="Maximum number of runs to execute with this schedule.",
+        ge=1,
+    )
 
     @field_validator(
         "start_time", "end_time", "run_once_start_time", mode="after"
@@ -858,6 +864,15 @@ class ScheduleTriggerResponse(TriggerResponse[ScheduleTriggerResponseBody,]):
             The schedule's run once start time.
         """
         return self.get_body().run_once_start_time
+
+    @property
+    def max_runs(self) -> int | None:
+        """Implements the 'max_runs' property.
+
+        Returns:
+            The scheduler's max runs.
+        """
+        return self.get_body().max_runs
 
 
 # ----------- EVENT CLASSES ------------------- #

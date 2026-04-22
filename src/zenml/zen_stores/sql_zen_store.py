@@ -5042,6 +5042,34 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return session.exec(query).first() is not None
 
+    def _drop_snapshot_trigger_assoc(
+        self,
+        snapshot_id: UUID,
+        session: Session,
+    ) -> None:
+        """Drops any trigger associations linked to a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot (to be deleted or un-named).
+            session: SQLAlchemy session
+        """
+        linked_snapshot_ids = session.exec(
+            select(PipelineSnapshotSchema.id).where(
+                PipelineSnapshotSchema.source_snapshot_id == snapshot_id
+            )
+        ).all()
+
+        # Remove the attached trigger snapshots
+
+        if not linked_snapshot_ids:
+            return
+
+        session.execute(
+            delete(TriggerSnapshotSchema).where(
+                col(TriggerSnapshotSchema.snapshot_id).in_(linked_snapshot_ids)
+            )
+        )
+
     def _remove_name_from_snapshot(
         self, session: Session, pipeline_id: UUID, name: str
     ) -> None:
@@ -5052,15 +5080,24 @@ class SqlZenStore(BaseZenStore):
             pipeline_id: The pipeline ID of the snapshot.
             name: The name of the snapshot.
         """
-        query = (
-            update(PipelineSnapshotSchema)
-            .where(
+        existing = session.exec(
+            select(PipelineSnapshotSchema).where(
                 col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
                 col(PipelineSnapshotSchema.name) == name,
             )
-            .values(name=None)
+        ).first()
+
+        if not existing:
+            return
+
+        existing.name = None
+
+        session.add(existing)
+
+        self._drop_snapshot_trigger_assoc(
+            snapshot_id=existing.id,
+            session=session,
         )
-        session.execute(query)
 
     def create_snapshot(
         self,
@@ -5332,6 +5369,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if snapshot.name is None:
+                self._drop_snapshot_trigger_assoc(
+                    snapshot_id=snapshot.id,
+                    session=session,
+                )
+                session.commit()
+
             session.refresh(snapshot)
             return snapshot.to_model(
                 include_metadata=True, include_resources=True
@@ -5363,6 +5407,16 @@ class SqlZenStore(BaseZenStore):
             for snapshot in snapshots:
                 snapshot.source_snapshot_id = None
                 session.add(snapshot)
+
+            # Remove the attached trigger snapshots
+
+            session.execute(
+                delete(TriggerSnapshotSchema).where(
+                    col(TriggerSnapshotSchema.snapshot_id).in_(
+                        [s.id for s in snapshots]
+                    )
+                )
+            )
 
             session.commit()
 
@@ -8282,6 +8336,61 @@ class SqlZenStore(BaseZenStore):
                 row.to_model(include_metadata=True, include_resources=True)  # type: ignore[misc]
                 for row in session.exec(stmt).all()
             ]
+
+    def get_run_count_by_trigger_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID | None = None
+    ) -> dict[UUID, int]:
+        """Calculates the number of runs for trigger/snapshot pair.
+
+        Note: This should take into account multiple attachments of the
+        same source snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot. If not specified will return counts for all trigger snapshots.
+
+        Returns:
+            A dictionary where keys are {trigger_id}_{snapshot_id} pairs and values their run counts.
+        """
+        with Session(self.engine) as session:
+            stmt = (
+                select(
+                    TriggerExecutionSchema.trigger_id,
+                    PipelineSnapshotSchema.source_snapshot_id,
+                    func.count().label("run_count"),
+                )
+                .select_from(TriggerExecutionSchema)
+                .join(
+                    PipelineRunSchema,
+                    col(PipelineRunSchema.id)
+                    == TriggerExecutionSchema.pipeline_run_id,
+                )
+                .join(
+                    PipelineSnapshotSchema,
+                    col(PipelineSnapshotSchema.id)
+                    == PipelineRunSchema.snapshot_id,
+                )
+                .where(
+                    TriggerExecutionSchema.trigger_id == trigger_id,
+                    col(PipelineSnapshotSchema.source_snapshot_id).isnot(None),
+                )
+            )
+
+            if snapshot_id:
+                stmt = stmt.where(
+                    PipelineSnapshotSchema.source_snapshot_id == snapshot_id,
+                )
+
+            stmt = stmt.group_by(
+                col(TriggerExecutionSchema.trigger_id),
+                col(PipelineSnapshotSchema.source_snapshot_id),
+            )
+
+            return {
+                row[1]: row[2]
+                for row in session.exec(stmt).all()
+                if row[1] is not None
+            }
 
     # ----------------------------- Schedules -----------------------------
 
