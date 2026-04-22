@@ -107,16 +107,21 @@ def resolve_stack_component_setting_key(
         StackComponentType,
         Sequence[Union["StackComponent", ComponentResponse]],
     ],
+    legacy: bool = False,
 ) -> Optional[str]:
     """Resolves a setting selector to a canonical component key.
+
+    For ZenML versions before 0.94.3, the settings keys are normalized to `type.flavor`,
+    however, for newer versions, the settings keys are normalized to `type:name`.
 
     Args:
         key: The user-provided settings key.
         components_by_type: Components grouped by type.
+        legacy: Flag to indicate whether to use legacy default settings keys.
 
     Returns:
-        The canonical `type:name` key for the resolved component. Returns
-        `None` if an explicit name/flavor selector doesn't match any component.
+        The canonical key for the resolved component. Returns ``None`` if an
+        explicit name/flavor selector doesn't match any component.
 
     Raises:
         ValueError: If the selector resolves ambiguously or if a shortcut key
@@ -172,7 +177,10 @@ def resolve_stack_component_setting_key(
             f"`{key}` because it matched {len(matches)} components."
         )
 
-    return f"{component_type}:{matches[0].name}"
+    if legacy:
+        return f"{component_type}.{_get_component_flavor(matches[0])}"
+    else:
+        return f"{component_type}:{matches[0].name}"
 
 
 def normalize_stack_component_setting_keys(
@@ -181,12 +189,17 @@ def normalize_stack_component_setting_keys(
         StackComponentType,
         Sequence[Union["StackComponent", ComponentResponse]],
     ],
+    legacy: bool = False,
 ) -> None:
     """Normalizes component settings keys to canonical component keys.
+
+    For ZenML versions before 0.94.3, the settings keys are normalized to `type.flavor`,
+    however, for newer versions, the settings keys are normalized to `type:name`.
 
     Args:
         settings: Settings to normalize in place.
         components_by_type: Components grouped by type.
+        legacy: Flag to indicate whether to use legacy default settings keys.
 
     Raises:
         ValueError: If a selector does not resolve to exactly one component.
@@ -202,6 +215,7 @@ def normalize_stack_component_setting_keys(
         resolved_key = resolve_stack_component_setting_key(
             key=key,
             components_by_type=components_by_type,
+            legacy=legacy,
         )
         if resolved_key is None:
             ignored_keys.append(key)

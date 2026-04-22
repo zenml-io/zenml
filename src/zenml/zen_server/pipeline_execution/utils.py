@@ -90,6 +90,52 @@ logger = get_logger(__name__)
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
+def use_legacy_stack_component_setting_keys_for_runner(
+    zenml_version: Optional[str],
+) -> bool:
+    """Whether stack component settings should use legacy keys for a runner.
+
+    Snapshots executed on ZenML before 0.94.3 expect `type.flavor` keys; the
+    server normalizes newer runs to `type:name` for multi-component stacks.
+
+    Args:
+        zenml_version: ZenML version string for the execution environment.
+
+    Returns:
+        `True` when `zenml_version` is missing, unparsable, or strictly
+        older than 0.94.3.
+    """
+    if not zenml_version or not zenml_version.strip():
+        return True
+    try:
+        parsed = version.parse(zenml_version.strip())
+        return parsed < version.parse("0.94.3")
+    except version.InvalidVersion:
+        return True
+
+
+def _has_legacy_settings(snapshot: PipelineSnapshotResponse) -> bool:
+    """Whether stack settings should use legacy keys for the snapshot runner.
+
+    Args:
+        snapshot: The snapshot to check.
+
+    Returns:
+        Whether stack settings should use legacy keys for the snapshot runner.
+    """
+    runner_version: Optional[str] = None
+
+    if snapshot.build is not None:
+        runner_version = snapshot.build.zenml_version
+
+    if runner_version is None:
+        runner_version = snapshot.client_version
+
+    return settings_utils.use_legacy_stack_component_setting_keys_for_runner(
+        runner_version
+    )
+
+
 class BoundedThreadPoolExecutor:
     """Thread pool executor which only allows a maximum number of concurrent tasks."""
 
@@ -421,7 +467,8 @@ def resume_run(run: PipelineRunResponse) -> Future[None]:
 
 
 def ensure_async_orchestrator(
-    snapshot: PipelineSnapshotRequest, stack: StackResponse
+    snapshot: PipelineSnapshotRequest,
+    stack: StackResponse,
 ) -> None:
     """Ensures the orchestrator is configured to run async.
 
@@ -441,6 +488,7 @@ def ensure_async_orchestrator(
         settings_utils.normalize_stack_component_setting_keys(
             settings=snapshot.pipeline_configuration.settings,
             components_by_type=stack.components,
+            legacy=_has_legacy_settings(snapshot),
         )
         key = settings_utils.get_stack_component_name_setting_key(orchestrator)
 
@@ -555,6 +603,7 @@ def snapshot_request_from_source_snapshot(
         settings_utils.normalize_stack_component_setting_keys(
             settings=config.settings,
             components_by_type=source_snapshot.stack.components,
+            legacy=_has_legacy_settings(source_snapshot),
         )
 
     pipeline_update = config.model_dump(
@@ -590,6 +639,7 @@ def snapshot_request_from_source_snapshot(
             settings_utils.normalize_stack_component_setting_keys(
                 settings=step_update_model.settings,
                 components_by_type=source_snapshot.stack.components,
+                legacy=_has_legacy_settings(source_snapshot),
             )
         step_update = step_update_model.model_dump(
             # Get rid of deprecated name to prevent overriding the step name
