@@ -14,6 +14,7 @@
 """SQL Model Implementations for Triggers Associations."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
@@ -22,6 +23,9 @@ from sqlmodel import Field, SQLModel
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+
+if TYPE_CHECKING:
+    from zenml.models import TriggerSnapshotDispatchState
 
 
 class TriggerSnapshotSchema(SQLModel, table=True):
@@ -61,6 +65,32 @@ class TriggerSnapshotSchema(SQLModel, table=True):
     )
 
     created_at: datetime = Field(default_factory=utc_now)
+
+    dispatch_state: str | None = Field(
+        sa_column=Column(
+            String(length=TEXT_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
+            nullable=True,
+            default=None,
+        ),
+    )
+
+    @property
+    def parsed_dispatch_state(self) -> "TriggerSnapshotDispatchState | None":
+        """Parse persisted dispatch-state JSON into the typed model.
+
+        Returns:
+            Parsed trigger dispatch state or ``None`` if missing/invalid.
+        """
+        if not self.dispatch_state:
+            return None
+        try:
+            from zenml.models import TriggerSnapshotDispatchState
+
+            return TriggerSnapshotDispatchState.model_validate_json(
+                self.dispatch_state
+            )
+        except Exception:
+            return None
 
 
 class TriggerExecutionSchema(SQLModel, table=True):
