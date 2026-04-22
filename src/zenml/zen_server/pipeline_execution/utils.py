@@ -90,12 +90,12 @@ logger = get_logger(__name__)
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
-def use_legacy_stack_component_setting_keys_for_runner(
+def _use_legacy_stack_component_setting_keys(
     zenml_version: Optional[str],
 ) -> bool:
     """Whether stack component settings should use legacy keys for a runner.
 
-    Snapshots executed on ZenML before 0.94.3 expect `type.flavor` keys; the
+    Snapshots executed on ZenML before 0.94.3 expect `type.flavor` keys, the
     server normalizes newer runs to `type:name` for multi-component stacks.
 
     Args:
@@ -131,9 +131,7 @@ def _has_legacy_settings(snapshot: PipelineSnapshotResponse) -> bool:
     if runner_version is None:
         runner_version = snapshot.client_version
 
-    return settings_utils.use_legacy_stack_component_setting_keys_for_runner(
-        runner_version
-    )
+    return _use_legacy_stack_component_setting_keys(runner_version)
 
 
 class BoundedThreadPoolExecutor:
@@ -216,7 +214,11 @@ def create_snapshot_from_source(
         config=run_configuration or PipelineRunConfiguration(),
         template_id=template_id,
     )
-    ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
+    ensure_async_orchestrator(
+        snapshot=snapshot_request,
+        stack=stack,
+        legacy=_has_legacy_settings(snapshot),
+    )
     return zen_store().create_snapshot(snapshot_request)
 
 
@@ -469,6 +471,7 @@ def resume_run(run: PipelineRunResponse) -> Future[None]:
 def ensure_async_orchestrator(
     snapshot: PipelineSnapshotRequest,
     stack: StackResponse,
+    legacy: bool,
 ) -> None:
     """Ensures the orchestrator is configured to run async.
 
@@ -477,6 +480,7 @@ def ensure_async_orchestrator(
             configuration should be updated to ensure the orchestrator is
             running async.
         stack: The stack on which the snapshot will run.
+        legacy: Indicates whether to use legacy stack component setting keys.
     """
     orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
     flavors = zen_store().list_flavors(
@@ -488,9 +492,15 @@ def ensure_async_orchestrator(
         settings_utils.normalize_stack_component_setting_keys(
             settings=snapshot.pipeline_configuration.settings,
             components_by_type=stack.components,
-            legacy=_has_legacy_settings(snapshot),
+            legacy=legacy,
         )
-        key = settings_utils.get_stack_component_name_setting_key(orchestrator)
+
+        if legacy:
+            key = f"{orchestrator.type}.{orchestrator.flavor_name}"
+        else:
+            key = settings_utils.get_stack_component_name_setting_key(
+                orchestrator
+            )
 
         if settings := snapshot.pipeline_configuration.settings.get(key):
             settings_dict = settings.model_dump()
