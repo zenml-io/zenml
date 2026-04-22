@@ -276,6 +276,11 @@ def attach_trigger_to_snapshot(
             "Trigger and snapshot must be in the same project"
         )
 
+    if not snapshot.name:
+        raise IllegalOperationError(
+            "Can not attach a snapshot without name to a trigger."
+        )
+
     snapshot_replaced_id = None
 
     for s in trigger.snapshots:

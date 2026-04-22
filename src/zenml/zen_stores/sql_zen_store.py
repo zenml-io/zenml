@@ -5057,7 +5057,6 @@ class SqlZenStore(BaseZenStore):
             snapshot_id: The ID of the snapshot (to be deleted or un-named).
             session: SQLAlchemy session
         """
-
         linked_snapshot_ids = session.exec(
             select(PipelineSnapshotSchema.id).where(
                 PipelineSnapshotSchema.source_snapshot_id == snapshot_id
