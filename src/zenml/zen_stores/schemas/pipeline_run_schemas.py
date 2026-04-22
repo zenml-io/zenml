@@ -753,7 +753,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.model_version
                 else None,
                 tags=[tag.to_model() for tag in self.tags],
-                log_collection=[log.to_model() for log in self.logs],
+                log_collection=[
+                    log.to_model()
+                    for log in sorted(self.logs, key=lambda log: log.created)
+                ],
                 visualizations=[
                     visualization.to_model(
                         include_metadata=False,
