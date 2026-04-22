@@ -355,6 +355,7 @@ class UnScopedTriggerFilter(BaseFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "is_archived",
+        "type",
     ]
 
     name: str | None = Field(
@@ -409,6 +410,8 @@ class UnScopedTriggerFilter(BaseFilter):
 
         query = super().apply_filter(query=query, table=table)
         query = query.where(TriggerSchema.is_archived == self.is_archived)
+        if self.type is not None:
+            query = query.where(TriggerSchema.type == self.type)
         return query
 
 

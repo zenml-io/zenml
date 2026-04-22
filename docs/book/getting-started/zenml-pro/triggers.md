@@ -463,7 +463,7 @@ c.attach_trigger_to_snapshot(
     pipeline_snapshot_id=UUID("<snapshot_uuid>"),
 )
 c.detach_trigger_from_snapshot(
-    trigger_id=UUID("<trigger_uuid>"),
+    trigger_id=UUID("<trigger_uuid>"),`
     pipeline_snapshot_id=UUID("<snapshot_uuid>"),
 )
 c.delete_trigger(trigger_id=UUID("<trigger_uuid>"), soft=True)
