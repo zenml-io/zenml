@@ -7,6 +7,7 @@ Create Date: 2026-03-31 15:41:03.431700
 """
 
 import sqlalchemy as sa
+import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -20,7 +21,11 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("stack_composition", schema=None) as batch_op:
         batch_op.add_column(
-            sa.Column("default_for_type", sa.String(), nullable=True)
+            sa.Column(
+                "default_for_type",
+                sqlmodel.sql.sqltypes.AutoString(),
+                nullable=True,
+            )
         )
 
     connection = op.get_bind()
