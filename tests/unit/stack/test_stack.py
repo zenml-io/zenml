@@ -184,9 +184,12 @@ def test_requires_remote_server(stack_with_mock_components, mocker):
         spec=BaseStepOperator,
         type=StackComponentType.STEP_OPERATOR,
         flavor="mock",
-        name="mock_step_operator",
     )
-    stack_with_mock_components._step_operator = step_operator
+    step_operator.name = "mock_step_operator"
+    step_operator.config.is_remote = False
+    stack_with_mock_components._components[
+        StackComponentType.STEP_OPERATOR
+    ] = [step_operator]
 
     stack_with_mock_components.orchestrator.config.is_remote = False
     stack_with_mock_components.step_operator.config.is_remote = False
