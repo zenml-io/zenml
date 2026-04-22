@@ -305,7 +305,7 @@ server:
     path: /
 ```
 
-> **Important:** `server.ingress.enabled` and `server.gateway.enabled` are mutually exclusive. The chart will fail to render if both are `true`.
+Both `server.ingress.enabled` and `server.gateway.enabled` can be set to `true` simultaneously. This is useful during migration periods: the chart renders both an Ingress and an HTTPRoute, allowing traffic to flow through whichever controller DNS points to. Kubernetes controllers only act on resources they own — an ingress controller ignores HTTPRoutes and a Gateway controller ignores Ingresses — so enabling both creates no conflict.
 
 For a full migration flow (prerequisites, rollout strategy, TLS options, DNS cutover, and rollback), see [Migrate to Gateway API](migrate-to-gateway-api.md).
 

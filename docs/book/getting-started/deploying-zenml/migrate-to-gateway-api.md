@@ -25,31 +25,24 @@ Gateway API is the Kubernetes networking successor to the legacy Ingress model. 
 
 1. Install or verify your Gateway API implementation.
 2. Create a shared `Gateway` (platform-managed).
-3. Update ZenML Helm values from `ingress` to `gateway`.
+3. Enable `server.gateway` in ZenML Helm values (alongside existing `server.ingress` for zero-downtime migration).
 4. Deploy and verify `HTTPRoute` status and application health.
 5. Perform DNS cutover (if using a new load balancer).
-6. Keep rollback path available until stabilization completes.
+6. Disable `server.ingress` after stabilization.
 
 ## Helm values migration
 
-### Before (Ingress)
+### Step 1: Enable both (parallel period)
+
+Both `server.ingress.enabled` and `server.gateway.enabled` can be `true` simultaneously. The chart renders both an Ingress and an HTTPRoute. Kubernetes controllers only act on resources they own — an ingress controller ignores HTTPRoutes and a Gateway controller ignores Ingresses — so enabling both creates no conflict.
 
 ```yaml
 server:
   ingress:
-    enabled: true
+    enabled: true              # keep Ingress active during migration
     host: zenml.example.com
-```
-
-### After (Gateway API)
-
-```yaml
-server:
-  ingress:
-    enabled: false
   gateway:
-    enabled: true
-    annotations: {}
+    enabled: true              # also create HTTPRoute
     gatewayRef:
       name: zenml-gateway
       namespace: gateway-infra
@@ -58,7 +51,29 @@ server:
     path: /
 ```
 
-> `ingress.enabled` and `gateway.enabled` are mutually exclusive. Helm rendering fails if both are `true`.
+At this point, traffic still flows through the ingress controller (DNS points to its load balancer). The HTTPRoute is ready on the Gateway side but idle.
+
+### Step 2: DNS cutover
+
+Update DNS to point to the Gateway's load balancer. Both the Ingress and HTTPRoute exist, so the transition is seamless — the ingress controller handles traffic until DNS propagates, then the Gateway takes over.
+
+### Step 3: Disable Ingress (cleanup)
+
+After DNS is stable and traffic is flowing through the Gateway, disable Ingress:
+
+```yaml
+server:
+  ingress:
+    enabled: false
+  gateway:
+    enabled: true
+    gatewayRef:
+      name: zenml-gateway
+      namespace: gateway-infra
+    sectionName: https-backend
+    host: zenml.example.com
+    path: /
+```
 
 ## Gateway implementation examples
 
@@ -122,8 +137,9 @@ If migration introduces a new load balancer:
 
 ## Rollback
 
-1. Repoint DNS to the previous load balancer.
-2. Set Helm values back to ingress mode:
+Since both Ingress and Gateway can be enabled simultaneously, rollback during the parallel period is simply a DNS change — point DNS back to the ingress controller's load balancer. No Helm changes needed.
+
+If you've already disabled Ingress (Step 3), re-enable it:
 
 ```yaml
 server:
@@ -134,6 +150,6 @@ server:
     enabled: false
 ```
 
-3. Re-deploy and verify `/health` and login.
+Re-deploy, repoint DNS to the ingress controller's load balancer, and verify `/health` and login.
 
 Keep both infrastructure paths available during stabilization to ensure a low-risk rollback.

@@ -1,7 +1,4 @@
 {{- $server := include "zenml.serverValues" . | fromYaml -}}
-{{- if and $server.ingress.enabled $server.gateway.enabled -}}
-{{- fail "Only one of ingress.enabled and gateway.enabled can be true" -}}
-{{- end -}}
 {{- if $server.ingress.enabled -}}
 {{- $fullName := include "zenml.fullname" . -}}
 {{- $svcPort := $server.service.port -}}
