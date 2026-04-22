@@ -115,23 +115,23 @@ def _use_legacy_stack_component_setting_keys(
 
 
 def _has_legacy_settings(snapshot: PipelineSnapshotResponse) -> bool:
-    """Whether stack settings should use legacy keys for the snapshot runner.
+    """Whether stack settings should use legacy keys.
 
     Args:
         snapshot: The snapshot to check.
 
     Returns:
-        Whether stack settings should use legacy keys for the snapshot runner.
+        Whether stack settings should use legacy keys.
     """
-    runner_version: Optional[str] = None
+    zenml_version: Optional[str] = None
 
     if snapshot.build is not None:
-        runner_version = snapshot.build.zenml_version
+        zenml_version = snapshot.build.zenml_version
 
-    if runner_version is None:
-        runner_version = snapshot.client_version
+    if zenml_version is None:
+        zenml_version = snapshot.client_version
 
-    return _use_legacy_stack_component_setting_keys(runner_version)
+    return _use_legacy_stack_component_setting_keys(zenml_version)
 
 
 class BoundedThreadPoolExecutor:
