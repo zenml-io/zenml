@@ -651,6 +651,9 @@ def update_platform_event_trigger(
         name,
         active,
         concurrency,
+        source_id,
+        source_type,
+        target_events,
     ]
 
     if not any(option is not None for option in options):
