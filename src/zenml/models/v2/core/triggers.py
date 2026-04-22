@@ -61,6 +61,7 @@ class TriggerDispatchStatusCode(StrEnum):
 
     SUCCESS = "SUCCESS"
     SKIPPED_CONCURRENCY = "SKIPPED_CONCURRENCY"
+    SKIPPED_MAX_RUNS = "SKIPPED_MAX_RUNS"
     ERROR = "ERROR"
 
 
