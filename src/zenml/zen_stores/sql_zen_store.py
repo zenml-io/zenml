@@ -5069,7 +5069,6 @@ class SqlZenStore(BaseZenStore):
                 col(TriggerSnapshotSchema.snapshot_id).in_(linked_snapshot_ids)
             )
         )
-        session.commit()
 
     def _remove_name_from_snapshot(
         self, session: Session, pipeline_id: UUID, name: str
@@ -5375,6 +5374,7 @@ class SqlZenStore(BaseZenStore):
                     snapshot_id=snapshot.id,
                     session=session,
                 )
+                session.commit()
 
             session.refresh(snapshot)
             return snapshot.to_model(
