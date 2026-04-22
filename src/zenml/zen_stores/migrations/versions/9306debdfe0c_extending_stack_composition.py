@@ -1,7 +1,7 @@
 """extending stack composition [9306debdfe0c].
 
 Revision ID: 9306debdfe0c
-Revises: e6dfd46db163
+Revises: a3f7c2e9b1d4
 Create Date: 2026-03-31 15:41:03.431700
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9306debdfe0c"
-down_revision = "e6dfd46db163"
+down_revision = "a3f7c2e9b1d4"
 branch_labels = None
 depends_on = None
 
