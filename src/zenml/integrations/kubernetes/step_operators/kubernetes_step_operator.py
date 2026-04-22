@@ -221,8 +221,12 @@ class KubernetesStepOperator(BaseStepOperator):
             "run_id": kube_utils.sanitize_label_value(str(info.run_id)),
             "run_name": kube_utils.sanitize_label_value(str(info.run_name)),
             "pipeline": kube_utils.sanitize_label_value(info.pipeline.name),
-            "step_run_id": kube_utils.sanitize_label_value(str(info.step_run_id)),
-            "step_name": kube_utils.sanitize_label_value(info.pipeline_step_name),
+            "step_run_id": kube_utils.sanitize_label_value(
+                str(info.step_run_id)
+            ),
+            "step_name": kube_utils.sanitize_label_value(
+                info.pipeline_step_name
+            ),
         }
         step_annotations = {
             STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,

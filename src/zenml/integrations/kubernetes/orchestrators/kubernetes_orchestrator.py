@@ -753,7 +753,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             image = self.get_image(snapshot=snapshot, step_name=invocation_id)
 
         labels = {
-            "project_id": kube_utils.sanitize_label_value(str(snapshot.project_id)),
+            "project_id": kube_utils.sanitize_label_value(
+                str(snapshot.project_id)
+            ),
             "pipeline": kube_utils.sanitize_label_value(pipeline_name),
         }
 
@@ -899,9 +901,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             "project_id": kube_utils.sanitize_label_value(
                 str(step_run_info.snapshot.project_id)
             ),
-            "pipeline": kube_utils.sanitize_label_value(step_run_info.pipeline.name),
-            "run_id": kube_utils.sanitize_label_value(str(step_run_info.run_id)),
-            "run_name": kube_utils.sanitize_label_value(str(step_run_info.run_name)),
+            "pipeline": kube_utils.sanitize_label_value(
+                step_run_info.pipeline.name
+            ),
+            "run_id": kube_utils.sanitize_label_value(
+                str(step_run_info.run_id)
+            ),
+            "run_name": kube_utils.sanitize_label_value(
+                str(step_run_info.run_name)
+            ),
             "step_run_id": kube_utils.sanitize_label_value(
                 str(step_run_info.step_run_id)
             ),
@@ -1100,7 +1108,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         errors = []
 
         # Find all jobs running steps of the pipeline
-        label_selector = f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
+        label_selector = (
+            f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
+        )
         try:
             job_list = kube_utils.list_jobs(
                 batch_api=self._k8s_batch_api,
@@ -1193,7 +1203,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         pipeline_status = None
         include_run_status = not run.status.is_finished
 
-        label_selector = f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
+        label_selector = (
+            f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
+        )
         try:
             job_list = kube_utils.list_jobs(
                 batch_api=self._k8s_batch_api,

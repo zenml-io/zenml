@@ -350,9 +350,13 @@ def main() -> None:
         step_runs: Dict[str, StepRunResponse] = {}
 
         base_labels = {
-            "project_id": kube_utils.sanitize_label_value(str(snapshot.project_id)),
+            "project_id": kube_utils.sanitize_label_value(
+                str(snapshot.project_id)
+            ),
             "run_id": kube_utils.sanitize_label_value(str(pipeline_run.id)),
-            "run_name": kube_utils.sanitize_label_value(str(pipeline_run.name)),
+            "run_name": kube_utils.sanitize_label_value(
+                str(pipeline_run.name)
+            ),
             "pipeline": kube_utils.sanitize_label_value(
                 snapshot.pipeline_configuration.name
             ),
@@ -445,7 +449,9 @@ def main() -> None:
                     return NodeStatus.COMPLETED
 
             step_labels = base_labels.copy()
-            step_labels["step_name"] = kube_utils.sanitize_label_value(step_name)
+            step_labels["step_name"] = kube_utils.sanitize_label_value(
+                step_name
+            )
             step_annotations = {
                 STEP_NAME_ANNOTATION_KEY: step_name,
             }
