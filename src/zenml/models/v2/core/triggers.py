@@ -111,7 +111,17 @@ class TriggerSnapshotDispatchState(BaseModel):
     )
     last_error_at: datetime | None = Field(
         default=None,
-        description="Timestamp of the latest recorded error.",
+        description=(
+            "Timestamp of the last error in the current consecutive error-type "
+            "streak."
+        ),
+    )
+    first_error_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Timestamp of the first error in the current consecutive "
+            "error-type streak."
+        ),
     )
     last_error_count: int = Field(
         default=0,
@@ -163,6 +173,8 @@ class TriggerSnapshotDispatchState(BaseModel):
                 self.last_error_count = 1
             if self.last_error_at is None:
                 self.last_error_at = utc_now()
+            if self.first_error_at is None:
+                self.first_error_at = self.last_error_at
         return self
 
     def apply_new_state(
@@ -180,8 +192,20 @@ class TriggerSnapshotDispatchState(BaseModel):
                 and self.last_error_type == new_state.last_error_type
             ):
                 self.last_error_count += 1
+                if self.first_error_at is None:
+                    self.first_error_at = (
+                        self.last_error_at
+                        or new_state.first_error_at
+                        or new_state.last_error_at
+                        or utc_now()
+                    )
             else:
                 self.last_error_count = 1
+                self.first_error_at = (
+                    new_state.first_error_at
+                    or new_state.last_error_at
+                    or utc_now()
+                )
             self.last_error_message = new_state.last_error_message
             self.last_error_type = new_state.last_error_type
             self.last_error_severity = new_state.last_error_severity
@@ -198,6 +222,7 @@ class TriggerSnapshotDispatchState(BaseModel):
         self.last_error_severity = None
         self.last_error_stack_trace = None
         self.last_error_at = None
+        self.first_error_at = None
         self.last_error_count = 0
 
 
@@ -380,8 +405,11 @@ class UnScopedTriggerFilter(BaseFilter):
         Returns:
             The query with filter applied.
         """
+        from zenml.zen_stores.schemas import TriggerSchema
+
         query = super().apply_filter(query=query, table=table)
-        return query.where(getattr(table, "is_archived") == self.is_archived)
+        query = query.where(TriggerSchema.is_archived == self.is_archived)
+        return query
 
 
 class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):

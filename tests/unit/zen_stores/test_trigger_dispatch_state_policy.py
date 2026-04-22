@@ -28,6 +28,28 @@ def test_new_error_overrides_previous_error_details() -> None:
     assert state.last_error_message == "second failure"
     assert state.last_error_type == "DISPATCH_PUBLISH_ERROR"
     assert state.last_error_count == 2
+    assert state.first_error_at is not None
+
+
+def test_same_error_type_keeps_first_error_at() -> None:
+    """Repeated same-type errors should preserve the original first error time."""
+    state = TriggerSnapshotDispatchState(
+        last_status=TriggerDispatchStatusCode.ERROR,
+        last_error_message="first failure",
+        last_error_type="DISPATCH_PUBLISH_ERROR",
+    )
+    first_error_at = state.first_error_at
+
+    next_error = TriggerSnapshotDispatchState(
+        last_status=TriggerDispatchStatusCode.ERROR,
+        last_error_message="second failure",
+        last_error_type="DISPATCH_PUBLISH_ERROR",
+    )
+    state.apply_new_state(new_state=next_error)
+
+    assert first_error_at is not None
+    assert state.first_error_at == first_error_at
+    assert state.last_error_count == 2
 
 
 def test_new_error_type_replaces_old_error_type() -> None:
@@ -46,6 +68,7 @@ def test_new_error_type_replaces_old_error_type() -> None:
     assert state.last_error_message == "execution failed"
     assert state.last_error_type == "DISPATCH_EXECUTION_ERROR"
     assert state.last_error_count == 1
+    assert state.first_error_at == state.last_error_at
 
 
 def test_success_keeps_previous_error_details() -> None:
@@ -64,6 +87,7 @@ def test_success_keeps_previous_error_details() -> None:
     assert state.last_error_message == "boom"
     assert state.last_error_type == "DISPATCH_EXECUTION_ERROR"
     assert state.last_error_count == 1
+    assert state.first_error_at is not None
 
 
 def test_clear_error_details_resets_error_counter() -> None:
@@ -79,6 +103,7 @@ def test_clear_error_details_resets_error_counter() -> None:
     assert state.last_error_message is None
     assert state.last_error_type is None
     assert state.last_error_at is None
+    assert state.first_error_at is None
     assert state.last_error_count == 0
 
 

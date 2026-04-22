@@ -4301,7 +4301,7 @@ class Client(metaclass=ClientMetaClass):
 
         def _get_schedule_trigger_by_id(
             trigger_id: UUID, hydrate: bool = True
-        ) -> BaseIdentifiedResponse:
+        ) -> ScheduleTriggerResponse:
             trigger = self.zen_store.get_trigger(
                 trigger_id=trigger_id,
                 hydrate=hydrate,
@@ -4316,7 +4316,7 @@ class Client(metaclass=ClientMetaClass):
             return trigger
 
         list_method = cast(
-            Callable[..., Page[BaseIdentifiedResponse]],
+            Callable[..., Page[ScheduleTriggerResponse]],
             functools.partial(
                 self.list_schedule_triggers,
                 is_archived=is_archived,
@@ -4534,7 +4534,7 @@ class Client(metaclass=ClientMetaClass):
 
         def _get_platform_event_trigger_by_id(
             trigger_id: UUID, hydrate: bool = True
-        ) -> BaseIdentifiedResponse:
+        ) -> PlatformEventTriggerResponse:
             trigger = self.zen_store.get_trigger(
                 trigger_id=trigger_id,
                 hydrate=hydrate,
@@ -4549,7 +4549,7 @@ class Client(metaclass=ClientMetaClass):
             return trigger
 
         list_method = cast(
-            Callable[..., Page[BaseIdentifiedResponse]],
+            Callable[..., Page[PlatformEventTriggerResponse]],
             functools.partial(
                 self.list_platform_event_triggers,
                 is_archived=is_archived,
@@ -4566,7 +4566,9 @@ class Client(metaclass=ClientMetaClass):
 
         if not isinstance(trigger, PlatformEventTriggerResponse):
             raise ValueError(
-                f"Found trigger {trigger.id} of incompatible type ({trigger.type} found {TriggerType.PLATFORM_EVENT} expected)."
+                f"Found trigger {trigger.id} of incompatible type "
+                f"({type(trigger).__name__} found "
+                f"{TriggerType.PLATFORM_EVENT} expected)."
             )
 
         return trigger
