@@ -113,7 +113,7 @@ def create_platform_event_trigger(
 @overload
 def update_platform_event_trigger(
     *,
-    trigger_id: UUID,
+    trigger_name_id_or_prefix: str | UUID,
     name: str | None = None,
     source_pipeline_id: UUID | None = None,
     target_events: list[PipelineEvent] | None = None,
@@ -126,7 +126,7 @@ def update_platform_event_trigger(
 @overload
 def update_platform_event_trigger(
     *,
-    trigger_id: UUID,
+    trigger_name_id_or_prefix: str | UUID,
     name: str | None = None,
     source_pipeline_run_id: UUID | None = None,
     target_events: list[PipelineRunEvent] | None = None,
@@ -139,7 +139,7 @@ def update_platform_event_trigger(
 @overload
 def update_platform_event_trigger(
     *,
-    trigger_id: UUID,
+    trigger_name_id_or_prefix: str | UUID,
     name: str | None = None,
     target_events: list[PipelineEvent] | list[PipelineRunEvent] | None = None,
     active: bool | None = None,
@@ -149,7 +149,7 @@ def update_platform_event_trigger(
 
 
 def update_platform_event_trigger(
-    trigger_id: UUID,
+    trigger_name_id_or_prefix: str | UUID,
     name: str | None = None,
     target_events: list[PipelineEvent] | list[PipelineRunEvent] | None = None,
     source_pipeline_id: UUID | None = None,
@@ -160,7 +160,7 @@ def update_platform_event_trigger(
     """Utility function to update a Platform Event Trigger.
 
     Args:
-        trigger_id: The ID of the trigger to update.
+        trigger_name_id_or_prefix: The name, ID, or ID prefix of the trigger.
         name: The name of the trigger.
         target_events: A list of target events (events that will cause trigger execution).
         source_pipeline_id: A Pipeline ID (one of the source options).
@@ -194,7 +194,7 @@ def update_platform_event_trigger(
         source_type = None
 
     return client.update_platform_event_trigger(
-        trigger_id=trigger_id,
+        trigger_name_id_or_prefix=trigger_name_id_or_prefix,
         name=name,
         active=active,
         source_id=source_id,

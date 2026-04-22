@@ -351,8 +351,10 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerDispatchStatusCode,
     TriggerFilter,
     TriggerRequest,
+    TriggerSnapshotDispatchState,
     TriggerUpdate,
     UserAuthModel,
     UserFilter,
@@ -8062,6 +8064,130 @@ class SqlZenStore(BaseZenStore):
             for sid in tbd:
                 assoc = session.get(TriggerSnapshotSchema, (trigger_id, sid))
                 session.delete(assoc)
+
+            session.commit()
+
+    @staticmethod
+    def _get_trigger_snapshot_association(
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        session: Session,
+    ) -> TriggerSnapshotSchema:
+        """Fetch trigger-snapshot association or raise a consistent error.
+
+        Args:
+            trigger_id: Trigger ID.
+            snapshot_id: Snapshot ID.
+            session: Active SQLModel session.
+
+        Returns:
+            The trigger-snapshot association row.
+
+        Raises:
+            KeyError: If the association row does not exist.
+        """
+        association = session.get(
+            TriggerSnapshotSchema, (trigger_id, snapshot_id)
+        )
+        if association is None:
+            raise KeyError(
+                f"No trigger_snapshot link for trigger {trigger_id} "
+                f"and snapshot {snapshot_id}."
+            )
+        return association
+
+    def update_trigger_snapshot_dispatch_state(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        state: TriggerSnapshotDispatchState,
+    ) -> None:
+        """Persist dispatch visibility JSON on the trigger_snapshot row.
+
+        Args:
+            trigger_id: Trigger ID.
+            snapshot_id: Snapshot ID.
+            state: Structured dispatch outcome.
+        """
+        with Session(self.engine) as session:
+            self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+            row = self._get_trigger_snapshot_association(
+                trigger_id=trigger_id,
+                snapshot_id=snapshot_id,
+                session=session,
+            )
+
+            previous_state = row.parsed_dispatch_state
+            final_state = state
+            if previous_state is not None:
+                previous_state.apply_new_state(new_state=state)
+                final_state = previous_state
+            elif final_state.last_status_at is None:
+                final_state.last_status_at = utc_now()
+
+            raw = final_state.model_dump_json()
+
+            row.dispatch_state = raw
+            session.add(row)
+            session.commit()
+
+    def clear_trigger_dispatch_error(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID | None = None,
+    ) -> None:
+        """Clear dispatch errors for one or all trigger snapshot associations.
+
+        Args:
+            trigger_id: Trigger ID.
+            snapshot_id: Optional display/source snapshot ID.
+
+        Raises:
+            KeyError: If the snapshot is not attached to the trigger.
+        """
+        with Session(self.engine) as session:
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+
+            if snapshot_id is None:
+                executable_snapshot_ids = [
+                    snapshot.id for snapshot in trigger.snapshots
+                ]
+            else:
+                executable_snapshot_ids = [
+                    snapshot.id
+                    for snapshot in trigger.snapshots
+                    if snapshot.source_snapshot_id == snapshot_id
+                ]
+                if not executable_snapshot_ids:
+                    raise KeyError(
+                        f"Snapshot {snapshot_id} is not attached to trigger "
+                        f"{trigger_id}"
+                    )
+
+            for executable_snapshot_id in executable_snapshot_ids:
+                row = self._get_trigger_snapshot_association(
+                    trigger_id=trigger_id,
+                    snapshot_id=executable_snapshot_id,
+                    session=session,
+                )
+                state = row.parsed_dispatch_state
+                if state is None:
+                    continue
+
+                if state.last_status == TriggerDispatchStatusCode.ERROR:
+                    row.dispatch_state = None
+                else:
+                    state.clear_error_details()
+                    row.dispatch_state = state.model_dump_json()
+                session.add(row)
 
             session.commit()
 
