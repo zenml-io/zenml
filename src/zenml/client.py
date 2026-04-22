@@ -6205,7 +6205,7 @@ class Client(metaclass=ClientMetaClass):
 
         secret_update = SecretUpdate(name=new_name or secret.name)
 
-        if update_private:
+        if update_private is not None:
             secret_update.private = update_private
         values: Dict[str, Optional[SecretStr]] = {}
         if add_or_update_values:
