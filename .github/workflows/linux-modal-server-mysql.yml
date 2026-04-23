@@ -162,22 +162,22 @@ jobs:
           }
 
           if [[ "${{ steps.setup_environment.outcome }}" != "success" ]]; then
-            echo "::warning::setup_environment failed; falling back to standard CI."
+            echo "::error::setup_environment failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
 
           if [[ "${{ steps.install_rust.outcome }}" != "success" ]]; then
-            echo "::warning::Install Rust failed; falling back to standard CI."
+            echo "::error::Install Rust failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
 
           if [[ "${{ steps.prepare.outcome }}" != "success" ]]; then
-            echo "::warning::Modal runtime preparation failed; falling back to standard CI."
+            echo "::error::Modal runtime preparation failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
 
           if [[ "${{ steps.provision.outcome }}" == "failure" ]]; then
-            echo "::warning::Modal server provisioning failed; falling back to standard CI."
+            echo "::error::Modal server provisioning failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
 
@@ -187,7 +187,7 @@ jobs:
               test_failed=true
             elif [[ ! -f "$junit_file" ]]; then
               if is_offload_prepare_failure; then
-                echo "::warning::offload failed before executing tests; falling back to standard CI."
+                echo "::error::offload failed before executing tests."
                 modal_infra_failed=true
               else
                 echo "::error::offload exited with $exit_code but no JUnit XML was produced."
@@ -195,7 +195,7 @@ jobs:
               fi
             elif [[ -z "$run_started_at" || "$(stat -c %Y "$junit_file")" -lt "$run_started_at" ]]; then
               if is_offload_prepare_failure; then
-                echo "::warning::offload failed during environment preparation; falling back to standard CI."
+                echo "::error::offload failed during environment preparation."
                 modal_infra_failed=true
               else
                 echo "::error::offload did not write a fresh JUnit XML report."
@@ -259,15 +259,9 @@ jobs:
       - name: Exit with classified status
         if: always()
         run: |
+          if [[ "${{ steps.classify.outputs.modal_infra_failed }}" == "true" ]]; then
+            exit 1
+          fi
           if [[ "${{ steps.classify.outputs.test_failed }}" == "true" ]]; then
             exit 1
           fi
-  fallback-integration-test:
-    needs: modal-server-mysql-offload
-    if: ${{ needs.modal-server-mysql-offload.outputs.modal_infra_failed == 'true' }}
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ubuntu-latest
-      python-version: ${{ inputs.python-version }}
-      test_environment: modal-server-mysql
-    secrets: inherit
