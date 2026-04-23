@@ -4203,6 +4203,7 @@ class Client(metaclass=ClientMetaClass):
         run_once_start_time: datetime | None = None,
         end_time: datetime | None = None,
         start_time: datetime | None = None,
+        max_runs: int | None = None,
     ) -> ScheduleTriggerResponse:
         """Create a native schedule trigger.
 
@@ -4216,6 +4217,7 @@ class Client(metaclass=ClientMetaClass):
             run_once_start_time: Schedule one-off execution
             end_time: The end time of the trigger.
             start_time: The start time of the trigger.
+            max_runs: Maximum number of runs to execute with this schedule.
 
         Returns:
             The created trigger.
@@ -4233,6 +4235,7 @@ class Client(metaclass=ClientMetaClass):
                 run_once_start_time=run_once_start_time,
                 end_time=end_time,
                 start_time=start_time,
+                max_runs=max_runs,
             )
         )
 
@@ -4251,6 +4254,7 @@ class Client(metaclass=ClientMetaClass):
         start_time: datetime | None = None,
         end_time: datetime | None = None,
         concurrency: TriggerRunConcurrency | None = None,
+        max_runs: int | None = None,
     ) -> ScheduleTriggerResponse:
         """Update a native schedule trigger.
 
@@ -4265,6 +4269,7 @@ class Client(metaclass=ClientMetaClass):
             end_time: The new end time of the trigger.
             run_once_start_time: The new run_once_start_time of the trigger.
             concurrency: The new trigger run concurrency.
+            max_runs: Maximum number of runs to execute with this schedule.
 
         Returns:
             The updated trigger.
@@ -4274,15 +4279,25 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
+        sets_scheduling_option = any(
+            option is not None
+            for option in [cron_expression, interval, run_once_start_time]
+        )
+
         response = self.zen_store.update_trigger(
             trigger_id=trigger.id,
             trigger_update=ScheduleTriggerUpdate(
                 name=name or trigger.name,
                 active=active if active is not None else trigger.active,
-                cron_expression=cron_expression or trigger.cron_expression,
-                interval=interval or trigger.interval,
+                cron_expression=cron_expression
+                if sets_scheduling_option
+                else trigger.cron_expression,
+                interval=interval
+                if sets_scheduling_option
+                else trigger.interval,
                 run_once_start_time=run_once_start_time
-                or trigger.run_once_start_time,
+                if sets_scheduling_option
+                else trigger.run_once_start_time,
                 start_time=start_time
                 if start_time is not None
                 else trigger.start_time,
@@ -4292,6 +4307,7 @@ class Client(metaclass=ClientMetaClass):
                 concurrency=concurrency
                 if concurrency is not None
                 else trigger.concurrency,
+                max_runs=max_runs or trigger.max_runs,
             ),
         )
 
@@ -6215,7 +6231,7 @@ class Client(metaclass=ClientMetaClass):
 
         secret_update = SecretUpdate(name=new_name or secret.name)
 
-        if update_private:
+        if update_private is not None:
             secret_update.private = update_private
         values: Dict[str, Optional[SecretStr]] = {}
         if add_or_update_values:
