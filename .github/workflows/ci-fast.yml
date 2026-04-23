@@ -121,7 +121,6 @@ jobs:
       use_modal: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     secrets: inherit
   ubuntu-latest-modal-server-mysql-integration-test:
-    needs: [linting]
     if: >-
       github.event.pull_request.draft == false &&
       (github.event_name != 'pull_request' ||
@@ -131,7 +130,6 @@ jobs:
       python-version: '3.13'
     secrets: inherit
   ubuntu-latest-docker-integration-smoke-test:
-    needs: [linting]
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/integration-test-fast.yml
     with:
