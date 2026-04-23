@@ -27,7 +27,8 @@ from zenml.utils import yaml_utils
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
 
-DEFAULT_FILENAME = "data.json"
+DEFAULT_FILENAME = "data_v2.json"
+LEGACY_FILENAME = "data.json"
 
 
 class PydanticMaterializer(BaseMaterializer):
@@ -42,12 +43,25 @@ class PydanticMaterializer(BaseMaterializer):
         Args:
             data_type: The type of the data to read.
 
+        Raises:
+            FileNotFoundError: If the data is not found.
+
         Returns:
-            The data read.
+            The loaded data.
         """
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
-        contents = yaml_utils.read_json(data_path)
-        return data_type.model_validate_json(contents)
+        if self.artifact_store.exists(data_path):
+            contents = yaml_utils.read_json(data_path)
+            return data_type.model_validate(contents)
+        else:
+            legacy_data_path = os.path.join(self.uri, LEGACY_FILENAME)
+            if self.artifact_store.exists(legacy_data_path):
+                contents = yaml_utils.read_json(legacy_data_path)
+                return data_type.model_validate_json(contents)
+            else:
+                raise FileNotFoundError(
+                    f"No data found at {data_path} or {legacy_data_path}."
+                )
 
     def save(self, data: BaseModel) -> None:
         """Serialize a BaseModel to JSON.
@@ -56,7 +70,7 @@ class PydanticMaterializer(BaseMaterializer):
             data: The data to store.
         """
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
-        yaml_utils.write_json(data_path, data.model_dump_json())
+        yaml_utils.write_json(data_path, data.model_dump(mode="json"))
 
     def extract_metadata(self, data: BaseModel) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given BaseModel object.
