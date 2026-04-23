@@ -15,7 +15,6 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from enum import StrEnum
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -51,6 +50,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
 )
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.time_utils import utc_now
 
 # ----------- DISPATCH STATE MODELS ------------------ #
