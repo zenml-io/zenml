@@ -128,8 +128,7 @@ def build_server_image(
     }
 
     return (
-        base.apt_install("git")
-        .add_local_dir(
+        base.add_local_dir(
             str(REPO_ROOT),
             "/src/zenml",
             copy=True,
