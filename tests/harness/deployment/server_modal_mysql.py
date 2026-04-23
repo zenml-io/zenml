@@ -115,9 +115,8 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         preprovisioned_server_url = self._get_preprovisioned_server_url()
         if preprovisioned_server_url:
             logging.info(
-                "Using pre-provisioned Modal server for '%s' at %s.",
+                "Using pre-provisioned Modal server for '%s'.",
                 self.config.name,
-                preprovisioned_server_url,
             )
             return
 
@@ -174,9 +173,8 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         tunnel = self._sandbox.tunnels()[ZENML_SERVER_PORT]
         self._tunnel_url = tunnel.url
         logging.info(
-            "Modal sandbox '%s' is up; waiting for server at %s...",
+            "Modal sandbox '%s' is up; waiting for server health check...",
             self._sandbox.object_id,
-            self._tunnel_url,
         )
 
         try:

@@ -172,9 +172,7 @@ def wait_for_server(
         try:
             response = requests.get(health_url, timeout=5)
             if response.ok:
-                logging.info(
-                    "Modal-hosted ZenML server is healthy at %s", url
-                )
+                logging.info("Modal-hosted ZenML server is healthy.")
                 return
             last_error = (
                 f"HTTP {response.status_code} from {health_url}: "
@@ -186,6 +184,6 @@ def wait_for_server(
         time.sleep(3)
 
     raise RuntimeError(
-        f"Modal-hosted ZenML server at {url} did not become healthy "
+        "Modal-hosted ZenML server did not become healthy "
         f"within {timeout_secs}s. Last error: {last_error or 'no response'}"
     )

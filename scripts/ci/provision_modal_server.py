@@ -21,11 +21,13 @@ DEFAULT_DEPLOYMENT = "modal-server-mysql"
 
 
 def _write_output(name: str, value: str) -> None:
-    """Writes a GitHub Actions output and echoes it for local runs."""
+    """Writes a GitHub Actions output without leaking values in CI logs."""
     github_output = os.getenv("GITHUB_OUTPUT")
     if github_output:
         with open(github_output, "a", encoding="utf-8") as output_file:
             output_file.write(f"{name}={value}\n")
+        print(f"{name}=<written to GITHUB_OUTPUT>")
+        return
 
     print(f"{name}={value}")
 
@@ -44,20 +46,23 @@ def _get_modal_deployment(
 
 def provision(deployment_name: str) -> int:
     """Provisions a Modal MySQL deployment and emits its connection info."""
-    deployment = _get_modal_deployment(deployment_name)
-    deployment.up()
+    import modal
 
-    store_config = deployment.get_store_config()
-    if store_config is None:
-        raise RuntimeError(
-            f"Deployment '{deployment_name}' did not produce a store config."
-        )
+    with modal.enable_output():
+        deployment = _get_modal_deployment(deployment_name)
+        deployment.up()
 
-    sandbox_id = deployment.sandbox_id
-    if sandbox_id is None:
-        raise RuntimeError(
-            f"Deployment '{deployment_name}' did not expose a sandbox ID."
-        )
+        store_config = deployment.get_store_config()
+        if store_config is None:
+            raise RuntimeError(
+                f"Deployment '{deployment_name}' did not produce a store config."
+            )
+
+        sandbox_id = deployment.sandbox_id
+        if sandbox_id is None:
+            raise RuntimeError(
+                f"Deployment '{deployment_name}' did not expose a sandbox ID."
+            )
 
     _write_output("server_url", store_config.url)
     _write_output("sandbox_id", sandbox_id)
@@ -68,8 +73,10 @@ def teardown(sandbox_id: str) -> int:
     """Terminates a previously provisioned Modal sandbox."""
     import modal
 
-    sandbox = modal.Sandbox.from_id(sandbox_id)
-    sandbox.terminate()
+    with modal.enable_output():
+        sandbox = modal.Sandbox.from_id(sandbox_id)
+        sandbox.terminate()
+
     logging.info("Terminated Modal sandbox %s.", sandbox_id)
     return 0
 
