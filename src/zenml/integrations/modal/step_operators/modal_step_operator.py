@@ -16,15 +16,19 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
-from modal_proto import api_pb2
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.resource_settings import ByteUnit, ResourceSettings
+from zenml.config.resource_settings import ByteUnit
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
+)
+from zenml.integrations.modal.utils import (
+    build_registry_image,
+    build_registry_secret,
+    get_gpu_values,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
@@ -40,24 +44,6 @@ logger = get_logger(__name__)
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
-
-
-def get_gpu_values(
-    settings: ModalStepOperatorSettings, resource_settings: ResourceSettings
-) -> Optional[str]:
-    """Get the GPU values for the Modal step operator.
-
-    Args:
-        settings: The Modal step operator settings.
-        resource_settings: The resource settings.
-
-    Returns:
-        The GPU string if a count is specified, otherwise the GPU type.
-    """
-    if not settings.gpu:
-        return None
-    gpu_count = resource_settings.gpu_count
-    return f"{settings.gpu}:{gpu_count}" if gpu_count else settings.gpu
 
 
 class ModalStepOperator(BaseStepOperator):
@@ -186,27 +172,17 @@ class ModalStepOperator(BaseStepOperator):
                 "No Docker credentials found for the container registry."
             )
 
-        my_secret = modal.secret._Secret.from_dict(
-            {
-                "REGISTRY_USERNAME": docker_username,
-                "REGISTRY_PASSWORD": docker_password,
-            }
+        registry_secret = build_registry_secret(
+            docker_username, docker_password
         )
-
-        spec = modal.image.DockerfileSpec(
-            commands=[f"FROM {image_name}"], context_files={}
+        zenml_image = build_registry_image(
+            image_name=image_name,
+            registry_secret=registry_secret,
+            environment=environment,
         )
-
-        zenml_image = modal.Image._from_args(
-            dockerfile_function=lambda *_, **__: spec,
-            force_build=False,
-            image_registry_config=modal.image._ImageRegistryConfig(
-                api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
-            ),
-        ).env(environment)
 
         resource_settings = info.config.resource_settings
-        gpu_values = get_gpu_values(settings, resource_settings)
+        gpu_values = get_gpu_values(settings.gpu, resource_settings)
         memory_mb = resource_settings.get_memory(ByteUnit.MB)
         memory_int = int(memory_mb) if memory_mb is not None else None
 
