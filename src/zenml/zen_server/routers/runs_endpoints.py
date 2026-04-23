@@ -609,6 +609,7 @@ if server_config().workload_manager_enabled:
     @router.post(
         "/{run_id}" + REPLAY,
         responses={
+            400: error_response,
             401: error_response,
             404: error_response,
             422: error_response,
@@ -628,7 +629,7 @@ if server_config().workload_manager_enabled:
             auth_context: The authentication context.
 
         Raises:
-            RuntimeError: If the run does not have a snapshot.
+            ValueError: If the run does not have a snapshot.
 
         Returns:
             The replayed pipeline run.
@@ -644,7 +645,7 @@ if server_config().workload_manager_enabled:
         )
 
         if not run.snapshot:
-            raise RuntimeError("Cannot replay a run without a snapshot.")
+            raise ValueError("Cannot replay a run without a snapshot.")
 
         verify_permission(
             resource_type=ResourceType.PIPELINE_SNAPSHOT,

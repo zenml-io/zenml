@@ -342,7 +342,7 @@ def run_snapshot(
         stack=stack, build=build, zenml_version=zenml_version
     )
 
-    is_replay = replay_configuration is not None
+    is_replay = original_run is not None
     workload_id = (
         placeholder_run.id if trigger_id or is_replay else target_snapshot.id
     )
