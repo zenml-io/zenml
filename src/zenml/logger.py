@@ -118,27 +118,6 @@ def _add_step_name_processor(
     return event_dict
 
 
-_GREY = "\x1b[90m"
-_WHITE = "\x1b[37m"
-_YELLOW = "\x1b[33m"
-_RED = "\x1b[31m"
-_BOLD_RED = "\x1b[31;1m"
-_PURPLE = "\x1b[38;5;105m"
-_BLUE = "\x1b[34m"
-_RESET = "\x1b[0m"
-
-_LEVEL_COLORS: dict[str, str] = {
-    "debug": _GREY,
-    "info": _WHITE,
-    "warning": _YELLOW,
-    "error": _RED,
-    "critical": _BOLD_RED,
-}
-
-_BACKTICK_PATTERN = r"`([^`]*)`"
-_URL_PATTERN = r"https?://[^\s)\"'>]+"
-
-
 class _ConsoleRenderer:
     """Structlog renderer for all client-side console output.
 
@@ -149,6 +128,26 @@ class _ConsoleRenderer:
       full structured layout, but wraps DEBUG-level lines in grey so
       framework noise fades into the background.
     """
+
+    _GREY = "\x1b[90m"
+    _WHITE = "\x1b[37m"
+    _YELLOW = "\x1b[33m"
+    _RED = "\x1b[31m"
+    _BOLD_RED = "\x1b[31;1m"
+    _PURPLE = "\x1b[38;5;105m"
+    _BLUE = "\x1b[34m"
+    _RESET = "\x1b[0m"
+
+    _LEVEL_COLORS: dict[str, str] = {
+        "debug": _GREY,
+        "info": _WHITE,
+        "warning": _YELLOW,
+        "error": _RED,
+        "critical": _BOLD_RED,
+    }
+
+    _BACKTICK_PATTERN = r"`([^`]*)`"
+    _URL_PATTERN = r"https?://[^\s)\"'>]+"
 
     def __init__(self, debug_mode: bool) -> None:
         self._debug_mode = debug_mode
@@ -188,8 +187,8 @@ class _ConsoleRenderer:
             return message
 
         level = str(event_dict.get("level", "info"))
-        level_color = _LEVEL_COLORS.get(level, "")
-        message = level_color + message + _RESET
+        level_color = self._LEVEL_COLORS.get(level, "")
+        message = level_color + message + self._RESET
         return self._colorize_highlights(message, level_color)
 
     def _format_debug_logs(
@@ -205,25 +204,25 @@ class _ConsoleRenderer:
         level = str(event_dict.get("level", "info"))
         if level == "debug":
             formatted = str(self._uncolored(_logger, _method_name, event_dict))
-            formatted = _GREY + formatted + _RESET
-            return self._colorize_highlights(formatted, _GREY)
+            formatted = self._GREY + formatted + self._RESET
+            return self._colorize_highlights(formatted, self._GREY)
 
         formatted = str(self._colored(_logger, _method_name, event_dict))
-        level_color = _LEVEL_COLORS.get(level, _WHITE)
+        level_color = self._LEVEL_COLORS.get(level, self._WHITE)
         return self._colorize_highlights(formatted, level_color)
 
-    @staticmethod
-    def _colorize_highlights(text: str, base_color: str) -> str:
+    @classmethod
+    def _colorize_highlights(cls, text: str, base_color: str) -> str:
         """Highlight backtick-quoted text in purple and URLs in blue."""
-        for quoted in re.findall(_BACKTICK_PATTERN, text):
+        for quoted in re.findall(cls._BACKTICK_PATTERN, text):
             text = text.replace(
                 "`" + quoted + "`",
-                _RESET + _PURPLE + quoted + base_color,
+                cls._RESET + cls._PURPLE + quoted + base_color,
             )
-        for url in re.findall(_URL_PATTERN, text):
+        for url in re.findall(cls._URL_PATTERN, text):
             text = text.replace(
                 url,
-                _RESET + _BLUE + url + base_color,
+                cls._RESET + cls._BLUE + url + base_color,
             )
         return text
 
