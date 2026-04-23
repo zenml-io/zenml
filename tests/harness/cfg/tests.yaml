@@ -45,6 +45,11 @@ tests:
     requirements:
       - capabilities:
           server: true
+  - module: tests.integration.functional.test_docker_orchestrator_smoke
+    requirements:
+      - capabilities:
+          server: true
+          synchronized: true
   - module: tests.integration.examples.test_deepchecks
     requirements:
       - integrations: [sklearn]

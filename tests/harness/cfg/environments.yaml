@@ -188,6 +188,17 @@ environments:
       - mlflow-local-registry
       - mlflow-local-deployer
     mandatory_requirements: [airflow-local]
+  - name: modal-server-mysql
+    description: >-
+      Modal sandbox deployment with ZenML server and MySQL.
+    deployment: modal-server-mysql
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-registry
+      - mlflow-local-deployer
+    capabilities:
+      server: true
   - name: github-actions-server-docker-orchestrator
     description: >-
       Server using GitHub Actions services with docker orchestrator and all

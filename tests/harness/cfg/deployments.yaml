@@ -111,6 +111,13 @@ deployments:
     database: mariadb
     capabilities:
       server: true
+  - name: modal-server-mysql
+    description: >-
+      ZenML server and MySQL running together in a Modal sandbox.
+    server: modal
+    database: mysql
+    capabilities:
+      server: true
   - name: github-actions-server
     description: >-
       Local ZenML server and MariaDB both running in docker with docker-compose.

@@ -32,6 +32,7 @@ class ServerType(str, Enum):
     NONE = "none"
     LOCAL = "local"
     DOCKER = "docker"
+    MODAL = "modal"
     EXTERNAL = "external"
 
 

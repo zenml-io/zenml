@@ -27,6 +27,12 @@ from tests.harness.deployment.server_docker_mariadb import (
 from tests.harness.deployment.server_external import (
     ExternalServerTestDeployment,
 )
+from tests.harness.deployment.server_modal_mariadb import (
+    ServerModalMariaDBTestDeployment,
+)
+from tests.harness.deployment.server_modal_mysql import (
+    ServerModalMySQLTestDeployment,
+)
 from tests.harness.deployment.server_sqlite import ServerSQLiteTestDeployment
 
 __all__ = [
@@ -38,5 +44,7 @@ __all__ = [
     "ServerDockerTestDeployment",
     "ServerDockerComposeMySQLTestDeployment",
     "ServerDockerComposeMariaDBTestDeployment",
+    "ServerModalMySQLTestDeployment",
+    "ServerModalMariaDBTestDeployment",
     "ExternalServerTestDeployment",
 ]

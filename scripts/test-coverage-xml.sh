@@ -42,6 +42,12 @@ if ! [[ "$RERUNS_DELAY" =~ ^[0-9]+$ ]]; then
 fi
 
 PYTEST_RERUN_ARGS=(--reruns "$RERUNS" --reruns-delay "$RERUNS_DELAY")
+PYTEST_TARGET=${PYTEST_TEST_PATH:-$TEST_SRC}
+PYTEST_TARGET_ARGS=("$PYTEST_TARGET")
+
+if [[ -n "${PYTEST_K_EXPRESSION:-}" ]]; then
+    PYTEST_TARGET_ARGS+=(-k "$PYTEST_K_EXPRESSION")
+fi
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
@@ -53,9 +59,9 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 # Shows errors instantly in logs when test fails.
 if [ -n "$1" ]; then
     if [ "$STORE_DURATIONS" == "store-durations" ]; then
-        coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations "${PYTEST_RERUN_ARGS[@]}" --instafail
+        coverage run -m pytest "${PYTEST_TARGET_ARGS[@]}" --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations "${PYTEST_RERUN_ARGS[@]}" --instafail
     else
-        coverage run -m pytest $TEST_SRC --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker "${PYTEST_RERUN_ARGS[@]}" --instafail
+        coverage run -m pytest "${PYTEST_TARGET_ARGS[@]}" --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker "${PYTEST_RERUN_ARGS[@]}" --instafail
     fi
 else
     if [ "$STORE_DURATIONS" == "store-durations" ]; then

@@ -11,11 +11,16 @@ on:
       - '!Dockerfile.ci'
       - '!.dockerignore'
       - '!offload.toml'
+      - '!offload-modal-server-mysql.toml'
       - '!scripts/ci/**'
       - '!scripts/run-fast-ci-offload.sh'
+      - '!scripts/test-coverage-xml.sh'
       - '!.github/workflows/ci-fast.yml'
+      - '!.github/workflows/integration-test-fast.yml'
       - '!.github/workflows/linux-fast-modal.yml'
+      - '!.github/workflows/linux-modal-server-mysql.yml'
       - '!pyproject.toml'
+      - '!tests/integration/functional/test_docker_orchestrator_smoke.py'
       - '**.md'
       - .github/workflows/claude.yml
       - .claude/**
@@ -27,11 +32,16 @@ on:
       - '!Dockerfile.ci'
       - '!.dockerignore'
       - '!offload.toml'
+      - '!offload-modal-server-mysql.toml'
       - '!scripts/ci/**'
       - '!scripts/run-fast-ci-offload.sh'
+      - '!scripts/test-coverage-xml.sh'
       - '!.github/workflows/ci-fast.yml'
+      - '!.github/workflows/integration-test-fast.yml'
       - '!.github/workflows/linux-fast-modal.yml'
+      - '!.github/workflows/linux-modal-server-mysql.yml'
       - '!pyproject.toml'
+      - '!tests/integration/functional/test_docker_orchestrator_smoke.py'
       - '**.md'
       - .github/workflows/claude.yml
       - .claude/**
@@ -110,18 +120,25 @@ jobs:
       python-version: '3.13'
       use_modal: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     secrets: inherit
-  ubuntu-latest-docker-integration-test:
+  ubuntu-latest-modal-server-mysql-integration-test:
+    needs: [linting]
+    if: >-
+      github.event.pull_request.draft == false &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    uses: ./.github/workflows/linux-modal-server-mysql.yml
+    with:
+      python-version: '3.13'
+    secrets: inherit
+  ubuntu-latest-docker-integration-smoke-test:
     needs: [linting]
     if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-        test_environment: [docker-server-docker-orchestrator-mysql]
-      fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
     with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
+      os: ubuntu-latest
+      python-version: '3.11'
+      test_environment: docker-server-docker-orchestrator-mysql
+      shard-count: 1
+      shards: '[1]'
+      test-path: tests/integration/functional/test_docker_orchestrator_smoke.py
     secrets: inherit

@@ -30,6 +30,26 @@ on:
         type: number
         required: false
         default: 3
+      shard-count:
+        description: Number of test shards to run
+        type: number
+        required: false
+        default: 6
+      shards:
+        description: JSON array describing the shard indices to run
+        type: string
+        required: false
+        default: '[1, 2, 3, 4, 5, 6]'
+      test-path:
+        description: Optional pytest path to run instead of the default suite path
+        type: string
+        required: false
+        default: ''
+      test-selector:
+        description: Optional pytest -k selector applied to the chosen test path
+        type: string
+        required: false
+        default: ''
   workflow_dispatch:
     inputs:
       os:
@@ -58,6 +78,7 @@ on:
           - local-server-airflow-orchestrator
           # Local ZenML docker-compose server deployments
           - docker-server-mysql
+          - modal-server-mysql
           - docker-server-mariadb
           - docker-server-docker-orchestrator-mysql
           - docker-server-docker-orchestrator-mariadb
@@ -82,6 +103,26 @@ on:
         type: number
         required: false
         default: 3
+      shard-count:
+        description: Number of test shards to run
+        type: number
+        required: false
+        default: 6
+      shards:
+        description: JSON array describing the shard indices to run
+        type: string
+        required: false
+        default: '[1, 2, 3, 4, 5, 6]'
+      test-path:
+        description: Optional pytest path to run instead of the default suite path
+        type: string
+        required: false
+        default: ''
+      test-selector:
+        description: Optional pytest -k selector applied to the chosen test path
+        type: string
+        required: false
+        default: ''
 jobs:
   integration-tests-fast:
     name: integration-tests-fast
@@ -89,7 +130,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: ${{ fromJSON(inputs.shards) }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -109,6 +150,8 @@ jobs:
       GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
+      MODAL_TOKEN_ID: ${{ contains(inputs.test_environment, 'modal') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.MODAL_TOKEN_ID || '' }}
+      MODAL_TOKEN_SECRET: ${{ contains(inputs.test_environment, 'modal') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.MODAL_TOKEN_SECRET || '' }}
       PYTEST_RERUNS: ${{ inputs.reruns }}
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     defaults:
@@ -289,9 +332,12 @@ jobs:
         # Ubuntu integration tests run as 6 shards
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} 6 ${{ matrix.shard }}
+          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} ${INPUTS_SHARD_COUNT} ${{ matrix.shard }}
         env:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          INPUTS_SHARD_COUNT: ${{ inputs.shard-count }}
+          PYTEST_TEST_PATH: ${{ inputs.test-path }}
+          PYTEST_K_EXPRESSION: ${{ inputs.test-selector }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
