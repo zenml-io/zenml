@@ -93,7 +93,7 @@ def test_update_platform_event_trigger_happy_path():
 
     with patch.object(trigger_utils, "Client", return_value=mock_client):
         result = trigger_utils.update_platform_event_trigger(
-            trigger_id=trigger_id,
+            trigger_name_id_or_prefix=trigger_id,
             name="updated-trigger",
             target_events=[PipelineRunEvent.COMPLETED],
             active=True,
@@ -102,7 +102,7 @@ def test_update_platform_event_trigger_happy_path():
 
     assert result is expected_response
     mock_client.update_platform_event_trigger.assert_called_once_with(
-        trigger_id=trigger_id,
+        trigger_name_id_or_prefix=trigger_id,
         name="updated-trigger",
         active=True,
         source_id=None,
@@ -123,14 +123,14 @@ def test_update_platform_event_trigger_allows_single_source_pipeline_id():
 
     with patch.object(trigger_utils, "Client", return_value=mock_client):
         result = trigger_utils.update_platform_event_trigger(
-            trigger_id=trigger_id,
+            trigger_name_id_or_prefix=trigger_id,
             source_pipeline_id=source_pipeline_id,
             target_events=[PipelineEvent.RUN_COMPLETED],
         )
 
     assert result is expected_response
     mock_client.update_platform_event_trigger.assert_called_once_with(
-        trigger_id=trigger_id,
+        trigger_name_id_or_prefix=trigger_id,
         name=None,
         active=None,
         source_id=source_pipeline_id,
