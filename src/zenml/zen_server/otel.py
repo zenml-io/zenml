@@ -17,17 +17,10 @@ Activates only when ``otel_exporter_otlp_endpoint`` is configured in
 ``ServerConfiguration`` (env: ``ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT``).
 Without it the server runs with zero OTel overhead.
 
-Why programmatic instrumentation instead of auto-instrumentation?
+We are not doing OTel's auto-instrumentation because it is incompatible with
+uvicorn's `--reload` mode. So we are using programmatic instrumentation instead.
 
-The `opentelemetry-instrument` CLI wrapper does not work reliably with
-uvicorn `--reload` — the SDK initializes but traces and logs never reach
-the collector (only auto-collected runtime metrics get through).
-
-Programmatic setup avoids this entirely because it runs inside the app
-process after the FastAPI instance already exists, so `instrument_app(app)`
-targets the real object.
-
-Note the following limitations when using Uvicorn with zero-code auto-instrumentation:
+More details:
 
 * `--reload` mode is incompatible: Uvicorn's `--reload` development mode spawns child processes in a way that breaks
        auto-instrumentation. For development, you may need to disable `--reload` or use manual instrumentation.
@@ -54,16 +47,7 @@ _OTEL_SAFE_TYPES = (type(None), bool, bytes, int, float, str, list, tuple)
 
 
 def sanitize_log_record_for_otel(record: logging.LogRecord) -> None:
-    """Strip non-serializable private attributes from a LogRecord.
-
-    structlog's ``ProcessorFormatter.wrap_for_formatter`` stashes internal
-    objects (e.g. ``_logger``, ``_record``) on the LogRecord.  OTel's
-    ``LoggingHandler`` iterates over the record's attributes and tries
-    to serialize every value — non-primitive private attributes cause a warning
-    on every single log line.
-
-    This helper removes any ``_``-prefixed attribute whose value is not an OTel-safe
-    primitive type, so it can be called before any OTel serialization step.
+    """Remove ``_``-prefixed non-primitive attributes from a LogRecord in place.
 
     Args:
         record: The log record to sanitize (mutated in place).
@@ -76,21 +60,15 @@ def sanitize_log_record_for_otel(record: logging.LogRecord) -> None:
 
 
 class _OTelSanitizeFilter(logging.Filter):
-    """Strip non-serializable attributes from LogRecords before OTel export.
+    """Strip non-serializable private attributes from LogRecords before OTel export.
 
-    When structlog's ProcessorFormatter processes a log record, it attaches an
-    internal _logger attribute to the LogRecord object. OTel's LoggingHandler
-    then iterates over record.__dict__ to convert all attributes into OTLP log
-    record attributes, and it only knows how to serialize primitives
-    (str, int, float, bool, bytes, list, tuple). When it hits the _logger object,
-    it emits a warning like:
+    structlog stashes internal objects (e.g. ``_logger``) on the LogRecord.
+    OTel's LoggingHandler can only serialize primitives like str, float, bool, etc.,
+    so it emits a warning on every log record:
 
-    ``Failed to encode attribute _logger of type BoundLoggerFilteringAtLevel``
+        ``Failed to encode attribute _logger of type BoundLoggerFilteringAtLevel``
 
-    This warning fires on every single log record, flooding the logs.
-    The filter strips any private (`_`-prefixed) attribute whose value isn't an
-    OTel-safe primitive. It doesn't drops log records — it just cleans them before
-    OTel sees them.
+    This filter removes those attributes without dropping any records.
 
     Ref:
      - https://github.com/open-telemetry/opentelemetry-python/issues/3649

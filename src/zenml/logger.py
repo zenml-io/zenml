@@ -90,6 +90,8 @@ def get_logger(logger_name: str) -> structlog.stdlib.BoundLogger:
     return structlog.get_logger(logger_name)
 
 
+# the function signature of a structlog processor requires you to
+# have three arguments: logger, method_name, and event_dict
 def _add_step_name_processor(
     logger: Any,
     method_name: str,
@@ -98,8 +100,8 @@ def _add_step_name_processor(
     """Structlog processor that injects the current step name.
 
     Args:
-        logger: The wrapped logger object (unused).
-        method_name: The log method called (unused).
+        logger: The wrapped logger object.
+        method_name: The log method called.
         event_dict: The event dictionary being processed.
 
     Returns:
