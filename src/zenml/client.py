@@ -1203,7 +1203,10 @@ class Client(metaclass=ClientMetaClass):
     def create_stack(
         self,
         name: str,
-        components: Mapping[StackComponentType, Union[str, UUID]],
+        components: Mapping[
+            StackComponentType,
+            Union[str, UUID, Sequence[Union[str, UUID]]],
+        ],
         stack_spec_file: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
         secrets: Optional[Sequence[Union[UUID, str]]] = None,
@@ -1212,7 +1215,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name: The name of the stack to register.
-            components: dictionary which maps component types to component names
+            components: Dictionary which maps component types to component
+                names/IDs or sequences of names/IDs.
             stack_spec_file: path to the stack spec file
             labels: The labels of the stack.
             secrets: The secrets of the stack.
@@ -1220,19 +1224,30 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered stack.
         """
-        stack_components = {}
+        stack_components: Dict[StackComponentType, List[UUID]] = {}
 
         for c_type, c_identifier in components.items():
+            if isinstance(c_identifier, Sequence) and not isinstance(
+                c_identifier, (str, bytes)
+            ):
+                component_identifiers = list(c_identifier)
+            else:
+                component_identifiers = [c_identifier]
+
             # Skip non-existent components.
-            if not c_identifier:
+            if not component_identifiers:
                 continue
 
-            # Get the component.
-            component = self.get_stack_component(
-                name_id_or_prefix=c_identifier,
-                component_type=c_type,
-            )
-            stack_components[c_type] = [component.id]
+            stack_components[c_type] = []
+            for component_identifier in component_identifiers:
+                if not component_identifier:
+                    continue
+
+                component = self.get_stack_component(
+                    name_id_or_prefix=component_identifier,
+                    component_type=c_type,
+                )
+                stack_components[c_type].append(component.id)
 
         stack = StackRequest(
             name=name,
@@ -1337,7 +1352,10 @@ class Client(metaclass=ClientMetaClass):
         labels: Optional[Dict[str, Any]] = None,
         description: Optional[str] = None,
         component_updates: Optional[
-            Dict[StackComponentType, List[Union[UUID, str]]]
+            Mapping[
+                StackComponentType,
+                Union[UUID, str, Sequence[Union[UUID, str]]],
+            ]
         ] = None,
         add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
@@ -1387,12 +1405,20 @@ class Client(metaclass=ClientMetaClass):
         if description:
             update_model.description = description
 
-        # Get the current components
         if component_updates:
             components_dict = stack.components.copy()
+            for (
+                component_type,
+                component_identifiers,
+            ) in component_updates.items():
+                if component_identifiers is not None:
+                    if isinstance(
+                        component_identifiers, Sequence
+                    ) and not isinstance(component_identifiers, (str, bytes)):
+                        component_id_list = list(component_identifiers)
+                    else:
+                        component_id_list = [component_identifiers]
 
-            for component_type, component_id_list in component_updates.items():
-                if component_id_list is not None:
                     components_dict[component_type] = [
                         self.get_stack_component(
                             name_id_or_prefix=component_id,

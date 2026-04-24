@@ -55,6 +55,10 @@ Every Experiment Tracker has different capabilities and uses a different way of 
 * in your steps, you have to explicitly log information (e.g. models, metrics, data) to the Experiment Tracker same as you would if you were using the tool independently of ZenML
 * finally, you can access the Experiment Tracker UI to browse and visualize the information logged during your pipeline runs. You can use the following code snippet to get the URL of the experiment tracker UI for the experiment linked to a certain step of your pipeline run:
 
+{% hint style="info" %}
+Stacks can have multiple experiment trackers attached. If you enable tracking with `@step(experiment_tracker=True)`, ZenML activates all attached experiment trackers for that step. If you want to use only one tracker, specify it explicitly by name in the `@step` decorator.
+{% endhint %}
+
 ```python
 from zenml.client import Client
 

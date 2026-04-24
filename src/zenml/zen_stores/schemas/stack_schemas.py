@@ -15,7 +15,8 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
@@ -58,6 +59,13 @@ class StackCompositionSchema(SQLModel, table=True):
     """
 
     __tablename__ = "stack_composition"
+    __table_args__ = (
+        UniqueConstraint(
+            "stack_id",
+            "default_for_type",
+            name="unique_default_stack_component_type",
+        ),
+    )
 
     stack_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -76,6 +84,16 @@ class StackCompositionSchema(SQLModel, table=True):
         ondelete="CASCADE",
         nullable=False,
         primary_key=True,
+    )
+    default_for_type: Optional[str] = Field(default=None, nullable=True)
+
+    stack: "StackSchema" = Relationship(
+        back_populates="stack_compositions",
+        sa_relationship_kwargs={"overlaps": "components,stacks"},
+    )
+    component: "StackComponentSchema" = Relationship(
+        back_populates="stack_compositions",
+        sa_relationship_kwargs={"overlaps": "components,stacks"},
     )
 
 
@@ -108,6 +126,16 @@ class StackSchema(NamedSchema, table=True):
     components: List["StackComponentSchema"] = Relationship(
         back_populates="stacks",
         link_model=StackCompositionSchema,
+        sa_relationship_kwargs={
+            "overlaps": "stack,component,stack_compositions"
+        },
+    )
+    stack_compositions: List["StackCompositionSchema"] = Relationship(
+        back_populates="stack",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "overlaps": "components,stacks,component",
+        },
     )
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="stack")
     snapshots: List["PipelineSnapshotSchema"] = Relationship(
@@ -162,13 +190,11 @@ class StackSchema(NamedSchema, table=True):
     def from_request(
         cls,
         request: "StackRequest",
-        components: Sequence["StackComponentSchema"],
     ) -> "StackSchema":
         """Create a stack schema from a request.
 
         Args:
             request: The request from which to create the stack.
-            components: List of components to link to the stack.
 
         Returns:
             The stack schema.
@@ -178,7 +204,6 @@ class StackSchema(NamedSchema, table=True):
             stack_spec_path=request.stack_spec_path,
             name=request.name,
             description=request.description,
-            components=components,
             labels=base64.b64encode(
                 json.dumps(request.labels).encode("utf-8")
             ),
@@ -208,14 +233,14 @@ class StackSchema(NamedSchema, table=True):
         """
         options = []
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(StackSchema.components)).joinedload(
-        #                 jl_arg(StackComponentSchema.flavor_schema)
-        #             ),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    joinedload(
+                        jl_arg(StackSchema.stack_compositions)
+                    ).joinedload(jl_arg(StackCompositionSchema.component))
+                ]
+            )
 
         if include_resources:
             options.extend([joinedload(jl_arg(StackSchema.user))])
@@ -225,24 +250,20 @@ class StackSchema(NamedSchema, table=True):
     def update(
         self,
         stack_update: "StackUpdate",
-        components: List["StackComponentSchema"],
     ) -> "StackSchema":
         """Updates a stack schema with a stack update model.
 
         Args:
             stack_update: `StackUpdate` to update the stack with.
-            components: List of `StackComponentSchema` to update the stack with.
 
         Returns:
             The updated StackSchema.
         """
         for field, value in stack_update.model_dump(
             exclude_unset=True,
-            exclude={"user", "add_secrets", "remove_secrets"},
+            exclude={"user", "components", "add_secrets", "remove_secrets"},
         ).items():
-            if field == "components":
-                self.components = components
-            elif field == "labels":
+            if field == "labels":
                 self.labels = base64.b64encode(
                     json.dumps(stack_update.labels).encode("utf-8")
                 )
@@ -284,8 +305,28 @@ class StackSchema(NamedSchema, table=True):
                 environment = json.loads(
                     base64.b64decode(self.environment).decode()
                 )
+
+            components: Dict[
+                StackComponentType, List["StackComponentSchema"]
+            ] = defaultdict(list)
+
+            sorted_compositions = sorted(
+                self.stack_compositions,
+                key=lambda composition: (
+                    composition.default_for_type is None,
+                ),
+            )
+            for composition in sorted_compositions:
+                component_type = StackComponentType(composition.component.type)
+                components[component_type].append(composition.component)
+
             metadata = StackResponseMetadata(
-                components={c.type: [c.to_model()] for c in self.components},
+                components={
+                    component_type: [
+                        component.to_model() for component in component_list
+                    ]
+                    for component_type, component_list in components.items()
+                },
                 stack_spec_path=self.stack_spec_path,
                 labels=json.loads(base64.b64decode(self.labels).decode())
                 if self.labels

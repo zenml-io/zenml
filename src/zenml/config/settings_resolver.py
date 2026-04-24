@@ -51,7 +51,9 @@ class SettingsResolver:
                 f"{set(settings_utils.get_general_settings())}) or stack "
                 "component specific settings. Stack component specific keys "
                 "are of the format "
-                "`<STACK_COMPONENT_TYPE>.<STACK_COMPONENT_FLAVOR>`."
+                "`<STACK_COMPONENT_TYPE>`, "
+                "`<STACK_COMPONENT_TYPE>.<STACK_COMPONENT_FLAVOR>`, or "
+                "`<STACK_COMPONENT_TYPE>:<STACK_COMPONENT_NAME>`."
             )
 
         self._key = key

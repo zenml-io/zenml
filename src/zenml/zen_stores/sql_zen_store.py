@@ -421,6 +421,7 @@ from zenml.zen_stores.schemas import (
     ServerSettingsSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
+    StackCompositionSchema,
     StackSchema,
     StepConfigurationSchema,
     StepRunInputArtifactSchema,
@@ -10637,7 +10638,9 @@ class SqlZenStore(BaseZenStore):
                                 continue
 
                 # Stack Components
-                components_mapping: Dict[StackComponentType, List[UUID]] = {}
+                components_mapping: Dict[StackComponentType, List[UUID]] = (
+                    defaultdict(list)
+                )
                 for (
                     component_type,
                     components,
@@ -10754,9 +10757,7 @@ class SqlZenStore(BaseZenStore):
                                     component_update=component_update,
                                 )
 
-                        components_mapping[component_type] = [
-                            component.id,
-                        ]
+                        components_mapping[component_type].append(component.id)
 
                 # Stack
                 self._verify_name_uniqueness(
@@ -10782,10 +10783,14 @@ class SqlZenStore(BaseZenStore):
                 defined_components = session.exec(
                     select(StackComponentSchema).where(or_(*filters))
                 ).all()
+                new_stack_schema = StackSchema.from_request(request=stack)
+                session.add(new_stack_schema)
+                session.flush()
 
-                new_stack_schema = StackSchema.from_request(
-                    request=stack,
-                    components=defined_components,
+                self._add_stack_compositions(
+                    stack_id=new_stack_schema.id,
+                    component_ids_by_type=components_mapping,
+                    session=session,
                 )
 
                 self._link_secrets_to_resource(
@@ -10793,8 +10798,6 @@ class SqlZenStore(BaseZenStore):
                     secrets=stack.secrets,
                     session=session,
                 )
-
-                session.add(new_stack_schema)
                 session.commit()
                 session.refresh(new_stack_schema)
 
@@ -10841,6 +10844,36 @@ class SqlZenStore(BaseZenStore):
                     "that are created in the process."
                 )
                 raise
+
+    def _add_stack_compositions(
+        self,
+        stack_id: UUID,
+        component_ids_by_type: Dict[StackComponentType, List[UUID]],
+        session: Session,
+    ) -> None:
+        """Create and persist stack composition rows for a stack.
+
+        Args:
+            stack_id: The ID of the stack the compositions belong to.
+            component_ids_by_type: Ordered component IDs grouped by type. The
+                first component ID of each type becomes the default.
+            session: The session in which to persist the rows.
+        """
+        for component_type, component_ids in component_ids_by_type.items():
+            default_component_id = component_ids[0] if component_ids else None
+
+            for component_id in component_ids:
+                session.add(
+                    StackCompositionSchema(
+                        stack_id=stack_id,
+                        component_id=component_id,
+                        default_for_type=(
+                            component_type.value
+                            if component_id == default_component_id
+                            else None
+                        ),
+                    )
+                )
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -10923,26 +10956,41 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            components: List["StackComponentSchema"] = []
-            if stack_update.components:
+            existing_stack.update(stack_update=stack_update)
+
+            if stack_update.components is not None:
+                component_ids_by_type: Dict[StackComponentType, List[UUID]] = (
+                    defaultdict(list)
+                )
+
                 for (
                     component_type,
                     list_of_component_ids,
                 ) in stack_update.components.items():
                     for component_id in list_of_component_ids:
-                        component = self._get_reference_schema_by_id(
+                        self._get_reference_schema_by_id(
                             resource=existing_stack,
                             reference_schema=StackComponentSchema,
                             reference_id=component_id,
                             session=session,
                             reference_type=f"{str(component_type)} stack component",
                         )
-                        components.append(component)
+                    component_ids_by_type[component_type] = list(
+                        list_of_component_ids
+                    )
 
-            existing_stack.update(
-                stack_update=stack_update,
-                components=components,
-            )
+                session.execute(
+                    delete(StackCompositionSchema).where(
+                        col(StackCompositionSchema.stack_id)
+                        == existing_stack.id
+                    )
+                )
+
+                self._add_stack_compositions(
+                    stack_id=existing_stack.id,
+                    component_ids_by_type=component_ids_by_type,
+                    session=session,
+                )
 
             self._link_secrets_to_resource(
                 resource=existing_stack,
