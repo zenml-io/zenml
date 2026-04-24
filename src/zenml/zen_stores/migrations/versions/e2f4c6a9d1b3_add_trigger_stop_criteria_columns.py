@@ -19,7 +19,9 @@ depends_on = None
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("trigger", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("end_time", sa.DateTime(), nullable=True))
+        batch_op.add_column(
+            sa.Column("end_time", sa.DateTime(), nullable=True)
+        )
         batch_op.add_column(sa.Column("max_runs", sa.Integer(), nullable=True))
 
 

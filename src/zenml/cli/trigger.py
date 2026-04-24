@@ -617,6 +617,16 @@ def list_supported_events(source_type: SourceType) -> None:
     default=TriggerRunConcurrency.SKIP.value,
 )
 @click.option("--active", type=bool, default=True)
+@click.option(
+    "--end_time",
+    type=str,
+    help="The end time of the trigger (ISO 8601 format).",
+)
+@click.option(
+    "--max-runs",
+    type=int,
+    help="The maximum number of runs to execute with this trigger.",
+)
 def create_platform_event(
     name: str,
     source_type: SourceType,
@@ -624,6 +634,8 @@ def create_platform_event(
     target_events: list[str],
     active: bool,
     concurrency: str,
+    end_time: str | None = None,
+    max_runs: int | None = None,
 ) -> None:
     """Create a platform event trigger.
 
@@ -634,6 +646,8 @@ def create_platform_event(
         target_events: The trigger target events.
         active: The active status of the trigger.
         concurrency: Option controlling the concurrency of the trigger.
+        end_time: The end time of the trigger.
+        max_runs: The maximum number of runs to execute with this trigger.
     """
     if not target_events:
         cli_utils.error("You must specify at least one target event.")
@@ -646,6 +660,8 @@ def create_platform_event(
             source_id=source_id,
             source_type=source_type,
             target_events=target_events,
+            end_time=iso8601_to_utc_naive(end_time) if end_time else None,
+            max_runs=max_runs,
         )
     except Exception as e:
         cli_utils.exception(e)
@@ -670,6 +686,16 @@ def create_platform_event(
     multiple=True,
     help="Use `list-supported-events` to view supported events by source type.",
 )
+@click.option(
+    "--end_time",
+    type=str,
+    help="The end time of the trigger (ISO 8601 format).",
+)
+@click.option(
+    "--max-runs",
+    type=int,
+    help="The maximum number of runs to execute with this trigger.",
+)
 def update_platform_event_trigger(
     trigger_name_or_id: str,
     name: str | None = None,
@@ -678,6 +704,8 @@ def update_platform_event_trigger(
     target_events: list[str] | None = None,
     active: bool | None = None,
     concurrency: str | None = None,
+    end_time: str | None = None,
+    max_runs: int | None = None,
 ) -> None:
     """Update a platform event trigger.
 
@@ -689,6 +717,8 @@ def update_platform_event_trigger(
         target_events: The trigger target events.
         active: The new active status of the trigger.
         concurrency: Option controlling the concurrency of the trigger.
+        end_time: The end time of the trigger.
+        max_runs: The maximum number of runs to execute with this trigger.
     """
     options = [
         name,
@@ -697,6 +727,8 @@ def update_platform_event_trigger(
         source_id,
         source_type,
         target_events,
+        end_time,
+        max_runs,
     ]
 
     if not any(option is not None for option in options):
@@ -714,6 +746,8 @@ def update_platform_event_trigger(
             source_id=source_id,
             source_type=source_type,
             target_events=target_events,
+            end_time=iso8601_to_utc_naive(end_time) if end_time else None,
+            max_runs=max_runs,
         )
     except Exception as e:
         cli_utils.exception(e)

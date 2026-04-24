@@ -14,6 +14,7 @@
 """Utility functions to manage platform event triggers."""
 
 import logging
+from datetime import datetime
 from typing import overload
 from uuid import UUID
 
@@ -41,6 +42,8 @@ def create_platform_event_trigger(
     target_events: list[PipelineEvent],
     active: bool = True,
     concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+    end_time: datetime | None = None,
+    max_runs: int | None = None,
 ) -> PlatformEventTriggerResponse:
     pass
 
@@ -54,6 +57,8 @@ def create_platform_event_trigger(
     target_events: list[PipelineRunEvent],
     active: bool = True,
     concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+    end_time: datetime | None = None,
+    max_runs: int | None = None,
 ) -> PlatformEventTriggerResponse:
     pass
 
@@ -65,6 +70,8 @@ def create_platform_event_trigger(
     source_pipeline_run_id: UUID | None = None,
     active: bool = True,
     concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+    end_time: datetime | None = None,
+    max_runs: int | None = None,
 ) -> PlatformEventTriggerResponse:
     """Utility function to create a Platform Event Trigger.
 
@@ -75,6 +82,8 @@ def create_platform_event_trigger(
         source_pipeline_run_id: A Pipeline Run ID (one of the source options).
         active: Flag - whether to activate the trigger on creation.
         concurrency: How to handle concurrent executions (SKIP/SUBMIT etc.).
+        end_time: The end time of the trigger.
+        max_runs: Maximum number of runs to execute with this trigger.
 
     Returns:
         The created platform event trigger object response.
@@ -107,6 +116,8 @@ def create_platform_event_trigger(
         target_events=[str(t.value) for t in target_events],
         active=active,
         concurrency=concurrency,
+        end_time=end_time,
+        max_runs=max_runs,
     )
 
 
@@ -119,6 +130,8 @@ def update_platform_event_trigger(
     target_events: list[PipelineEvent] | None = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
+    end_time: datetime | None = None,
+    max_runs: int | None = None,
 ) -> PlatformEventTriggerResponse:
     pass
 
@@ -132,6 +145,8 @@ def update_platform_event_trigger(
     target_events: list[PipelineRunEvent] | None = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
+    end_time: datetime | None = None,
+    max_runs: int | None = None,
 ) -> PlatformEventTriggerResponse:
     pass
 
@@ -144,6 +159,8 @@ def update_platform_event_trigger(
     target_events: list[PipelineEvent] | list[PipelineRunEvent] | None = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
+    end_time: datetime | None = None,
+    max_runs: int | None = None,
 ) -> PlatformEventTriggerResponse:
     pass
 
@@ -156,6 +173,8 @@ def update_platform_event_trigger(
     source_pipeline_run_id: UUID | None = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
+    end_time: datetime | None = None,
+    max_runs: int | None = None,
 ) -> PlatformEventTriggerResponse:
     """Utility function to update a Platform Event Trigger.
 
@@ -167,6 +186,8 @@ def update_platform_event_trigger(
         source_pipeline_run_id: A Pipeline Run ID (one of the source options).
         active: Flag - whether to activate the trigger on creation.
         concurrency: How to handle concurrent executions (SKIP/SUBMIT etc.).
+        end_time: The end time of the trigger.
+        max_runs: Maximum number of runs to execute with this trigger.
 
     Returns:
         The updated platform event trigger object response.
@@ -203,6 +224,8 @@ def update_platform_event_trigger(
         if target_events is not None
         else None,
         concurrency=concurrency,
+        end_time=end_time,
+        max_runs=max_runs,
     )
 
 

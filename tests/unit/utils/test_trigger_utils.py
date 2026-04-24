@@ -56,6 +56,8 @@ def test_create_platform_event_trigger_happy_path():
         target_events=[str(PipelineEvent.RUN_COMPLETED.value)],
         active=False,
         concurrency=TriggerRunConcurrency.SUBMIT,
+        end_time=None,
+        max_runs=None,
     )
 
 
@@ -109,6 +111,8 @@ def test_update_platform_event_trigger_happy_path():
         source_type=None,
         target_events=[str(PipelineRunEvent.COMPLETED.value)],
         concurrency=TriggerRunConcurrency.SKIP,
+        end_time=None,
+        max_runs=None,
     )
 
 
@@ -137,4 +141,6 @@ def test_update_platform_event_trigger_allows_single_source_pipeline_id():
         source_type=SourceType.PIPELINE,
         target_events=[str(PipelineEvent.RUN_COMPLETED.value)],
         concurrency=None,
+        end_time=None,
+        max_runs=None,
     )

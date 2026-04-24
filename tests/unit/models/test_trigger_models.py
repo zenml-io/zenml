@@ -159,7 +159,6 @@ def test_schedule_trigger_timezone_normalization():
     assert req_with_end_time.end_time == datetime(2026, 1, 1, 10, 0)
 
 
-
 def test_schedule_trigger_response_next_occurrence_behavior():
     active = ScheduleTriggerResponseBody(
         project_id=uuid4(),

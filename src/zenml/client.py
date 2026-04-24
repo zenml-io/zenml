@@ -4465,6 +4465,8 @@ class Client(metaclass=ClientMetaClass):
         project_id: str | UUID | None = None,
         active: bool = True,
         concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+        end_time: datetime | None = None,
+        max_runs: int | None = None,
     ) -> PlatformEventTriggerResponse:
         """Create a platform event trigger.
 
@@ -4476,6 +4478,8 @@ class Client(metaclass=ClientMetaClass):
             project_id: The project ID.
             active: Whether the trigger should be activated on creation.
             concurrency: Option controlling trigger run concurrency behavior (SKIP, SUBMIT, etc.).
+            end_time: The end time of the trigger.
+            max_runs: Maximum number of runs to execute with this trigger.
 
         Returns:
             The created trigger.
@@ -4487,6 +4491,8 @@ class Client(metaclass=ClientMetaClass):
                 flavor=TriggerFlavor.PLATFORM_EVENT,
                 active=active,
                 concurrency=concurrency,
+                end_time=end_time,
+                max_runs=max_runs,
                 source_entity=SourceEntity(
                     id=source_id,
                     type=source_type,
@@ -4508,6 +4514,8 @@ class Client(metaclass=ClientMetaClass):
         source_id: UUID | None = None,
         target_events: list[str] | None = None,
         concurrency: TriggerRunConcurrency | None = None,
+        end_time: datetime | None = None,
+        max_runs: int | None = None,
     ) -> PlatformEventTriggerResponse:
         """Update a platform event trigger.
 
@@ -4520,6 +4528,8 @@ class Client(metaclass=ClientMetaClass):
             source_type: The source type of the trigger. (e.g. Pipeline Run).
             source_id: The source ID of the trigger. (e.g. Pipeline Run ID).
             target_events: The events to react for the trigger source(e.g. Pipeline run completed).
+            end_time: The end time of the trigger.
+            max_runs: Maximum number of runs to execute with this trigger.
 
         Returns:
             The updated trigger.
@@ -4542,6 +4552,12 @@ class Client(metaclass=ClientMetaClass):
                     id=source_id or trigger.source_id,
                 ),
                 target_events=target_events or trigger.target_events,
+                end_time=end_time
+                if end_time is not None
+                else trigger.end_time,
+                max_runs=max_runs
+                if max_runs is not None
+                else trigger.max_runs,
             ),
         )
 

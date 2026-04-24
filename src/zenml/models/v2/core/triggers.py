@@ -607,12 +607,21 @@ class ScheduleTrigger(BaseModel):
 
         return self
 
+
+class ScheduleTriggerRequest(TriggerRequest, ScheduleTrigger):
+    """Class representing a ScheduleTrigger request."""
+
+    type: Literal[TriggerType.SCHEDULE] = TriggerType.SCHEDULE
+    flavor: Literal[TriggerFlavor.NATIVE_SCHEDULE] = (
+        TriggerFlavor.NATIVE_SCHEDULE
+    )
+
     @model_validator(mode="after")
-    def _correct_time_boundaries(self) -> "ScheduleTrigger":
+    def _correct_time_boundaries(self) -> "ScheduleTriggerRequest":
         """Ensure start and end times set valid boundaries.
 
         Returns:
-            The ScheduleTrigger instance.
+            The schedule request instance.
 
         Raises:
             ValueError: If start time is greater than end time.
@@ -624,15 +633,6 @@ class ScheduleTrigger(BaseModel):
             raise ValueError("The end time must be after the start time.")
 
         return self
-
-
-class ScheduleTriggerRequest(TriggerRequest, ScheduleTrigger):
-    """Class representing a ScheduleTrigger request."""
-
-    type: Literal[TriggerType.SCHEDULE] = TriggerType.SCHEDULE
-    flavor: Literal[TriggerFlavor.NATIVE_SCHEDULE] = (
-        TriggerFlavor.NATIVE_SCHEDULE
-    )
 
     def get_config(self) -> str:
         """Returns the serialized blob of custom trigger fields.
@@ -672,6 +672,24 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
         TriggerFlavor.NATIVE_SCHEDULE
     )
     next_occurrence: datetime | None = None
+
+    @model_validator(mode="after")
+    def _correct_time_boundaries(self) -> "ScheduleTriggerUpdate":
+        """Ensure start and end times set valid boundaries.
+
+        Returns:
+            The schedule update instance.
+
+        Raises:
+            ValueError: If start time is greater than end time.
+        """
+        if not (self.end_time and self.start_time):
+            return self
+
+        if self.end_time <= self.start_time:
+            raise ValueError("The end time must be after the start time.")
+
+        return self
 
     def get_config(self) -> str:
         """Returns the serialized blob of custom trigger fields.
@@ -830,6 +848,24 @@ class TriggerResponse(
             The concurrency of the trigger.
         """
         return self.get_body().concurrency
+
+    @property
+    def end_time(self) -> datetime | None:
+        """Implements the 'end_time' property.
+
+        Returns:
+            The end time of the trigger.
+        """
+        return self.get_body().end_time
+
+    @property
+    def max_runs(self) -> int | None:
+        """Implements the 'max_runs' property.
+
+        Returns:
+            The max-runs value of the trigger.
+        """
+        return self.get_body().max_runs
 
 
 class ScheduleTriggerResponse(TriggerResponse[ScheduleTriggerResponseBody,]):
