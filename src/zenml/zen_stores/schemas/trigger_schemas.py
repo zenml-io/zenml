@@ -114,6 +114,16 @@ class TriggerSchema(NamedSchema, table=True):
         sa_column=Column(VARCHAR(20), nullable=False),
         description="The trigger execution concurrency (SKIP, SUBMIT, etc.)",
     )
+    end_time: datetime | None = Field(
+        nullable=True,
+        default=None,
+        description="The point in time after which the trigger stops creating runs.",
+    )
+    max_runs: int | None = Field(
+        nullable=True,
+        default=None,
+        description="Maximum number of runs a trigger can create per attached snapshot.",
+    )
     # -------------------- FOREIGN KEYS ------------------------------------
 
     project_id: UUID = build_foreign_key_field(
@@ -254,6 +264,8 @@ class TriggerSchema(NamedSchema, table=True):
             flavor=trigger_request.flavor,
             type=trigger_request.type,
             concurrency=trigger_request.concurrency,
+            end_time=trigger_request.end_time,
+            max_runs=trigger_request.max_runs,
         )
 
         for field_name, value in extra_fields.items():
@@ -315,6 +327,8 @@ class TriggerSchema(NamedSchema, table=True):
             flavor=TriggerFlavor(self.flavor),
             name=self.name,
             concurrency=self.concurrency,
+            end_time=self.end_time,
+            max_runs=self.max_runs,
             **json.loads(self.configuration),
         )
 
