@@ -18,7 +18,8 @@ import json
 from typing import Any, Dict, Optional, Sequence, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
+from sqlalchemy import VARCHAR, Column, String, UniqueConstraint
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy_utils.types.encrypted.encrypted_type import (
@@ -27,7 +28,7 @@ from sqlalchemy_utils.types.encrypted.encrypted_type import (
 )
 from sqlmodel import Field, Relationship
 
-from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
     SecretRequest,
     SecretResponse,
@@ -44,6 +45,10 @@ from zenml.zen_stores.schemas.schema_utils import (
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
+
+# Max total UTF-8 bytes of all key names and value strings in a ZenML secret
+# (SQL store).
+SECRET_KEY_VALUE_BYTES_MAX = 64 * 1024
 
 
 class SecretDecodeError(Exception):
@@ -72,7 +77,14 @@ class SecretSchema(NamedSchema, table=True):
 
     internal: bool = Field(default=False)
 
-    values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
+    values: Optional[bytes] = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
 
     user_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -122,11 +134,24 @@ class SecretSchema(NamedSchema, table=True):
                 secret values. If None, the values will be base64 encoded.
 
         Raises:
-            ValueError: If the secret values do not fit in the database field.
+            ValueError: If the total UTF-8 size of all keys and values exceeds
+                `SECRET_KEY_VALUE_BYTES_MAX`, or the values cannot be stored.
 
         Returns:
             The serialized encrypted secret values.
         """
+        total_bytes = sum(
+            len(k.encode("utf-8")) + len(v.encode("utf-8"))
+            for k, v in values.items()
+        )
+        if total_bytes > SECRET_KEY_VALUE_BYTES_MAX:
+            max_kib = SECRET_KEY_VALUE_BYTES_MAX // 1024
+            raise ValueError(
+                f"Secret key and value strings exceed the maximum total size "
+                f"({max_kib} KiB of UTF-8 across all keys and values). "
+                f"Split the data or use an artifact store for large files."
+            )
+
         serialized_values = json.dumps(values)
 
         if encryption_engine is None:
@@ -135,13 +160,6 @@ class SecretSchema(NamedSchema, table=True):
             )
         else:
             encrypted_values = encryption_engine.encrypt(serialized_values)
-
-        if len(encrypted_values) > TEXT_FIELD_MAX_LENGTH:
-            raise ValueError(
-                "Database representation of secret values exceeds max "
-                "length. Please use fewer values or consider using shorter "
-                "secret keys and/or values."
-            )
 
         return encrypted_values
 
