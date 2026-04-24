@@ -137,7 +137,7 @@ def builtin_type_file_uri(clean_client: "Client"):
     # Save the integer to the temporary file
     from zenml.utils.yaml_utils import write_json
 
-    write_json(filepath, TempClass().model_dump_json())
+    write_json(filepath, TempClass().model_dump(mode="json"))
 
     # Yield the temporary directory
     yield temp_dir
