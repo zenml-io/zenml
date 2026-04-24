@@ -21,6 +21,7 @@ from zenml.models import (
 
 
 def test_schedule_trigger_valid_and_inheritance():
+    end_time = datetime(2026, 1, 1, 12, 0)
     req = ScheduleTriggerRequest(
         project=uuid4(),
         name="sched",
@@ -29,10 +30,14 @@ def test_schedule_trigger_valid_and_inheritance():
         flavor=TriggerFlavor.NATIVE_SCHEDULE,
         concurrency=TriggerRunConcurrency.SKIP,
         cron_expression="0 * * * *",
+        end_time=end_time,
+        max_runs=10,
     )
     assert req.name == "sched"
     assert req.type == TriggerType.SCHEDULE
     assert req.flavor == TriggerFlavor.NATIVE_SCHEDULE
+    assert req.end_time == end_time
+    assert req.max_runs == 10
 
     upd = ScheduleTriggerUpdate(
         name="sched",
@@ -40,9 +45,13 @@ def test_schedule_trigger_valid_and_inheritance():
         type=TriggerType.SCHEDULE,
         flavor=TriggerFlavor.NATIVE_SCHEDULE,
         cron_expression="0 * * * *",
+        end_time=end_time,
+        max_runs=5,
     )
     assert upd.name == "sched"
     assert upd.type == TriggerType.SCHEDULE
+    assert upd.end_time == end_time
+    assert upd.max_runs == 5
 
     body = ScheduleTriggerResponseBody(
         project_id=uuid4(),
@@ -56,10 +65,14 @@ def test_schedule_trigger_valid_and_inheritance():
         concurrency=TriggerRunConcurrency.SKIP,
         is_archived=False,
         cron_expression="0 * * * *",
+        end_time=end_time,
+        max_runs=3,
         next_occurrence=datetime(2026, 1, 1, 12, 0),
     )
     assert body.name == "sched"
     assert body.next_occurrence is not None
+    assert body.end_time == end_time
+    assert body.max_runs == 3
 
 
 def test_schedule_trigger_validators():
@@ -131,6 +144,21 @@ def test_schedule_trigger_timezone_normalization():
     assert req.start_time.tzinfo is None
     assert req.start_time == datetime(2026, 1, 1, 10, 0)
 
+    end_time = datetime(2026, 1, 1, 12, 0, tzinfo=timezone(timedelta(hours=2)))
+    req_with_end_time = ScheduleTriggerRequest(
+        project=uuid4(),
+        name="sched-with-end-time",
+        active=True,
+        type=TriggerType.SCHEDULE,
+        flavor=TriggerFlavor.NATIVE_SCHEDULE,
+        cron_expression="0 * * * *",
+        end_time=end_time,
+    )
+    assert req_with_end_time.end_time is not None
+    assert req_with_end_time.end_time.tzinfo is None
+    assert req_with_end_time.end_time == datetime(2026, 1, 1, 10, 0)
+
+
 
 def test_schedule_trigger_response_next_occurrence_behavior():
     active = ScheduleTriggerResponseBody(
@@ -183,6 +211,7 @@ def test_schedule_trigger_response_next_occurrence_behavior():
 
 
 def test_platform_event_valid_and_inheritance():
+    end_time = datetime(2026, 2, 1, 12, 0)
     req = PlatformEventTriggerRequest(
         project=uuid4(),
         name="evt",
@@ -191,9 +220,13 @@ def test_platform_event_valid_and_inheritance():
         flavor=TriggerFlavor.PLATFORM_EVENT,
         source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
         target_events=["completed"],
+        end_time=end_time,
+        max_runs=9,
     )
     assert req.name == "evt"
     assert req.source_entity.type == SourceType.PIPELINE_RUN
+    assert req.end_time == end_time
+    assert req.max_runs == 9
 
     upd = PlatformEventTriggerUpdate(
         name="evt",
@@ -202,8 +235,12 @@ def test_platform_event_valid_and_inheritance():
         flavor=TriggerFlavor.PLATFORM_EVENT,
         source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
         target_events=["completed"],
+        end_time=end_time,
+        max_runs=4,
     )
     assert upd.source_entity.type == SourceType.PIPELINE_RUN
+    assert upd.end_time == end_time
+    assert upd.max_runs == 4
 
     body = PlatformEventTriggerResponseBody(
         project_id=uuid4(),
@@ -218,8 +255,43 @@ def test_platform_event_valid_and_inheritance():
         is_archived=False,
         source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
         target_events=["completed"],
+        end_time=end_time,
+        max_runs=2,
     )
     assert body.source_entity.type == SourceType.PIPELINE_RUN
+    assert body.end_time == end_time
+    assert body.max_runs == 2
+
+
+def test_platform_event_shared_stop_criteria_validations_and_payload():
+    with pytest.raises(ValidationError):
+        PlatformEventTriggerRequest(
+            project=uuid4(),
+            name="evt",
+            active=True,
+            type=TriggerType.PLATFORM_EVENT,
+            flavor=TriggerFlavor.PLATFORM_EVENT,
+            source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
+            target_events=["completed"],
+            max_runs=0,
+        )
+
+    req = PlatformEventTriggerRequest(
+        project=uuid4(),
+        name="evt",
+        active=True,
+        type=TriggerType.PLATFORM_EVENT,
+        flavor=TriggerFlavor.PLATFORM_EVENT,
+        source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
+        target_events=["completed"],
+        end_time=datetime(
+            2026, 1, 1, 12, 0, tzinfo=timezone(timedelta(hours=2))
+        ),
+        max_runs=2,
+    )
+    assert req.end_time is not None
+    assert req.end_time.tzinfo is None
+    assert req.end_time == datetime(2026, 1, 1, 10, 0)
 
 
 def test_platform_event_invalid_combinations():

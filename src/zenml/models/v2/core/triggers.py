@@ -256,6 +256,38 @@ class TriggerBase(BaseModel, ABC):
         description="How to handle concurrently running triggers "
         "(pipeline runs generated from the same trigger & snapshot).",
     )
+    end_time: datetime | None = Field(
+        default=None,
+        description=(
+            "The point in time after which the trigger stops creating runs."
+        ),
+    )
+    max_runs: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Maximum number of runs a trigger can create per attached snapshot."
+        ),
+    )
+
+    @field_validator("end_time", mode="after")
+    @classmethod
+    def _end_time_tz_unaware_utc(
+        cls, value: datetime | None
+    ) -> datetime | None:
+        """Ensure end_time is timezone-unaware and in UTC.
+
+        Args:
+            value: The end time value.
+
+        Returns:
+            The normalized end time.
+        """
+        if value and value.tzinfo:
+            value = value.astimezone(timezone.utc)
+            value = value.replace(tzinfo=None)
+
+        return value
 
 
 class TriggerRequest(ProjectScopedRequest, TriggerBase, ABC):
@@ -505,21 +537,13 @@ class ScheduleTrigger(BaseModel):
         ge=60,
         description="Scheduling option: Execute on intervals of N seconds after start time.",
     )
-    end_time: datetime | None = None
     start_time: datetime | None = None
     run_once_start_time: datetime | None = Field(
         default=None,
         description="Scheduling option: Execute once on selected start time.",
     )
-    max_runs: int | None = Field(
-        default=None,
-        description="Maximum number of runs to execute with this schedule.",
-        ge=1,
-    )
 
-    @field_validator(
-        "start_time", "end_time", "run_once_start_time", mode="after"
-    )
+    @field_validator("start_time", "run_once_start_time", mode="after")
     @classmethod
     def _tz_unaware_utc(cls, value: datetime | None) -> datetime | None:
         """Ensures that all datetime objects are timezone unaware and in UTC time.
