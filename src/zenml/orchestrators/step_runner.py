@@ -768,6 +768,7 @@ class StepRunner:
                 data=return_value,
                 materializer_class=materializer_class,
                 uri=uri,
+                artifact_store=self._stack.artifact_store,
                 artifact_type=artifact_type,
                 store_metadata=artifact_metadata_enabled,
                 store_visualizations=artifact_visualization_enabled,

@@ -30,6 +30,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
+    ReplayRunConfiguration,
 )
 from zenml.config.step_configurations import Step, StepConfigurationUpdate
 from zenml.constants import (
@@ -209,6 +210,12 @@ def create_snapshot_from_source(
     Returns:
         A new pipeline snapshot response.
     """
+    if isinstance(run_configuration, ReplayRunConfiguration):
+        run_configuration = _maybe_upload_step_input_overrides(
+            run_configuration=run_configuration,
+            stack=stack,
+        )
+
     snapshot_request = snapshot_request_from_source_snapshot(
         source_snapshot=snapshot,
         config=run_configuration or PipelineRunConfiguration(),
@@ -222,10 +229,65 @@ def create_snapshot_from_source(
     return zen_store().create_snapshot(snapshot_request)
 
 
+def _maybe_upload_step_input_overrides(
+    run_configuration: ReplayRunConfiguration,
+    stack: StackResponse,
+) -> ReplayRunConfiguration:
+    """Maybe upload step input overrides for a replay run.
+
+    Args:
+        run_configuration: The run configuration.
+        stack: The stack for the run.
+
+    Returns:
+        The run configuration with the step input overrides uploaded.
+    """
+    from zenml.artifacts.external_artifact import ExternalArtifact
+    from zenml.artifacts.utils import load_artifact_store
+
+    if not run_configuration.step_input_overrides:
+        return run_configuration
+
+    if all(
+        isinstance(value, UUID)
+        for overrides in run_configuration.step_input_overrides.values()
+        for value in overrides.values()
+    ):
+        return run_configuration
+
+    artifact_store = load_artifact_store(
+        stack.components[StackComponentType.ARTIFACT_STORE][0].id,
+        zen_store=zen_store(),
+    )
+
+    override_ids: Dict[str, Dict[str, UUID]] = {}
+
+    for (
+        invocation_id,
+        overrides,
+    ) in run_configuration.step_input_overrides.items():
+        override_ids[invocation_id] = {}
+        for input_name, value in overrides.items():
+            # We treat UUIDs as already uploaded artifact versions, and for the
+            # rest we try to upload them to the artifact store.
+            if isinstance(value, UUID):
+                artifact_version_id = value
+            else:
+                artifact_version_id = ExternalArtifact(
+                    value=value
+                ).upload_by_value(artifact_store=artifact_store)
+
+            override_ids[invocation_id][input_name] = artifact_version_id
+
+    return run_configuration.model_copy(
+        update={"step_input_overrides": override_ids}
+    )
+
+
 def run_snapshot(
     snapshot: PipelineSnapshotResponse,
     auth_context: AuthContext,
-    request: PipelineSnapshotRunRequest,
+    request: Optional[PipelineSnapshotRunRequest] = None,
     sync: bool = False,
     template_id: Optional[UUID] = None,
     create_new_snapshot: bool = True,
@@ -233,6 +295,8 @@ def run_snapshot(
     wait_runner_pod: bool = True,
     trigger_id: UUID | None = None,
     trigger_execution_info: TriggerExecutionInfo | None = None,
+    replay_configuration: Optional[ReplayRunConfiguration] = None,
+    original_run: Optional[PipelineRunResponse] = None,
 ) -> PipelineRunResponse:
     """Run a snapshot from the server.
 
@@ -248,26 +312,37 @@ def run_snapshot(
         wait_runner_pod: Whether to wait for runner pod completion.
         trigger_id: The trigger ID that generated the snapshot run (optional).
         trigger_execution_info: Extra (trigger-related) information about the trigger run (optional).
+        replay_configuration: The replay configuration.
+        original_run: The original run.
 
     Raises:
         MaxConcurrentTasksError: If the maximum number of concurrent run
             snapshot tasks is reached.
+        ValueError: If no original run is provided for a replay run.
 
     Returns:
         ID of the new pipeline run.
     """
+    if replay_configuration and not original_run:
+        raise ValueError("Original run is required to replay a pipeline run.")
+
+    run_configuration: Optional[PipelineRunConfiguration] = (
+        replay_configuration
+        or (request.run_configuration if request else None)
+    )
+
     if not implicit_auth_context:
         set_auth_context(auth_context)
     logger.info("Current auth context: %s", get_auth_context())
     build, stack, zenml_version = validate_snapshot_for_server_execution(
         snapshot=snapshot,
-        run_configuration=request.run_configuration,
+        run_configuration=run_configuration,
     )
 
     if create_new_snapshot:
         target_snapshot = create_snapshot_from_source(
             snapshot=snapshot,
-            run_configuration=request.run_configuration,
+            run_configuration=run_configuration,
             template_id=template_id,
             stack=stack,
         )
@@ -275,7 +350,7 @@ def run_snapshot(
         target_snapshot = snapshot
 
     trigger_info = None
-    if request.step_run:
+    if request and request.step_run:
         trigger_info = PipelineRunTriggerInfo(
             step_run_id=request.step_run,
         )
@@ -284,6 +359,7 @@ def run_snapshot(
         snapshot=target_snapshot,
         trigger_info=trigger_info,
         logs=LogsRequest(source=LOGS_RUNNER_SOURCE),
+        original_run_id=original_run.id if original_run else None,
     )
 
     if trigger_id:
@@ -314,8 +390,13 @@ def run_snapshot(
         stack=stack, build=build, zenml_version=zenml_version
     )
 
-    workload_id = placeholder_run.id if trigger_id else target_snapshot.id
-    workload_type = WorkloadType.RUN if trigger_id else WorkloadType.SNAPSHOT
+    is_replay = original_run is not None
+    workload_id = (
+        placeholder_run.id if trigger_id or is_replay else target_snapshot.id
+    )
+    workload_type = (
+        WorkloadType.RUN if trigger_id or is_replay else WorkloadType.SNAPSHOT
+    )
 
     def _task() -> None:
         with track_handler(
