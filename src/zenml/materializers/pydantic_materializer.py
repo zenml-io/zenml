@@ -57,6 +57,10 @@ class PydanticMaterializer(BaseMaterializer):
             legacy_data_path = os.path.join(self.uri, LEGACY_FILENAME)
             if self.artifact_store.exists(legacy_data_path):
                 contents = yaml_utils.read_json(legacy_data_path)
+                # In ZenML versions <= 0.94.2, the pydantic materializer double
+                # encoded the data before writing it to a file. The first round
+                # of decoding happens in the `read_json` function, we now call
+                # `model_validate_json` to decode the data again.
                 return data_type.model_validate_json(contents)
             else:
                 raise FileNotFoundError(
