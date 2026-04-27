@@ -57,10 +57,10 @@ jobs:
           echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      # The Modal path does not run tests on the GitHub runner; the runner
-      # only needs Python, uv, offload, and the Modal sandbox helper deps.
-      # Avoid the full ZenML dev install here so warm runs don't spend ~3m
-      # setting up packages that are only used inside the Modal image.
+      # The Modal path executes tests remotely, but offload still performs
+      # pytest collection on the GitHub runner before it schedules sandboxes.
+      # Install the runner deps directly instead of going through the full
+      # setup_environment composite action and its extra environment checks.
       - name: Restore runner dependency cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
@@ -123,14 +123,20 @@ jobs:
             python -m pip install --upgrade uv
           fi
 
+          runner_extras=".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
           # offload.toml's high-frequency per-batch commands invoke
           # modal_sandbox.py via `python3` instead of `uv run` to skip
           # uv's PEP 723 resolve on every call (~1-2s saved per batch).
-          # That requires the checked-in runner dependencies in
-          # scripts/ci/modal_sandbox_requirements.txt to already be
-          # importable from the runner's system python.
-          if ! uv pip install --system -r scripts/ci/modal_sandbox_requirements.txt; then
-            echo "::warning::Unable to install Modal runtime dependencies; falling back to standard CI."
+          # The runner also needs pytest and import-time test dependencies for
+          # offload's local collect-only phase.
+          if ! uv pip install --system -e "$runner_extras" -r scripts/ci/modal_sandbox_requirements.txt; then
+            echo "::warning::Unable to install Modal runner dependencies; falling back to standard CI."
+            echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
+            echo "run_modal=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! uv pip install --system "setuptools<82"; then
+            echo "::warning::Unable to pin setuptools for Modal runner dependencies; falling back to standard CI."
             echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
             echo "run_modal=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -144,6 +150,8 @@ jobs:
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
             hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
             }}
+          restore-keys: |
+            offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-
       - name: Restore JUnit duration cache
         id: restore_junit_cache
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
@@ -186,7 +194,11 @@ jobs:
           set -euo pipefail
           run_started_at="$(date +%s)"
           offload_log="test-results/modal-fast-ci/offload.log"
+          junit_file="test-results/modal-fast-ci/junit.xml"
           mkdir -p "$(dirname "$offload_log")"
+          if [[ -f "$junit_file" ]]; then
+            touch -d "2000-01-01 00:00:00 UTC" "$junit_file"
+          fi
           echo "run_started_at=$run_started_at" >> "$GITHUB_OUTPUT"
           # max_parallel lives in offload.toml; don't duplicate it here.
           set +e
@@ -222,7 +234,7 @@ jobs:
               return 1
             fi
             grep -Eq \
-              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox' \
+              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox|Failed to discover tests|pytest --collect-only failed|No module named pytest' \
               "$offload_log"
           }
           if [[ "${{ steps.setup_python.outcome }}" != "success" ]]; then

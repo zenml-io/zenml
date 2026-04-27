@@ -96,8 +96,9 @@ jobs:
           if ! command -v uv >/dev/null 2>&1; then
             python -m pip install --upgrade uv
           fi
-          uv pip install --system -e .
-          uv pip install --system -r scripts/ci/modal_sandbox_requirements.txt
+          runner_extras=".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
+          uv pip install --system -e "$runner_extras" -r scripts/ci/modal_sandbox_requirements.txt
+          uv pip install --system "setuptools<82"
       - name: Restore offload image cache
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
@@ -105,6 +106,8 @@ jobs:
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
             hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
             }}
+          restore-keys: |
+            offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-
       - name: Restore JUnit duration cache
         id: restore_junit_cache
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
@@ -139,7 +142,11 @@ jobs:
           set -euo pipefail
           run_started_at="$(date +%s)"
           offload_log="test-results/modal-server-mysql-ci/offload.log"
+          junit_file="test-results/modal-server-mysql-ci/junit.xml"
           mkdir -p "$(dirname "$offload_log")"
+          if [[ -f "$junit_file" ]]; then
+            touch -d "2000-01-01 00:00:00 UTC" "$junit_file"
+          fi
           echo "run_started_at=$run_started_at" >> "$GITHUB_OUTPUT"
           # The pinned offload binary auto-discovers offload.toml and does
           # not support --config, so expose this lane's config under the
@@ -170,7 +177,7 @@ jobs:
               return 1
             fi
             grep -Eq \
-              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox|error: unexpected argument' \
+              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox|Failed to discover tests|pytest --collect-only failed|No module named pytest|error: unexpected argument' \
               "$offload_log"
           }
 
