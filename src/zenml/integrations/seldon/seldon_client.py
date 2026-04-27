@@ -941,16 +941,13 @@ class SeldonClient:
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
 
-        Returns:
-            A generator that can be accessed to get the service logs.
-
         Yields:
             The next log line.
 
         Raises:
             SeldonClientError: if an unknown error occurs while fetching
                 the logs.
-        """
+        """  # noqa: DOC201, DOC403
         logger.debug(f"Retrieving logs for SeldonDeployment resource: {name}")
         try:
             response = self._core_api.list_namespaced_pod(

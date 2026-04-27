@@ -443,12 +443,7 @@ class BaseDeployer(StackComponent, ABC):
             the metadata about the deployment
         """
         snapshot = deployment.snapshot
-        stack_metadata = {}
-        if stack:
-            stack_metadata = {
-                component_type.value: component.flavor
-                for component_type, component in stack.components.items()
-            }
+        stack_metadata = stack.component_flavor_metadata if stack else {}
         return {
             "project_id": deployment.project_id,
             "store_type": Client().zen_store.type.value,

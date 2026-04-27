@@ -650,8 +650,9 @@ class Model(BaseModel):
 
         Raises:
             RuntimeError: if the model version needs to be created, but
-                provided name is reserved.
-            RuntimeError: if the model version cannot be created.
+                provided name is reserved or the model version cannot be
+                created.
+            KeyError: if the model version cannot be fetched.
         """
         from zenml.client import Client
         from zenml.models import ModelVersionRequest

@@ -361,7 +361,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 # go through all stack components and identify those that
                 # advertise a local path where they persist information that
                 # they need to be available when running pipelines.
-                for stack_comp in stack.components.values():
+                for stack_comp in stack.all_components:
                     if stack_comp.local_path is None:
                         continue
                     return False, (

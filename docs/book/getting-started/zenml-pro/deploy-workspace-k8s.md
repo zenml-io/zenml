@@ -274,15 +274,40 @@ To login to a workspace with the ZenML CLI:
 zenml login <WORKSPACE_NAME>
 ```
 
-### (Optional) Enable Snapshot Support / Workload Manager
+### (Optional) Opt-in Workspace Server Features
 
-The Workspace Server includes a workload manager feature that enables running pipelines directly from the ZenML Pro UI. This requires the workspace server to have access to a Kubernetes cluster where ad-hoc runner pods can be created.
+Several ZenML Pro capabilities are not turned on by the default Helm
+installation. They need extra infrastructure, environment variables, or
+additional microservices beyond the main workspace server. Many are
+paid add-ons on top of the base plan—see the
+[pricing page](https://www.zenml.io/pricing)—and must be licensed and enabled
+for your organization before they work end-to-end.
 
-{% hint style="warning" %}
-The workload manager feature and snapshots are only available from ZenML workspace server version 0.90.0 onwards.
-{% endhint %}
+**What it enables** points to ZenML Pro documentation for the capability.
+**What it deploys** summarizes the extra components at a high level. In the
+ZenML Helm chart, each optional background process is modeled as an
+additional microservice (its own Kubernetes Deployment) next to the API
+server. You declare those microservices in `values.yaml` under the
+`workerDeployments` map; each key under that map configures one microservice.
+The per-feature guides show the exact YAML.
 
-If you want to enable snapshot support for the ZenML Pro workspace server, you need to follow the instructions in the [Enable Snapshot Support](deploy-workspace-snapshots.md) guide.
+| Guide | What it enables | What it deploys | Minimum workspace server version |
+|-------|-----------------|-----------------|----------------------------------|
+| [Enable Snapshot Support](deploy-workspace-snapshots.md) | [Snapshots](snapshots.md) | Workload manager: server env vars and RBAC so the workspace can create "runner Jobs" in Kubernetes | 0.90.0 |
+| [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md) | [Schedule triggers](triggers.md#schedule-triggers), [platform event triggers](triggers.md#platform-event-triggers) | **Scheduler** and **executor** microservices, **Redis** (broker URL via **`secretEnvironment`**); **`server.secretEnvironment`** **`ZENML_REDIS_BROKER_URL`** for platform events; requires [snapshot support](deploy-workspace-snapshots.md) to run attached snapshots | 0.94.3 |
+| [Enable Resource Pools](deploy-workspace-resource-pools.md) | [Resource pools](resource-pools.md) | **Resource pool reconciler** microservice | 0.94.3 |
+
+Deploy [snapshot support](deploy-workspace-snapshots.md) before you rely on
+[event triggers and schedules](deploy-workspace-event-triggers-and-schedules.md)
+end-to-end: triggers run against pipeline snapshots, which need the workload
+manager to execute on the cluster.
+
+**Platform event triggers** also require **`ZENML_REDIS_BROKER_URL`** on the
+main workspace server, set through **`server.secretEnvironment`** (or
+**`server.environmentSecretKeyRefs`**) rather than plain `server.environment`,
+because broker URLs may contain credentials. Schedule-only triggers do not
+need Redis on the server. See
+[Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md).
 
 ## Day 2 Operations
 
@@ -307,3 +332,5 @@ Request from ZenML Support:
 - Update bundles and release notes
 - Security documentation (SBOM, vulnerability reports)
 
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

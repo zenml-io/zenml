@@ -131,7 +131,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         def _validate_remote_components(
             stack: "Stack",
         ) -> Tuple[bool, str]:
-            for component in stack.components.values():
+            for component in stack.all_components:
                 if not component.config.is_local:
                     continue
 
@@ -740,7 +740,6 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             Step statuses are not supported for AzureML, so step_statuses_dict will always be None.
 
         Raises:
-            AssertionError: If the run was not executed by to this orchestrator.
             ValueError: If it fetches an unknown state or if we can not fetch
                 the orchestrator run ID.
         """

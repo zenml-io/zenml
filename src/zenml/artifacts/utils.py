@@ -124,6 +124,7 @@ def _store_artifact_data_and_prepare_request(
     uri: str,
     materializer_class: Type["BaseMaterializer"],
     save_type: ArtifactSaveType,
+    artifact_store: "BaseArtifactStore",
     version: Optional[Union[int, str]] = None,
     artifact_type: Optional[ArtifactType] = None,
     tags: Optional[List[str]] = None,
@@ -141,6 +142,7 @@ def _store_artifact_data_and_prepare_request(
         materializer_class: The materializer class to use for storing the
             artifact data.
         save_type: Save type of the artifact version.
+        artifact_store: The artifact store in which to store the artifact.
         version: The artifact version.
         artifact_type: The artifact type. If not given, the type will be defined
             by the materializer that is used to save the artifact.
@@ -155,8 +157,6 @@ def _store_artifact_data_and_prepare_request(
     Returns:
         Artifact version request for the artifact data that was stored.
     """
-    artifact_store = Client().active_stack.artifact_store
-
     uses_in_memory_materializer = issubclass(
         materializer_class, InMemoryMaterializer
     )
@@ -231,6 +231,7 @@ def save_artifact(
     # TODO: remove these once external artifact does not use this function anymore
     save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
     has_custom_name: bool = True,
+    artifact_store: Optional["BaseArtifactStore"] = None,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
 
@@ -253,6 +254,8 @@ def save_artifact(
         save_type: The type of save operation that created the artifact version.
         has_custom_name: If the artifact name is custom and should be listed in
             the dashboard "Artifacts" tab.
+        artifact_store: The artifact store in which to store the artifact. If
+            not provided, the active stack's artifact store will be used.
 
     Returns:
         The saved artifact response.
@@ -263,7 +266,7 @@ def save_artifact(
     from zenml.utils import source_utils
 
     client = Client()
-    artifact_store = client.active_stack.artifact_store
+    artifact_store = artifact_store or client.active_stack.artifact_store
 
     if not uri:
         uri = os.path.join("custom_artifacts", name, str(uuid4()))
@@ -294,6 +297,7 @@ def save_artifact(
         uri=uri,
         materializer_class=materializer_class,
         save_type=save_type,
+        artifact_store=artifact_store,
         version=version,
         artifact_type=artifact_type,
         tags=tags,

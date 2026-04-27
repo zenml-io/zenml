@@ -33,7 +33,12 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    ResourceRequestStatus,
+    StepRuntime,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
@@ -55,7 +60,7 @@ from zenml.utils.logging_utils import (
     is_step_logging_enabled,
     setup_logging_context,
 )
-from zenml.utils.time_utils import utc_now
+from zenml.utils.time_utils import exponential_backoff_delays, utc_now
 
 if TYPE_CHECKING:
     from zenml.step_operators import BaseStepOperator
@@ -78,19 +83,19 @@ def _get_step_operator(
     Raises:
         RuntimeError: If no active step operator is found.
     """
-    step_operator = stack.step_operator
+    if step_operator_name is None:
+        step_operator = stack.step_operator
+        if step_operator is None:
+            raise RuntimeError(
+                f"No step operators specified for active stack '{stack.name}'."
+            )
+        return step_operator
 
-    # the two following errors should never happen as the stack gets
-    # validated before running the pipeline
-    if not step_operator:
+    step_operator = stack.step_operators.get(step_operator_name)
+    if step_operator is None:
         raise RuntimeError(
-            f"No step operator specified for active stack '{stack.name}'."
-        )
-
-    if step_operator_name and step_operator_name != step_operator.name:
-        raise RuntimeError(
-            f"No step operator named '{step_operator_name}' in active "
-            f"stack '{stack.name}'."
+            f"No step operator named '{step_operator_name}' found in active "
+            f"stack '{stack.name}'. Available step operators: {list(stack.step_operators)}."
         )
 
     return step_operator
@@ -353,7 +358,11 @@ class StepLauncher:
                             step_run_id=step_run.id
                         )
 
-                        if (
+                        if step_run.status == ExecutionStatus.CANCELLING:
+                            publish_utils.publish_cancelled_step_run(
+                                step_run_id=step_run.id
+                            )
+                        elif (
                             isinstance(e, StepHeartBeatTerminationException)
                             or step_run.status == ExecutionStatus.STOPPING
                         ):
@@ -366,7 +375,10 @@ class StepLauncher:
                                 self._invocation_id,
                                 e,
                             )
-                            if step_run.status == ExecutionStatus.RUNNING:
+                            if step_run.status in {
+                                ExecutionStatus.RUNNING,
+                                ExecutionStatus.QUEUED,
+                            }:
                                 # Only update the status if the step runner
                                 # somehow failed to do so.
                                 publish_utils.publish_failed_step_run(
@@ -457,8 +469,7 @@ class StepLauncher:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
-
-        """
+        """  # noqa: DOC501
         from zenml.deployers.server import runtime
 
         step_run_info = StepRunInfo(
@@ -480,6 +491,9 @@ class StepLauncher:
             step=self._step,
             skip_artifact_materialization=runtime.should_skip_artifact_materialization(),
         )
+
+        if self._snapshot.is_dynamic:
+            self._wait_until_resources_acquired(step_run_info)
 
         try:
             if self._step.config.step_operator:
@@ -550,18 +564,18 @@ class StepLauncher:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
 
-        # noqa: DAR401
         Raises:
             RuntimeError: If trying to use a step operator that does not support
                 running asynchronously in a dynamic pipeline.
             NotImplementedError: If the step operator does not implement the
                 `submit(...)` or `launch(...)` methods.
             BaseException: If the step run failed.
-        """
+        """  # noqa: DOC502, DOC503
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
         )
+
         entrypoint_cfg_class = step_operator.entrypoint_config_class
         entrypoint_command = (
             entrypoint_cfg_class.get_entrypoint_command()
@@ -657,10 +671,9 @@ class StepLauncher:
         Args:
             step_run_info: Additional information needed to run the step.
 
-        # noqa: DAR401
         Raises:
             BaseException: If the step run failed.
-        """
+        """  # noqa: DOC502, DOC503
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
@@ -716,3 +729,79 @@ class StepLauncher:
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )
+
+    def _wait_until_resources_acquired(
+        self, step_run_info: StepRunInfo
+    ) -> None:
+        """Waits until the resources are acquired.
+
+        Args:
+            step_run_info: Step run information.
+
+        Raises:
+            RuntimeError: If the resource request was not found, or
+                was rejected, preempted, or cancelled.
+        """
+        resource_request = step_run_info.step_run.resource_request
+        if not resource_request:
+            return
+
+        if resource_request.status == ResourceRequestStatus.ALLOCATED:
+            return
+
+        for delay in exponential_backoff_delays(
+            initial_delay=1.0,
+            max_delay=20.0,
+            factor=2.0,
+            jitter="equal",
+        ):
+            try:
+                resource_request = Client().zen_store.get_resource_request(
+                    resource_request.id, hydrate=False
+                )
+            except KeyError as e:
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` not found. This "
+                    "is most likely because someone deleted the resource "
+                    "request."
+                ) from e
+
+            if resource_request.status == ResourceRequestStatus.ALLOCATED:
+                logger.info(
+                    "Resource request `%s` for step `%s` was approved.",
+                    resource_request.id,
+                    step_run_info.pipeline_step_name,
+                )
+                publish_utils.publish_step_run_status_update(
+                    step_run_id=step_run_info.step_run_id,
+                    status=ExecutionStatus.RUNNING,
+                )
+                return
+            elif resource_request.status == ResourceRequestStatus.REJECTED:
+                reason = resource_request.status_reason or "Unknown reason"
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was rejected: "
+                    f"{reason}"
+                )
+            elif resource_request.status == ResourceRequestStatus.PREEMPTED:
+                reason = resource_request.status_reason or "Unknown reason"
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was preempted: "
+                    f"{reason}"
+                )
+            elif resource_request.status == ResourceRequestStatus.CANCELLED:
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was cancelled."
+                )
+
+            logger.info(
+                "Waiting for resource request `%s` of step `%s` to be "
+                "approved...",
+                resource_request.id,
+                step_run_info.pipeline_step_name,
+            )
+            time.sleep(delay)

@@ -100,7 +100,7 @@ from zenml.steps.entrypoint_function_utils import StepArtifact
 def local_stack():
     """Returns a local stack with local orchestrator and artifact store."""
     orchestrator = LocalOrchestrator(
-        name="",
+        name="some_orchestrator",
         id=uuid4(),
         config=StackComponentConfig(),
         flavor="default",
@@ -110,7 +110,7 @@ def local_stack():
         updated=datetime.now(),
     )
     artifact_store = LocalArtifactStore(
-        name="",
+        name="some_artifact_store",
         id=uuid4(),
         config=LocalArtifactStoreConfig(),
         flavor="default",

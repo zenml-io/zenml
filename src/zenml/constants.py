@@ -183,6 +183,7 @@ APP_NAME = "zenml"
 # Environment variables
 ENV_ZENML_LOGGING_COLORS_DISABLED = "ZENML_LOGGING_COLORS_DISABLED"
 ENV_ZENML_ANALYTICS_OPT_IN = "ZENML_ANALYTICS_OPT_IN"
+ENV_ZENML_CONTAINER_ENGINE = "ZENML_CONTAINER_ENGINE"
 ENV_ZENML_USER_ID = "ZENML_USER_ID"
 ENV_ZENML_CONFIG_PATH = "ZENML_CONFIG_PATH"
 ENV_ZENML_DEBUG = "ZENML_DEBUG"
@@ -480,6 +481,9 @@ CURATED_VISUALIZATIONS = "/curated_visualizations"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
+RESOURCE_POOLS = "/resource_pools"
+RESOURCE_POOL_SUBJECT_POLICIES = "/resource_pool_subject_policies"
+RESOURCE_REQUESTS = "/resource_requests"
 PROJECTS = "/projects"
 REFRESH = "/refresh"
 RESOLVE = "/resolve"
@@ -514,10 +518,12 @@ STATUS = "/status"
 STEP_CONFIGURATION = "/step-configuration"
 STEPS = "/steps"
 HEARTBEAT = "/heartbeat"
+REPLAY = "/replay"
 STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"
 TRIGGERS = "/triggers"
+TRIGGER_SNAPSHOT_DISPATCH_STATE = "/dispatch_state"
 ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
 URL = "/url"
@@ -565,6 +571,7 @@ MLFLOW_MODEL_FORMAT = "MLflow"
 
 # Service connector constants
 DOCKER_REGISTRY_RESOURCE_TYPE = "docker-registry"
+DOCKERHUB_REGISTRY_URI = "docker.io"
 KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
 
 # Stack Recipe constants
@@ -652,5 +659,6 @@ LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
 
 # Subscription-based features
 SCHEDULE_FEATURE = "schedule"
+RESOURCE_POOL_FEATURE = "resource_pool"
 
 LOGS_RUNNER_SOURCE = "runner"

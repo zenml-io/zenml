@@ -17,9 +17,10 @@ import os
 from typing import IO, Dict, List, Optional, Set, cast
 
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.container_engines import ContainerEngine
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import io_utils, string_utils
+from zenml.utils import string_utils
 from zenml.utils.archivable import Archivable, ArchiveType
 
 logger = get_logger(__name__)
@@ -131,7 +132,7 @@ class BuildContext(Archivable):
         """
         dockerignore = self.dockerignore_file
         if dockerignore:
-            patterns = self._parse_dockerignore(dockerignore)
+            patterns = ContainerEngine.parse_dockerignore(dockerignore)
             # Always include the .zen directory
             patterns.append(f"!/{REPOSITORY_DIRECTORY_NAME}")
             return patterns
@@ -141,32 +142,3 @@ class BuildContext(Archivable):
                 "context.",
             )
             return []
-
-    @staticmethod
-    def _parse_dockerignore(dockerignore_path: str) -> List[str]:
-        """Parses a dockerignore file and returns a list of patterns to ignore.
-
-        Args:
-            dockerignore_path: Path to the dockerignore file.
-
-        Returns:
-            List of patterns to ignore.
-        """
-        try:
-            file_content = io_utils.read_file_contents_as_string(
-                dockerignore_path
-            )
-        except FileNotFoundError:
-            logger.warning(
-                "Unable to find dockerignore file at path '%s'.",
-                dockerignore_path,
-            )
-            return []
-
-        exclude_patterns = []
-        for line in file_content.split("\n"):
-            line = line.strip()
-            if line and not line.startswith("#"):
-                exclude_patterns.append(line)
-
-        return exclude_patterns

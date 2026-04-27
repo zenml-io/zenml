@@ -82,3 +82,5 @@ Finetuning LLMs can be a powerful tool when used appropriately, but it's importa
 
 In the next section we'll look at some of the practical considerations you have
 to take into account when finetuning LLMs.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

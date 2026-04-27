@@ -19,6 +19,7 @@ from uuid import UUID, uuid4
 
 from pydantic import Field, model_validator
 
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
@@ -95,8 +96,14 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
         return self
 
-    def upload_by_value(self) -> UUID:
+    def upload_by_value(
+        self, artifact_store: Optional["BaseArtifactStore"] = None
+    ) -> UUID:
         """Uploads the artifact by value.
+
+        Args:
+            artifact_store: The artifact store in which to store the artifact.
+                If not provided, the active stack's artifact store will be used.
 
         Returns:
             The uploaded artifact ID.
@@ -116,6 +123,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             uri=uri,
             has_custom_name=False,
             save_type=ArtifactSaveType.EXTERNAL,
+            artifact_store=artifact_store,
         )
 
         # To avoid duplicate uploads, switch to referencing the uploaded

@@ -326,6 +326,9 @@ class OtelLogStore(BaseLogStore):
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
 
+        Returns:
+            A list of log entries.
+
         Raises:
             NotImplementedError: Log fetching is not supported by the OTEL log
                 store.

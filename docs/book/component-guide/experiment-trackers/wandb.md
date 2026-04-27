@@ -518,3 +518,5 @@ if __name__ == "__main__":
 </details>
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb.html#zenml.integrations.wandb) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

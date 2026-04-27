@@ -23,13 +23,14 @@ from uuid import UUID
 
 from packaging import version
 
-from zenml import LogsRequest
+from zenml import LogsRequest, TriggerExecutionInfo
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
+    ReplayRunConfiguration,
 )
 from zenml.config.step_configurations import Step, StepConfigurationUpdate
 from zenml.constants import (
@@ -88,6 +89,50 @@ from zenml.zen_server.utils import (
 logger = get_logger(__name__)
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
+
+
+def _use_legacy_stack_component_setting_keys(
+    zenml_version: Optional[str],
+) -> bool:
+    """Whether stack component settings should use legacy keys for a runner.
+
+    Snapshots executed on ZenML before 0.94.3 expect `type.flavor` keys, the
+    server normalizes newer runs to `type:name` for multi-component stacks.
+
+    Args:
+        zenml_version: ZenML version string for the execution environment.
+
+    Returns:
+        `True` when `zenml_version` is missing, unparsable, or strictly
+        older than 0.94.3.
+    """
+    if not zenml_version or not zenml_version.strip():
+        return True
+    try:
+        parsed = version.parse(zenml_version.strip())
+        return parsed < version.parse("0.94.3")
+    except version.InvalidVersion:
+        return True
+
+
+def _has_legacy_settings(snapshot: PipelineSnapshotResponse) -> bool:
+    """Whether stack settings should use legacy keys.
+
+    Args:
+        snapshot: The snapshot to check.
+
+    Returns:
+        Whether stack settings should use legacy keys.
+    """
+    zenml_version: Optional[str] = None
+
+    if snapshot.build is not None:
+        zenml_version = snapshot.build.zenml_version
+
+    if zenml_version is None:
+        zenml_version = snapshot.client_version
+
+    return _use_legacy_stack_component_setting_keys(zenml_version)
 
 
 class BoundedThreadPoolExecutor:
@@ -165,25 +210,93 @@ def create_snapshot_from_source(
     Returns:
         A new pipeline snapshot response.
     """
+    if isinstance(run_configuration, ReplayRunConfiguration):
+        run_configuration = _maybe_upload_step_input_overrides(
+            run_configuration=run_configuration,
+            stack=stack,
+        )
+
     snapshot_request = snapshot_request_from_source_snapshot(
         source_snapshot=snapshot,
         config=run_configuration or PipelineRunConfiguration(),
         template_id=template_id,
     )
-    ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
+    ensure_async_orchestrator(
+        snapshot=snapshot_request,
+        stack=stack,
+        legacy=_has_legacy_settings(snapshot),
+    )
     return zen_store().create_snapshot(snapshot_request)
+
+
+def _maybe_upload_step_input_overrides(
+    run_configuration: ReplayRunConfiguration,
+    stack: StackResponse,
+) -> ReplayRunConfiguration:
+    """Maybe upload step input overrides for a replay run.
+
+    Args:
+        run_configuration: The run configuration.
+        stack: The stack for the run.
+
+    Returns:
+        The run configuration with the step input overrides uploaded.
+    """
+    from zenml.artifacts.external_artifact import ExternalArtifact
+    from zenml.artifacts.utils import load_artifact_store
+
+    if not run_configuration.step_input_overrides:
+        return run_configuration
+
+    if all(
+        isinstance(value, UUID)
+        for overrides in run_configuration.step_input_overrides.values()
+        for value in overrides.values()
+    ):
+        return run_configuration
+
+    artifact_store = load_artifact_store(
+        stack.components[StackComponentType.ARTIFACT_STORE][0].id,
+        zen_store=zen_store(),
+    )
+
+    override_ids: Dict[str, Dict[str, UUID]] = {}
+
+    for (
+        invocation_id,
+        overrides,
+    ) in run_configuration.step_input_overrides.items():
+        override_ids[invocation_id] = {}
+        for input_name, value in overrides.items():
+            # We treat UUIDs as already uploaded artifact versions, and for the
+            # rest we try to upload them to the artifact store.
+            if isinstance(value, UUID):
+                artifact_version_id = value
+            else:
+                artifact_version_id = ExternalArtifact(
+                    value=value
+                ).upload_by_value(artifact_store=artifact_store)
+
+            override_ids[invocation_id][input_name] = artifact_version_id
+
+    return run_configuration.model_copy(
+        update={"step_input_overrides": override_ids}
+    )
 
 
 def run_snapshot(
     snapshot: PipelineSnapshotResponse,
     auth_context: AuthContext,
-    request: PipelineSnapshotRunRequest,
+    request: Optional[PipelineSnapshotRunRequest] = None,
     sync: bool = False,
     template_id: Optional[UUID] = None,
     create_new_snapshot: bool = True,
     implicit_auth_context: bool = True,
     wait_runner_pod: bool = True,
     trigger_id: UUID | None = None,
+    trigger_execution_info: TriggerExecutionInfo | None = None,
+    replay_configuration: Optional[ReplayRunConfiguration] = None,
+    original_run: Optional[PipelineRunResponse] = None,
 ) -> PipelineRunResponse:
     """Run a snapshot from the server.
 
@@ -198,26 +311,38 @@ def run_snapshot(
         implicit_auth_context: Whether to use implicit auth context or create an explicit new one.
         wait_runner_pod: Whether to wait for runner pod completion.
         trigger_id: The trigger ID that generated the snapshot run (optional).
+        trigger_execution_info: Extra (trigger-related) information about the trigger run (optional).
+        replay_configuration: The replay configuration.
+        original_run: The original run.
 
     Raises:
         MaxConcurrentTasksError: If the maximum number of concurrent run
             snapshot tasks is reached.
+        ValueError: If no original run is provided for a replay run.
 
     Returns:
         ID of the new pipeline run.
     """
+    if replay_configuration and not original_run:
+        raise ValueError("Original run is required to replay a pipeline run.")
+
+    run_configuration: Optional[PipelineRunConfiguration] = (
+        replay_configuration
+        or (request.run_configuration if request else None)
+    )
+
     if not implicit_auth_context:
         set_auth_context(auth_context)
     logger.info("Current auth context: %s", get_auth_context())
     build, stack, zenml_version = validate_snapshot_for_server_execution(
         snapshot=snapshot,
-        run_configuration=request.run_configuration,
+        run_configuration=run_configuration,
     )
 
     if create_new_snapshot:
         target_snapshot = create_snapshot_from_source(
             snapshot=snapshot,
-            run_configuration=request.run_configuration,
+            run_configuration=run_configuration,
             template_id=template_id,
             stack=stack,
         )
@@ -225,7 +350,7 @@ def run_snapshot(
         target_snapshot = snapshot
 
     trigger_info = None
-    if request.step_run:
+    if request and request.step_run:
         trigger_info = PipelineRunTriggerInfo(
             step_run_id=request.step_run,
         )
@@ -234,12 +359,14 @@ def run_snapshot(
         snapshot=target_snapshot,
         trigger_info=trigger_info,
         logs=LogsRequest(source=LOGS_RUNNER_SOURCE),
+        original_run_id=original_run.id if original_run else None,
     )
 
     if trigger_id:
         zen_store().create_trigger_execution(
             trigger_id=trigger_id,
             pipeline_run_id=placeholder_run.id,
+            info=trigger_execution_info,
         )
 
     report_usage(
@@ -263,8 +390,13 @@ def run_snapshot(
         stack=stack, build=build, zenml_version=zenml_version
     )
 
-    workload_id = placeholder_run.id if trigger_id else target_snapshot.id
-    workload_type = WorkloadType.RUN if trigger_id else WorkloadType.SNAPSHOT
+    is_replay = original_run is not None
+    workload_id = (
+        placeholder_run.id if trigger_id or is_replay else target_snapshot.id
+    )
+    workload_type = (
+        WorkloadType.RUN if trigger_id or is_replay else WorkloadType.SNAPSHOT
+    )
 
     def _task() -> None:
         with track_handler(
@@ -418,7 +550,9 @@ def resume_run(run: PipelineRunResponse) -> Future[None]:
 
 
 def ensure_async_orchestrator(
-    snapshot: PipelineSnapshotRequest, stack: StackResponse
+    snapshot: PipelineSnapshotRequest,
+    stack: StackResponse,
+    legacy: bool,
 ) -> None:
     """Ensures the orchestrator is configured to run async.
 
@@ -427,6 +561,7 @@ def ensure_async_orchestrator(
             configuration should be updated to ensure the orchestrator is
             running async.
         stack: The stack on which the snapshot will run.
+        legacy: Indicates whether to use legacy stack component setting keys.
     """
     orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
     flavors = zen_store().list_flavors(
@@ -435,7 +570,18 @@ def ensure_async_orchestrator(
     flavor = Flavor.from_model(flavors[0])
 
     if "synchronous" in flavor.config_class.model_fields:
-        key = settings_utils.get_flavor_setting_key(flavor)
+        settings_utils.normalize_stack_component_setting_keys(
+            settings=snapshot.pipeline_configuration.settings,
+            components_by_type=stack.components,
+            legacy=legacy,
+        )
+
+        if legacy:
+            key = f"{orchestrator.type}.{orchestrator.flavor_name}"
+        else:
+            key = settings_utils.get_stack_component_name_setting_key(
+                orchestrator
+            )
 
         if settings := snapshot.pipeline_configuration.settings.get(key):
             settings_dict = settings.model_dump()
@@ -545,8 +691,10 @@ def snapshot_request_from_source_snapshot(
         pipeline_update_exclude.add("parameters")
 
     if config.settings:
-        convert_component_shortcut_settings_keys(
-            settings=config.settings, stack=source_snapshot.stack
+        settings_utils.normalize_stack_component_setting_keys(
+            settings=config.settings,
+            components_by_type=source_snapshot.stack.components,
+            legacy=_has_legacy_settings(source_snapshot),
         )
 
     pipeline_update = config.model_dump(
@@ -579,9 +727,10 @@ def snapshot_request_from_source_snapshot(
             invocation_id, StepConfigurationUpdate()
         )
         if step_update_model.settings:
-            convert_component_shortcut_settings_keys(
+            settings_utils.normalize_stack_component_setting_keys(
                 settings=step_update_model.settings,
-                stack=source_snapshot.stack,
+                components_by_type=source_snapshot.stack.components,
+                legacy=_has_legacy_settings(source_snapshot),
             )
         step_update = step_update_model.model_dump(
             # Get rid of deprecated name to prevent overriding the step name
@@ -721,41 +870,6 @@ def get_pipeline_run_analytics_metadata(
         "pipeline_run_id": str(run_id),
         "source_snapshot_id": str(source_snapshot_id),
     }
-
-
-def convert_component_shortcut_settings_keys(
-    settings: Dict[str, "BaseSettings"], stack: "StackResponse"
-) -> None:
-    """Convert component shortcut settings keys.
-
-    Args:
-        settings: Dictionary of settings.
-        stack: The stack response.
-
-    Raises:
-        ValueError: If the shortcut key is ambiguous because the stack has
-            multiple components of the same type.
-        ValueError: If stack component settings were defined both using the
-            full and the shortcut key.
-    """
-    for component_type, component_list in stack.components.items():
-        shortcut_key = str(component_type)
-        if component_settings := settings.pop(shortcut_key, None):
-            if len(component_list) > 1:
-                raise ValueError(
-                    "Unable to convert shortcut settings key for stack with "
-                    f"multiple components of type {component_type}."
-                )
-
-            key = f"{component_type}.{component_list[0].flavor_name}"
-            if key in settings:
-                raise ValueError(
-                    f"Duplicate settings provided for your {shortcut_key} "
-                    f"using the keys {shortcut_key} and {key}. Remove settings "
-                    "for one of them to fix this error."
-                )
-
-            settings[key] = component_settings
 
 
 def validate_snapshot_for_server_execution(

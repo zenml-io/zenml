@@ -164,3 +164,5 @@ select appropriate data, and evaluate results, you're ready to dive into the
 technical implementation. In the next section, we'll walk through [a practical example of finetuning using the Accelerate library](./finetuning-with-accelerate.md),
 showing you how to implement
 these concepts in code.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

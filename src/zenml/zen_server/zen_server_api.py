@@ -68,6 +68,9 @@ from zenml.zen_server.routers import (
     pipeline_snapshot_endpoints,
     pipelines_endpoints,
     projects_endpoints,
+    resource_pool_subject_policies_endpoints,
+    resource_pools_endpoints,
+    resource_requests_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
     run_wait_conditions_endpoints,
@@ -93,31 +96,30 @@ from zenml.zen_server.secure_headers import (
 from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_feature_gate,
-    initialize_memcache,
     initialize_rbac,
     initialize_request_manager,
+    initialize_resource_pool_store,
     initialize_snapshot_executor,
     initialize_workload_manager,
     initialize_zen_store,
+    register_event_handlers,
     server_config,
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
 )
 
-DASHBOARD_DIRECTORY = "dashboard"
 
-
-def relative_path(rel: str) -> str:
-    """Get the absolute path of a path relative to the ZenML server module.
-
-    Args:
-        rel: Relative path.
+def dashboard_directory() -> str:
+    """Absolute path to the dashboard directory.
 
     Returns:
-        Absolute path.
+        The dashboard directory.
     """
-    return os.path.join(os.path.dirname(__file__), rel)
+    if dashboard_path := server_config().dashboard_files_path:
+        return os.path.abspath(dashboard_path)
+
+    return os.path.join(os.path.dirname(__file__), "dashboard")
 
 
 app = FastAPI(
@@ -160,13 +162,14 @@ async def initialize() -> None:
     # race conditions
     await initialize_request_manager()
     initialize_zen_store()
+    initialize_resource_pool_store()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
     initialize_feature_gate()
     initialize_workload_manager()
+    initialize_resource_pool_store()
     initialize_snapshot_executor()
     initialize_secure_headers()
-    initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
         # ZenML server is running or to update the version and server URL.
@@ -174,6 +177,8 @@ async def initialize() -> None:
 
     if logger.isEnabledFor(logging.DEBUG):
         start_event_loop_lag_monitor()
+
+    await register_event_handlers()
 
 
 @app.on_event("shutdown")
@@ -196,9 +201,7 @@ if not DASHBOARD_REDIRECT_URL:
     app.mount(
         "/assets",
         StaticFiles(
-            directory=relative_path(
-                os.path.join(DASHBOARD_DIRECTORY, "assets")
-            ),
+            directory=os.path.join(dashboard_directory(), "assets"),
             check_dir=False,
         ),
     )
@@ -228,7 +231,7 @@ async def ready() -> str:
     return "OK"
 
 
-templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
+templates = Jinja2Templates(directory=dashboard_directory())
 
 
 @app.get("/", include_in_schema=False)
@@ -247,9 +250,7 @@ async def dashboard(request: Request) -> Any:
     if DASHBOARD_REDIRECT_URL:
         return RedirectResponse(url=DASHBOARD_REDIRECT_URL)
 
-    if not os.path.isfile(
-        os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
-    ):
+    if not os.path.isfile(os.path.join(dashboard_directory(), "index.html")):
         raise HTTPException(status_code=404)
     return templates.TemplateResponse("index.html", {"request": request})
 
@@ -294,6 +295,9 @@ app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(projects_endpoints.workspace_router)
 app.include_router(projects_endpoints.router)
+app.include_router(resource_pools_endpoints.router)
+app.include_router(resource_pool_subject_policies_endpoints.router)
+app.include_router(resource_requests_endpoints.router)
 app.include_router(trigger_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
@@ -311,7 +315,7 @@ def get_root_static_files() -> List[str]:
     Returns:
         List of static files in the root directory.
     """
-    root_path = relative_path(DASHBOARD_DIRECTORY)
+    root_path = dashboard_directory()
     if not os.path.isdir(root_path):
         return []
     files = []
@@ -364,7 +368,7 @@ async def catch_all(request: Request, file_path: str) -> Any:
     # directory
     if file_path and file_path in root_static_files:
         logger.debug(f"Returning static file: {file_path}")
-        full_path = os.path.join(relative_path(DASHBOARD_DIRECTORY), file_path)
+        full_path = os.path.join(dashboard_directory(), file_path)
         return FileResponse(full_path)
 
     # everything else is directed to the index.html file that hosts the
