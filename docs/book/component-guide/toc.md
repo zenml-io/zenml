@@ -51,6 +51,7 @@
 * [Step Operators](step-operators/README.md)
   * [Amazon SageMaker](step-operators/sagemaker.md)
   * [AzureML](step-operators/azureml.md)
+  * [Databricks](step-operators/databricks.md)
   * [Google Cloud VertexAI](step-operators/vertex.md)
   * [Kubernetes](step-operators/kubernetes.md)
   * [Run:AI](step-operators/runai.md)

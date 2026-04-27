@@ -13,26 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of the Databricks orchestrator."""
 
-import itertools
 import os
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
-from databricks.sdk.service import iam
-from databricks.sdk.service.compute import (
-    AutoScale,
-    ClientsTypes,
-    ClusterSpec,
-    DbfsStorageInfo,
-    DockerBasicAuth,
-    DockerImage,
-    InitScriptInfo,
-    WorkloadType,
-)
 from databricks.sdk.service.jobs import CronSchedule, JobCluster
 from databricks.sdk.service.jobs import Task as DatabricksTask
-from databricks.sdk.service.workspace import ImportFormat
 
 from zenml.client import Client
 from zenml.constants import (
@@ -48,7 +35,13 @@ from zenml.integrations.databricks.orchestrators.databricks_orchestrator_entrypo
     DatabricksEntrypointConfiguration,
 )
 from zenml.integrations.databricks.utils.databricks_utils import (
+    DATABRICKS_WHEELS_DIRECTORY_PREFIX,
+    DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH,
+    build_databricks_cluster_spec,
+    build_job_access_control_list,
+    collect_requirements,
     convert_step_to_task,
+    upload_wheel_to_workspace,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -60,10 +53,6 @@ from zenml.orchestrators import (
 )
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils.package_utils import clean_requirements
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
@@ -73,11 +62,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
-DATABRICKS_WHEELS_DIRECTORY_PREFIX = "/Workspace/Shared/.zenml"
-DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
-DATABRICKS_SPARK_DEFAULT_VERSION = "16.4.x-scala2.12"
 DATABRICKS_JOB_ID_PARAMETER_REFERENCE = "{{job.id}}"
-DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 
 
 class DatabricksOrchestrator(WheeledOrchestrator):
@@ -268,32 +253,14 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     for upstream_step_name in step.spec.upstream_steps
                 ]
 
-                docker_settings = step.config.docker_settings
-                docker_image_builder = PipelineDockerImageBuilder()
-                # Gather the requirements files
-                requirements_files = (
-                    docker_image_builder.gather_requirements_files(
-                        docker_settings=docker_settings,
-                        stack=Client().active_stack,
-                        log=False,
-                    )
-                )
-
-                # Extract and clean the requirements
-                requirements = list(
-                    itertools.chain.from_iterable(
-                        r[1].strip().split("\n") for r in requirements_files
-                    )
-                )
-
-                # Remove empty items and duplicates
-                requirements = sorted(set(filter(None, requirements)))
-
                 task = convert_step_to_task(
                     f"{snapshot.id}_{step_name}",
                     ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND,
                     arguments,
-                    clean_requirements(requirements),
+                    collect_requirements(
+                        docker_settings=step.config.docker_settings,
+                        stack=Client().active_stack,
+                    ),
                     depends_on=upstream_steps,
                     zenml_project_wheel=zenml_project_wheel,
                     job_cluster_key=job_cluster_key,
@@ -320,33 +287,16 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         databricks_client = self._get_databricks_client()
 
-        # Upload wheel to Workspace files (DBR 15+ compatible)
         snapshot_name = snapshot.pipeline.name
-        databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{snapshot_name}/{orchestrator_run_name}"
-        wheel_filename = wheel_path.rsplit("/", 1)[-1]
-        databricks_wheel_path = f"{databricks_directory}/{wheel_filename}"
-
-        # Create directory and upload wheel file using Workspace API (works with DBR 15+)
-        try:
-            databricks_client.workspace.mkdirs(path=databricks_directory)
-            with open(wheel_path, "rb") as f:
-                databricks_client.workspace.upload(
-                    path=databricks_wheel_path,
-                    content=f.read(),
-                    format=ImportFormat.AUTO,
-                    overwrite=True,
-                )
-            logger.info(
-                f"Successfully uploaded wheel to Databricks workspace: "
-                f"{databricks_wheel_path}"
-            )
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to upload wheel file to Databricks workspace at "
-                f"{databricks_wheel_path}. Ensure your Databricks workspace has "
-                f"the necessary permissions and the path is accessible. "
-                f"Original error: {e}"
-            ) from e
+        databricks_directory = (
+            f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/"
+            f"{snapshot_name}/{orchestrator_run_name}"
+        )
+        databricks_wheel_path = upload_wheel_to_workspace(
+            databricks_client=databricks_client,
+            wheel_path=wheel_path,
+            databricks_directory=databricks_directory,
+        )
 
         # Construct the env variables for the pipeline
         env_vars = base_environment.copy()
@@ -399,63 +349,13 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 cron expression.
         """
         databricks_client = self._get_databricks_client()
-        spark_conf = settings.spark_conf or {}
-
-        policy_id = settings.policy_id
-        if policy_id is None:
-            for policy in databricks_client.cluster_policies.list():
-                if policy.name == "Job Compute":
-                    policy_id = policy.policy_id
-                    break
-        if policy_id is None:
-            raise ValueError(
-                "Could not find the `Job Compute` policy in Databricks. "
-                "Either create a `Job Compute` policy or specify a "
-                "`policy_id` in the orchestrator settings."
-            )
-
-        docker_image = None
-        if settings.docker_image_url:
-            basic_auth = None
-            if settings.docker_image_username:
-                basic_auth = DockerBasicAuth(
-                    username=settings.docker_image_username,
-                    password=settings.docker_image_password,
-                )
-            docker_image = DockerImage(
-                url=settings.docker_image_url,
-                basic_auth=basic_auth,
-            )
-
-        init_scripts = None
-        if settings.init_scripts:
-            init_scripts = [
-                InitScriptInfo(dbfs=DbfsStorageInfo(destination=script))
-                for script in settings.init_scripts
-            ]
 
         job_cluster = JobCluster(
             job_cluster_key=job_cluster_key,
-            new_cluster=ClusterSpec(
-                spark_version=settings.spark_version
-                or DATABRICKS_SPARK_DEFAULT_VERSION,
-                num_workers=settings.num_workers,
-                node_type_id=settings.node_type_id or "Standard_D4s_v5",
-                driver_node_type_id=settings.driver_node_type_id,
-                policy_id=policy_id,
-                autoscale=AutoScale(
-                    min_workers=settings.autoscale[0],
-                    max_workers=settings.autoscale[1],
-                ),
-                single_user_name=settings.single_user_name,
-                spark_env_vars=env_vars,
-                spark_conf=spark_conf,
-                workload_type=WorkloadType(
-                    clients=ClientsTypes(jobs=True, notebooks=False)
-                ),
-                custom_tags=settings.custom_tags,
-                docker_image=docker_image,
-                init_scripts=init_scripts,
+            new_cluster=build_databricks_cluster_spec(
+                databricks_client=databricks_client,
+                settings=settings,
+                env_vars=env_vars,
             ),
         )
         if schedule and schedule.cron_expression:
@@ -475,27 +375,13 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         else:
             databricks_schedule = None
 
-        access_control_list = None
-        if settings.access_control_list:
-            access_control_list = [
-                iam.AccessControlRequest(
-                    group_name=acl.group_name,
-                    user_name=acl.user_name,
-                    service_principal_name=acl.service_principal_name,
-                    permission_level=iam.PermissionLevel(
-                        acl.permission_level.value
-                    ),
-                )
-                for acl in settings.access_control_list
-            ]
-
         job = databricks_client.jobs.create(
             name=pipeline_name,
             tasks=tasks,
             job_clusters=[job_cluster],
             schedule=databricks_schedule,
             tags=settings.job_tags,
-            access_control_list=access_control_list,
+            access_control_list=build_job_access_control_list(settings),
             timeout_seconds=settings.timeout_seconds,
             max_concurrent_runs=settings.max_concurrent_runs,
         )

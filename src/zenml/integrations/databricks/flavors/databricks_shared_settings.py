@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,24 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Databricks orchestrator base config and settings."""
+"""Shared Databricks settings models."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import Dict, List, Optional, Tuple
 
-from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
-from zenml.integrations.databricks.flavors.databricks_shared_settings import (
-    DatabricksBaseSettings,
-)
-from zenml.orchestrators import BaseOrchestratorConfig
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
-from zenml.utils.secret_utils import SecretField
+from pydantic import BaseModel, Field
 
-if TYPE_CHECKING:
-    from zenml.integrations.databricks.orchestrators import (
-        DatabricksOrchestrator,
-    )
-
-logger = get_logger(__name__)
+from zenml.config.base_settings import BaseSettings
+from zenml.utils.enum_utils import StrEnum
 
 
 class DatabricksAvailabilityType(StrEnum):
@@ -49,11 +39,7 @@ class DatabricksPermissionLevel(StrEnum):
 
 
 class DatabricksAccessControlRequest(BaseModel):
-    """Databricks job access control entry.
-
-    Exactly one of group_name, user_name, or service_principal_name
-    must be specified.
-    """
+    """Databricks job access control entry."""
 
     group_name: Optional[str] = Field(
         default=None,
@@ -76,14 +62,9 @@ class DatabricksAccessControlRequest(BaseModel):
     )
 
 
-class DatabricksOrchestratorSettings(BaseSettings):
-    """Databricks orchestrator base settings.
+class DatabricksBaseSettings(BaseSettings):
+    """Databricks execution settings shared by orchestrator and step operator."""
 
-    Configuration for Databricks cluster and Spark execution settings.
-    Field descriptions are defined inline using Field() descriptors.
-    """
-
-    # Cluster Configuration
     spark_version: Optional[str] = Field(
         default=None,
         description="Apache Spark version for the Databricks cluster. "
@@ -120,7 +101,8 @@ class DatabricksOrchestratorSettings(BaseSettings):
     spark_conf: Optional[Dict[str, str]] = Field(
         default=None,
         description="Custom Spark configuration properties as key-value pairs. "
-        "Example: {'spark.sql.adaptive.enabled': 'true', 'spark.sql.adaptive.coalescePartitions.enabled': 'true'}",
+        "Example: {'spark.sql.adaptive.enabled': 'true', "
+        "'spark.sql.adaptive.coalescePartitions.enabled': 'true'}",
     )
     spark_env_vars: Optional[Dict[str, str]] = Field(
         default=None,
@@ -134,8 +116,8 @@ class DatabricksOrchestratorSettings(BaseSettings):
     )
     availability_type: Optional[DatabricksAvailabilityType] = Field(
         default=None,
-        description="Instance availability type: ON_DEMAND (guaranteed), SPOT (cost-optimized), "
-        "or SPOT_WITH_FALLBACK (spot with on-demand backup).",
+        description="Instance availability type: ON_DEMAND (guaranteed), SPOT "
+        "(cost-optimized), or SPOT_WITH_FALLBACK (spot with on-demand backup).",
     )
     custom_tags: Optional[Dict[str, str]] = Field(
         default=None,
@@ -155,12 +137,10 @@ class DatabricksOrchestratorSettings(BaseSettings):
             default=None,
             description="Access control list for the Databricks job. Grants "
             "permissions to users, groups, or service principals. By default, "
-            "only the job creator (service principal) can access the job. "
+            "only the job creator can access the job. "
             "Example: [{'group_name': 'users', 'permission_level': 'CAN_VIEW'}]",
         )
     )
-
-    # Job-level execution control
     timeout_seconds: Optional[int] = Field(
         default=None,
         description="Timeout in seconds applied to each run of the job. "
@@ -171,8 +151,6 @@ class DatabricksOrchestratorSettings(BaseSettings):
         description="Maximum number of concurrent runs for this job. "
         "Databricks defaults to 1 if not specified. Maximum is 1000",
     )
-
-    # Task-level retry and timeout
     task_timeout_seconds: Optional[int] = Field(
         default=None,
         description="Timeout in seconds for each task (step) in the job. "
@@ -193,111 +171,28 @@ class DatabricksOrchestratorSettings(BaseSettings):
         description="Whether to retry a task when it times out. "
         "Requires max_retries to be set",
     )
-
-class DatabricksOrchestratorSettings(DatabricksBaseSettings):
-    """Databricks orchestrator settings."""
-
-
-class DatabricksOrchestratorConfig(
-    BaseOrchestratorConfig, DatabricksOrchestratorSettings
-):
-    """Databricks orchestrator base config.
-
-    Attributes:
-        host: Databricks host.
-        client_id: Databricks client id.
-        client_secret: Databricks client secret.
-    """
-
-    host: str
-    client_id: str = SecretField(default=None)
-    client_secret: str = SecretField(default=None)
-
-    @property
-    def is_local(self) -> bool:
-        """Checks if this stack component is running locally.
-
-        Returns:
-            True if this config is for a local component, False otherwise.
-        """
-        return False
-
-    @property
-    def is_remote(self) -> bool:
-        """Checks if this stack component is running remotely.
-
-        Returns:
-            True if this config is for a remote component, False otherwise.
-        """
-        return True
-
-    @property
-    def is_schedulable(self) -> bool:
-        """Whether the orchestrator is schedulable or not.
-
-        Returns:
-            Whether the orchestrator is schedulable or not.
-        """
-        return True
-
-
-class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Databricks orchestrator flavor."""
-
-    @property
-    def name(self) -> str:
-        """Name of the flavor.
-
-        Returns:
-            The name of the flavor.
-        """
-        return DATABRICKS_ORCHESTRATOR_FLAVOR
-
-    @property
-    def docs_url(self) -> Optional[str]:
-        """A url to point at docs explaining this flavor.
-
-        Returns:
-            A flavor docs url.
-        """
-        return self.generate_default_docs_url()
-
-    @property
-    def sdk_docs_url(self) -> Optional[str]:
-        """A url to point at SDK docs explaining this flavor.
-
-        Returns:
-            A flavor SDK docs url.
-        """
-        return self.generate_default_sdk_docs_url()
-
-    @property
-    def logo_url(self) -> str:
-        """A url to represent the flavor in the dashboard.
-
-        Returns:
-            The flavor logo.
-        """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/databricks.png"
-
-    @property
-    def config_class(self) -> Type[DatabricksOrchestratorConfig]:
-        """Returns `KubeflowOrchestratorConfig` config class.
-
-        Returns:
-                The config class.
-        """
-        return DatabricksOrchestratorConfig
-
-    @property
-    def implementation_class(self) -> Type["DatabricksOrchestrator"]:
-        """Implementation class for this flavor.
-
-        Returns:
-            The implementation class.
-        """
-        from zenml.integrations.databricks.orchestrators import (
-            DatabricksOrchestrator,
-        )
-
-        return DatabricksOrchestrator
+    driver_node_type_id: Optional[str] = Field(
+        default=None,
+        description="Databricks node type for the Spark driver. Defaults to "
+        "the same type as worker nodes if not specified. "
+        "Example: 'i3.xlarge'",
+    )
+    init_scripts: Optional[List[str]] = Field(
+        default=None,
+        description="DBFS paths to init scripts for cluster setup. "
+        "Example: ['dbfs:/scripts/install_dependencies.sh']",
+    )
+    docker_image_url: Optional[str] = Field(
+        default=None,
+        description="Docker image URL for the cluster. Must be accessible "
+        "from the Databricks workspace. "
+        "Example: 'my-registry.com/my-image:latest'",
+    )
+    docker_image_username: Optional[str] = Field(
+        default=None,
+        description="Username for authenticating to the Docker registry",
+    )
+    docker_image_password: Optional[str] = Field(
+        default=None,
+        description="Password for authenticating to the Docker registry",
+    )
