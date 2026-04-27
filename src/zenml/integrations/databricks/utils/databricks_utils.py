@@ -664,7 +664,7 @@ def map_databricks_run_to_execution_status(run: Run) -> ExecutionStatus:
 
 
 def sanitize_labels(labels: Dict[str, str]) -> None:
-    """Update the label values to be valid Kubernetes labels.
+    """Update the label values to be valid databricks labels.
 
     See:
     https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
@@ -673,7 +673,7 @@ def sanitize_labels(labels: Dict[str, str]) -> None:
         labels: the labels to sanitize.
     """
     for key, value in labels.items():
-        # Kubernetes labels must be alphanumeric, no longer than
+        # databricks labels must be alphanumeric, no longer than
         # 63 characters, and must begin and end with an alphanumeric
         # character ([a-z0-9A-Z])
         labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)[:63].strip(
