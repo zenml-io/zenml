@@ -65,15 +65,15 @@ rules:
       # classify.outputs.test_failed). All of these are produced by
       # trusted first-party steps and expand to "true"/"false" or a
       # numeric exit code; there is no untrusted input path.
-      - linux-fast-modal.yml:228  # steps.setup_python.outcome
-      - linux-fast-modal.yml:232  # steps.install_rust.outcome
-      - linux-fast-modal.yml:236  # steps.prepare.outcome
-      - linux-fast-modal.yml:240  # steps.prepare.outputs.modal_infra_failed
-      - linux-fast-modal.yml:243  # steps.run.outputs.modal_infra_failed
-      - linux-fast-modal.yml:246  # steps.prepare.outputs.run_modal
-      - linux-fast-modal.yml:247  # steps.run.outputs.exit_code
-      - linux-fast-modal.yml:248  # steps.run.outputs.run_started_at
-      - linux-fast-modal.yml:324  # steps.classify.outputs.test_failed
+      - linux-fast-modal.yml:261  # steps.setup_python.outcome
+      - linux-fast-modal.yml:265  # steps.install_rust.outcome
+      - linux-fast-modal.yml:269  # steps.prepare.outcome
+      - linux-fast-modal.yml:273  # steps.prepare.outputs.modal_infra_failed
+      - linux-fast-modal.yml:276  # steps.run.outputs.modal_infra_failed
+      - linux-fast-modal.yml:279  # steps.prepare.outputs.run_modal
+      - linux-fast-modal.yml:280  # steps.run.outputs.exit_code
+      - linux-fast-modal.yml:281  # steps.run.outputs.run_started_at
+      - linux-fast-modal.yml:359  # steps.classify.outputs.test_failed
 
   # Detect cache poisoning vulnerabilities
   # Ignores: Low-confidence findings for protected publish workflows
