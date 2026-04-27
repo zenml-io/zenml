@@ -19,16 +19,16 @@ import sys
 import uuid
 from typing import Optional
 
-from tests.harness.deployment.base import (
-    MYSQL_DEFAULT_PASSWORD,
-    MYSQL_DOCKER_IMAGE,
-    BaseTestDeployment,
-)
 from tests.harness.deployment._modal_runtime import (
     ZENML_SERVER_PORT,
     build_server_image,
     check_modal_credentials,
     wait_for_server,
+)
+from tests.harness.deployment.base import (
+    MYSQL_DEFAULT_PASSWORD,
+    MYSQL_DOCKER_IMAGE,
+    BaseTestDeployment,
 )
 from tests.harness.model import (
     DatabaseType,
@@ -64,15 +64,19 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
     # MySQL listens on its default port on localhost inside the sandbox;
     # the ZenML server connects over 127.0.0.1 so we never expose it
     # outside the sandbox.
-    _DB_INTERNAL_URL_FMT = (
-        "mysql://root:{password}@127.0.0.1:3306/{database}"
-    )
+    _DB_INTERNAL_URL_FMT = "mysql://root:{password}@127.0.0.1:3306/{database}"
 
     def __init__(self, config: "object") -> None:  # noqa: D107
         super().__init__(config)  # type: ignore[arg-type]
         self._app: Optional["object"] = None
+        self._app_name: Optional[str] = None
         self._sandbox: Optional["object"] = None
         self._tunnel_url: Optional[str] = None
+
+    @property
+    def app_name(self) -> Optional[str]:
+        """Returns the Modal app name for a locally managed deployment."""
+        return self._app_name
 
     @property
     def sandbox_id(self) -> Optional[str]:
@@ -139,9 +143,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
             "ZENML_STORE_URL": store_url,
         }
 
-        python_version = (
-            f"{sys.version_info.major}.{sys.version_info.minor}"
-        )
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
         logging.info(
             "Building Modal image for '%s' (db=%s, python=%s)...",
             self.config.name,
@@ -159,6 +161,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
             f"{uuid.uuid4().hex[:_APP_NAME_SUFFIX_LEN]}"
         )[:64]
         logging.info("Creating Modal app '%s'...", app_name)
+        self._app_name = app_name
         self._app = modal.App.lookup(app_name, create_if_missing=True)
 
         logging.info("Launching Modal sandbox...")
@@ -213,6 +216,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
                 )
         self._sandbox = None
         self._app = None
+        self._app_name = None
         self._tunnel_url = None
 
     def get_store_config(self) -> Optional[DeploymentStoreConfig]:

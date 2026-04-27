@@ -119,6 +119,42 @@ def environment_session(
     if no_provision:
         logging.info("Skipping environment provisioning")
         with environment.deployment.connect() as client:
+            if os.getenv("ZENML_TEST_ISOLATE_PROJECT", "").lower() in (
+                "1",
+                "true",
+                "yes",
+            ):
+                from zenml.utils.string_utils import random_str
+
+                original_project_id = client.active_project.id
+                project_name = f"pytest_{random_str(12).lower()}"
+                client.create_project(
+                    name=project_name,
+                    description="pytest isolated project",
+                )
+                client.set_active_project(project_name)
+                try:
+                    yield environment, client
+                finally:
+                    try:
+                        client.set_active_project(original_project_id)
+                    except Exception as exc:
+                        logging.warning(
+                            "Failed to restore the original project after "
+                            "an isolated no-provision test session: %s",
+                            exc,
+                        )
+                    try:
+                        client.delete_project(project_name)
+                    except Exception as exc:
+                        logging.warning(
+                            "Failed to delete isolated no-provision project "
+                            "'%s': %s",
+                            project_name,
+                            exc,
+                        )
+                    os.chdir(orig_cwd)
+                return
             yield environment, client
     else:
         # Provision the environment (bring up the deployment, if local, and

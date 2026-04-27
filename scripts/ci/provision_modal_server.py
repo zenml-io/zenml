@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import shutil
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 SCRIPT_ROOT = Path(__file__).resolve().parents[2]
@@ -63,21 +66,92 @@ def provision(deployment_name: str) -> int:
             raise RuntimeError(
                 f"Deployment '{deployment_name}' did not expose a sandbox ID."
             )
+        app_name = deployment.app_name
+        if app_name is None:
+            raise RuntimeError(
+                f"Deployment '{deployment_name}' did not expose a Modal app name."
+            )
 
     _write_output("server_url", store_config.url)
     _write_output("sandbox_id", sandbox_id)
+    _write_output("app_name", app_name)
     return 0
 
 
-def teardown(sandbox_id: str) -> int:
-    """Terminates a previously provisioned Modal sandbox."""
+def _modal_environment_cli_args() -> list[str]:
+    """Returns Modal CLI args for the selected environment, if any."""
+    modal_environment = os.getenv("MODAL_ENVIRONMENT")
+    if modal_environment:
+        return ["--env", modal_environment]
+    return []
+
+
+def _stop_modal_app(app_name: str) -> None:
+    """Stops the Modal app created only to host the server sandbox."""
+    modal_command = shutil.which("modal")
+    if modal_command is None:
+        logging.warning(
+            "Unable to stop Modal app '%s': modal CLI not found.", app_name
+        )
+        return
+
+    command = [
+        modal_command,
+        "app",
+        "stop",
+        app_name,
+        *_modal_environment_cli_args(),
+    ]
+    result = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        logging.warning(
+            "Unable to stop Modal app '%s' (exit %s): %s%s",
+            app_name,
+            result.returncode,
+            result.stdout,
+            result.stderr,
+        )
+        return
+
+    logging.info("Stopped Modal app %s.", app_name)
+
+
+def teardown(sandbox_id: str, app_name: str | None = None) -> int:
+    """Terminates a previously provisioned Modal sandbox and app."""
     import modal
 
+    sandbox_terminated = False
     with modal.enable_output():
-        sandbox = modal.Sandbox.from_id(sandbox_id)
-        sandbox.terminate()
+        try:
+            sandbox = modal.Sandbox.from_id(sandbox_id)
+            sandbox.terminate()
+            deadline = time.monotonic() + 60
+            while time.monotonic() < deadline:
+                if sandbox.poll() is not None:
+                    sandbox_terminated = True
+                    break
+                time.sleep(2)
+            else:
+                logging.warning(
+                    "Modal sandbox %s did not report termination within 60s.",
+                    sandbox_id,
+                )
+        except Exception as exc:
+            logging.warning(
+                "Unable to terminate Modal sandbox %s: %s",
+                sandbox_id,
+                exc,
+            )
 
-    logging.info("Terminated Modal sandbox %s.", sandbox_id)
+    if sandbox_terminated:
+        logging.info("Terminated Modal sandbox %s.", sandbox_id)
+    if app_name:
+        _stop_modal_app(app_name)
     return 0
 
 
@@ -105,6 +179,10 @@ def parse_args() -> argparse.Namespace:
         "--sandbox-id",
         help="Sandbox ID to terminate when using the teardown action.",
     )
+    parser.add_argument(
+        "--app-name",
+        help="Modal app name to stop when using the teardown action.",
+    )
     return parser.parse_args()
 
 
@@ -118,7 +196,7 @@ def main() -> int:
             return provision(args.deployment)
         if not args.sandbox_id:
             raise ValueError("--sandbox-id is required for teardown.")
-        return teardown(args.sandbox_id)
+        return teardown(args.sandbox_id, app_name=args.app_name)
     except Exception as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1

@@ -29,4 +29,5 @@ exec uv run "$modal_sandbox_script" create "$image_id" \
   --env ZENML_ANALYTICS_OPT_IN=false \
   --env AUTO_OPEN_DASHBOARD=false \
   --env ZENML_CLIENT_TEMPLATE_DIR=/opt/zenml-template \
+  --env ZENML_TEST_ISOLATE_PROJECT=true \
   --env "ZENML_MODAL_SERVER_URL=${ZENML_MODAL_SERVER_URL}"

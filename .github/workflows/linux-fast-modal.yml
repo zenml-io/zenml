@@ -42,6 +42,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       PYTHONDONTWRITEBYTECODE: 1
+      MODAL_ENVIRONMENT: ci
     defaults:
       run:
         shell: bash

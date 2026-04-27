@@ -44,6 +44,34 @@ def test_modal_server_create_command_passes_resolved_sandbox_helper() -> None:
     )
     assert "uv run @modal_sandbox.py" not in wrapper
     assert 'uv run "$modal_sandbox_script" create "$image_id"' in wrapper
+    assert "--env ZENML_TEST_ISOLATE_PROJECT=true" in wrapper
+
+
+def test_modal_workflows_use_ci_modal_environment() -> None:
+    """Keeps CI-created Modal apps and sandboxes in the CI environment."""
+    workflow_paths = (
+        ".github/workflows/linux-fast-modal.yml",
+        ".github/workflows/linux-modal-server-mysql.yml",
+    )
+
+    for workflow_path in workflow_paths:
+        workflow = _read_repo_file(workflow_path)
+
+        assert "MODAL_ENVIRONMENT: ci" in workflow
+
+
+def test_modal_server_teardown_stops_created_app() -> None:
+    """Avoids leaving live Modal apps after the server sandbox is torn down."""
+    workflow = _read_repo_file(
+        ".github/workflows/linux-modal-server-mysql.yml"
+    )
+    provision_script = _read_repo_file("scripts/ci/provision_modal_server.py")
+    teardown_step = _read_workflow_step(workflow, "Teardown Modal server")
+
+    assert '_write_output("app_name", app_name)' in provision_script
+    assert '"app",\n        "stop",' in provision_script
+    assert "--app-name" in teardown_step
+    assert "steps.provision.outputs.app_name" in teardown_step
 
 
 def test_modal_fast_ci_wall_clock_exceeds_offload_timeout() -> None:

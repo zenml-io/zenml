@@ -27,6 +27,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       PYTHONDONTWRITEBYTECODE: 1
+      MODAL_ENVIRONMENT: ci
     defaults:
       run:
         shell: bash
@@ -255,7 +256,10 @@ jobs:
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-        run: python scripts/ci/provision_modal_server.py teardown --sandbox-id "${{ steps.provision.outputs.sandbox_id }}"
+        run: >-
+          python scripts/ci/provision_modal_server.py teardown
+          --sandbox-id "${{ steps.provision.outputs.sandbox_id }}"
+          --app-name "${{ steps.provision.outputs.app_name }}"
       - name: Save offload image cache
         if: always()
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
