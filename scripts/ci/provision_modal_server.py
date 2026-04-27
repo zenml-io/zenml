@@ -137,15 +137,18 @@ def teardown(sandbox_id: str, app_name: str | None = None) -> int:
                     break
                 time.sleep(2)
             else:
-                logging.warning(
-                    "Modal sandbox %s did not report termination within 60s.",
-                    sandbox_id,
+                # Visible in GitHub Actions log; sandbox may leak otherwise.
+                print(
+                    f"::warning::Modal sandbox {sandbox_id} did not report "
+                    "termination within 60s and may still be running.",
+                    file=sys.stderr,
                 )
         except Exception as exc:
-            logging.warning(
-                "Unable to terminate Modal sandbox %s: %s",
-                sandbox_id,
-                exc,
+            # Surface as an annotation so CI viewers can spot leaked sandboxes.
+            print(
+                f"::warning::Unable to terminate Modal sandbox {sandbox_id}: "
+                f"{exc}",
+                file=sys.stderr,
             )
 
     if sandbox_terminated:

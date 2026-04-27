@@ -11,12 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Modal integration for cloud-native pipeline execution.
-
-The Modal integration sub-module provides both a step operator flavor (run a
-single step on Modal) and an orchestrator flavor (run an entire pipeline on
-Modal, one sandbox per step).
-"""
+"""Initialization of the Modal integration."""
 from typing import List, Type
 
 from zenml.integrations.constants import MODAL
@@ -24,7 +19,6 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 MODAL_STEP_OPERATOR_FLAVOR = "modal"
-MODAL_ORCHESTRATOR_FLAVOR = "modal"
 
 
 class ModalIntegration(Integration):
@@ -40,11 +34,8 @@ class ModalIntegration(Integration):
         Returns:
             List of new stack component flavors.
         """
-        from zenml.integrations.modal.flavors import (
-            ModalOrchestratorFlavor,
-            ModalStepOperatorFlavor,
-        )
+        from zenml.integrations.modal.flavors import ModalStepOperatorFlavor
 
-        return [ModalStepOperatorFlavor, ModalOrchestratorFlavor]
+        return [ModalStepOperatorFlavor]
 
 

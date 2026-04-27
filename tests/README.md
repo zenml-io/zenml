@@ -40,19 +40,6 @@ not met:
 pytest tests/integration
 ```
 
-For the Linux fast CI path, developers can run the same Modal-backed flow
-locally once the Modal credentials are available:
-
-```bash
-export MODAL_TOKEN_ID=...
-export MODAL_TOKEN_SECRET=...
-scripts/run-fast-ci-offload.sh
-```
-
-This is the closest pre-push check to the fast CI path. It runs only the Linux
-unit suite and the default integration suite, matching the workflow that now
-backs `ci-fast`.
-
 To unlock the full potential of the integration test framework, you should do
 this in four simple steps instead:
 

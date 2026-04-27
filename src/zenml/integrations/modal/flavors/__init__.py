@@ -13,11 +13,6 @@
 #  permissions and limitations under the License.
 """Modal integration flavors."""
 
-from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
-    ModalOrchestratorConfig,
-    ModalOrchestratorFlavor,
-    ModalOrchestratorSettings,
-)
 from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
     ModalStepOperatorConfig,
     ModalStepOperatorFlavor,
@@ -25,9 +20,6 @@ from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
 )
 
 __all__ = [
-    "ModalOrchestratorConfig",
-    "ModalOrchestratorFlavor",
-    "ModalOrchestratorSettings",
     "ModalStepOperatorConfig",
     "ModalStepOperatorFlavor",
     "ModalStepOperatorSettings",

@@ -16,7 +16,10 @@
 import pytest
 
 from zenml.config.resource_settings import ResourceSettings
-from zenml.integrations.modal.utils import get_gpu_values
+from zenml.integrations.modal.flavors import ModalStepOperatorSettings
+from zenml.integrations.modal.step_operators.modal_step_operator import (
+    get_gpu_values,
+)
 
 
 @pytest.mark.parametrize(
@@ -37,6 +40,7 @@ from zenml.integrations.modal.utils import get_gpu_values
     ],
 )
 def test_get_gpu_values(gpu, gpu_count, expected_result):
+    settings = ModalStepOperatorSettings(gpu=gpu)
     resource_settings = ResourceSettings(gpu_count=gpu_count)
-    result = get_gpu_values(gpu, resource_settings)
+    result = get_gpu_values(settings, resource_settings)
     assert result == expected_result

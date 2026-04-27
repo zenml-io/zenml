@@ -24,9 +24,12 @@ from zenml.integrations.skypilot_kubernetes.flavors.skypilot_orchestrator_kubern
     SkypilotKubernetesOrchestratorConfig,
     SkypilotKubernetesOrchestratorSettings,
 )
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+
+logger = get_logger(__name__)
 
 
 class SkypilotKubernetesOrchestrator(SkypilotBaseOrchestrator):
