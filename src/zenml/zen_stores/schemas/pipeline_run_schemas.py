@@ -861,6 +861,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "Only failed or paused runs can be resumed."
             )
 
+        if (
+            requested_status == ExecutionStatus.PROVISIONING
+            and current_status != ExecutionStatus.INITIALIZING
+        ):
+            # Ignore transitions to provisioning from non-initializing states.
+            # This could happen if the orchestrator starts running the pipeline
+            # before the client environment can update the status to provisioning.
+            return False
+
         # Snapshot always exists for pipeline runs of newer versions
         assert self.snapshot
         is_dynamic_pipeline = self.snapshot.is_dynamic
@@ -880,15 +889,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 step_statuses=self._get_step_run_statuses(),
                 num_steps=self.snapshot.step_count,
             )
-
-        if (
-            new_status == ExecutionStatus.PROVISIONING
-            and current_status != ExecutionStatus.INITIALIZING
-        ):
-            # Ignore transitions to provisioning from non-initializing states.
-            # This could happen if the orchestrator starts running the pipeline
-            # before the client environment can update the status to provisioning.
-            return False
 
         if current_status.is_finished:
             if (
