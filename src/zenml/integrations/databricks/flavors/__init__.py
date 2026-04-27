@@ -20,6 +20,12 @@ from zenml.integrations.databricks.flavors.databricks_model_deployer_flavor impo
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
     DatabricksOrchestratorConfig,
     DatabricksOrchestratorFlavor,
+    DatabricksOrchestratorSettings,
+)
+from zenml.integrations.databricks.flavors.databricks_shared_settings import (
+    DatabricksAccessControlRequest,
+    DatabricksAvailabilityType,
+    DatabricksPermissionLevel,
 )
 from zenml.integrations.databricks.flavors.databricks_step_operator_flavor import (
     DatabricksStepOperatorConfig,
@@ -30,9 +36,13 @@ from zenml.integrations.databricks.flavors.databricks_step_operator_flavor impor
 __all__ = [
     "DatabricksOrchestratorFlavor",
     "DatabricksOrchestratorConfig",
+    "DatabricksOrchestratorSettings",
     "DatabricksStepOperatorFlavor",
     "DatabricksStepOperatorConfig",
     "DatabricksStepOperatorSettings",
     "DatabricksModelDeployerFlavor",
     "DatabricksModelDeployerConfig",
+    "DatabricksAccessControlRequest",
+    "DatabricksAvailabilityType",
+    "DatabricksPermissionLevel",
 ]

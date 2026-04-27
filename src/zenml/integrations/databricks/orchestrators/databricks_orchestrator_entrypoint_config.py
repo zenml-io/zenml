@@ -20,8 +20,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
 from zenml.integrations.databricks.utils.databricks_utils import (
-    ENV_ZENML_DATABRICKS_WHEEL_PACKAGE,
-    add_wheel_package_to_sys_path,
+    configure_databricks_wheel_environment,
 )
 
 WHEEL_PACKAGE_OPTION = "wheel_package"
@@ -80,8 +79,7 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
     def run(self) -> None:
         """Runs the step."""
         wheel_package = self.entrypoint_args[WHEEL_PACKAGE_OPTION]
-        add_wheel_package_to_sys_path(wheel_package)
-        os.environ[ENV_ZENML_DATABRICKS_WHEEL_PACKAGE] = wheel_package
+        configure_databricks_wheel_environment(wheel_package)
 
         # Get the job id and add it to the environment
         databricks_job_id = self.entrypoint_args[DATABRICKS_JOB_ID_OPTION]

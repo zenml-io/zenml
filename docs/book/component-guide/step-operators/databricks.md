@@ -29,6 +29,10 @@ The Databricks step operator uses the same wheel-based execution model as the Da
 
 This lets you offload a single step to Databricks without changing how the rest of your pipeline runs.
 
+{% hint style="info" %}
+The step operator uploads wheels under `/Workspace/Shared/.zenml` and removes the step-specific wheel directory after the Databricks run completes successfully. If a run fails or is canceled, the wheel directory is retained for debugging and can be removed manually from the same workspace path.
+{% endhint %}
+
 ### How to use it
 
 To use the Databricks step operator, first install the Databricks integration:
@@ -65,7 +69,7 @@ Once the step operator is part of your active stack, you can use it on individua
 from zenml import step
 
 
-@step(step_operator=True)
+@step(step_operator="databricks")
 def trainer(...) -> ...:
     """Run this step on Databricks."""
     ...
@@ -73,7 +77,7 @@ def trainer(...) -> ...:
 
 ### Additional configuration
 
-The Databricks step operator reuses the Databricks execution settings used by the Databricks orchestrator. You can configure settings such as the Spark version, worker count, node types, autoscaling, Spark configuration, Spark environment variables, cluster policy, init scripts, and Docker image settings.
+The Databricks step operator reuses the Databricks execution settings used by the Databricks orchestrator. You can configure settings such as the Spark version, worker count, node types, autoscaling, Spark configuration, Spark environment variables, cluster policy, init scripts, and Docker image settings. Init scripts must use DBFS paths that start with `dbfs:/`. If you configure Docker registry authentication, provide both `docker_image_username` and `docker_image_password`.
 
 ```python
 from zenml.integrations.databricks.flavors.databricks_step_operator_flavor import (
@@ -88,6 +92,7 @@ databricks_settings = DatabricksStepOperatorSettings(
     autoscale=(2, 3),
     spark_conf={},
     spark_env_vars={},
+    init_scripts=["dbfs:/scripts/install_dependencies.sh"],
 )
 ```
 
@@ -98,7 +103,7 @@ from zenml import step
 
 
 @step(
-    step_operator=True,
+    step_operator="databricks",
     settings={
         "step_operator": databricks_settings,
     },
@@ -130,4 +135,3 @@ If you plan to use GPU-enabled Databricks clusters, make sure your step environm
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) for the full Databricks integration API surface.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
-

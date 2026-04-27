@@ -14,11 +14,15 @@
 """Shared Databricks settings models."""
 
 from typing import Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.secret_utils import SecretField
+
+DATABRICKS_DEFAULT_AUTOSCALE = (0, 1)
 
 
 class DatabricksAvailabilityType(StrEnum):
@@ -61,6 +65,32 @@ class DatabricksAccessControlRequest(BaseModel):
         "CAN_VIEW, CAN_MANAGE_RUN, CAN_MANAGE, IS_OWNER",
     )
 
+    @model_validator(mode="after")
+    def _validate_single_principal(
+        self,
+    ) -> "DatabricksAccessControlRequest":
+        """Ensures that exactly one Databricks principal is configured.
+
+        Returns:
+            The validated access control request.
+
+        Raises:
+            ValueError: If none or multiple Databricks principals are set.
+        """
+        principals = [
+            self.group_name,
+            self.user_name,
+            self.service_principal_name,
+        ]
+        if sum(bool(principal) for principal in principals) != 1:
+            raise ValueError(
+                "Exactly one of `group_name`, `user_name`, or "
+                "`service_principal_name` must be specified for a "
+                "Databricks access control request."
+            )
+
+        return self
+
 
 class DatabricksBaseSettings(BaseSettings):
     """Databricks execution settings shared by orchestrator and step operator."""
@@ -72,6 +102,7 @@ class DatabricksBaseSettings(BaseSettings):
     )
     num_workers: Optional[int] = Field(
         default=None,
+        ge=0,
         description="Fixed number of worker nodes. Cannot be used with autoscaling.",
     )
     node_type_id: Optional[str] = Field(
@@ -86,13 +117,15 @@ class DatabricksBaseSettings(BaseSettings):
     )
     autotermination_minutes: Optional[int] = Field(
         default=None,
+        ge=0,
         description="Minutes of inactivity before automatic cluster termination. "
         "Helps control costs by shutting down idle clusters.",
     )
     autoscale: Tuple[int, int] = Field(
-        default=(0, 1),
+        default=DATABRICKS_DEFAULT_AUTOSCALE,
         description="Cluster autoscaling bounds as (min_workers, max_workers). "
-        "Automatically adjusts cluster size based on workload.",
+        "The default (0, 1) intentionally permits driver-only Databricks "
+        "clusters while still allowing one worker when needed.",
     )
     single_user_name: Optional[str] = Field(
         default=None,
@@ -111,8 +144,9 @@ class DatabricksBaseSettings(BaseSettings):
     )
     schedule_timezone: Optional[str] = Field(
         default=None,
-        description="Timezone for scheduled pipeline execution. "
-        "Uses IANA timezone format (e.g., 'America/New_York').",
+        description="IANA timezone for scheduled pipeline execution. "
+        "Used only by the Databricks orchestrator when a schedule is configured. "
+        "Example: 'America/New_York'.",
     )
     availability_type: Optional[DatabricksAvailabilityType] = Field(
         default=None,
@@ -129,7 +163,8 @@ class DatabricksBaseSettings(BaseSettings):
     job_tags: Optional[Dict[str, str]] = Field(
         default=None,
         description="Tags associated with the Databricks job, forwarded to the "
-        "cluster as cluster tags. Maximum 25 tags. "
+        "cluster as cluster tags. Used only by the Databricks orchestrator. "
+        "Maximum 25 tags. "
         "Example: {'project': 'recommendation-engine', 'owner': 'data-team'}",
     )
     access_control_list: Optional[List[DatabricksAccessControlRequest]] = (
@@ -143,33 +178,41 @@ class DatabricksBaseSettings(BaseSettings):
     )
     timeout_seconds: Optional[int] = Field(
         default=None,
+        ge=0,
         description="Timeout in seconds applied to each run of the job. "
         "Value of 0 means no timeout. Example: 3600 for a 1-hour timeout",
     )
     max_concurrent_runs: Optional[int] = Field(
         default=None,
+        ge=1,
+        le=1000,
         description="Maximum number of concurrent runs for this job. "
-        "Databricks defaults to 1 if not specified. Maximum is 1000",
+        "Used only by the Databricks orchestrator. Databricks defaults to 1 "
+        "if not specified. Maximum is 1000",
     )
     task_timeout_seconds: Optional[int] = Field(
         default=None,
+        ge=0,
         description="Timeout in seconds for each task (step) in the job. "
         "Value of 0 means no timeout",
     )
     max_retries: Optional[int] = Field(
         default=None,
+        ge=-1,
         description="Maximum number of times to retry a failed task. "
-        "Use -1 for unlimited retries",
+        "Use -1 for unlimited retries. Used only by the Databricks orchestrator.",
     )
     min_retry_interval_millis: Optional[int] = Field(
         default=None,
+        ge=0,
         description="Minimum interval in milliseconds between retry attempts. "
-        "Example: 60000 for 1 minute between retries",
+        "Used only by the Databricks orchestrator. Example: 60000 for "
+        "1 minute between retries",
     )
     retry_on_timeout: Optional[bool] = Field(
         default=None,
-        description="Whether to retry a task when it times out. "
-        "Requires max_retries to be set",
+        description="Whether to retry a task when it times out. Requires "
+        "max_retries to be set. Used only by the Databricks orchestrator.",
     )
     driver_node_type_id: Optional[str] = Field(
         default=None,
@@ -179,8 +222,9 @@ class DatabricksBaseSettings(BaseSettings):
     )
     init_scripts: Optional[List[str]] = Field(
         default=None,
-        description="DBFS paths to init scripts for cluster setup. "
-        "Example: ['dbfs:/scripts/install_dependencies.sh']",
+        description="DBFS paths to init scripts for cluster setup. Only "
+        "`dbfs:/` paths are supported. Example: "
+        "['dbfs:/scripts/install_dependencies.sh']",
     )
     docker_image_url: Optional[str] = Field(
         default=None,
@@ -190,9 +234,122 @@ class DatabricksBaseSettings(BaseSettings):
     )
     docker_image_username: Optional[str] = Field(
         default=None,
-        description="Username for authenticating to the Docker registry",
+        description="Username for authenticating to the Docker registry. "
+        "Must be provided together with `docker_image_password`.",
     )
-    docker_image_password: Optional[str] = Field(
+    docker_image_password: Optional[str] = SecretField(
         default=None,
-        description="Password for authenticating to the Docker registry",
+        description="Password for authenticating to the Docker registry. "
+        "Must be provided together with `docker_image_username`.",
     )
+
+    @field_validator("autoscale")
+    @classmethod
+    def _validate_autoscale_bounds(
+        cls, value: Tuple[int, int]
+    ) -> Tuple[int, int]:
+        """Validates Databricks autoscale worker bounds.
+
+        Args:
+            value: The autoscale worker bounds.
+
+        Returns:
+            The validated autoscale worker bounds.
+
+        Raises:
+            ValueError: If the autoscale worker bounds are invalid.
+        """
+        min_workers, max_workers = value
+        if min_workers < 0 or max_workers < 0:
+            raise ValueError(
+                "Databricks autoscale worker counts must be greater than "
+                "or equal to 0."
+            )
+        if min_workers > max_workers:
+            raise ValueError(
+                "Databricks autoscale `min_workers` must be less than or "
+                "equal to `max_workers`."
+            )
+
+        return value
+
+    @field_validator("init_scripts")
+    @classmethod
+    def _validate_init_script_paths(
+        cls, value: Optional[List[str]]
+    ) -> Optional[List[str]]:
+        """Validates that init scripts use DBFS paths.
+
+        Args:
+            value: The init script paths.
+
+        Returns:
+            The validated init script paths.
+
+        Raises:
+            ValueError: If any init script path is not a DBFS path.
+        """
+        if value is None:
+            return None
+
+        invalid_paths = [
+            path for path in value if not path.startswith("dbfs:/")
+        ]
+        if invalid_paths:
+            raise ValueError(
+                "Databricks init scripts must use DBFS paths starting with "
+                f"`dbfs:/`. Invalid paths: {invalid_paths}."
+            )
+
+        return value
+
+    @field_validator("schedule_timezone")
+    @classmethod
+    def _validate_schedule_timezone(
+        cls, value: Optional[str]
+    ) -> Optional[str]:
+        """Validates the schedule timezone.
+
+        Args:
+            value: The schedule timezone.
+
+        Returns:
+            The validated schedule timezone.
+
+        Raises:
+            ValueError: If the timezone is not a valid IANA timezone.
+        """
+        if value is None:
+            return None
+
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as e:
+            raise ValueError(
+                "Databricks `schedule_timezone` must be a valid IANA "
+                "timezone, e.g. 'America/New_York' or 'UTC'."
+            ) from e
+
+        return value
+
+    @model_validator(mode="after")
+    def _validate_docker_image_credentials(self) -> "DatabricksBaseSettings":
+        """Validates Docker image registry credentials.
+
+        Returns:
+            The validated settings.
+
+        Raises:
+            ValueError: If only one Docker registry credential is configured.
+        """
+        data = object.__getattribute__(self, "__dict__")
+        has_username = bool(data.get("docker_image_username"))
+        has_password = bool(data.get("docker_image_password"))
+        if has_username != has_password:
+            raise ValueError(
+                "Databricks Docker image authentication requires both "
+                "`docker_image_username` and `docker_image_password` to be "
+                "configured."
+            )
+
+        return self

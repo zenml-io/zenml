@@ -48,6 +48,10 @@ When the Databricks job is executed, it retrieves the wheel package from Databri
 
 Once the job is completed, ZenML retrieves the logs and status of the job and updates the pipeline run accordingly. This allows you to monitor the progress of your pipeline and view the logs of each step.
 
+{% hint style="info" %}
+The orchestrator keeps uploaded wheel packages under `/Workspace/Shared/.zenml` after a successful job submission because Databricks job definitions, scheduled runs, and manual re-runs keep referencing those workspace files. Clean up old wheel directories from that workspace path according to your team's retention policy when you no longer need to re-run those jobs.
+{% endhint %}
+
 
 ### How to use it
 
@@ -126,7 +130,7 @@ The Databricks orchestrator only supports the `cron_expression`, in the `Schedul
 {% endhint %}
 
 {% hint style="warning" %}
-The Databricks orchestrator requires Java Timezone IDs to be used in the `cron_expression`. You can find a list of supported timezones [here](https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html), the timezone ID must be set in the settings of the orchestrator (see below for more information how to set settings for the orchestrator).
+The Databricks orchestrator requires an IANA timezone ID to be configured through `schedule_timezone` in the orchestrator settings (see below for more information on how to set orchestrator settings).
 {% endhint %}
 
 **How to delete a scheduled pipeline**
@@ -137,20 +141,21 @@ In order to cancel a scheduled Databricks pipeline, you need to manually delete 
 
 ### Additional configuration
 
-For additional configuration of the Databricks orchestrator, you can pass `DatabricksOrchestratorSettings` which allows you to change the Spark version, number of workers, node type, autoscale settings, Spark configuration, Spark environment variables, and schedule timezone.
+For additional configuration of the Databricks orchestrator, you can pass `DatabricksOrchestratorSettings` which allows you to change the Spark version, number of workers, node type, autoscale settings, Spark configuration, Spark environment variables, schedule timezone, init scripts, and Docker image settings. Init scripts must use DBFS paths that start with `dbfs:/`. If you configure Docker registry authentication, provide both `docker_image_username` and `docker_image_password`.
 
 ```python
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import DatabricksOrchestratorSettings
 
 databricks_settings = DatabricksOrchestratorSettings(
     spark_version="15.3.x-scala2.12",
-    num_workers="3",
+    num_workers=3,
     node_type_id="Standard_D4s_v5",
     policy_id=POLICY_ID,
     autoscale=(2, 3),
     spark_conf={},
     spark_env_vars={},
-    schedule_timezone="America/Los_Angeles" or "PST" # You can get the timezone ID from here: https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html
+    init_scripts=["dbfs:/scripts/install_dependencies.sh"],
+    schedule_timezone="America/Los_Angeles",
 )
 ```
 
@@ -174,12 +179,14 @@ You can apply tags to Databricks resources for cost allocation, governance, and 
 * `custom_tags`: Applied to the underlying cluster resources (e.g., AWS EC2 instances, EBS volumes). Maximum 45 tags.
 * `job_tags`: Applied to the Databricks job itself and forwarded as cluster tags. Maximum 25 tags.
 
+By default, Databricks autoscaling uses `(0, 1)` worker bounds. This intentionally permits driver-only clusters while still allowing one worker when needed.
+
 ```python
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import DatabricksOrchestratorSettings
 
 databricks_settings = DatabricksOrchestratorSettings(
     spark_version="15.3.x-scala2.12",
-    num_workers="3",
+    num_workers=3,
     node_type_id="Standard_D4s_v5",
     custom_tags={"cost_center": "ml-team", "environment": "production"},
     job_tags={"project": "recommendation-engine", "owner": "data-team"},

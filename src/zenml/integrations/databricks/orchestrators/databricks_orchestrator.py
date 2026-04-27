@@ -21,7 +21,6 @@ from databricks.sdk import WorkspaceClient as DatabricksClient
 from databricks.sdk.service.jobs import CronSchedule, JobCluster
 from databricks.sdk.service.jobs import Task as DatabricksTask
 
-from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_CUSTOM_SOURCE_ROOT,
     METADATA_ORCHESTRATOR_URL,
@@ -184,7 +183,8 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         Raises:
             ValueError: If the schedule is not set or if the cron expression
                 is not set.
-            RuntimeError: If the wheel file cannot be uploaded to the Databricks workspace.
+            Exception: If wheel upload or Databricks job submission fails
+                after cleanup.
 
         Returns:
             Optional submission result.
@@ -210,16 +210,18 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             ):
                 raise ValueError(
                     "Property `schedule_timezone` must be set when passing "
-                    "`cron_expression` to a Databricks orchestrator."
-                    "Databricks orchestrator requires a Java Timezone ID to run the pipeline on schedule."
-                    "Please refer to https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html for more information."
+                    "`cron_expression` to a Databricks orchestrator. "
+                    "Databricks orchestrator requires a Java Timezone ID to "
+                    "run the pipeline on schedule. Please refer to "
+                    "https://docs.oracle.com/middleware/1221/wcs/tag-ref/"
+                    "MISC/TimeZones.html for more information."
                 )
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_databricks_pipeline(
             zenml_project_wheel: str, job_cluster_key: str
         ) -> List[DatabricksTask]:
-            """Create a databrcks task for each step.
+            """Create a Databricks task for each step.
 
             This should contain the name of the step or task and configures the
             entrypoint of the task to run the step.
@@ -259,7 +261,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     arguments,
                     collect_requirements(
                         docker_settings=step.config.docker_settings,
-                        stack=Client().active_stack,
+                        stack=stack,
                     ),
                     depends_on=upstream_steps,
                     zenml_project_wheel=zenml_project_wheel,
@@ -282,21 +284,35 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             self.copy_repository_to_temp_dir_and_add_setup_py()
         )
 
-        # Create a wheel for the package in the temporary directory
-        wheel_path = self.create_wheel(temp_dir=repository_temp_dir)
-
         databricks_client = self._get_databricks_client()
-
-        snapshot_name = snapshot.pipeline.name
+        snapshot_name = self.sanitize_name(snapshot.pipeline.name)
+        run_namespace = self.sanitize_name(
+            str(placeholder_run.id)
+            if placeholder_run
+            else orchestrator_run_name
+        )
         databricks_directory = (
             f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/"
-            f"{snapshot_name}/{orchestrator_run_name}"
+            f"{snapshot_name}/{run_namespace}/orchestrator"
         )
-        databricks_wheel_path = upload_wheel_to_workspace(
-            databricks_client=databricks_client,
-            wheel_path=wheel_path,
-            databricks_directory=databricks_directory,
-        )
+        try:
+            # Create a wheel for the package in the temporary directory
+            wheel_path = self.create_wheel(temp_dir=repository_temp_dir)
+            try:
+                databricks_wheel_path = upload_wheel_to_workspace(
+                    databricks_client=databricks_client,
+                    wheel_path=wheel_path,
+                    databricks_directory=databricks_directory,
+                )
+            except Exception:
+                self._delete_workspace_directory(
+                    databricks_client=databricks_client,
+                    databricks_directory=databricks_directory,
+                    context="failed wheel upload",
+                )
+                raise
+        finally:
+            fileio.rmtree(repository_temp_dir)
 
         # Construct the env variables for the pipeline
         env_vars = base_environment.copy()
@@ -308,21 +324,59 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
         )
 
-        fileio.rmtree(repository_temp_dir)
-
         # using the databricks client uploads the pipeline to databricks
         job_cluster_key = self.sanitize_name(str(snapshot.id))
-        self._upload_and_run_pipeline(
-            pipeline_name=orchestrator_run_name,
-            settings=settings,
-            tasks=_construct_databricks_pipeline(
-                databricks_wheel_path, job_cluster_key
-            ),
-            env_vars=env_vars,
-            job_cluster_key=job_cluster_key,
-            schedule=snapshot.schedule,
-        )
+        try:
+            self._upload_and_run_pipeline(
+                pipeline_name=orchestrator_run_name,
+                settings=settings,
+                tasks=_construct_databricks_pipeline(
+                    databricks_wheel_path, job_cluster_key
+                ),
+                env_vars=env_vars,
+                job_cluster_key=job_cluster_key,
+                schedule=snapshot.schedule,
+            )
+        except Exception:
+            self._delete_workspace_directory(
+                databricks_client=databricks_client,
+                databricks_directory=databricks_directory,
+                context="failed job submission",
+            )
+            raise
         return None
+
+    def _delete_workspace_directory(
+        self,
+        databricks_client: DatabricksClient,
+        databricks_directory: str,
+        context: str,
+    ) -> None:
+        """Delete a Databricks workspace directory best-effort.
+
+        Databricks jobs retain task library paths for scheduled runs and manual
+        re-runs. For successful orchestrator submissions, uploaded wheel
+        directories are therefore retained and should be managed by workspace
+        retention policies. Automatic deletion is only safe before a job exists.
+
+        Args:
+            databricks_client: Databricks client.
+            databricks_directory: Workspace directory to delete.
+            context: Context for warning logs if cleanup fails.
+        """
+        try:
+            databricks_client.workspace.delete(
+                path=databricks_directory,
+                recursive=True,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to delete Databricks workspace wheel directory `%s` "
+                "after %s: %s",
+                databricks_directory,
+                context,
+                e,
+            )
 
     def _upload_and_run_pipeline(
         self,
@@ -358,6 +412,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 env_vars=env_vars,
             ),
         )
+        databricks_schedule = None
         if schedule and schedule.cron_expression:
             schedule_timezone = settings.schedule_timezone
             if schedule_timezone:
@@ -372,8 +427,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                     "Databricks orchestrator requires a Java Timezone ID to run the pipeline on schedule. "
                     "Please refer to https://docs.oracle.com/middleware/1221/wcs/tag-ref/MISC/TimeZones.html for more information."
                 )
-        else:
-            databricks_schedule = None
 
         job = databricks_client.jobs.create(
             name=pipeline_name,

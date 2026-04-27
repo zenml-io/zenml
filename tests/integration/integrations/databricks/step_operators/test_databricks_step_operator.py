@@ -45,7 +45,9 @@ if DATABRICKS_INSTALLED:
         DATABRICKS_STEP_JOB_ID_METADATA_KEY,
         DATABRICKS_STEP_RUN_ID_METADATA_KEY,
         DATABRICKS_STEP_RUN_URL_METADATA_KEY,
+        DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY,
         DatabricksStepOperator,
+        get_wheel_package_name,
     )
 else:
     NotFound = Exception
@@ -55,9 +57,11 @@ else:
     DatabricksStepOperatorConfig = Any
     DatabricksStepOperatorSettings = Any
     DatabricksStepOperator = Any
+    get_wheel_package_name = Any
     DATABRICKS_STEP_JOB_ID_METADATA_KEY = "job_id"
     DATABRICKS_STEP_RUN_ID_METADATA_KEY = "run_id"
     DATABRICKS_STEP_RUN_URL_METADATA_KEY = "run_page_url"
+    DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY = "wheel_directory"
 
 
 def _get_databricks_step_operator() -> DatabricksStepOperator:
@@ -82,7 +86,12 @@ def _get_step_run(run_id: str = "123") -> Any:
     """Create a mock step run with run metadata."""
     return SimpleNamespace(
         id=uuid4(),
-        run_metadata={DATABRICKS_STEP_RUN_ID_METADATA_KEY: run_id},
+        run_metadata={
+            DATABRICKS_STEP_RUN_ID_METADATA_KEY: run_id,
+            DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY: (
+                "/Workspace/Shared/.zenml/my-pipeline/run-id/steps/step-id"
+            ),
+        },
     )
 
 
@@ -157,12 +166,17 @@ def test_submit_publishes_run_metadata(mocker: Any) -> None:
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.fileio.rmtree"
     )
+    mocker.patch(
+        "zenml.integrations.databricks.step_operators.databricks_step_operator.get_databricks_wheel_source",
+        return_value=None,
+    )
 
     step_run = SimpleNamespace(run_metadata={})
     step_run_info = SimpleNamespace(
         pipeline=SimpleNamespace(name="my-pipeline"),
         pipeline_step_name="trainer",
         run_name="my-run",
+        run_id=uuid4(),
         snapshot=SimpleNamespace(id=uuid4(), stack=SimpleNamespace()),
         config=SimpleNamespace(
             docker_settings=SimpleNamespace(),
@@ -175,7 +189,13 @@ def test_submit_publishes_run_metadata(mocker: Any) -> None:
 
     operator.submit(
         info=step_run_info,
-        entrypoint_command=["entrypoint.main"],
+        entrypoint_command=[
+            "entrypoint.main",
+            "--entrypoint_config_source",
+            "zenml.entrypoint",
+            "--snapshot_id",
+            str(step_run_info.snapshot.id),
+        ],
         environment={"ENV_KEY": "ENV_VALUE"},
     )
 
@@ -188,6 +208,21 @@ def test_submit_publishes_run_metadata(mocker: Any) -> None:
         step_run.run_metadata[DATABRICKS_STEP_RUN_URL_METADATA_KEY]
         == "https://workspace/jobs/runs/123"
     )
+    assert (
+        step_run.run_metadata[DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY]
+        == f"/Workspace/Shared/.zenml/my-pipeline/"
+        f"{step_run_info.run_id}/steps/{step_run_info.step_run_id}"
+    )
+
+    submitted_task = operator._client.jobs.submit.call_args.kwargs["tasks"][0]
+    assert submitted_task.python_wheel_task.parameters == [
+        "--entrypoint_config_source",
+        "zenml.entrypoint",
+        "--snapshot_id",
+        str(step_run_info.snapshot.id),
+        "--wheel_package",
+        get_wheel_package_name(),
+    ]
 
 
 def test_submit_reuses_existing_databricks_wheel_source(mocker: Any) -> None:
@@ -249,6 +284,7 @@ def test_submit_reuses_existing_databricks_wheel_source(mocker: Any) -> None:
         pipeline=SimpleNamespace(name="my-pipeline"),
         pipeline_step_name="trainer",
         run_name="my-run",
+        run_id=uuid4(),
         snapshot=SimpleNamespace(id=uuid4(), stack=SimpleNamespace()),
         config=SimpleNamespace(
             docker_settings=SimpleNamespace(),
@@ -331,3 +367,7 @@ def test_wait_returns_completed_on_success_status(mocker: Any) -> None:
     status = operator.wait(_get_step_run())
 
     assert status == ExecutionStatus.COMPLETED
+    operator._client.workspace.delete.assert_called_once_with(
+        path="/Workspace/Shared/.zenml/my-pipeline/run-id/steps/step-id",
+        recursive=True,
+    )

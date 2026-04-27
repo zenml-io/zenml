@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Databricks step operator implementation."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
 from databricks.sdk.errors import NotFound
@@ -27,6 +27,7 @@ from zenml.integrations.databricks.flavors.databricks_step_operator_flavor impor
     DatabricksStepOperatorSettings,
 )
 from zenml.integrations.databricks.step_operators.databricks_step_operator_entrypoint_config import (
+    WHEEL_PACKAGE_OPTION,
     DatabricksStepOperatorEntrypointConfiguration,
 )
 from zenml.integrations.databricks.utils.databricks_utils import (
@@ -61,12 +62,18 @@ logger = get_logger(__name__)
 DATABRICKS_STEP_RUN_ID_METADATA_KEY = "run_id"
 DATABRICKS_STEP_JOB_ID_METADATA_KEY = "job_id"
 DATABRICKS_STEP_RUN_URL_METADATA_KEY = "run_page_url"
+DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY = "wheel_directory"
 
 
 class DatabricksStepOperator(BaseStepOperator):
     """Step operator to run individual steps on Databricks."""
 
+    # Initialized lazily because stack components are deserialized before use.
     _client: Optional[DatabricksClient] = None
+    _cleaned_wheel_directories: Optional[set[str]] = None
+    _ignored_settings_warning_signatures: Optional[
+        set[Tuple[bool, Tuple[str, ...]]]
+    ] = None
 
     @property
     def client(self) -> DatabricksClient:
@@ -148,14 +155,7 @@ class DatabricksStepOperator(BaseStepOperator):
             info: Information about the step run.
             settings: Databricks step operator settings.
         """
-        if not info.config.resource_settings.empty:
-            logger.warning(
-                "Specifying custom step resources is not supported for the "
-                "Databricks step operator. Configure Databricks cluster "
-                "resources through the Databricks step operator settings "
-                "instead."
-            )
-
+        custom_resources_configured = not info.config.resource_settings.empty
         ignored_settings = []
         if settings.schedule_timezone is not None:
             ignored_settings.append("schedule_timezone")
@@ -170,17 +170,36 @@ class DatabricksStepOperator(BaseStepOperator):
         if settings.retry_on_timeout is not None:
             ignored_settings.append("retry_on_timeout")
 
-        if ignored_settings:
+        sorted_ignored_settings = tuple(sorted(ignored_settings))
+        warning_signature = (
+            custom_resources_configured,
+            sorted_ignored_settings,
+        )
+        if self._ignored_settings_warning_signatures is None:
+            self._ignored_settings_warning_signatures = set()
+        if warning_signature in self._ignored_settings_warning_signatures:
+            return
+        self._ignored_settings_warning_signatures.add(warning_signature)
+
+        if custom_resources_configured:
+            logger.warning(
+                "Specifying custom step resources is not supported for the "
+                "Databricks step operator. Configure Databricks cluster "
+                "resources through the Databricks step operator settings "
+                "instead."
+            )
+
+        if sorted_ignored_settings:
             logger.warning(
                 "The Databricks step operator does not apply the following "
                 "settings for one-time Databricks runs: %s.",
-                ", ".join(sorted(ignored_settings)),
+                ", ".join(sorted_ignored_settings),
             )
 
     def submit(
         self,
         info: "StepRunInfo",
-        entrypoint_command: list[str],
+        entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
         """Submit a step run to Databricks.
@@ -192,7 +211,9 @@ class DatabricksStepOperator(BaseStepOperator):
                 environment.
 
         Raises:
-            RuntimeError: If Databricks run submission fails.
+            Exception: If wheel upload or Databricks run submission fails
+                after cleanup.
+            RuntimeError: If the stack or Databricks run ID is missing.
         """
         settings = cast(
             DatabricksStepOperatorSettings, self.get_settings(info)
@@ -217,84 +238,97 @@ class DatabricksStepOperator(BaseStepOperator):
             package_version=__version__,
             source_root=source_root,
         )
+        databricks_directory = (
+            f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/"
+            f"{sanitize_name(info.pipeline.name)}/"
+            f"{sanitize_name(str(info.run_id))}/steps/{info.step_run_id}"
+        )
         try:
             wheel_path = create_wheel(repository_temp_dir)
-            databricks_directory = (
-                f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/"
-                f"{sanitize_name(info.pipeline.name)}/{info.step_run_id}"
-            )
-            databricks_wheel_path = upload_wheel_to_workspace(
-                databricks_client=self.client,
-                wheel_path=wheel_path,
-                databricks_directory=databricks_directory,
-            )
-
-            environment = environment.copy()
-            if settings.spark_env_vars:
-                environment.update(settings.spark_env_vars)
-            environment[ENV_ZENML_CUSTOM_SOURCE_ROOT] = (
-                DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
-            )
-
-            entrypoint_arguments = DatabricksStepOperatorEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=info.pipeline_step_name,
-                snapshot_id=info.snapshot.id,
-                step_run_id=str(info.step_run_id),
-                wheel_package=package_name,
-            )
-            task = convert_step_to_submit_task(
-                task_name=f"{info.step_run_id}",
-                command=entrypoint_command[0],
-                arguments=entrypoint_arguments,
-                libraries=collect_requirements(
-                    docker_settings=info.config.docker_settings,
-                    stack=Stack.from_model(stack_model),
-                ),
-                zenml_project_wheel=databricks_wheel_path,
-                new_cluster=build_databricks_cluster_spec(
+            try:
+                databricks_wheel_path = upload_wheel_to_workspace(
                     databricks_client=self.client,
-                    settings=settings,
-                    env_vars=environment,
-                ),
-                timeout_seconds=settings.task_timeout_seconds,
-            )
-            submitted_run = cast(
-                Any,
-                self.client.jobs.submit(
-                    access_control_list=cast(
-                        Any, build_submit_access_control_list(settings)
+                    wheel_path=wheel_path,
+                    databricks_directory=databricks_directory,
+                )
+            except Exception:
+                self._delete_workspace_directory(
+                    databricks_directory=databricks_directory,
+                    context="failed wheel upload",
+                )
+                raise
+
+            try:
+                environment = environment.copy()
+                if settings.spark_env_vars:
+                    environment.update(settings.spark_env_vars)
+                environment[ENV_ZENML_CUSTOM_SOURCE_ROOT] = (
+                    DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH
+                )
+
+                entrypoint_arguments = entrypoint_command[1:] + [
+                    f"--{WHEEL_PACKAGE_OPTION}",
+                    package_name,
+                ]
+                task = convert_step_to_submit_task(
+                    task_name=str(info.step_run_id),
+                    command=entrypoint_command[0],
+                    arguments=entrypoint_arguments,
+                    libraries=collect_requirements(
+                        docker_settings=info.config.docker_settings,
+                        stack=Stack.from_model(stack_model),
+                    ),
+                    zenml_project_wheel=databricks_wheel_path,
+                    new_cluster=build_databricks_cluster_spec(
+                        databricks_client=self.client,
+                        settings=settings,
+                        env_vars=environment,
+                    ),
+                    timeout_seconds=settings.task_timeout_seconds,
+                )
+                submitted_run = self.client.jobs.submit(
+                    access_control_list=build_submit_access_control_list(
+                        settings
                     ),
                     run_name=f"{info.run_name}-{info.pipeline_step_name}",
                     tasks=[task],
                     timeout_seconds=settings.timeout_seconds,
-                ),
-            )
+                )
+            except Exception:
+                self._delete_workspace_directory(
+                    databricks_directory=databricks_directory,
+                    context="failed run submission",
+                )
+                raise
         finally:
             fileio.rmtree(repository_temp_dir)
 
-        run_id = cast(
-            int, submitted_run.response.run_id or submitted_run.run_id
-        )
+        run_id = submitted_run.response.run_id
         if run_id is None:
+            self._delete_workspace_directory(
+                databricks_directory=databricks_directory,
+                context="run submission without run ID",
+            )
             raise RuntimeError(
                 "Databricks did not return a run ID for the submitted step."
             )
 
-        metadata = cast(
-            Dict[str, Any],
-            {DATABRICKS_STEP_RUN_ID_METADATA_KEY: str(run_id)},
-        )
+        metadata: Dict[str, Any] = {
+            DATABRICKS_STEP_RUN_ID_METADATA_KEY: str(run_id),
+            DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY: (
+                databricks_directory
+            ),
+        }
         publish_step_run_metadata(info.step_run_id, {self.id: metadata})
         info.step_run.run_metadata.update(metadata)
         try:
             run = self.client.jobs.get_run(run_id=run_id)
-        except Exception as e:
+        except NotFound:
             logger.warning(
-                "Submitted Databricks run '%s' for step '%s', but failed to "
-                "retrieve additional run metadata: %s",
+                "Submitted Databricks run '%s' for step '%s', but the run "
+                "was not found while retrieving additional metadata.",
                 run_id,
                 info.pipeline_step_name,
-                e,
             )
         else:
             extra_metadata: Dict[str, Any] = {}
@@ -360,7 +394,68 @@ class DatabricksStepOperator(BaseStepOperator):
             )
             return ExecutionStatus.FAILED
 
-        return map_databricks_run_to_execution_status(run)
+        status = map_databricks_run_to_execution_status(run)
+        if status == ExecutionStatus.COMPLETED:
+            self._cleanup_uploaded_wheel_directory(step_run)
+        return status
+
+    def _cleanup_uploaded_wheel_directory(
+        self, step_run: "StepRunResponse"
+    ) -> None:
+        """Delete the uploaded wheel directory after successful completion.
+
+        Args:
+            step_run: The step run whose metadata contains the wheel directory.
+        """
+        databricks_directory = step_run.run_metadata.get(
+            DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY
+        )
+        if not databricks_directory:
+            return
+
+        databricks_directory = str(databricks_directory)
+        if self._cleaned_wheel_directories is None:
+            self._cleaned_wheel_directories = set()
+        if databricks_directory in self._cleaned_wheel_directories:
+            return
+
+        self._delete_workspace_directory(
+            databricks_directory=databricks_directory,
+            context=f"successful completion of step run `{step_run.id}`",
+        )
+        self._cleaned_wheel_directories.add(databricks_directory)
+
+    def _delete_workspace_directory(
+        self,
+        databricks_directory: str,
+        context: str,
+    ) -> None:
+        """Delete a Databricks workspace directory best-effort.
+
+        Args:
+            databricks_directory: Workspace directory to delete.
+            context: Context for warning logs if cleanup fails.
+        """
+        try:
+            self.client.workspace.delete(
+                path=databricks_directory,
+                recursive=True,
+            )
+        except NotFound:
+            logger.debug(
+                "Databricks workspace wheel directory `%s` was already "
+                "deleted after %s.",
+                databricks_directory,
+                context,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to delete Databricks workspace wheel directory `%s` "
+                "after %s: %s",
+                databricks_directory,
+                context,
+                e,
+            )
 
     def cancel(self, step_run: "StepRunResponse") -> None:
         """Cancel a Databricks step run.

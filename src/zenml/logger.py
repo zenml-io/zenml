@@ -319,6 +319,26 @@ def wrap_stdout_stderr() -> None:
         _stderr_wrapped = True
 
 
+def _is_logging_utils_circular_import_error(
+    error: BaseException,
+) -> bool:
+    """Check whether logging_utils failed to import due to init cycles."""
+    message = str(error)
+    if (
+        "partially initialized module" not in message
+        and "circular import" not in message
+    ):
+        return False
+
+    for module_name in ("zenml", "zenml.utils.logging_utils"):
+        module = sys.modules.get(module_name)
+        module_spec = getattr(module, "__spec__", None)
+        if getattr(module_spec, "_initializing", False):
+            return True
+
+    return False
+
+
 class ZenMLLoggingHandler(logging.Handler):
     """Custom handler that routes logs through LoggingContext."""
 
@@ -328,15 +348,16 @@ class ZenMLLoggingHandler(logging.Handler):
         Args:
             record: The log record to emit.
         """
-        # Look up the module only if it has already been fully imported.
-        # Attempting a fresh import here can trigger a circular import
-        # when a background thread (e.g. Databricks Py4J) emits a log
-        # while zenml.__init__ is still loading.
-        mod = sys.modules.get("zenml.utils.logging_utils")
-        if mod is None:
+        try:
+            from zenml.utils.logging_utils import LoggingContext
+        except Exception as e:
+            if _is_logging_utils_circular_import_error(e):
+                return
+
+            self.handleError(record)
             return
 
-        mod.LoggingContext.emit(record)
+        LoggingContext.emit(record)
 
 
 def get_console_handler() -> logging.Handler:

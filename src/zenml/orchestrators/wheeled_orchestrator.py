@@ -50,9 +50,6 @@ class WheeledOrchestrator(BaseOrchestrator, ABC):
         Args:
             temp_dir: Path to the temporary directory containing the package.
 
-        Raises:
-            RuntimeError: If the wheel file could not be created.
-
         Returns:
             Path to the created wheel file.
         """

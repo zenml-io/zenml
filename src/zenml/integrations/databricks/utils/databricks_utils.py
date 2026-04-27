@@ -17,24 +17,29 @@ import os
 import re
 import sys
 from importlib.metadata import distribution
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
-from databricks.sdk.service import iam, jobs
+from databricks.sdk.service import iam
 from databricks.sdk.service.compute import (
     AutoScale,
+    AwsAttributes,
+    AwsAvailability,
+    AzureAttributes,
+    AzureAvailability,
     ClientsTypes,
     ClusterSpec,
     DbfsStorageInfo,
     DockerBasicAuth,
     DockerImage,
+    GcpAttributes,
+    GcpAvailability,
     InitScriptInfo,
     Library,
     PythonPyPiLibrary,
     WorkloadType,
 )
 from databricks.sdk.service.jobs import (
-    JobAccessControlRequest,
     PythonWheelTask,
     Run,
     RunLifeCycleState,
@@ -46,7 +51,7 @@ from databricks.sdk.service.jobs import Task as DatabricksTask
 from databricks.sdk.service.workspace import ImportFormat
 
 from zenml import __version__
-from zenml.client import Client
+from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.enums import ExecutionStatus
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
     DatabricksBaseSettings,
@@ -68,6 +73,32 @@ DATABRICKS_SPARK_DEFAULT_VERSION = "16.4.x-scala2.12"
 DATABRICKS_DEFAULT_NODE_TYPE_ID = "Standard_D4s_v5"
 DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 ENV_ZENML_DATABRICKS_WHEEL_PACKAGE = "ZENML_DATABRICKS_WHEEL_PACKAGE"
+_ZENML_REQUIREMENT_PATTERN = re.compile(
+    r"^\s*zenml(?:\[[^\]]+\])?(?:\s*(?:[<>=!~]=?|@)|\s*;|\s*$)",
+    re.IGNORECASE,
+)
+_AZURE_AVAILABILITY_BY_TYPE = {
+    "ON_DEMAND": AzureAvailability.ON_DEMAND_AZURE,
+    "SPOT": AzureAvailability.SPOT_AZURE,
+    "SPOT_WITH_FALLBACK": AzureAvailability.SPOT_WITH_FALLBACK_AZURE,
+}
+_GCP_AVAILABILITY_BY_TYPE = {
+    "ON_DEMAND": GcpAvailability.ON_DEMAND_GCP,
+    "SPOT": GcpAvailability.PREEMPTIBLE_GCP,
+    "SPOT_WITH_FALLBACK": GcpAvailability.PREEMPTIBLE_WITH_FALLBACK_GCP,
+}
+
+
+def _is_pip_option(requirement: str) -> bool:
+    """Check whether a requirements line is a pip option.
+
+    Args:
+        requirement: Requirements file line.
+
+    Returns:
+        Whether the line is a pip option instead of a package requirement.
+    """
+    return requirement.lstrip().startswith("-")
 
 
 def collect_requirements(
@@ -88,15 +119,43 @@ def collect_requirements(
         stack=stack,
         log=False,
     )
+    ignored_pip_options = {
+        filename: pip_options
+        for filename, _, pip_options in requirements_files
+        if pip_options
+    }
+    if ignored_pip_options:
+        logger.warning(
+            "Databricks PyPI libraries do not support arbitrary pip "
+            "options from requirements files. The following pip options "
+            "will not be applied: %s",
+            ignored_pip_options,
+        )
+
     requirements = [
         line
-        for content in (
-            requirement[1].strip().split("\n")
-            for requirement in requirements_files
-        )
-        for line in content
+        for _, content, _ in requirements_files
+        for line in content.strip().split("\n")
         if line
     ]
+    pip_option_requirements = [
+        requirement
+        for requirement in requirements
+        if _is_pip_option(requirement)
+    ]
+    if pip_option_requirements:
+        logger.warning(
+            "Databricks PyPI libraries do not support pip options inside "
+            "requirements files. The following requirement lines will not "
+            "be applied: %s",
+            pip_option_requirements,
+        )
+        requirements = [
+            requirement
+            for requirement in requirements
+            if not _is_pip_option(requirement)
+        ]
+
     return clean_requirements(sorted(set(requirements)))
 
 
@@ -145,18 +204,51 @@ def upload_wheel_to_workspace(
     return databricks_wheel_path
 
 
-def add_wheel_package_to_sys_path(wheel_package: str) -> None:
+def _get_wheel_package_project_root(wheel_package: str) -> str:
+    """Get the absolute project root for an installed wheel package.
+
+    Args:
+        wheel_package: The generated wheel package name.
+
+    Returns:
+        Absolute path to the package root inside the installed wheel.
+    """
+    dist = distribution(wheel_package)
+    return os.path.abspath(
+        os.path.join(str(dist.locate_file(".")), wheel_package)
+    )
+
+
+def add_wheel_package_to_sys_path(wheel_package: str) -> str:
     """Add the generated wheel package root to the Python path.
 
     Args:
         wheel_package: The generated wheel package name.
+
+    Returns:
+        Absolute path to the package root inside the installed wheel.
     """
-    dist = distribution(wheel_package)
-    project_root = os.path.join(str(dist.locate_file(".")), str(wheel_package))
+    project_root = _get_wheel_package_project_root(wheel_package)
 
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
-        sys.path.insert(-1, project_root)
+
+    return project_root
+
+
+def configure_databricks_wheel_environment(wheel_package: str) -> str:
+    """Configure runtime environment variables for a Databricks wheel.
+
+    Args:
+        wheel_package: The generated wheel package name.
+
+    Returns:
+        Absolute path to the package root inside the installed wheel.
+    """
+    project_root = add_wheel_package_to_sys_path(wheel_package)
+    os.environ[ENV_ZENML_DATABRICKS_WHEEL_PACKAGE] = wheel_package
+    os.environ[ENV_ZENML_CUSTOM_SOURCE_ROOT] = project_root
+    return project_root
 
 
 def get_databricks_wheel_source() -> Optional[tuple[str, str]]:
@@ -175,16 +267,38 @@ def get_databricks_wheel_source() -> Optional[tuple[str, str]]:
     if not wheel_package:
         return None
 
-    dist = distribution(wheel_package)
-    source_root = os.path.join(str(dist.locate_file(".")), wheel_package)
-    return source_root, wheel_package
+    return _get_wheel_package_project_root(wheel_package), wheel_package
+
+
+def _has_zenml_requirement(libraries: Optional[List[str]]) -> bool:
+    """Check whether libraries already include a ZenML requirement.
+
+    Args:
+        libraries: Python package requirements.
+
+    Returns:
+        Whether a ZenML package requirement is already present.
+    """
+    return bool(libraries) and any(
+        _ZENML_REQUIREMENT_PATTERN.match(library)
+        for library in libraries or []
+    )
 
 
 def _get_databricks_libraries(
     libraries: Optional[List[str]],
     zenml_project_wheel: Optional[str],
 ) -> List[Library]:
-    """Build Databricks library descriptors for a task."""
+    """Build Databricks library descriptors for a task.
+
+    Args:
+        libraries: Python package requirements or wheel paths to install.
+        zenml_project_wheel: Optional workspace path to the generated ZenML
+            project wheel.
+
+    Returns:
+        Databricks library descriptors for the task.
+    """
     db_libraries = []
     if libraries:
         for library in libraries:
@@ -194,9 +308,10 @@ def _get_databricks_libraries(
                 db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
     if zenml_project_wheel:
         db_libraries.append(Library(whl=zenml_project_wheel))
-    db_libraries.append(
-        Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
-    )
+    if not _has_zenml_requirement(libraries):
+        db_libraries.append(
+            Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
+        )
     return db_libraries
 
 
@@ -232,18 +347,6 @@ def convert_step_to_task(
     Returns:
         Databricks task.
     """
-    db_libraries = []
-    if libraries:
-        for library in libraries:
-            if library.endswith(".whl"):
-                db_libraries.append(Library(whl=library))
-            else:
-                db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
-    if zenml_project_wheel:
-        db_libraries.append(Library(whl=zenml_project_wheel))
-    db_libraries.append(
-        Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
-    )
     return DatabricksTask(
         task_key=task_name,
         job_cluster_key=job_cluster_key,
@@ -307,20 +410,18 @@ def convert_step_to_submit_task(
 
 def _resolve_policy_id(
     databricks_client: DatabricksClient, policy_id: Optional[str]
-) -> str:
+) -> Optional[str]:
     """Resolve the Databricks cluster policy ID.
 
     Args:
         databricks_client: Databricks client.
         policy_id: Configured policy ID.
 
-    Raises:
-        ValueError: If the policy cannot be resolved.
-
     Returns:
-        Policy ID to use.
+        Policy ID to use, or None if no default policy exists.
     """
     if policy_id is not None:
+        databricks_client.cluster_policies.get(policy_id=policy_id)
         return policy_id
 
     for policy in databricks_client.cluster_policies.list():
@@ -328,11 +429,73 @@ def _resolve_policy_id(
             assert policy.policy_id is not None
             return policy.policy_id
 
-    raise ValueError(
-        "Could not find the `Job Compute` policy in Databricks. "
-        "Either create a `Job Compute` policy or specify a "
-        "`policy_id` in the Databricks settings."
+    logger.debug(
+        "Could not find the default `Job Compute` Databricks cluster policy. "
+        "Submitting the cluster without a policy ID."
     )
+    return None
+
+
+def _get_cloud_availability_attributes(
+    databricks_client: DatabricksClient,
+    availability_type: Optional[object],
+) -> Dict[str, Any]:
+    """Build cloud-specific cluster availability attributes.
+
+    Args:
+        databricks_client: Databricks client.
+        availability_type: Configured availability type.
+
+    Returns:
+        ClusterSpec keyword arguments for availability settings.
+    """
+    if availability_type is None:
+        return {}
+
+    availability = str(getattr(availability_type, "value", availability_type))
+    config = getattr(databricks_client, "config", None)
+    host = (getattr(config, "host", "") or "").lower()
+
+    if "azuredatabricks" in host:
+        return {
+            "azure_attributes": AzureAttributes(
+                availability=_AZURE_AVAILABILITY_BY_TYPE[availability]
+            )
+        }
+
+    if "gcp.databricks" in host or ".gcp." in host:
+        return {
+            "gcp_attributes": GcpAttributes(
+                availability=_GCP_AVAILABILITY_BY_TYPE[availability]
+            )
+        }
+
+    return {
+        "aws_attributes": AwsAttributes(
+            availability=AwsAvailability(availability)
+        )
+    }
+
+
+def _build_init_script_info(script: str) -> InitScriptInfo:
+    """Build a Databricks init script descriptor.
+
+    Args:
+        script: DBFS init script path.
+
+    Raises:
+        ValueError: If the init script path is not a DBFS URI.
+
+    Returns:
+        Databricks init script descriptor.
+    """
+    if not script.startswith("dbfs:/"):
+        raise ValueError(
+            "Databricks init scripts currently only support DBFS paths. "
+            f"Got `{script}`; expected a path starting with `dbfs:/`."
+        )
+
+    return InitScriptInfo(dbfs=DbfsStorageInfo(destination=script))
 
 
 def build_databricks_cluster_spec(
@@ -366,9 +529,13 @@ def build_databricks_cluster_spec(
     init_scripts = None
     if settings.init_scripts:
         init_scripts = [
-            InitScriptInfo(dbfs=DbfsStorageInfo(destination=script))
-            for script in settings.init_scripts
+            _build_init_script_info(script) for script in settings.init_scripts
         ]
+
+    availability_attributes = _get_cloud_availability_attributes(
+        databricks_client=databricks_client,
+        availability_type=settings.availability_type,
+    )
 
     return ClusterSpec(
         spark_version=settings.spark_version
@@ -391,6 +558,7 @@ def build_databricks_cluster_spec(
         docker_image=docker_image,
         init_scripts=init_scripts,
         autotermination_minutes=settings.autotermination_minutes,
+        **availability_attributes,
     )
 
 
@@ -421,7 +589,7 @@ def build_job_access_control_list(
 
 def build_submit_access_control_list(
     settings: DatabricksBaseSettings,
-) -> Optional[List[JobAccessControlRequest]]:
+) -> Optional[List[iam.AccessControlRequest]]:
     """Build access control entries for Databricks one-time runs.
 
     Args:
@@ -434,13 +602,11 @@ def build_submit_access_control_list(
         return None
 
     return [
-        JobAccessControlRequest(
+        iam.AccessControlRequest(
             group_name=acl.group_name,
             user_name=acl.user_name,
             service_principal_name=acl.service_principal_name,
-            permission_level=jobs.JobPermissionLevel(
-                acl.permission_level.value
-            ),
+            permission_level=iam.PermissionLevel(acl.permission_level.value),
         )
         for acl in settings.access_control_list
     ]

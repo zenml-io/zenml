@@ -38,8 +38,8 @@ class DatabricksStepOperatorConfig(
     """Databricks step operator config."""
 
     host: str
-    client_id: str = SecretField(default=None)
-    client_secret: str = SecretField(default=None)
+    client_id: Optional[str] = SecretField(default=None)
+    client_secret: Optional[str] = SecretField(default=None)
 
     @property
     def is_local(self) -> bool:

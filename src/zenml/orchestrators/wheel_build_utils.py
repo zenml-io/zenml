@@ -14,8 +14,9 @@
 """Helpers for packaging the current source tree as a wheel."""
 
 import os
-import re
+import string
 import subprocess
+import sys
 import tempfile
 import zipfile
 from typing import Optional
@@ -28,10 +29,16 @@ from zenml.utils.source_utils import get_source_root
 logger = get_logger(__name__)
 
 DEFAULT_PACKAGE_NAME = "zenmlproject"
+_ALLOWED_PACKAGE_NAME_CHARACTERS = set(
+    string.ascii_lowercase + string.digits + "-"
+)
 
 
 def sanitize_name(name: str) -> str:
     """Sanitize a name for use in generated package identifiers.
+
+    The generated name intentionally only contains ASCII lowercase letters,
+    digits, and hyphens.
 
     Args:
         name: Arbitrary input name.
@@ -39,10 +46,11 @@ def sanitize_name(name: str) -> str:
     Returns:
         Sanitized name.
     """
-    name = re.sub(r"[^a-z0-9-]", "-", name.lower())
-    name = re.sub(r"^[-]+", "", name)
-    name = re.sub(r"[-]+$", "", name)
-    return name
+    sanitized_name = "".join(
+        character if character in _ALLOWED_PACKAGE_NAME_CHARACTERS else "-"
+        for character in name.lower()
+    )
+    return sanitized_name.strip("-")
 
 
 def get_wheel_package_name(source_root: Optional[str] = None) -> str:
@@ -114,12 +122,12 @@ def create_wheel(temp_dir: str) -> str:
     Returns:
         Path to the created wheel file.
     """
-    original_dir = os.getcwd()
-    os.chdir(temp_dir)
-
     try:
         result = subprocess.run(
-            ["pip", "wheel", "."], check=True, capture_output=True
+            [sys.executable, "-m", "pip", "wheel", "."],
+            check=True,
+            capture_output=True,
+            cwd=temp_dir,
         )
         logger.debug(f"Wheel creation stdout: {result.stdout.decode()}")
         logger.debug(f"Wheel creation stderr: {result.stderr.decode()}")
@@ -147,5 +155,3 @@ def create_wheel(temp_dir: str) -> str:
             f"stdout:\n{stdout}\n"
             f"stderr:\n{stderr}"
         ) from e
-    finally:
-        os.chdir(original_dir)
