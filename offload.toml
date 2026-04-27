@@ -1,10 +1,10 @@
 [offload]
-max_parallel = 20
+max_parallel = 32
 test_timeout_secs = 960
 # Cap on cumulative historical duration per batch (LPT bin-packing).
 # 10s (the offload default) over-fragments large suites into many small
 # batches, each paying sandbox create + exec/fetch overhead. 180s keeps the
-# baseline fast-CI suite near one full 20-sandbox wave while staying below the
+# baseline fast-CI suite near one full 32-sandbox wave while staying below the
 # 300s requeue floor so a stuck batch still gets hedged. Tests whose own
 # duration exceeds the cap continue to be placed alone in their own batch.
 max_batch_duration_secs = 180

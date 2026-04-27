@@ -96,6 +96,14 @@ def test_modal_workflows_install_runner_collection_dependencies() -> None:
         assert 'uv pip install --system "setuptools<82"' in workflow
 
 
+def test_modal_scheduler_parallelism_targets_one_warm_wave() -> None:
+    """Guards the sandbox concurrency used for warm Modal runs."""
+    assert "max_parallel = 32" in _read_repo_file("offload.toml")
+    assert "max_parallel = 32" in _read_repo_file(
+        "offload-modal-server-mysql.toml"
+    )
+
+
 def test_modal_batch_cap_targets_one_warm_wave() -> None:
     """Documents the batch cap used for sub-5-minute warm Modal runs."""
     assert "max_batch_duration_secs = 180" in _read_repo_file("offload.toml")
