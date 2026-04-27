@@ -210,7 +210,7 @@ Environment variables are configured through the standard ZenML `environment` se
 **Issue: "Failed to submit Run:AI workload" / 403 errors**
 - Check that your client ID and secret are correct
 - Verify your Run:AI base URL is accessible
-- Verify the service account has VECD (or at minimum View+Create+Edit) on Trainings within the project scope — see [Run:AI service account permissions](#runai-service-account-permissions)
+- Verify the service account has View/Edit/Create/Delete permissions (or at minimum View+Create+Edit) on Trainings within the project scope — see [Run:AI service account permissions](#runai-service-account-permissions)
 - Ensure your project has sufficient resource quota
 
 **Issue: Workload stays in `Pending` and eventually times out**
