@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -40,6 +40,7 @@ from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.logging_utils import (
     LogEntry,
     fetch_logs,
+    search_logs_by_id,
     search_logs_by_source,
 )
 from zenml.zen_server.auth import (
@@ -289,21 +290,30 @@ def get_step_status(
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
     step_id: UUID,
-    source: str = "step",
+    source: Optional[str] = None,
+    logs_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
     """Get log entries for a step.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        source: The source of the logs to get. Default is "step".
+        source: The source of the logs to get.
+        logs_id: The ID of the logs to get.
 
     Returns:
         List of log entries.
 
     Raises:
+        ValueError: If both source and logs_id are provided.
         KeyError: If no logs are available for this step.
     """
+    if source is None and logs_id is None:
+        raise ValueError("Either source or logs_id must be provided.")
+
+    if source is not None and logs_id is not None:
+        raise ValueError("Only one of source or logs_id must be provided.")
+
     store = zen_store()
 
     step = store.get_run_step(step_id, hydrate=True)
@@ -316,11 +326,30 @@ def get_step_logs(
     )
 
     if step.log_collection:
-        if logs := search_logs_by_source(step.log_collection, source):
-            return fetch_logs(
-                logs=logs,
-                zen_store=store,
-                limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-            )
+        if source:
+            if logs := search_logs_by_source(step.log_collection, source):
+                return fetch_logs(
+                    logs=logs,
+                    zen_store=store,
+                    limit=LOGS_MAX_ENTRIES_PER_REQUEST,
+                )
+            else:
+                raise KeyError(
+                    f"No logs found for source '{source}' in step {step_id}"
+                )
 
-    raise KeyError(f"No logs found for source '{source}' in step {step_id}")
+        elif logs_id:
+            if logs := search_logs_by_id(step.log_collection, logs_id):
+                return fetch_logs(
+                    logs=logs,
+                    zen_store=store,
+                    limit=LOGS_MAX_ENTRIES_PER_REQUEST,
+                )
+            else:
+                raise KeyError(
+                    f"No logs found for ID '{logs_id}' in step {step_id}"
+                )
+        else:
+            raise ValueError("Either source or logs_id must be provided.")
+    else:
+        raise KeyError(f"No logs found for step {step_id}.")

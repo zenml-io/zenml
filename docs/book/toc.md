@@ -14,6 +14,7 @@
 * [Deploy](getting-started/deploying-zenml/README.md)
   * [Deploy with Docker](getting-started/deploying-zenml/deploy-with-docker.md)
   * [Deploy with Helm](getting-started/deploying-zenml/deploy-with-helm.md)
+    * [Migrate to Gateway API](getting-started/deploying-zenml/migrate-to-gateway-api.md)
   * [Deploy using HuggingFace Spaces](getting-started/deploying-zenml/deploy-using-huggingface-spaces.md)
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
   * [Secret management](getting-started/deploying-zenml/secret-management.md)

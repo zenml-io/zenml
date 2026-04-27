@@ -547,13 +547,9 @@ class SeldonModelDeployer(BaseModelDeployer):
             # Add telemetry with metadata that gets the stack metadata and
             # differentiates between pure model and custom code deployments
             stack = Client().active_stack
-            stack_metadata = {
-                component_type.value: component.flavor
-                for component_type, component in stack.components.items()
-            }
             analytics_handler.metadata = {
                 "store_type": Client().zen_store.type.value,
-                **stack_metadata,
+                **stack.component_flavor_metadata,
                 "is_custom_code_deployment": config.is_custom_deployment,
             }
 

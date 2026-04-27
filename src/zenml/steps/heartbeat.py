@@ -40,9 +40,7 @@ class StepHeartBeatTerminationException(Exception):
 class StepHeartbeatWorker:
     """Worker class implementing heartbeat polling and remote termination."""
 
-    STEP_HEARTBEAT_INTERVAL_SECONDS = (
-        60 * 2
-    )  # submit heartbeats every 2 minutes.
+    STEP_HEARTBEAT_INTERVAL_SECONDS = 15  # submit heartbeats every 2 minutes.
 
     MAX_HEARTBEAT_INTERVAL_SECONDS = 60 * 5
     MAX_CONSECUTIVE_FAILURES = 3
@@ -201,6 +199,14 @@ class StepHeartbeatWorker:
             logger.debug("Heartbeat set to disabled - stopping worker")
             self.stop()
             return
+
+        if response.status in {
+            ExecutionStatus.STOPPED,
+            ExecutionStatus.STOPPING,
+            ExecutionStatus.CANCELLED,
+            ExecutionStatus.CANCELLING,
+        }:
+            self._terminated = True
 
         if response.pipeline_run_status in {
             ExecutionStatus.STOPPED,

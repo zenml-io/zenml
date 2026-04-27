@@ -20,43 +20,8 @@ from importlib.metadata import (
 )
 from typing import Dict, List, Optional, Union, cast
 
-import requests
-from packaging import version
 from packaging.markers import default_environment
 from packaging.requirements import Requirement
-
-
-def is_latest_zenml_version() -> bool:
-    """Checks if the currently running ZenML package is on the latest version.
-
-    Returns:
-        True in case the current running zenml code is the latest available version on PYPI, otherwise False.
-
-    Raises:
-        RuntimeError: In case something goes wrong
-    """
-    from zenml import __version__
-
-    # Get the current version of the package
-    current_local_version = __version__
-
-    # Get the latest version from PyPI
-    try:
-        response = requests.get("https://pypi.org/pypi/zenml/json", timeout=60)
-        response.raise_for_status()
-        latest_published_version = response.json()["info"]["version"]
-    except Exception as e:
-        raise RuntimeError(
-            f"Failed to fetch the latest version from PyPI: {e}"
-        )
-
-    # Compare versions
-    if version.parse(latest_published_version) > version.parse(
-        current_local_version
-    ):
-        return False
-    else:
-        return True
 
 
 def clean_requirements(requirements: List[str]) -> List[str]:

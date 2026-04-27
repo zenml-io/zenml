@@ -369,6 +369,24 @@ def search_logs_by_source(
     return None
 
 
+def search_logs_by_id(
+    logs_collection: List[LogsResponse], logs_id: UUID
+) -> Optional[LogsResponse]:
+    """Get the logs response for a given ID.
+
+    Args:
+        logs_collection: The logs collection.
+        logs_id: The ID of the logs.
+
+    Returns:
+        The logs response for the given ID.
+    """
+    for log in logs_collection:
+        if log.id == logs_id:
+            return log
+    return None
+
+
 def get_run_log_metadata(
     pipeline_run: "PipelineRunResponse",
 ) -> Dict[str, Any]:
