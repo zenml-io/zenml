@@ -14,7 +14,7 @@
 """Models representing pipeline run wait conditions."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
 from uuid import UUID
 
 from pydantic import Field
@@ -29,6 +29,11 @@ from zenml.metadata.metadata_types import MetadataType
 from zenml.models import RunMetadataFilterMixin
 from zenml.models.v2.base.base import (
     BaseUpdate,
+)
+from zenml.models.v2.base.filter import (
+    DatetimeFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -283,41 +288,50 @@ class RunWaitConditionResponse(
 class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     """Filter model for wait conditions."""
 
-    FILTER_EXCLUDE_FIELDS = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "resolved_by",
         "pipeline_run",
     ]
-    CLI_EXCLUDE_FIELDS = [
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+    ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
+    ]
 
-    pipeline_run: Optional[Union[UUID, str]] = Field(
+    pipeline_run: UUIDFilterOption = Field(
         default=None,
         title="Filter by pipeline run ID/name.",
         union_mode="left_to_right",
     )
-    type: Optional[str] = Field(
+    type: StrFilterOption = Field(
         default=None, title="Filter by condition type."
     )
-    status: Optional[str] = Field(
+    status: StrFilterOption = Field(
         default=None, title="Filter by condition status."
     )
-    name: Optional[str] = Field(
+    name: StrFilterOption = Field(
         default=None, title="Filter by wait condition name."
     )
-    resolved_by: Optional[Union[UUID, str]] = Field(
+    resolved_by: UUIDFilterOption = Field(
         default=None,
         title="Filter by the name or ID of the user that resolved the condition.",
         union_mode="left_to_right",
     )
-    resolved_at: Optional[Union[datetime, str]] = Field(
+    resolved_at: DatetimeFilterOption = Field(
         default=None,
         title="Filter by the timestamp when the condition was resolved.",
+        union_mode="left_to_right",
     )
-    resolution: Optional[str] = Field(
+    resolution: StrFilterOption = Field(
         default=None,
         title="Filter by condition resolution.",
     )
@@ -335,7 +349,7 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_
+        from sqlmodel import and_, or_
 
         from zenml.zen_stores.schemas import (
             PipelineRunSchema,
@@ -344,24 +358,46 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         )
 
         if self.resolved_by:
-            resolved_by_filter = and_(
-                RunWaitConditionSchema.resolved_by_user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.resolved_by,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
+            resolved_values = (
+                self.resolved_by
+                if isinstance(self.resolved_by, list)
+                else [self.resolved_by]
             )
-            custom_filters.append(resolved_by_filter)
+            resolved_filters = [
+                and_(
+                    RunWaitConditionSchema.resolved_by_user_id == UserSchema.id,
+                    self.generate_name_or_id_query_conditions(
+                        value=v,
+                        table=UserSchema,
+                        additional_columns=["full_name"],
+                    ),
+                )
+                for v in resolved_values
+            ]
+            if len(resolved_filters) == 1:
+                custom_filters.append(resolved_filters[0])
+            else:
+                custom_filters.append(or_(*resolved_filters))
 
         if self.pipeline_run:
-            pipeline_run_filter = and_(
-                RunWaitConditionSchema.run_id == PipelineRunSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.pipeline_run,
-                    table=PipelineRunSchema,
-                ),
+            run_values = (
+                self.pipeline_run
+                if isinstance(self.pipeline_run, list)
+                else [self.pipeline_run]
             )
-            custom_filters.append(pipeline_run_filter)
+            run_filters = [
+                and_(
+                    RunWaitConditionSchema.run_id == PipelineRunSchema.id,
+                    self.generate_name_or_id_query_conditions(
+                        value=v,
+                        table=PipelineRunSchema,
+                    ),
+                )
+                for v in run_values
+            ]
+            if len(run_filters) == 1:
+                custom_filters.append(run_filters[0])
+            else:
+                custom_filters.append(or_(*run_filters))
 
         return custom_filters

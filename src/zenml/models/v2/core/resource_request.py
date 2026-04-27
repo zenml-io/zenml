@@ -21,13 +21,17 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
 from pydantic import Field, PositiveInt, model_validator
 
 from zenml.enums import ResourceRequestStatus
+from zenml.models.v2.base.filter import (
+    BoolFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -229,29 +233,33 @@ class ResourceRequestFilter(UserScopedFilter):
         "pipeline_run_id",
     ]
 
-    preemptible: Optional[bool] = Field(
+    preemptible: BoolFilterOption = Field(
         default=None,
         description="Whether the resource request is preemptible.",
     )
-    component_id: Union[UUID, str, None] = Field(
+    component_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the component that is requesting the resources.",
+        union_mode="left_to_right",
     )
-    step_run_id: Union[UUID, str, None] = Field(
+    step_run_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the step run that is requesting the resources.",
+        union_mode="left_to_right",
     )
-    preemption_initiated_by_id: Union[UUID, str, None] = Field(
+    preemption_initiated_by_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the request that initiated the preemption of this request.",
+        union_mode="left_to_right",
     )
-    status: Union[ResourceRequestStatus, str, None] = Field(
+    status: StrFilterOption = Field(
         default=None,
         description="The status of the resource request.",
     )
-    pipeline_run_id: Union[UUID, str, None] = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the pipeline run that is requesting the resources.",
+        union_mode="left_to_right",
     )
 
     def get_custom_filters(
@@ -268,7 +276,7 @@ class ResourceRequestFilter(UserScopedFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_
+        from sqlmodel import and_, or_
 
         from zenml.zen_stores.schemas import (
             ResourceRequestSchema,
@@ -276,10 +284,21 @@ class ResourceRequestFilter(UserScopedFilter):
         )
 
         if self.pipeline_run_id:
-            pipeline_run_filter = and_(
-                ResourceRequestSchema.step_run_id == StepRunSchema.id,
-                StepRunSchema.pipeline_run_id == self.pipeline_run_id,
+            run_ids = (
+                self.pipeline_run_id
+                if isinstance(self.pipeline_run_id, list)
+                else [self.pipeline_run_id]
             )
-            custom_filters.append(pipeline_run_filter)
+            run_id_filters = [
+                and_(
+                    ResourceRequestSchema.step_run_id == StepRunSchema.id,
+                    StepRunSchema.pipeline_run_id == rid,
+                )
+                for rid in run_ids
+            ]
+            if len(run_id_filters) == 1:
+                custom_filters.append(run_id_filters[0])
+            else:
+                custom_filters.append(or_(*run_id_filters))
 
         return custom_filters

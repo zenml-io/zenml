@@ -768,6 +768,10 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+    ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
@@ -866,14 +870,23 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         )
 
         if self.model:
-            model_filter = and_(
-                StepRunSchema.model_version_id == ModelVersionSchema.id,
-                ModelVersionSchema.model_id == ModelSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.model, table=ModelSchema
-                ),
+            model_values = (
+                self.model if isinstance(self.model, list) else [self.model]
             )
-            custom_filters.append(model_filter)
+            model_filters = [
+                and_(
+                    StepRunSchema.model_version_id == ModelVersionSchema.id,
+                    ModelVersionSchema.model_id == ModelSchema.id,
+                    self.generate_name_or_id_query_conditions(
+                        value=v, table=ModelSchema
+                    ),
+                )
+                for v in model_values
+            ]
+            if len(model_filters) == 1:
+                custom_filters.append(model_filters[0])
+            else:
+                custom_filters.append(or_(*model_filters))
 
         if self.exclude_retried:
             custom_filters.append(

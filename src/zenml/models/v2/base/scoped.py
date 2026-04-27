@@ -679,7 +679,12 @@ class RunMetadataFilterMixin(BaseFilter):
             ValueError: If any entry in run_metadata does not contain a colon.
         """
         if self.run_metadata:
-            for entry in self.run_metadata:
+            entries = (
+                [self.run_metadata]
+                if isinstance(self.run_metadata, str)
+                else self.run_metadata
+            )
+            for entry in entries:
                 if ":" not in entry:
                     raise ValueError(
                         f"Invalid run_metadata entry format: '{entry}'. "
@@ -730,7 +735,12 @@ class RunMetadataFilterMixin(BaseFilter):
             }
 
             # Create an EXISTS subquery for each run_metadata filter
-            for entry in self.run_metadata:
+            metadata_entries = (
+                [self.run_metadata]
+                if isinstance(self.run_metadata, str)
+                else self.run_metadata
+            )
+            for entry in metadata_entries:
                 # Split at the first colon to get the key
                 key, value = entry.split(":", 1)
 
