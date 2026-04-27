@@ -30,10 +30,11 @@ jobs:
     if: ${{ inputs.use_modal && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     # Fail fast if Modal stalls. The offload run itself has a 16-minute
-    # per-test timeout (test_timeout_secs in offload.toml); a 15-minute
-    # job wall clock is a tight-but-safe ceiling once the image cache is
-    # warm. Bump this if we intentionally add heavier fast-CI coverage.
-    timeout-minutes: 15
+    # per-test timeout (test_timeout_secs in offload.toml). The job wall
+    # clock must exceed that so the per-test cap is the one that actually
+    # fires; 22 minutes leaves ~6 minutes for cold-start setup (image
+    # rebuild + uv install) on top of the per-test ceiling.
+    timeout-minutes: 22
     outputs:
       modal_infra_failed: ${{ steps.classify.outputs.modal_infra_failed }}
     env:
