@@ -23,6 +23,7 @@ from typing import (
     Optional,
     Type,
     TypeVar,
+    Union,
 )
 from uuid import UUID
 
@@ -189,7 +190,7 @@ class UserScopedFilter(BaseFilter):
         "user",
     ]
 
-    scope_user: UUIDFilterOption = Field(
+    scope_user: Optional[UUID] = Field(
         default=None,
         description="The user to scope this query to.",
     )
@@ -386,7 +387,11 @@ class ProjectScopedFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "project",
     ]
-    project: UUIDFilterOption = Field(
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "project",
+    ]
+    project: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the project which the search is scoped to. "
         "This field must always be set and is always applied in addition to "
