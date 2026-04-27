@@ -24,11 +24,11 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
-    BoolOrList,
-    DatetimeOrList,
-    FloatOrList,
-    StrOrList,
-    UUIDOrList,
+    BoolFilterOption,
+    DatetimeFilterOption,
+    FloatFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -331,50 +331,50 @@ class ScheduleFilter(ProjectScopedFilter):
         "is_archived",
     ]
 
-    pipeline_id: UUIDOrList = Field(
+    pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",
         union_mode="left_to_right",
     )
-    orchestrator_id: UUIDOrList = Field(
+    orchestrator_id: UUIDFilterOption = Field(
         default=None,
         description="Orchestrator that the schedule is attached to.",
         union_mode="left_to_right",
     )
-    active: BoolOrList = Field(
+    active: BoolFilterOption = Field(
         default=None,
         description="If the schedule is active",
     )
-    cron_expression: StrOrList = Field(
+    cron_expression: StrFilterOption = Field(
         default=None,
         description="The cron expression, describing the schedule",
     )
-    start_time: DatetimeOrList = Field(
+    start_time: DatetimeFilterOption = Field(
         default=None, description="Start time", union_mode="left_to_right"
     )
-    end_time: DatetimeOrList = Field(
+    end_time: DatetimeFilterOption = Field(
         default=None, description="End time", union_mode="left_to_right"
     )
-    interval_second: FloatOrList = Field(
+    interval_second: FloatFilterOption = Field(
         default=None,
         description="The repetition interval in seconds",
     )
-    catchup: BoolOrList = Field(
+    catchup: BoolFilterOption = Field(
         default=None,
         description="Whether or not the schedule is set to catchup past missed "
         "events",
     )
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the schedule",
     )
-    run_once_start_time: DatetimeOrList = Field(
+    run_once_start_time: DatetimeFilterOption = Field(
         default=None,
         description="The time at which the schedule should run once",
         union_mode="left_to_right",
     )
 
-    is_archived: BoolOrList = Field(
+    is_archived: BoolFilterOption = Field(
         default=None,
         description="Whether or not the schedule is archived",
     )

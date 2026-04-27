@@ -30,9 +30,9 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
-    BoolOrList,
-    StrOrList,
-    UUIDOrList,
+    BoolFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 
 if TYPE_CHECKING:
@@ -277,20 +277,20 @@ class ServiceAccountResponse(
 class ServiceAccountFilter(BaseFilter):
     """Model to enable advanced filtering of service accounts."""
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the user",
     )
-    description: StrOrList = Field(
+    description: StrFilterOption = Field(
         default=None,
         title="Filter by the service account description.",
     )
-    active: BoolOrList = Field(
+    active: BoolFilterOption = Field(
         default=None,
         description="Whether the user is active",
         union_mode="left_to_right",
     )
-    external_user_id: UUIDOrList = Field(
+    external_user_id: UUIDFilterOption = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",

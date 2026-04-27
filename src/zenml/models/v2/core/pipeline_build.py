@@ -30,10 +30,10 @@ from pydantic import Field
 
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.filter import (
-    BoolOrList,
-    IntOrList,
-    StrOrList,
-    UUIDOrList,
+    BoolFilterOption,
+    IntFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -490,43 +490,43 @@ class PipelineBuildFilter(ProjectScopedFilter):
         "container_registry_id",
     ]
 
-    pipeline_id: UUIDOrList = Field(
+    pipeline_id: UUIDFilterOption = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    stack_id: UUIDOrList = Field(
+    stack_id: UUIDFilterOption = Field(
         description="Stack associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    container_registry_id: UUIDOrList = Field(
+    container_registry_id: UUIDFilterOption = Field(
         description="Container registry associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    is_local: BoolOrList = Field(
+    is_local: BoolFilterOption = Field(
         description="Whether the build images are stored in a container "
         "registry or locally.",
         default=None,
     )
-    contains_code: BoolOrList = Field(
+    contains_code: BoolFilterOption = Field(
         description="Whether any image of the build contains user code.",
         default=None,
     )
-    zenml_version: StrOrList = Field(
+    zenml_version: StrFilterOption = Field(
         description="The version of ZenML used for this build.", default=None
     )
-    python_version: StrOrList = Field(
+    python_version: StrFilterOption = Field(
         description="The Python version used for this build.", default=None
     )
-    checksum: StrOrList = Field(
+    checksum: StrFilterOption = Field(
         description="The build checksum.", default=None
     )
-    stack_checksum: StrOrList = Field(
+    stack_checksum: StrFilterOption = Field(
         description="The stack checksum.", default=None
     )
-    duration: IntOrList = Field(
+    duration: IntFilterOption = Field(
         description="The duration of the build in seconds.", default=None
     )
 

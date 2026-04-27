@@ -293,10 +293,6 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
-    API_MULTI_INPUT_PARAMS = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
-    ]
 
     pipeline_run: Optional[Union[UUID, str]] = Field(
         default=None,

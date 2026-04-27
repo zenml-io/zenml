@@ -35,10 +35,10 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
-    BoolOrList,
-    DatetimeOrList,
-    StrOrList,
-    UUIDOrList,
+    BoolFilterOption,
+    DatetimeFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 from zenml.utils.string_utils import b64_decode, b64_encode
 from zenml.utils.time_utils import utc_now
@@ -354,29 +354,29 @@ class APIKeyFilter(BaseFilter):
         "service_account",
     ]
 
-    service_account: UUIDOrList = Field(
+    service_account: UUIDFilterOption = Field(
         default=None,
         description="The service account to scope this query to.",
     )
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the API key",
     )
-    description: StrOrList = Field(
+    description: StrFilterOption = Field(
         default=None,
         title="Filter by the API key description.",
     )
-    active: BoolOrList = Field(
+    active: BoolFilterOption = Field(
         default=None,
         title="Whether the API key is active.",
         union_mode="left_to_right",
     )
-    last_login: DatetimeOrList = Field(
+    last_login: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last used to log in.",
         union_mode="left_to_right",
     )
-    last_rotated: DatetimeOrList = Field(
+    last_rotated: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last rotated.",
         union_mode="left_to_right",

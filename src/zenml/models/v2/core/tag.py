@@ -21,7 +21,7 @@ from pydantic import Field, field_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import BoolOrList, StrOrList
+from zenml.models.v2.base.filter import BoolFilterOption, StrFilterOption
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -201,13 +201,13 @@ class TagFilter(UserScopedFilter):
         "resource_type",
     ]
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         description="The unique title of the tag.", default=None
     )
     color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
     )
-    exclusive: BoolOrList = Field(
+    exclusive: BoolFilterOption = Field(
         description="The flag signifying whether the tag is an exclusive tag.",
         default=None,
     )

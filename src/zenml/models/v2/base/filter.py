@@ -78,12 +78,12 @@ VALUELESS_FILTER_OPS = {
 }
 
 
-StrOrList = Optional[Union[str, List[str]]]
-IntOrList = Optional[Union[int, str, List[Union[int, str]]]]
-FloatOrList = Optional[Union[float, str, List[Union[float, str]]]]
-BoolOrList = Optional[Union[bool, str, List[Union[bool, str]]]]
-UUIDOrList = Optional[Union[UUID, str, List[Union[UUID, str]]]]
-DatetimeOrList = Optional[Union[datetime, str, List[Union[datetime, str]]]]
+StrFilterOption = Optional[Union[str, List[str]]]
+IntFilterOption = Optional[Union[int, str, List[Union[int, str]]]]
+FloatFilterOption = Optional[Union[float, str, List[Union[float, str]]]]
+BoolFilterOption = Optional[Union[bool, str, List[Union[bool, str]]]]
+UUIDFilterOption = Optional[Union[UUID, str, List[Union[UUID, str]]]]
+DatetimeFilterOption = Optional[Union[datetime, str, List[Union[datetime, str]]]]
 
 
 class Filter(BaseModel, ABC):
@@ -700,15 +700,15 @@ class BaseFilter(BaseModel):
         le=PAGE_SIZE_MAXIMUM,
         description="Page size",
     )
-    id: UUIDOrList = Field(
+    id: UUIDFilterOption = Field(
         default=None,
         description="Id for this resource",
         union_mode="left_to_right",
     )
-    created: DatetimeOrList = Field(
+    created: DatetimeFilterOption = Field(
         default=None, description="Created", union_mode="left_to_right"
     )
-    updated: DatetimeOrList = Field(
+    updated: DatetimeFilterOption = Field(
         default=None, description="Updated", union_mode="left_to_right"
     )
 
@@ -1482,6 +1482,9 @@ class FilterGenerator:
 
         Returns:
             A Filter object.
+
+        Raises:
+            ValueError: If the value is not a valid boolean.
         """
         if operator in VALUELESS_FILTER_OPS:
             return BoolFilter(

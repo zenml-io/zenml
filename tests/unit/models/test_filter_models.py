@@ -24,29 +24,29 @@ from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.models.v2.base.filter import (
     BaseFilter,
     BoolFilter,
-    BoolOrList,
+    BoolFilterOption,
     DatetimeFilter,
-    DatetimeOrList,
+    DatetimeFilterOption,
     Filter,
-    FloatOrList,
-    IntOrList,
+    FloatFilterOption,
+    IntFilterOption,
     NumericFilter,
     StrFilter,
-    StrOrList,
+    StrFilterOption,
     UUIDFilter,
-    UUIDOrList,
+    UUIDFilterOption,
 )
 
 
 class SomeFilterModel(BaseFilter):
     """Test custom filter model with all supported field types."""
 
-    uuid_field: UUIDOrList = None
-    datetime_field: DatetimeOrList = None
-    int_field: IntOrList = None
-    float_field: FloatOrList = None
-    bool_field: BoolOrList = None
-    str_field: StrOrList = None
+    uuid_field: UUIDFilterOption = None
+    datetime_field: DatetimeFilterOption = None
+    int_field: IntFilterOption = None
+    float_field: FloatFilterOption = None
+    bool_field: BoolFilterOption = None
+    str_field: StrFilterOption = None
 
 
 def _test_filter_model(

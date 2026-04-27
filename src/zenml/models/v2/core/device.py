@@ -25,10 +25,10 @@ from zenml.models.v2.base.base import (
     BaseUpdate,
 )
 from zenml.models.v2.base.filter import (
-    BoolOrList,
-    DatetimeOrList,
-    IntOrList,
-    UUIDOrList,
+    BoolFilterOption,
+    DatetimeFilterOption,
+    IntFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
@@ -447,12 +447,12 @@ class OAuthDeviceInternalResponse(OAuthDeviceResponse):
 class OAuthDeviceFilter(UserScopedFilter):
     """Model to enable advanced filtering of OAuth2 devices."""
 
-    expires: DatetimeOrList = Field(
+    expires: DatetimeFilterOption = Field(
         default=None,
         description="The expiration date of the OAuth2 device.",
         union_mode="left_to_right",
     )
-    client_id: UUIDOrList = Field(
+    client_id: UUIDFilterOption = Field(
         default=None,
         description="The client ID of the OAuth2 device.",
         union_mode="left_to_right",
@@ -462,17 +462,17 @@ class OAuthDeviceFilter(UserScopedFilter):
         description="The status of the OAuth2 device.",
         union_mode="left_to_right",
     )
-    trusted_device: BoolOrList = Field(
+    trusted_device: BoolFilterOption = Field(
         default=None,
         description="Whether the OAuth2 device was marked as trusted.",
         union_mode="left_to_right",
     )
-    failed_auth_attempts: IntOrList = Field(
+    failed_auth_attempts: IntFilterOption = Field(
         default=None,
         description="The number of failed authentication attempts.",
         union_mode="left_to_right",
     )
-    last_login: DatetimeOrList = Field(
+    last_login: DatetimeFilterOption = Field(
         default=None,
         description="The date of the last successful login.",
         union_mode="left_to_right",

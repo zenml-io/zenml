@@ -33,7 +33,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import StrOrList, UUIDOrList
+from zenml.models.v2.base.filter import StrFilterOption, UUIDFilterOption
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -288,17 +288,17 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the Pipeline",
     )
-    latest_run_status: StrOrList = Field(
+    latest_run_status: StrFilterOption = Field(
         default=None,
         description="Filter by the status of the latest run of a pipeline. "
         "This will always be applied as an `AND` filter for now.",
     )
 
-    latest_run_user: UUIDOrList = Field(
+    latest_run_user: UUIDFilterOption = Field(
         default=None,
         description="Filter by the name or id of the last user that executed the pipeline. ",
     )

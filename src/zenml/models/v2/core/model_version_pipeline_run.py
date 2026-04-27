@@ -29,8 +29,8 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     BaseFilter,
     StrFilter,
-    StrOrList,
-    UUIDOrList,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
@@ -132,21 +132,21 @@ class ModelVersionPipelineRunFilter(BaseFilter):
         "id",
     ]
 
-    model_version_id: UUIDOrList = Field(
+    model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by model version ID",
         union_mode="left_to_right",
     )
-    pipeline_run_id: UUIDOrList = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by pipeline run ID",
         union_mode="left_to_right",
     )
-    pipeline_run_name: StrOrList = Field(
+    pipeline_run_name: StrFilterOption = Field(
         default=None,
         description="Name of the pipeline run",
     )
-    user: UUIDOrList = Field(
+    user: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the user that created the pipeline run.",
     )

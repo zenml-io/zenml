@@ -31,7 +31,7 @@ from pydantic import BaseModel, Field, field_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery, StrOrList, UUIDOrList
+from zenml.models.v2.base.filter import AnyQuery, StrFilterOption, UUIDFilterOption
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -401,28 +401,28 @@ class ComponentFilter(UserScopedFilter):
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
-    scope_type: StrOrList = Field(
+    scope_type: StrFilterOption = Field(
         default=None,
         description="The type to scope this query to.",
     )
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the stack component",
     )
-    flavor: StrOrList = Field(
+    flavor: StrFilterOption = Field(
         default=None,
         description="Flavor of the stack component",
     )
-    type: StrOrList = Field(
+    type: StrFilterOption = Field(
         default=None,
         description="Type of the stack component",
     )
-    connector_id: UUIDOrList = Field(
+    connector_id: UUIDFilterOption = Field(
         default=None,
         description="Connector linked to the stack component",
         union_mode="left_to_right",
     )
-    stack_id: UUIDOrList = Field(
+    stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack of the stack component",
         union_mode="left_to_right",

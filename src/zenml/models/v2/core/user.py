@@ -40,9 +40,9 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
-    BoolOrList,
-    StrOrList,
-    UUIDOrList,
+    BoolFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 
 if TYPE_CHECKING:
@@ -477,29 +477,29 @@ class UserResponse(
 class UserFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the user",
     )
-    full_name: StrOrList = Field(
+    full_name: StrFilterOption = Field(
         default=None,
         description="Full Name of the user",
     )
-    email: StrOrList = Field(
+    email: StrFilterOption = Field(
         default=None,
         description="Email of the user",
     )
-    active: BoolOrList = Field(
+    active: BoolFilterOption = Field(
         default=None,
         description="Whether the user is active",
         union_mode="left_to_right",
     )
-    email_opted_in: BoolOrList = Field(
+    email_opted_in: BoolFilterOption = Field(
         default=None,
         description="Whether the user has opted in to emails",
         union_mode="left_to_right",
     )
-    external_user_id: UUIDOrList = Field(
+    external_user_id: UUIDFilterOption = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",

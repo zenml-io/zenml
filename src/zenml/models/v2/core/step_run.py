@@ -39,11 +39,11 @@ from zenml.enums import (
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
-    BoolOrList,
-    DatetimeOrList,
-    IntOrList,
-    StrOrList,
-    UUIDOrList,
+    BoolFilterOption,
+    DatetimeFilterOption,
+    IntFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -773,71 +773,71 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the step run",
     )
-    code_hash: StrOrList = Field(
+    code_hash: StrFilterOption = Field(
         default=None,
         description="Code hash for this step run",
     )
-    cache_key: StrOrList = Field(
+    cache_key: StrFilterOption = Field(
         default=None,
         description="Cache key for this step run",
     )
-    status: StrOrList = Field(
+    status: StrFilterOption = Field(
         default=None,
         description="Status of the Step Run",
     )
-    start_time: DatetimeOrList = Field(
+    start_time: DatetimeFilterOption = Field(
         default=None,
         description="Start time for this run",
         union_mode="left_to_right",
     )
-    end_time: DatetimeOrList = Field(
+    end_time: DatetimeFilterOption = Field(
         default=None,
         description="End time for this run",
         union_mode="left_to_right",
     )
-    pipeline_run_id: UUIDOrList = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline run of this step run",
         union_mode="left_to_right",
     )
-    snapshot_id: UUIDOrList = Field(
+    snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Snapshot of this step run",
         union_mode="left_to_right",
     )
-    original_step_run_id: UUIDOrList = Field(
+    original_step_run_id: UUIDFilterOption = Field(
         default=None,
         description="Original id for this step run",
         union_mode="left_to_right",
     )
-    model_version_id: UUIDOrList = Field(
+    model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Model version associated with the step run.",
         union_mode="left_to_right",
     )
-    model: UUIDOrList = Field(
+    model: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    version: IntOrList = Field(
+    version: IntFilterOption = Field(
         default=None,
         description="Version of the step run.",
         union_mode="left_to_right",
     )
-    exclude_retried: BoolOrList = Field(
+    exclude_retried: BoolFilterOption = Field(
         default=None,
         description="Whether to exclude retried step runs.",
     )
-    cache_expires_at: DatetimeOrList = Field(
+    cache_expires_at: DatetimeFilterOption = Field(
         default=None,
         description="Cache expiration time of the step run.",
         union_mode="left_to_right",
     )
-    cache_expired: BoolOrList = Field(
+    cache_expired: BoolFilterOption = Field(
         default=None,
         description="Whether the cache expiration time of the step run has "
         "passed.",

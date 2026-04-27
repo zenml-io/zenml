@@ -27,7 +27,7 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import BaseFilter, StrOrList
+from zenml.models.v2.base.filter import BaseFilter, StrFilterOption
 from zenml.utils.pydantic_utils import before_validator_handler
 
 # ------------------ Request Model ------------------
@@ -192,12 +192,12 @@ class ProjectResponse(
 class ProjectFilter(BaseFilter):
     """Model to enable advanced filtering of all projects."""
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the project",
     )
 
-    display_name: StrOrList = Field(
+    display_name: StrFilterOption = Field(
         default=None,
         description="Display name of the project",
     )

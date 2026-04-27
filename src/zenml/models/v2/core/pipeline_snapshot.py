@@ -36,9 +36,9 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.filter import (
-    BoolOrList,
-    StrOrList,
-    UUIDOrList,
+    BoolFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -667,52 +667,52 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the snapshot.",
     )
-    named_only: BoolOrList = Field(
+    named_only: BoolFilterOption = Field(
         default=None,
         description="Whether to only return snapshots with a name.",
     )
-    pipeline: UUIDOrList = Field(
+    pipeline: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the snapshot.",
         union_mode="left_to_right",
     )
-    stack: UUIDOrList = Field(
+    stack: UUIDFilterOption = Field(
         default=None,
         description="Stack associated with the snapshot.",
         union_mode="left_to_right",
     )
-    build_id: UUIDOrList = Field(
+    build_id: UUIDFilterOption = Field(
         default=None,
         description="Build associated with the snapshot.",
         union_mode="left_to_right",
     )
-    schedule_id: UUIDOrList = Field(
+    schedule_id: UUIDFilterOption = Field(
         default=None,
         description="Schedule associated with the snapshot.",
         union_mode="left_to_right",
     )
-    source_snapshot_id: UUIDOrList = Field(
+    source_snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
     )
-    runnable: BoolOrList = Field(
+    runnable: BoolFilterOption = Field(
         default=None,
         description="Whether the snapshot is runnable.",
     )
-    deployable: BoolOrList = Field(
+    deployable: BoolFilterOption = Field(
         default=None,
         description="Whether the snapshot is deployable.",
     )
-    deployed: BoolOrList = Field(
+    deployed: BoolFilterOption = Field(
         default=None,
         description="Whether the snapshot is deployed.",
     )
-    trigger_id: UUIDOrList = Field(
+    trigger_id: UUIDFilterOption = Field(
         default=None,
         description="Trigger associated with the snapshot (attached).",
     )

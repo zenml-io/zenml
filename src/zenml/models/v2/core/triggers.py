@@ -44,9 +44,9 @@ from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
-    BoolOrList,
-    DatetimeOrList,
-    StrOrList,
+    BoolFilterOption,
+    DatetimeFilterOption,
+    StrFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -365,15 +365,15 @@ class UnScopedTriggerFilter(BaseFilter):
         "type",
     ]
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="The name of the trigger.",
     )
-    active: BoolOrList = Field(
+    active: BoolFilterOption = Field(
         default=None,
         description="Whether the trigger should be active.",
     )
-    is_archived: BoolOrList = Field(
+    is_archived: BoolFilterOption = Field(
         default=False,
         description=(
             "Restrict results to archived or non-archived triggers. Applied as "
@@ -390,7 +390,7 @@ class UnScopedTriggerFilter(BaseFilter):
         description="The trigger type.",
         union_mode="left_to_right",
     )
-    next_occurrence: DatetimeOrList = Field(
+    next_occurrence: DatetimeFilterOption = Field(
         default=None,
         description="The next occurrence of the trigger (applicable only for schedules).",
         union_mode="left_to_right",
@@ -439,11 +439,11 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "next_occurrence",
     ]
 
-    pipeline_id: StrOrList = Field(
+    pipeline_id: StrFilterOption = Field(
         default=None,
         description="Filter triggers by pipeline ID (triggers that are attached to this pipeline's snapshots)",
     )
-    snapshot_id: StrOrList = Field(
+    snapshot_id: StrFilterOption = Field(
         default=None,
         description="Filter triggers by snapshot ID (triggers that are attached to this snapshot)",
     )

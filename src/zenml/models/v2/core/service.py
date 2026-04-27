@@ -30,7 +30,7 @@ from pydantic import ConfigDict, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ServiceState
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import BoolOrList, StrOrList, UUIDOrList
+from zenml.models.v2.base.filter import BoolFilterOption, StrFilterOption, UUIDFilterOption
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -405,16 +405,16 @@ class ServiceResponse(
 class ServiceFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of services."""
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the service. Use this to filter services by "
         "their name.",
     )
-    type: StrOrList = Field(
+    type: StrFilterOption = Field(
         default=None,
         description="Type of the service. Filter services by their type.",
     )
-    flavor: StrOrList = Field(
+    flavor: StrFilterOption = Field(
         default=None,
         description="Flavor of the service. Use this to filter services by "
         "their flavor.",
@@ -424,23 +424,23 @@ class ServiceFilter(ProjectScopedFilter):
         description="Config of the service. Use this to filter services by "
         "their config.",
     )
-    pipeline_name: StrOrList = Field(
+    pipeline_name: StrFilterOption = Field(
         default=None,
         description="Pipeline name responsible for deploying the service",
     )
-    pipeline_step_name: StrOrList = Field(
+    pipeline_step_name: StrFilterOption = Field(
         default=None,
         description="Pipeline step name responsible for deploying the service",
     )
-    running: BoolOrList = Field(
+    running: BoolFilterOption = Field(
         default=None, description="Whether the service is running"
     )
-    model_version_id: UUIDOrList = Field(
+    model_version_id: UUIDFilterOption = Field(
         default=None,
         description="By the model version this service is attached to.",
         union_mode="left_to_right",
     )
-    pipeline_run_id: UUIDOrList = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="By the pipeline run this service is attached to.",
         union_mode="left_to_right",

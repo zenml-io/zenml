@@ -31,7 +31,7 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import BoolOrList, StrOrList, UUIDOrList
+from zenml.models.v2.base.filter import BoolFilterOption, StrFilterOption, UUIDFilterOption
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -356,39 +356,39 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: StrOrList = Field(
+    name: StrFilterOption = Field(
         default=None,
         description="Name of the run template.",
     )
-    hidden: BoolOrList = Field(
+    hidden: BoolFilterOption = Field(
         default=None,
         description="Whether the run template is hidden.",
     )
-    pipeline_id: UUIDOrList = Field(
+    pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the template.",
         union_mode="left_to_right",
     )
-    build_id: UUIDOrList = Field(
+    build_id: UUIDFilterOption = Field(
         default=None,
         description="Build associated with the template.",
         union_mode="left_to_right",
     )
-    stack_id: UUIDOrList = Field(
+    stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack associated with the template.",
         union_mode="left_to_right",
     )
-    code_repository_id: UUIDOrList = Field(
+    code_repository_id: UUIDFilterOption = Field(
         default=None,
         description="Code repository associated with the template.",
         union_mode="left_to_right",
     )
-    pipeline: UUIDOrList = Field(
+    pipeline: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the pipeline associated with the template.",
     )
-    stack: UUIDOrList = Field(
+    stack: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the stack associated with the template.",
     )
