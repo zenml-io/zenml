@@ -133,6 +133,10 @@ def my_step():
 
 This approach allows you to use different components for different steps in your pipeline while also customizing their runtime behavior.
 
+{% hint style="info" %}
+If your stack contains multiple step operators, `@step(step_operator=True)` uses the default step operator, which is the first attached step operator in the stack. If your stack contains multiple experiment trackers, `@step(experiment_tracker=True)` activates all attached experiment trackers for that step.
+{% endhint %}
+
 ## Types of Settings
 
 Settings in ZenML are categorized into three main types:
@@ -145,8 +149,11 @@ Settings in ZenML are categorized into three main types:
   * `DeploymentSettings` for pipeline deployment configuration - can only be set at the pipeline level
 
 * **Stack-component-specific settings** for configuring behaviors of components in your stack:
-  * These use the pattern `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>` as keys
-  * Examples include `experiment_tracker.mlflow` or just `step_operator`
+  * These use the pattern `<COMPONENT_CATEGORY>`, `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`, or `<COMPONENT_CATEGORY>:<COMPONENT_NAME>` as keys
+  * Use `<COMPONENT_CATEGORY>` to target the default attached component of that type
+  * Use `.` to select by flavor: `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>` only works if exactly one attached component of that flavor exists in the stack
+  * Use `:` to select an exact named instance: `<COMPONENT_CATEGORY>:<COMPONENT_NAME>` targets a specific attached component by name
+  * Examples include `experiment_tracker`, `experiment_tracker.wandb`, or `step_operator:vertex`
 
 ## Configuration Hierarchy
 

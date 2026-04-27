@@ -454,6 +454,8 @@ def get_resource_type_for_model(
         PipelineRunResponse,
         PipelineSnapshotRequest,
         PipelineSnapshotResponse,
+        PlatformEventTriggerRequest,
+        PlatformEventTriggerResponse,
         ProjectRequest,
         ProjectResponse,
         ResourcePoolRequest,
@@ -534,6 +536,8 @@ def get_resource_type_for_model(
         ResourcePoolSubjectPolicyRequest: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
         ResourcePoolSubjectPolicyResponse: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
         # UserResponse: ResourceType.USER,
+        PlatformEventTriggerRequest: ResourceType.TRIGGER,
+        PlatformEventTriggerResponse: ResourceType.TRIGGER,
         ScheduleTriggerRequest: ResourceType.TRIGGER,
         ScheduleTriggerResponse: ResourceType.TRIGGER,
         TriggerRequest: ResourceType.TRIGGER,
@@ -751,6 +755,9 @@ def delete_model_resources(models: List[AnyModel]) -> None:
         if resource := get_resource_for_model(model):
             resources.add(resource)
 
+    if not resources:
+        return
+
     delete_resources(resources=list(resources))
 
 
@@ -762,6 +769,9 @@ def delete_resources(resources: List[Resource]) -> None:
             information.
     """
     if not server_config().rbac_enabled:
+        return
+
+    if not resources:
         return
 
     rbac().delete_resources(resources=resources)

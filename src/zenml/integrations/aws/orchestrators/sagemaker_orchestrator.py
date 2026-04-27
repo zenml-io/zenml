@@ -244,7 +244,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         def _validate_remote_components(
             stack: "Stack",
         ) -> Tuple[bool, str]:
-            for component in stack.components.values():
+            for component in stack.all_components:
                 if not component.config.is_local:
                     continue
 
