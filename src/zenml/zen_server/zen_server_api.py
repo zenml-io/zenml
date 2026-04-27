@@ -68,6 +68,9 @@ from zenml.zen_server.routers import (
     pipeline_snapshot_endpoints,
     pipelines_endpoints,
     projects_endpoints,
+    resource_pool_subject_policies_endpoints,
+    resource_pools_endpoints,
+    resource_requests_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
     run_wait_conditions_endpoints,
@@ -93,12 +96,13 @@ from zenml.zen_server.secure_headers import (
 from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_feature_gate,
-    initialize_memcache,
     initialize_rbac,
     initialize_request_manager,
+    initialize_resource_pool_store,
     initialize_snapshot_executor,
     initialize_workload_manager,
     initialize_zen_store,
+    register_event_handlers,
     server_config,
     snapshot_executor,
     start_event_loop_lag_monitor,
@@ -158,13 +162,14 @@ async def initialize() -> None:
     # race conditions
     await initialize_request_manager()
     initialize_zen_store()
+    initialize_resource_pool_store()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
     initialize_feature_gate()
     initialize_workload_manager()
+    initialize_resource_pool_store()
     initialize_snapshot_executor()
     initialize_secure_headers()
-    initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
         # ZenML server is running or to update the version and server URL.
@@ -172,6 +177,8 @@ async def initialize() -> None:
 
     if logger.isEnabledFor(logging.DEBUG):
         start_event_loop_lag_monitor()
+
+    await register_event_handlers()
 
 
 @app.on_event("shutdown")
@@ -288,6 +295,9 @@ app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(projects_endpoints.workspace_router)
 app.include_router(projects_endpoints.router)
+app.include_router(resource_pools_endpoints.router)
+app.include_router(resource_pool_subject_policies_endpoints.router)
+app.include_router(resource_requests_endpoints.router)
 app.include_router(trigger_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the

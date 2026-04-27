@@ -297,6 +297,7 @@ class ServerConfiguration(BaseModel):
     feature_gate_implementation_source: Optional[str] = None
     reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
+    resource_pool_implementation_source: Optional[str] = None
     max_concurrent_snapshot_runs: int = (
         DEFAULT_ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS
     )
@@ -369,6 +370,8 @@ class ServerConfiguration(BaseModel):
     dashboard_files_path: Optional[str] = None
 
     _deployment_id: Optional[UUID] = None
+
+    event_handler_sources: list[str] = []
 
     @model_validator(mode="before")
     @classmethod
@@ -486,6 +489,25 @@ class ServerConfiguration(BaseModel):
 
         return value
 
+    @field_validator("event_handler_sources", mode="before")
+    @classmethod
+    def _convert_event_handlers(cls, value: Any) -> list[str]:
+        """Convert comma-separated value to list of strings.
+
+        Args:
+            value: A comma-separated string or None.
+
+        Returns:
+            A list of event handlers or an empty list.
+        """
+        if isinstance(value, list):
+            return value
+
+        if isinstance(value, str):
+            return [i.strip() for i in value.strip().split(",")]
+
+        return []
+
     @property
     def deployment_id(self) -> UUID:
         """Get the ZenML server deployment ID.
@@ -530,6 +552,15 @@ class ServerConfiguration(BaseModel):
             Whether workload management is enabled on the server or not.
         """
         return self.workload_manager_implementation_source is not None
+
+    @property
+    def resource_pool_enabled(self) -> bool:
+        """Whether resource pool store is enabled on the server or not.
+
+        Returns:
+            Whether resource pool store is enabled on the server or not.
+        """
+        return self.resource_pool_implementation_source is not None
 
     def get_jwt_token_issuer(self) -> str:
         """Get the JWT token issuer.

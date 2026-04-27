@@ -24,6 +24,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 from uuid import UUID
@@ -134,9 +135,11 @@ def stack() -> None:
     "-s",
     "--step_operator",
     "step_operator",
-    help="Name of the step operator for this stack.",
+    help="Name of a step operator for this stack. Repeat the flag to attach "
+    "multiple step operators; the first one becomes the default.",
     type=str,
     required=False,
+    multiple=True,
 )
 @click.option(
     "-f",
@@ -158,17 +161,21 @@ def stack() -> None:
     "-e",
     "--experiment_tracker",
     "experiment_tracker",
-    help="Name of the experiment tracker for this stack.",
+    help="Name of an experiment tracker for this stack. Repeat the flag to "
+    "attach multiple experiment trackers; the first one becomes the default.",
     type=str,
     required=False,
+    multiple=True,
 )
 @click.option(
     "-al",
     "--alerter",
     "alerter",
-    help="Name of the alerter for this stack.",
+    help="Name of an alerter for this stack. Repeat the flag to attach "
+    "multiple alerters; the first one becomes the default.",
     type=str,
     required=False,
+    multiple=True,
 )
 @click.option(
     "-an",
@@ -254,11 +261,11 @@ def register_stack(
     orchestrator: Optional[str] = None,
     container_registry: Optional[str] = None,
     model_registry: Optional[str] = None,
-    step_operator: Optional[str] = None,
+    step_operator: Tuple[str, ...] = (),
     feature_store: Optional[str] = None,
     model_deployer: Optional[str] = None,
-    experiment_tracker: Optional[str] = None,
-    alerter: Optional[str] = None,
+    experiment_tracker: Tuple[str, ...] = (),
+    alerter: Tuple[str, ...] = (),
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
@@ -278,11 +285,11 @@ def register_stack(
         orchestrator: Name of the orchestrator for this stack.
         container_registry: Name of the container registry for this stack.
         model_registry: Name of the model registry for this stack.
-        step_operator: Name of the step operator for this stack.
+        step_operator: Names of step operators for this stack.
         feature_store: Name of the feature store for this stack.
         model_deployer: Name of the model deployer for this stack.
-        experiment_tracker: Name of the experiment tracker for this stack.
-        alerter: Name of the alerter for this stack.
+        experiment_tracker: Names of experiment trackers for this stack.
+        alerter: Names of alerters for this stack.
         annotator: Name of the annotator for this stack.
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
@@ -527,7 +534,6 @@ def register_stack(
         for component_type_, component_name_ in [
             (StackComponentType.ARTIFACT_STORE, artifact_store),
             (StackComponentType.ORCHESTRATOR, orchestrator),
-            (StackComponentType.ALERTER, alerter),
             (StackComponentType.ANNOTATOR, annotator),
             (StackComponentType.DATA_VALIDATOR, data_validator),
             (StackComponentType.FEATURE_STORE, feature_store),
@@ -535,8 +541,6 @@ def register_stack(
             (StackComponentType.LOG_STORE, log_store),
             (StackComponentType.MODEL_DEPLOYER, model_deployer),
             (StackComponentType.MODEL_REGISTRY, model_registry),
-            (StackComponentType.STEP_OPERATOR, step_operator),
-            (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
             (StackComponentType.DEPLOYER, deployer),
         ]:
@@ -545,6 +549,19 @@ def register_stack(
                     client.get_stack_component(
                         component_type_, component_name_
                     ).id
+                ]
+
+        for component_type_, component_names_ in [
+            (StackComponentType.ALERTER, alerter),
+            (StackComponentType.STEP_OPERATOR, step_operator),
+            (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
+        ]:
+            if component_names_:
+                components[component_type_] = [
+                    client.get_stack_component(
+                        component_type_, component_name_
+                    ).id
+                    for component_name_ in component_names_
                 ]
 
         try:
@@ -648,9 +665,12 @@ def register_stack(
     "-s",
     "--step_operator",
     "step_operator",
-    help="Name of the new step operator for this stack.",
+    help="Name of a step operator for this stack. Repeat the flag to replace "
+    "the stack step operators with multiple attached step operators; the "
+    "first one becomes the default.",
     type=str,
     required=False,
+    multiple=True,
 )
 @click.option(
     "-f",
@@ -672,17 +692,21 @@ def register_stack(
     "-e",
     "--experiment_tracker",
     "experiment_tracker",
-    help="Name of the new experiment tracker for this stack.",
+    help="Name of an experiment tracker for this stack. Repeat the flag to "
+    "replace the stack experiment trackers; the first one becomes the default.",
     type=str,
     required=False,
+    multiple=True,
 )
 @click.option(
     "-al",
     "--alerter",
     "alerter",
-    help="Name of the new alerter for this stack.",
+    help="Name of an alerter for this stack. Repeat the flag to replace the "
+    "stack alerters; the first one becomes the default.",
     type=str,
     required=False,
+    multiple=True,
 )
 @click.option(
     "-an",
@@ -755,11 +779,11 @@ def update_stack(
     artifact_store: Optional[str] = None,
     orchestrator: Optional[str] = None,
     container_registry: Optional[str] = None,
-    step_operator: Optional[str] = None,
+    step_operator: Tuple[str, ...] = (),
     feature_store: Optional[str] = None,
     model_deployer: Optional[str] = None,
-    experiment_tracker: Optional[str] = None,
-    alerter: Optional[str] = None,
+    experiment_tracker: Tuple[str, ...] = (),
+    alerter: Tuple[str, ...] = (),
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
@@ -777,12 +801,12 @@ def update_stack(
         artifact_store: Name of the new artifact store for this stack.
         orchestrator: Name of the new orchestrator for this stack.
         container_registry: Name of the new container registry for this stack.
-        step_operator: Name of the new step operator for this stack.
+        step_operator: Names of step operators for this stack.
         feature_store: Name of the new feature store for this stack.
         model_deployer: Name of the new model deployer for this stack.
-        experiment_tracker: Name of the new experiment tracker for this
+        experiment_tracker: Names of experiment trackers for this
             stack.
-        alerter: Name of the new alerter for this stack.
+        alerter: Names of alerters for this stack.
         annotator: Name of the new annotator for this stack.
         data_validator: Name of the new data validator for this stack.
         image_builder: Name of the new image builder for this stack.
@@ -808,7 +832,7 @@ def update_stack(
         if artifact_store:
             updates[StackComponentType.ARTIFACT_STORE] = [artifact_store]
         if alerter:
-            updates[StackComponentType.ALERTER] = [alerter]
+            updates[StackComponentType.ALERTER] = list(alerter)
         if annotator:
             updates[StackComponentType.ANNOTATOR] = [annotator]
         if container_registry:
@@ -818,9 +842,9 @@ def update_stack(
         if data_validator:
             updates[StackComponentType.DATA_VALIDATOR] = [data_validator]
         if experiment_tracker:
-            updates[StackComponentType.EXPERIMENT_TRACKER] = [
+            updates[StackComponentType.EXPERIMENT_TRACKER] = list(
                 experiment_tracker
-            ]
+            )
         if feature_store:
             updates[StackComponentType.FEATURE_STORE] = [feature_store]
         if model_registry:
@@ -832,7 +856,7 @@ def update_stack(
         if orchestrator:
             updates[StackComponentType.ORCHESTRATOR] = [orchestrator]
         if step_operator:
-            updates[StackComponentType.STEP_OPERATOR] = [step_operator]
+            updates[StackComponentType.STEP_OPERATOR] = list(step_operator)
         if deployer:
             updates[StackComponentType.DEPLOYER] = [deployer]
         if log_store:
@@ -1043,6 +1067,110 @@ def remove_stack_component(
         cli_utils.declare(
             f"Stack `{updated_stack.name}` successfully updated!"
         )
+
+
+@stack.command(
+    "set-default",
+    help="Set the default component for a repeatable stack component type.",
+)
+@click.argument("stack", type=str, required=False)
+@click.option(
+    "-s",
+    "--step_operator",
+    "step_operator",
+    help="Name of the step operator to set as the default for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-e",
+    "--experiment_tracker",
+    "experiment_tracker",
+    help="Name of the experiment tracker to set as the default for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-al",
+    "--alerter",
+    "alerter",
+    help="Name of the alerter to set as the default for this stack.",
+    type=str,
+    required=False,
+)
+def set_default_stack_component(
+    stack: Optional[str] = None,
+    step_operator: Optional[str] = None,
+    experiment_tracker: Optional[str] = None,
+    alerter: Optional[str] = None,
+) -> None:
+    """Set defaults for repeatable stack component types.
+
+    Args:
+        stack: Name or ID of the stack to update. If omitted, the active stack
+            is used.
+        step_operator: Name or ID of the step operator to promote.
+        experiment_tracker: Name or ID of the experiment tracker to promote.
+        alerter: Name or ID of the alerter to promote.
+    """
+    client = Client()
+
+    default_components = {}
+
+    if step_operator is not None:
+        default_components[StackComponentType.STEP_OPERATOR] = step_operator
+    if experiment_tracker is not None:
+        default_components[StackComponentType.EXPERIMENT_TRACKER] = (
+            experiment_tracker
+        )
+    if alerter is not None:
+        default_components[StackComponentType.ALERTER] = alerter
+
+    if not default_components:
+        cli_utils.error(
+            "Select at least one repeatable component type using "
+            "`--step_operator`, `--experiment_tracker`, or `--alerter`."
+        )
+
+    with console.status("Setting stack component default...\n"):
+        stack_model = client.get_stack(name_id_or_prefix=stack)
+        component_updates = {}
+
+        for (
+            component_type,
+            default_component_name_or_id,
+        ) in default_components.items():
+            component_list = stack_model.components.get(component_type, [])
+            default_component = client.get_stack_component(
+                name_id_or_prefix=default_component_name_or_id,
+                component_type=component_type,
+            )
+
+            if not component_list or all(
+                component.id != default_component.id
+                for component in component_list
+            ):
+                cli_utils.error(
+                    f"Component `{default_component_name_or_id}` is not "
+                    f"attached to stack `{stack_model.name}` as a "
+                    f"`{component_type}` component."
+                )
+
+            component_updates[component_type] = [
+                default_component.id,
+                *[
+                    component.id
+                    for component in component_list
+                    if component.id != default_component.id
+                ],
+            ]
+
+        updated_stack = client.update_stack(
+            name_id_or_prefix=stack,
+            component_updates=component_updates,
+        )
+
+    print_model_url(get_stack_url(updated_stack))
 
 
 @stack.command("rename", help="Rename a stack.")
@@ -1362,6 +1490,33 @@ def _import_stack_component(
     return component.id
 
 
+def _import_stack_components(
+    component_type: StackComponentType,
+    component_config: Union[Dict[str, Any], List[Dict[str, Any]]],
+) -> List[UUID]:
+    """Import one or multiple stack components of a given type.
+
+    Args:
+        component_type: The type of component to import.
+        component_config: Serialized component configuration(s).
+
+    Returns:
+        Imported component IDs in the given order.
+    """
+    if isinstance(component_config, list):
+        component_dicts = component_config
+    else:
+        component_dicts = [component_config]
+
+    return [
+        _import_stack_component(
+            component_type=component_type,
+            component_dict=component_dict,
+        )
+        for component_dict in component_dicts
+    ]
+
+
 @stack.command("import", help="Import a stack from YAML.")
 @click.argument("stack_name", type=str, required=True)
 @click.option("--filename", "-f", type=str, required=False)
@@ -1436,11 +1591,10 @@ def import_stack(
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
 
-        component_id = _import_stack_component(
+        component_ids[component_type] = _import_stack_components(
             component_type=component_type,
-            component_dict=component_config,
+            component_config=component_config,
         )
-        component_ids[component_type] = component_id
 
     imported_stack = Client().create_stack(
         name=stack_name, components=component_ids
@@ -1469,11 +1623,15 @@ def copy_stack(source_stack_name_or_id: str, target_stack: str) -> None:
         except KeyError as err:
             cli_utils.exception(err)
 
-        component_mapping: Dict[StackComponentType, Union[str, UUID]] = {}
+        component_mapping: Dict[
+            StackComponentType, Union[UUID, List[UUID]]
+        ] = {}
 
         for c_type, c_list in stack_to_copy.components.items():
             if c_list:
-                component_mapping[c_type] = c_list[0].id
+                component_mapping[c_type] = [
+                    component.id for component in c_list
+                ]
 
         copied_stack = client.create_stack(
             name=target_stack,
@@ -1606,7 +1764,7 @@ def validate_name(ctx: click.Context, param: str, value: str) -> str:
         The validated value.
 
     Raises:
-        BadParameter: If the name is invalid.
+        click.BadParameter: If the name is invalid.
     """
     if not value:
         return value
@@ -1687,7 +1845,7 @@ def deploy(
         set_stack: Immediately set the deployed stack as active.
 
     Raises:
-        Abort: If the user aborts the deployment.
+        click.Abort: If the user aborts the deployment.
         KeyboardInterrupt: If the user interrupts the deployment.
     """
     stack_name = stack_name or f"zenml-{provider}-stack"
@@ -2010,8 +2168,8 @@ def _get_stack_component_info(
         The info model of the stack component.
 
     Raises:
-        ValueError: If the cloud provider is not supported.
-        ValueError: If the component type is not supported.
+        ValueError: If the cloud provider or component type is not
+            supported.
     """
     from rich.prompt import Prompt
 

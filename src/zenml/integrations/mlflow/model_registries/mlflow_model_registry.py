@@ -216,7 +216,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
             metadata: The metadata of the model.
 
         Raises:
-            RuntimeError: If the model already exists.
+            KeyError: If the model already exists.
+            RuntimeError: If the model registration fails.
 
         Returns:
             The registered model.

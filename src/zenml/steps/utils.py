@@ -117,9 +117,8 @@ def parse_return_type_annotations(
 
     Raises:
         RuntimeError: If the output annotation has variable length or contains
-            duplicate output names.
-        RuntimeError: If type annotations should be enforced and a type
-            annotation is missing.
+            duplicate output names, or if type annotations should be enforced
+            and a type annotation is missing.
 
     Returns:
         - A dictionary mapping output names to their output signatures.
@@ -562,7 +561,7 @@ def run_as_single_step_pipeline(
     pipeline_settings: Any = {}
     if "synchronous" in type(orchestrator.config).model_fields:
         # Make sure the orchestrator runs sync so we stream the logs
-        key = settings_utils.get_stack_component_setting_key(orchestrator)
+        key = settings_utils.get_stack_component_name_setting_key(orchestrator)
         pipeline_settings[key] = BaseSettings(synchronous=True)
 
     @pipeline(

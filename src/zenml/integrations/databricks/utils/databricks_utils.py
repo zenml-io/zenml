@@ -232,6 +232,18 @@ def convert_step_to_task(
     Returns:
         Databricks task.
     """
+    db_libraries = []
+    if libraries:
+        for library in libraries:
+            if library.endswith(".whl"):
+                db_libraries.append(Library(whl=library))
+            else:
+                db_libraries.append(Library(pypi=PythonPyPiLibrary(library)))
+    if zenml_project_wheel:
+        db_libraries.append(Library(whl=zenml_project_wheel))
+    db_libraries.append(
+        Library(pypi=PythonPyPiLibrary(f"zenml=={__version__}"))
+    )
     return DatabricksTask(
         task_key=task_name,
         job_cluster_key=job_cluster_key,

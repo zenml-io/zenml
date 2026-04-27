@@ -31,29 +31,33 @@ def test_initializing_a_stack_from_components(
 ):
     """Tests that a stack can be initialized from a dict of components."""
     components = {
-        StackComponentType.ORCHESTRATOR: local_orchestrator,
-        StackComponentType.ARTIFACT_STORE: local_artifact_store,
+        StackComponentType.ORCHESTRATOR: [local_orchestrator],
+        StackComponentType.ARTIFACT_STORE: [local_artifact_store],
     }
 
-    stack = Stack.from_components(id=uuid4(), name="", components=components)
+    stack = Stack.from_components_v2(
+        id=uuid4(), name="", components=components
+    )
 
     assert stack.orchestrator is local_orchestrator
     assert stack.artifact_store is local_artifact_store
     assert stack.container_registry is None
 
     # check that it also works with optional container registry
-    components[StackComponentType.CONTAINER_REGISTRY] = (
+    components[StackComponentType.CONTAINER_REGISTRY] = [
         local_container_registry
-    )
+    ]
 
-    stack = Stack.from_components(id=uuid4(), name="", components=components)
+    stack = Stack.from_components_v2(
+        id=uuid4(), name="", components=components
+    )
     assert stack.container_registry is local_container_registry
 
 
 def test_initializing_a_stack_with_missing_components():
     """Tests that initializing a stack with missing components fails."""
     with pytest.raises(TypeError):
-        Stack.from_components(id=uuid4(), name="", components={}).validate()
+        Stack.from_components_v2(id=uuid4(), name="", components={}).validate()
 
 
 def test_initializing_a_stack_with_wrong_components(local_orchestrator):
@@ -65,7 +69,7 @@ def test_initializing_a_stack_with_wrong_components(local_orchestrator):
     }
 
     with pytest.raises(TypeError):
-        Stack.from_components(
+        Stack.from_components_v2(
             id=uuid4(), name="", components=components
         ).validate()
 
@@ -82,11 +86,11 @@ def test_stack_returns_all_its_components(
     )
 
     expected_components = {
-        StackComponentType.ORCHESTRATOR: local_orchestrator,
-        StackComponentType.ARTIFACT_STORE: local_artifact_store,
+        StackComponentType.ORCHESTRATOR: [local_orchestrator],
+        StackComponentType.ARTIFACT_STORE: [local_artifact_store],
     }
     assert all(
-        stack.components[component_type] == component
+        stack._components[component_type] == component
         for component_type, component in expected_components.items()
     )
 
@@ -99,12 +103,12 @@ def test_stack_returns_all_its_components(
         container_registry=local_container_registry,
     )
 
-    expected_components[StackComponentType.CONTAINER_REGISTRY] = (
+    expected_components[StackComponentType.CONTAINER_REGISTRY] = [
         local_container_registry
-    )
+    ]
 
     assert all(
-        stack.components[component_type] == component
+        stack._components[component_type] == component
         for component_type, component in expected_components.items()
     )
 
@@ -180,9 +184,12 @@ def test_requires_remote_server(stack_with_mock_components, mocker):
         spec=BaseStepOperator,
         type=StackComponentType.STEP_OPERATOR,
         flavor="mock",
-        name="mock_step_operator",
     )
-    stack_with_mock_components._step_operator = step_operator
+    step_operator.name = "mock_step_operator"
+    step_operator.config.is_remote = False
+    stack_with_mock_components._components[
+        StackComponentType.STEP_OPERATOR
+    ] = [step_operator]
 
     stack_with_mock_components.orchestrator.config.is_remote = False
     stack_with_mock_components.step_operator.config.is_remote = False
@@ -345,10 +352,7 @@ def test_get_step_run_metadata(
     mocker.patch.object(
         stack,
         "_get_active_components_for_step",
-        return_value={
-            StackComponentType.ORCHESTRATOR: local_orchestrator,
-            StackComponentType.ARTIFACT_STORE: local_artifact_store,
-        },
+        return_value=[local_orchestrator, local_artifact_store],
     )
     run_metadata = stack.get_step_run_metadata(info=MockStepInfo())
     assert len(run_metadata) == 2
@@ -385,10 +389,7 @@ def test_get_step_run_metadata_never_raises_errors(
     mocker.patch.object(
         stack,
         "_get_active_components_for_step",
-        return_value={
-            StackComponentType.ORCHESTRATOR: local_orchestrator,
-            StackComponentType.ARTIFACT_STORE: local_artifact_store,
-        },
+        return_value=[local_orchestrator, local_artifact_store],
     )
     run_metadata = stack.get_step_run_metadata(info=MockStepInfo())
     assert len(run_metadata) == 0

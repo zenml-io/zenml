@@ -245,12 +245,19 @@ class StepRunner:
                         isinstance(step_exception, KeyboardInterrupt)
                         and heartbeat_worker.is_terminated
                     ):
-                        Client().zen_store.update_run_step(
+                        step_run = Client().get_run_step(
                             step_run_id=step_run_info.step_run_id,
-                            step_run_update=StepRunUpdate(
-                                status=ExecutionStatus.STOPPING,
-                            ),
+                            hydrate=False,
                         )
+                        if step_run.status == ExecutionStatus.RUNNING:
+                            # Only update the status if the step status hasn't
+                            # been changed by the server yet.
+                            Client().zen_store.update_run_step(
+                                step_run_id=step_run_info.step_run_id,
+                                step_run_update=StepRunUpdate(
+                                    status=ExecutionStatus.STOPPING,
+                                ),
+                            )
 
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
@@ -761,6 +768,7 @@ class StepRunner:
                 data=return_value,
                 materializer_class=materializer_class,
                 uri=uri,
+                artifact_store=self._stack.artifact_store,
                 artifact_type=artifact_type,
                 store_metadata=artifact_metadata_enabled,
                 store_visualizations=artifact_visualization_enabled,

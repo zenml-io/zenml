@@ -91,6 +91,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+    from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
     from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 
 
@@ -300,6 +301,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
     )
 
+    trigger_execution: Optional["TriggerExecutionSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "lazy": "select",
+            "uselist": False,
+            "passive_deletes": "all",
+        },
+    )
+
     # Needed for cascade deletion
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
@@ -333,12 +342,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         options = []
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(PipelineRunSchema.run_metadata)),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
+                ]
+            )
 
         if include_resources:
             options.extend(
@@ -627,6 +636,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             updated=self.updated,
             in_progress=self.in_progress,
             index=self.index,
+            pipeline_id=self.pipeline_id,
         )
         metadata = None
         if include_metadata:
@@ -686,6 +696,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 exception_info=json.loads(self.exception_info)
                 if self.exception_info
                 else None,
+                trigger_execution_info=json.loads(self.trigger_execution.info)
+                if self.trigger_execution and self.trigger_execution.info
+                else None,
             )
 
         resources = None
@@ -740,7 +753,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.model_version
                 else None,
                 tags=[tag.to_model() for tag in self.tags],
-                log_collection=[log.to_model() for log in self.logs],
+                log_collection=[
+                    log.to_model()
+                    for log in sorted(self.logs, key=lambda log: log.created)
+                ],
                 visualizations=[
                     visualization.to_model(
                         include_metadata=False,

@@ -33,8 +33,10 @@ from zenml.models import (
     TriggerRequest,
     TriggerResponseMetadata,
     TriggerResponseResources,
+    TriggerSnapshotDispatchState,
     TriggerUpdate,
 )
+from zenml.models.v2.core.triggers import TriggerBase
 from zenml.triggers.registry import (
     TYPE_TO_RESPONSE_BODY_MAPPING,
     TYPE_TO_RESPONSE_MAPPING,
@@ -76,6 +78,10 @@ class TriggerSchema(NamedSchema, table=True):
             table_name=__tablename__,
             column_names=["flavor", "next_occurrence"],
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["flavor", "source_entity"],
+        ),
     )
 
     # -------------------- BASE FIELDS
@@ -108,7 +114,6 @@ class TriggerSchema(NamedSchema, table=True):
         sa_column=Column(VARCHAR(20), nullable=False),
         description="The trigger execution concurrency (SKIP, SUBMIT, etc.)",
     )
-
     # -------------------- FOREIGN KEYS ------------------------------------
 
     project_id: UUID = build_foreign_key_field(
@@ -138,6 +143,9 @@ class TriggerSchema(NamedSchema, table=True):
         link_model=TriggerSnapshotSchema,
         sa_relationship_kwargs={"viewonly": True},
     )
+    snapshot_links: list[TriggerSnapshotSchema] = Relationship(
+        sa_relationship_kwargs={"cascade": "delete"}
+    )
 
     user: UserSchema | None = Relationship(back_populates="triggers")
 
@@ -147,6 +155,20 @@ class TriggerSchema(NamedSchema, table=True):
         nullable=True,
         default=None,
         description="The next occurrence. Applicable for schedules.",
+    )
+
+    source_entity: str | None = Field(
+        sa_column=Column(VARCHAR(255), default=None, nullable=True),
+        description="The event source(e.g. pipeline:<uuid>. Applicable for platform events.",
+    )
+
+    target_events: str | None = Field(
+        sa_column=Column(
+            String(length=TEXT_FIELD_MAX_LENGTH).with_variant(TEXT, "mysql"),
+            nullable=True,
+            default=None,
+        ),
+        description="The target events of the trigger (e.g. event:run_completed). Applicable for platform events.",
     )
 
     @property
@@ -204,7 +226,8 @@ class TriggerSchema(NamedSchema, table=True):
                 [
                     selectinload(jl_arg(TriggerSchema.snapshots)).selectinload(
                         jl_arg(PipelineSnapshotSchema.source_snapshot)
-                    )
+                    ),
+                    selectinload(jl_arg(TriggerSchema.snapshot_links)),
                 ]
             )
 
@@ -247,14 +270,13 @@ class TriggerSchema(NamedSchema, table=True):
         Returns:
             The updated TriggerSchema.
         """
-        if trigger_update.active is not None:
-            self.active = trigger_update.active
-
-        if trigger_update.name is not None:
-            self.name = trigger_update.name
-
-        if trigger_update.concurrency is not None:
-            self.concurrency = trigger_update.concurrency
+        for field, value in trigger_update.model_dump(
+            exclude_unset=True,
+            include=set(TriggerBase.model_fields.keys()),
+        ).items():
+            if field in ["type"]:
+                continue
+            setattr(self, field, value)
 
         self.configuration = trigger_update.get_config()
 
@@ -306,19 +328,46 @@ class TriggerSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             latest_run = self.latest_run
+            display_snapshot_id_by_executable_id: dict[UUID, UUID] = {}
+            snapshots = []
+            executable_snapshots = []
+            for snapshot in self.snapshots:
+                snapshot_model = snapshot.to_model()
+                executable_snapshots.append(snapshot_model)
+                display_snapshot = (
+                    snapshot.source_snapshot.to_model()
+                    if snapshot.source_snapshot is not None
+                    else snapshot_model
+                )
+                snapshots.append(display_snapshot)
+                display_snapshot_id_by_executable_id[snapshot.id] = (
+                    display_snapshot.id
+                )
+
+            snapshot_dispatch_states: dict[
+                UUID, TriggerSnapshotDispatchState
+            ] = {}
+            for snapshot_link in self.snapshot_links:
+                parsed_state = snapshot_link.parsed_dispatch_state
+                display_snapshot_id = display_snapshot_id_by_executable_id.get(
+                    snapshot_link.snapshot_id
+                )
+                if (
+                    parsed_state is not None
+                    and display_snapshot_id is not None
+                ):
+                    snapshot_dispatch_states[display_snapshot_id] = (
+                        parsed_state
+                    )
 
             resources = TriggerResponseResources(
                 user=self.user.to_model() if self.user else None,
-                snapshots=[
-                    s.source_snapshot.to_model()
-                    if s.source_snapshot is not None
-                    else s.to_model()
-                    for s in self.snapshots
-                ],
-                executable_snapshots=[s.to_model() for s in self.snapshots],
+                snapshots=snapshots,
+                executable_snapshots=executable_snapshots,
                 latest_run=latest_run.to_model()
                 if latest_run is not None
                 else None,
+                snapshot_dispatch_states=snapshot_dispatch_states,
             )
 
         return response_cls(

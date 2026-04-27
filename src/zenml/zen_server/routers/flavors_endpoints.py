@@ -138,8 +138,6 @@ def update_flavor(
 ) -> FlavorResponse:
     """Updates a flavor.
 
-    # noqa: DAR401
-
     Args:
         flavor_id: ID of the flavor to update.
         flavor_update: Flavor update.
