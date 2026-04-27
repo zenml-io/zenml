@@ -19,7 +19,9 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Type,
+    Union,
 )
 
 from pydantic import BaseModel, ConfigDict, create_model
@@ -31,7 +33,6 @@ from zenml.execution.pipeline.utils import (
     should_prevent_pipeline_execution,
 )
 from zenml.logger import get_logger
-from zenml.models import PipelineRunResponse
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.steps.utils import (
     parse_return_type_annotations,
@@ -39,6 +40,10 @@ from zenml.steps.utils import (
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from zenml.execution.pipeline.dynamic.outputs import (
+        AnyOutputFuture,
+        PipelineFuture,
+    )
     from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
@@ -150,9 +155,99 @@ class DynamicPipeline(Pipeline):
                 upstream_steps=set(),
             )
 
-    def __call__(
-        self, *args: Any, **kwargs: Any
-    ) -> Optional[PipelineRunResponse]:
+    def submit(
+        self,
+        *args: Any,
+        after: Union[
+            "AnyOutputFuture",
+            Sequence["AnyOutputFuture"],
+            None,
+        ] = None,
+        **kwargs: Any,
+    ) -> "PipelineFuture":
+        """Submit the pipeline to run concurrently as a child pipeline.
+
+        Args:
+            *args: Entrypoint function arguments.
+            after: Optional dependency futures.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            RuntimeError: If called outside a dynamic pipeline function.
+
+        Returns:
+            The child pipeline future.
+        """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+        from zenml.steps.step_context import StepContext
+
+        run_context = DynamicPipelineRunContext.get()
+        if not run_context:
+            raise RuntimeError(
+                "Submitting a pipeline is only possible within a dynamic "
+                "pipeline run context."
+            )
+
+        if StepContext.get():
+            raise RuntimeError(
+                "Calling a child pipeline is not allowed within a step function."
+            )
+
+        return run_context.runner.submit_child_pipeline(
+            pipeline=self,
+            args=args,
+            kwargs=kwargs,
+            after=after,
+            concurrent=True,
+        )
+
+    def embed(self, *args: Any, **kwargs: Any) -> Any:
+        """Run the steps of this pipeline embedded in another pipeline.
+
+        This method does not create a new pipeline run and instead runs the
+        steps as part of the parent pipeline run. The child pipeline's
+        configuration is ignored.
+
+        Args:
+            *args: Entrypoint function arguments.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            RuntimeError: If called outside a dynamic pipeline run, or
+                inside a step function.
+
+        Returns:
+            Whatever the child pipeline's entrypoint returns.
+        """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+        from zenml.steps.step_context import StepContext
+
+        if not DynamicPipelineRunContext.get():
+            raise RuntimeError(
+                "Calling `pipeline.embed(...)` is only possible "
+                "within another dynamic pipeline run."
+            )
+
+        if StepContext.get():
+            raise RuntimeError(
+                "Calling `pipeline.embed(...)` is not allowed "
+                "within a step function."
+            )
+
+        # TODO: We could maybe add a `GroupContext` here that groups these
+        # steps? Before that we should allow multiple groups per step though,
+        # as otherwise this would be conflicting with map groups.
+
+        # Copy to mirror the other call modes (`__call__`, `submit`) and
+        # avoid mutating pipeline-level state across repeated inline calls
+        # of the same pipeline (e.g. via `_run_args` or `_invocations`).
+        return self.copy().entrypoint(*args, **kwargs)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Run the pipeline on the active stack.
 
         Args:
@@ -164,8 +259,29 @@ class DynamicPipeline(Pipeline):
                 dynamic pipelines.
 
         Returns:
-            The pipeline run or `None` if running with a schedule.
+            The child pipeline outputs when called from a dynamic run context,
+            otherwise the top-level pipeline run or `None` if running with a
+            schedule.
         """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+        from zenml.steps.step_context import StepContext
+
+        if run_context := DynamicPipelineRunContext.get():
+            if StepContext.get():
+                raise RuntimeError(
+                    "Calling a child pipeline is not allowed within a step function."
+                )
+
+            return run_context.runner.submit_child_pipeline(
+                pipeline=self,
+                args=args,
+                kwargs=kwargs,
+                after=None,
+                concurrent=False,
+            )
+
         if should_prevent_pipeline_execution():
             logger.info("Preventing execution of pipeline '%s'.", self.name)
             return None

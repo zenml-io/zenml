@@ -287,6 +287,157 @@ The `StepRunFuture` object provides several methods:
 When using `step.submit()`, steps with `runtime="isolated"` will execute in separate containers/processes, while steps with `runtime="inline"` will execute in separate threads within the orchestration environment.
 {% endhint %}
 
+### Child pipelines inside dynamic pipelines
+
+Dynamic pipelines can call other dynamic pipelines from their `@pipeline`
+body. This is useful for composing larger workflows out of reusable dynamic
+building blocks.
+
+Key behavior:
+
+- Only dynamic pipelines can be called as child pipelines.
+- Child pipelines run on the same stack as the parent run.
+- Child pipelines can run synchronously (`child(...)`) or concurrently
+  (`child.submit(...)`).
+- Child pipeline calls are only allowed in pipeline bodies, not inside step
+  functions.
+- Child pipelines reuse the parent run's Docker image — they don't trigger a
+  new build. The child snapshot inherits the parent's build, code reference,
+  and code path so the child runs against the exact same image and source
+  bundle as the parent.
+
+Child pipeline outputs are returned as artifact references:
+
+- `None`
+- A single output artifact
+- A tuple of output artifacts
+
+These outputs can be passed directly to downstream steps.
+
+```python
+from zenml import pipeline, step
+
+@step
+def produce_number() -> int:
+    return 42
+
+@pipeline(dynamic=True)
+def child_pipeline():
+    return produce_number()
+
+@step
+def consume_number(value: int) -> None:
+    print(value)
+
+@pipeline(dynamic=True)
+def parent_pipeline():
+    child_output = child_pipeline()
+    consume_number(child_output)
+```
+
+For concurrent execution, use `submit()` and wait on the future:
+
+```python
+@pipeline(dynamic=True)
+def parent_pipeline_concurrent():
+    future = child_pipeline.submit()
+    child_output = future.result()
+    consume_number(child_output)
+```
+
+### Inline child pipelines with `embed(...)`
+
+Use `child_pipeline.embed(...)` if you want to reuse another
+dynamic pipeline's body without creating a child pipeline run.
+
+```python
+@pipeline(dynamic=True)
+def parent_pipeline_inline():
+    # Executes child steps in the parent run context
+    child_output = child_pipeline.embed()
+    consume_number(child_output)
+```
+
+`embed(...)` behavior:
+
+- It executes the child pipeline entrypoint inline as part of the parent run.
+- It does not create a separate child run in the dashboard.
+- It is only valid inside a dynamic pipeline body.
+- It is not allowed inside `@step` functions.
+
+{% hint style="warning" %}
+**Limitations of `embed(...)`.** Unlike `child_pipeline(...)`
+and `child_pipeline.submit(...)`, the inline form does not apply the child
+pipeline's own configuration. The parent run's configuration governs every
+step that runs inline:
+
+- Child-level `settings`, `retry`, `enable_cache`, `enable_step_logs`,
+  `environment`, `secrets`, `tags`, `substitutions`, `model`, and
+  `on_init` / `on_success` / `on_failure` / `on_cleanup` hooks are ignored.
+- Per-step Docker overrides on the child pipeline are also ignored — the
+  parent's image is used for any inline isolated step.
+- `depends_on` config templates declared on the child pipeline are not
+  picked up.
+- There is no failure isolation: an exception inside the inline body
+  aborts the parent run.
+
+If any of these matter to your use case, call the child as
+`child_pipeline(...)` (sync) or `child_pipeline.submit(...)` (concurrent)
+instead. Both create a real child run with its own configuration applied.
+{% endhint %}
+
+In short, use:
+
+- `child_pipeline(...)` for a synchronous child run
+- `child_pipeline.submit(...)` for a concurrent child run
+- `child_pipeline.embed(...)` for embedded execution in the parent
+  run
+
+{% hint style="warning" %}
+**Resume idempotency depends on submit order.** Child pipeline child runs are
+identified by the order of `child_pipeline(...)` / `child_pipeline.submit(...)`
+calls in the parent body: the first call to `my_pipeline` becomes
+`pipeline:my_pipeline`, the second becomes `pipeline:my_pipeline_2`, and so on.
+On resume, ZenML reuses an existing child run only if the same call appears in
+the same position. If you reorder, insert, or remove child pipeline calls before
+existing ones, every subsequent ID shifts and previously completed children are
+re-executed. Same caveat applies to step invocation IDs.
+{% endhint %}
+
+### Build, code, and Docker settings inheritance
+
+Child runs share the parent's orchestration environment, image, and code
+bundle. This has two consequences worth knowing:
+
+- **No new Docker build.** The child snapshot inherits the parent's `build`,
+  `code_reference`, and `code_path`. The child runs against the exact same
+  image and source bundle as the parent — there is no separate build step,
+  and the child's code/dependencies must already be installed in the parent's
+  image.
+- **Pipeline-level Docker settings on the child are ignored.** When a child
+  pipeline (or a child step) declares non-default `docker_settings`, those
+  settings are silently overridden by the parent's. If you need a different
+  image for a step inside a child pipeline, configure that step with a
+  `step_operator` or use `runtime="isolated"` together with stack-level
+  resource configuration on the parent.
+
+This applies to all three call modes (`child(...)`, `child.submit(...)`,
+and `child.embed(...)`).
+
+### Permissions and authentication for nested runs
+
+Nested runs orchestrate from the parent's environment, so they share the
+parent's API token. The token must be scoped to the **root** run of the
+nesting tree — the root orchestrator can mint per-child-run tokens for any
+descendant. Child runs cannot mint tokens for their siblings; only
+descendants of the same root tree are reachable from a given parent token.
+
+This is transparent for the default flow (the root orchestrator launches
+everything in the same environment). It matters if you build automation on
+top of `ZENML_PIPELINE_RUN_ID` tokens — those tokens give you read/update
+access to the run they were minted for and any of its descendants, but not
+to siblings or unrelated runs.
+
 ### Config Templates with `depends_on`
 
 You can use YAML configuration files to provide default parameters for steps using the `depends_on` parameter:
