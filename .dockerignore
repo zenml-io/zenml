@@ -1,9 +1,13 @@
 *
 !.dockerignore
+!.github
+!.github/workflows
+!.github/workflows/**
 !Dockerfile.ci
 !LICENSE
 !README.md
 !alembic.ini
+!offload-modal-server-mysql.toml
 !offload.toml
 !pyproject.toml
 !scripts

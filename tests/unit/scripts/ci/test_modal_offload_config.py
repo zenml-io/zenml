@@ -22,6 +22,13 @@ def _read_toml_string(contents: str, key: str) -> str:
     return match.group("value")
 
 
+def _read_workflow_step(workflow: str, step_name: str) -> str:
+    return workflow.split(
+        f"      - name: {step_name}\n",
+        maxsplit=1,
+    )[1].split("      - name:", maxsplit=1)[0]
+
+
 def test_modal_server_create_command_passes_resolved_sandbox_helper() -> None:
     """Ensures the wrapper never tries to spawn a literal @ helper path."""
     config = _read_repo_file("offload-modal-server-mysql.toml")
@@ -103,12 +110,13 @@ def test_modal_workflows_restore_offload_image_cache_with_fallback() -> None:
         ".github/workflows/linux-fast-modal.yml",
         ".github/workflows/linux-modal-server-mysql.yml",
     )
-    exact_key_pattern = re.compile(
-        r"key: offload-image-v2-\$\{\{ runner\.os \}\}-"
-        r"\$\{\{ inputs\.python-version \}\}-\$\{\{\s*\n"
-        r"\s+hashFiles\('Dockerfile\.ci', 'pyproject\.toml', "
-        r"'scripts/install-zenml-dev\.sh'\)\s*\n"
-        r"\s+\}\}"
+    cache_key_files = (
+        "Dockerfile.ci",
+        ".dockerignore",
+        "pyproject.toml",
+        "scripts/install-zenml-dev.sh",
+        "offload.toml",
+        "offload-modal-server-mysql.toml",
     )
     fallback_key = (
         "offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-"
@@ -121,9 +129,19 @@ def test_modal_workflows_restore_offload_image_cache_with_fallback() -> None:
         )[1].split("      - name:", maxsplit=1)[0]
 
         assert "path: .offload-image-cache" in restore_step
-        assert exact_key_pattern.search(restore_step) is not None
+        for cache_key_file in cache_key_files:
+            assert cache_key_file in restore_step
         assert "restore-keys: |" in restore_step
         assert fallback_key in restore_step
+
+
+def test_modal_sandbox_context_includes_ci_harness_config() -> None:
+    """Keeps Modal payload tests from missing CI regression-test inputs."""
+    dockerignore = _read_repo_file(".dockerignore")
+
+    assert "!.github/workflows/**" in dockerignore
+    assert "!offload.toml" in dockerignore
+    assert "!offload-modal-server-mysql.toml" in dockerignore
 
 
 def test_modal_workflows_classify_sandbox_create_failures() -> None:
@@ -155,3 +173,27 @@ def test_modal_workflows_classify_collection_failures_as_infra() -> None:
         assert "Failed to discover tests" in workflow
         assert "pytest --collect-only failed" in workflow
         assert "No module named pytest" in workflow
+
+
+def test_modal_run_steps_fail_visibly_for_real_test_failures() -> None:
+    """Avoids hiding failed offload runs behind continue-on-error."""
+    workflow_paths = (
+        ".github/workflows/linux-fast-modal.yml",
+        ".github/workflows/linux-modal-server-mysql.yml",
+    )
+
+    for workflow_path in workflow_paths:
+        workflow = _read_repo_file(workflow_path)
+        run_step = _read_workflow_step(workflow, "Run tests via offload")
+
+        assert "continue-on-error: true" not in run_step
+        assert 'echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"' in run_step
+        assert 'exit "$exit_code"' in run_step
+
+    fast_run_step = _read_workflow_step(
+        _read_repo_file(".github/workflows/linux-fast-modal.yml"),
+        "Run tests via offload",
+    )
+
+    assert "modal_infra_failed=true" in fast_run_step
+    assert "falling back to standard CI" in fast_run_step

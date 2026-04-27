@@ -148,7 +148,9 @@ jobs:
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
+            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml',
+            'scripts/install-zenml-dev.sh', 'offload.toml',
+            'offload-modal-server-mysql.toml')
             }}
           restore-keys: |
             offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-
@@ -177,7 +179,6 @@ jobs:
       - name: Run tests via offload
         id: run
         if: ${{ steps.prepare.outputs.run_modal == 'true' }}
-        continue-on-error: true
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
@@ -208,6 +209,27 @@ jobs:
           exit_code="${PIPESTATUS[0]}"
           set -e
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          modal_infra_failed=false
+          is_offload_prepare_failure() {
+            if [[ ! -f "$offload_log" ]]; then
+              return 1
+            fi
+            grep -Eq \
+              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox|Failed to discover tests|pytest --collect-only failed|No module named pytest' \
+              "$offload_log"
+          }
+          if [[ "$exit_code" != "0" && "$exit_code" != "2" ]]; then
+            if [[ ! -f "$junit_file" || "$(stat -c %Y "$junit_file")" -lt "$run_started_at" ]]; then
+              if is_offload_prepare_failure; then
+                echo "::warning::offload failed before producing a fresh JUnit XML; falling back to standard CI."
+                modal_infra_failed=true
+              fi
+            fi
+          fi
+          echo "modal_infra_failed=$modal_infra_failed" >> "$GITHUB_OUTPUT"
+          if [[ "$modal_infra_failed" == "true" ]]; then
+            exit 0
+          fi
           # offload exit-code contract (see offload/src/orchestrator.rs):
           #   0 = all tests passed
           #   1 = one or more tests failed, or expected tests were never run
@@ -217,7 +239,6 @@ jobs:
           # via the fresh-junit check below. Both 0 and 2 mean the Modal run
           # produced a trustworthy result and we should NOT fall back to the
           # standard CI path.
-          echo "modal_infra_failed=false" >> "$GITHUB_OUTPUT"
           exit "$exit_code"
       - name: Classify Modal result
         id: classify
@@ -314,7 +335,9 @@ jobs:
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
+            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml',
+            'scripts/install-zenml-dev.sh', 'offload.toml',
+            'offload-modal-server-mysql.toml')
             }}
       - name: Save JUnit duration cache
         if: ${{ always() && steps.classify.outputs.junit_cache_safe == 'true' }}

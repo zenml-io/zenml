@@ -104,7 +104,9 @@ jobs:
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
+            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml',
+            'scripts/install-zenml-dev.sh', 'offload.toml',
+            'offload-modal-server-mysql.toml')
             }}
           restore-keys: |
             offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-
@@ -133,7 +135,6 @@ jobs:
       - name: Run tests via offload
         id: run
         if: ${{ steps.provision.outcome == 'success' }}
-        continue-on-error: true
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
@@ -261,7 +262,9 @@ jobs:
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', 'pyproject.toml', 'scripts/install-zenml-dev.sh')
+            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml',
+            'scripts/install-zenml-dev.sh', 'offload.toml',
+            'offload-modal-server-mysql.toml')
             }}
       - name: Save JUnit duration cache
         if: ${{ always() && steps.classify.outputs.junit_cache_safe == 'true' }}
