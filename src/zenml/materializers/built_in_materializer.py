@@ -38,7 +38,7 @@ from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
-from zenml.utils import source_utils, yaml_utils
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -88,7 +88,7 @@ class BuiltInMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        contents = yaml_utils.read_json(self.data_path)
+        contents = _read_json(self.data_path, self.artifact_store)
         if type(contents) is not data_type:
             # TODO [ENG-142]: Raise error or try to coerce
             logger.debug(
@@ -103,11 +103,7 @@ class BuiltInMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        yaml_utils.write_json(
-            self.data_path,
-            data,
-            ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
-        )
+        _write_json(self.data_path, data, self.artifact_store)
 
     def save_visualizations(
         self, data: Union[bool, float, int, str]
@@ -224,7 +220,7 @@ def _all_serializable(iterable: Iterable[Any]) -> bool:
     """For an iterable, check whether all of its elements are JSON-serializable.
 
     Args:
-        iterable (Iterable): The iterable to check.
+        iterable: The iterable to check.
 
     Returns:
         True if all elements are JSON-serializable, else False.
@@ -383,11 +379,11 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # If the data was serialized as JSON, deserialize it.
         if self.artifact_store.exists(self.data_path):
-            outputs = yaml_utils.read_json(self.data_path)
+            outputs = _read_json(self.data_path, self.artifact_store)
 
         # Otherwise, use the metadata to reconstruct the data as a list.
         else:
-            metadata = yaml_utils.read_json(self.metadata_path)
+            metadata = _read_json(self.metadata_path, self.artifact_store)
             outputs = []
 
             # Backwards compatibility for zenml <= 0.37.0
@@ -455,10 +451,10 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # If the data is serializable, just write it into a single JSON file.
         if _is_serializable(data):
-            yaml_utils.write_json(
+            _write_json(
                 self.data_path,
                 data,
-                ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
+                self.artifact_store,
             )
             return
 
@@ -490,7 +486,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     }
                 )
             # Write metadata as JSON.
-            yaml_utils.write_json(self.metadata_path, metadata)
+            _write_json(self.metadata_path, metadata, self.artifact_store)
             # Materialize each element.
             for element, materializer in zip(data, materializers):
                 materializer.validate_save_type_compatibility(type(element))
@@ -583,10 +579,10 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             The loaded item.
         """
         if self.artifact_store.exists(self.data_path):
-            data = yaml_utils.read_json(self.data_path)
+            data = _read_json(self.data_path, self.artifact_store)
             item = data[index]
         else:
-            metadata = yaml_utils.read_json(self.metadata_path)
+            metadata = _read_json(self.metadata_path, self.artifact_store)
 
             if isinstance(metadata, list):
                 metadata_entry = metadata[index]
@@ -618,3 +614,36 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                 )
 
         return item
+
+
+def _read_json(file_path: str, artifact_store: BaseArtifactStore) -> Any:
+    """Read a JSON file.
+
+    Args:
+        file_path: The path to the JSON file.
+        artifact_store: The artifact store in which to read the JSON file.
+
+    Returns:
+        The contents of the JSON file.
+    """
+    with artifact_store.open(file_path, "r") as f:
+        return json.loads(f.read())
+
+
+def _write_json(
+    file_path: str, data: Any, artifact_store: BaseArtifactStore
+) -> None:
+    """Write a JSON file.
+
+    Args:
+        file_path: The path to the JSON file.
+        data: The data to write to the JSON file.
+        artifact_store: The artifact store in which to write the JSON file.
+    """
+    with artifact_store.open(file_path, "w") as f:
+        f.write(
+            json.dumps(
+                data,
+                ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
+            )
+        )

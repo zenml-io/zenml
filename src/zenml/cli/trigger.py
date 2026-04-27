@@ -18,17 +18,26 @@ from uuid import UUID
 
 import click
 
+from zenml import PlatformEventTriggerResponse, ScheduleTriggerResponse
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.console import console
-from zenml.enums import CliCategories, TriggerRunConcurrency
+from zenml.enums import (
+    CliCategories,
+    SourceType,
+    TriggerRunConcurrency,
+    TriggerType,
+)
 from zenml.logger import get_logger
 from zenml.models import TriggerFilter
 from zenml.utils.time_utils import iso8601_to_utc_naive
 
 logger = get_logger(__name__)
+
+
+# CLI groups
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -39,6 +48,14 @@ def trigger() -> None:
 @trigger.group()
 def schedule() -> None:
     """Commands for schedule triggers."""
+
+
+@trigger.group()
+def platform_event() -> None:
+    """Commands for platform events triggers."""
+
+
+# SCHEDULE commands
 
 
 @schedule.command("create", help="Create a new schedule trigger.")
@@ -54,7 +71,7 @@ def schedule() -> None:
 @click.option("--interval", type=int)
 @click.option(
     "--run_once_start_time",
-    type=bool,
+    type=str,
     help="One-off execution time (ISO 8601 format)",
 )
 @click.option(
@@ -67,6 +84,11 @@ def schedule() -> None:
     type=str,
     help="The end time of the schedule (ISO 8601 format).",
 )
+@click.option(
+    "--max-runs",
+    type=int,
+    help="The maximum number of runs to execute with this schedule",
+)
 def create_schedule(
     name: str,
     active: bool,
@@ -76,6 +98,7 @@ def create_schedule(
     run_once_start_time: str | None = None,
     start_time: str | None = None,
     end_time: str | None = None,
+    max_runs: int | None = None,
 ) -> None:
     """Create a schedule trigger.
 
@@ -88,6 +111,7 @@ def create_schedule(
         start_time: The start time of the trigger.
         end_time: The end time of the trigger.
         run_once_start_time: The run_once_start_time of the trigger.
+        max_runs: The maximum number of runs to execute with this schedule.
     """
     options = [cron_expression, interval, run_once_start_time]
 
@@ -109,6 +133,7 @@ def create_schedule(
             if start_time
             else None,
             end_time=iso8601_to_utc_naive(end_time) if end_time else None,
+            max_runs=max_runs,
         )
     except Exception as e:
         cli_utils.exception(e)
@@ -117,14 +142,14 @@ def create_schedule(
 
 
 @schedule.command("update", help="Update a schedule trigger.")
-@click.argument("schedule_id", type=UUID)
+@click.argument("schedule_name_or_id", type=str)
 @click.option("--name", type=str)
 @click.option("--active", type=bool)
 @click.option("--cron-expression", type=str)
 @click.option("--interval", type=int)
 @click.option(
     "--run_once_start_time",
-    type=bool,
+    type=str,
     help="One-off execution time (ISO 8601 format)",
 )
 @click.option(
@@ -137,8 +162,18 @@ def create_schedule(
     type=str,
     help="The end time of the schedule (ISO 8601 format).",
 )
+@click.option(
+    "--concurrency",
+    type=click.Choice(TriggerRunConcurrency.values()),
+    help="Option to control the concurrency of the trigger.",
+)
+@click.option(
+    "--max-runs",
+    type=int,
+    help="The maximum number of runs to execute with this schedule",
+)
 def update_schedule_trigger(
-    schedule_id: UUID,
+    schedule_name_or_id: str,
     name: str | None = None,
     active: bool | None = None,
     cron_expression: str | None = None,
@@ -146,11 +181,13 @@ def update_schedule_trigger(
     run_once_start_time: str | None = None,
     start_time: str | None = None,
     end_time: str | None = None,
+    concurrency: str | None = None,
+    max_runs: int | None = None,
 ) -> None:
     """Update a schedule trigger.
 
     Args:
-        schedule_id: The ID of the schedule.
+        schedule_name_or_id: The name or ID of the schedule trigger.
         name: The new name of the trigger.
         active: The new active status of the trigger.
         cron_expression: The new cron_expression of the trigger.
@@ -158,6 +195,8 @@ def update_schedule_trigger(
         start_time: The new start time of the trigger.
         end_time: The new end time of the trigger.
         run_once_start_time: The new run_once_start_time of the trigger.
+        concurrency: The new concurrency of the trigger.
+        max_runs: The new maximum number of runs to execute with this schedule.
     """
     options = [
         name,
@@ -167,6 +206,8 @@ def update_schedule_trigger(
         start_time,
         end_time,
         run_once_start_time,
+        concurrency,
+        max_runs,
     ]
 
     if not any(option is not None for option in options):
@@ -175,7 +216,7 @@ def update_schedule_trigger(
 
     try:
         Client().update_schedule_trigger(
-            trigger_id=schedule_id,
+            trigger_name_id_or_prefix=schedule_name_or_id,
             name=name,
             active=active,
             cron_expression=cron_expression,
@@ -187,108 +228,15 @@ def update_schedule_trigger(
             if start_time
             else None,
             end_time=iso8601_to_utc_naive(end_time) if end_time else None,
-        )
-    except Exception as e:
-        cli_utils.exception(e)
-    else:
-        cli_utils.declare(f"Updated schedule '{schedule_id}'.")
-
-
-@schedule.command("delete", help="Delete a schedule trigger.")
-@click.argument("schedule_id", type=UUID)
-@click.option(
-    "--soft",
-    type=bool,
-    default=True,
-    help="Deletion mode. Soft deletion will archive the trigger preserving historical references. "
-    "Hard deletion (soft=false) will purge the trigger along with its associated references "
-    "(recommended only for retention). ",
-)
-def delete_schedule_trigger(schedule_id: UUID, soft: bool = True) -> None:
-    """Delete a schedule trigger.
-
-    Args:
-        schedule_id: The ID of the schedule.
-        soft: Deletion mode.
-    """
-    try:
-        Client().delete_trigger(trigger_id=schedule_id, soft=soft)
-    except Exception as e:
-        cli_utils.exception(e)
-    else:
-        cli_utils.declare(f"Deleted schedule '{schedule_id}'.")
-
-
-@schedule.command("attach", help="Attach schedule to snapshot")
-@click.argument("schedule_id", type=UUID)
-@click.argument("snapshot_id", type=UUID)
-@click.option(
-    "--config",
-    "-c",
-    "config_path",
-    type=click.Path(exists=True, dir_okay=False),
-    required=False,
-    help="Path to config file (PipelineRunConfiguration) for triggered runs.",
-)
-@click.option(
-    "--allow-replace",
-    type=click.BOOL,
-    required=False,
-    help="Allow replacement if attachment already exists.",
-    is_flag=True,
-)
-def attach_schedule_trigger(
-    schedule_id: UUID,
-    snapshot_id: UUID,
-    config_path: str | None = None,
-    allow_replace: bool = False,
-) -> None:
-    """Attach a schedule to a snapshot.
-
-    Args:
-        schedule_id: The ID of the schedule.
-        snapshot_id: The ID of the snapshot.
-        config_path: The path to the config file to use.
-        allow_replace: Allow replacement if attachment already exists.
-    """
-    try:
-        Client().attach_trigger_to_snapshot(
-            trigger_id=schedule_id,
-            pipeline_snapshot_id=snapshot_id,
-            run_configuration=PipelineRunConfiguration.from_yaml(config_path)
-            if config_path
+            concurrency=TriggerRunConcurrency(concurrency)
+            if concurrency
             else None,
-            allow_replace=allow_replace,
+            max_runs=max_runs,
         )
     except Exception as e:
         cli_utils.exception(e)
     else:
-        cli_utils.declare(
-            f"Attached schedule '{schedule_id}' to snapshot '{snapshot_id}'."
-        )
-
-
-@schedule.command("detach", help="Detach schedule from snapshot")
-@click.argument("schedule_id", type=UUID)
-@click.argument("snapshot_id", type=UUID)
-def detach_schedule_trigger(schedule_id: UUID, snapshot_id: UUID) -> None:
-    """Detach a schedule from a snapshot.
-
-    Args:
-        schedule_id: The ID of the schedule.
-        snapshot_id: The ID of the snapshot.
-    """
-    try:
-        Client().detach_trigger_from_snapshot(
-            trigger_id=schedule_id,
-            pipeline_snapshot_id=snapshot_id,
-        )
-    except Exception as e:
-        cli_utils.exception(e)
-    else:
-        cli_utils.declare(
-            f"Detached schedule '{schedule_id}' from snapshot '{snapshot_id}'."
-        )
+        cli_utils.declare(f"Updated schedule '{schedule_name_or_id}'.")
 
 
 @schedule.command("list", help="List available schedules.")
@@ -315,12 +263,504 @@ def list_schedules(
         **kwargs: Keyword arguments to filter the schedules.
     """
     client = Client()
-    with console.status("Listing schedules...\n"):
+    with console.status("Listing triggers...\n"):
         schedules = client.list_schedule_triggers(**kwargs)
 
     cli_utils.print_page(
         schedules,
         columns,
         output_format,
-        empty_message="No schedule triggers found for the given filters.",
+        empty_message="No triggers found for the given filters.",
     )
+
+
+# COMMON COMMANDS
+
+
+def get_trigger_by_type(
+    trigger_type: TriggerType,
+    trigger_name_id_or_prefix: str,
+    hydrate: bool,
+    allow_name_prefix_match: bool,
+    is_archived: bool = False,
+) -> ScheduleTriggerResponse | PlatformEventTriggerResponse:
+    """Getter helper. Resolves trigger type getter by id.
+
+    Args:
+        trigger_type: The trigger type.
+        trigger_name_id_or_prefix: The name or ID of the trigger.
+        hydrate: Whether to hydrate response object.
+        allow_name_prefix_match: Whether to allow name prefix matching.
+        is_archived: Whether to search for archived triggers.
+
+    Returns:
+        The trigger by ID.
+
+    Raises:
+        RuntimeError: If trigger type is not supported.
+    """
+    if trigger_type == TriggerType.SCHEDULE:
+        return Client().get_schedule_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            hydrate=hydrate,
+            is_archived=is_archived,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+    elif trigger_type == TriggerType.PLATFORM_EVENT:
+        return Client().get_platform_event_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            hydrate=hydrate,
+            is_archived=is_archived,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+    else:
+        raise RuntimeError(f"Unknown trigger type: {trigger_type}")
+
+
+def make_delete_command(trigger_type: TriggerType) -> click.Command:
+    """Delete command factory function.
+
+    Args:
+        trigger_type: The trigger type.
+
+    Returns:
+        A Click.command for the delete method
+    """
+
+    def delete_trigger(
+        trigger_name_or_id: str, hard: bool = False, archived: bool = False
+    ) -> None:
+        """Delete a trigger.
+
+        Args:
+            trigger_name_or_id: The name or ID of the trigger.
+            hard: Deletion mode.
+            archived: Whether to delete an archived trigger.
+        """
+        try:
+            trigger_id = get_trigger_by_type(
+                trigger_type=trigger_type,
+                trigger_name_id_or_prefix=trigger_name_or_id,
+                allow_name_prefix_match=False,
+                is_archived=archived,
+                hydrate=False,
+            ).id
+
+            Client().delete_trigger(
+                trigger_id=trigger_id, soft=not hard and not archived
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.declare(f"Deleted trigger '{trigger_name_or_id}'.")
+
+    f = delete_trigger
+
+    f = click.argument("trigger_name_or_id", type=str)(f)
+    f = click.option(
+        "--hard",
+        "-h",
+        is_flag=True,
+        help="Deletion mode. Hard deletion will purge the trigger along with "
+        "its associated references (recommended only for retention). Soft "
+        "deletion (default) will archive the trigger preserving historical "
+        "references.",
+    )(f)
+    f = click.option(
+        "--archived",
+        "-a",
+        is_flag=True,
+        help="Whether to delete archived triggers.",
+    )(f)
+
+    return click.command(name="delete", help="Delete a trigger.")(f)
+
+
+def make_attach_command(trigger_type: TriggerType) -> click.Command:
+    """Attach command factory function.
+
+    Args:
+        trigger_type: The trigger type.
+
+    Returns:
+        A Click.command for the attach method
+    """
+
+    def attach_trigger(
+        trigger_name_or_id: str,
+        snapshot_name_or_id: str,
+        config_path: str | None = None,
+        allow_replace: bool = False,
+    ) -> None:
+        """Attach a trigger to a snapshot.
+
+        Args:
+            trigger_name_or_id: The name or ID of the trigger.
+            snapshot_name_or_id: The name or ID of the snapshot.
+            config_path: The path to the config file to use.
+            allow_replace: Allow replacement if attachment already exists.
+        """
+        try:
+            trigger_id = get_trigger_by_type(
+                trigger_type=trigger_type,
+                trigger_name_id_or_prefix=trigger_name_or_id,
+                allow_name_prefix_match=False,
+                hydrate=False,
+            ).id
+            snapshot_id = (
+                Client()
+                .get_snapshot(
+                    name_id_or_prefix=snapshot_name_or_id,
+                    allow_prefix_match=False,
+                    hydrate=False,
+                )
+                .id
+            )
+            Client().attach_trigger_to_snapshot(
+                trigger_id=trigger_id,
+                pipeline_snapshot_id=snapshot_id,
+                run_configuration=PipelineRunConfiguration.from_yaml(
+                    config_path
+                )
+                if config_path
+                else None,
+                allow_replace=allow_replace,
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.declare(
+                f"Attached trigger '{trigger_name_or_id}' to snapshot "
+                f"'{snapshot_name_or_id}'."
+            )
+
+    f = attach_trigger
+
+    f = click.argument("snapshot_name_or_id", type=str)(f)
+    f = click.argument("trigger_name_or_id", type=str)(f)
+    f = click.option(
+        "--config",
+        "-c",
+        "config_path",
+        type=click.Path(exists=True, dir_okay=False),
+        required=False,
+        help="Path to config file (PipelineRunConfiguration) for triggered runs.",
+    )(f)
+    f = click.option(
+        "--allow-replace",
+        type=click.BOOL,
+        required=False,
+        help="Allow replacement if attachment already exists.",
+        is_flag=True,
+    )(f)
+
+    return click.command("attach", help="Attach trigger to snapshot")(f)
+
+
+def make_detach_command(trigger_type: TriggerType) -> click.Command:
+    """Detach command factory function.
+
+    Args:
+        trigger_type: The trigger type.
+
+    Returns:
+        A Click.command for the detach method
+    """
+
+    def detach_trigger(
+        trigger_name_or_id: str, snapshot_name_or_id: str
+    ) -> None:
+        """Detach a trigger from a snapshot.
+
+        Args:
+            trigger_name_or_id: The name or ID of the trigger.
+            snapshot_name_or_id: The name or ID of the snapshot.
+        """
+        try:
+            trigger_id = get_trigger_by_type(
+                trigger_type=trigger_type,
+                trigger_name_id_or_prefix=trigger_name_or_id,
+                allow_name_prefix_match=False,
+                hydrate=False,
+            ).id
+            snapshot_id = (
+                Client()
+                .get_snapshot(
+                    name_id_or_prefix=snapshot_name_or_id,
+                    allow_prefix_match=False,
+                    hydrate=False,
+                )
+                .id
+            )
+            Client().detach_trigger_from_snapshot(
+                trigger_id=trigger_id,
+                pipeline_snapshot_id=snapshot_id,
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.declare(
+                f"Detached trigger '{trigger_name_or_id}' from snapshot "
+                f"'{snapshot_name_or_id}'."
+            )
+
+    f = detach_trigger
+
+    f = click.argument("snapshot_name_or_id", type=str)(f)
+    f = click.argument("trigger_name_or_id", type=str)(f)
+
+    return click.command("detach", help="Detach trigger from snapshot")(f)
+
+
+def make_clear_errors_command(trigger_type: TriggerType) -> click.Command:
+    """Create a command for clearing trigger dispatch error details.
+
+    Args:
+        trigger_type: The trigger type.
+
+    Returns:
+        A Click command for dispatch error acknowledgement.
+    """
+
+    def clear_errors(
+        trigger_name_or_id: str,
+        snapshot_name_or_id: str | None = None,
+    ) -> None:
+        """Clear recorded dispatch errors for one or all trigger snapshots.
+
+        Args:
+            trigger_name_or_id: The name or ID of the trigger.
+            snapshot_name_or_id: Optional name or ID of a specific snapshot.
+        """
+        try:
+            trigger_id = get_trigger_by_type(
+                trigger_type=trigger_type,
+                trigger_name_id_or_prefix=trigger_name_or_id,
+                allow_name_prefix_match=False,
+                hydrate=False,
+            ).id
+            snapshot_id = None
+            if snapshot_name_or_id is not None:
+                snapshot_id = (
+                    Client()
+                    .get_snapshot(
+                        name_id_or_prefix=snapshot_name_or_id,
+                        allow_prefix_match=False,
+                        hydrate=False,
+                    )
+                    .id
+                )
+            Client().clear_trigger_dispatch_error(
+                trigger_id=trigger_id,
+                pipeline_snapshot_id=snapshot_id,
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            if snapshot_name_or_id is None:
+                cli_utils.declare(
+                    "Cleared dispatch error details for all snapshots attached "
+                    f"to trigger '{trigger_name_or_id}'."
+                )
+            else:
+                cli_utils.declare(
+                    "Cleared dispatch error details for "
+                    f"trigger '{trigger_name_or_id}' and snapshot "
+                    f"'{snapshot_name_or_id}'."
+                )
+
+    f = clear_errors
+    f = click.argument("snapshot_name_or_id", type=str, required=False)(f)
+    f = click.argument("trigger_name_or_id", type=str)(f)
+
+    return click.command(
+        "clear-errors",
+        help="Acknowledge and clear status errors.",
+    )(f)
+
+
+# PLATFORM EVENT COMMANDS
+
+
+@platform_event.command()
+@click.argument("source_type", type=click.Choice(SourceType.values()))
+def list_supported_events(source_type: SourceType) -> None:
+    """List supported target events by SourceType.
+
+    Args:
+        source_type: The source type.
+    """
+    from zenml.utils.trigger_utils import list_supported_events
+
+    click.echo(
+        f"Support events for {source_type}:",
+    )
+
+    for index, e in enumerate(list_supported_events(source_type=source_type)):
+        click.echo(f"{index + 1}) {e}")
+
+
+@platform_event.command("create", help="Create a new platform event trigger.")
+@click.argument("name", type=str)
+@click.argument("source_type", type=click.Choice(SourceType.values()))
+@click.argument("source_id", type=UUID)
+@click.option(
+    "--target_events",
+    type=str,
+    multiple=True,
+    help="Use `list-supported-events` to view supported events by source type.",
+)
+@click.option(
+    "--concurrency",
+    type=click.Choice(TriggerRunConcurrency.values()),
+    help="Option to control the concurrency of the trigger.",
+    default=TriggerRunConcurrency.SKIP.value,
+)
+@click.option("--active", type=bool, default=True)
+def create_platform_event(
+    name: str,
+    source_type: SourceType,
+    source_id: UUID,
+    target_events: list[str],
+    active: bool,
+    concurrency: str,
+) -> None:
+    """Create a platform event trigger.
+
+    Args:
+        name: The name of the trigger.
+        source_type: The source type of the trigger.
+        source_id: The source ID of the trigger.
+        target_events: The trigger target events.
+        active: The active status of the trigger.
+        concurrency: Option controlling the concurrency of the trigger.
+    """
+    if not target_events:
+        cli_utils.error("You must specify at least one target event.")
+
+    try:
+        s = Client().create_platform_event_trigger(
+            name=name,
+            active=active,
+            concurrency=TriggerRunConcurrency(concurrency),
+            source_id=source_id,
+            source_type=source_type,
+            target_events=target_events,
+        )
+    except Exception as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Created platform event '{s.id}'.")
+
+
+@platform_event.command("update", help="Update a platform event trigger.")
+@click.argument("trigger_name_or_id", type=str)
+@click.option("--name", type=str)
+@click.option("--active", type=bool)
+@click.option(
+    "--concurrency",
+    type=click.Choice(TriggerRunConcurrency.values()),
+    help="Option to control the concurrency of the trigger.",
+)
+@click.option("--source_type", type=click.Choice(SourceType.values()))
+@click.option("--source_id", type=UUID)
+@click.option(
+    "--target_events",
+    type=str,
+    multiple=True,
+    help="Use `list-supported-events` to view supported events by source type.",
+)
+def update_platform_event_trigger(
+    trigger_name_or_id: str,
+    name: str | None = None,
+    source_type: SourceType | None = None,
+    source_id: UUID | None = None,
+    target_events: list[str] | None = None,
+    active: bool | None = None,
+    concurrency: str | None = None,
+) -> None:
+    """Update a platform event trigger.
+
+    Args:
+        trigger_name_or_id: The name or ID of the platform event trigger.
+        name: The new name of the trigger.
+        source_type: The source type of the trigger.
+        source_id: The source ID of the trigger.
+        target_events: The trigger target events.
+        active: The new active status of the trigger.
+        concurrency: Option controlling the concurrency of the trigger.
+    """
+    options = [
+        name,
+        active,
+        concurrency,
+        source_id,
+        source_type,
+        target_events,
+    ]
+
+    if not any(option is not None for option in options):
+        cli_utils.declare("No update requested.")
+        return
+
+    try:
+        Client().update_platform_event_trigger(
+            trigger_name_id_or_prefix=trigger_name_or_id,
+            name=name,
+            active=active,
+            concurrency=TriggerRunConcurrency(concurrency)
+            if concurrency
+            else None,
+            source_id=source_id,
+            source_type=source_type,
+            target_events=target_events,
+        )
+    except Exception as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Updated platform event '{trigger_name_or_id}'.")
+
+
+@platform_event.command("list", help="List available platform event triggers.")
+@cli_utils.list_options(
+    TriggerFilter,
+    default_columns=[
+        "id",
+        "name",
+        "active",
+        "is_archived",
+        "concurrency",
+    ],
+)
+def list_platform_events(
+    columns: str,
+    output_format: cli_utils.OutputFormat,
+    **kwargs: Any,
+) -> None:
+    """List all platform event triggers that fulfill the filter requirements.
+
+    Args:
+        columns: Columns to display in output.
+        output_format: Format for output (table/json/yaml/csv/tsv).
+        **kwargs: Keyword arguments to filter the platform event triggers.
+    """
+    client = Client()
+    with console.status("Listing triggers...\n"):
+        events = client.list_platform_event_triggers(**kwargs)
+
+    cli_utils.print_page(
+        events,
+        columns,
+        output_format,
+        empty_message="No triggers found for the given filters.",
+    )
+
+
+for group, tr_type in [
+    (schedule, TriggerType.SCHEDULE),
+    (platform_event, TriggerType.PLATFORM_EVENT),
+]:
+    group.add_command(make_delete_command(tr_type))
+    group.add_command(make_attach_command(tr_type))
+    group.add_command(make_detach_command(tr_type))
+    group.add_command(make_clear_errors_command(tr_type))

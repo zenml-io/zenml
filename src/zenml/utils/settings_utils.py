@@ -14,7 +14,15 @@
 """Utility functions for ZenML settings."""
 
 import re
-from typing import TYPE_CHECKING, Dict, Sequence, Type
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Mapping,
+    Optional,
+    Sequence,
+    Type,
+    Union,
+)
 
 from zenml.config.constants import (
     DEPLOYMENT_SETTINGS_KEY,
@@ -22,14 +30,18 @@ from zenml.config.constants import (
     RESOURCE_SETTINGS_KEY,
 )
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
+from zenml.models.v2.core.component import ComponentResponse
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.stack import Stack, StackComponent
+    from zenml.stack import StackComponent
     from zenml.stack.flavor import Flavor
 
+logger = get_logger(__name__)
+
 STACK_COMPONENT_REGEX = re.compile(
-    "(" + "|".join(StackComponentType.values()) + r")(\..*)?"
+    "(" + "|".join(StackComponentType.values()) + r")([.:].+)?"
 )
 
 
@@ -45,6 +57,20 @@ def get_stack_component_setting_key(stack_component: "StackComponent") -> str:
     return f"{stack_component.type}.{stack_component.flavor}"
 
 
+def get_stack_component_name_setting_key(
+    stack_component: Union["StackComponent", ComponentResponse],
+) -> str:
+    """Gets the canonical name-scoped setting key for a stack component.
+
+    Args:
+        stack_component: The stack component for which to get the key.
+
+    Returns:
+        The canonical setting key for the stack component.
+    """
+    return f"{stack_component.type}:{stack_component.name}"
+
+
 def get_flavor_setting_key(flavor: "Flavor") -> str:
     """Gets the setting key for a flavor.
 
@@ -55,6 +81,162 @@ def get_flavor_setting_key(flavor: "Flavor") -> str:
         The setting key for the flavor.
     """
     return f"{flavor.type}.{flavor.name}"
+
+
+def _get_component_flavor(
+    component: Union["StackComponent", ComponentResponse],
+) -> str:
+    """Gets the flavor name for a runtime or response component.
+
+    Args:
+        component: The component whose flavor should be returned.
+
+    Returns:
+        The component flavor.
+    """
+    from zenml.stack import StackComponent
+
+    if isinstance(component, StackComponent):
+        return component.flavor
+    return component.flavor_name
+
+
+def resolve_stack_component_setting_key(
+    key: str,
+    components_by_type: Mapping[
+        StackComponentType,
+        Sequence[Union["StackComponent", ComponentResponse]],
+    ],
+    legacy: bool = False,
+) -> Optional[str]:
+    """Resolves a setting selector to a canonical component key.
+
+    For ZenML versions before 0.94.3, the settings keys are normalized to `type.flavor`,
+    however, for newer versions, the settings keys are normalized to `type:name`.
+
+    Args:
+        key: The user-provided settings key.
+        components_by_type: Components grouped by type.
+        legacy: Flag to indicate whether to use legacy default settings keys.
+
+    Returns:
+        The canonical key for the resolved component. Returns ``None`` if an
+        explicit name/flavor selector doesn't match any component.
+
+    Raises:
+        ValueError: If the selector resolves ambiguously or if a shortcut key
+            cannot be resolved.
+    """
+    if not is_stack_component_setting_key(key):
+        raise ValueError(f"Invalid stack component setting key `{key}`.")
+
+    selector = ""
+    if ":" in key:
+        component_type_str, selector = key.split(":", 1)
+        selector_kind = "name"
+    elif "." in key:
+        component_type_str, selector = key.split(".", 1)
+        selector_kind = "flavor"
+    else:
+        component_type_str = key
+        selector_kind = "shortcut"
+
+    component_type = StackComponentType(component_type_str)
+    components = list(components_by_type.get(component_type, []))
+
+    if selector_kind == "shortcut":
+        matches = components[:1]
+    elif selector_kind == "flavor":
+        matches = [
+            component
+            for component in components
+            if _get_component_flavor(component) == selector
+        ]
+    else:
+        matches = [
+            component for component in components if component.name == selector
+        ]
+
+    if len(matches) != 1:
+        if selector_kind == "shortcut":
+            raise ValueError(
+                "Unable to resolve settings key "
+                f"`{key}` because the stack has no default component of type "
+                f"{component_type}."
+            )
+        if len(matches) == 0:
+            logger.warning(
+                "Ignoring settings key `%s` because it doesn't match any "
+                "attached %s component.",
+                key,
+                component_type.value,
+            )
+            return None
+        raise ValueError(
+            "Unable to resolve settings key "
+            f"`{key}` because it matched {len(matches)} components."
+        )
+
+    if legacy:
+        return f"{component_type}.{_get_component_flavor(matches[0])}"
+    else:
+        return f"{component_type}:{matches[0].name}"
+
+
+def normalize_stack_component_setting_keys(
+    settings: Dict[str, "BaseSettings"],
+    components_by_type: Mapping[
+        StackComponentType,
+        Sequence[Union["StackComponent", ComponentResponse]],
+    ],
+    legacy: bool = False,
+) -> None:
+    """Normalizes component settings keys to canonical component keys.
+
+    For ZenML versions before 0.94.3, the settings keys are normalized to `type.flavor`,
+    however, for newer versions, the settings keys are normalized to `type:name`.
+
+    Args:
+        settings: Settings to normalize in place.
+        components_by_type: Components grouped by type.
+        legacy: Flag to indicate whether to use legacy default settings keys.
+
+    Raises:
+        ValueError: If a selector does not resolve to exactly one component.
+    """
+    resolved_settings: Dict[str, "BaseSettings"] = {}
+    resolved_from: Dict[str, str] = {}
+    ignored_keys = []
+
+    for key, component_settings in settings.items():
+        if not is_stack_component_setting_key(key):
+            continue
+
+        resolved_key = resolve_stack_component_setting_key(
+            key=key,
+            components_by_type=components_by_type,
+            legacy=legacy,
+        )
+        if resolved_key is None:
+            ignored_keys.append(key)
+            continue
+        if existing_key := resolved_from.get(resolved_key):
+            raise ValueError(
+                "Duplicate settings provided using the keys "
+                f"{existing_key} and {key}. Both refer to {resolved_key}. "
+                "Remove settings for one of them to fix this error."
+            )
+
+        resolved_from[resolved_key] = key
+        resolved_settings[resolved_key] = component_settings
+
+    for key in list(resolved_from.values()):
+        settings.pop(key, None)
+
+    for key in ignored_keys:
+        settings.pop(key, None)
+
+    settings.update(resolved_settings)
 
 
 def is_valid_setting_key(key: str) -> bool:
@@ -93,37 +275,6 @@ def is_general_setting_key(key: str) -> bool:
     return key in get_general_settings()
 
 
-def get_stack_component_for_settings_key(
-    key: str, stack: "Stack"
-) -> "StackComponent":
-    """Gets the stack component of a stack for a given settings key.
-
-    Args:
-        key: The settings key for which to get the component.
-        stack: The stack from which to get the component.
-
-    Raises:
-        ValueError: If the key is invalid or the stack does not contain a
-            component of the correct flavor.
-
-    Returns:
-        The stack component.
-    """
-    if not is_stack_component_setting_key(key):
-        raise ValueError(
-            f"Settings key {key} does not refer to a stack component."
-        )
-
-    component_type, flavor = key.split(".", 1)
-    stack_component = stack.components.get(StackComponentType(component_type))
-    if not stack_component or stack_component.flavor != flavor:
-        raise ValueError(
-            f"Component of type {component_type} in stack {stack} is not "
-            f"of the flavor {flavor} specified by the settings key {key}."
-        )
-    return stack_component
-
-
 def get_general_settings() -> Dict[str, Type["BaseSettings"]]:
     """Returns all general settings.
 
@@ -159,5 +310,7 @@ def validate_setting_keys(setting_keys: Sequence[str]) -> None:
                 "to general settings (available keys: "
                 f"{set(get_general_settings())}) or stack component specific "
                 "settings. Stack component specific keys are of the format "
-                "`<STACK_COMPONENT_TYPE>.<STACK_COMPONENT_FLAVOR>`."
+                "`<STACK_COMPONENT_TYPE>`, "
+                "`<STACK_COMPONENT_TYPE>.<STACK_COMPONENT_FLAVOR>`, or "
+                "`<STACK_COMPONENT_TYPE>:<STACK_COMPONENT_NAME>`."
             )

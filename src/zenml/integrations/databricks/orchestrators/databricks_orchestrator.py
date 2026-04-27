@@ -97,7 +97,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         def _validate_remote_components(
             stack: "Stack",
         ) -> Tuple[bool, str]:
-            for component in stack.components.values():
+            for component in stack.all_components:
                 if not component.config.is_local:
                     continue
 
@@ -152,14 +152,10 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         """Returns the active orchestrator run id.
 
         Raises:
-            RuntimeError: If no run id exists. This happens when this method
-                gets called while the orchestrator is not running a pipeline.
+            RuntimeError: If the run id cannot be read from the environment.
 
         Returns:
             The orchestrator run id.
-
-        Raises:
-            RuntimeError: If the run id cannot be read from the environment.
         """
         try:
             return os.environ[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID]
@@ -398,9 +394,9 @@ class DatabricksOrchestrator(WheeledOrchestrator):
             settings: The settings for the Databricks orchestrator.
 
         Raises:
-            ValueError: If the `Job Compute` policy is not found.
-            ValueError: If the `schedule_timezone` is not set when passing
-
+            ValueError: If the `Job Compute` policy is not found or
+                if the `schedule_timezone` is not set when passing a
+                cron expression.
         """
         databricks_client = self._get_databricks_client()
         spark_conf = settings.spark_conf or {}

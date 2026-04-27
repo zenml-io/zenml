@@ -96,6 +96,9 @@ class BaseStepOperator(StackComponent, ABC):
         Args:
             step_run: The step run to get the status of.
 
+        Returns:
+            The execution status of the step run.
+
         Raises:
             NotImplementedError: If the step operator does not implement this
                 method.

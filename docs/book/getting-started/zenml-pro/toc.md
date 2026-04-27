@@ -17,6 +17,8 @@
     * [Kubernetes with Helm](deploy-workspace-k8s.md)
     * [AWS ECS](deploy-workspace-ecs.md)
     * [Enable Snapshot Support](deploy-workspace-snapshots.md)
+    * [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md)
+    * [Enable Resource Pools](deploy-workspace-resource-pools.md)
 
 ## Manage
 
@@ -35,6 +37,10 @@
 * [Teams](teams.md)
 * [Snapshots](snapshots.md)
 * [Triggers](triggers.md)
+* [Resource Pools](resource-pools.md)
+  * [Core Concepts](resource-pools-core-concepts.md)
+  * [Reconciliation Process](resource-pools-reconciliation.md)
+  * [Examples](resource-pools-examples.md)
 
 ## Access Management
 

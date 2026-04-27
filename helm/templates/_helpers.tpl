@@ -114,6 +114,12 @@ Build the complete NO_PROXY list
 {{- $noProxy = printf "%s,%s" $noProxy $server.ingress.host -}}
 {{- end -}}
 {{- end -}}
+{{- /* Add the gateway hostname if specified */ -}}
+{{- if $server.gateway.host -}}
+{{- if not (contains $server.gateway.host $noProxy) -}}
+{{- $noProxy = printf "%s,%s" $noProxy $server.gateway.host -}}
+{{- end -}}
+{{- end -}}
 {{- range $server.proxy.additionalNoProxy -}}
 {{- $noProxy = printf "%s,%s" $noProxy . -}}
 {{- end -}}

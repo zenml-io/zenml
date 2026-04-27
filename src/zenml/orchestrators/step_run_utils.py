@@ -276,6 +276,16 @@ class StepRunRequestFactory:
                 if request.docstring is None:
                     request.docstring = cached_step_run.docstring
 
+        if (
+            request.status != ExecutionStatus.CACHED
+            and self.snapshot.is_dynamic
+        ):
+            if step.config.step_operator:
+                assert self.stack.step_operator
+                request.resource_requester = self.stack.step_operator.id
+            else:
+                request.resource_requester = self.stack.orchestrator.id
+
     def _populate_skipped_step(
         self,
         request: StepRunRequest,
@@ -286,11 +296,9 @@ class StepRunRequestFactory:
             request: The request to populate.
 
         Raises:
-            RuntimeError: If the pipeline run is not a replayed run.
-            RuntimeError: If no step run is found for the step in the original
-                run.
-            RuntimeError: If the step wasn't successfully completed in the
-                original run.
+            RuntimeError: If the pipeline run is not a replayed run, if no
+                step run is found for the step in the original run, or if
+                the step wasn't successfully completed in the original run.
         """
         if not self.pipeline_run.original_run:
             raise RuntimeError(

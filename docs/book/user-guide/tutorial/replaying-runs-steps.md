@@ -15,7 +15,13 @@ A replay re-executes a pipeline or step using the same input artifacts (and para
 
 ## Replaying a pipeline
 
-Call `.replay()` on any `@pipeline`-decorated function. ZenML resolves the run to replay using the first match:
+Replay a pipeline either from local pipeline code (`.replay()`) or directly via
+the server (`Client().replay_pipeline_run(...)`).
+
+{% tabs %}
+{% tab title="From local code" %}
+
+ZenML resolves the run to replay using the first match:
 
 1. `pipeline_run` — replay that exact run.
 2. `pipeline` — replay the latest run of that pipeline name/ID.
@@ -42,12 +48,25 @@ training_pipeline.replay()
 # Replay a specific run
 training_pipeline.replay(pipeline_run="run_name_or_id")
 ```
+{% endtab %}
+
+{% tab title="From the server" %}
+```python
+from zenml import Client
+
+# Replay a specific run by name or ID
+Client().replay_pipeline_run(name_id_or_prefix="run_name_or_id")
+```
+{% endtab %}
+{% endtabs %}
 
 ### Skipping steps
 
 You can skip steps that don't need to be re-executed. Skipped steps reuse
 their output artifacts from the original run.
 
+{% tabs %}
+{% tab title="From local code" %}
 ```python
 # Skip specific steps by name
 training_pipeline.replay(skip=["load_data"])
@@ -55,6 +74,26 @@ training_pipeline.replay(skip=["load_data"])
 # Automatically skip all steps that succeeded in the original run
 training_pipeline.replay(skip_successful_steps=True)
 ```
+{% endtab %}
+
+{% tab title="From the server" %}
+```python
+from zenml import Client
+
+# Skip specific steps by invocation ID
+Client().replay_pipeline_run(
+    name_id_or_prefix="run_name_or_id",
+    run_configuration={"steps_to_skip": ["load_data"]},
+)
+
+# Automatically skip all steps that succeeded in the original run
+Client().replay_pipeline_run(
+    name_id_or_prefix="run_name_or_id",
+    run_configuration={"skip_successful_steps": True},
+)
+```
+{% endtab %}
+{% endtabs %}
 
 {% hint style="info" %}
 A step can only be skipped if all of its upstream dependencies are also skipped.
@@ -62,12 +101,77 @@ A step can only be skipped if all of its upstream dependencies are also skipped.
 
 ### Overriding pipeline parameters
 
+{% tabs %}
+{% tab title="From local code" %}
 Pass `input_overrides` to change parameters for the replayed run. Any
 parameters you don't override are carried over from the original run.
 
 ```python
 training_pipeline.replay(input_overrides={"learning_rate": 0.01})
 ```
+{% endtab %}
+{% tab title="From the server" %}
+Pass `parameters` in the run configuration to override pipeline parameters.
+
+```python
+from zenml import Client
+
+Client().replay_pipeline_run(
+    name_id_or_prefix="run_name_or_id",
+    run_configuration={"parameters": {"learning_rate": 0.01}},
+)
+```
+{% endtab %}
+{% endtabs %}
+
+### Overriding step inputs
+
+Use `step_input_overrides` to replace specific step inputs for a replayed
+pipeline run.
+
+{% tabs %}
+{% tab title="From local code" %}
+`step_input_overrides` expects a mapping of `invocation_id -> input_name ->
+value`.
+
+```python
+training_pipeline.replay(
+    pipeline_run="run_name_or_id",
+    step_input_overrides={
+        "trainer": {
+            "training_data": my_dataframe,
+        }
+    },
+)
+```
+{% endtab %}
+{% tab title="From the server" %}
+For server-side replay, `step_input_overrides` values can be either:
+
+- **UUIDs** of existing artifact versions (no new upload), or
+- **inline values** (server uploads them to the active artifact store before
+  replay starts).
+
+```python
+from zenml import Client
+from uuid import UUID
+
+Client().replay_pipeline_run(
+    name_id_or_prefix="run_name_or_id",
+    run_configuration={
+        "step_input_overrides": {
+            "trainer": {
+                # Existing artifact version UUID: no upload
+                "training_data": UUID("34e8ef74-32b9-4e58-ab8b-99ee133f4f89"),
+                # Inline value: uploaded by the server
+                "learning_rate": 0.01,
+            }
+        }
+    },
+)
+```
+{% endtab %}
+{% endtabs %}
 
 ---
 

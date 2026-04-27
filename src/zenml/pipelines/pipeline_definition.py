@@ -403,9 +403,8 @@ class Pipeline:
                 pipeline.
             secrets: Secrets to set as environment variables when running this
                 pipeline.
-            settings: Settings for this pipeline.
             enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
-            settings: settings for this pipeline.
+            settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
@@ -1176,11 +1175,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
                 for (
                     component_type,
-                    component_models,
+                    components,
                 ) in snapshot.stack.components.items():
-                    logger.info(
-                        f"  {component_type.value}: `{component_models[0].name}`"
-                    )
+                    for component in components:
+                        logger.info(
+                            f"  {component_type.value}: `{component.name}`"
+                        )
         except Exception as e:
             logger.debug(f"Logging pipeline snapshot metadata failed: {e}")
 
@@ -1295,14 +1295,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         active_user = Client().active_user
         own_stack = stack_creator and stack_creator == active_user.id
 
-        stack_metadata = {
-            component_type.value: component.flavor
-            for component_type, component in stack.components.items()
-        }
         return {
             "project_id": snapshot.project_id,
             "store_type": Client().zen_store.type.value,
-            **stack_metadata,
+            **stack.component_flavor_metadata,
             "total_steps": len(self.invocations),
             "schedule": bool(snapshot.schedule),
             "custom_materializer": custom_materializer,
@@ -1415,9 +1411,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 ID.
 
         Raises:
-            RuntimeError: If the method is called on an inactive pipeline.
-            RuntimeError: If the invocation was called with an artifact from
-                a different pipeline.
+            RuntimeError: If the method is called on an inactive pipeline or
+                if the invocation was called with an artifact from a different
+                pipeline.
 
         Returns:
             The step invocation ID.
