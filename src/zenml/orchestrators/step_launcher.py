@@ -83,19 +83,19 @@ def _get_step_operator(
     Raises:
         RuntimeError: If no active step operator is found.
     """
-    step_operator = stack.step_operator
+    if step_operator_name is None:
+        step_operator = stack.step_operator
+        if step_operator is None:
+            raise RuntimeError(
+                f"No step operators specified for active stack '{stack.name}'."
+            )
+        return step_operator
 
-    # the two following errors should never happen as the stack gets
-    # validated before running the pipeline
-    if not step_operator:
+    step_operator = stack.step_operators.get(step_operator_name)
+    if step_operator is None:
         raise RuntimeError(
-            f"No step operator specified for active stack '{stack.name}'."
-        )
-
-    if step_operator_name and step_operator_name != step_operator.name:
-        raise RuntimeError(
-            f"No step operator named '{step_operator_name}' in active "
-            f"stack '{stack.name}'."
+            f"No step operator named '{step_operator_name}' found in active "
+            f"stack '{stack.name}'. Available step operators: {list(stack.step_operators)}."
         )
 
     return step_operator

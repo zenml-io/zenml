@@ -52,6 +52,7 @@ from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
+    ReplayRunConfiguration,
 )
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -88,6 +89,7 @@ from zenml.constants import (
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
+    REPLAY,
     RESOLVE,
     RESOURCE_POOL_SUBJECT_POLICIES,
     RESOURCE_POOLS,
@@ -2363,6 +2365,32 @@ class RestZenStore(BaseZenStore):
             resource_id=run_id,
             route=RUNS,
         )
+
+    def replay_run(
+        self, run_id: UUID, run_configuration: ReplayRunConfiguration
+    ) -> PipelineRunResponse:
+        """Replay a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to replay.
+            run_configuration: Replay configuration.
+
+        Raises:
+            RuntimeError: If the server does not support replaying a run.
+
+        Returns:
+            The replayed pipeline run.
+        """
+        try:
+            response_body = self.post(
+                f"{RUNS}/{run_id}{REPLAY}", body=run_configuration
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Replaying a run is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
 
     def disable_run_heartbeat(self, run_id: UUID) -> None:
         """Disables heartbeat for a pipeline run.

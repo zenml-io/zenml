@@ -27,16 +27,17 @@ one-off executions, interval-based schedules, or cron expressions for fine-grain
 Additional options, such as time boundaries, concurrency limits, and activation settings, let you 
 tailor the trigger to your workflow requirements.
 
-| Attribute           | Description                                                  | Notes                        |
-|---------------------|--------------------------------------------------------------|------------------------------|
-| name                | The name of the schedule                                     | Unique within project        |
-| cron_expression     | A cron expression describing your schedule's frequency       | Standard 5-field cron format |
-| interval            | An interval (in seconds) describing the schedule's frequency | Combined with start_time     |
-| run_once_start_time | One-off execution at a specific time in the future           | UTC                          |
-| start_time          | The beginning of the schedule                                | UTC                          |
-| end_time            | The end time of the schedule                                 | UTC                          |
-| active              | Status of the schedule (active/inactive)                     | -                            |
-| concurrency         | Option to control how concurrent runs should be handled      | Skip is the default option   |
+| Attribute           | Description                                                             | Notes                        |
+|---------------------|-------------------------------------------------------------------------|------------------------------|
+| name                | The name of the schedule                                                | Unique within project        |
+| cron_expression     | A cron expression describing your schedule's frequency                  | Standard 5-field cron format |
+| interval            | An interval (in seconds) describing the schedule's frequency            | Combined with start_time     |
+| run_once_start_time | One-off execution at a specific time in the future                      | UTC                          |
+| start_time          | The beginning of the schedule                                           | UTC                          |
+| end_time            | The end time of the schedule                                            | UTC                          |
+| active              | Status of the schedule (active/inactive)                                | -                            |
+| concurrency         | Option to control how concurrent runs should be handled                 | Skip is the default option   |
+| max_runs            | Option to control maximum runs (per attached snapshot) for the schedule | -                            |
 
 ### Create a schedule
 
@@ -229,6 +230,50 @@ Via the CLI:
 ~~~bash
 zenml trigger schedule list --active=true
 ~~~
+
+### Stopping Criteria
+
+You can control when a schedule stops by limiting it in time or by number of runs. This helps avoid unintended 
+long-running schedules and gives you tighter control over resource usage.
+
+#### `end_time`
+
+Defines the point in time after which the schedule will no longer trigger runs. 
+The schedule remains visible but inactive for future executions.
+
+~~~python
+from datetime import datetime, timedelta
+from zenml.client import Client
+
+client = Client()
+
+client.create_schedule_trigger(
+    name="limited-schedule",
+    cron_expression="0 0 * * *",
+    end_time=datetime.now() + timedelta(days=2),
+)
+~~~
+
+#### `max_runs`
+
+Limits how many times a schedule can trigger a pipeline. Once the limit is reached, no further runs are scheduled. 
+Note that this limit applies per attached snapshot, for example, with a limit of 2 and two attached snapshots, you will see a total of 4 runs.
+
+~~~python
+from zenml.client import Client
+
+client = Client()
+
+client.create_schedule_trigger(
+    name="limited-schedule",
+    cron_expression="0 0 * * *",
+    max_runs=24,
+)
+~~~
+
+#### Combined usage
+
+If both are set, the schedule stops when the first condition is reached (time or run limit).
 
 #### Clear dispatch errors
 

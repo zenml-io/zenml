@@ -1,0 +1,36 @@
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- if $server.gateway.enabled -}}
+{{- $fullName := include "zenml.fullname" . -}}
+{{- $svcPort := $server.service.port -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+  {{- with $server.gateway.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ required "gateway.gatewayRef.name is required when gateway.enabled=true" $server.gateway.gatewayRef.name | quote }}
+      {{- if $server.gateway.gatewayRef.namespace }}
+      namespace: {{ $server.gateway.gatewayRef.namespace | quote }}
+      {{- end }}
+      {{- if $server.gateway.sectionName }}
+      sectionName: {{ $server.gateway.sectionName | quote }}
+      {{- end }}
+  {{- if $server.gateway.host }}
+  hostnames:
+    - {{ $server.gateway.host | quote }}
+  {{- end }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: {{ $server.gateway.path | default "/" | quote }}
+      backendRefs:
+        - name: {{ $fullName }}
+          port: {{ $svcPort }}
+{{- end }}

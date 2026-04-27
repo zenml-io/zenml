@@ -40,6 +40,10 @@ zenml step-operator flavor list
 
 You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you want to use is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), you can simply specify it in the `@step` decorator of your step.
 
+{% hint style="info" %}
+Stacks can have multiple step operators attached. If you use `@step(step_operator=True)`, ZenML uses the default attached step operator, which is the first step operator in the stack. If you want to use a non-default step operator, specify it explicitly by name in the `@step` decorator.
+{% endhint %}
+
 ```python
 from zenml import step
 

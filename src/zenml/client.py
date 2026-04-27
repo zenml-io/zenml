@@ -46,6 +46,7 @@ from zenml.client_lazy_loader import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
+    ReplayRunConfiguration,
 )
 from zenml.config.source import Source
 from zenml.constants import (
@@ -1203,7 +1204,10 @@ class Client(metaclass=ClientMetaClass):
     def create_stack(
         self,
         name: str,
-        components: Mapping[StackComponentType, Union[str, UUID]],
+        components: Mapping[
+            StackComponentType,
+            Union[str, UUID, Sequence[Union[str, UUID]]],
+        ],
         stack_spec_file: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
         secrets: Optional[Sequence[Union[UUID, str]]] = None,
@@ -1212,7 +1216,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name: The name of the stack to register.
-            components: dictionary which maps component types to component names
+            components: Dictionary which maps component types to component
+                names/IDs or sequences of names/IDs.
             stack_spec_file: path to the stack spec file
             labels: The labels of the stack.
             secrets: The secrets of the stack.
@@ -1220,19 +1225,30 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered stack.
         """
-        stack_components = {}
+        stack_components: Dict[StackComponentType, List[UUID]] = {}
 
         for c_type, c_identifier in components.items():
+            if isinstance(c_identifier, Sequence) and not isinstance(
+                c_identifier, (str, bytes)
+            ):
+                component_identifiers = list(c_identifier)
+            else:
+                component_identifiers = [c_identifier]
+
             # Skip non-existent components.
-            if not c_identifier:
+            if not component_identifiers:
                 continue
 
-            # Get the component.
-            component = self.get_stack_component(
-                name_id_or_prefix=c_identifier,
-                component_type=c_type,
-            )
-            stack_components[c_type] = [component.id]
+            stack_components[c_type] = []
+            for component_identifier in component_identifiers:
+                if not component_identifier:
+                    continue
+
+                component = self.get_stack_component(
+                    name_id_or_prefix=component_identifier,
+                    component_type=c_type,
+                )
+                stack_components[c_type].append(component.id)
 
         stack = StackRequest(
             name=name,
@@ -1337,7 +1353,10 @@ class Client(metaclass=ClientMetaClass):
         labels: Optional[Dict[str, Any]] = None,
         description: Optional[str] = None,
         component_updates: Optional[
-            Dict[StackComponentType, List[Union[UUID, str]]]
+            Mapping[
+                StackComponentType,
+                Union[UUID, str, Sequence[Union[UUID, str]]],
+            ]
         ] = None,
         add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
         remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
@@ -1387,12 +1406,20 @@ class Client(metaclass=ClientMetaClass):
         if description:
             update_model.description = description
 
-        # Get the current components
         if component_updates:
             components_dict = stack.components.copy()
+            for (
+                component_type,
+                component_identifiers,
+            ) in component_updates.items():
+                if component_identifiers is not None:
+                    if isinstance(
+                        component_identifiers, Sequence
+                    ) and not isinstance(component_identifiers, (str, bytes)):
+                        component_id_list = list(component_identifiers)
+                    else:
+                        component_id_list = [component_identifiers]
 
-            for component_type, component_id_list in component_updates.items():
-                if component_id_list is not None:
                     components_dict[component_type] = [
                         self.get_stack_component(
                             name_id_or_prefix=component_id,
@@ -4177,6 +4204,7 @@ class Client(metaclass=ClientMetaClass):
         run_once_start_time: datetime | None = None,
         end_time: datetime | None = None,
         start_time: datetime | None = None,
+        max_runs: int | None = None,
     ) -> ScheduleTriggerResponse:
         """Create a native schedule trigger.
 
@@ -4190,6 +4218,7 @@ class Client(metaclass=ClientMetaClass):
             run_once_start_time: Schedule one-off execution
             end_time: The end time of the trigger.
             start_time: The start time of the trigger.
+            max_runs: Maximum number of runs to execute with this schedule.
 
         Returns:
             The created trigger.
@@ -4207,6 +4236,7 @@ class Client(metaclass=ClientMetaClass):
                 run_once_start_time=run_once_start_time,
                 end_time=end_time,
                 start_time=start_time,
+                max_runs=max_runs,
             )
         )
 
@@ -4225,6 +4255,7 @@ class Client(metaclass=ClientMetaClass):
         start_time: datetime | None = None,
         end_time: datetime | None = None,
         concurrency: TriggerRunConcurrency | None = None,
+        max_runs: int | None = None,
     ) -> ScheduleTriggerResponse:
         """Update a native schedule trigger.
 
@@ -4239,6 +4270,7 @@ class Client(metaclass=ClientMetaClass):
             end_time: The new end time of the trigger.
             run_once_start_time: The new run_once_start_time of the trigger.
             concurrency: The new trigger run concurrency.
+            max_runs: Maximum number of runs to execute with this schedule.
 
         Returns:
             The updated trigger.
@@ -4248,15 +4280,25 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
+        sets_scheduling_option = any(
+            option is not None
+            for option in [cron_expression, interval, run_once_start_time]
+        )
+
         response = self.zen_store.update_trigger(
             trigger_id=trigger.id,
             trigger_update=ScheduleTriggerUpdate(
                 name=name or trigger.name,
                 active=active if active is not None else trigger.active,
-                cron_expression=cron_expression or trigger.cron_expression,
-                interval=interval or trigger.interval,
+                cron_expression=cron_expression
+                if sets_scheduling_option
+                else trigger.cron_expression,
+                interval=interval
+                if sets_scheduling_option
+                else trigger.interval,
                 run_once_start_time=run_once_start_time
-                or trigger.run_once_start_time,
+                if sets_scheduling_option
+                else trigger.run_once_start_time,
                 start_time=start_time
                 if start_time is not None
                 else trigger.start_time,
@@ -4266,6 +4308,7 @@ class Client(metaclass=ClientMetaClass):
                 concurrency=concurrency
                 if concurrency is not None
                 else trigger.concurrency,
+                max_runs=max_runs or trigger.max_runs,
             ),
         )
 
@@ -4994,6 +5037,74 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
             include_full_metadata=include_full_metadata,
         )
+
+    @_fail_for_sql_zen_store
+    def replay_pipeline_run(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        run_configuration: ReplayRunConfiguration
+        | Dict[str, Any]
+        | None = None,
+        config_path: Optional[str] = None,
+        project: Optional[Union[str, UUID]] = None,
+        synchronous: bool = False,
+    ) -> PipelineRunResponse:
+        """Replay a pipeline run via the server.
+
+        Args:
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run to
+                replay.
+            run_configuration: Optional replay configuration. Either this or a
+                path to a config file can be specified.
+            config_path: Path to a YAML configuration file. This file will be
+                parsed as a `ReplayRunConfiguration` object. Either this or the
+                configuration in code can be specified.
+            project: The project name/ID to filter by.
+            synchronous: If `True`, this method will wait until the replayed run
+                finishes.
+
+        Raises:
+            RuntimeError: If both a config path and run configuration are
+                specified.
+
+        Returns:
+            The replayed pipeline run.
+        """
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = ReplayRunConfiguration.from_yaml(config_path)
+        elif not run_configuration:
+            run_configuration = ReplayRunConfiguration()
+
+        if isinstance(run_configuration, Dict):
+            run_configuration = ReplayRunConfiguration.model_validate(
+                run_configuration
+            )
+
+        original_run = self.get_pipeline_run(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        replayed_run = self.zen_store.replay_run(
+            run_id=original_run.id,
+            run_configuration=run_configuration,
+        )
+
+        if synchronous:
+            from zenml.pipelines.run_utils import (
+                wait_for_pipeline_run_to_finish,
+            )
+
+            replayed_run = wait_for_pipeline_run_to_finish(
+                run_id=replayed_run.id
+            )
+
+        return replayed_run
 
     def list_pipeline_runs(
         self,
@@ -6189,7 +6300,7 @@ class Client(metaclass=ClientMetaClass):
 
         secret_update = SecretUpdate(name=new_name or secret.name)
 
-        if update_private:
+        if update_private is not None:
             secret_update.private = update_private
         values: Dict[str, Optional[SecretStr]] = {}
         if add_or_update_values:

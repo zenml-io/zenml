@@ -18,6 +18,7 @@ from uuid import UUID
 
 import click
 
+from zenml import PlatformEventTriggerResponse, ScheduleTriggerResponse
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
@@ -27,6 +28,7 @@ from zenml.enums import (
     CliCategories,
     SourceType,
     TriggerRunConcurrency,
+    TriggerType,
 )
 from zenml.logger import get_logger
 from zenml.models import TriggerFilter
@@ -82,6 +84,11 @@ def platform_event() -> None:
     type=str,
     help="The end time of the schedule (ISO 8601 format).",
 )
+@click.option(
+    "--max-runs",
+    type=int,
+    help="The maximum number of runs to execute with this schedule",
+)
 def create_schedule(
     name: str,
     active: bool,
@@ -91,6 +98,7 @@ def create_schedule(
     run_once_start_time: str | None = None,
     start_time: str | None = None,
     end_time: str | None = None,
+    max_runs: int | None = None,
 ) -> None:
     """Create a schedule trigger.
 
@@ -103,6 +111,7 @@ def create_schedule(
         start_time: The start time of the trigger.
         end_time: The end time of the trigger.
         run_once_start_time: The run_once_start_time of the trigger.
+        max_runs: The maximum number of runs to execute with this schedule.
     """
     options = [cron_expression, interval, run_once_start_time]
 
@@ -124,6 +133,7 @@ def create_schedule(
             if start_time
             else None,
             end_time=iso8601_to_utc_naive(end_time) if end_time else None,
+            max_runs=max_runs,
         )
     except Exception as e:
         cli_utils.exception(e)
@@ -157,6 +167,11 @@ def create_schedule(
     type=click.Choice(TriggerRunConcurrency.values()),
     help="Option to control the concurrency of the trigger.",
 )
+@click.option(
+    "--max-runs",
+    type=int,
+    help="The maximum number of runs to execute with this schedule",
+)
 def update_schedule_trigger(
     schedule_name_or_id: str,
     name: str | None = None,
@@ -167,6 +182,7 @@ def update_schedule_trigger(
     start_time: str | None = None,
     end_time: str | None = None,
     concurrency: str | None = None,
+    max_runs: int | None = None,
 ) -> None:
     """Update a schedule trigger.
 
@@ -180,6 +196,7 @@ def update_schedule_trigger(
         end_time: The new end time of the trigger.
         run_once_start_time: The new run_once_start_time of the trigger.
         concurrency: The new concurrency of the trigger.
+        max_runs: The new maximum number of runs to execute with this schedule.
     """
     options = [
         name,
@@ -190,6 +207,7 @@ def update_schedule_trigger(
         end_time,
         run_once_start_time,
         concurrency,
+        max_runs,
     ]
 
     if not any(option is not None for option in options):
@@ -213,6 +231,7 @@ def update_schedule_trigger(
             concurrency=TriggerRunConcurrency(concurrency)
             if concurrency
             else None,
+            max_runs=max_runs,
         )
     except Exception as e:
         cli_utils.exception(e)
@@ -258,8 +277,51 @@ def list_schedules(
 # COMMON COMMANDS
 
 
-def make_delete_command() -> click.Command:
+def get_trigger_by_type(
+    trigger_type: TriggerType,
+    trigger_name_id_or_prefix: str,
+    hydrate: bool,
+    allow_name_prefix_match: bool,
+    is_archived: bool = False,
+) -> ScheduleTriggerResponse | PlatformEventTriggerResponse:
+    """Getter helper. Resolves trigger type getter by id.
+
+    Args:
+        trigger_type: The trigger type.
+        trigger_name_id_or_prefix: The name or ID of the trigger.
+        hydrate: Whether to hydrate response object.
+        allow_name_prefix_match: Whether to allow name prefix matching.
+        is_archived: Whether to search for archived triggers.
+
+    Returns:
+        The trigger by ID.
+
+    Raises:
+        RuntimeError: If trigger type is not supported.
+    """
+    if trigger_type == TriggerType.SCHEDULE:
+        return Client().get_schedule_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            hydrate=hydrate,
+            is_archived=is_archived,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+    elif trigger_type == TriggerType.PLATFORM_EVENT:
+        return Client().get_platform_event_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            hydrate=hydrate,
+            is_archived=is_archived,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+    else:
+        raise RuntimeError(f"Unknown trigger type: {trigger_type}")
+
+
+def make_delete_command(trigger_type: TriggerType) -> click.Command:
     """Delete command factory function.
+
+    Args:
+        trigger_type: The trigger type.
 
     Returns:
         A Click.command for the delete method
@@ -276,16 +338,14 @@ def make_delete_command() -> click.Command:
             archived: Whether to delete an archived trigger.
         """
         try:
-            trigger_id = (
-                Client()
-                .get_schedule_trigger(
-                    trigger_name_id_or_prefix=trigger_name_or_id,
-                    allow_name_prefix_match=False,
-                    is_archived=archived,
-                    hydrate=False,
-                )
-                .id
-            )
+            trigger_id = get_trigger_by_type(
+                trigger_type=trigger_type,
+                trigger_name_id_or_prefix=trigger_name_or_id,
+                allow_name_prefix_match=False,
+                is_archived=archived,
+                hydrate=False,
+            ).id
+
             Client().delete_trigger(
                 trigger_id=trigger_id, soft=not hard and not archived
             )
@@ -316,8 +376,11 @@ def make_delete_command() -> click.Command:
     return click.command(name="delete", help="Delete a trigger.")(f)
 
 
-def make_attach_command() -> click.Command:
+def make_attach_command(trigger_type: TriggerType) -> click.Command:
     """Attach command factory function.
+
+    Args:
+        trigger_type: The trigger type.
 
     Returns:
         A Click.command for the attach method
@@ -338,15 +401,12 @@ def make_attach_command() -> click.Command:
             allow_replace: Allow replacement if attachment already exists.
         """
         try:
-            trigger_id = (
-                Client()
-                .get_schedule_trigger(
-                    trigger_name_id_or_prefix=trigger_name_or_id,
-                    allow_name_prefix_match=False,
-                    hydrate=False,
-                )
-                .id
-            )
+            trigger_id = get_trigger_by_type(
+                trigger_type=trigger_type,
+                trigger_name_id_or_prefix=trigger_name_or_id,
+                allow_name_prefix_match=False,
+                hydrate=False,
+            ).id
             snapshot_id = (
                 Client()
                 .get_snapshot(
@@ -397,8 +457,11 @@ def make_attach_command() -> click.Command:
     return click.command("attach", help="Attach trigger to snapshot")(f)
 
 
-def make_detach_command() -> click.Command:
+def make_detach_command(trigger_type: TriggerType) -> click.Command:
     """Detach command factory function.
+
+    Args:
+        trigger_type: The trigger type.
 
     Returns:
         A Click.command for the detach method
@@ -414,15 +477,12 @@ def make_detach_command() -> click.Command:
             snapshot_name_or_id: The name or ID of the snapshot.
         """
         try:
-            trigger_id = (
-                Client()
-                .get_schedule_trigger(
-                    trigger_name_id_or_prefix=trigger_name_or_id,
-                    allow_name_prefix_match=False,
-                    hydrate=False,
-                )
-                .id
-            )
+            trigger_id = get_trigger_by_type(
+                trigger_type=trigger_type,
+                trigger_name_id_or_prefix=trigger_name_or_id,
+                allow_name_prefix_match=False,
+                hydrate=False,
+            ).id
             snapshot_id = (
                 Client()
                 .get_snapshot(
@@ -452,8 +512,11 @@ def make_detach_command() -> click.Command:
     return click.command("detach", help="Detach trigger from snapshot")(f)
 
 
-def make_clear_errors_command() -> click.Command:
+def make_clear_errors_command(trigger_type: TriggerType) -> click.Command:
     """Create a command for clearing trigger dispatch error details.
+
+    Args:
+        trigger_type: The trigger type.
 
     Returns:
         A Click command for dispatch error acknowledgement.
@@ -470,15 +533,12 @@ def make_clear_errors_command() -> click.Command:
             snapshot_name_or_id: Optional name or ID of a specific snapshot.
         """
         try:
-            trigger_id = (
-                Client()
-                .get_schedule_trigger(
-                    trigger_name_id_or_prefix=trigger_name_or_id,
-                    allow_name_prefix_match=False,
-                    hydrate=False,
-                )
-                .id
-            )
+            trigger_id = get_trigger_by_type(
+                trigger_type=trigger_type,
+                trigger_name_id_or_prefix=trigger_name_or_id,
+                allow_name_prefix_match=False,
+                hydrate=False,
+            ).id
             snapshot_id = None
             if snapshot_name_or_id is not None:
                 snapshot_id = (
@@ -634,6 +694,9 @@ def update_platform_event_trigger(
         name,
         active,
         concurrency,
+        source_id,
+        source_type,
+        target_events,
     ]
 
     if not any(option is not None for option in options):
@@ -693,8 +756,11 @@ def list_platform_events(
     )
 
 
-for group in [schedule, platform_event]:
-    group.add_command(make_delete_command())
-    group.add_command(make_attach_command())
-    group.add_command(make_detach_command())
-    group.add_command(make_clear_errors_command())
+for group, tr_type in [
+    (schedule, TriggerType.SCHEDULE),
+    (platform_event, TriggerType.PLATFORM_EVENT),
+]:
+    group.add_command(make_delete_command(tr_type))
+    group.add_command(make_attach_command(tr_type))
+    group.add_command(make_detach_command(tr_type))
+    group.add_command(make_clear_errors_command(tr_type))
