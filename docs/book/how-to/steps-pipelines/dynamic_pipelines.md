@@ -4,10 +4,6 @@ description: Write dynamic pipelines
 
 # Dynamic Pipelines
 
-{% hint style="info" %}
-Dynamic pipelines are supported by the `local`, `local_docker`, `kubernetes`, `sagemaker`, `vertex`, and `azureml` orchestrators. Review the [Limitations and Known Issues](#limitations-and-known-issues) section for important details about running remotely.
-{% endhint %}
-
 ## Why Dynamic Pipelines?
 
 Traditional ZenML pipelines require you to define the entire DAG structure at pipeline definition time. While this works well for many use cases, there are scenarios where you need more flexibility:
@@ -334,13 +330,10 @@ Client().trigger_pipeline(snapshot_id=<ID>, run_configuration={"parameters": {"m
 
 ## Limitations and Known Issues
 
-### Logging
+### Execution modes and error handling
 
-Our logging storage isn't threadsafe yet, which means logs from parallel steps may be mixed up when multiple steps execute concurrently. This is a known limitation that we're working to address.
-
-### Error Handling
-
-When running multiple steps concurrently using `step.submit()`, a failure in one step does not automatically stop other steps. Instead, they continue executing until finished. You should implement your own error handling logic if you need coordinated failure behavior.
+- The `CONTINUE_ON_FAILURE` execution mode is currently not supported in dynamic pipelines. Instead, you can use `try...except` to catch step exceptions and continue the pipeline.
+- When using the `FAIL_FAST` execution mode, failure of a step does not immediately cancel other other **inline** steps. Instead, they continue executing until finished. **Isolated** steps on the other hand will be shut down immediately.
 
 ### Orchestrator Support
 
@@ -364,10 +357,6 @@ When you call `.load()` on an artifact in a dynamic pipeline, it synchronously l
 
 - Mapping is currently supported only over artifacts produced within the same pipeline run (mapping over raw data or external artifacts is not supported).
 - Chunk size for mapped collection loading defaults to 1 and is not yet configurable.
-
-### Execution mode
-
-Currently only the `STOP_ON_FAILURE` execution mode is supported for dynamic pipelines, and will be used as a default.
 
 ## Best Practices
 
