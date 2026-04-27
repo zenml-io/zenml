@@ -120,7 +120,19 @@ def create_docker_run_command(
     if custom_run_args:
         custom_run_args += " "
 
-    sudo_prefix = "sudo " if use_sudo else ""
+    # sudo resets the calling shell's environment by default, which would
+    # cause docker's `-e KEY` (inherit-from-shell) form to arrive with empty
+    # values. --preserve-env propagates the listed names across the sudo
+    # boundary without inlining their values onto the command line.
+    if use_sudo:
+        if environment:
+            preserved = ",".join(environment.keys())
+            sudo_prefix = f"sudo --preserve-env={preserved} "
+        else:
+            sudo_prefix = "sudo "
+    else:
+        sudo_prefix = ""
+
     return (
         f"{sudo_prefix}docker run --rm {custom_run_args}{docker_environment_str} "
         f"{shlex.quote(image)} {entrypoint_str} {arguments_str}"
