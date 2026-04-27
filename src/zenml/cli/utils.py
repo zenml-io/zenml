@@ -2787,9 +2787,7 @@ def _get_click_option_default(default: Any, multiple: bool) -> Any:
 
     # str and bytes are Sequence; exclude them so a string/bytes default is
     # not expanded into per-code-unit tuples for Click multiple options.
-    if isinstance(default, Sequence) and not isinstance(
-        default, (str, bytes)
-    ):
+    if isinstance(default, Sequence) and not isinstance(default, (str, bytes)):
         return tuple(default)
 
     # Scalar defaults are not valid for `multiple=True` options and

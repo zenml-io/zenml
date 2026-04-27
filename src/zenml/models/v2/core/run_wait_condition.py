@@ -365,7 +365,8 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
             )
             resolved_filters = [
                 and_(
-                    RunWaitConditionSchema.resolved_by_user_id == UserSchema.id,
+                    RunWaitConditionSchema.resolved_by_user_id
+                    == UserSchema.id,
                     self.generate_name_or_id_query_conditions(
                         value=v,
                         table=UserSchema,
