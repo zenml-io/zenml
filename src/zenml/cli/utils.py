@@ -512,11 +512,14 @@ def print_stack_configuration(
             "owner": stack.user.name if stack.user else None,
             "labels": stack.labels or {},
             "components": {
-                (ct.value if hasattr(ct, "value") else str(ct)): {
-                    "id": str(components[0].id),
-                    "name": components[0].name,
-                    "flavor": components[0].flavor_name,
-                }
+                (ct.value if hasattr(ct, "value") else str(ct)): [
+                    {
+                        "id": str(component.id),
+                        "name": component.name,
+                        "flavor": component.flavor_name,
+                    }
+                    for component in components
+                ]
                 for ct, components in stack.components.items()
                 if components
             },
@@ -538,7 +541,11 @@ def print_stack_configuration(
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, components in stack.components.items():
-        rich_table.add_row(component_type, components[0].name)
+        for index, component in enumerate(components):
+            rich_table.add_row(
+                component_type if index == 0 else "",
+                component.name,
+            )
 
     rich_table.columns[0]._cells = [
         component.upper()  # type: ignore[union-attr]
@@ -1024,7 +1031,7 @@ def install_packages(
         use_uv: Whether to use uv for package installation.
 
     Raises:
-        e: If the package installation fails.
+        subprocess.CalledProcessError: If the package installation fails.
     """
     if "neptune" in packages:
         declare(
@@ -2043,13 +2050,16 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
     Returns:
         An emoji representing the given execution status.
-
-    Raises:
-        RuntimeError: If the given execution status is not supported.
     """
     from zenml.enums import ExecutionStatus
 
-    if status in {ExecutionStatus.INITIALIZING, ExecutionStatus.PROVISIONING}:
+    if status in {
+        ExecutionStatus.INITIALIZING,
+        ExecutionStatus.PROVISIONING,
+        ExecutionStatus.QUEUED,
+        ExecutionStatus.RESUMING,
+        ExecutionStatus.RETRYING,
+    }:
         return ":hourglass_flowing_sand:"
     if status == ExecutionStatus.FAILED:
         return ":x:"
@@ -2059,9 +2069,17 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
         return ":white_check_mark:"
     if status == ExecutionStatus.CACHED:
         return ":package:"
-    if status == ExecutionStatus.STOPPED or status == ExecutionStatus.STOPPING:
+    if status in {
+        ExecutionStatus.STOPPED,
+        ExecutionStatus.STOPPING,
+        ExecutionStatus.CANCELLING,
+        ExecutionStatus.CANCELLED,
+    }:
         return ":stop_sign:"
-    raise RuntimeError(f"Unknown status: {status}")
+    if status == ExecutionStatus.PAUSED:
+        return ":pause_button:"
+
+    return ":question:"
 
 
 def fetch_snapshot(
@@ -2249,7 +2267,11 @@ def generate_stack_row(
             header = component_type.value.upper().replace("_", " ")
         else:
             header = component_type.value
-        row[header] = components[0].name if components else "-"
+        row[header] = (
+            ", ".join([component.name for component in components])
+            if components
+            else "-"
+        )
 
     return row
 

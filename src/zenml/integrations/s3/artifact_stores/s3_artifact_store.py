@@ -47,6 +47,20 @@ logger = get_logger(__name__)
 PathType = Union[bytes, str]
 
 
+def _normalize_s3_path(path: str) -> str:
+    """Normalizes an S3 path by removing the protocol prefix if present.
+
+    Args:
+        path: The path to normalize.
+
+    Returns:
+        The normalized path.
+    """
+    if path.startswith("s3://"):
+        return path[5:]
+    return path
+
+
 class ZenMLS3Filesystem(s3fs.S3FileSystem):  # type: ignore[misc]
     """Modified s3fs.S3FileSystem to disable caching.
 
@@ -72,10 +86,36 @@ class ZenMLS3Filesystem(s3fs.S3FileSystem):  # type: ignore[misc]
 
     cachable = False
 
+    @staticmethod
+    async def _safe_aexit_s3_creator(s3_creator: Any) -> None:
+        """Exit an aiobotocore client context manager, tolerating double-close.
+
+        The s3fs finalizer and ZenML's explicit cleanup can both call
+        ``__aexit__`` on the same creator object. The second call raises
+        ``AssertionError("Session was never entered")`` in aiobotocore
+        because ``http_session._sessions`` is already ``None``. This
+        wrapper treats that specific assertion as a harmless no-op.
+
+        Args:
+            s3_creator: The aiobotocore async context manager to exit.
+
+        Raises:
+            AssertionError: If the assertion is unrelated to double-close.
+        """
+        try:
+            await s3_creator.__aexit__(None, None, None)
+        except AssertionError as exc:
+            _MSG = "Session was never entered"
+            if not (exc.args and _MSG in str(exc.args[0])):
+                raise
+            logger.debug(
+                "Suppressed double-close of aiobotocore session: %s", exc
+            )
+
     async def _close(self) -> None:
         """Close the S3 client."""
         if self._s3creator is not None:  # type: ignore[has-type]
-            await self._s3creator.__aexit__(None, None, None)  # type: ignore[has-type]
+            await self._safe_aexit_s3_creator(self._s3creator)  # type: ignore[has-type]
             self._s3creator = None
             self._s3 = None
 
@@ -91,18 +131,24 @@ class ZenMLS3Filesystem(s3fs.S3FileSystem):  # type: ignore[misc]
         """
         # IMPORTANT: This method is a copy of the original close_session method
         # from s3fs.S3FileSystem. The only difference is that it uses the
-        # provided event loop instead of creating a new one.
+        # provided event loop instead of creating a new one, and routes
+        # through _safe_aexit_s3_creator to tolerate double-close.
         if loop is not None and loop.is_running():
             try:
                 # NOTE: this is the line in the original method that causes
                 # the memory leak
                 # loop = asyncio.get_event_loop()
-                loop.create_task(s3.__aexit__(None, None, None))
+                loop.create_task(ZenMLS3Filesystem._safe_aexit_s3_creator(s3))
                 return
             except RuntimeError:
                 pass
             try:
-                sync(loop, s3.__aexit__, None, None, None, timeout=0.1)
+                sync(
+                    loop,
+                    ZenMLS3Filesystem._safe_aexit_s3_creator,
+                    s3,
+                    timeout=0.1,
+                )
                 return
             except FSTimeoutError:
                 pass
@@ -330,9 +376,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         # remove s3 prefix if given, so we can remove the directory later as
         # this method is expected to only return filenames
-        path = convert_to_str(path)
-        if path.startswith("s3://"):
-            path = path[5:]
+        path = _normalize_s3_path(convert_to_str(path))
 
         def _extract_basename(file_dict: Dict[str, Any]) -> str:
             """Extracts the basename from a file info dict returned by the S3 filesystem.

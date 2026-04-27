@@ -163,6 +163,56 @@ the chance of the server receiving the maximum amount of retry requests.
 - **`starting_deadline_seconds`**: CronJob starting deadline in seconds for scheduled pipelines. If a scheduled run misses its trigger time, it can still start within this window. Only applies when a pipeline has a cron schedule. Note: this is different from `active_deadline_seconds`, which limits how long a *running* job can execute.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
 
+#### Kubernetes permissions and service accounts
+
+For production setups, use separate identities for:
+
+1. the identity that starts the orchestrator job (typically via a linked Service
+   Connector),
+2. the service account used by the orchestrator pod,
+3. the service account used by step pods.
+
+Using one service account for all three works, but it is broader than
+necessary.
+
+**Starter identity (Service Connector / kubeconfig identity)**
+
+Minimum permissions to start a non-scheduled orchestrator run:
+
+- `batch/jobs`: `create`
+
+Common optional permissions:
+
+- For synchronous startup monitoring from the submitter:
+  - `batch/jobs`: `get`
+  - `core/pods`: `list`
+  - `core/pods/log`: `get`
+- For scheduled pipelines (CronJobs):
+  - `batch/cronjobs`: `create`, `patch`, `delete`
+- If `pass_zenml_token_as_secret=True`:
+  - `core/secrets`: `create`, `patch`, `delete`
+- If you let ZenML auto-create the default `zenml-service-account`:
+  - `core/serviceaccounts`: `create`
+  - `rbac.authorization.k8s.io/rolebindings`: `create`
+
+**Orchestrator pod service account (`service_account_name`)**
+
+The orchestrator pod launches and monitors step jobs. It needs:
+
+- `batch/jobs`: `create`, `get`, `list`, `patch`, `delete`
+- `core/pods`: `get`, `list`
+- `core/pods/log`: `get`
+
+If `pass_zenml_token_as_secret=True`, also grant:
+
+- `core/secrets`: `delete`
+
+**Step pod service account (`step_pod_service_account_name`)**
+
+Step containers do not need Kubernetes API access for normal execution in this
+orchestrator flow. Unless your step code explicitly calls the Kubernetes API,
+you can keep this account with no additional Kubernetes RBAC grants.
+
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
 from kubernetes.client.models import V1Toleration

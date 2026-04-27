@@ -72,7 +72,7 @@ Your choice of implementation will determine the additional environment variable
 Provides generic Kubernetes functionality to run snapshots.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
@@ -84,7 +84,7 @@ zenml:
 Provides AWS-specific features including external S3 logs and ECR integration.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workload-manager
@@ -104,7 +104,7 @@ Choose how runner images are managed. Your choice of implementation will determi
 Reuse the container images built for the snapshot being run.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
         # Keep this empty or skip setting it to reuse the snapshot container images
@@ -116,7 +116,7 @@ zenml:
 Build the runner images on-demand.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
         ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: internal-registry.mycompany.com/zenml
@@ -127,7 +127,7 @@ zenml:
 Use a pre-built runner image for all runs.
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "false"
         ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE: internal-registry.mycompany.com/zenml/zenml:<ZENML_OSS_VERSION>
@@ -149,6 +149,34 @@ Granting these permissions can be achieved in several ways:
   * use implicit workload identity access to the container registry - available in most cloud providers by granting the Kubernetes service account access to the container registry
   * configure a service account with implicit access to the container registry - associating some cloud service identity (e.g. a GCP service account, an AWS IAM role, etc.) with the Kubernetes service account
   * configure an image pull secret for the service account - similar to the previous option, but using a Kubernetes secret instead of a cloud service identity
+
+#### Recommended least-privilege split
+
+Use separate identities for:
+
+1. the service account running the Workspace Server pod,
+2. the service account configured in
+   `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` for runner/builder jobs.
+
+**Workspace Server service account RBAC (in workload manager namespace)**
+
+The Workspace Server creates, monitors, and cleans up workload manager jobs and
+fetches pod logs. Grant:
+
+- `batch/jobs`: `create`, `get`, `deletecollection`
+- `core/pods`: `list`
+- `core/pods/log`: `get`
+
+**Workload manager runner/builder service account**
+
+The runner/builder jobs launched by the workload manager do not need Kubernetes
+API permissions for the workload manager control loop itself. This account
+mainly needs:
+
+- container registry pull permissions for runner images,
+- container registry push permissions if build-on-demand is enabled,
+- optional cloud permissions required by your workload implementation (for
+  example S3 write access when AWS external logs are enabled).
 
 ### 4. Environment Variable Reference
 
@@ -183,7 +211,7 @@ All supported environment variables for workload manager configuration:
 **Minimal Kubernetes Configuration:**
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
@@ -193,7 +221,7 @@ zenml:
 **Full AWS Configuration:**
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
@@ -212,7 +240,7 @@ zenml:
 **Configuration with a Pre-built Runner Image:**
 
 ```yaml
-zenml:
+server:
     environment:
         ZENML_SERVER_WORKLOAD_MANAGER_IMPLEMENTATION_SOURCE: zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager
         ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
@@ -240,3 +268,5 @@ helm upgrade zenml ./zenml-<version>.tgz \
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [Helm Documentation](https://helm.sh/docs/)
 
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

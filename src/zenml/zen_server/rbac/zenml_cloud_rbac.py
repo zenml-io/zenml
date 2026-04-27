@@ -156,6 +156,8 @@ class ZenMLCloudRBAC(RBACInterface):
             resources: The resources for which to delete the resource membership
                 information.
         """
+        if not resources:
+            return
         params = {
             "resources": [str(resource) for resource in resources],
         }

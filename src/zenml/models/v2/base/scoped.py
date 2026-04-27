@@ -710,6 +710,7 @@ class RunMetadataFilterMixin(BaseFilter):
                 PipelineRunSchema,
                 RunMetadataResourceSchema,
                 RunMetadataSchema,
+                RunWaitConditionSchema,
                 ScheduleSchema,
                 StepRunSchema,
             )
@@ -718,6 +719,7 @@ class RunMetadataFilterMixin(BaseFilter):
                 ArtifactVersionSchema: MetadataResourceTypes.ARTIFACT_VERSION,
                 ModelVersionSchema: MetadataResourceTypes.MODEL_VERSION,
                 PipelineRunSchema: MetadataResourceTypes.PIPELINE_RUN,
+                RunWaitConditionSchema: MetadataResourceTypes.WAIT_CONDITION,
                 StepRunSchema: MetadataResourceTypes.STEP_RUN,
                 ScheduleSchema: MetadataResourceTypes.SCHEDULE,
             }

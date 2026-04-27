@@ -251,6 +251,9 @@ class BaseOrchestrator(StackComponent, ABC):
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
+
+        Returns:
+            An optional iterator of step metadata dictionaries.
         """
 
     def run(
@@ -466,6 +469,52 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
+    def resume_run(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        run: "PipelineRunResponse",
+        stack: "Stack",
+        force_async: bool = False,
+    ) -> None:
+        """Resume an existing dynamic pipeline run.
+
+        Args:
+            snapshot: Snapshot backing the run.
+            run: Existing pipeline run to resume.
+            stack: Stack used for the resume.
+            force_async: Whether to skip waiting for submission completion.
+
+        Raises:
+            RuntimeError: If the snapshot does not represent a dynamic pipeline.
+        """
+        if not snapshot.is_dynamic:
+            raise RuntimeError("Cannot resume a non-dynamic pipeline.")
+
+        self._prepare_run(snapshot=snapshot)
+
+        base_environment, secrets = get_config_environment_vars(
+            pipeline_run_id=run.id,
+        )
+        base_environment.update(secrets)
+
+        try:
+            submission_result = self.submit_dynamic_pipeline(
+                snapshot=snapshot,
+                stack=stack,
+                environment=base_environment,
+                placeholder_run=run,
+            )
+
+            if submission_result:
+                if submission_result.metadata:
+                    # TODO: Do we somehow prefix the metadata here
+                    pass
+
+                if submission_result.wait_for_completion and not force_async:
+                    submission_result.wait_for_completion()
+        finally:
+            self._cleanup_run()
+
     def run_step(
         self,
         step: "Step",
@@ -536,6 +585,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Args:
             step_run: The step run.
+
+        Returns:
+            The execution status of the isolated step run.
 
         Raises:
             NotImplementedError: If the orchestrator does not implement this
@@ -781,6 +833,10 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             run: A pipeline run response to fetch its status.
             include_steps: If True, also fetch the status of individual steps.
+
+        Returns:
+            A tuple of the pipeline run status and an optional dictionary of
+            step statuses.
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base

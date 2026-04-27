@@ -15,12 +15,31 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Literal, Optional, Type
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    ClassVar,
+    Dict,
+    Generic,
+    Literal,
+    Optional,
+    Type,
+    TypeAlias,
+    TypeVar,
+)
+from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import TriggerFlavor, TriggerRunConcurrency, TriggerType
+from zenml.enums import (
+    PLATFORM_EVENT_REGISTRY,
+    SourceType,
+    TriggerFlavor,
+    TriggerRunConcurrency,
+    TriggerType,
+)
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     AnyQuery,
@@ -37,6 +56,182 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
 )
+from zenml.utils.enum_utils import StrEnum
+from zenml.utils.time_utils import utc_now
+
+# ----------- DISPATCH STATE MODELS ------------------ #
+
+
+class TriggerDispatchStatusCode(StrEnum):
+    """User-facing dispatch status values for trigger-snapshot execution."""
+
+    SUCCESS = "SUCCESS"
+    SKIPPED_CONCURRENCY = "SKIPPED_CONCURRENCY"
+    SKIPPED_MAX_RUNS = "SKIPPED_MAX_RUNS"
+    ERROR = "ERROR"
+
+
+class TriggerDispatchErrorSeverity(StrEnum):
+    """Severity levels for trigger dispatch errors."""
+
+    MINOR = "Minor"
+    MAJOR = "Major"
+    CRITICAL = "Critical"
+
+
+class TriggerSnapshotDispatchState(BaseModel):
+    """User-facing trigger dispatch state stored on trigger-snapshot links.
+
+    Persisted only for paths where a concrete ``(trigger_id, snapshot_id)``
+    association row exists; unattributable exits stay in structured logs.
+    """
+
+    MESSAGE_MAX_LENGTH: ClassVar[int] = 4096
+    ERROR_TYPE_MAX_LENGTH: ClassVar[int] = 255
+    STACK_TRACE_MAX_LENGTH: ClassVar[int] = 16_384
+
+    last_status: TriggerDispatchStatusCode
+    last_status_at: datetime | None = Field(
+        default=None,
+        description="Timestamp of the latest recorded status transition.",
+    )
+    last_error_message: str | None = Field(
+        default=None,
+        max_length=MESSAGE_MAX_LENGTH,
+        description=(
+            "Friendly user-facing message describing the latest error."
+        ),
+    )
+    last_error_type: str | None = Field(
+        default=None,
+        max_length=ERROR_TYPE_MAX_LENGTH,
+        description="Implementation-level error classifier.",
+    )
+    last_error_severity: TriggerDispatchErrorSeverity | None = Field(
+        default=None,
+        description="Severity level of the latest error.",
+    )
+    last_error_stack_trace: str | None = Field(
+        default=None,
+        max_length=STACK_TRACE_MAX_LENGTH,
+        description="Stack trace accompanying the last error",
+    )
+    last_error_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Timestamp of the last error in the current consecutive error-type "
+            "streak."
+        ),
+    )
+    first_error_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Timestamp of the first error in the current consecutive "
+            "error-type streak."
+        ),
+    )
+    last_error_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of times the latest error type occurred consecutively.",
+    )
+
+    @field_validator("last_error_message", mode="before")
+    @classmethod
+    def _truncate_message(cls, value: Any) -> Any:
+        """Truncate message payloads to storage-safe length.
+
+        Args:
+            value: Incoming message value.
+
+        Returns:
+            Possibly truncated message value.
+        """
+        if isinstance(value, str):
+            return value[: cls.MESSAGE_MAX_LENGTH]
+        return value
+
+    @field_validator("last_error_stack_trace", mode="before")
+    @classmethod
+    def _truncate_stack_trace_tail(cls, value: Any) -> Any:
+        """Trim stack traces to keep the most relevant bottom entries.
+
+        Args:
+            value: Incoming stack trace.
+
+        Returns:
+            Possibly tail-trimmed stack trace.
+        """
+        if isinstance(value, str):
+            return value[-cls.STACK_TRACE_MAX_LENGTH :]
+        return value
+
+    @model_validator(mode="after")
+    def _set_error_defaults(self) -> "TriggerSnapshotDispatchState":
+        """Initialize default error metadata for freshly created errors.
+
+        Returns:
+            The validated state.
+        """
+        if self.last_status_at is None:
+            self.last_status_at = utc_now()
+        if self.last_status == TriggerDispatchStatusCode.ERROR:
+            if self.last_error_count == 0:
+                self.last_error_count = 1
+            if self.last_error_at is None:
+                self.last_error_at = utc_now()
+            if self.first_error_at is None:
+                self.first_error_at = self.last_error_at
+        return self
+
+    def apply_new_state(
+        self,
+        new_state: "TriggerSnapshotDispatchState",
+    ) -> None:
+        """Apply a new dispatch state on top of this persisted state.
+
+        Args:
+            new_state: Newly reported dispatch state.
+        """
+        if new_state.last_status == TriggerDispatchStatusCode.ERROR:
+            if (
+                self.last_status == TriggerDispatchStatusCode.ERROR
+                and self.last_error_type == new_state.last_error_type
+            ):
+                self.last_error_count += 1
+                if self.first_error_at is None:
+                    self.first_error_at = (
+                        self.last_error_at
+                        or new_state.first_error_at
+                        or new_state.last_error_at
+                        or utc_now()
+                    )
+            else:
+                self.last_error_count = 1
+                self.first_error_at = (
+                    new_state.first_error_at
+                    or new_state.last_error_at
+                    or utc_now()
+                )
+            self.last_error_message = new_state.last_error_message
+            self.last_error_type = new_state.last_error_type
+            self.last_error_severity = new_state.last_error_severity
+            self.last_error_stack_trace = new_state.last_error_stack_trace
+            self.last_error_at = new_state.last_error_at or utc_now()
+
+        self.last_status = new_state.last_status
+        self.last_status_at = new_state.last_status_at or utc_now()
+
+    def clear_error_details(self) -> None:
+        """Clear stored error details while keeping the last status."""
+        self.last_error_message = None
+        self.last_error_type = None
+        self.last_error_severity = None
+        self.last_error_stack_trace = None
+        self.last_error_at = None
+        self.first_error_at = None
+        self.last_error_count = 0
+
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -47,6 +242,9 @@ if TYPE_CHECKING:
     from zenml.models.v2.base.filter import AnySchema
 
 
+# ----------- TRIGGER BASE CLASSES ------------------- #
+
+
 class TriggerBase(BaseModel, ABC):
     """Base class for triggers."""
 
@@ -54,7 +252,10 @@ class TriggerBase(BaseModel, ABC):
         max_length=STR_FIELD_MAX_LENGTH,
         description="The name of the trigger.",
     )
-    active: bool
+    active: bool = Field(
+        default=True,
+        description="Whether the trigger should be active.",
+    )
     type: TriggerType
     concurrency: TriggerRunConcurrency = Field(
         default=TriggerRunConcurrency.SKIP,
@@ -146,13 +347,22 @@ class TriggerResponseMetadata(ProjectScopedResponseMetadata):
 class TriggerResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the schedule entity."""
 
-    snapshots: Optional[list["PipelineSnapshotResponse"]] = None
+    snapshots: list["PipelineSnapshotResponse"] = []
+    executable_snapshots: list["PipelineSnapshotResponse"] = []
     user: Optional["UserResponse"] = None
     latest_run: Optional["PipelineRunResponse"] = None
+    snapshot_dispatch_states: dict[UUID, TriggerSnapshotDispatchState] = Field(
+        default_factory=dict
+    )
 
 
 class UnScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        "is_archived",
+        "type",
+    ]
 
     name: StrOrList = Field(
         default=None,
@@ -164,7 +374,10 @@ class UnScopedTriggerFilter(BaseFilter):
     )
     is_archived: BoolOrList = Field(
         default=False,
-        description="Whether the trigger should be archived.",
+        description=(
+            "Restrict results to archived or non-archived triggers. Applied as "
+            "a global scope filter independently of logical_operator."
+        ),
     )
     flavor: TriggerFlavor | str | None = Field(
         default=None,
@@ -185,11 +398,34 @@ class UnScopedTriggerFilter(BaseFilter):
         default=None, description="The trigger concurrency."
     )
 
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from zenml.zen_stores.schemas import TriggerSchema
+
+        query = super().apply_filter(query=query, table=table)
+        query = query.where(TriggerSchema.is_archived == self.is_archived)
+        if self.type is not None:
+            query = query.where(TriggerSchema.type == self.type)
+        return query
+
 
 class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
     """Public class for filtering triggers."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *UnScopedTriggerFilter.FILTER_EXCLUDE_FIELDS,
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_id",
         "snapshot_id",
@@ -198,6 +434,8 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
     CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "type",
+        "flavor",
+        "next_occurrence",
     ]
 
     pipeline_id: StrOrList = Field(
@@ -236,7 +474,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
             TriggerSnapshotSchema,
         )
 
-        query = ProjectScopedFilter.apply_filter(self, query, table)
+        query = super().apply_filter(query, table)
 
         if self.filter_by_snapshot:
             query = query.join(
@@ -260,6 +498,9 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         return query
 
 
+# ----------- SCHEDULE CLASSES ------------------- #
+
+
 class ScheduleTrigger(BaseModel):
     """Base class for schedule-specific parameters."""
 
@@ -274,6 +515,11 @@ class ScheduleTrigger(BaseModel):
     run_once_start_time: datetime | None = Field(
         default=None,
         description="Scheduling option: Execute once on selected start time.",
+    )
+    max_runs: int | None = Field(
+        default=None,
+        description="Maximum number of runs to execute with this schedule.",
+        ge=1,
     )
 
     @field_validator(
@@ -363,6 +609,11 @@ class ScheduleTrigger(BaseModel):
 
 class ScheduleTriggerRequest(TriggerRequest, ScheduleTrigger):
     """Class representing a ScheduleTrigger request."""
+
+    type: Literal[TriggerType.SCHEDULE] = TriggerType.SCHEDULE
+    flavor: Literal[TriggerFlavor.NATIVE_SCHEDULE] = (
+        TriggerFlavor.NATIVE_SCHEDULE
+    )
 
     def get_config(self) -> str:
         """Returns the serialized blob of custom trigger fields.
@@ -467,14 +718,18 @@ class ScheduleTriggerResponseBody(ScheduleTrigger, TriggerResponseBody):
         return ["next_occurrence"]
 
 
-class ScheduleTriggerResponse(
+TriggerBodyT = TypeVar("TriggerBodyT", bound="TriggerResponseBody")
+
+
+class TriggerResponse(
     ProjectScopedResponse[
-        ScheduleTriggerResponseBody,
+        TriggerBodyT,
         TriggerResponseMetadata,
         TriggerResponseResources,
-    ]
+    ],
+    Generic[TriggerBodyT],
 ):
-    """Class representing a ScheduleTrigger response."""
+    """Class representing a base TriggerResponse."""
 
     @property
     def is_archived(self) -> bool:
@@ -520,6 +775,46 @@ class ScheduleTriggerResponse(
             The trigger flavor.
         """
         return self.get_body().flavor
+
+    @property
+    def snapshots(self) -> list["PipelineSnapshotResponse"]:
+        """Implements the 'snapshots' property.
+
+        Returns:
+            A list of source snapshots the triggers is attached to.
+        """
+        return self.get_resources().snapshots
+
+    @property
+    def executable_snapshots(self) -> list["PipelineSnapshotResponse"]:
+        """Implements the 'executable_snapshots' property.
+
+        Returns:
+            A list of snapshots the triggers is attached to.
+        """
+        return self.get_resources().executable_snapshots
+
+    @property
+    def latest_run(self) -> Optional["PipelineRunResponse"]:
+        """Implements the 'latest_run' property.
+
+        Returns:
+            The latest run of the trigger.
+        """
+        return self.get_resources().latest_run
+
+    @property
+    def concurrency(self) -> TriggerRunConcurrency:
+        """Implements the 'concurrency' property.
+
+        Returns:
+            The concurrency of the trigger.
+        """
+        return self.get_body().concurrency
+
+
+class ScheduleTriggerResponse(TriggerResponse[ScheduleTriggerResponseBody,]):
+    """Class representing a ScheduleTrigger response."""
 
     @property
     def next_occurrence(self) -> datetime | None:
@@ -576,33 +871,181 @@ class ScheduleTriggerResponse(
         return self.get_body().run_once_start_time
 
     @property
-    def snapshots(self) -> list["PipelineSnapshotResponse"] | None:
-        """Implements the 'snapshots' property.
+    def max_runs(self) -> int | None:
+        """Implements the 'max_runs' property.
 
         Returns:
-            A list of snapshots the triggers is attached to.
+            The scheduler's max runs.
         """
-        return self.get_resources().snapshots
+        return self.get_body().max_runs
+
+
+# ----------- EVENT CLASSES ------------------- #
+
+
+class SourceEntity(BaseModel):
+    """Base class representing a SourceEntity."""
+
+    type: SourceType
+    id: UUID
+
+
+class PlatformEventTrigger(BaseModel):
+    """Base class for event-specific parameters."""
+
+    source_entity: SourceEntity
+    target_events: list[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_event_type(self) -> "PlatformEventTrigger":
+        """Validates type/event combination.
+
+        Returns:
+            The event trigger instance.
+
+        Raises:
+            ValueError: If type/event combination is invalid.
+        """
+        event_enum = PLATFORM_EVENT_REGISTRY[self.source_entity.type]
+
+        for event in self.target_events:
+            try:
+                event_enum(event)  # type: ignore[abstract]
+            except ValueError:
+                allowed = [e.value for e in event_enum]
+                raise ValueError(
+                    f"Invalid event '{event}' for source_type '{self.source_entity.type}'. "
+                    f"Allowed events: {allowed}"
+                )
+
+        return self
+
+
+class PlatformEventTriggerRequest(TriggerRequest, PlatformEventTrigger):
+    """Class representing a PlatformEventTrigger request."""
+
+    type: Literal[TriggerType.PLATFORM_EVENT] = TriggerType.PLATFORM_EVENT
+    flavor: Literal[TriggerFlavor.PLATFORM_EVENT] = (
+        TriggerFlavor.PLATFORM_EVENT
+    )
+
+    def get_config(self) -> str:
+        """Returns the serialized blob of custom trigger fields.
+
+        Returns:
+            Json-dump of ScheduleTrigger config.
+        """
+        return self.model_dump_json(
+            include=set(PlatformEventTrigger.model_fields),
+        )
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Calculates and returns extra flat fields.
+
+        Returns:
+            A dictionary with extra fields (next occurrence or empty).
+        """
+        return {
+            "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
+            "target_events": " ".join(
+                f"event:{event}" for event in self.target_events
+            ),
+        }
+
+
+class PlatformEventTriggerUpdate(TriggerUpdate, PlatformEventTrigger):
+    """Class representing a PlatformEventTrigger update."""
+
+    type: Literal[TriggerType.PLATFORM_EVENT] = TriggerType.PLATFORM_EVENT
+    flavor: Literal[TriggerFlavor.PLATFORM_EVENT] = (
+        TriggerFlavor.PLATFORM_EVENT
+    )
+
+    def get_config(self) -> str:
+        """Returns the serialized blob of custom trigger fields.
+
+        Returns:
+            Json-dump of ScheduleTrigger config.
+        """
+        return self.model_dump_json(
+            include=set(PlatformEventTrigger.model_fields),
+        )
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Calculates and returns extra flat fields.
+
+        Returns:
+            A dictionary with extra fields (next occurrence or empty).
+        """
+        return {
+            "source_entity": f"{self.source_entity.type.value}:{self.source_entity.id}",
+            "target_events": " ".join(
+                f"event:{event}" for event in self.target_events
+            ),
+        }
+
+
+class PlatformEventTriggerResponseBody(
+    PlatformEventTrigger, TriggerResponseBody
+):
+    """Class representing a PlatformEvent trigger response body."""
+
+    def get_extra_fields(self) -> list[str]:
+        """Returns the extra fields (e.g. next occurrence).
+
+        Returns:
+            The extra fields for the schedule payload.
+        """
+        return []
+
+
+class PlatformEventTriggerResponse(
+    TriggerResponse[PlatformEventTriggerResponseBody,]
+):
+    """Class representing a platform event trigger response."""
 
     @property
-    def latest_run(self) -> Optional["PipelineRunResponse"]:
-        """Implements the 'latest_run' property.
+    def source_type(self) -> SourceType:
+        """Implements the `source_type` property.
 
         Returns:
-            The latest run of the trigger.
+            The source entity type.
         """
-        return self.get_resources().latest_run
+        return self.get_body().source_entity.type
 
     @property
-    def concurrency(self) -> TriggerRunConcurrency:
-        """Implements the 'concurrency' property.
+    def source_id(self) -> UUID:
+        """Implements the `source_id` property.
 
         Returns:
-            The concurrency of the trigger.
+            The source entity id.
         """
-        return self.get_body().concurrency
+        return self.get_body().source_entity.id
+
+    @property
+    def target_events(self) -> list[str]:
+        """Implements the `target_events` property.
+
+        Returns:
+            The list of events we trigger runs for.
+        """
+        return self.get_body().target_events
 
 
-TRIGGER_UPDATE_TYPE_UNION = ScheduleTriggerUpdate
-TRIGGER_CREATE_TYPE_UNION = ScheduleTriggerRequest
-TRIGGER_RETURN_TYPE_UNION = ScheduleTriggerResponse
+class TriggerExecutionInfo(BaseModel):
+    """Class representing a trigger execution information."""
+
+    upstream_run_id: UUID | None = None
+
+
+TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[
+    ScheduleTriggerUpdate | PlatformEventTriggerUpdate,
+    Field(discriminator="type"),
+]
+TRIGGER_CREATE_TYPE_UNION: TypeAlias = Annotated[
+    ScheduleTriggerRequest | PlatformEventTriggerRequest,
+    Field(discriminator="type"),
+]
+TRIGGER_RETURN_TYPE_UNION: TypeAlias = (
+    ScheduleTriggerResponse | PlatformEventTriggerResponse
+)

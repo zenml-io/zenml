@@ -178,3 +178,5 @@ Run:AI workload logs can be viewed in the Run:AI control plane UI:
 1. Navigate to your Run:AI control plane
 2. Go to Workloads → Training
 3. Find your step workload and click to view logs
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

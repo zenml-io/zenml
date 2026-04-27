@@ -18,8 +18,11 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.enums import StackDeploymentProvider
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+    ReplayRunConfiguration,
+)
+from zenml.enums import RunWaitConditionStatus, StackDeploymentProvider
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
@@ -103,6 +106,11 @@ from zenml.models import (
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -153,9 +161,12 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsStoreInterface,
+)
 
 
-class ZenStoreInterface(ABC):
+class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
     """ZenML store interface.
 
     All ZenML stores must implement the methods in this interface.
@@ -1658,6 +1669,22 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def replay_run(
+        self,
+        run_id: UUID,
+        run_configuration: ReplayRunConfiguration,
+    ) -> PipelineRunResponse:
+        """Replay a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to replay.
+            run_configuration: Replay configuration.
+
+        Returns:
+            The replayed pipeline run.
+        """
+
+    @abstractmethod
     def disable_run_heartbeat(self, run_id: UUID) -> None:
         """Disables the run's heartbeat.
 
@@ -1666,6 +1693,81 @@ class ZenStoreInterface(ABC):
 
         Returns:
             KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def create_run_wait_condition(
+        self, run_wait_condition: RunWaitConditionRequest
+    ) -> RunWaitConditionResponse:
+        """Create a run wait condition.
+
+        Args:
+            run_wait_condition: The wait condition to create.
+
+        Returns:
+            The created wait condition.
+        """
+
+    @abstractmethod
+    def get_run_wait_condition(
+        self, run_wait_condition_id: UUID, hydrate: bool = True
+    ) -> RunWaitConditionResponse:
+        """Get a run wait condition by ID.
+
+        Args:
+            run_wait_condition_id: The ID of the wait condition.
+            hydrate: Whether to hydrate nested metadata/resources.
+
+        Returns:
+            The run wait condition.
+        """
+
+    @abstractmethod
+    def list_run_wait_conditions(
+        self,
+        run_wait_condition_filter_model: RunWaitConditionFilter,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions matching the filter criteria.
+
+        Args:
+            run_wait_condition_filter_model: Filter and pagination model.
+            hydrate: Whether to hydrate nested metadata/resources.
+
+        Returns:
+            A page of wait conditions.
+        """
+
+    @abstractmethod
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolve_request: RunWaitConditionResolveRequest,
+    ) -> RunWaitConditionResponse:
+        """Resolve a run wait condition.
+
+        Args:
+            run_wait_condition_id: The wait condition ID.
+            resolve_request: Resolution payload.
+
+        Returns:
+            The updated wait condition.
+        """
+
+    @abstractmethod
+    def update_run_wait_condition_lease(
+        self,
+        run_wait_condition_id: UUID,
+        lease_update: RunWaitConditionLeaseUpdate,
+    ) -> RunWaitConditionStatus:
+        """Update a run wait condition polling lease.
+
+        Args:
+            run_wait_condition_id: The wait condition ID.
+            lease_update: Lease update payload.
+
+        Returns:
+            The latest persisted wait condition status.
         """
 
     # -------------------- Run metadata --------------------
@@ -1762,13 +1864,19 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def attach_trigger_to_snapshot(
-        self, trigger_id: UUID, snapshot_id: UUID
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
     ) -> None:
         """Attaches (links) a trigger to a snapshot.
 
         Args:
             trigger_id: The ID of the trigger.
             snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs.
+            allow_replace: Allow replacement if attachment already exists.
 
         Raises:
             KeyError: if the entities don't exist.
@@ -1787,6 +1895,21 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the entities don't exist.
+        """
+
+    @abstractmethod
+    def clear_trigger_dispatch_error(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID | None = None,
+    ) -> None:
+        """Clear recorded dispatch errors for a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: Optional snapshot ID. If provided, clear only this
+                snapshot association. If omitted, clear all associated
+                snapshot dispatch errors for the trigger.
         """
 
     # -------------------- Schedules --------------------

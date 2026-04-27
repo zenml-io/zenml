@@ -6,7 +6,7 @@ fullnameOverride: ""
 
 
 # ZenML server related options.
-zenml:
+server:
 
   replicaCount: 1
 
@@ -314,6 +314,10 @@ zenml:
     # If set to true, path where the local database is created will be
     # mounted as a persistent volume so the data is not lost on pod restarts.
     # Only relevant for local sqlite database.
+    # When persistence is enabled, ensure that podSecurityContext.fsGroup
+    # is set to 1000 (this is the default) so that the ZenML container can write to
+    # the persistent volume. The container runs as UID 1000, and without fsGroup
+    # set, the PVC will be mounted with root:root ownership, causing permission errors.
     persistence:
       enabled: false
       size: 1Gi
@@ -1111,6 +1115,21 @@ zenml:
   # mounted as environment variables in the ZenML server container.
   secretEnvironment: {}
 
+  # Extra environment variables sourced from existing Kubernetes secrets via
+  # valueFrom.secretKeyRef. Use this to inject sensitive values (API keys,
+  # passwords, tokens) from secrets that already exist in the cluster without
+  # committing them to values.yaml.
+  #
+  # Example:
+  #   environmentSecretKeyRefs:
+  #     - name: MY_API_KEY
+  #       secretName: my-existing-secret
+  #       secretKey: api-key
+  #     - name: DB_PASSWORD
+  #       secretName: db-credentials
+  #       secretKey: password
+  environmentSecretKeyRefs: []
+
   # Custom 'app.kubernetes.io/instance' label value to use. This is used to
   # uniquely identify the ZenML deployment in the Kubernetes cluster. All
   # resources in the deployment will be labeled with this value, if set. The
@@ -1155,6 +1174,28 @@ zenml:
       generateCerts: false
       secretName: zenml-tls-certs
 
+  # Gateway API (gateway.networking.k8s.io/v1) as an alternative to Ingress.
+  # Only one of ingress.enabled and gateway.enabled can be true.
+  #
+  # NOTE on TLS: Unlike Ingress, TLS termination in Gateway API is configured
+  # on the Gateway resource's listeners, not on the HTTPRoute. To enable HTTPS:
+  #   1. Configure an HTTPS listener on your Gateway with a certificateRef
+  #   2. Set sectionName below to the name of that HTTPS listener (e.g. "https")
+  # This chart only creates the HTTPRoute; the Gateway resource (and its TLS
+  # config) must be managed separately.
+  gateway:
+    enabled: false
+    annotations: {}
+    gatewayRef:
+      name: ""
+      namespace: ""
+    # Name of the Gateway listener to attach to. Set this to your HTTPS
+    # listener name (e.g. "https") for TLS termination. If empty, the route
+    # attaches to all compatible listeners on the referenced Gateway.
+    sectionName: ""
+    host: ""
+    path: /
+
   # Configuration for custom CA certificates.
   certificates:
 
@@ -1196,8 +1237,14 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
+podSecurityContext:
+  # fsGroup must be set to 1000 when using persistent volumes (database persistence or backup PVCs)
+  # to ensure the ZenML container (running as UID 1000) can write to the mounted volumes.
+  # This is set by default to prevent permission issues.
+  fsGroup: 1000
+  # fsGroupChangePolicy controls when fsGroup ownership changes are applied.
+  # "OnRootMismatch" only changes ownership if the root of the volume doesn't match the fsGroup.
+  fsGroupChangePolicy: "OnRootMismatch"
 
 securityContext:
   runAsNonRoot: true
@@ -1257,6 +1304,11 @@ affinity: {}
 #         replicaCount: 1
 #         command: ["python"]
 #         args: ["-m", "task"]
+#         strategy:
+#             type: RollingUpdate
+#             rollingUpdate:
+#                 maxSurge: 1
+#                 maxUnavailable: 0
 #         ports:
 #             - name: http
 #               containerPort: 8080

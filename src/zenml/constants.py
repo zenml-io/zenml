@@ -16,6 +16,7 @@
 import json
 import logging
 import os
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, List, Optional, Type, TypeVar
 
 from zenml.enums import AuthScheme
@@ -93,6 +94,37 @@ def is_false_string_value(value: Any) -> bool:
     return value in ["0", "n", "no", "False", "false"]
 
 
+def validate_directory_name(name: str) -> str:
+    """Validate a directory name.
+
+    Args:
+        name: The directory name to validate.
+
+    Raises:
+        ValueError: If the name is not a valid directory name.
+
+    Returns:
+        The validated directory name.
+    """
+    if not name:
+        raise ValueError("Directory name cannot be empty.")
+
+    if name in {".", ".."}:
+        raise ValueError(
+            "Directory name must not point to the current or parent directory."
+        )
+
+    if PurePosixPath(name).parts != (name,) or PureWindowsPath(name).parts != (
+        name,
+    ):
+        raise ValueError(
+            "Directory name must be a single path component without nested "
+            "levels."
+        )
+
+    return name
+
+
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
 
@@ -151,12 +183,14 @@ APP_NAME = "zenml"
 # Environment variables
 ENV_ZENML_LOGGING_COLORS_DISABLED = "ZENML_LOGGING_COLORS_DISABLED"
 ENV_ZENML_ANALYTICS_OPT_IN = "ZENML_ANALYTICS_OPT_IN"
+ENV_ZENML_CONTAINER_ENGINE = "ZENML_CONTAINER_ENGINE"
 ENV_ZENML_USER_ID = "ZENML_USER_ID"
 ENV_ZENML_CONFIG_PATH = "ZENML_CONFIG_PATH"
 ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
 ENV_ZENML_LOGGING_FORMAT = "ZENML_LOGGING_FORMAT"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
+ENV_ZENML_REPOSITORY_DIRECTORY_NAME = "ZENML_REPOSITORY_DIRECTORY_NAME"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_ACTIVE_STACK_ID = "ZENML_ACTIVE_STACK_ID"
 ENV_ZENML_ACTIVE_PROJECT_ID = "ZENML_ACTIVE_PROJECT_ID"
@@ -187,6 +221,7 @@ ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS = (
 )
 ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
+ENV_ZENML_DISABLE_INTERACTIVE_INPUT = "ZENML_DISABLE_INTERACTIVE_INPUT"
 ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE = "ZENML_DISABLE_PIPELINE_LOGS_STORAGE"
 ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS = "ZENML_DISABLE_STEP_NAMES_IN_LOGS"
@@ -239,6 +274,7 @@ ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY = (
 )
 
 ENV_ZENML_DEFAULT_OUTPUT = "ZENML_DEFAULT_OUTPUT"
+ENV_ZENML_DEFAULT_ANALYTICS_SOURCE = "ZENML_DEFAULT_ANALYTICS_SOURCE"
 ENV_ZENML_CLI_COLUMN_WIDTH = "ZENML_CLI_COLUMN_WIDTH"
 
 ENV_ZENML_DYNAMIC_PIPELINE_WORKER_COUNT = "ZENML_DYNAMIC_PIPELINE_WORKER_COUNT"
@@ -282,7 +318,9 @@ REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
 
 # Repository and local store directory paths:
-REPOSITORY_DIRECTORY_NAME = ".zen"
+REPOSITORY_DIRECTORY_NAME = validate_directory_name(
+    os.getenv(ENV_ZENML_REPOSITORY_DIRECTORY_NAME, ".zen")
+)
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 # Config file name
@@ -443,11 +481,16 @@ CURATED_VISUALIZATIONS = "/curated_visualizations"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
+RESOURCE_POOLS = "/resource_pools"
+RESOURCE_POOL_SUBJECT_POLICIES = "/resource_pool_subject_policies"
+RESOURCE_REQUESTS = "/resource_requests"
 PROJECTS = "/projects"
 REFRESH = "/refresh"
+RESOLVE = "/resolve"
 RUNS = "/runs"
 RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
+RUN_WAIT_CONDITIONS = "/run_wait_conditions"
 SCHEDULES = "/schedules"
 SECRETS = "/secrets"
 SECRETS_OPERATIONS = "/secrets_operations"
@@ -475,10 +518,12 @@ STATUS = "/status"
 STEP_CONFIGURATION = "/step-configuration"
 STEPS = "/steps"
 HEARTBEAT = "/heartbeat"
+REPLAY = "/replay"
 STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"
 TRIGGERS = "/triggers"
+TRIGGER_SNAPSHOT_DISPATCH_STATE = "/dispatch_state"
 ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
 URL = "/url"
@@ -526,6 +571,7 @@ MLFLOW_MODEL_FORMAT = "MLflow"
 
 # Service connector constants
 DOCKER_REGISTRY_RESOURCE_TYPE = "docker-registry"
+DOCKERHUB_REGISTRY_URI = "docker.io"
 KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
 
 # Stack Recipe constants
@@ -613,3 +659,6 @@ LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
 
 # Subscription-based features
 SCHEDULE_FEATURE = "schedule"
+RESOURCE_POOL_FEATURE = "resource_pool"
+
+LOGS_RUNNER_SOURCE = "runner"

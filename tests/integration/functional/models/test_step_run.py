@@ -18,13 +18,16 @@ import random
 import string
 from typing import TYPE_CHECKING
 
+import pytest
+
 from tests.integration.functional.conftest import step_with_logs
 from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
+from zenml import step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StepType
 
 if TYPE_CHECKING:
     from zenml.client import Client
@@ -49,6 +52,43 @@ def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
     pipeline_run_2 = pipe.model.last_run
     step_run_2 = pipeline_run_2.steps["constant_int_output_test_step"]
     assert step_run_2.status == ExecutionStatus.CACHED
+
+
+@step(step_type=StepType.TOOL_CALL)
+def tool_call_step() -> int:
+    return 1
+
+
+@step(step_type=StepType.MEMORY_CALL)
+def memory_call_step() -> int:
+    return 1
+
+
+@pytest.mark.parametrize(
+    "step_fn,step_name,expected_type",
+    [
+        (tool_call_step, "tool_call_step", StepType.TOOL_CALL),
+        (memory_call_step, "memory_call_step", StepType.MEMORY_CALL),
+    ],
+)
+def test_step_run_and_dag_include_step_type(
+    clean_client: "Client",
+    one_step_pipeline,
+    step_fn,
+    step_name,
+    expected_type,
+):
+    """Tests that step responses and DAG nodes contain the configured step type."""
+    pipeline_instance = one_step_pipeline(step_fn)
+    pipeline_run = pipeline_instance()
+
+    step_run = pipeline_run.steps[step_name]
+    dag = clean_client.zen_store.get_pipeline_run_dag(pipeline_run.id)
+
+    assert step_run.type == expected_type
+
+    step_node = next(node for node in dag.nodes if node.type == "step")
+    assert step_node.metadata["type"] == expected_type.value
 
 
 def test_step_run_parent_steps_linkage(

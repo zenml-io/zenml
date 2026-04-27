@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """The 'analytics' module of ZenML."""
 from contextvars import ContextVar
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 from uuid import UUID
 
 from zenml.enums import SourceContextTypes
@@ -82,13 +82,15 @@ def group(  # type: ignore[return]
 
 
 def track(  # type: ignore[return]
-    event: "AnalyticsEvent",
+    event: "Union[AnalyticsEvent, str]",
     metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """Track segment event if user opted-in.
 
     Args:
-        event: Name of event to track in segment.
+        event: Name of event to track in segment. Can be an AnalyticsEvent
+            enum member or an arbitrary string for downstream consumers
+            (e.g. Kitaru) that define their own event names.
         metadata: Dict of metadata to track.
 
     Returns:

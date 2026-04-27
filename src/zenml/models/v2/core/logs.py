@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 
 from pydantic import Field, field_validator, model_validator
 
-from zenml.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.constants import LOGS_RUNNER_SOURCE, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     ProjectScopedRequest,
@@ -83,7 +83,7 @@ class LogsRequest(ProjectScopedRequest):
         Raises:
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
-        """
+        """  # noqa: DOC502
         if value is not None:
             assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
                 "The length of the value for this field can not "
@@ -101,7 +101,11 @@ class LogsRequest(ProjectScopedRequest):
         Returns:
             self
         """
-        if self.artifact_store_id is None and self.log_store_id is None:
+        if (
+            self.artifact_store_id is None
+            and self.log_store_id is None
+            and self.source != LOGS_RUNNER_SOURCE
+        ):
             raise ValueError(
                 "Either an `artifact_store_id` or a `log_store_id` must be set."
             )

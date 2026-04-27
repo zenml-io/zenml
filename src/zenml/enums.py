@@ -16,7 +16,7 @@
 import logging
 from enum import Enum
 
-from zenml.utils.enum_utils import StrEnum
+from zenml.utils.enum_utils import DescribedValuesEnum, StrEnum
 
 
 class ArtifactType(StrEnum):
@@ -40,6 +40,7 @@ class StepRunInputArtifactType(StrEnum):
     MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
     EXTERNAL = "external"  # loaded via `ExternalArtifact(value=...)`
     LAZY_LOADED = "lazy"  # loaded via various lazy methods
+    OVERRIDE = "override"  # used when overriding step inputs
 
 
 class ArtifactSaveType(StrEnum):
@@ -84,6 +85,7 @@ class ExecutionStatus(StrEnum):
 
     INITIALIZING = "initializing"
     PROVISIONING = "provisioning"
+    QUEUED = "queued"
     RUNNING = "running"
     FAILED = "failed"
     COMPLETED = "completed"
@@ -93,6 +95,10 @@ class ExecutionStatus(StrEnum):
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    CANCELLING = "cancelling"
+    CANCELLED = "cancelled"
+    PAUSED = "paused"
+    RESUMING = "resuming"
     STOPPED = "stopped"
     STOPPING = "stopping"
 
@@ -110,6 +116,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.SKIPPED,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
+            ExecutionStatus.CANCELLED,
         }
 
     @property
@@ -132,7 +139,7 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a failed execution.
         """
-        return self in {ExecutionStatus.FAILED}
+        return self in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
 
 
 class LoggingLevels(Enum):
@@ -153,6 +160,39 @@ class ExecutionMode(StrEnum):
     FAIL_FAST = "fail_fast"
     STOP_ON_FAILURE = "stop_on_failure"
     CONTINUE_ON_FAILURE = "continue_on_failure"
+
+
+class RunWaitConditionType(StrEnum):
+    """Supported wait condition types."""
+
+    EXTERNAL_INPUT = "external_input"
+
+
+class RunWaitConditionStatus(StrEnum):
+    """Lifecycle states for a wait condition."""
+
+    PENDING = "pending"
+    RESOLVED = "resolved"
+
+
+class RunWaitConditionResolution(StrEnum):
+    """Resolution outcomes for resolved wait conditions."""
+
+    CONTINUE = "continue"
+    ABORT = "abort"
+
+
+class RunWaitConditionLeaseMode(StrEnum):
+    """Supported lease update modes for wait-condition polling."""
+
+    REFRESH = "refresh"
+    # Finalize the lease and release it. If the wait condition has been resolved
+    # in the meantime, the poller is responsible for continuing the run.
+    FINALIZE = "finalize"
+    # The poller instance is no longer able to continue the run (due to an
+    # error, etc.). If the wait condition has been resolved in the meantime,
+    # the server should try resuming the run.
+    ABANDON = "abandon"
 
 
 class StackComponentType(StrEnum):
@@ -186,6 +226,19 @@ class StackComponentType(StrEnum):
             return "model_registries"
 
         return f"{self.value}s"
+
+    @property
+    def supports_multiple_per_stack(self) -> bool:
+        """Whether multiple components of this type can exist in one stack.
+
+        Returns:
+            True if this component type is repeatable within a stack.
+        """
+        return self in {
+            StackComponentType.ALERTER,
+            StackComponentType.EXPERIMENT_TRACKER,
+            StackComponentType.STEP_OPERATOR,
+        }
 
 
 class StoreType(StrEnum):
@@ -349,6 +402,11 @@ class SourceContextTypes(StrEnum):
     DASHBOARD = "dashboard"
     DASHBOARD_V2 = "dashboard-v2"
     API = "api"
+    KITARU_PYTHON = "kitaru-python"
+    KITARU_CLI = "kitaru-cli"
+    KITARU_MCP = "kitaru-mcp"
+    KITARU_API = "kitaru-api"
+    KITARU_UI = "kitaru-ui"
     UNKNOWN = "unknown"
 
 
@@ -430,6 +488,7 @@ class MetadataResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
     SCHEDULE = "schedule"
+    WAIT_CONDITION = "wait_condition"
 
 
 class VisualizationResourceTypes(StrEnum):
@@ -565,6 +624,14 @@ class StepRuntime(StrEnum):
     ISOLATED = "isolated"
 
 
+class StepType(StrEnum):
+    """All supported step types."""
+
+    TOOL_CALL = "tool_call"
+    LLM_CALL = "llm_call"
+    MEMORY_CALL = "memory_call"
+
+
 class GroupType(StrEnum):
     """Enum representing different types of group."""
 
@@ -572,16 +639,30 @@ class GroupType(StrEnum):
     MAP = "map"
 
 
+class ResourceRequestStatus(StrEnum):
+    """Resource request statuses."""
+
+    PENDING = "pending"
+    ALLOCATED = "allocated"
+    PREEMPTING = "preempting"
+    PREEMPTED = "preempted"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+    RELEASED = "released"
+
+
 class TriggerType(StrEnum):
     """Enum representing fundamental trigger types."""
 
-    SCHEDULE = "schedule"  # TODO: Extend with Webhook
+    SCHEDULE = "schedule"
+    PLATFORM_EVENT = "platform_event"
 
 
 class TriggerFlavor(StrEnum):
     """Enum representing trigger flavors."""
 
-    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors
+    NATIVE_SCHEDULE = "native schedule"
+    PLATFORM_EVENT = "platform event"
 
 
 class TriggerRunConcurrency(StrEnum):
@@ -589,3 +670,61 @@ class TriggerRunConcurrency(StrEnum):
 
     SKIP = "skip"
     SUBMIT = "submit"
+
+
+class ContainerEngineType(StrEnum):
+    """Container engine types."""
+
+    DOCKER = "docker"
+    PODMAN = "podman"
+
+
+class SourceType(StrEnum):
+    """Enum representing the source type."""
+
+    PIPELINE = "pipeline"
+    PIPELINE_RUN = "pipeline_run"
+
+
+class PipelineEvent(DescribedValuesEnum):
+    """Enum representing platform target events for pipelines."""
+
+    RUN_COMPLETED = "run_completed"
+    RUN_FAILED = "run_failed"
+
+    @classmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
+
+        Returns:
+            An dictionary with descriptions for each enum value.
+        """
+        return {
+            cls.RUN_COMPLETED: "A pipeline run of the source pipeline has completed successfully.",
+            cls.RUN_FAILED: "A pipeline run of the source pipeline has failed.",
+        }
+
+
+class PipelineRunEvent(DescribedValuesEnum):
+    """Enum representing platform target events for pipeline runs."""
+
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+    @classmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
+
+        Returns:
+            An dictionary with descriptions for each enum value.
+        """
+        return {
+            cls.COMPLETED: "Source pipeline run completed successfully.",
+            cls.FAILED: "Source pipeline run failed.",
+        }
+
+
+PLATFORM_EVENT_REGISTRY: dict[SourceType, type[DescribedValuesEnum]] = {
+    SourceType.PIPELINE: PipelineEvent,
+    SourceType.PIPELINE_RUN: PipelineRunEvent,
+}

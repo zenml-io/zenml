@@ -119,6 +119,16 @@ class StackRequest(UserScopedRequest):
         Returns:
             The components of the stack.
         """
+        for component_type, components in value.items():
+            if (
+                not component_type.supports_multiple_per_stack
+                and len(components) > 1
+            ):
+                raise ValueError(
+                    f"Stack component type '{component_type}' does not support "
+                    "multiple components in a single stack."
+                )
+
         if value:
             artifact_stores = value.get(StackComponentType.ARTIFACT_STORE, [])
             orchestrators = value.get(StackComponentType.ORCHESTRATOR, [])
@@ -148,6 +158,7 @@ class StackRequest(UserScopedRequest):
                                 "referring to the position in the list of service "
                                 "connectors."
                             )
+
         return self
 
 
@@ -218,6 +229,16 @@ class StackUpdate(BaseUpdate):
         """
         if value is None:
             return None
+
+        for component_type, components in value.items():
+            if (
+                not component_type.supports_multiple_per_stack
+                and len(components) > 1
+            ):
+                raise ValueError(
+                    f"Stack component type '{component_type}' does not support "
+                    "multiple components in a single stack."
+                )
 
         if value:
             artifact_stores = value.get(StackComponentType.ARTIFACT_STORE, [])
@@ -315,9 +336,18 @@ class StackResponse(
         Returns:
             The yaml representation of the Stack Model.
         """
-        component_data = {}
-        for component_type, components_list in self.components.items():
-            component = components_list[0]
+
+        def _serialize_component(
+            component: "ComponentResponse",
+        ) -> Dict[str, Any]:
+            """Serialize a component to a dictionary.
+
+            Args:
+                component: The component to serialize.
+
+            Returns:
+                The serialized component.
+            """
             component_dict = dict(
                 name=component.name,
                 type=str(component.type),
@@ -329,8 +359,15 @@ class StackResponse(
                 )
             )
             component_dict.update(configuration)
+            return component_dict
 
-            component_data[component_type.value] = component_dict
+        component_data = {}
+        for component_type, components_list in self.components.items():
+            serialized_components = [
+                _serialize_component(component)
+                for component in components_list
+            ]
+            component_data[component_type.value] = serialized_components
 
         # write zenml version and stack dict to YAML
         yaml_data = {

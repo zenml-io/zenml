@@ -430,7 +430,7 @@ To remove the deployment:
 
 - [Configure your organization in ZenML Cloud](https://cloud.zenml.io)
 - [Set up users and teams](organization.md)
-- [Configure stacks and service connectors](https://docs.zenml.io/stacks)
+- [Configure stacks and service connectors](https://docs.zenml.io/concepts/stack_components)
 - [Run your first pipeline](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 
 ## Related Documentation
@@ -439,3 +439,5 @@ To remove the deployment:
 - [Self-hosted Deployment Overview](self-hosted-deployment.md)
 - [AWS ECS Documentation](https://docs.aws.amazon.com/ecs/)
 - [AWS RDS Documentation](https://docs.aws.amazon.com/rds/)
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -24,6 +24,7 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
+    Union,
 )
 
 from zenml import __version__
@@ -98,8 +99,9 @@ class Compiler:
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
-        convert_component_shortcut_settings_keys(
-            pipeline.configuration.settings, stack=stack
+        settings_utils.normalize_stack_component_setting_keys(
+            pipeline.configuration.settings,
+            components_by_type=stack._components,
         )
 
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
@@ -257,11 +259,11 @@ class Compiler:
         """
         pipeline_settings = pipeline.configuration.settings
 
-        for component in stack.components.values():
+        for component in stack.all_components:
             if not component.settings_class:
                 continue
 
-            settings_key = settings_utils.get_stack_component_setting_key(
+            settings_key = settings_utils.get_stack_component_name_setting_key(
                 component
             )
             default_settings = self._get_default_settings(component)
@@ -467,24 +469,20 @@ class Compiler:
         Returns:
             The step spec.
         """
-        inputs = {
-            key: [
-                InputSpec(
-                    step_name=artifact.invocation_id,
-                    output_name=artifact.output_name,
-                    chunk_index=artifact.chunk_index,
-                    chunk_size=artifact.chunk_size,
-                )
-                for artifact in artifact_list
-            ]
-            for key, artifact_list in invocation.input_artifacts.items()
-        }
+        inputs: Dict[str, Union[List[InputSpec], InputSpec]] = {}
+        for key, artifact_or_list in invocation.input_artifacts.items():
+            if isinstance(artifact_or_list, list):
+                inputs[key] = [a.to_spec() for a in artifact_or_list]
+            else:
+                inputs[key] = artifact_or_list.to_spec()
+
         return StepSpec(
             source=invocation.step.resolve(),
             upstream_steps=sorted(invocation.upstream_steps),
             inputs=inputs,
             invocation_id=invocation.id,
             enable_heartbeat=enable_heartbeat,
+            parameter_spec=invocation.step._compute_parameter_schema(),
         )
 
     @staticmethod
@@ -551,8 +549,9 @@ class Compiler:
             # pipeline function) after all other step-specific configurations.
             step._merge_dynamic_configuration()
 
-            convert_component_shortcut_settings_keys(
-                step.configuration.settings, stack=stack
+            settings_utils.normalize_stack_component_setting_keys(
+                step.configuration.settings,
+                components_by_type=stack._components,
             )
             step_secrets = secret_utils.resolve_and_verify_secrets(
                 step.configuration.secrets
@@ -653,14 +652,8 @@ class Compiler:
         Raises:
             StackValidationError: If a required stack component is missing.
         """
-        available_step_operators = (
-            {stack.step_operator.name} if stack.step_operator else set()
-        )
-        available_experiment_trackers = (
-            {stack.experiment_tracker.name}
-            if stack.experiment_tracker
-            else set()
-        )
+        available_step_operators = set(stack.step_operators.keys())
+        available_experiment_trackers = set(stack.experiment_trackers.keys())
 
         for name, step in steps.items():
             step_operator = step.config.step_operator
@@ -743,33 +736,6 @@ class Compiler:
             parameters=pipeline._parameters,
             input_schema=input_schema,
         )
-
-
-def convert_component_shortcut_settings_keys(
-    settings: Dict[str, "BaseSettings"], stack: "Stack"
-) -> None:
-    """Convert component shortcut settings keys.
-
-    Args:
-        settings: Dictionary of settings.
-        stack: The stack that the pipeline will run on.
-
-    Raises:
-        ValueError: If stack component settings were defined both using the
-            full and the shortcut key.
-    """
-    for component in stack.components.values():
-        shortcut_key = str(component.type)
-        if component_settings := settings.pop(shortcut_key, None):
-            key = settings_utils.get_stack_component_setting_key(component)
-            if key in settings:
-                raise ValueError(
-                    f"Duplicate settings provided for your {shortcut_key} "
-                    f"using the keys {shortcut_key} and {key}. Remove settings "
-                    "for one of them to fix this error."
-                )
-
-            settings[key] = component_settings
 
 
 def finalize_environment_variables(

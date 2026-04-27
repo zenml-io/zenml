@@ -47,7 +47,7 @@ from zenml.constants import (
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     handle_bool_env_var,
 )
-from zenml.enums import GroupType, StepRuntime
+from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.exceptions import SourceValidationException, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -117,6 +117,7 @@ class BaseStep:
     def __init__(
         self,
         name: Optional[str] = None,
+        step_type: Optional[StepType] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -145,6 +146,7 @@ class BaseStep:
 
         Args:
             name: The name of the step.
+            step_type: The type of the step.
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
@@ -225,7 +227,9 @@ class BaseStep:
                 },
             )
 
-        self._configuration = PartialStepConfiguration(name=name)
+        self._configuration = PartialStepConfiguration(
+            name=name, step_type=step_type
+        )
         self._dynamic_configuration: Optional["StepConfigurationUpdate"] = None
         self._capture_dynamic_configuration = True
 
@@ -364,7 +368,7 @@ class BaseStep:
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[
-        Dict[str, List["StepArtifact"]],
+        Dict[str, Union["StepArtifact", List["StepArtifact"]]],
         Dict[str, Union["ExternalArtifact", "ArtifactVersionResponse"]],
         Dict[str, "ModelVersionDataLazyLoader"],
         Dict[str, "ClientLazyLoader"],
@@ -400,7 +404,7 @@ class BaseStep:
                 f"Wrong arguments when calling step '{self.name}': {e}"
             ) from e
 
-        artifacts = {}
+        artifacts: Dict[str, Union["StepArtifact", List["StepArtifact"]]] = {}
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ] = {}
@@ -413,7 +417,7 @@ class BaseStep:
             self.entrypoint_definition.validate_input(key=key, value=value)
 
             if isinstance(value, StepArtifact):
-                artifacts[key] = [value]
+                artifacts[key] = value
                 if key in self.configuration.parameters:
                     logger.warning(
                         "Got duplicate value for step input %s, using value "
@@ -529,8 +533,12 @@ class BaseStep:
 
         upstream_steps = {
             artifact.invocation_id
-            for artifact_list in input_artifacts.values()
-            for artifact in artifact_list
+            for artifact_or_list in input_artifacts.values()
+            for artifact in (
+                artifact_or_list
+                if isinstance(artifact_or_list, list)
+                else [artifact_or_list]
+            )
         }
         if isinstance(after, str):
             upstream_steps.add(after)
@@ -1374,7 +1382,9 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _validate_inputs(
         self,
-        input_artifacts: Dict[str, List["StepArtifact"]],
+        input_artifacts: Dict[
+            str, Union["StepArtifact", List["StepArtifact"]]
+        ],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
@@ -1408,7 +1418,9 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _finalize_configuration(
         self,
-        input_artifacts: Dict[str, List["StepArtifact"]],
+        input_artifacts: Dict[
+            str, Union["StepArtifact", List["StepArtifact"]]
+        ],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
@@ -1567,6 +1579,37 @@ To avoid this consider setting step parameters only in one place (config or code
 
         return params
 
+    def _compute_parameter_schema(self) -> Optional[Dict[str, Any]]:
+        """Computes a JSON schema for the configured step parameters.
+
+        Returns:
+            The JSON schema for the configured step parameters.
+        """
+        parameter_names = set(self.configuration.parameters)
+        if not parameter_names:
+            return {}
+
+        parameter_inputs = {
+            name: parameter
+            for name, parameter in self.entrypoint_definition.inputs.items()
+            if name in parameter_names
+        }
+
+        try:
+            parameter_model = pydantic_utils.create_parameter_model(
+                model_name=f"{self.name.title().replace('_', '')}Parameters",
+                parameters=parameter_inputs,
+                default_values=self.configuration.parameters,
+            )
+            return parameter_model.model_json_schema()
+        except Exception as e:
+            logger.debug(
+                "Failed to generate the parameter schema for step `%s`: %s.",
+                self.name,
+                e,
+            )
+            return None
+
     def replay(
         self,
         pipeline: Union[UUID, str, None] = None,
@@ -1642,14 +1685,17 @@ To avoid this consider setting step parameters only in one place (config or code
                 "not match your local step code."
             )
 
+        spec = step_run.spec
         inputs = {}
         for input_name, input_artifacts in step_run.regular_inputs.items():
-            if len(input_artifacts) > 1:
+            is_scalar = spec.is_scalar_input(input_name)
+
+            if is_scalar:
+                inputs[input_name] = input_artifacts[0].load()
+            else:
                 inputs[input_name] = [
                     artifact.load() for artifact in input_artifacts
                 ]
-            else:
-                inputs[input_name] = input_artifacts[0].load()
 
         if input_overrides:
             inputs.update(input_overrides)

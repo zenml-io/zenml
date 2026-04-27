@@ -58,7 +58,7 @@ class BaseServiceEndpointHealthMonitor(BaseTypedModel):
     def check_endpoint_status(
         self, endpoint: "BaseServiceEndpoint"
     ) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the external service endpoint.
+        """Check the current operational state of the external service endpoint.
 
         Args:
             endpoint: service endpoint to check

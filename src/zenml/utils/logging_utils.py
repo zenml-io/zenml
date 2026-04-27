@@ -369,6 +369,24 @@ def search_logs_by_source(
     return None
 
 
+def search_logs_by_id(
+    logs_collection: List[LogsResponse], logs_id: UUID
+) -> Optional[LogsResponse]:
+    """Get the logs response for a given ID.
+
+    Args:
+        logs_collection: The logs collection.
+        logs_id: The ID of the logs.
+
+    Returns:
+        The logs response for the given ID.
+    """
+    for log in logs_collection:
+        if log.id == logs_id:
+            return log
+    return None
+
+
 def get_run_log_metadata(
     pipeline_run: "PipelineRunResponse",
 ) -> Dict[str, Any]:
@@ -568,6 +586,19 @@ def setup_logging_context(
     """
     log_metadata = {}
 
+    logs_response: Optional[LogsResponse] = None
+
+    if step_run and step_run.log_collection:
+        logs_response = search_logs_by_source(
+            logs_collection=step_run.log_collection,
+            source=source,
+        )
+    elif pipeline_run and pipeline_run.log_collection:
+        logs_response = search_logs_by_source(
+            logs_collection=pipeline_run.log_collection,
+            source=source,
+        )
+
     logs_request = generate_logs_request(source=source)
 
     if step_run:
@@ -579,7 +610,8 @@ def setup_logging_context(
         if step_run is None:
             logs_request.pipeline_run_id = pipeline_run.id
 
-    logs_response = Client().zen_store.create_logs(logs_request)
+    if logs_response is None:
+        logs_response = Client().zen_store.create_logs(logs_request)
 
     return LoggingContext(
         name=str(logs_response.id),

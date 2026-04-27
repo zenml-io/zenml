@@ -203,9 +203,7 @@ class Pipeline:
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
 
-        self._configuration = PipelineConfiguration(
-            name=name,
-        )
+        self._configuration = PipelineConfiguration(name=name)
         self._from_config_file: Dict[str, Any] = {}
         with self.__suppress_configure_warnings__():
             self.configure(
@@ -405,9 +403,8 @@ class Pipeline:
                 pipeline.
             secrets: Secrets to set as environment variables when running this
                 pipeline.
-            settings: Settings for this pipeline.
             enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
-            settings: settings for this pipeline.
+            settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
@@ -1178,11 +1175,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
                 for (
                     component_type,
-                    component_models,
+                    components,
                 ) in snapshot.stack.components.items():
-                    logger.info(
-                        f"  {component_type.value}: `{component_models[0].name}`"
-                    )
+                    for component in components:
+                        logger.info(
+                            f"  {component_type.value}: `{component.name}`"
+                        )
         except Exception as e:
             logger.debug(f"Logging pipeline snapshot metadata failed: {e}")
 
@@ -1297,14 +1295,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         active_user = Client().active_user
         own_stack = stack_creator and stack_creator == active_user.id
 
-        stack_metadata = {
-            component_type.value: component.flavor
-            for component_type, component in stack.components.items()
-        }
         return {
             "project_id": snapshot.project_id,
             "store_type": Client().zen_store.type.value,
-            **stack_metadata,
+            **stack.component_flavor_metadata,
             "total_steps": len(self.invocations),
             "schedule": bool(snapshot.schedule),
             "custom_materializer": custom_materializer,
@@ -1388,7 +1382,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def add_step_invocation(
         self,
         step: "BaseStep",
-        input_artifacts: Dict[str, List[StepArtifact]],
+        input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],
@@ -1417,9 +1411,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 ID.
 
         Raises:
-            RuntimeError: If the method is called on an inactive pipeline.
-            RuntimeError: If the invocation was called with an artifact from
-                a different pipeline.
+            RuntimeError: If the method is called on an inactive pipeline or
+                if the invocation was called with an artifact from a different
+                pipeline.
 
         Returns:
             The step invocation ID.
@@ -1438,8 +1432,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "A step invocation can only be added to an active pipeline."
             )
 
-        for artifact_list in input_artifacts.values():
-            for artifact in artifact_list:
+        for artifact_or_list in input_artifacts.values():
+            for artifact in (
+                artifact_or_list
+                if isinstance(artifact_or_list, list)
+                else [artifact_or_list]
+            ):
                 if artifact.pipeline is not self:
                     raise RuntimeError(
                         "Got invalid input artifact for invocation of step "
@@ -1791,25 +1789,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             entrypoint_definition = validate_entrypoint_function(
                 self.entrypoint
             )
-
-            defaults: Dict[str, Any] = self._parameters
-            model_args: Dict[str, Any] = {}
-            for name, param in entrypoint_definition.inputs.items():
-                if name in defaults:
-                    default_value = defaults[name]
-                elif param.default is not inspect.Parameter.empty:
-                    default_value = param.default
-                else:
-                    default_value = ...
-
-                model_args[name] = (param.annotation, default_value)
-
-            model_args["__config__"] = ConfigDict(extra="forbid")
-            params_model: Type[BaseModel] = create_model(
-                "PipelineInput",
-                **model_args,
+            return pydantic_utils.create_parameter_model(
+                model_name="PipelineInput",
+                parameters=entrypoint_definition.inputs,
+                default_values=self._parameters,
+                config=ConfigDict(extra="forbid"),
             )
-            return params_model
         except Exception as e:
             logger.debug(
                 f"Failed to generate the input parameters model for pipeline "
@@ -1847,6 +1832,48 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._parameters = {}
         self._output_artifacts = []
 
+    def _prepare_step_input_overrides(
+        self,
+        step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]],
+    ) -> Dict[str, Dict[str, "UUID"]]:
+        """Prepares replay step input overrides.
+
+        Args:
+            step_input_overrides: User-provided step input overrides.
+
+        Returns:
+            Artifact version IDs for step input overrides.
+        """
+        from zenml import ExternalArtifact
+        from zenml.models import ArtifactVersionResponse
+
+        if not step_input_overrides:
+            return {}
+
+        processed_overrides: Dict[str, Dict[str, UUID]] = {}
+
+        for invocation_id, overrides in step_input_overrides.items():
+            invocation_overrides: Dict[str, UUID] = {}
+
+            for input_name, value in overrides.items():
+                if isinstance(value, ArtifactVersionResponse):
+                    artifact_version_id = value.id
+                elif isinstance(value, ExternalArtifact):
+                    if value.id:
+                        artifact_version_id = value.id
+                    else:
+                        artifact_version_id = value.upload_by_value()
+                else:
+                    artifact_version_id = ExternalArtifact(
+                        value=value
+                    ).upload_by_value()
+
+                invocation_overrides[input_name] = artifact_version_id
+
+            processed_overrides[invocation_id] = invocation_overrides
+
+        return processed_overrides
+
     def replay(
         self,
         pipeline: Union[UUID, str, None] = None,
@@ -1854,6 +1881,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         skip: Union[Set[str], Sequence[str], None] = None,
         skip_successful_steps: bool = False,
         input_overrides: Optional[Mapping[str, Any]] = None,
+        step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]] = None,
         debug: bool = False,
     ) -> PipelineRunResponse:
         """Replay the pipeline.
@@ -1872,6 +1900,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             skip_successful_steps: Whether to skip successful steps of the
                 original run when replaying the pipeline.
             input_overrides: Input overrides for the pipeline.
+            step_input_overrides: Input overrides for replayed step inputs.
+                Keys must be step invocation IDs and values must map input names
+                to either plain Python values, `ExternalArtifact` instances, or
+                `ArtifactVersionResponse` objects.
             debug: Whether to run the pipeline in debug mode. In debug mode, the
                 pipeline is executed using a local orchestrator, while
                 keeping the remaining components of your active stack.
@@ -1901,11 +1933,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         pipeline_instance = self.copy()
         pipeline_instance._original_run = original_run
 
+        configuration_update: Dict[str, Any] = {}
+
         if skip or skip_successful_steps:
-            configuration_update: Dict[str, Any] = {
-                "skip_successful_steps": skip_successful_steps,
-                "steps_to_skip": set(skip) if skip else set(),
-            }
+            configuration_update.update(
+                {
+                    "skip_successful_steps": skip_successful_steps,
+                    "steps_to_skip": set(skip) if skip else set(),
+                }
+            )
+
+        if step_input_overrides:
+            configuration_update["step_input_overrides"] = (
+                self._prepare_step_input_overrides(step_input_overrides)
+            )
+
+        if configuration_update:
             pipeline_instance._configuration = (
                 pipeline_instance._configuration.model_copy(
                     update=configuration_update

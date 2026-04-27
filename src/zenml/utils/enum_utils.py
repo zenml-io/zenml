@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Util functions for enums."""
 
-from enum import Enum
+from abc import ABCMeta, abstractmethod
+from enum import Enum, EnumMeta
 from typing import List
 
 
@@ -45,3 +46,35 @@ class StrEnum(str, Enum):
             A list of all enum values.
         """
         return [c.value for c in cls]
+
+
+class ABCEnumMeta(ABCMeta, EnumMeta):
+    """Metaclass combining ABCMeta and EnumType."""
+
+
+class DescribedValuesEnum(StrEnum, metaclass=ABCEnumMeta):
+    """Enum abstraction displaying enum descriptions."""
+
+    @classmethod
+    @abstractmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
+
+        Returns:
+            An dictionary with descriptions for each enum value.
+        """
+        pass
+
+    @classmethod
+    def described_values(cls) -> list[dict[str, str | None]]:
+        """Helper - returns a list of dictionaries describing the enum values.
+
+        Returns:
+            A list of dictionary objects with descriptions.
+        """
+        idx = cls.value_description_index()
+
+        return [
+            {"value": value, "description": idx.get(value)}
+            for value in cls.values()
+        ]

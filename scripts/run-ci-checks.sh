@@ -7,4 +7,3 @@ export ZENML_ANALYTICS_OPT_IN=false
 
 scripts/lint.sh
 scripts/check-spelling.sh
-scripts/docstring.sh

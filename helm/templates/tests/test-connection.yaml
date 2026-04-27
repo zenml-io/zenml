@@ -1,3 +1,4 @@
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -11,5 +12,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "zenml.fullname" . }}:{{ .Values.zenml.service.port }}']
+      args: ['{{ include "zenml.fullname" . }}:{{ $server.service.port }}']
   restartPolicy: Never

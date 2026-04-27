@@ -81,7 +81,10 @@ def test_crud_cycle():
         client.list_schedules(is_archived=False, name=schedule.name).total == 0
     )
     assert (
-        client.list_schedules(is_archived=True, name=schedule.name).total == 1
+        client.list_schedules(
+            is_archived=True, name=f"startswith:{schedule.name}"
+        ).total
+        == 1
     )
 
     client.zen_store.delete_schedule(schedule_id=schedule.id, soft=False)

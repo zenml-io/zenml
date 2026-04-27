@@ -509,3 +509,5 @@ Now that you understand the basics of managing scheduled pipelines, you can:
 4. Implement data-dependent scheduling where [pipelines trigger](https://docs.zenml.io/how-to/trigger-pipelines) based on data availability
 
 For more advanced schedule management and monitoring techniques, check out the[ZenML documentation](https://docs.zenml.io).
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

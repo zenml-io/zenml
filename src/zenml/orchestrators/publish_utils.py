@@ -135,6 +135,23 @@ def publish_stopped_step_run(step_run_id: "UUID") -> "StepRunResponse":
     )
 
 
+def publish_cancelled_step_run(step_run_id: "UUID") -> "StepRunResponse":
+    """Publishes a cancelled step run.
+
+    Args:
+        step_run_id: The ID of the step run to update.
+
+    Returns:
+        The updated step run.
+    """
+    return publish_step_run_status_update(
+        step_run_id=step_run_id,
+        status=ExecutionStatus.CANCELLED,
+        end_time=utc_now(),
+        exception_info=step_exception_info.get(),
+    )
+
+
 def publish_successful_pipeline_run(
     pipeline_run_id: "UUID",
 ) -> "PipelineRunResponse":
@@ -150,8 +167,6 @@ def publish_successful_pipeline_run(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.COMPLETED,
-            end_time=utc_now(),
-            is_finished=True,
         ),
     )
 
@@ -173,8 +188,6 @@ def publish_failed_pipeline_run(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.FAILED,
-            end_time=utc_now(),
-            is_finished=True,
             exception_info=exception_info,
         ),
     )
@@ -212,62 +225,8 @@ def publish_pipeline_run_status_update(
         run_update=PipelineRunUpdate(
             status=status,
             status_reason=status_reason,
-            end_time=end_time,
         ),
     )
-
-
-def get_pipeline_run_status(
-    run_status: ExecutionStatus,
-    step_statuses: List[ExecutionStatus],
-    num_steps: int,
-    is_dynamic_pipeline: bool,
-) -> ExecutionStatus:
-    """Gets the pipeline run status for the given step statuses.
-
-    Args:
-        run_status: The status of the run.
-        step_statuses: The status of steps in this run.
-        num_steps: The total amount of steps in this run.
-        is_dynamic_pipeline: If the pipeline is dynamic.
-
-    Returns:
-        The run status.
-    """
-    # STOPPING state
-    if run_status == ExecutionStatus.STOPPING:
-        if all(status.is_finished for status in step_statuses):
-            return ExecutionStatus.STOPPED
-        else:
-            return ExecutionStatus.STOPPING
-
-    # If there is a failed step, the run is failed
-    if (
-        ExecutionStatus.FAILED in step_statuses
-        or run_status == ExecutionStatus.FAILED
-    ):
-        return ExecutionStatus.FAILED
-
-    # If there is a stopped step, the run is stopped or stopping
-    elif ExecutionStatus.STOPPED in step_statuses:
-        if all(status.is_finished for status in step_statuses):
-            return ExecutionStatus.STOPPED
-        else:
-            return ExecutionStatus.STOPPING
-
-    # If there is a running step, the run is running
-    elif (
-        ExecutionStatus.RUNNING in step_statuses
-        or ExecutionStatus.RETRYING in step_statuses
-    ):
-        return ExecutionStatus.RUNNING
-    elif is_dynamic_pipeline:
-        return run_status
-    elif len(step_statuses) < num_steps:
-        return ExecutionStatus.RUNNING
-    # Any other state is completed
-    else:
-        return ExecutionStatus.COMPLETED
 
 
 def publish_pipeline_run_metadata(

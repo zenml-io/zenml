@@ -82,13 +82,13 @@ setup(
         """Create a wheel for the package in the given temporary directory.
 
         Args:
-            temp_dir (str): Path to the temporary directory containing the package.
+            temp_dir: Path to the temporary directory containing the package.
 
         Raises:
             RuntimeError: If the wheel file could not be created.
 
         Returns:
-            str: Path to the created wheel file.
+            Path to the created wheel file.
         """
         # Change to the temporary directory
         original_dir = os.getcwd()

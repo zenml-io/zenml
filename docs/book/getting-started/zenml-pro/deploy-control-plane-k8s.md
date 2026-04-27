@@ -21,7 +21,7 @@ This guide provides step-by-step instructions for deploying ZenML Pro on Kuberne
 
 All components run entirely within your Kubernetes cluster and infrastructure:
 
-![ZenML Pro Self-hosted Architecture](.gitbook/assets/full_zenml_infra.png)
+![ZenML Pro Self-hosted Architecture](.gitbook/assets/full_zenml_infra.avif)
 
 ### Architecture Components
 
@@ -339,3 +339,5 @@ Request from ZenML Support:
 - Update bundles and release notes
 - Security documentation (SBOM, vulnerability reports)
 
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
