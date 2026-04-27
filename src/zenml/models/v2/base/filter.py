@@ -67,6 +67,10 @@ ONEOF_ERROR = (
     "When you are using the 'oneof:'/'notoneof:' filtering make sure that "
     "the provided value is a json formatted list."
 )
+NO_VALUE_ERROR = (
+    "When you are using the 'isempty'/'isnotempty' filtering make sure that "
+    "that there is no value provided with ':'."
+)
 
 VALUELESS_FILTER_OPS = {
     GenericFilterOps.IS_EMPTY,
@@ -934,7 +938,7 @@ class BaseFilter(BaseModel):
                 value = split_value[1]
                 operator = GenericFilterOps(split_value[0])
                 if operator in VALUELESS_FILTER_OPS:
-                    value = None
+                    raise ValueError(NO_VALUE_ERROR)
 
             if operator in {
                 operator.ONEOF,

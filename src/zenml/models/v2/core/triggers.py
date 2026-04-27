@@ -358,6 +358,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
 
 class UnScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
+
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "is_archived",

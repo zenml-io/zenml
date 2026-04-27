@@ -14,11 +14,7 @@
 """Models representing schedules."""
 
 from datetime import datetime, timedelta, timezone
-<<<<<<< HEAD
-from typing import Dict, Optional
-=======
-from typing import ClassVar, Dict, Optional, Union
->>>>>>> origin/develop
+from typing import ClassVar, Dict, Optional
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
@@ -334,7 +330,7 @@ class ScheduleFilter(ProjectScopedFilter):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "is_archived",
     ]
-    
+
     pipeline_id: UUIDOrList = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",
