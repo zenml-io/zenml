@@ -179,7 +179,7 @@ def generate_config_schema(
             # from the dynamic settings.
             if issubclass(class_, BaseSettings):
                 if len(class_.model_fields) > 0:
-                    settings_key = f"{component.type}.{component.flavor}"
+                    settings_key = f"{component.type}:{component.name}"
                     settings_fields[settings_key] = (
                         Optional[class_],
                         None,
