@@ -31,34 +31,39 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Set uv cache + temp dirs (/opt)
+      - name: Set cache + temp dirs (/opt)
         run: |
-          sudo mkdir -p /opt/uv-cache /opt/tmp
-          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          sudo mkdir -p /opt/uv-cache /opt/pip-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/pip-cache /opt/tmp
           echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "PIP_CACHE_DIR=/opt/pip-cache" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/src:$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
           echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
           echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
           echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Restore uv cache
+      - name: Restore runner dependency cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
-          path: /opt/uv-cache
+          path: |
+            /opt/uv-cache
+            /opt/pip-cache
           key: uv-modal-server-mysql-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
-            'scripts/install-zenml-dev.sh') }}
+            'scripts/ci/modal_sandbox_requirements.txt') }}
           restore-keys: |
             uv-modal-server-mysql-${{ runner.os }}-${{ inputs.python-version }}-
             uv-modal-server-mysql-${{ runner.os }}-
-      - name: Setup environment
-        id: setup_environment
+      - name: Set up Python
+        id: setup_python
         continue-on-error: true
-        uses: ./.github/actions/setup_environment
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          cache_version: ${{ inputs.python-version }}
           python-version: ${{ inputs.python-version }}
-          os: ubuntu-latest
-          install_integrations: 'no'
+      - name: Configure git
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
       - name: Install Rust
         id: install_rust
         continue-on-error: true
@@ -88,6 +93,10 @@ jobs:
             cargo install --git https://github.com/safoinme/offload.git --rev 455356a6aae31b15c5becc2594600513525c9e46
           fi
 
+          if ! command -v uv >/dev/null 2>&1; then
+            python -m pip install --upgrade uv
+          fi
+          uv pip install --system -e .
           uv pip install --system -r scripts/ci/modal_sandbox_requirements.txt
       - name: Restore offload image cache
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
@@ -112,7 +121,7 @@ jobs:
           cp ci/baseline-junit.xml test-results/modal-server-mysql-ci/junit.xml
       - name: Provision Modal server
         id: provision
-        if: ${{ steps.setup_environment.outcome == 'success' && steps.install_rust.outcome == 'success' && steps.prepare.outcome == 'success' }}
+        if: ${{ steps.setup_python.outcome == 'success' && steps.install_rust.outcome == 'success' && steps.prepare.outcome == 'success' }}
         continue-on-error: true
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
@@ -161,12 +170,12 @@ jobs:
               return 1
             fi
             grep -Eq \
-              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|error: unexpected argument' \
+              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox|error: unexpected argument' \
               "$offload_log"
           }
 
-          if [[ "${{ steps.setup_environment.outcome }}" != "success" ]]; then
-            echo "::error::setup_environment failed; failing Modal server MySQL lane."
+          if [[ "${{ steps.setup_python.outcome }}" != "success" ]]; then
+            echo "::error::Python setup failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
 

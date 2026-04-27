@@ -30,10 +30,11 @@ jobs:
     if: ${{ inputs.use_modal && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     # Fail fast if Modal stalls. The offload run itself has a 16-minute
-    # per-test timeout (test_timeout_secs in offload.toml); a 15-minute
-    # job wall clock is a tight-but-safe ceiling once the image cache is
-    # warm. Bump this if we intentionally add heavier fast-CI coverage.
-    timeout-minutes: 15
+    # per-test timeout (test_timeout_secs in offload.toml), and the job
+    # also pays setup, image prep, and result classification time. Keep the
+    # wall clock above the offload timeout so GitHub does not kill the run
+    # before offload can publish its exit-code output.
+    timeout-minutes: 30
     outputs:
       modal_infra_failed: ${{ steps.classify.outputs.modal_infra_failed }}
     env:
@@ -45,40 +46,42 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Set uv cache + temp dirs (/opt)
+      - name: Set cache + temp dirs (/opt)
         run: |
-          sudo mkdir -p /opt/uv-cache /opt/tmp
-          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          sudo mkdir -p /opt/uv-cache /opt/pip-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/pip-cache /opt/tmp
           echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "PIP_CACHE_DIR=/opt/pip-cache" >> "$GITHUB_ENV"
           echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
           echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
           echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      # Cache the uv resolver/wheel cache so install-zenml-dev.sh
-      # restores in seconds instead of running ~3 minutes of fresh
-      # downloads + builds for the full server+secrets+connectors
-      # extras tree. Key tracks the inputs that affect the resolved
-      # dep set; restore-keys lets stale caches still pre-warm pip
-      # downloads on dep bumps.
-      - name: Restore uv cache
+      # The Modal path does not run tests on the GitHub runner; the runner
+      # only needs Python, uv, offload, and the Modal sandbox helper deps.
+      # Avoid the full ZenML dev install here so warm runs don't spend ~3m
+      # setting up packages that are only used inside the Modal image.
+      - name: Restore runner dependency cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
-          path: /opt/uv-cache
+          path: |
+            /opt/uv-cache
+            /opt/pip-cache
           key: uv-fast-modal-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
-            'scripts/install-zenml-dev.sh') }}
+            'scripts/ci/modal_sandbox_requirements.txt') }}
           restore-keys: |
             uv-fast-modal-${{ runner.os }}-${{ inputs.python-version }}-
             uv-fast-modal-${{ runner.os }}-
-      - name: Setup environment
-        id: setup_environment
+      - name: Set up Python
+        id: setup_python
         continue-on-error: true
-        uses: ./.github/actions/setup_environment
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          cache_version: ${{ inputs.python-version }}
           python-version: ${{ inputs.python-version }}
-          os: ubuntu-latest
-          install_integrations: 'no'
+      - name: Configure git
+        run: |
+          git config --global user.email "info@zenml.io"
+          git config --global user.name "ZenML GmbH"
       - name: Install Rust
         id: install_rust
         continue-on-error: true
@@ -96,7 +99,7 @@ jobs:
           key: cargo-offload-${{ runner.os }}-455356a6aae31b15c5becc2594600513525c9e46-v1
       - name: Prepare Modal runtime
         id: prepare
-        if: ${{ steps.setup_environment.outcome == 'success' && steps.install_rust.outcome == 'success' }}
+        if: ${{ steps.setup_python.outcome == 'success' && steps.install_rust.outcome == 'success' }}
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
@@ -115,6 +118,9 @@ jobs:
               echo "run_modal=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
+          fi
+          if ! command -v uv >/dev/null 2>&1; then
+            python -m pip install --upgrade uv
           fi
 
           # offload.toml's high-frequency per-batch commands invoke
@@ -216,11 +222,11 @@ jobs:
               return 1
             fi
             grep -Eq \
-              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed' \
+              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox' \
               "$offload_log"
           }
-          if [[ "${{ steps.setup_environment.outcome }}" != "success" ]]; then
-            echo "::warning::setup_environment failed; falling back to standard CI."
+          if [[ "${{ steps.setup_python.outcome }}" != "success" ]]; then
+            echo "::warning::Python setup failed; falling back to standard CI."
             modal_infra_failed=true
           fi
           if [[ "${{ steps.install_rust.outcome }}" != "success" ]]; then

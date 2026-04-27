@@ -1,13 +1,13 @@
 [offload]
 max_parallel = 20
 test_timeout_secs = 960
-max_batch_duration_secs = 90
+max_batch_duration_secs = 180
 sandbox_project_root = "/app"
 
 [provider]
 type = "default"
 prepare_command = "uv run @modal_sandbox.py prepare Dockerfile.ci --cached --include-cwd --sandbox-init-cmd 'cd /app && pip install --no-deps -e . -q && python scripts/ci/build_zenml_template.py /opt/zenml-template'"
-create_command = "bash scripts/ci/create_modal_server_mysql_sandbox.sh {image_id}"
+create_command = "bash scripts/ci/create_modal_server_mysql_sandbox.sh @modal_sandbox.py {image_id}"
 exec_command = "python3 @modal_sandbox.py exec {sandbox_id} {command}"
 destroy_command = "uv run @modal_sandbox.py destroy {sandbox_id}"
 download_command = "printf '[offload] exec_and_fetch returned no inline artifacts; falling back to download_command.\\n' >&2; python3 @modal_sandbox.py download {sandbox_id} {paths}"

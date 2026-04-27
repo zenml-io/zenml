@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 <image-id>" >&2
+if [[ $# -ne 2 ]]; then
+  echo "Usage: $0 <modal-sandbox-script> <image-id>" >&2
   exit 1
 fi
 
@@ -12,9 +12,15 @@ if [[ -z "${ZENML_MODAL_SERVER_URL:-}" ]]; then
   exit 1
 fi
 
-image_id="$1"
+modal_sandbox_script="$1"
+image_id="$2"
 
-exec uv run @modal_sandbox.py create "$image_id" \
+if [[ "$modal_sandbox_script" == @* ]]; then
+  echo "Modal sandbox helper token was not resolved by offload: ${modal_sandbox_script}" >&2
+  exit 1
+fi
+
+exec uv run "$modal_sandbox_script" create "$image_id" \
   --cpu 2 \
   --memory-gb 4 \
   --env PYTHONDONTWRITEBYTECODE=1 \

@@ -3,12 +3,11 @@ max_parallel = 20
 test_timeout_secs = 960
 # Cap on cumulative historical duration per batch (LPT bin-packing).
 # 10s (the offload default) over-fragments large suites into many small
-# batches, each paying the per-batch sandbox-exec + junit-download
-# overhead. 90s packs ~18 batches for this suite instead of ~27, cutting
-# per-batch sandbox-boot taxes, while staying well below the 300s requeue
-# floor so a stuck batch still gets hedged. Tests whose own duration
-# exceeds the cap continue to be placed alone in their own batch.
-max_batch_duration_secs = 90
+# batches, each paying sandbox create + exec/fetch overhead. 180s keeps the
+# baseline fast-CI suite near one full 20-sandbox wave while staying below the
+# 300s requeue floor so a stuck batch still gets hedged. Tests whose own
+# duration exceeds the cap continue to be placed alone in their own batch.
+max_batch_duration_secs = 180
 sandbox_project_root = "/app"
 
 [provider]

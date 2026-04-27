@@ -60,20 +60,20 @@ rules:
       - validate-changelog.yml:37  # step output
       - notify-changelog.yml:27  # inputs.release_tag is workflow_dispatch input (authorized users only)
       # linux-fast-modal.yml: the `Classify Modal result` step inspects
-      # outputs set earlier in the same job (setup_environment.outcome,
+      # outputs set earlier in the same job (setup_python.outcome,
       # install_rust.outcome, prepare.outputs.*, run.outputs.*,
       # classify.outputs.test_failed). All of these are produced by
       # trusted first-party steps and expand to "true"/"false" or a
       # numeric exit code; there is no untrusted input path.
-      - linux-fast-modal.yml:222  # steps.setup_environment.outcome
-      - linux-fast-modal.yml:226  # steps.install_rust.outcome
-      - linux-fast-modal.yml:230  # steps.prepare.outcome
-      - linux-fast-modal.yml:234  # steps.prepare.outputs.modal_infra_failed
-      - linux-fast-modal.yml:237  # steps.run.outputs.modal_infra_failed
-      - linux-fast-modal.yml:240  # steps.prepare.outputs.run_modal
-      - linux-fast-modal.yml:241  # steps.run.outputs.exit_code
-      - linux-fast-modal.yml:242  # steps.run.outputs.run_started_at
-      - linux-fast-modal.yml:318  # steps.classify.outputs.test_failed
+      - linux-fast-modal.yml:228  # steps.setup_python.outcome
+      - linux-fast-modal.yml:232  # steps.install_rust.outcome
+      - linux-fast-modal.yml:236  # steps.prepare.outcome
+      - linux-fast-modal.yml:240  # steps.prepare.outputs.modal_infra_failed
+      - linux-fast-modal.yml:243  # steps.run.outputs.modal_infra_failed
+      - linux-fast-modal.yml:246  # steps.prepare.outputs.run_modal
+      - linux-fast-modal.yml:247  # steps.run.outputs.exit_code
+      - linux-fast-modal.yml:248  # steps.run.outputs.run_started_at
+      - linux-fast-modal.yml:324  # steps.classify.outputs.test_failed
 
   # Detect cache poisoning vulnerabilities
   # Ignores: Low-confidence findings for protected publish workflows
