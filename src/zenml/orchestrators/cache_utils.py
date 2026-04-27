@@ -74,8 +74,7 @@ def generate_cache_key(
 
     Raises:
         ValueError: If some file dependencies are outside the source root or
-            missing.
-        ValueError: If the cache function is invalid.
+            missing, or if the cache function is invalid.
         RuntimeError: If executing the cache function failed.
 
     Returns:

@@ -10,6 +10,10 @@ metadata:
     {{- include "zenml.labels" $ | nindent 4 }}
     app.kubernetes.io/component: {{ $name }}
 spec:
+  {{- if $worker.strategy }}
+  strategy:
+    {{- toYaml $worker.strategy | nindent 8 }}
+  {{- end }}
   {{- if and $worker.autoscaling $worker.autoscaling.enabled }}
   {{- else }}
   replicas: {{ $worker.replicaCount | default 1 }}
