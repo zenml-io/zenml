@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     PIPELINE_SNAPSHOTS,
     SCHEDULE_FEATURE,
+    TRIGGER_SNAPSHOT_DISPATCH_STATE,
     TRIGGERS,
     VERSION_1,
 )
@@ -62,7 +63,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=API + VERSION_1 + TRIGGERS,
+    prefix=API + VERSION_1,
     tags=["triggers"],
     responses={401: error_response, 403: error_response},
 )
@@ -97,7 +98,7 @@ def verify_permissions_for_source_entity(
 
 
 @router.post(
-    "",
+    TRIGGERS,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -128,7 +129,7 @@ def create_trigger(
 
 
 @router.get(
-    "",
+    TRIGGERS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -159,7 +160,7 @@ def list_triggers(
 
 
 @router.get(
-    "/{trigger_id}",
+    TRIGGERS + "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -186,7 +187,7 @@ def get_trigger(
 
 
 @router.put(
-    "/{trigger_id}",
+    TRIGGERS + "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -221,7 +222,7 @@ def update_trigger(
 
 
 @router.delete(
-    "/{trigger_id}",
+    TRIGGERS + "/{trigger_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -245,7 +246,7 @@ def delete_trigger(
 
 
 @router.put(
-    "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
+    TRIGGERS + "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -274,6 +275,11 @@ def attach_trigger_to_snapshot(
     if trigger.project_id != snapshot.project_id:
         raise IllegalOperationError(
             "Trigger and snapshot must be in the same project"
+        )
+
+    if not snapshot.name:
+        raise IllegalOperationError(
+            "Can not attach a snapshot without name to a trigger."
         )
 
     snapshot_replaced_id = None
@@ -336,7 +342,7 @@ def attach_trigger_to_snapshot(
 
 
 @router.delete(
-    "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
+    TRIGGERS + "/{trigger_id}" + PIPELINE_SNAPSHOTS + "/{snapshot_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
@@ -367,3 +373,55 @@ def detach_trigger_from_snapshot(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
     )
+
+
+@router.delete(
+    TRIGGERS + "/{trigger_id}" + TRIGGER_SNAPSHOT_DISPATCH_STATE,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def clear_trigger_dispatch_error(
+    trigger_id: UUID,
+    snapshot_id: UUID | None = None,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Clears recorded dispatch errors for one or all trigger snapshots.
+
+    Args:
+        trigger_id: The ID of the trigger.
+        snapshot_id: Optional snapshot ID. If omitted all trigger snapshot
+            dispatch errors are cleared.
+    """
+    trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
+
+    verify_permission_for_model(
+        model=trigger,
+        action=Action.UPDATE,
+    )
+
+    zen_store().clear_trigger_dispatch_error(
+        trigger_id=trigger_id,
+        snapshot_id=snapshot_id,
+    )
+
+
+@router.get(
+    "/supported-events",
+    responses={422: error_response},
+)
+def list_supported_events(
+    source_type: SourceType,
+) -> list[dict[str, str | None]]:
+    """Helper endpoint. Lists supported events by source type.
+
+    Args:
+        source_type: The source type.
+
+    Returns:
+        A list of {"value": "", "description": ""} objects.
+    """
+    from zenml.enums import PLATFORM_EVENT_REGISTRY
+
+    if source_type not in PLATFORM_EVENT_REGISTRY:
+        return []
+    return PLATFORM_EVENT_REGISTRY[source_type].described_values()

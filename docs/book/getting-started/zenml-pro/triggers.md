@@ -27,16 +27,17 @@ one-off executions, interval-based schedules, or cron expressions for fine-grain
 Additional options, such as time boundaries, concurrency limits, and activation settings, let you 
 tailor the trigger to your workflow requirements.
 
-| Attribute           | Description                                                  | Notes                        |
-|---------------------|--------------------------------------------------------------|------------------------------|
-| name                | The name of the schedule                                     | Unique within project        |
-| cron_expression     | A cron expression describing your schedule's frequency       | Standard 5-field cron format |
-| interval            | An interval (in seconds) describing the schedule's frequency | Combined with start_time     |
-| run_once_start_time | One-off execution at a specific time in the future           | UTC                          |
-| start_time          | The beginning of the schedule                                | UTC                          |
-| end_time            | The end time of the schedule                                 | UTC                          |
-| active              | Status of the schedule (active/inactive)                     | -                            |
-| concurrency         | Option to control how concurrent runs should be handled      | Skip is the default option   |
+| Attribute           | Description                                                             | Notes                        |
+|---------------------|-------------------------------------------------------------------------|------------------------------|
+| name                | The name of the schedule                                                | Unique within project        |
+| cron_expression     | A cron expression describing your schedule's frequency                  | Standard 5-field cron format |
+| interval            | An interval (in seconds) describing the schedule's frequency            | Combined with start_time     |
+| run_once_start_time | One-off execution at a specific time in the future                      | UTC                          |
+| start_time          | The beginning of the schedule                                           | UTC                          |
+| end_time            | The end time of the schedule                                            | UTC                          |
+| active              | Status of the schedule (active/inactive)                                | -                            |
+| concurrency         | Option to control how concurrent runs should be handled                 | Skip is the default option   |
+| max_runs            | Option to control maximum runs (per attached snapshot) for the schedule | -                            |
 
 ### Create a schedule
 
@@ -69,36 +70,42 @@ zenml trigger schedule create daily-schedule-6-am --cron-expression "0 6 * * *"
 So far we have instructed our system with *when* to execute but not *what*. To do so,
 we need to *attach* a schedule to a snapshot.
 
+For the CLI, commands that take a trigger or snapshot accept itsname or ID
+(exact match, not a prefix). Positional order is always trigger first, then snapshot.
+
 Via the SDK:
 
 ~~~python
+from uuid import UUID
 from zenml.client import Client
 
 client = Client()
 client.attach_trigger_to_snapshot(
-    trigger_id="<TRIGGER_ID>",
-    pipeline_snapshot_id="<>SNAPSHOT_ID"
+    trigger_id=UUID("<TRIGGER_UUID>"),
+    pipeline_snapshot_id=UUID("<SNAPSHOT_UUID>"),
 )
 ~~~
 
 Via the CLI:
 
 ~~~bash
-zenml trigger schedule attach "<TRIGGER_ID>" "<SNAPSHOT_ID>"
+zenml trigger schedule attach "<TRIGGER_NAME_OR_ID>" "<SNAPSHOT_NAME_OR_ID>"
 ~~~
 
-Users can provide a configuration object to define the parameters of pipeline runs triggered from this attachment.
+Users can provide a configuration object to define the parameters of pipeline runs
+triggered from this attachment.
 
 Via the SDK:
 
 ~~~python
+from uuid import UUID
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
 client = Client()
 client.attach_trigger_to_snapshot(
-    trigger_id="<TRIGGER_ID>",
-    pipeline_snapshot_id="<>SNAPSHOT_ID",
+    trigger_id=UUID("<TRIGGER_UUID>"),
+    pipeline_snapshot_id=UUID("<SNAPSHOT_UUID>"),
     run_configuration=PipelineRunConfiguration(
         enable_step_logs=True,
         enable_pipeline_logs=True,
@@ -106,30 +113,33 @@ client.attach_trigger_to_snapshot(
 )
 ~~~
 
-Via the CLI:
+Via the CLI (using a `PipelineRunConfiguration` YAML file):
 
 ~~~bash
-zenml trigger schedule detach "<TRIGGER_ID>" "<SNAPSHOT_ID>" --config=<path-to-your-config>.yml
+zenml trigger schedule attach "<TRIGGER_NAME_OR_ID>" "<SNAPSHOT_NAME_OR_ID>" \
+  --config=<path-to-your-config>.yml
 ~~~
 
-To stop a trigger from launching runs for a specific snapshot, you can *detach* the trigger from that snapshot.
+To stop a trigger from launching runs for a specific snapshot, you can *detach* the
+trigger from that snapshot.
 
 Via the SDK:
 
 ~~~python
+from uuid import UUID
 from zenml.client import Client
 
 client = Client()
 client.detach_trigger_from_snapshot(
-    trigger_id="<TRIGGER_ID>",
-    pipeline_snapshot_id="<>SNAPSHOT_ID"
+    trigger_id=UUID("<TRIGGER_UUID>"),
+    pipeline_snapshot_id=UUID("<SNAPSHOT_UUID>"),
 )
 ~~~
 
 Via the CLI:
 
 ~~~bash
-zenml trigger schedule detach "<TRIGGER_ID>" "<SNAPSHOT_ID>"
+zenml trigger schedule detach "<TRIGGER_NAME_OR_ID>" "<SNAPSHOT_NAME_OR_ID>"
 ~~~
 
 The ability to detach and attach snapshots is particularly useful as pipelines evolve. When a new pipeline 
@@ -154,16 +164,17 @@ from zenml.client import Client
 
 client = Client()
 client.update_schedule_trigger(
-    trigger_id="<TRIGGER_ID>",
+    trigger_name_id_or_prefix="daily-schedule-6-am",
     active=False,
-    name="daily-schedule-6-am[DO NOT TOUCH]"
+    name="daily-schedule-6-am[DO NOT TOUCH]",
 )
 ~~~
 
 Via the CLI:
 
 ~~~bash
-zenml trigger schedule update "<TRIGGER_ID>" --active=false --name="daily-schedule-6-am-(dont-touch)"
+zenml trigger schedule update "daily-schedule-6-am" --active=false \
+  --name="daily-schedule-6-am-(dont-touch)"
 ~~~
 
 ### View Schedules
@@ -187,6 +198,14 @@ Or its attached snapshots and executed pipeline runs:
 
 ![Image Showing Schedule Runs](../../.gitbook/assets/schedule_runs_dash.png)
 
+For each trigger–snapshot attachment, ZenML can persist the **dispatch state** (for
+example, last status, or error message and severity when a dispatch fails). The
+snapshot dispatch states on a trigger response reflect that information. After
+you fix the underlying problem, you can acknowledge the error and clear the
+stored details (see the next section). Use `get_schedule_trigger` with
+`trigger_name_id_or_prefix` to load a schedule by name, full ID, or ID prefix;
+set `allow_name_prefix_match=False` if you need an exact name match.
+
 Via the SDK:
 
 ~~~python
@@ -198,7 +217,9 @@ active_schedules = client.list_schedule_triggers(
     active=True,
 )  # list schedules
 
-schedule = client.get_schedule_trigger(trigger_id="<SCHEDULE_ID>")  # get a schedule by ID
+schedule = client.get_schedule_trigger(
+    trigger_name_id_or_prefix="my-schedule",
+)
 
 for snapshot in schedule.snapshots:  # iterate a schedule's attached snapshots
     print(snapshot.id)
@@ -208,6 +229,92 @@ Via the CLI:
 
 ~~~bash
 zenml trigger schedule list --active=true
+~~~
+
+### Stopping Criteria
+
+You can control when a schedule stops by limiting it in time or by number of runs. This helps avoid unintended 
+long-running schedules and gives you tighter control over resource usage.
+
+#### `end_time`
+
+Defines the point in time after which the schedule will no longer trigger runs. 
+The schedule remains visible but inactive for future executions.
+
+~~~python
+from datetime import datetime, timedelta
+from zenml.client import Client
+
+client = Client()
+
+client.create_schedule_trigger(
+    name="limited-schedule",
+    cron_expression="0 0 * * *",
+    end_time=datetime.now() + timedelta(days=2),
+)
+~~~
+
+#### `max_runs`
+
+Limits how many times a schedule can trigger a pipeline. Once the limit is reached, no further runs are scheduled. 
+Note that this limit applies per attached snapshot, for example, with a limit of 2 and two attached snapshots, you will see a total of 4 runs.
+
+~~~python
+from zenml.client import Client
+
+client = Client()
+
+client.create_schedule_trigger(
+    name="limited-schedule",
+    cron_expression="0 0 * * *",
+    max_runs=24,
+)
+~~~
+
+#### Combined usage
+
+If both are set, the schedule stops when the first condition is reached (time or run limit).
+
+#### Clear dispatch errors
+
+To clear stored dispatch error details after the issue is resolved, use the SDK
+or the `clear-errors` command under `zenml trigger schedule`. With no snapshot argument, errors are cleared for **all** snapshots attached to that trigger.
+
+Via the SDK:
+
+~~~python
+from uuid import UUID
+from zenml.client import Client
+
+client = Client()
+trigger = client.get_schedule_trigger(
+    trigger_name_id_or_prefix="my-schedule",
+    allow_name_prefix_match=False,
+    hydrate=False,
+)
+client.clear_trigger_dispatch_error(
+    trigger_id=trigger.id,
+    pipeline_snapshot_id=None,
+)
+~~~
+
+To clear the error only for one attached snapshot, pass that snapshot’s UUID
+(in addition to the `client` and `trigger` values from the example above):
+
+~~~python
+from uuid import UUID
+
+client.clear_trigger_dispatch_error(
+    trigger_id=trigger.id,
+    pipeline_snapshot_id=UUID("<SNAPSHOT_UUID>"),
+)
+~~~
+
+Via the CLI:
+
+~~~bash
+zenml trigger schedule clear-errors "my-schedule"
+zenml trigger schedule clear-errors "my-schedule" "my-snapshot"
 ~~~
 
 ### Delete schedules
@@ -222,28 +329,35 @@ Via the dashboard:
 
 ![Image Showing Schedule Deletion](../../.gitbook/assets/delete_schedule_soft.png)
 
-You can view archived schedules by setting the `Display archived` where can you also
-hard delete them.
+You can view archived schedules by setting the `Display archived` filter, where
+you can also hard delete them.
 
 ![Image Showing Schedule Hard Deletion](../../.gitbook/assets/delete_schedule_hard.png)
 
 Via the SDK:
 
 ~~~python
+from uuid import UUID
 from zenml.client import Client
 
 client = Client()
-
 client.delete_trigger(
-    trigger_id="<SCHEDULE_ID>",
-    soft=True,  # set to False if you want to hard-delete the schedule.
+    trigger_id=UUID("<TRIGGER_UUID>"),
+    soft=True,
 )
 ~~~
 
 Via the CLI:
 
+Default behavior is **soft** deletion (the trigger is archived). Pass
+`--hard` to remove the trigger and its associated references permanently. To
+operate on an **archived** trigger, add `--archived` (for example, to hard
+delete a trigger that is already archived).
+
 ~~~bash
-zenml trigger schedule delete "<SCHEDULE_ID>" --soft=true  # set to False to hard-delete the schedule
+zenml trigger schedule delete "my-schedule"
+zenml trigger schedule delete "my-schedule" --hard
+zenml trigger schedule delete "my-old-schedule" --archived --hard
 ~~~
 
 ## Triggers vs OSS schedules
@@ -291,7 +405,7 @@ trigger operates within your workflow.
 | active        | Status of the trigger (active/inactive)                   | -                                  |
 | concurrency   | Option to control how concurrent runs should be handled   | Skip is the default option         |
 
-You can manage platform event triggers using the same set of commands (create, update, attach, detach, list, delete) 
+You can manage platform event triggers using the same set of commands (create, update, attach, detach, list, delete, clear-errors)
 as for schedule triggers. While some parameters and responses differ slightly, additional utilities are 
 available to help you work more effectively with this trigger type.
 
@@ -329,7 +443,7 @@ zenml trigger platform-event list-supported-events pipeline
 Then we can create the trigger as follows:
 
 ```bash
-zenml trigger platform-event create "on-hello-pipeline-complete" pipeline <pipeline ID> --target_events=run_completed
+zenml trigger platform-event create "on-hello-pipeline-complete" pipeline <PIPELINE_NAME_OR_ID> --target_events=run_completed
 ```
 
 ### Update Platform Event Triggers
@@ -340,27 +454,25 @@ The trigger initially reacted to successful completion, and we will now extend i
 Via the SDK:
 
 ```python
-from zenml.client import Client
 from zenml.enums import PipelineEvent
 from zenml.utils.trigger_utils import update_platform_event_trigger
 
-trigger_id = Client().get_platform_event_trigger(trigger_id="<trigger_id>").id
-
 trigger = update_platform_event_trigger(
-    trigger_id=trigger_id,
-    target_events=[PipelineEvent.RUN_FAILED, PipelineEvent.RUN_COMPLETED]
+    trigger_name_id_or_prefix="on-hello-pipeline-complete",
+    target_events=[PipelineEvent.RUN_FAILED, PipelineEvent.RUN_COMPLETED],
 )
 ```
 
 Via the CLI:
 
 ```bash
-zenml trigger platform-event update <trigger_id> --target_events=run_completed --target_events=run_failed
+zenml trigger platform-event update "on-hello-pipeline-complete" \
+  --target_events=run_completed --target_events=run_failed
 ```
 
 ### Remaining Platform Event Trigger operations
 
-The remaining operations (view, attach, detach, and delete) do not differ significantly from schedule triggers. 
+The remaining operations (view, attach, detach, delete, and clear-errors) match schedule triggers. 
 In the CLI, they are grouped under a different command namespace, but the syntax remains the same. 
 You can explore the available platform event trigger commands with:
 
@@ -371,23 +483,35 @@ zenml trigger platform-event
 To view platform event triggers via the SDK:
 
 ```python
+from uuid import UUID
 from zenml.client import Client
 
-# GET by ID
-trigger = Client().get_platform_event_trigger(trigger_id="<trigger_id>")
+# By name, ID, or ID prefix
+trigger = Client().get_platform_event_trigger(
+    trigger_name_id_or_prefix="on-hello-pipeline-complete",
+)
 
 # List with filtering & sorting
 triggers = Client().list_platform_event_triggers()
 ```
 
-To attach, detach, and delete triggers via the SDK, the methods are shared across all trigger types:
+To attach, detach, and delete triggers via the SDK, the methods are shared across
+all trigger types (IDs are UUIDs):
 
 ```python
+from uuid import UUID
 from zenml.client import Client
 
-Client().attach_trigger_to_snapshot(trigger_id="<trigger_id>", pipeline_snapshot_id="<snapshot_id>")
-Client().detach_trigger_from_snapshot(trigger_id="<trigger_id>", pipeline_snapshot_id="<snapshot_id>")
-Client().delete_trigger(trigger_id="<trigger_id>")
+c = Client()
+c.attach_trigger_to_snapshot(
+    trigger_id=UUID("<trigger_uuid>"),
+    pipeline_snapshot_id=UUID("<snapshot_uuid>"),
+)
+c.detach_trigger_from_snapshot(
+    trigger_id=UUID("<trigger_uuid>"),`
+    pipeline_snapshot_id=UUID("<snapshot_uuid>"),
+)
+c.delete_trigger(trigger_id=UUID("<trigger_uuid>"), soft=True)
 ```
 
 ### Upstream information

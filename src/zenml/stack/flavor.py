@@ -26,7 +26,6 @@ from zenml.models import (
 )
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils import source_utils
-from zenml.utils.package_utils import is_latest_zenml_version
 
 
 class Flavor:
@@ -226,21 +225,10 @@ class Flavor:
         Returns:
             The complete url to the zenml documentation
         """
-        from zenml import __version__
-
         component_type = self.type.plural.replace("_", "-")
         name = self.name.replace("_", "-")
 
-        try:
-            is_latest = is_latest_zenml_version()
-        except RuntimeError:
-            # We assume in error cases that we are on the latest version
-            is_latest = True
-
-        if is_latest:
-            base = "https://docs.zenml.io"
-        else:
-            base = f"https://zenml-io.gitbook.io/zenml-legacy-documentation/v/{__version__}"
+        base = "https://docs.zenml.io"
         return f"{base}/stack-components/{component_type}/{name}"
 
     def generate_default_sdk_docs_url(self) -> str:

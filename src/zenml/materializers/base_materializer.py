@@ -15,6 +15,7 @@
 
 import contextlib
 import inspect
+import os
 import shutil
 import tempfile
 from typing import Any, ClassVar, Dict, Iterator, Optional, Tuple, Type, cast
@@ -22,7 +23,6 @@ from typing import Any, ClassVar, Dict, Iterator, Optional, Tuple, Type, cast
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.exceptions import MaterializerInterfaceError
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.metadata.metadata_types import MetadataType
@@ -371,10 +371,39 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         from zenml.metadata.metadata_types import StorageSize
 
-        storage_size = fileio.size(self.uri)
+        storage_size = self._get_storage_size(self.uri)
+
         if isinstance(storage_size, int):
             return {"storage_size": StorageSize(storage_size)}
         return {}
+
+    def _get_storage_size(self, path: str) -> Optional[int]:
+        """Get the storage size of the given path.
+
+        Args:
+            path: The path to get the storage size of.
+
+        Returns:
+            The storage size of the given path.
+        """
+        if not self.artifact_store.exists(path):
+            return 0
+
+        if self.artifact_store.isdir(path):
+            files = self.artifact_store.listdir(path)
+            file_sizes = [
+                self._get_storage_size(os.path.join(str(path), str(file)))
+                for file in files
+            ]
+            return sum(
+                [
+                    file_size
+                    for file_size in file_sizes
+                    if file_size is not None
+                ]
+            )
+        else:
+            return self.artifact_store.size(path)
 
     @contextlib.contextmanager
     def get_temporary_directory(
