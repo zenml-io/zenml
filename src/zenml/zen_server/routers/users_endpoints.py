@@ -151,8 +151,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     ) -> UserResponse:
         """Creates a user.
 
-        # noqa: DAR401
-
         Args:
             user: User to create.
             auth_context: Authentication context.

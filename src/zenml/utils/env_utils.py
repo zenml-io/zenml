@@ -224,12 +224,16 @@ def get_runtime_environment(
         A dictionary of environment variables.
     """
     environment = {}
-    for component in stack.components.values():
-        if isinstance(component, list):
-            for item in component:
-                environment.update(item.environment)
-        else:
+
+    from zenml.stack import Stack
+
+    if isinstance(stack, Stack):
+        for component in stack.all_components:
             environment.update(component.environment)
+    else:
+        for component_list in stack.components.values():
+            for component_response in component_list:
+                environment.update(component_response.environment)
 
     environment.update(stack.environment)
     environment.update(config.environment)
@@ -260,12 +264,15 @@ def get_runtime_secret_environment(
     secrets = list(reversed(config.secrets))
     secrets.extend(stack.secrets)
 
-    for component in stack.components.values():
-        if isinstance(component, list):
-            for item in component:
-                secrets.extend(item.secrets)
-        else:
+    from zenml.stack import Stack
+
+    if isinstance(stack, Stack):
+        for component in stack.all_components:
             secrets.extend(component.secrets)
+    else:
+        for components_list in stack.components.values():
+            for component_response in components_list:
+                secrets.extend(component_response.secrets)
 
     # Removes duplicates while preserving order, only the first occurrence of
     # each secret will be kept. We then reverse the list to make sure the
@@ -333,6 +340,9 @@ class ConfigBase(BaseModel, ABC):
 
         Returns:
             A list of prefixes to use for env var name resolution.
+
+        Raises:
+            NotImplementedError: If the method is not implemented.
         """
         raise NotImplementedError
 

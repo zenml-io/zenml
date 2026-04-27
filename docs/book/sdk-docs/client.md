@@ -72,6 +72,7 @@ Methods for managing ZenML pipelines, runs, and related resources:
 * [`Client.delete_run_template`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_run_template)
 * [`Client.delete_schedule`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_schedule)
 * [`Client.create_trigger`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.create_trigger)
+* [`Client.clear_trigger_dispatch_error`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.clear_trigger_dispatch_error)
 * [`Client.delete_trigger`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_trigger)
 * [`Client.delete_trigger_execution`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_trigger_execution)
 

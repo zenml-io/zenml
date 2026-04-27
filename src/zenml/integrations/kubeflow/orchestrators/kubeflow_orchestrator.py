@@ -72,7 +72,7 @@ from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, settings_utils
+from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
@@ -355,7 +355,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 # go through all stack components and identify those that
                 # advertise a local path where they persist information that
                 # they need to be available when running pipelines.
-                for stack_comp in stack.components.values():
+                for stack_comp in stack.all_components:
                     local_path = stack_comp.local_path
                     if not local_path:
                         continue
@@ -883,9 +883,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         run = Client().get_pipeline_run(run_id)
 
-        settings_key = settings_utils.get_stack_component_setting_key(self)
-        run_settings = self.settings_class.model_validate(
-            run.config.model_dump().get(settings_key, self.config)
+        run_settings = cast(
+            KubeflowOrchestratorSettings,
+            self.get_settings(run),
         )
         user_namespace = run_settings.user_namespace
 

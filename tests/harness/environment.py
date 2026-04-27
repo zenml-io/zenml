@@ -169,7 +169,7 @@ class TestEnvironment:
 
         Raises:
             AssertionError: If the components have not been collected yet.
-        """
+        """  # noqa: DOC502
         if self._mandatory_components is not None:
             return self._mandatory_components
 

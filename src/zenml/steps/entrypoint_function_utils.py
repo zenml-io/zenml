@@ -147,9 +147,9 @@ class EntrypointFunctionDefinition(NamedTuple):
         Raises:
             KeyError: If the function has no input for the given key.
             RuntimeError: If a parameter is passed for an input that is
-                annotated as an `UnmaterializedArtifact`.
-            RuntimeError: If the input value is not valid for the type
-                annotation provided for the function parameter.
+                annotated as an `UnmaterializedArtifact`, or if the input
+                value is not valid for the type annotation provided for
+                the function parameter.
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """
