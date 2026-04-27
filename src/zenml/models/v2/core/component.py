@@ -31,7 +31,11 @@ from pydantic import BaseModel, Field, field_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery, StrFilterOption, UUIDFilterOption
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    StrFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,

@@ -27,7 +27,11 @@ from pydantic import Field, SecretStr
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery, BoolFilterOption, StrFilterOption
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BoolFilterOption,
+    StrFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,

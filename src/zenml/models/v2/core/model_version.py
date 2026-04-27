@@ -33,7 +33,11 @@ from zenml.enums import ArtifactType, ModelStages
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import IntFilterOption, StrFilterOption, UUIDFilterOption
+from zenml.models.v2.base.filter import (
+    IntFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,

@@ -30,7 +30,11 @@ from pydantic import ConfigDict, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ServiceState
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import BoolFilterOption, StrFilterOption, UUIDFilterOption
+from zenml.models.v2.base.filter import (
+    BoolFilterOption,
+    StrFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,

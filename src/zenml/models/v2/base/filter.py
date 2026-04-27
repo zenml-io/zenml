@@ -83,7 +83,9 @@ IntFilterOption = Optional[Union[int, str, List[Union[int, str]]]]
 FloatFilterOption = Optional[Union[float, str, List[Union[float, str]]]]
 BoolFilterOption = Optional[Union[bool, str, List[Union[bool, str]]]]
 UUIDFilterOption = Optional[Union[UUID, str, List[Union[UUID, str]]]]
-DatetimeFilterOption = Optional[Union[datetime, str, List[Union[datetime, str]]]]
+DatetimeFilterOption = Optional[
+    Union[datetime, str, List[Union[datetime, str]]]
+]
 
 
 class Filter(BaseModel, ABC):
