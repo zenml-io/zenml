@@ -12164,7 +12164,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         requested_status: Optional[ExecutionStatus] = None,
         status_reason: Optional[str] = None,
-    ) -> Tuple[bool, PipelineRunSchema]:
+    ) -> Tuple[bool, PipelineRunSchema, ExecutionStatus]:
         """Update a pipeline run status without committing the transaction.
 
         Args:
@@ -12174,19 +12174,20 @@ class SqlZenStore(BaseZenStore):
             status_reason: The reason for the status of the pipeline run.
 
         Returns:
-            A tuple containing whether the schema was updated and the updated
-            pipeline run schema.
+            A tuple containing whether the schema was updated, the updated
+            pipeline run schema and the previous status.
         """
         pipeline_run = session.exec(
             select(PipelineRunSchema).where(
                 PipelineRunSchema.id == pipeline_run_id
             )
         ).one()
+        previous_status = ExecutionStatus(pipeline_run.status)
         did_update = pipeline_run.update_status(
             requested_status=requested_status, status_reason=status_reason
         )
         session.add(pipeline_run)
-        return did_update, pipeline_run
+        return did_update, pipeline_run, previous_status
 
     def _update_pipeline_run_status(
         self,
@@ -12206,21 +12207,26 @@ class SqlZenStore(BaseZenStore):
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
-        did_update, pipeline_run = self._update_pipeline_run_status_no_commit(
-            pipeline_run_id=pipeline_run_id,
-            session=session,
-            requested_status=requested_status,
-            status_reason=status_reason,
+        did_update, pipeline_run, previous_status = (
+            self._update_pipeline_run_status_no_commit(
+                pipeline_run_id=pipeline_run_id,
+                session=session,
+                requested_status=requested_status,
+                status_reason=status_reason,
+            )
         )
 
         # Commit to release the lock on the pipeline run.
         session.commit()
         if not did_update:
             return
-        EventDispatcher().handle_run_status_update(
-            run=pipeline_run.to_model(include_metadata=True)
-        )
+
         new_status = ExecutionStatus(pipeline_run.status)
+
+        if new_status != previous_status:
+            EventDispatcher().handle_run_status_update(
+                run=pipeline_run.to_model(include_metadata=True)
+            )
 
         if new_status.is_finished and pipeline_run.end_time:
             if pipeline_run.start_time:
