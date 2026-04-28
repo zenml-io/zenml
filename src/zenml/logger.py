@@ -266,6 +266,10 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
 
         Returns:
             The result of the original write method.
+
+        Raises:
+            Exception: If importing `LoggingContext` fails for a reason other
+                than a circular import during logger initialization.
         """
         try:
             from zenml.utils.logging_utils import LoggingContext
