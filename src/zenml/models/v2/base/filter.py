@@ -16,6 +16,7 @@
 import json
 from abc import ABC, abstractmethod
 from datetime import datetime
+from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -77,6 +78,7 @@ VALUELESS_FILTER_OPS = {
     GenericFilterOps.IS_NOT_EMPTY,
 }
 
+TEnum = TypeVar("TEnum", bound=Enum)
 
 StrFilterOption = Optional[Union[str, List[str]]]
 IntFilterOption = Optional[Union[int, str, List[Union[int, str]]]]
@@ -86,6 +88,7 @@ UUIDFilterOption = Optional[Union[UUID, str, List[Union[UUID, str]]]]
 DatetimeFilterOption = Optional[
     Union[datetime, str, List[Union[datetime, str]]]
 ]
+EnumFilterOption = Optional[Union[TEnum, str, List[Union[TEnum, str]]]]
 
 
 class Filter(BaseModel, ABC):

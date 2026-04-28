@@ -686,7 +686,7 @@ class ModelVersionFilter(
         description="The number of the Model Version",
     )
     # TODO: By doing this we are changing the union order, is this a problem?
-    # This may have always been cast to a string anyway, perhaps we can use 
+    # This may have always been cast to a string anyway, perhaps we can use
     # a StrFilterOption instead?
     stage: EnumFilterOption[ModelStages] = Field(
         description="The model version stage",
