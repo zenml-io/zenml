@@ -217,6 +217,7 @@ from zenml.models import (
 from zenml.models.v2.base.filter import (
     BoolFilterOption,
     DatetimeFilterOption,
+    EnumFilterOption,
     FloatFilterOption,
     IntFilterOption,
     StrFilterOption,
@@ -2745,7 +2746,6 @@ class Client(metaclass=ClientMetaClass):
         latest_run_user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         user: UUIDFilterOption = None,
-        tag: Optional[str] = None,
         tags: StrFilterOption = None,
         hydrate: bool = False,
     ) -> Page[PipelineResponse]:
@@ -2766,7 +2766,6 @@ class Client(metaclass=ClientMetaClass):
                 executed the latest run.
             project: The project name/ID to filter by.
             user: The name/ID of the user to filter by.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -2787,7 +2786,6 @@ class Client(metaclass=ClientMetaClass):
             latest_run_user=latest_run_user,
             project=project or self.active_project.id,
             user=user,
-            tag=tag,
             tags=tags,
         )
         return self.zen_store.list_pipelines(
@@ -3127,7 +3125,6 @@ class Client(metaclass=ClientMetaClass):
         runnable: BoolFilterOption = None,
         deployable: BoolFilterOption = None,
         deployed: BoolFilterOption = None,
-        tag: Optional[str] = None,
         tags: StrFilterOption = None,
         hydrate: bool = False,
         trigger_id: UUIDFilterOption = None,
@@ -3155,7 +3152,6 @@ class Client(metaclass=ClientMetaClass):
             runnable: Whether the snapshot is runnable.
             deployable: Whether the snapshot is deployable.
             deployed: Whether the snapshot is deployed.
-            tag: Filter by tag.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3184,7 +3180,6 @@ class Client(metaclass=ClientMetaClass):
             runnable=runnable,
             deployable=deployable,
             deployed=deployed,
-            tag=tag,
             tags=tags,
             trigger_id=trigger_id,
         )
@@ -3585,7 +3580,6 @@ class Client(metaclass=ClientMetaClass):
         url: StrFilterOption = None,
         user: UUIDFilterOption = None,
         pipeline: UUIDFilterOption = None,
-        tag: Optional[str] = None,
         tags: StrFilterOption = None,
         hydrate: bool = False,
     ) -> Page[DeploymentResponse]:
@@ -3607,7 +3601,6 @@ class Client(metaclass=ClientMetaClass):
             url: The url of the deployment to filter by.
             user: Filter by user name/ID.
             pipeline: Filter by pipeline name/ID.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3632,7 +3625,6 @@ class Client(metaclass=ClientMetaClass):
                 status=status,
                 url=url,
                 pipeline=pipeline,
-                tag=tag,
                 tags=tags,
             ),
             hydrate=hydrate,
@@ -4060,7 +4052,6 @@ class Client(metaclass=ClientMetaClass):
         id: UUIDFilterOption = None,
         name: StrFilterOption = None,
         hidden: BoolFilterOption = False,
-        tag: Optional[str] = None,
         project: Optional[Union[str, UUID]] = None,
         pipeline_id: UUIDFilterOption = None,
         build_id: UUIDFilterOption = None,
@@ -4083,7 +4074,6 @@ class Client(metaclass=ClientMetaClass):
             id: Filter by run template ID.
             name: Filter by run template name.
             hidden: Filter by run template hidden status.
-            tag: Filter by run template tags.
             project: Filter by project name/ID.
             pipeline_id: Filter by pipeline ID.
             build_id: Filter by build ID.
@@ -4108,7 +4098,6 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             name=name,
             hidden=hidden,
-            tag=tag,
             project=project or self.active_project.id,
             pipeline_id=pipeline_id,
             build_id=build_id,
@@ -4402,7 +4391,7 @@ class Client(metaclass=ClientMetaClass):
         updated: DatetimeFilterOption = None,
         name: StrFilterOption = None,
         active: BoolFilterOption = None,
-        concurrency: str | None = None,
+        concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: BoolFilterOption = False,
         flavor: TriggerFlavor = TriggerFlavor.NATIVE_SCHEDULE,  # TODO
         next_occurrence: DatetimeFilterOption = None,
@@ -4445,9 +4434,7 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 active=active,
-                concurrency=TriggerRunConcurrency(concurrency)
-                if concurrency
-                else None,
+                concurrency=concurrency,
                 is_archived=is_archived,
                 flavor=flavor,
                 type=TriggerType.SCHEDULE,
@@ -4635,7 +4622,7 @@ class Client(metaclass=ClientMetaClass):
         updated: datetime | None = None,
         name: str | None = None,
         active: bool | None = None,
-        concurrency: str | None = None,
+        concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
         pipeline_id: str | UUID | None = None,
         snapshot_id: str | UUID | None = None,
@@ -4674,9 +4661,7 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 active=active,
-                concurrency=TriggerRunConcurrency(concurrency)
-                if concurrency
-                else None,
+                concurrency=concurrency,
                 is_archived=is_archived,
                 flavor=TriggerFlavor.PLATFORM_EVENT,
                 type=TriggerType.PLATFORM_EVENT,
@@ -5140,7 +5125,6 @@ class Client(metaclass=ClientMetaClass):
         start_time: DatetimeFilterOption = None,
         end_time: DatetimeFilterOption = None,
         templatable: BoolFilterOption = None,
-        tag: Optional[str] = None,
         tags: StrFilterOption = None,
         user: UUIDFilterOption = None,
         run_metadata: StrFilterOption = None,
@@ -5190,7 +5174,6 @@ class Client(metaclass=ClientMetaClass):
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
             templatable: If the runs should be templatable or not.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             user: The name/ID of the user to filter by.
             run_metadata: The run_metadata of the run to filter by.
@@ -5239,7 +5222,6 @@ class Client(metaclass=ClientMetaClass):
             index=index,
             start_time=start_time,
             end_time=end_time,
-            tag=tag,
             tags=tags,
             user=user,
             run_metadata=run_metadata,
@@ -5554,7 +5536,6 @@ class Client(metaclass=ClientMetaClass):
         user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
         tags: StrFilterOption = None,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
@@ -5573,7 +5554,6 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: Filter artifacts by tag.
             tags: Tags to filter by.
 
         Returns:
@@ -5589,7 +5569,6 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             has_custom_name=has_custom_name,
-            tag=tag,
             tags=tags,
             user=user,
             project=project or self.active_project.id,
@@ -5766,7 +5745,6 @@ class Client(metaclass=ClientMetaClass):
         model: UUIDFilterOption = None,
         pipeline_run: UUIDFilterOption = None,
         run_metadata: StrFilterOption = None,
-        tag: Optional[str] = None,
         tags: StrFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
@@ -5794,7 +5772,6 @@ class Client(metaclass=ClientMetaClass):
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
-            tag: A tag to filter by.
             tags: Tags to filter by.
             user: Filter by user name or ID.
             model: Filter by model name or ID.
@@ -5829,7 +5806,6 @@ class Client(metaclass=ClientMetaClass):
             model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
-            tag=tag,
             tags=tags,
             user=user,
             model=model,
@@ -7682,7 +7658,6 @@ class Client(metaclass=ClientMetaClass):
         user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
         tags: StrFilterOption = None,
     ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
@@ -7700,7 +7675,6 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: The tag of the model to filter by.
             tags: Tags to filter by.
 
         Returns:
@@ -7715,7 +7689,6 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             created=created,
             updated=updated,
-            tag=tag,
             tags=tags,
             user=user,
             project=project or self.active_project.id,
@@ -7914,11 +7887,10 @@ class Client(metaclass=ClientMetaClass):
         name: StrFilterOption = None,
         id: UUIDFilterOption = None,
         number: IntFilterOption = None,
-        stage: Optional[Union[str, ModelStages]] = None,
+        stage: EnumFilterOption[ModelStages] = None,
         run_metadata: StrFilterOption = None,
         user: UUIDFilterOption = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
         tags: StrFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponse]:
@@ -7942,7 +7914,6 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: The tag to filter by.
             tags: Tags to filter by.
             project: The project name/ID to filter by.
 
@@ -7974,7 +7945,6 @@ class Client(metaclass=ClientMetaClass):
             number=number,
             stage=stage,
             run_metadata=run_metadata,
-            tag=tag,
             tags=tags,
             user=user,
             model=model,
@@ -8214,7 +8184,7 @@ class Client(metaclass=ClientMetaClass):
         updated: DatetimeFilterOption = None,
         expires: DatetimeFilterOption = None,
         client_id: UUIDFilterOption = None,
-        status: Union[OAuthDeviceStatus, str, None] = None,
+        status: EnumFilterOption[OAuthDeviceStatus] = None,
         trusted_device: BoolFilterOption = None,
         user: UUIDFilterOption = None,
         failed_auth_attempts: IntFilterOption = None,
@@ -9142,9 +9112,9 @@ class Client(metaclass=ClientMetaClass):
         created: DatetimeFilterOption = None,
         updated: DatetimeFilterOption = None,
         name: StrFilterOption = None,
-        color: Optional[Union[str, ColorVariants]] = None,
+        color: EnumFilterOption[ColorVariants] = None,
         exclusive: BoolFilterOption = None,
-        resource_type: Optional[Union[str, TaggableResourceTypes]] = None,
+        resource_type: EnumFilterOption[TaggableResourceTypes] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
@@ -9159,9 +9129,9 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation.
             updated: Use the last updated date for filtering.
             name: The name of the tag.
-            color: The color of the tag.
+            color: Filter by tag color (enum, string wire value, or list).
             exclusive: Flag indicating whether the tag is exclusive.
-            resource_type: Filter tags associated with a specific resource type.
+            resource_type: Filter by resource type (enum, string wire value, or list).
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 

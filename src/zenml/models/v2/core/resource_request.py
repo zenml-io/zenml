@@ -276,7 +276,7 @@ class ResourceRequestFilter(UserScopedFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_, or_
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             ResourceRequestSchema,
