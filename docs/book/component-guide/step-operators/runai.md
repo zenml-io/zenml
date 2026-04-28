@@ -129,7 +129,7 @@ from zenml import step
 @step(step_operator="<NAME>")
 def trainer(...) -> ...:
     """Train a model on Run:AI."""
-    # This step will be executed on Run:AI
+    ...
 ```
 
 {% hint style="info" %}
@@ -206,6 +206,7 @@ settings = RunAIStepOperatorSettings(
 | `node_type` | str | None | Node type label for GPU selection |
 | `preemptibility` | str | None | "preemptible" or "non-preemptible" |
 | `priority_class` | str | None | Kubernetes PriorityClass name |
+| `tolerations` | list | None | Kubernetes tolerations (`RunAITolerationSettings`) for scheduling on tainted nodes |
 | `large_shm_request` | bool | False | Request large /dev/shm for PyTorch DataLoader |
 | `pvc_mounts` | list | None | PVC mounts (`RunAIPVCMountSettings`) |
 | `config_map_mounts` | list | None | ConfigMap mounts (`RunAIConfigMapMountSettings`) |
@@ -247,6 +248,7 @@ from zenml.integrations.runai.flavors import (
     RunAIPortSettings,
     RunAISecurityContextSettings,
     RunAIStepOperatorSettings,
+    RunAITolerationSettings,
 )
 
 runai_settings = RunAIStepOperatorSettings(
@@ -262,6 +264,13 @@ runai_settings = RunAIStepOperatorSettings(
     node_pools=["a100-pool"],
     preemptibility="non-preemptible",
     priority_class="train",
+    tolerations=[
+        RunAITolerationSettings(
+            key="nvidia.com/gpu",
+            operator="Exists",
+            effect="NoSchedule",
+        )
+    ],
     large_shm_request=True,
     # Existing Run:AI/Kubernetes assets mounted into the workload.
     pvc_mounts=[
@@ -329,6 +338,7 @@ These fields map to the Run:AI training workload request body. ZenML validates t
 | `s3_mounts` | S3 data source | Use Run:AI/Kubernetes-managed credential references for private buckets. |
 | `host_path_mounts` | HostPath data source / volume | Depends heavily on cluster policy and should be used sparingly. |
 | `workload_template_id` | Workload template ID | Applies an existing Run:AI workload template. ZenML does not resolve template names. |
+| `tolerations` | Kubernetes tolerations | Allows scheduling on tainted nodes with typed key/operator/value/effect settings. |
 | `security_context` | Workload security block | UID/GID, non-root, seccomp, capabilities, and related pod security settings. |
 | `ports` | Port declarations | Declares container ports and optional service ports. |
 | `external_urls` | Exposed URLs | Requests Run:AI external URL exposure for long-running/debug endpoints. |
@@ -338,7 +348,7 @@ These fields map to the Run:AI training workload request body. ZenML validates t
 
 Use the typed mount settings to attach existing Kubernetes/Run:AI storage references to the training workload. Run:AI documents these as [data sources](https://run-ai-docs.nvidia.com/self-hosted/workloads-in-nvidia-run-ai/assets/datasources), including remote locations such as NFS and S3 and local Kubernetes resources such as PVC, ConfigMap, HostPath, and Secret.
 
-Supported storage setting classes are `RunAIPVCMountSettings`, `RunAIConfigMapMountSettings`, `RunAISecretMountSettings`, `RunAINFSMountSettings`, `RunAIS3MountSettings`, and `RunAIHostPathMountSettings`. Mount paths must be absolute and unique within the workload. ConfigMap and Secret `default_mode` values must be four-character strings such as `"0644"`. ZenML only passes references to Run:AI; it does not create PVCs, ConfigMaps, Secrets, buckets, or NFS exports.
+Supported storage setting classes are `RunAIPVCMountSettings`, `RunAIConfigMapMountSettings`, `RunAISecretMountSettings`, `RunAINFSMountSettings`, `RunAIS3MountSettings`, and `RunAIHostPathMountSettings`. Mount paths must be absolute and unique within the workload. ConfigMap and Secret `default_mode` values must be four-character octal strings such as `"0644"` or `"0400"`. ZenML only passes references to Run:AI; it does not create PVCs, ConfigMaps, Secrets, buckets, or NFS exports.
 
 | Setting class | Important fields |
 |---|---|
@@ -359,7 +369,30 @@ Pass an existing Run:AI workload template ID with `workload_template_id`:
 settings = RunAIStepOperatorSettings(workload_template_id="template-id")
 ```
 
-Run:AI describes templates as reusable workload setups in the [workload templates documentation](https://run-ai-docs.nvidia.com/self-hosted/2.22/workloads-in-nvidia-run-ai/workload-templates). ZenML does not resolve template names or change Run:AI's template merge semantics. Template-name lookup is deferred to a future client abstraction if needed.
+Run:AI describes templates as reusable workload setups in the [workload templates documentation](https://run-ai-docs.nvidia.com/self-hosted/2.22/workloads-in-nvidia-run-ai/workload-templates). ZenML does not resolve template names or change Run:AI's template merge semantics. Run:AI workload requests use template IDs, so resolve template names before configuring ZenML.
+
+#### Scheduling tolerations
+
+Use `RunAITolerationSettings` to schedule workloads on Kubernetes nodes with matching taints:
+
+```python
+from zenml.integrations.runai.flavors import (
+    RunAIStepOperatorSettings,
+    RunAITolerationSettings,
+)
+
+settings = RunAIStepOperatorSettings(
+    tolerations=[
+        RunAITolerationSettings(
+            key="nvidia.com/gpu",
+            operator="Exists",
+            effect="NoSchedule",
+        )
+    ]
+)
+```
+
+Supported fields are `key`, `operator` (`"Equal"` or `"Exists"`), `value`, and `effect` (`"NoSchedule"`, `"PreferNoSchedule"`, or `"NoExecute"`). Run:AI and Kubernetes still decide whether the project may use the targeted nodes.
 
 #### Security context
 
@@ -439,7 +472,7 @@ settings = RunAIStepOperatorSettings(parallelism=2, completions=4)
 
 Values greater than `1` can run the same ZenML step entrypoint multiple times for a single step run. This is useful only for explicitly idempotent workloads and is **not** distributed training support. Make sure artifact and metadata writes are safe before enabling it.
 
-#### Deferred workload types
+#### Workload type scope
 
 Distributed training and inference workloads are separate Run:AI API resources (`DistributedCreationRequest` and `InferenceCreationRequest`) and are intentionally not modeled as extra fields on this training step operator. Distributed training needs a dedicated abstraction for worker roles, replica topology, rank/world-size coordination, and artifact writes. Inference workloads fit better in a model deployer or deployer-style abstraction because their lifecycle is service-oriented rather than step-run-oriented.
 

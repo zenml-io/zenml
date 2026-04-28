@@ -26,6 +26,7 @@ from zenml.integrations.runai.flavors import (
     RunAISecurityContextSettings,
     RunAIStepOperatorConfig,
     RunAIStepOperatorSettings,
+    RunAITolerationSettings,
 )
 
 
@@ -116,6 +117,19 @@ def test_runai_settings_accept_advanced_training_fields() -> None:
                 authorization_type="authenticatedUsers",
             )
         ],
+        tolerations=[
+            {
+                "key": "nvidia.com/gpu",
+                "operator": "Exists",
+                "effect": "NoSchedule",
+            },
+            RunAITolerationSettings(
+                key="dedicated",
+                operator="Equal",
+                value="training",
+                effect="NoExecute",
+            ),
+        ],
         workload_template_id="template-id",
         parallelism=2,
         completions=3,
@@ -124,6 +138,11 @@ def test_runai_settings_accept_advanced_training_fields() -> None:
     assert settings.workload_template_id == "template-id"
     assert settings.parallelism == 2
     assert settings.completions == 3
+    assert settings.tolerations is not None
+    assert all(
+        isinstance(toleration, RunAITolerationSettings)
+        for toleration in settings.tolerations
+    )
 
 
 @pytest.mark.parametrize(
@@ -161,7 +180,43 @@ def test_runai_settings_accept_advanced_training_fields() -> None:
                     }
                 ]
             },
-            "String should have at least 4 characters",
+            "default_mode must be a four-character octal string",
+        ),
+        (
+            {
+                "secret_mounts": [
+                    {
+                        "secret": "secret",
+                        "mount_path": "/secret",
+                        "default_mode": "9999",
+                    }
+                ]
+            },
+            "default_mode must be a four-character octal string",
+        ),
+        (
+            {
+                "config_map_mounts": [
+                    {
+                        "config_map": "cm",
+                        "mount_path": "/cm",
+                        "default_mode": "abcd",
+                    }
+                ]
+            },
+            "default_mode must be a four-character octal string",
+        ),
+        (
+            {"tolerations": [{"operator": "Invalid"}]},
+            "Input should be",
+        ),
+        (
+            {"tolerations": [{"effect": "Invalid"}]},
+            "Input should be",
+        ),
+        (
+            {"tolerations": [{"unexpected": "value"}]},
+            "Extra inputs are not permitted",
         ),
         ({"security_context": {"run_as_uid": -1}}, "greater than or equal"),
         (

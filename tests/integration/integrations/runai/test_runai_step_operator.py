@@ -47,6 +47,7 @@ if RUNAI_INSTALLED:
         RunAISecurityContextSettings,
         RunAIStepOperatorConfig,
         RunAIStepOperatorSettings,
+        RunAITolerationSettings,
     )
     from zenml.integrations.runai.step_operators.runai_step_operator import (
         RUNAI_WORKLOAD_ID_METADATA_KEY,
@@ -67,6 +68,7 @@ else:
     RunAISecretMountSettings = Any
     RunAISecurityContextSettings = Any
     RunAIStepOperatorConfig = Any
+    RunAITolerationSettings = Any
     RunAIStepOperatorSettings = Any
     RUNAI_WORKLOAD_ID_METADATA_KEY = "workload_id"
     RUNAI_WORKLOAD_NAME_METADATA_KEY = "workload_name"
@@ -272,6 +274,14 @@ def test_submit_maps_advanced_training_workload_settings(mocker: Any) -> None:
                 authorization_type="authenticatedUsers",
             )
         ],
+        tolerations=[
+            RunAITolerationSettings(
+                key="dedicated",
+                operator="Equal",
+                value="training",
+                effect="NoSchedule",
+            )
+        ],
         parallelism=2,
         completions=3,
     )
@@ -324,6 +334,10 @@ def test_submit_maps_advanced_training_workload_settings(mocker: Any) -> None:
     assert spec.ports[0].external == 30088
     assert spec.exposed_urls[0].container == 8888
     assert spec.exposed_urls[0].authorization_type == "authenticatedUsers"
+    assert spec.tolerations[0].key == "dedicated"
+    assert spec.tolerations[0].operator == "Equal"
+    assert spec.tolerations[0].value == "training"
+    assert spec.tolerations[0].effect == "NoSchedule"
 
 
 def test_get_status_maps_runai_status(mocker: Any) -> None:

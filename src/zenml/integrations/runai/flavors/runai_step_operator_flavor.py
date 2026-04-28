@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Run:AI step operator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Type
+from collections import Counter
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type
 from urllib.parse import urlparse
 
 from pydantic import (
@@ -36,6 +37,7 @@ from zenml.integrations.runai.flavors.runai_training_workload_settings import (
     RunAIS3MountSettings,
     RunAISecretMountSettings,
     RunAISecurityContextSettings,
+    RunAITolerationSettings,
 )
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 from zenml.utils.secret_utils import PlainSerializedSecretStr
@@ -153,12 +155,11 @@ class RunAIStepOperatorSettings(BaseSettings):
         "Run:AI presets: 'train' (50), 'build' (50), 'interactive-preemptible' (100), 'inference' (125)",
     )
 
-    tolerations: Optional[List[Dict[str, Any]]] = Field(
+    tolerations: Optional[List[RunAITolerationSettings]] = Field(
         default=None,
-        description="Kubernetes tolerations for scheduling on tainted nodes. Each item: "
-        "{'key': str, 'operator': 'Equal'|'Exists', 'value': str, "
-        "'effect': 'NoSchedule'|'PreferNoSchedule'|'NoExecute'}. "
-        "Example: [{'key': 'nvidia.com/gpu', 'operator': 'Exists', 'effect': 'NoSchedule'}]",
+        description="Kubernetes tolerations for scheduling on tainted nodes. Each item is a "
+        "RunAITolerationSettings with optional key, operator, value, and effect. "
+        "Example: [RunAITolerationSettings(key='nvidia.com/gpu', operator='Exists', effect='NoSchedule')]",
     )
 
     extended_resources: Optional[Dict[str, str]] = Field(
@@ -207,51 +208,75 @@ class RunAIStepOperatorSettings(BaseSettings):
 
     pvc_mounts: Optional[List[RunAIPVCMountSettings]] = Field(
         default=None,
-        description="PVC storage mounts to attach to the training workload.",
+        description="PVC mounts attached to the workload. Each entry is a "
+        "RunAIPVCMountSettings with claim_name and absolute container path. "
+        "Example: [RunAIPVCMountSettings(claim_name='datasets', path='/mnt/data')]",
     )
     config_map_mounts: Optional[List[RunAIConfigMapMountSettings]] = Field(
         default=None,
-        description="ConfigMap storage mounts to attach to the training workload.",
+        description="ConfigMap mounts attached to the workload. Each entry is a "
+        "RunAIConfigMapMountSettings with config_map name and absolute mount_path. "
+        "Example: [RunAIConfigMapMountSettings(config_map='train-cfg', mount_path='/etc/train')]",
     )
     secret_mounts: Optional[List[RunAISecretMountSettings]] = Field(
         default=None,
-        description="Secret storage mounts to attach to the training workload.",
+        description="Secret mounts attached to the workload. Each entry is a "
+        "RunAISecretMountSettings with secret name and absolute mount_path. "
+        "Example: [RunAISecretMountSettings(secret='hf-token', mount_path='/etc/secrets')]",
     )
     nfs_mounts: Optional[List[RunAINFSMountSettings]] = Field(
         default=None,
-        description="NFS storage mounts to attach to the training workload.",
+        description="NFS mounts attached to the workload. Each entry is a "
+        "RunAINFSMountSettings with server, exported path, and container mount_path. "
+        "Example: [RunAINFSMountSettings(server='nfs.example.com', path='/exports', mount_path='/mnt/nfs')]",
     )
     s3_mounts: Optional[List[RunAIS3MountSettings]] = Field(
         default=None,
-        description="S3 storage mounts to attach to the training workload.",
+        description="S3 mounts attached to the workload. Each entry is a "
+        "RunAIS3MountSettings with bucket and absolute container path. "
+        "Example: [RunAIS3MountSettings(bucket='my-bucket', path='/mnt/s3')]",
     )
     host_path_mounts: Optional[List[RunAIHostPathMountSettings]] = Field(
         default=None,
-        description="HostPath storage mounts to attach to the training workload.",
+        description="HostPath mounts attached to the workload. Each entry is a "
+        "RunAIHostPathMountSettings with absolute host path and absolute mount_path. "
+        "Example: [RunAIHostPathMountSettings(path='/var/data', mount_path='/mnt/host')]",
     )
     workload_template_id: Optional[str] = Field(
         default=None,
-        description="Run:AI workload template ID to apply when creating the workload.",
+        description="Run:AI workload template ID to apply when creating the workload. "
+        "Must be the UUID of an existing template; ZenML does not resolve template names. "
+        "Example: '550e8400-e29b-41d4-a716-446655440000'",
     )
     security_context: Optional[RunAISecurityContextSettings] = Field(
         default=None,
-        description="Security context for the training workload container.",
+        description="Container security context. Accepts a RunAISecurityContextSettings "
+        "with UID/GID, seccomp, capabilities, and related fields. "
+        "Example: RunAISecurityContextSettings(uid_gid_source='custom', run_as_uid=1000, run_as_gid=1000)",
     )
     ports: Optional[List[RunAIPortSettings]] = Field(
         default=None,
-        description="Container ports to expose on the training workload.",
+        description="Container ports to expose on the workload. Each entry is a "
+        "RunAIPortSettings with container port (1-65535) and optional service_type. "
+        "Example: [RunAIPortSettings(container=8888, service_type='ClusterIP', external=30088)]",
     )
     external_urls: Optional[List[RunAIExternalURLSettings]] = Field(
         default=None,
-        description="External URL exposure settings for the training workload.",
+        description="External URL exposure for the workload. Each entry is a "
+        "RunAIExternalURLSettings with container port and authorization_type. "
+        "Example: [RunAIExternalURLSettings(container=8888, authorization_type='authenticatedUsers')]",
     )
     parallelism: Optional[PositiveInt] = Field(
         default=None,
-        description="Run:AI training workload parallelism.",
+        description="Run:AI training workload parallelism. Number of pods that run "
+        "the same step in parallel for one step run. Must be <= completions. "
+        "Use only for explicitly idempotent workloads. Example: 2",
     )
     completions: Optional[PositiveInt] = Field(
         default=None,
-        description="Run:AI training workload completions.",
+        description="Run:AI training workload completions. Total number of successful "
+        "pod completions required for the workload to be considered complete. "
+        "Must be >= parallelism. Example: 4",
     )
 
     workload_timeout: Optional[PositiveInt] = Field(
@@ -291,7 +316,6 @@ class RunAIStepOperatorSettings(BaseSettings):
 
         import re
 
-        # Use regex for stricter validation
         pattern = r"^(\d+(?:\.\d+)?)(K|M|G|T|Ki|Mi|Gi|Ti)$"
         if not re.match(pattern, value):
             raise ValueError(
@@ -338,9 +362,7 @@ class RunAIStepOperatorSettings(BaseSettings):
             + [mount.mount_path for mount in self.host_path_mounts or []]
         )
         duplicate_mount_paths = {
-            mount_path
-            for mount_path in mount_paths
-            if mount_paths.count(mount_path) > 1
+            path for path, count in Counter(mount_paths).items() if count > 1
         }
         if duplicate_mount_paths:
             sorted_paths = ", ".join(sorted(duplicate_mount_paths))

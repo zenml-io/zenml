@@ -28,6 +28,9 @@ from zenml.integrations.runai.flavors.runai_training_workload_settings import (
     RunAIS3MountSettings,
     RunAISecretMountSettings,
     RunAISecurityContextSettings,
+    RunAITolerationEffect,
+    RunAITolerationOperator,
+    RunAITolerationSettings,
 )
 
 __all__ = [
@@ -40,6 +43,9 @@ __all__ = [
     "RunAIS3MountSettings",
     "RunAISecretMountSettings",
     "RunAISecurityContextSettings",
+    "RunAITolerationEffect",
+    "RunAITolerationOperator",
+    "RunAITolerationSettings",
     "RunAIStepOperatorConfig",
     "RunAIStepOperatorFlavor",
     "RunAIStepOperatorSettings",

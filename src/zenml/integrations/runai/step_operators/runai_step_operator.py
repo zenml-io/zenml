@@ -16,8 +16,19 @@
 import random
 import time
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
+from pydantic import BaseModel
 from runai.models.annotation import Annotation
 from runai.models.config_map_instance import ConfigMapInstance
 from runai.models.environment_variable import EnvironmentVariable
@@ -73,6 +84,8 @@ logger = get_logger(__name__)
 RUNAI_STEP_OPERATOR_DOCKER_IMAGE_KEY = "runai_step_operator"
 RUNAI_WORKLOAD_ID_METADATA_KEY = "workload_id"
 RUNAI_WORKLOAD_NAME_METADATA_KEY = "workload_name"
+
+T = TypeVar("T")
 
 
 class RunAIStepOperator(BaseStepOperator):
@@ -308,7 +321,9 @@ class RunAIStepOperator(BaseStepOperator):
                     node_type=settings.node_type,
                     preemptibility=settings.preemptibility,
                     priority_class=settings.priority_class,
-                    tolerations=self._build_tolerations(settings),
+                    tolerations=self._build_instances(
+                        settings.tolerations, Toleration
+                    ),
                     backoff_limit=settings.backoff_limit,
                     termination_grace_period_seconds=(
                         settings.termination_grace_period_seconds
@@ -321,8 +336,10 @@ class RunAIStepOperator(BaseStepOperator):
                     annotations=self._build_annotations(settings),
                     storage=self._build_storage(settings),
                     security=self._build_security_context(settings),
-                    ports=self._build_ports(settings),
-                    exposed_urls=self._build_external_urls(settings),
+                    ports=self._build_instances(settings.ports, Port),
+                    exposed_urls=self._build_instances(
+                        settings.external_urls, ExposedUrl
+                    ),
                     parallelism=settings.parallelism,
                     completions=settings.completions,
                 ),
@@ -585,16 +602,26 @@ class RunAIStepOperator(BaseStepOperator):
         )
 
     @staticmethod
-    def _dump_settings(settings: Any) -> Dict[str, Any]:
-        """Convert a Pydantic settings object to SDK constructor kwargs.
+    def _build_instances(
+        items: Optional[Sequence[BaseModel]], sdk_cls: Type[T]
+    ) -> Optional[List[T]]:
+        """Convert a list of Pydantic settings objects into SDK instances.
+
+        Returns None for empty/missing input so the SDK omits the field
+        entirely rather than serializing an empty list.
 
         Args:
-            settings: The Pydantic settings object.
+            items: The settings objects to convert.
+            sdk_cls: The Run:AI SDK class to instantiate for each item.
 
         Returns:
-            Keyword arguments with unset optional fields omitted.
+            A list of SDK instances, or None when no items were provided.
         """
-        return cast(Dict[str, Any], settings.model_dump(exclude_none=True))
+        if not items:
+            return None
+        return [
+            sdk_cls(**item.model_dump(exclude_none=True)) for item in items
+        ]
 
     def _build_storage(
         self, settings: RunAIStepOperatorSettings
@@ -605,102 +632,47 @@ class RunAIStepOperator(BaseStepOperator):
             settings: The step operator settings.
 
         Returns:
-            Run:AI storage settings or None.
+            Run:AI storage settings, or None when no mounts are configured.
         """
         storage_kwargs = {
-            "config_map_volume": self._build_config_map_mounts(settings),
-            "host_path": self._build_host_path_mounts(settings),
-            "nfs": self._build_nfs_mounts(settings),
-            "pvc": self._build_pvc_mounts(settings),
-            "s3": self._build_s3_mounts(settings),
-            "secret_volume": self._build_secret_mounts(settings),
+            "config_map_volume": self._build_instances(
+                settings.config_map_mounts, ConfigMapInstance
+            ),
+            "host_path": self._build_instances(
+                settings.host_path_mounts, HostPathInstance
+            ),
+            "nfs": self._build_instances(settings.nfs_mounts, NfsInstance),
+            "pvc": self._build_instances(settings.pvc_mounts, PvcInstance),
+            "s3": self._build_instances(settings.s3_mounts, S3Instance),
+            "secret_volume": self._build_instances(
+                settings.secret_mounts, SecretInstance2
+            ),
         }
         if not any(storage_kwargs.values()):
             return None
 
         return SupersetSpecAllOfStorage(**storage_kwargs)
 
-    def _build_pvc_mounts(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[PvcInstance]]:
-        """Build PVC mount settings for the Run:AI workload."""
-        if not settings.pvc_mounts:
-            return None
-        return [
-            PvcInstance(**self._dump_settings(mount))
-            for mount in settings.pvc_mounts
-        ]
-
-    def _build_config_map_mounts(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[ConfigMapInstance]]:
-        """Build ConfigMap mount settings for the Run:AI workload."""
-        if not settings.config_map_mounts:
-            return None
-        return [
-            ConfigMapInstance(**self._dump_settings(mount))
-            for mount in settings.config_map_mounts
-        ]
-
-    def _build_secret_mounts(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[SecretInstance2]]:
-        """Build Secret mount settings for the Run:AI workload."""
-        if not settings.secret_mounts:
-            return None
-        return [
-            SecretInstance2(**self._dump_settings(mount))
-            for mount in settings.secret_mounts
-        ]
-
-    def _build_nfs_mounts(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[NfsInstance]]:
-        """Build NFS mount settings for the Run:AI workload."""
-        if not settings.nfs_mounts:
-            return None
-        return [
-            NfsInstance(**self._dump_settings(mount))
-            for mount in settings.nfs_mounts
-        ]
-
-    def _build_s3_mounts(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[S3Instance]]:
-        """Build S3 mount settings for the Run:AI workload."""
-        if not settings.s3_mounts:
-            return None
-        return [
-            S3Instance(**self._dump_settings(mount))
-            for mount in settings.s3_mounts
-        ]
-
-    def _build_host_path_mounts(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[HostPathInstance]]:
-        """Build HostPath mount settings for the Run:AI workload."""
-        if not settings.host_path_mounts:
-            return None
-        return [
-            HostPathInstance(**self._dump_settings(mount))
-            for mount in settings.host_path_mounts
-        ]
-
     def _build_security_context(
         self, settings: RunAIStepOperatorSettings
     ) -> Optional[SupersetSpecAllOfSecurity]:
         """Build security settings for the Run:AI workload.
 
+        Run:AI expects supplemental_groups as a semicolon-separated string,
+        so we serialize the typed list before forwarding to the SDK.
+
         Args:
             settings: The step operator settings.
 
         Returns:
-            Run:AI security settings or None.
+            Run:AI security settings, or None when no security context is set.
         """
         if not settings.security_context:
             return None
 
-        security_kwargs = self._dump_settings(settings.security_context)
+        security_kwargs = settings.security_context.model_dump(
+            exclude_none=True
+        )
         supplemental_groups = security_kwargs.get("supplemental_groups")
         if supplemental_groups is not None:
             security_kwargs["supplemental_groups"] = ";".join(
@@ -708,25 +680,6 @@ class RunAIStepOperator(BaseStepOperator):
             )
 
         return SupersetSpecAllOfSecurity(**security_kwargs)
-
-    def _build_ports(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Port]]:
-        """Build port exposure settings for the Run:AI workload."""
-        if not settings.ports:
-            return None
-        return [Port(**self._dump_settings(port)) for port in settings.ports]
-
-    def _build_external_urls(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[ExposedUrl]]:
-        """Build external URL settings for the Run:AI workload."""
-        if not settings.external_urls:
-            return None
-        return [
-            ExposedUrl(**self._dump_settings(external_url))
-            for external_url in settings.external_urls
-        ]
 
     def _build_image_pull_secrets(
         self,
@@ -749,35 +702,6 @@ class RunAIStepOperator(BaseStepOperator):
                 name=self.config.image_pull_secret_name, user_credential=False
             )
         ]
-
-    def _build_tolerations(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Toleration]]:
-        """Build tolerations for scheduling on tainted nodes.
-
-        Args:
-            settings: The step operator settings.
-
-        Returns:
-            List of Toleration objects or None.
-        """
-        if not settings.tolerations:
-            return None
-
-        tolerations_list = []
-        for t in settings.tolerations:
-            toleration_dict: Dict[str, Any] = {}
-            if "key" in t:
-                toleration_dict["key"] = t["key"]
-            if "operator" in t:
-                toleration_dict["operator"] = t["operator"]
-            if "value" in t:
-                toleration_dict["value"] = t["value"]
-            if "effect" in t:
-                toleration_dict["effect"] = t["effect"]
-            tolerations_list.append(Toleration(**toleration_dict))
-
-        return tolerations_list
 
     def _build_labels(
         self, settings: RunAIStepOperatorSettings
@@ -832,7 +756,7 @@ class RunAIStepOperator(BaseStepOperator):
         logger.info(f"Stopping workload {workload_id}: {reason}")
         try:
             client.suspend_training_workload(workload_id)
-        except Exception as suspend_exc:
+        except RunAIClientError as suspend_exc:
             logger.error(
                 f"Failed to stop workload {workload_id}: {suspend_exc}. "
                 f"{manual_cleanup_hint}"
@@ -849,7 +773,7 @@ class RunAIStepOperator(BaseStepOperator):
         logger.info(f"Deleting workload {workload_id}: {reason}")
         try:
             client.delete_training_workload(workload_id)
-        except Exception as delete_exc:
+        except RunAIClientError as delete_exc:
             logger.error(
                 f"Failed to delete workload {workload_id}: {delete_exc}. "
                 f"{manual_cleanup_hint}"
@@ -915,11 +839,11 @@ class RunAIStepOperator(BaseStepOperator):
                         max_missing_status_checks,
                     )
                     sleep_time = base_interval
-                elif status and is_success_status(status):
+                elif is_success_status(status):
                     missing_status_retries = 0
                     return ExecutionStatus.COMPLETED
 
-                elif status and is_failure_status(status):
+                elif is_failure_status(status):
                     missing_status_retries = 0
                     self._cleanup_workload(
                         client, workload_id, f"failed with status: {status}"
@@ -930,7 +854,7 @@ class RunAIStepOperator(BaseStepOperator):
 
                 else:
                     missing_status_retries = 0
-                    if status and is_pending_status(status):
+                    if is_pending_status(status):
                         if pending_start_time is None:
                             pending_start_time = time.time()
                         if (
