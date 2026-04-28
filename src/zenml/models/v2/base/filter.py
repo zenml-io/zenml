@@ -68,8 +68,8 @@ ONEOF_ERROR = (
     "the provided value is a json formatted list."
 )
 NO_VALUE_ERROR = (
-    "When you are using the 'isempty'/'isnotempty' filtering make sure that "
-    "that there is no value provided with ':'."
+    "When using 'isempty:'/'isnotempty:', use the explicit 'operator:' form "
+    "without a value (e.g. 'isempty:')."
 )
 
 VALUELESS_FILTER_OPS = {
@@ -929,9 +929,6 @@ class BaseFilter(BaseModel):
         """
         operator = GenericFilterOps.EQUALS  # Default operator
         if isinstance(value, str):
-            if value in VALUELESS_FILTER_OPS:
-                return None, GenericFilterOps(value)
-
             split_value = value.split(":", 1)
             if (
                 len(split_value) == 2
@@ -940,7 +937,9 @@ class BaseFilter(BaseModel):
                 value = split_value[1]
                 operator = GenericFilterOps(split_value[0])
                 if operator in VALUELESS_FILTER_OPS:
-                    raise ValueError(NO_VALUE_ERROR)
+                    if value:
+                        raise ValueError(NO_VALUE_ERROR)
+                    value = None
 
             if operator in {
                 operator.ONEOF,
@@ -957,7 +956,7 @@ class BaseFilter(BaseModel):
 
     def generate_name_or_id_query_conditions(
         self,
-        value: Union[UUID, str],
+        value: Union[UUID, str, List[Union[UUID, str]]],
         table: Type["NamedSchema"],
         additional_columns: Optional[List[str]] = None,
     ) -> "ColumnElement[bool]":
@@ -974,29 +973,33 @@ class BaseFilter(BaseModel):
         """
         from sqlmodel import or_
 
-        value, operator = BaseFilter._resolve_operator(value)
-        # For the `oneof` operator, the return value here will be a list which
-        # we do not want to convert.
-        if isinstance(value, UUID):
-            value = str(value)
+        values = value if isinstance(value, list) else [value]
 
         conditions = []
+        for value in values:
+            value, operator = BaseFilter._resolve_operator(value)
+            # For the `oneof` operator, the return value here will be a list which
+            # we do not want to convert.
+            if isinstance(value, UUID):
+                value = str(value)
 
-        filter_ = FilterGenerator(table).define_filter(
-            column="id", value=value, operator=operator
-        )
-        conditions.append(filter_.generate_query_conditions(table=table))
-
-        filter_ = FilterGenerator(table).define_filter(
-            column="name", value=value, operator=operator
-        )
-        conditions.append(filter_.generate_query_conditions(table=table))
-
-        for column in additional_columns or []:
             filter_ = FilterGenerator(table).define_filter(
-                column=column, value=value, operator=operator
+                column="id", value=value, operator=operator
             )
             conditions.append(filter_.generate_query_conditions(table=table))
+
+            filter_ = FilterGenerator(table).define_filter(
+                column="name", value=value, operator=operator
+            )
+            conditions.append(filter_.generate_query_conditions(table=table))
+
+            for column in additional_columns or []:
+                filter_ = FilterGenerator(table).define_filter(
+                    column=column, value=value, operator=operator
+                )
+                conditions.append(
+                    filter_.generate_query_conditions(table=table)
+                )
 
         return or_(*conditions)
 

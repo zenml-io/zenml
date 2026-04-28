@@ -481,13 +481,15 @@ class TaggableFilter(BaseFilter):
 
         query = super().apply_filter(query=query, table=table)
 
-        if self.tags and any(
+        tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
+
+        if tag_values and any(
             self._resolve_operator(tag)[1]
             not in {
                 GenericFilterOps.IS_EMPTY,
                 GenericFilterOps.IS_NOT_EMPTY,
             }
-            for tag in self.tags
+            for tag in tag_values
         ):
             query = query.join(
                 TagResourceSchema,
@@ -509,12 +511,14 @@ class TaggableFilter(BaseFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        if self.tags:
+        tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
+
+        if tag_values:
             from sqlmodel import exists, select
 
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
-            for tag in self.tags:
+            for tag in tag_values:
                 _, operator = self._resolve_operator(tag)
                 if operator == GenericFilterOps.IS_EMPTY:
                     custom_filters.append(
