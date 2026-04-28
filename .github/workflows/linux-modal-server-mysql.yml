@@ -15,7 +15,6 @@ on:
         type: string
         required: false
         default: '3.13'
-
 jobs:
   modal-server-mysql-offload:
     runs-on: ubuntu-latest
@@ -50,8 +49,9 @@ jobs:
           path: |
             /opt/uv-cache
             /opt/pip-cache
-          key: uv-modal-server-mysql-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
-            'scripts/ci/modal_sandbox_requirements.txt') }}
+          key: uv-modal-server-mysql-${{ runner.os }}-${{ inputs.python-version }}-${{
+            hashFiles('pyproject.toml', 'scripts/ci/modal_sandbox_requirements.txt')
+            }}
           restore-keys: |
             uv-modal-server-mysql-${{ runner.os }}-${{ inputs.python-version }}-
             uv-modal-server-mysql-${{ runner.os }}-
@@ -89,11 +89,9 @@ jobs:
             echo "::error::Modal credentials are required for this workflow."
             exit 1
           fi
-
           if ! command -v offload >/dev/null 2>&1; then
             cargo install --git https://github.com/safoinme/offload.git --rev 455356a6aae31b15c5becc2594600513525c9e46
           fi
-
           if ! command -v uv >/dev/null 2>&1; then
             python -m pip install --upgrade uv
           fi
@@ -105,10 +103,8 @@ jobs:
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml',
-            'scripts/install-zenml-dev.sh', 'offload.toml',
-            'offload-modal-server-mysql.toml')
-            }}
+            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml', 'scripts/install-zenml-dev.sh',
+            'offload.toml', 'offload-modal-server-mysql.toml') }}
           restore-keys: |
             offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-
       - name: Restore JUnit duration cache
@@ -116,7 +112,8 @@ jobs:
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: test-results/modal-server-mysql-ci/junit.xml
-          key: offload-modal-server-mysql-junit-${{ runner.os }}-${{ inputs.python-version }}
+          key: offload-modal-server-mysql-junit-${{ runner.os }}-${{ inputs.python-version
+            }}
           restore-keys: |
             offload-modal-server-mysql-junit-${{ runner.os }}-
       - name: Seed JUnit durations from baseline if cache missed
@@ -182,27 +179,22 @@ jobs:
               'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox|Failed to discover tests|pytest --collect-only failed|No module named pytest|error: unexpected argument' \
               "$offload_log"
           }
-
           if [[ "${{ steps.setup_python.outcome }}" != "success" ]]; then
             echo "::error::Python setup failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
-
           if [[ "${{ steps.install_rust.outcome }}" != "success" ]]; then
             echo "::error::Install Rust failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
-
           if [[ "${{ steps.prepare.outcome }}" != "success" ]]; then
             echo "::error::Modal runtime preparation failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
-
           if [[ "${{ steps.provision.outcome }}" == "failure" ]]; then
             echo "::error::Modal server provisioning failed; failing Modal server MySQL lane."
             modal_infra_failed=true
           fi
-
           if [[ "$modal_infra_failed" != "true" && "${{ steps.provision.outcome }}" == "success" ]]; then
             if [[ -z "$exit_code" ]]; then
               echo "::error::offload did not report an exit code."
@@ -247,7 +239,6 @@ jobs:
               fi
             fi
           fi
-
           echo "modal_infra_failed=$modal_infra_failed" >> "$GITHUB_OUTPUT"
           echo "test_failed=$test_failed" >> "$GITHUB_OUTPUT"
           echo "junit_cache_safe=$junit_cache_safe" >> "$GITHUB_OUTPUT"
@@ -266,16 +257,15 @@ jobs:
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml',
-            'scripts/install-zenml-dev.sh', 'offload.toml',
-            'offload-modal-server-mysql.toml')
-            }}
+            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml', 'scripts/install-zenml-dev.sh',
+            'offload.toml', 'offload-modal-server-mysql.toml') }}
       - name: Save JUnit duration cache
         if: ${{ always() && steps.classify.outputs.junit_cache_safe == 'true' }}
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: test-results/modal-server-mysql-ci/junit.xml
-          key: offload-modal-server-mysql-junit-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id }}
+          key: offload-modal-server-mysql-junit-${{ runner.os }}-${{ inputs.python-version
+            }}-${{ github.run_id }}
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
@@ -285,7 +275,7 @@ jobs:
           if-no-files-found: warn
       - name: Exit with classified status
         if: always()
-        run: |
+        run: |-
           if [[ "${{ steps.classify.outputs.modal_infra_failed }}" == "true" ]]; then
             exit 1
           fi

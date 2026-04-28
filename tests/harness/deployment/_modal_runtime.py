@@ -28,13 +28,11 @@ from typing import TYPE_CHECKING, Dict
 import requests
 
 if TYPE_CHECKING:
-    import modal
+    import modal  # type: ignore[import-not-found]
 
 HARNESS_DEPLOYMENT_DIR = Path(__file__).parent
 REPO_ROOT = HARNESS_DEPLOYMENT_DIR.parents[2]
-ENTRYPOINT_SCRIPT_PATH = (
-    HARNESS_DEPLOYMENT_DIR / "_modal_server_entrypoint.sh"
-)
+ENTRYPOINT_SCRIPT_PATH = HARNESS_DEPLOYMENT_DIR / "_modal_server_entrypoint.sh"
 
 # Exposed HTTPS port on the sandbox. ZenML's FastAPI app listens here
 # inside the container; Modal tunnels it out via `encrypted_ports`.

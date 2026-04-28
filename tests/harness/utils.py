@@ -26,6 +26,7 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator, List, Optional, Tuple
+from uuid import UUID
 
 import pytest
 
@@ -33,7 +34,11 @@ from tests.harness.environment import TestEnvironment
 from tests.harness.harness import TestHarness
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
+from zenml.constants import (
+    DEFAULT_PROJECT_NAME,
+    ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_DEBUG,
+)
 from zenml.login.credentials_store import CredentialsStore
 from zenml.stack.stack import Stack
 
@@ -67,6 +72,17 @@ def _restore_env_var(name: str, value: Optional[str]) -> None:
         os.environ[name] = value
     else:
         os.environ.pop(name, None)
+
+
+def _ensure_active_project(client: Client) -> UUID:
+    """Return the active project ID, selecting the default project if needed."""
+    try:
+        return client.active_project.id
+    except RuntimeError as exc:
+        if "No project is currently set as active" not in str(exc):
+            raise
+
+    return client.set_active_project(DEFAULT_PROJECT_NAME).id
 
 
 @contextmanager
@@ -119,6 +135,7 @@ def environment_session(
     if no_provision:
         logging.info("Skipping environment provisioning")
         with environment.deployment.connect() as client:
+            active_project_id = _ensure_active_project(client)
             if os.getenv("ZENML_TEST_ISOLATE_PROJECT", "").lower() in (
                 "1",
                 "true",
@@ -126,7 +143,7 @@ def environment_session(
             ):
                 from zenml.utils.string_utils import random_str
 
-                original_project_id = client.active_project.id
+                original_project_id = active_project_id
                 project_name = f"pytest_{random_str(12).lower()}"
                 client.create_project(
                     name=project_name,

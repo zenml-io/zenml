@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Generator, Tuple
 import pytest
 
 from tests.harness.utils import setup_test_stack_session
-from zenml import pipeline, step
+from zenml._test_support.docker_orchestrator_smoke import smoke_pipeline
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.models import PipelineRunResponse
@@ -13,16 +13,6 @@ from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
     from tests.harness.environment import TestEnvironment
-
-
-@step(enable_cache=False)
-def smoke_constant_step() -> int:
-    return 7
-
-
-@step(enable_cache=False)
-def smoke_increment_step(input_value: int) -> int:
-    return input_value + 1
 
 
 @pytest.fixture(scope="module")
@@ -53,10 +43,6 @@ def docker_orchestrator_run(
     docker_orchestrator_client: Client,
 ) -> Tuple[Client, PipelineRunResponse]:
     """Run a minimal two-step pipeline on the configured Docker stack."""
-    @pipeline(name="connected_two_step_pipeline")
-    def smoke_pipeline() -> None:
-        smoke_increment_step(smoke_constant_step())
-
     pipeline_run = smoke_pipeline()
     stored_run = docker_orchestrator_client.get_pipeline_run(pipeline_run.id)
     return docker_orchestrator_client, stored_run

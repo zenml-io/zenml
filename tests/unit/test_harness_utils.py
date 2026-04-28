@@ -2,13 +2,16 @@
 
 import os
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
+from typing import Generator
+from uuid import UUID, uuid4
 
 import pytest
 
 import tests.harness.utils as harness_utils
-from zenml.constants import ENV_ZENML_CONFIG_PATH
+from zenml.constants import DEFAULT_PROJECT_NAME, ENV_ZENML_CONFIG_PATH
 
 
 class _DummyTmpPathFactory:
@@ -111,3 +114,94 @@ def test_clean_default_client_session_rewrites_template_paths_and_restores_env(
 
     assert os.getenv(ENV_ZENML_CONFIG_PATH) == "original-config-path"
     assert os.getenv("DISABLE_DATABASE_MIGRATION") == "sentinel"
+
+
+def test_no_provision_isolated_session_restores_default_active_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests project isolation when a reused server has no local active project."""
+
+    class FakeClient:
+        def __init__(self) -> None:
+            self.default_project_id = uuid4()
+            self.projects = {
+                self.default_project_id: SimpleNamespace(
+                    id=self.default_project_id,
+                    name=DEFAULT_PROJECT_NAME,
+                )
+            }
+            self.active_project_id: UUID | None = None
+            self.deleted_projects: list[str] = []
+            self.set_active_calls: list[str | UUID] = []
+
+        @property
+        def active_project(self) -> SimpleNamespace:
+            if self.active_project_id is None:
+                raise RuntimeError("No project is currently set as active.")
+            return self.projects[self.active_project_id]
+
+        def set_active_project(
+            self, project_name_or_id: str | UUID
+        ) -> SimpleNamespace:
+            self.set_active_calls.append(project_name_or_id)
+            for project in self.projects.values():
+                if (
+                    project.id == project_name_or_id
+                    or project.name == project_name_or_id
+                ):
+                    self.active_project_id = project.id
+                    return project
+            raise KeyError(project_name_or_id)
+
+        def create_project(
+            self, name: str, description: str
+        ) -> SimpleNamespace:
+            del description
+            project_id = uuid4()
+            project = SimpleNamespace(id=project_id, name=name)
+            self.projects[project_id] = project
+            return project
+
+        def delete_project(self, project_name_or_id: str | UUID) -> None:
+            self.deleted_projects.append(str(project_name_or_id))
+            for project_id, project in list(self.projects.items()):
+                if (
+                    project.id == project_name_or_id
+                    or project.name == project_name_or_id
+                ):
+                    del self.projects[project_id]
+                    return
+            raise KeyError(project_name_or_id)
+
+    class FakeDeployment:
+        def __init__(self, client: FakeClient) -> None:
+            self._client = client
+
+        @contextmanager
+        def connect(self) -> Generator[FakeClient, None, None]:
+            yield self._client
+
+    client = FakeClient()
+    environment = SimpleNamespace(deployment=FakeDeployment(client))
+
+    class FakeTestHarness:
+        def set_environment(self, **kwargs: object) -> SimpleNamespace:
+            del kwargs
+            return environment
+
+    monkeypatch.setattr(harness_utils, "TestHarness", FakeTestHarness)
+    monkeypatch.setenv("ZENML_TEST_ISOLATE_PROJECT", "true")
+
+    with harness_utils.environment_session(no_provision=True) as (
+        yielded_environment,
+        yielded_client,
+    ):
+        assert yielded_environment is environment
+        assert yielded_client is client
+        assert client.set_active_calls[0] == DEFAULT_PROJECT_NAME
+        isolated_project_name = client.active_project.name
+        assert isolated_project_name.startswith("pytest_")
+
+    assert client.active_project.id == client.default_project_id
+    assert client.set_active_calls[-1] == client.default_project_id
+    assert client.deleted_projects == [isolated_project_name]

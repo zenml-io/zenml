@@ -123,7 +123,6 @@ jobs:
           if ! command -v uv >/dev/null 2>&1; then
             python -m pip install --upgrade uv
           fi
-
           runner_extras=".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
           # offload.toml's high-frequency per-batch commands invoke
           # modal_sandbox.py via `python3` instead of `uv run` to skip
@@ -149,10 +148,8 @@ jobs:
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml',
-            'scripts/install-zenml-dev.sh', 'offload.toml',
-            'offload-modal-server-mysql.toml')
-            }}
+            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml', 'scripts/install-zenml-dev.sh',
+            'offload.toml', 'offload-modal-server-mysql.toml') }}
           restore-keys: |
             offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-
       - name: Restore JUnit duration cache
@@ -336,10 +333,8 @@ jobs:
         with:
           path: .offload-image-cache
           key: offload-image-v2-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml',
-            'scripts/install-zenml-dev.sh', 'offload.toml',
-            'offload-modal-server-mysql.toml')
-            }}
+            hashFiles('Dockerfile.ci', '.dockerignore', 'pyproject.toml', 'scripts/install-zenml-dev.sh',
+            'offload.toml', 'offload-modal-server-mysql.toml') }}
       - name: Save JUnit duration cache
         if: ${{ always() && steps.classify.outputs.junit_cache_safe == 'true' }}
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4

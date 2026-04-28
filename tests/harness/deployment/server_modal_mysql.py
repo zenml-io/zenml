@@ -17,7 +17,7 @@ import logging
 import os
 import sys
 import uuid
-from typing import Optional
+from typing import Mapping, Optional, Protocol
 
 from tests.harness.deployment._modal_runtime import (
     ZENML_SERVER_PORT,
@@ -48,6 +48,30 @@ ENV_MODAL_SERVER_URL = "ZENML_MODAL_SERVER_URL"
 _APP_NAME_SUFFIX_LEN = 8
 
 
+class _ModalTunnel(Protocol):
+    """Modal tunnel attributes used by this deployment."""
+
+    url: str
+
+
+class _ModalSandbox(Protocol):
+    """Modal sandbox methods used by this deployment."""
+
+    object_id: object
+
+    def poll(self) -> Optional[object]:
+        """Returns a value once the sandbox has stopped."""
+        ...
+
+    def tunnels(self) -> Mapping[int, _ModalTunnel]:
+        """Returns the sandbox port tunnels."""
+        ...
+
+    def terminate(self) -> None:
+        """Terminates the sandbox."""
+        ...
+
+
 class ServerModalMySQLTestDeployment(BaseTestDeployment):
     """ZenML server + MySQL running together inside a single Modal sandbox.
 
@@ -70,7 +94,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         super().__init__(config)  # type: ignore[arg-type]
         self._app: Optional["object"] = None
         self._app_name: Optional[str] = None
-        self._sandbox: Optional["object"] = None
+        self._sandbox: Optional[_ModalSandbox] = None
         self._tunnel_url: Optional[str] = None
 
     @property
@@ -102,7 +126,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         if self._sandbox is None or self._tunnel_url is None:
             return False
         try:
-            return self._sandbox.poll() is None  # type: ignore[attr-defined]
+            return self._sandbox.poll() is None
         except Exception:
             # If the Modal SDK raises because the sandbox was reaped out
             # from under us, treat it as "not running" so `up()` can
@@ -132,7 +156,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
             return
 
         check_modal_credentials()
-        import modal
+        import modal  # type: ignore[import-not-found]
 
         store_url = self._DB_INTERNAL_URL_FMT.format(
             password=self.DB_ROOT_PASSWORD, database=self.DB_NAME
@@ -182,7 +206,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
 
         try:
             wait_for_server(self._tunnel_url)
-        except Exception:
+        except RuntimeError:
             # A healthy sandbox that never serves is worse than useless;
             # tear it down so the caller doesn't pay for it.
             self._terminate_sandbox()
@@ -204,7 +228,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         """Terminates the sandbox and clears local references."""
         if self._sandbox is not None:
             try:
-                self._sandbox.terminate()  # type: ignore[attr-defined]
+                self._sandbox.terminate()
             except Exception as exc:
                 # Termination best-effort: if Modal says the sandbox is
                 # already gone, we still want to clear our local state so
