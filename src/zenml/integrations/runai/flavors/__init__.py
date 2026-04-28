@@ -21,7 +21,6 @@ from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
 from zenml.integrations.runai.flavors.runai_training_workload_settings import (
     RunAIConfigMapMountSettings,
     RunAIExternalURLSettings,
-    RunAIGitMountSettings,
     RunAIHostPathMountSettings,
     RunAINFSMountSettings,
     RunAIPortSettings,
@@ -34,7 +33,6 @@ from zenml.integrations.runai.flavors.runai_training_workload_settings import (
 __all__ = [
     "RunAIConfigMapMountSettings",
     "RunAIExternalURLSettings",
-    "RunAIGitMountSettings",
     "RunAIHostPathMountSettings",
     "RunAINFSMountSettings",
     "RunAIPortSettings",

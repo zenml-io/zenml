@@ -23,7 +23,6 @@ from runai.models.config_map_instance import ConfigMapInstance
 from runai.models.environment_variable import EnvironmentVariable
 from runai.models.exposed_url import ExposedUrl
 from runai.models.extended_resource import ExtendedResource
-from runai.models.git_instance import GitInstance
 from runai.models.host_path_instance import HostPathInstance
 from runai.models.image_pull_secret import ImagePullSecret
 from runai.models.label import Label
@@ -610,7 +609,6 @@ class RunAIStepOperator(BaseStepOperator):
         """
         storage_kwargs = {
             "config_map_volume": self._build_config_map_mounts(settings),
-            "git": self._build_git_mounts(settings),
             "host_path": self._build_host_path_mounts(settings),
             "nfs": self._build_nfs_mounts(settings),
             "pvc": self._build_pvc_mounts(settings),
@@ -686,17 +684,6 @@ class RunAIStepOperator(BaseStepOperator):
         return [
             HostPathInstance(**self._dump_settings(mount))
             for mount in settings.host_path_mounts
-        ]
-
-    def _build_git_mounts(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[GitInstance]]:
-        """Build Git mount settings for the Run:AI workload."""
-        if not settings.git_mounts:
-            return None
-        return [
-            GitInstance(**self._dump_settings(mount))
-            for mount in settings.git_mounts
         ]
 
     def _build_security_context(

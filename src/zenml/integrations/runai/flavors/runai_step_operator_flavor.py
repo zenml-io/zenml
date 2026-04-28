@@ -29,7 +29,6 @@ from zenml.integrations.runai import RUNAI_STEP_OPERATOR_FLAVOR
 from zenml.integrations.runai.flavors.runai_training_workload_settings import (
     RunAIConfigMapMountSettings,
     RunAIExternalURLSettings,
-    RunAIGitMountSettings,
     RunAIHostPathMountSettings,
     RunAINFSMountSettings,
     RunAIPortSettings,
@@ -230,10 +229,6 @@ class RunAIStepOperatorSettings(BaseSettings):
         default=None,
         description="HostPath storage mounts to attach to the training workload.",
     )
-    git_mounts: Optional[List[RunAIGitMountSettings]] = Field(
-        default=None,
-        description="Git storage mounts to attach to the training workload.",
-    )
     workload_template_id: Optional[str] = Field(
         default=None,
         description="Run:AI workload template ID to apply when creating the workload.",
@@ -341,7 +336,6 @@ class RunAIStepOperatorSettings(BaseSettings):
             + [mount.mount_path for mount in self.nfs_mounts or []]
             + [mount.path for mount in self.s3_mounts or []]
             + [mount.mount_path for mount in self.host_path_mounts or []]
-            + [mount.path for mount in self.git_mounts or []]
         )
         duplicate_mount_paths = {
             mount_path

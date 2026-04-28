@@ -173,7 +173,9 @@ class RunAIClient:
         Returns:
             The raw runapy client.
         """
-        return RunapyClient(ApiClient(config))
+        api_client_cls = cast(Any, ApiClient)
+        runapy_client_cls = cast(Any, RunapyClient)
+        return cast(RunapyClient, runapy_client_cls(api_client_cls(config)))
 
     @staticmethod
     def _get_status_code(exc: Exception) -> Optional[int]:

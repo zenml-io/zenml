@@ -186,35 +186,6 @@ class RunAIHostPathMountSettings(BaseModel):
     )
 
 
-class RunAIGitMountSettings(BaseModel):
-    """Settings for a Run:AI Git storage mount."""
-
-    name: Optional[str] = Field(default=None, description="Run:AI mount name.")
-    repository: str = Field(description="Git repository URL.")
-    branch: Optional[str] = Field(default=None, description="Git branch.")
-    revision: Optional[str] = Field(default=None, description="Git revision.")
-    path: str = Field(description="Absolute container path for the Git mount.")
-    password_secret: Optional[str] = Field(
-        default=None,
-        description="Secret that stores Git credentials.",
-    )
-    secret_key_of_user: Optional[str] = Field(
-        default=None, description="Secret key containing the Git username."
-    )
-    secret_key_of_password: Optional[str] = Field(
-        default=None, description="Secret key containing the Git password."
-    )
-    exclude: Optional[bool] = Field(
-        default=None, description="Whether to exclude this mount."
-    )
-    secret_ref: Optional[str] = Field(
-        default=None,
-        description="Run:AI secret reference for Git credentials.",
-    )
-
-    _validate_path = field_validator("path")(_validate_absolute_path)
-
-
 class RunAISecurityContextSettings(BaseModel):
     """Settings for the Run:AI workload security context."""
 

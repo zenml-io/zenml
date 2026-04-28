@@ -58,7 +58,7 @@ Some advanced settings require additional read permissions because they referenc
 | Advanced setting | Additional Run:AI entity → action |
 |---|---|
 | `workload_template_id` | Templates → View |
-| S3/Git mounts backed by Run:AI-managed credentials or data sources | Credentials/Data sources → View |
+| S3 mounts backed by Run:AI-managed credentials or data sources | Credentials/Data sources → View |
 
 PVC, ConfigMap, Secret, NFS, and HostPath mounts are passed as workload spec references. Run:AI and the underlying Kubernetes cluster validate whether the referenced objects are allowed for the project and namespace.
 
@@ -213,7 +213,6 @@ settings = RunAIStepOperatorSettings(
 | `nfs_mounts` | list | None | NFS mounts (`RunAINFSMountSettings`) |
 | `s3_mounts` | list | None | S3 mounts (`RunAIS3MountSettings`) |
 | `host_path_mounts` | list | None | HostPath mounts (`RunAIHostPathMountSettings`) |
-| `git_mounts` | list | None | Git mounts (`RunAIGitMountSettings`) |
 | `workload_template_id` | str | None | Existing Run:AI workload template ID |
 | `security_context` | object | None | Run:AI security context (`RunAISecurityContextSettings`) |
 | `ports` | list | None | Port declarations (`RunAIPortSettings`) |
@@ -237,14 +236,13 @@ Useful Run:AI references while configuring these settings:
 
 #### End-to-end advanced example
 
-The following example combines the most common advanced settings: an existing PVC, a ConfigMap, a Git checkout, a template ID, explicit UID/GID settings, a debugging port, and conservative retry/timeout behavior.
+The following example combines the most common advanced settings: an existing PVC, a ConfigMap, a template ID, explicit UID/GID settings, a debugging port, and conservative retry/timeout behavior.
 
 ```python
 from zenml import step
 from zenml.integrations.runai.flavors import (
     RunAIConfigMapMountSettings,
     RunAIExternalURLSettings,
-    RunAIGitMountSettings,
     RunAIPVCMountSettings,
     RunAIPortSettings,
     RunAISecurityContextSettings,
@@ -278,15 +276,6 @@ runai_settings = RunAIStepOperatorSettings(
             config_map="training-config",
             mount_path="/etc/training",
             default_mode="0644",
-        )
-    ],
-    # Git mounts are useful for auxiliary repos such as config or recipe repos.
-    # ZenML already packages the pipeline code into the Docker image.
-    git_mounts=[
-        RunAIGitMountSettings(
-            repository="https://github.com/acme/training-recipes.git",
-            branch="main",
-            path="/opt/recipes",
         )
     ],
     workload_template_id="550e8400-e29b-41d4-a716-446655440000",
@@ -339,7 +328,6 @@ These fields map to the Run:AI training workload request body. ZenML validates t
 | `nfs_mounts` | NFS data source / volume | Requires `server`, exported `path`, and container `mount_path`. |
 | `s3_mounts` | S3 data source | Use Run:AI/Kubernetes-managed credential references for private buckets. |
 | `host_path_mounts` | HostPath data source / volume | Depends heavily on cluster policy and should be used sparingly. |
-| `git_mounts` | Git data source | Clones a repo into `path` when the workload starts; best for auxiliary repos, not the ZenML pipeline code. |
 | `workload_template_id` | Workload template ID | Applies an existing Run:AI workload template. ZenML does not resolve template names. |
 | `security_context` | Workload security block | UID/GID, non-root, seccomp, capabilities, and related pod security settings. |
 | `ports` | Port declarations | Declares container ports and optional service ports. |
@@ -348,9 +336,9 @@ These fields map to the Run:AI training workload request body. ZenML validates t
 
 #### Storage mounts
 
-Use the typed mount settings to attach existing Kubernetes/Run:AI storage references to the training workload. Run:AI documents these as [data sources](https://run-ai-docs.nvidia.com/self-hosted/workloads-in-nvidia-run-ai/assets/datasources), including remote locations such as NFS, Git, and S3 and local Kubernetes resources such as PVC, ConfigMap, HostPath, and Secret.
+Use the typed mount settings to attach existing Kubernetes/Run:AI storage references to the training workload. Run:AI documents these as [data sources](https://run-ai-docs.nvidia.com/self-hosted/workloads-in-nvidia-run-ai/assets/datasources), including remote locations such as NFS and S3 and local Kubernetes resources such as PVC, ConfigMap, HostPath, and Secret.
 
-Supported storage setting classes are `RunAIPVCMountSettings`, `RunAIConfigMapMountSettings`, `RunAISecretMountSettings`, `RunAINFSMountSettings`, `RunAIS3MountSettings`, `RunAIHostPathMountSettings`, and `RunAIGitMountSettings`. Mount paths must be absolute and unique within the workload. ConfigMap and Secret `default_mode` values must be four-character strings such as `"0644"`. ZenML only passes references to Run:AI; it does not create PVCs, ConfigMaps, Secrets, buckets, Git repositories, or NFS exports.
+Supported storage setting classes are `RunAIPVCMountSettings`, `RunAIConfigMapMountSettings`, `RunAISecretMountSettings`, `RunAINFSMountSettings`, `RunAIS3MountSettings`, and `RunAIHostPathMountSettings`. Mount paths must be absolute and unique within the workload. ConfigMap and Secret `default_mode` values must be four-character strings such as `"0644"`. ZenML only passes references to Run:AI; it does not create PVCs, ConfigMaps, Secrets, buckets, or NFS exports.
 
 | Setting class | Important fields |
 |---|---|
@@ -360,7 +348,6 @@ Supported storage setting classes are `RunAIPVCMountSettings`, `RunAIConfigMapMo
 | `RunAINFSMountSettings` | `server`, `path`, `mount_path`, `read_only` |
 | `RunAIS3MountSettings` | `bucket`, `path`, `url`, `access_key_secret`, `secret_key_of_access_key_id`, `secret_key_of_secret_key` |
 | `RunAIHostPathMountSettings` | `path`, `mount_path`, `read_only`, `mount_propagation` |
-| `RunAIGitMountSettings` | `repository`, `branch`, `revision`, `path`, `password_secret`, `secret_key_of_user`, `secret_key_of_password` |
 
 HostPath mounts and Secret mounts can expose sensitive host or credential data. Use them only when your Run:AI/Kubernetes policies allow them for the project.
 

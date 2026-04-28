@@ -38,7 +38,6 @@ if RUNAI_INSTALLED:
     from zenml.integrations.runai.flavors import (
         RunAIConfigMapMountSettings,
         RunAIExternalURLSettings,
-        RunAIGitMountSettings,
         RunAIHostPathMountSettings,
         RunAINFSMountSettings,
         RunAIPortSettings,
@@ -60,7 +59,6 @@ else:
     WorkloadSubmissionResult = Any
     RunAIConfigMapMountSettings = Any
     RunAIExternalURLSettings = Any
-    RunAIGitMountSettings = Any
     RunAIHostPathMountSettings = Any
     RunAINFSMountSettings = Any
     RunAIPortSettings = Any
@@ -250,14 +248,6 @@ def test_submit_maps_advanced_training_workload_settings(mocker: Any) -> None:
                 read_only=True,
             )
         ],
-        git_mounts=[
-            RunAIGitMountSettings(
-                name="git-mount",
-                repository="https://github.com/example/repo.git",
-                branch="main",
-                path="/mnt/git",
-            )
-        ],
         workload_template_id="template-id",
         security_context=RunAISecurityContextSettings(
             uid_gid_source="custom",
@@ -325,9 +315,6 @@ def test_submit_maps_advanced_training_workload_settings(mocker: Any) -> None:
     assert spec.storage.nfs[0].server == "nfs.example.com"
     assert spec.storage.s3[0].bucket == "training-bucket"
     assert spec.storage.host_path[0].mount_path == "/mnt/host"
-    assert (
-        spec.storage.git[0].repository == "https://github.com/example/repo.git"
-    )
     assert spec.security.run_as_uid == 1000
     assert spec.security.run_as_gid == 1000
     assert spec.security.uid_gid_source == "custom"
