@@ -306,20 +306,3 @@ def test_build_cluster_spec_uses_fixed_workers_without_autoscale() -> None:
 
     assert cluster_spec_dict["num_workers"] == 2
     assert "autoscale" not in cluster_spec_dict
-
-
-def test_build_cluster_spec_rejects_non_dbfs_init_scripts() -> None:
-    """Tests that non-DBFS init scripts fail before job submission."""
-    client = _FakeWorkspaceClient(
-        host="https://workspace.cloud.databricks.com"
-    )
-    settings = DatabricksBaseSettings.model_construct(
-        init_scripts=["s3://bucket/init.sh"]
-    )
-
-    with pytest.raises(ValueError, match="DBFS paths"):
-        build_databricks_cluster_spec(
-            databricks_client=client,
-            settings=settings,
-            env_vars={},
-        )

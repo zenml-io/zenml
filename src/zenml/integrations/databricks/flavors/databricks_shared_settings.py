@@ -23,14 +23,6 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import SecretField
 
 DATABRICKS_DEFAULT_AUTOSCALE = (0, 1)
-DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS: Tuple[str, ...] = (
-    "schedule_timezone",
-    "job_tags",
-    "max_concurrent_runs",
-    "max_retries",
-    "min_retry_interval_millis",
-    "retry_on_timeout",
-)
 
 
 class DatabricksAvailabilityType(StrEnum):
@@ -111,7 +103,8 @@ class DatabricksBaseSettings(BaseSettings):
     num_workers: Optional[int] = Field(
         default=None,
         ge=0,
-        description="Fixed number of worker nodes. Cannot be used with autoscaling.",
+        description="Fixed number of worker nodes for the cluster. Cannot be "
+        "combined with `autoscale`. Example: 4",
     )
     node_type_id: Optional[str] = Field(
         default=None,
@@ -121,7 +114,8 @@ class DatabricksBaseSettings(BaseSettings):
     )
     policy_id: Optional[str] = Field(
         default=None,
-        description="Databricks cluster policy ID for governance and cost control.",
+        description="Databricks cluster policy ID for governance and cost "
+        "control. Example: '0123456789ABCDEF'",
     )
     autotermination_minutes: Optional[int] = Field(
         default=None,
@@ -137,7 +131,8 @@ class DatabricksBaseSettings(BaseSettings):
     )
     single_user_name: Optional[str] = Field(
         default=None,
-        description="Databricks username for single-user cluster access mode.",
+        description="Databricks username for single-user cluster access mode. "
+        "Example: 'user@company.com'",
     )
     spark_conf: Optional[Dict[str, str]] = Field(
         default=None,

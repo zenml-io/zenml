@@ -13,27 +13,16 @@
 #  permissions and limitations under the License.
 """Databricks step operator implementation."""
 
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    List,
-    Optional,
-    Protocol,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
 from databricks.sdk.errors import NotFound
+from databricks.sdk.service.jobs import SubmitRunResponse
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.enums import ExecutionStatus
-from zenml.integrations.databricks.flavors.databricks_shared_settings import (
-    DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS,
-)
 from zenml.integrations.databricks.flavors.databricks_step_operator_flavor import (
     DatabricksStepOperatorConfig,
     DatabricksStepOperatorSettings,
@@ -79,17 +68,14 @@ DATABRICKS_STEP_JOB_ID_METADATA_KEY = "job_id"
 DATABRICKS_STEP_RUN_URL_METADATA_KEY = "run_page_url"
 DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY = "wheel_directory"
 
-
-class _DatabricksSubmitRunResponse(Protocol):
-    """SDK submit response shape used by Databricks step submission."""
-
-    run_id: Optional[int]
-
-
-class _DatabricksSubmitRunWait(Protocol):
-    """SDK wait wrapper shape returned by jobs.submit."""
-
-    response: _DatabricksSubmitRunResponse
+DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS: Tuple[str, ...] = (
+    "schedule_timezone",
+    "job_tags",
+    "max_concurrent_runs",
+    "max_retries",
+    "min_retry_interval_millis",
+    "retry_on_timeout",
+)
 
 
 class DatabricksStepOperator(BaseStepOperator):
@@ -338,8 +324,8 @@ class DatabricksStepOperator(BaseStepOperator):
         finally:
             fileio.rmtree(repository_temp_dir)
 
-        submitted_run_wait = cast(_DatabricksSubmitRunWait, submitted_run)
-        run_id = submitted_run_wait.response.run_id
+        submit_response = cast(SubmitRunResponse, submitted_run.response)
+        run_id = submit_response.run_id
         if run_id is None:
             delete_workspace_directory(
                 databricks_client=self.client,
@@ -402,13 +388,13 @@ class DatabricksStepOperator(BaseStepOperator):
             RuntimeError: If the Databricks run ID is missing.
         """
         run_id = step_run.run_metadata.get(DATABRICKS_STEP_RUN_ID_METADATA_KEY)
-        if not run_id:
+        if not isinstance(run_id, (str, int)):
             raise RuntimeError(
                 "Unable to determine the Databricks run ID for step run "
                 f"`{step_run.id}` because run metadata key "
                 f"`{DATABRICKS_STEP_RUN_ID_METADATA_KEY}` is missing."
             )
-        return int(str(run_id))
+        return int(run_id)
 
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
         """Get the status of a Databricks step run.

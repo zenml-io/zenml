@@ -525,20 +525,12 @@ def _build_init_script_info(script: str) -> InitScriptInfo:
     """Build a Databricks init script descriptor.
 
     Args:
-        script: DBFS init script path.
-
-    Raises:
-        ValueError: If the init script path is not a DBFS URI.
+        script: DBFS init script path. Validated to start with ``dbfs:/`` by
+            ``DatabricksBaseSettings._validate_init_script_paths``.
 
     Returns:
         Databricks init script descriptor.
     """
-    if not script.startswith("dbfs:/"):
-        raise ValueError(
-            "Databricks init scripts currently only support DBFS paths. "
-            f"Got `{script}`; expected a path starting with `dbfs:/`."
-        )
-
     return InitScriptInfo(dbfs=DbfsStorageInfo(destination=script))
 
 

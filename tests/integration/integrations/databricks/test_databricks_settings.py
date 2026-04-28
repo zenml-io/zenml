@@ -20,9 +20,11 @@ from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import
     DatabricksOrchestratorSettings,
 )
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
-    DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS,
     DatabricksAccessControlRequest,
     DatabricksBaseSettings,
+)
+from zenml.integrations.databricks.step_operators.databricks_step_operator import (
+    DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS,
 )
 from zenml.utils.secret_utils import is_secret_field
 
