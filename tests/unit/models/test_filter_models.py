@@ -26,6 +26,7 @@ from zenml.models.v2.base.filter import (
     BaseFilter,
     DatetimeFilter,
     Filter,
+    NullFilter,
     NumericFilter,
     StrFilter,
     UUIDFilter,
@@ -68,8 +69,12 @@ def _test_filter_model(
     if expected_value is None:
         expected_value = filter_value
 
+    # Null operators are datatype-agnostic and intentionally bypass each
+    # filter's `ALLOWED_OPS`, so this datatype-focused helper skips them.
+    null_operators = {GenericFilterOps.ISNULL, GenericFilterOps.ISNOTNULL}
+
     for filter_op in GenericFilterOps.values():
-        if filter_op in ignore_operators:
+        if filter_op in ignore_operators or filter_op in null_operators:
             continue
 
         filter_str = f"{filter_op}:{filter_value}"
@@ -208,6 +213,9 @@ def test_datetime_filter_model_fails_for_wrong_formats(
     with pytest.raises(ValueError):
         SomeFilterModel(datetime_field=false_format_datetime)
     for filter_op in GenericFilterOps.values():
+        # Null operators ignore the value, so a malformed datetime is fine.
+        if filter_op in (GenericFilterOps.ISNULL, GenericFilterOps.ISNOTNULL):
+            continue
         with pytest.raises(ValueError):
             SomeFilterModel(
                 datetime_field=f"{filter_op}:{false_format_datetime}"
@@ -260,3 +268,42 @@ def test_string_filter_model():
         filter_value="a_random_string",
         ignore_operators=[GenericFilterOps.ONEOF],
     )
+
+
+@pytest.mark.parametrize(
+    "filter_field",
+    ["uuid_field", "datetime_field", "int_field", "str_field"],
+)
+@pytest.mark.parametrize("operator", ["isnull", "isnotnull"])
+def test_null_filter_model_for_all_field_types(
+    filter_field: str, operator: str
+) -> None:
+    """Null operators produce a NullFilter regardless of column datatype."""
+    model_instance = SomeFilterModel(**{filter_field: f"{operator}:"})
+
+    assert len(model_instance.list_of_filters) == 1
+    model_filter = model_instance.list_of_filters[0]
+    assert isinstance(model_filter, NullFilter)
+    assert model_filter.operation == operator
+    assert model_filter.column == filter_field
+
+
+@pytest.mark.parametrize(
+    "operation,expected_sql",
+    [
+        (GenericFilterOps.ISNULL, "IS NULL"),
+        (GenericFilterOps.ISNOTNULL, "IS NOT NULL"),
+    ],
+)
+def test_null_filter_emits_expected_sql(
+    operation: GenericFilterOps, expected_sql: str
+) -> None:
+    """NullFilter compiles to a SQL `IS [NOT] NULL` predicate."""
+    from sqlalchemy import Column, MetaData, String, Table
+
+    nullable = Table("t", MetaData(), Column("c", String))
+    condition = NullFilter(
+        operation=operation, column="c"
+    ).generate_query_conditions_from_column(nullable.c.c)
+    rendered = str(condition.compile(compile_kwargs={"literal_binds": True}))
+    assert expected_sql in rendered.upper()

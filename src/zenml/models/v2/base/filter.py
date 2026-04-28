@@ -144,6 +144,35 @@ class Filter(BaseModel, ABC):
         """
 
 
+class NullFilter(Filter):
+    """Filter that emits `IS NULL` / `IS NOT NULL` for any nullable column.
+
+    Routed by `FilterGenerator.define_filter` whenever the user supplies the
+    `isnull:` or `isnotnull:` operator, regardless of the column's datatype.
+    These operators are unary, so the filter carries no value.
+    """
+
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.ISNULL,
+        GenericFilterOps.ISNOTNULL,
+    ]
+
+    value: None = None
+
+    def generate_query_conditions_from_column(self, column: Any) -> Any:
+        """Generate query conditions for a null check on any column.
+
+        Args:
+            column: The column of an SQLModel table on which to filter.
+
+        Returns:
+            The query condition.
+        """
+        if self.operation == GenericFilterOps.ISNOTNULL:
+            return column.is_not(None)
+        return column.is_(None)
+
+
 class BoolFilter(Filter):
     """Filter for all Boolean fields."""
 
@@ -1056,6 +1085,11 @@ class FilterGenerator:
         Returns:
             A Filter object.
         """
+        # Null checks are datatype-agnostic; route them before the type-
+        # specific factories below cast `value` and crash on the empty input.
+        if operator in (GenericFilterOps.ISNULL, GenericFilterOps.ISNOTNULL):
+            return NullFilter(operation=operator, column=column)
+
         # Create datetime filters
         if self.is_datetime_field(column):
             return self._define_datetime_filter(

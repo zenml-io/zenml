@@ -366,6 +366,8 @@ class GenericFilterOps(StrEnum):
     LTE = "lte"
     LT = "lt"
     IN = "in"
+    ISNULL = "isnull"
+    ISNOTNULL = "isnotnull"
 
 
 class SorterOps(StrEnum):
