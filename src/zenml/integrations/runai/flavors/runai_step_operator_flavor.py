@@ -26,6 +26,18 @@ from pydantic import (
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.runai import RUNAI_STEP_OPERATOR_FLAVOR
+from zenml.integrations.runai.flavors.runai_training_workload_settings import (
+    RunAIConfigMapMountSettings,
+    RunAIExternalURLSettings,
+    RunAIGitMountSettings,
+    RunAIHostPathMountSettings,
+    RunAINFSMountSettings,
+    RunAIPortSettings,
+    RunAIPVCMountSettings,
+    RunAIS3MountSettings,
+    RunAISecretMountSettings,
+    RunAISecurityContextSettings,
+)
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 
@@ -194,6 +206,59 @@ class RunAIStepOperatorSettings(BaseSettings):
         "Example: {'prometheus.io/scrape': 'true'}",
     )
 
+    pvc_mounts: Optional[List[RunAIPVCMountSettings]] = Field(
+        default=None,
+        description="PVC storage mounts to attach to the training workload.",
+    )
+    config_map_mounts: Optional[List[RunAIConfigMapMountSettings]] = Field(
+        default=None,
+        description="ConfigMap storage mounts to attach to the training workload.",
+    )
+    secret_mounts: Optional[List[RunAISecretMountSettings]] = Field(
+        default=None,
+        description="Secret storage mounts to attach to the training workload.",
+    )
+    nfs_mounts: Optional[List[RunAINFSMountSettings]] = Field(
+        default=None,
+        description="NFS storage mounts to attach to the training workload.",
+    )
+    s3_mounts: Optional[List[RunAIS3MountSettings]] = Field(
+        default=None,
+        description="S3 storage mounts to attach to the training workload.",
+    )
+    host_path_mounts: Optional[List[RunAIHostPathMountSettings]] = Field(
+        default=None,
+        description="HostPath storage mounts to attach to the training workload.",
+    )
+    git_mounts: Optional[List[RunAIGitMountSettings]] = Field(
+        default=None,
+        description="Git storage mounts to attach to the training workload.",
+    )
+    workload_template_id: Optional[str] = Field(
+        default=None,
+        description="Run:AI workload template ID to apply when creating the workload.",
+    )
+    security_context: Optional[RunAISecurityContextSettings] = Field(
+        default=None,
+        description="Security context for the training workload container.",
+    )
+    ports: Optional[List[RunAIPortSettings]] = Field(
+        default=None,
+        description="Container ports to expose on the training workload.",
+    )
+    external_urls: Optional[List[RunAIExternalURLSettings]] = Field(
+        default=None,
+        description="External URL exposure settings for the training workload.",
+    )
+    parallelism: Optional[PositiveInt] = Field(
+        default=None,
+        description="Run:AI training workload parallelism.",
+    )
+    completions: Optional[PositiveInt] = Field(
+        default=None,
+        description="Run:AI training workload completions.",
+    )
+
     workload_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Maximum time in seconds to wait for workload completion. "
@@ -243,14 +308,14 @@ class RunAIStepOperatorSettings(BaseSettings):
         return value
 
     @model_validator(mode="after")
-    def _validate_gpu_settings(self) -> "RunAIStepOperatorSettings":
-        """Validate GPU settings consistency.
+    def _validate_settings(self) -> "RunAIStepOperatorSettings":
+        """Validate cross-field settings consistency.
 
         Returns:
             The validated settings.
 
         Raises:
-            ValueError: If GPU settings are inconsistent.
+            ValueError: If settings are inconsistent.
         """
         if self.gpu_request_type == "memory" and not self.gpu_memory_request:
             raise ValueError(
@@ -261,6 +326,34 @@ class RunAIStepOperatorSettings(BaseSettings):
                 raise ValueError(
                     "gpu_portion_limit must be >= gpu_portion_request"
                 )
+
+        if (
+            self.parallelism is not None
+            and self.completions is not None
+            and self.parallelism > self.completions
+        ):
+            raise ValueError("parallelism must be <= completions")
+
+        mount_paths = (
+            [mount.path for mount in self.pvc_mounts or []]
+            + [mount.mount_path for mount in self.config_map_mounts or []]
+            + [mount.mount_path for mount in self.secret_mounts or []]
+            + [mount.mount_path for mount in self.nfs_mounts or []]
+            + [mount.path for mount in self.s3_mounts or []]
+            + [mount.mount_path for mount in self.host_path_mounts or []]
+            + [mount.path for mount in self.git_mounts or []]
+        )
+        duplicate_mount_paths = {
+            mount_path
+            for mount_path in mount_paths
+            if mount_paths.count(mount_path) > 1
+        }
+        if duplicate_mount_paths:
+            sorted_paths = ", ".join(sorted(duplicate_mount_paths))
+            raise ValueError(
+                f"Mount paths must be unique across all Run:AI mounts: {sorted_paths}"
+            )
+
         return self
 
 

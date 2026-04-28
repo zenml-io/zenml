@@ -19,11 +19,24 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from runai.models.annotation import Annotation
+from runai.models.config_map_instance import ConfigMapInstance
 from runai.models.environment_variable import EnvironmentVariable
+from runai.models.exposed_url import ExposedUrl
 from runai.models.extended_resource import ExtendedResource
+from runai.models.git_instance import GitInstance
+from runai.models.host_path_instance import HostPathInstance
 from runai.models.image_pull_secret import ImagePullSecret
 from runai.models.label import Label
+from runai.models.nfs_instance import NfsInstance
+from runai.models.port import Port
+from runai.models.pvc_instance import PvcInstance
+from runai.models.s3_instance import S3Instance
+from runai.models.secret_instance2 import SecretInstance2
 from runai.models.superset_spec_all_of_compute import SupersetSpecAllOfCompute
+from runai.models.superset_spec_all_of_security import (
+    SupersetSpecAllOfSecurity,
+)
+from runai.models.superset_spec_all_of_storage import SupersetSpecAllOfStorage
 from runai.models.toleration import Toleration
 from runai.models.training_creation_request import TrainingCreationRequest
 from runai.models.training_spec_spec import TrainingSpecSpec
@@ -197,8 +210,7 @@ class RunAIStepOperator(BaseStepOperator):
                 environment.
 
         Raises:
-            RunAIClientError: If building the Run:AI training request fails.
-            RuntimeError: If workload submission fails.
+            RuntimeError: If building or submitting the Run:AI training request fails.
         """
         settings = cast(RunAIStepOperatorSettings, self.get_settings(info))
 
@@ -208,50 +220,15 @@ class RunAIStepOperator(BaseStepOperator):
 
         workload_name = self._build_workload_name(info)
 
-        compute = self._build_compute_spec(settings)
-
-        env_vars = self._build_environment_variables(environment)
-
-        image_pull_secrets = self._build_image_pull_secrets()
-
-        command, args = self._build_command_and_args(entrypoint_command)
-
-        tolerations_list = self._build_tolerations(settings)
-        labels_list = self._build_labels(settings)
-        annotations_list = self._build_annotations(settings)
-
-        try:
-            training_request = TrainingCreationRequest(
-                name=workload_name,
-                project_id=project_id,
-                cluster_id=cluster_id,
-                spec=TrainingSpecSpec(
-                    image=image,
-                    command=command,
-                    compute=compute,
-                    environment_variables=env_vars,
-                    args=args,
-                    image_pull_secrets=image_pull_secrets,
-                    node_pools=settings.node_pools,
-                    node_type=settings.node_type,
-                    preemptibility=settings.preemptibility,
-                    priority_class=settings.priority_class,
-                    tolerations=tolerations_list,
-                    backoff_limit=settings.backoff_limit,
-                    termination_grace_period_seconds=(
-                        settings.termination_grace_period_seconds
-                    ),
-                    terminate_after_preemption=settings.terminate_after_preemption,
-                    working_dir=settings.working_dir,
-                    labels=labels_list,
-                    annotations=annotations_list,
-                ),
-            )
-        except Exception as exc:
-            raise RunAIClientError(
-                "Failed to build Run:AI training request "
-                f"({type(exc).__name__}): {exc}"
-            ) from exc
+        training_request = self._build_training_request(
+            settings=settings,
+            image=image,
+            workload_name=workload_name,
+            project_id=project_id,
+            cluster_id=cluster_id,
+            entrypoint_command=entrypoint_command,
+            environment=environment,
+        )
 
         info.force_write_logs()
 
@@ -284,6 +261,78 @@ class RunAIStepOperator(BaseStepOperator):
         info.step_run.run_metadata[RUNAI_WORKLOAD_NAME_METADATA_KEY] = (
             result.workload_name
         )
+
+    def _build_training_request(
+        self,
+        settings: RunAIStepOperatorSettings,
+        image: str,
+        workload_name: str,
+        project_id: str,
+        cluster_id: str,
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
+    ) -> TrainingCreationRequest:
+        """Build a Run:AI training workload creation request.
+
+        Args:
+            settings: The step operator settings.
+            image: Docker image to run.
+            workload_name: Run:AI workload name.
+            project_id: Run:AI project ID.
+            cluster_id: Run:AI cluster ID.
+            entrypoint_command: The ZenML step entrypoint command.
+            environment: Environment variables for the workload.
+
+        Returns:
+            The Run:AI training creation request.
+
+        Raises:
+            RunAIClientError: If SDK model construction fails.
+        """
+        try:
+            command, args = self._build_command_and_args(entrypoint_command)
+            return TrainingCreationRequest(
+                name=workload_name,
+                project_id=project_id,
+                cluster_id=cluster_id,
+                template_id=settings.workload_template_id,
+                spec=TrainingSpecSpec(
+                    image=image,
+                    command=command,
+                    compute=self._build_compute_spec(settings),
+                    environment_variables=(
+                        self._build_environment_variables(environment)
+                    ),
+                    args=args,
+                    image_pull_secrets=self._build_image_pull_secrets(),
+                    node_pools=settings.node_pools,
+                    node_type=settings.node_type,
+                    preemptibility=settings.preemptibility,
+                    priority_class=settings.priority_class,
+                    tolerations=self._build_tolerations(settings),
+                    backoff_limit=settings.backoff_limit,
+                    termination_grace_period_seconds=(
+                        settings.termination_grace_period_seconds
+                    ),
+                    terminate_after_preemption=(
+                        settings.terminate_after_preemption
+                    ),
+                    working_dir=settings.working_dir,
+                    labels=self._build_labels(settings),
+                    annotations=self._build_annotations(settings),
+                    storage=self._build_storage(settings),
+                    security=self._build_security_context(settings),
+                    ports=self._build_ports(settings),
+                    exposed_urls=self._build_external_urls(settings),
+                    parallelism=settings.parallelism,
+                    completions=settings.completions,
+                ),
+            )
+        except Exception as exc:
+            raise RunAIClientError(
+                "Failed to build Run:AI training request "
+                f"({type(exc).__name__}): {exc}"
+            ) from exc
 
     def _get_workload_id(self, step_run: "StepRunResponse") -> str:
         """Gets the Run:AI workload ID from step run metadata.
@@ -535,6 +584,162 @@ class RunAIStepOperator(BaseStepOperator):
             large_shm_request=settings.large_shm_request,
             extended_resources=extended_resources_list,
         )
+
+    @staticmethod
+    def _dump_settings(settings: Any) -> Dict[str, Any]:
+        """Convert a Pydantic settings object to SDK constructor kwargs.
+
+        Args:
+            settings: The Pydantic settings object.
+
+        Returns:
+            Keyword arguments with unset optional fields omitted.
+        """
+        return cast(Dict[str, Any], settings.model_dump(exclude_none=True))
+
+    def _build_storage(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[SupersetSpecAllOfStorage]:
+        """Build storage settings for the Run:AI workload.
+
+        Args:
+            settings: The step operator settings.
+
+        Returns:
+            Run:AI storage settings or None.
+        """
+        storage_kwargs = {
+            "config_map_volume": self._build_config_map_mounts(settings),
+            "git": self._build_git_mounts(settings),
+            "host_path": self._build_host_path_mounts(settings),
+            "nfs": self._build_nfs_mounts(settings),
+            "pvc": self._build_pvc_mounts(settings),
+            "s3": self._build_s3_mounts(settings),
+            "secret_volume": self._build_secret_mounts(settings),
+        }
+        if not any(storage_kwargs.values()):
+            return None
+
+        return SupersetSpecAllOfStorage(**storage_kwargs)
+
+    def _build_pvc_mounts(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[PvcInstance]]:
+        """Build PVC mount settings for the Run:AI workload."""
+        if not settings.pvc_mounts:
+            return None
+        return [
+            PvcInstance(**self._dump_settings(mount))
+            for mount in settings.pvc_mounts
+        ]
+
+    def _build_config_map_mounts(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[ConfigMapInstance]]:
+        """Build ConfigMap mount settings for the Run:AI workload."""
+        if not settings.config_map_mounts:
+            return None
+        return [
+            ConfigMapInstance(**self._dump_settings(mount))
+            for mount in settings.config_map_mounts
+        ]
+
+    def _build_secret_mounts(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[SecretInstance2]]:
+        """Build Secret mount settings for the Run:AI workload."""
+        if not settings.secret_mounts:
+            return None
+        return [
+            SecretInstance2(**self._dump_settings(mount))
+            for mount in settings.secret_mounts
+        ]
+
+    def _build_nfs_mounts(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[NfsInstance]]:
+        """Build NFS mount settings for the Run:AI workload."""
+        if not settings.nfs_mounts:
+            return None
+        return [
+            NfsInstance(**self._dump_settings(mount))
+            for mount in settings.nfs_mounts
+        ]
+
+    def _build_s3_mounts(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[S3Instance]]:
+        """Build S3 mount settings for the Run:AI workload."""
+        if not settings.s3_mounts:
+            return None
+        return [
+            S3Instance(**self._dump_settings(mount))
+            for mount in settings.s3_mounts
+        ]
+
+    def _build_host_path_mounts(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[HostPathInstance]]:
+        """Build HostPath mount settings for the Run:AI workload."""
+        if not settings.host_path_mounts:
+            return None
+        return [
+            HostPathInstance(**self._dump_settings(mount))
+            for mount in settings.host_path_mounts
+        ]
+
+    def _build_git_mounts(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[GitInstance]]:
+        """Build Git mount settings for the Run:AI workload."""
+        if not settings.git_mounts:
+            return None
+        return [
+            GitInstance(**self._dump_settings(mount))
+            for mount in settings.git_mounts
+        ]
+
+    def _build_security_context(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[SupersetSpecAllOfSecurity]:
+        """Build security settings for the Run:AI workload.
+
+        Args:
+            settings: The step operator settings.
+
+        Returns:
+            Run:AI security settings or None.
+        """
+        if not settings.security_context:
+            return None
+
+        security_kwargs = self._dump_settings(settings.security_context)
+        supplemental_groups = security_kwargs.get("supplemental_groups")
+        if supplemental_groups is not None:
+            security_kwargs["supplemental_groups"] = ";".join(
+                str(group) for group in supplemental_groups
+            )
+
+        return SupersetSpecAllOfSecurity(**security_kwargs)
+
+    def _build_ports(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[Port]]:
+        """Build port exposure settings for the Run:AI workload."""
+        if not settings.ports:
+            return None
+        return [Port(**self._dump_settings(port)) for port in settings.ports]
+
+    def _build_external_urls(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[List[ExposedUrl]]:
+        """Build external URL settings for the Run:AI workload."""
+        if not settings.external_urls:
+            return None
+        return [
+            ExposedUrl(**self._dump_settings(external_url))
+            for external_url in settings.external_urls
+        ]
 
     def _build_image_pull_secrets(
         self,

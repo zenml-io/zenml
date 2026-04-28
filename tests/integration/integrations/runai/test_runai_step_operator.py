@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for the Run:AI step operator."""
+
 import importlib.util
 from datetime import datetime
 from types import SimpleNamespace
@@ -33,7 +35,17 @@ if RUNAI_INSTALLED:
         RunAIWorkloadNotFoundError,
         WorkloadSubmissionResult,
     )
-    from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
+    from zenml.integrations.runai.flavors import (
+        RunAIConfigMapMountSettings,
+        RunAIExternalURLSettings,
+        RunAIGitMountSettings,
+        RunAIHostPathMountSettings,
+        RunAINFSMountSettings,
+        RunAIPortSettings,
+        RunAIPVCMountSettings,
+        RunAIS3MountSettings,
+        RunAISecretMountSettings,
+        RunAISecurityContextSettings,
         RunAIStepOperatorConfig,
         RunAIStepOperatorSettings,
     )
@@ -46,6 +58,16 @@ else:
     RunAIClient = Any
     RunAIWorkloadNotFoundError = Exception
     WorkloadSubmissionResult = Any
+    RunAIConfigMapMountSettings = Any
+    RunAIExternalURLSettings = Any
+    RunAIGitMountSettings = Any
+    RunAIHostPathMountSettings = Any
+    RunAINFSMountSettings = Any
+    RunAIPortSettings = Any
+    RunAIPVCMountSettings = Any
+    RunAIS3MountSettings = Any
+    RunAISecretMountSettings = Any
+    RunAISecurityContextSettings = Any
     RunAIStepOperatorConfig = Any
     RunAIStepOperatorSettings = Any
     RUNAI_WORKLOAD_ID_METADATA_KEY = "workload_id"
@@ -147,6 +169,174 @@ def test_submit_publishes_workload_metadata(mocker: Any) -> None:
         step_run.run_metadata[RUNAI_WORKLOAD_NAME_METADATA_KEY]
         == "workload-name"
     )
+
+    training_request = operator._client.create_training_workload.call_args[0][
+        0
+    ]
+    assert training_request.template_id is None
+    assert training_request.spec.storage is None
+    assert training_request.spec.security is None
+    assert training_request.spec.ports is None
+    assert training_request.spec.exposed_urls is None
+    assert training_request.spec.parallelism is None
+    assert training_request.spec.completions is None
+
+
+def test_submit_maps_advanced_training_workload_settings(mocker: Any) -> None:
+    """Tests that advanced Run:AI settings are mapped to the SDK request."""
+    operator = _get_runai_step_operator()
+    operator._client = mocker.Mock(spec=RunAIClient)
+    operator._client.create_training_workload.return_value = (
+        WorkloadSubmissionResult(
+            workload_id="workload-123",
+            workload_name="workload-name",
+        )
+    )
+    mocker.patch.object(
+        operator,
+        "_resolve_project_and_cluster",
+        return_value=("project-id", "cluster-id"),
+    )
+    mocker.patch(
+        "zenml.integrations.runai.step_operators.runai_step_operator.publish_step_run_metadata"
+    )
+
+    settings = RunAIStepOperatorSettings(
+        pvc_mounts=[
+            RunAIPVCMountSettings(
+                name="pvc-mount",
+                path="/mnt/pvc",
+                claim_name="datasets-pvc",
+                read_only=True,
+                data_sharing=True,
+            )
+        ],
+        config_map_mounts=[
+            RunAIConfigMapMountSettings(
+                name="config-mount",
+                config_map="training-config",
+                mount_path="/mnt/config",
+                default_mode="0644",
+            )
+        ],
+        secret_mounts=[
+            RunAISecretMountSettings(
+                name="secret-mount",
+                secret="training-secret",
+                mount_path="/mnt/secret",
+                default_mode="0400",
+            )
+        ],
+        nfs_mounts=[
+            RunAINFSMountSettings(
+                name="nfs-mount",
+                server="nfs.example.com",
+                path="/exports/datasets",
+                mount_path="/mnt/nfs",
+            )
+        ],
+        s3_mounts=[
+            RunAIS3MountSettings(
+                name="s3-mount",
+                bucket="training-bucket",
+                path="/mnt/s3",
+            )
+        ],
+        host_path_mounts=[
+            RunAIHostPathMountSettings(
+                name="host-mount",
+                path="/var/lib/datasets",
+                mount_path="/mnt/host",
+                read_only=True,
+            )
+        ],
+        git_mounts=[
+            RunAIGitMountSettings(
+                name="git-mount",
+                repository="https://github.com/example/repo.git",
+                branch="main",
+                path="/mnt/git",
+            )
+        ],
+        workload_template_id="template-id",
+        security_context=RunAISecurityContextSettings(
+            uid_gid_source="custom",
+            run_as_uid=1000,
+            run_as_gid=1000,
+            run_as_non_root=True,
+            seccomp_profile_type="RuntimeDefault",
+            supplemental_groups=[1000, 2000],
+        ),
+        ports=[
+            RunAIPortSettings(
+                name="jupyter",
+                container=8888,
+                service_type="ClusterIP",
+                external=30088,
+            )
+        ],
+        external_urls=[
+            RunAIExternalURLSettings(
+                name="notebook",
+                container=8888,
+                authorization_type="authenticatedUsers",
+            )
+        ],
+        parallelism=2,
+        completions=3,
+    )
+    mocker.patch.object(operator, "get_settings", return_value=settings)
+
+    step_run_info = SimpleNamespace(
+        pipeline_step_name="trainer",
+        pipeline=SimpleNamespace(name="my-pipeline"),
+        run_id=uuid4(),
+        step_run_id=uuid4(),
+        step_run=SimpleNamespace(run_metadata={}),
+        get_image=lambda key: "my-image:latest",
+        force_write_logs=mocker.Mock(),
+    )
+
+    operator.submit(
+        info=step_run_info,
+        entrypoint_command=[
+            "python",
+            "-m",
+            "zenml.entrypoints.step_entrypoint",
+            "--step_name=trainer",
+        ],
+        environment={},
+    )
+
+    training_request = operator._client.create_training_workload.call_args[0][
+        0
+    ]
+    assert training_request.template_id == "template-id"
+
+    spec = training_request.spec
+    assert spec.parallelism == 2
+    assert spec.completions == 3
+    assert spec.storage.pvc[0].claim_name == "datasets-pvc"
+    assert spec.storage.pvc[0].data_sharing is True
+    assert spec.storage.config_map_volume[0].config_map == "training-config"
+    assert spec.storage.config_map_volume[0].default_mode == "0644"
+    assert spec.storage.secret_volume[0].secret == "training-secret"
+    assert spec.storage.secret_volume[0].default_mode == "0400"
+    assert spec.storage.nfs[0].server == "nfs.example.com"
+    assert spec.storage.s3[0].bucket == "training-bucket"
+    assert spec.storage.host_path[0].mount_path == "/mnt/host"
+    assert (
+        spec.storage.git[0].repository == "https://github.com/example/repo.git"
+    )
+    assert spec.security.run_as_uid == 1000
+    assert spec.security.run_as_gid == 1000
+    assert spec.security.uid_gid_source == "custom"
+    assert spec.security.supplemental_groups == "1000;2000"
+    assert spec.ports[0].container == 8888
+    assert spec.ports[0].service_type == "ClusterIP"
+    assert spec.ports[0].external == 30088
+    assert spec.exposed_urls[0].container == 8888
+    assert spec.exposed_urls[0].authorization_type == "authenticatedUsers"
 
 
 def test_get_status_maps_runai_status(mocker: Any) -> None:

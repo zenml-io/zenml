@@ -51,7 +51,16 @@ The ZenML integration only ever exercises a small set of Run:AI API operations u
 | Suspend on cancel/timeout | Trainings → Edit |
 | Delete workload (only if `delete_on_failure=True`) | Trainings → Delete |
 
-That's it. The integration constructs the full workload spec from your `RunAIStepOperatorSettings` and submits it directly, so it does **not** need access to Workspaces, Inferences, Environments, Compute resources, Credentials, Data sources, Templates, Policies, Users, Access rules, or Roles.
+For basic usage, that's it. The integration constructs the full workload spec from your `RunAIStepOperatorSettings` and submits it directly, so it does **not** need access to Workspaces, Inferences, Environments, Compute resources, Policies, Users, Access rules, or Roles.
+
+Some advanced settings require additional read permissions because they reference existing Run:AI assets:
+
+| Advanced setting | Additional Run:AI entity → action |
+|---|---|
+| `workload_template_id` | Templates → View |
+| S3/Git mounts backed by Run:AI-managed credentials or data sources | Credentials/Data sources → View |
+
+PVC, ConfigMap, Secret, NFS, and HostPath mounts are passed as workload spec references. Run:AI and the underlying Kubernetes cluster validate whether the referenced objects are allowed for the project and namespace.
 
 #### Recommended role by Run:AI version
 
@@ -127,6 +136,8 @@ def trainer(...) -> ...:
 ZenML will build a Docker image which includes your code and use it to run your steps on Run:AI. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
+You can use standard ZenML `DockerSettings` on the step or pipeline to control this image, for example to install additional Python requirements, set a parent image, or include extra files. These settings affect the image that Run:AI runs; Run:AI-specific settings such as storage mounts, security context, ports, and scheduling remain in `RunAIStepOperatorSettings`.
+
 The Run:AI step operator uses asynchronous workload submission under the hood. ZenML stores the Run:AI workload metadata for each step run and uses it for status monitoring and cancellation.
 
 ### Configuring GPU resources
@@ -196,8 +207,254 @@ settings = RunAIStepOperatorSettings(
 | `preemptibility` | str | None | "preemptible" or "non-preemptible" |
 | `priority_class` | str | None | Kubernetes PriorityClass name |
 | `large_shm_request` | bool | False | Request large /dev/shm for PyTorch DataLoader |
+| `pvc_mounts` | list | None | PVC mounts (`RunAIPVCMountSettings`) |
+| `config_map_mounts` | list | None | ConfigMap mounts (`RunAIConfigMapMountSettings`) |
+| `secret_mounts` | list | None | Secret mounts (`RunAISecretMountSettings`) |
+| `nfs_mounts` | list | None | NFS mounts (`RunAINFSMountSettings`) |
+| `s3_mounts` | list | None | S3 mounts (`RunAIS3MountSettings`) |
+| `host_path_mounts` | list | None | HostPath mounts (`RunAIHostPathMountSettings`) |
+| `git_mounts` | list | None | Git mounts (`RunAIGitMountSettings`) |
+| `workload_template_id` | str | None | Existing Run:AI workload template ID |
+| `security_context` | object | None | Run:AI security context (`RunAISecurityContextSettings`) |
+| `ports` | list | None | Port declarations (`RunAIPortSettings`) |
+| `external_urls` | list | None | External URL exposure (`RunAIExternalURLSettings`) |
+| `parallelism` | int | None | Run:AI training workload parallelism |
+| `completions` | int | None | Run:AI training workload completions |
 
 Environment variables are configured through the standard ZenML `environment` settings on steps or pipelines; the Run:AI step operator does not introduce an additional environment-specific setting.
+
+### Advanced training workload settings
+
+The Run:AI step operator can also pass through advanced fields for **standard training workloads**. These settings are additive and optional; if you do not set them, the existing default behavior is unchanged.
+
+Useful Run:AI references while configuring these settings:
+
+* [Run:AI standard training workloads](https://run-ai-docs.nvidia.com/self-hosted/2.22/workloads-in-nvidia-run-ai/using-training/standard-training/train-models)
+* [Run:AI data sources](https://run-ai-docs.nvidia.com/self-hosted/workloads-in-nvidia-run-ai/assets/datasources)
+* [Run:AI workload templates](https://run-ai-docs.nvidia.com/self-hosted/2.22/workloads-in-nvidia-run-ai/workload-templates)
+* [Run:AI CLI examples](https://run-ai-docs.nvidia.com/self-hosted/reference/cli/cli-examples)
+* [Run:AI REST API overview](https://run-ai-docs.nvidia.com/api/2.22)
+
+#### End-to-end advanced example
+
+The following example combines the most common advanced settings: an existing PVC, a ConfigMap, a Git checkout, a template ID, explicit UID/GID settings, a debugging port, and conservative retry/timeout behavior.
+
+```python
+from zenml import step
+from zenml.integrations.runai.flavors import (
+    RunAIConfigMapMountSettings,
+    RunAIExternalURLSettings,
+    RunAIGitMountSettings,
+    RunAIPVCMountSettings,
+    RunAIPortSettings,
+    RunAISecurityContextSettings,
+    RunAIStepOperatorSettings,
+)
+
+runai_settings = RunAIStepOperatorSettings(
+    # Compute and scheduling
+    gpu_devices_request=1,
+    gpu_request_type="memory",
+    gpu_memory_request="20Gi",
+    gpu_memory_limit="40Gi",
+    cpu_core_request=8.0,
+    cpu_core_limit=16.0,
+    cpu_memory_request="32G",
+    cpu_memory_limit="64G",
+    node_pools=["a100-pool"],
+    preemptibility="non-preemptible",
+    priority_class="train",
+    large_shm_request=True,
+    # Existing Run:AI/Kubernetes assets mounted into the workload.
+    pvc_mounts=[
+        RunAIPVCMountSettings(
+            claim_name="training-datasets",
+            path="/mnt/datasets",
+            read_only=True,
+        )
+    ],
+    config_map_mounts=[
+        RunAIConfigMapMountSettings(
+            config_map="training-config",
+            mount_path="/etc/training",
+            default_mode="0644",
+        )
+    ],
+    # Git mounts are useful for auxiliary repos such as config or recipe repos.
+    # ZenML already packages the pipeline code into the Docker image.
+    git_mounts=[
+        RunAIGitMountSettings(
+            repository="https://github.com/acme/training-recipes.git",
+            branch="main",
+            path="/opt/recipes",
+        )
+    ],
+    workload_template_id="550e8400-e29b-41d4-a716-446655440000",
+    security_context=RunAISecurityContextSettings(
+        uid_gid_source="custom",
+        run_as_uid=1000,
+        run_as_gid=1000,
+        run_as_non_root=True,
+        read_only_root_filesystem=True,
+        seccomp_profile_type="RuntimeDefault",
+        supplemental_groups=[1000, 2000],
+    ),
+    ports=[
+        RunAIPortSettings(
+            name="debug-ui",
+            container=8888,
+            service_type="ClusterIP",
+            external=30088,
+        )
+    ],
+    external_urls=[
+        RunAIExternalURLSettings(
+            name="debug-ui",
+            container=8888,
+            authorization_type="authenticatedUsers",
+        )
+    ],
+    labels={"team": "ml-research"},
+    annotations={"prometheus.io/scrape": "true"},
+    backoff_limit=1,
+    termination_grace_period_seconds=120,
+    pending_timeout=900,
+    workload_timeout=7200,
+)
+
+@step(step_operator="runai", settings={"step_operator": runai_settings})
+def train_model():
+    ...
+```
+
+#### Advanced settings reference
+
+These fields map to the Run:AI training workload request body. ZenML validates the local shape where possible, then sends the request to Run:AI; Run:AI and the underlying Kubernetes cluster still decide whether referenced assets, security settings, and ingress configuration are allowed.
+
+| ZenML setting | Run:AI concept | Notes |
+|---|---|---|
+| `pvc_mounts` | PVC data source / PVC volume | Existing or newly described PVC mount. `path` is the container mount path. |
+| `config_map_mounts` | ConfigMap data source / volume | `config_map` is the existing ConfigMap name; `mount_path` is the container path. |
+| `secret_mounts` | Secret data source / volume | Mounts a Secret as files. Use normal ZenML environment settings for non-secret environment variables. |
+| `nfs_mounts` | NFS data source / volume | Requires `server`, exported `path`, and container `mount_path`. |
+| `s3_mounts` | S3 data source | Use Run:AI/Kubernetes-managed credential references for private buckets. |
+| `host_path_mounts` | HostPath data source / volume | Depends heavily on cluster policy and should be used sparingly. |
+| `git_mounts` | Git data source | Clones a repo into `path` when the workload starts; best for auxiliary repos, not the ZenML pipeline code. |
+| `workload_template_id` | Workload template ID | Applies an existing Run:AI workload template. ZenML does not resolve template names. |
+| `security_context` | Workload security block | UID/GID, non-root, seccomp, capabilities, and related pod security settings. |
+| `ports` | Port declarations | Declares container ports and optional service ports. |
+| `external_urls` | Exposed URLs | Requests Run:AI external URL exposure for long-running/debug endpoints. |
+| `parallelism` / `completions` | Training workload parallelism | Runs multiple pods for the same training workload; see caveat below. |
+
+#### Storage mounts
+
+Use the typed mount settings to attach existing Kubernetes/Run:AI storage references to the training workload. Run:AI documents these as [data sources](https://run-ai-docs.nvidia.com/self-hosted/workloads-in-nvidia-run-ai/assets/datasources), including remote locations such as NFS, Git, and S3 and local Kubernetes resources such as PVC, ConfigMap, HostPath, and Secret.
+
+Supported storage setting classes are `RunAIPVCMountSettings`, `RunAIConfigMapMountSettings`, `RunAISecretMountSettings`, `RunAINFSMountSettings`, `RunAIS3MountSettings`, `RunAIHostPathMountSettings`, and `RunAIGitMountSettings`. Mount paths must be absolute and unique within the workload. ConfigMap and Secret `default_mode` values must be four-character strings such as `"0644"`. ZenML only passes references to Run:AI; it does not create PVCs, ConfigMaps, Secrets, buckets, Git repositories, or NFS exports.
+
+| Setting class | Important fields |
+|---|---|
+| `RunAIPVCMountSettings` | `claim_name`, `path`, `existing_pvc`, `read_only`, `ephemeral`, `claim_info`, `data_sharing` |
+| `RunAIConfigMapMountSettings` | `config_map`, `mount_path`, `sub_path`, `default_mode` |
+| `RunAISecretMountSettings` | `secret`, `mount_path`, `default_mode` |
+| `RunAINFSMountSettings` | `server`, `path`, `mount_path`, `read_only` |
+| `RunAIS3MountSettings` | `bucket`, `path`, `url`, `access_key_secret`, `secret_key_of_access_key_id`, `secret_key_of_secret_key` |
+| `RunAIHostPathMountSettings` | `path`, `mount_path`, `read_only`, `mount_propagation` |
+| `RunAIGitMountSettings` | `repository`, `branch`, `revision`, `path`, `password_secret`, `secret_key_of_user`, `secret_key_of_password` |
+
+HostPath mounts and Secret mounts can expose sensitive host or credential data. Use them only when your Run:AI/Kubernetes policies allow them for the project.
+
+#### Workload templates
+
+Pass an existing Run:AI workload template ID with `workload_template_id`:
+
+```python
+settings = RunAIStepOperatorSettings(workload_template_id="template-id")
+```
+
+Run:AI describes templates as reusable workload setups in the [workload templates documentation](https://run-ai-docs.nvidia.com/self-hosted/2.22/workloads-in-nvidia-run-ai/workload-templates). ZenML does not resolve template names or change Run:AI's template merge semantics. Template-name lookup is deferred to a future client abstraction if needed.
+
+#### Security context
+
+Use `RunAISecurityContextSettings` for UID/GID and related security fields:
+
+```python
+from zenml.integrations.runai.flavors import RunAISecurityContextSettings
+
+settings = RunAIStepOperatorSettings(
+    security_context=RunAISecurityContextSettings(
+        uid_gid_source="custom",
+        run_as_uid=1000,
+        run_as_gid=1000,
+        run_as_non_root=True,
+        read_only_root_filesystem=True,
+        seccomp_profile_type="RuntimeDefault",
+        supplemental_groups=[1000, 2000],
+    )
+)
+```
+
+Run:AI's SDK uses `run_as_uid` and `run_as_gid` with `uid_gid_source="custom"` for explicit IDs. ZenML accepts `supplemental_groups` as a list of integers and serializes it to Run:AI's semicolon-separated format. Cluster admission policies still decide whether a security context is accepted.
+
+| Security field | Values / type |
+|---|---|
+| `uid_gid_source` | `"custom"`, `"fromTheImage"`, or `"fromIdpToken"` |
+| `run_as_uid`, `run_as_gid` | Non-negative integer UID/GID |
+| `run_as_non_root` | Boolean |
+| `supplemental_groups` | List of non-negative integer group IDs |
+| `seccomp_profile_type` | `"RuntimeDefault"`, `"Unconfined"`, or `"Localhost"` |
+| `allow_privilege_escalation`, `read_only_root_filesystem`, `host_ipc`, `host_network` | Boolean |
+| `capabilities` | List of Linux capabilities to add |
+
+#### Ports and external URLs
+
+Use `RunAIPortSettings` for port declarations and `RunAIExternalURLSettings` for Run:AI external URL exposure. Run:AI CLI examples show the same concept with flags such as `--external-url container=8888` in the [CLI examples](https://run-ai-docs.nvidia.com/self-hosted/reference/cli/cli-examples).
+
+```python
+from zenml.integrations.runai.flavors import (
+    RunAIExternalURLSettings,
+    RunAIPortSettings,
+)
+
+settings = RunAIStepOperatorSettings(
+    ports=[
+        RunAIPortSettings(
+            container=8888,
+            service_type="ClusterIP",
+            external=30088,
+        )
+    ],
+    external_urls=[
+        RunAIExternalURLSettings(
+            container=8888,
+            authorization_type="authenticatedUsers",
+        )
+    ],
+)
+```
+
+The `container` value is the port inside the workload container. The optional `external` value is an integer service port exposed by Run:AI. The integration submits the exposure configuration but does not poll generated URLs or store them in ZenML metadata.
+
+| Setting class | Important fields |
+|---|---|
+| `RunAIPortSettings` | `container`, `service_type`, `external`, `tool_type`, `tool_name`, `name` |
+| `RunAIExternalURLSettings` | `container`, `url`, `authorization_type`, `authorized_users`, `authorized_groups`, `tool_type`, `tool_name`, `name` |
+
+External URLs are mainly useful for workloads that keep a service alive during step execution, for example a temporary debugger, profiler, or notebook endpoint. A normal ZenML training step exits after producing artifacts, so there may be nothing to reach by the time you open the URL.
+
+#### Parallelism and completions
+
+`parallelism` and `completions` are passed to the Run:AI training workload spec. Run:AI CLI examples show the equivalent concept with `runai training submit --parallelism 2 --completions 2` in the [CLI examples](https://run-ai-docs.nvidia.com/self-hosted/reference/cli/cli-examples).
+
+```python
+settings = RunAIStepOperatorSettings(parallelism=2, completions=4)
+```
+
+Values greater than `1` can run the same ZenML step entrypoint multiple times for a single step run. This is useful only for explicitly idempotent workloads and is **not** distributed training support. Make sure artifact and metadata writes are safe before enabling it.
+
+#### Deferred workload types
+
+Distributed training and inference workloads are separate Run:AI API resources (`DistributedCreationRequest` and `InferenceCreationRequest`) and are intentionally not modeled as extra fields on this training step operator. Distributed training needs a dedicated abstraction for worker roles, replica topology, rank/world-size coordination, and artifact writes. Inference workloads fit better in a model deployer or deployer-style abstraction because their lifecycle is service-oriented rather than step-run-oriented.
 
 ### Troubleshooting
 
