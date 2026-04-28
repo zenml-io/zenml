@@ -13,16 +13,19 @@
 #  permissions and limitations under the License.
 """Validator tests for the Databricks step operator."""
 
+from __future__ import annotations
+
 import importlib.util
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
-from typing import Any
 from uuid import uuid4
 
 import pytest
 
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.stack import Stack
 
 DATABRICKS_INSTALLED = importlib.util.find_spec("databricks") is not None
@@ -37,9 +40,6 @@ if DATABRICKS_INSTALLED:
     from zenml.integrations.databricks.step_operators import (
         DatabricksStepOperator,
     )
-else:
-    DatabricksStepOperatorConfig = Any
-    DatabricksStepOperator = Any
 
 
 def _get_databricks_step_operator() -> DatabricksStepOperator:
@@ -61,9 +61,9 @@ def _get_databricks_step_operator() -> DatabricksStepOperator:
 
 
 def test_databricks_step_operator_stack_validation(
-    local_orchestrator: Any,
-    local_artifact_store: Any,
-    s3_artifact_store: Any,
+    local_orchestrator: BaseOrchestrator,
+    local_artifact_store: BaseArtifactStore,
+    s3_artifact_store: BaseArtifactStore,
 ) -> None:
     """Tests Databricks step operator stack validation."""
     step_operator = _get_databricks_step_operator()

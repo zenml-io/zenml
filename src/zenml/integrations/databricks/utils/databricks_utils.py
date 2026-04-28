@@ -17,9 +17,10 @@ import os
 import re
 import sys
 from importlib.metadata import distribution
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from databricks.sdk import WorkspaceClient as DatabricksClient
+from databricks.sdk.errors import NotFound
 from databricks.sdk.service import iam
 from databricks.sdk.service.compute import (
     AutoScale,
@@ -54,6 +55,7 @@ from zenml import __version__
 from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.enums import ExecutionStatus
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
+    DatabricksAvailabilityType,
     DatabricksBaseSettings,
 )
 from zenml.logger import get_logger
@@ -204,6 +206,40 @@ def upload_wheel_to_workspace(
     return databricks_wheel_path
 
 
+def delete_workspace_directory(
+    databricks_client: DatabricksClient,
+    databricks_directory: str,
+    context: str,
+) -> None:
+    """Delete a Databricks workspace directory best-effort.
+
+    Args:
+        databricks_client: Databricks client.
+        databricks_directory: Workspace directory to delete.
+        context: Context for warning logs if cleanup fails.
+    """
+    try:
+        databricks_client.workspace.delete(
+            path=databricks_directory,
+            recursive=True,
+        )
+    except NotFound:
+        logger.debug(
+            "Databricks workspace wheel directory `%s` was already "
+            "deleted after %s.",
+            databricks_directory,
+            context,
+        )
+    except Exception as e:
+        logger.warning(
+            "Failed to delete Databricks workspace wheel directory `%s` "
+            "after %s: %s",
+            databricks_directory,
+            context,
+            e,
+        )
+
+
 def _get_wheel_package_project_root(wheel_package: str) -> str:
     """Get the absolute project root for an installed wheel package.
 
@@ -279,7 +315,7 @@ def _has_zenml_requirement(libraries: Optional[List[str]]) -> bool:
     Returns:
         Whether a ZenML package requirement is already present.
     """
-    return bool(libraries) and any(
+    return any(
         _ZENML_REQUIREMENT_PATTERN.match(library)
         for library in libraries or []
     )
@@ -436,10 +472,15 @@ def _resolve_policy_id(
     return None
 
 
+DatabricksAvailabilityAttributes = tuple[
+    Optional[AwsAttributes], Optional[AzureAttributes], Optional[GcpAttributes]
+]
+
+
 def _get_cloud_availability_attributes(
     databricks_client: DatabricksClient,
-    availability_type: Optional[object],
-) -> Dict[str, Any]:
+    availability_type: Optional[DatabricksAvailabilityType],
+) -> DatabricksAvailabilityAttributes:
     """Build cloud-specific cluster availability attributes.
 
     Args:
@@ -450,31 +491,34 @@ def _get_cloud_availability_attributes(
         ClusterSpec keyword arguments for availability settings.
     """
     if availability_type is None:
-        return {}
+        return None, None, None
 
-    availability = str(getattr(availability_type, "value", availability_type))
-    config = getattr(databricks_client, "config", None)
-    host = (getattr(config, "host", "") or "").lower()
+    availability = availability_type.value
+    host = (databricks_client.config.host or "").lower()
 
     if "azuredatabricks" in host:
-        return {
-            "azure_attributes": AzureAttributes(
+        return (
+            None,
+            AzureAttributes(
                 availability=_AZURE_AVAILABILITY_BY_TYPE[availability]
-            )
-        }
+            ),
+            None,
+        )
 
     if "gcp.databricks" in host or ".gcp." in host:
-        return {
-            "gcp_attributes": GcpAttributes(
+        return (
+            None,
+            None,
+            GcpAttributes(
                 availability=_GCP_AVAILABILITY_BY_TYPE[availability]
-            )
-        }
-
-    return {
-        "aws_attributes": AwsAttributes(
-            availability=AwsAvailability(availability)
+            ),
         )
-    }
+
+    return (
+        AwsAttributes(availability=AwsAvailability(availability)),
+        None,
+        None,
+    )
 
 
 def _build_init_script_info(script: str) -> InitScriptInfo:
@@ -532,22 +576,29 @@ def build_databricks_cluster_spec(
             _build_init_script_info(script) for script in settings.init_scripts
         ]
 
-    availability_attributes = _get_cloud_availability_attributes(
-        databricks_client=databricks_client,
-        availability_type=settings.availability_type,
+    aws_attributes, azure_attributes, gcp_attributes = (
+        _get_cloud_availability_attributes(
+            databricks_client=databricks_client,
+            availability_type=settings.availability_type,
+        )
     )
+
+    num_workers = None
+    autoscale = None
+    if settings.num_workers is not None:
+        num_workers = settings.num_workers
+    else:
+        autoscale = AutoScale(
+            min_workers=settings.autoscale[0],
+            max_workers=settings.autoscale[1],
+        )
 
     return ClusterSpec(
         spark_version=settings.spark_version
         or DATABRICKS_SPARK_DEFAULT_VERSION,
-        num_workers=settings.num_workers,
         node_type_id=settings.node_type_id or DATABRICKS_DEFAULT_NODE_TYPE_ID,
         driver_node_type_id=settings.driver_node_type_id,
         policy_id=_resolve_policy_id(databricks_client, settings.policy_id),
-        autoscale=AutoScale(
-            min_workers=settings.autoscale[0],
-            max_workers=settings.autoscale[1],
-        ),
         single_user_name=settings.single_user_name,
         spark_env_vars=env_vars,
         spark_conf=settings.spark_conf or {},
@@ -558,39 +609,18 @@ def build_databricks_cluster_spec(
         docker_image=docker_image,
         init_scripts=init_scripts,
         autotermination_minutes=settings.autotermination_minutes,
-        **availability_attributes,
+        num_workers=num_workers,
+        autoscale=autoscale,
+        aws_attributes=aws_attributes,
+        azure_attributes=azure_attributes,
+        gcp_attributes=gcp_attributes,
     )
 
 
-def build_job_access_control_list(
+def build_access_control_list(
     settings: DatabricksBaseSettings,
 ) -> Optional[List[iam.AccessControlRequest]]:
-    """Build access control entries for Databricks job creation.
-
-    Args:
-        settings: Databricks settings.
-
-    Returns:
-        Access control list or None.
-    """
-    if not settings.access_control_list:
-        return None
-
-    return [
-        iam.AccessControlRequest(
-            group_name=acl.group_name,
-            user_name=acl.user_name,
-            service_principal_name=acl.service_principal_name,
-            permission_level=iam.PermissionLevel(acl.permission_level.value),
-        )
-        for acl in settings.access_control_list
-    ]
-
-
-def build_submit_access_control_list(
-    settings: DatabricksBaseSettings,
-) -> Optional[List[iam.AccessControlRequest]]:
-    """Build access control entries for Databricks one-time runs.
+    """Build access control entries for Databricks jobs and runs.
 
     Args:
         settings: Databricks settings.

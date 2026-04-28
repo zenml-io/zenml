@@ -69,15 +69,14 @@ Once the step operator is part of your active stack, you can use it on individua
 from zenml import step
 
 
-@step(step_operator="databricks")
+@step(step_operator="databricks_step_operator")
 def trainer(...) -> ...:
-    """Run this step on Databricks."""
     ...
 ```
 
 ### Additional configuration
 
-The Databricks step operator reuses the Databricks execution settings used by the Databricks orchestrator. You can configure settings such as the Spark version, worker count, node types, autoscaling, Spark configuration, Spark environment variables, cluster policy, init scripts, and Docker image settings. Init scripts must use DBFS paths that start with `dbfs:/`. If you configure Docker registry authentication, provide both `docker_image_username` and `docker_image_password`.
+The Databricks step operator reuses the Databricks execution settings used by the Databricks orchestrator. You can configure Spark version, worker count, node types, autoscaling, Spark configuration, Spark environment variables, cluster policy, init scripts, and Docker image settings. Init scripts must use DBFS paths that start with `dbfs:/`. If you configure Docker registry authentication, provide both `docker_image_username` and `docker_image_password`.
 
 ```python
 from zenml.integrations.databricks.flavors.databricks_step_operator_flavor import (
@@ -89,12 +88,13 @@ databricks_settings = DatabricksStepOperatorSettings(
     num_workers=3,
     node_type_id="Standard_D4s_v5",
     policy_id=POLICY_ID,
-    autoscale=(2, 3),
     spark_conf={},
     spark_env_vars={},
     init_scripts=["dbfs:/scripts/install_dependencies.sh"],
 )
 ```
+
+Use `num_workers` for fixed-size clusters. For autoscaling clusters, omit `num_workers` and set `autoscale`, for example `autoscale=(2, 3)`.
 
 You can specify these settings on steps that should run on Databricks:
 
@@ -103,7 +103,7 @@ from zenml import step
 
 
 @step(
-    step_operator="databricks",
+    step_operator="databricks_step_operator",
     settings={
         "step_operator": databricks_settings,
     },
@@ -113,7 +113,7 @@ def databricks_step(...) -> ...:
 ```
 
 {% hint style="warning" %}
-The Databricks step operator submits one-time Databricks runs. Settings related to scheduling or long-lived Databricks jobs, such as `schedule_timezone`, `job_tags`, or `max_concurrent_runs`, are not applied in this execution mode.
+The Databricks step operator submits one-time Databricks runs. Settings related to scheduling, long-lived Databricks jobs, or Databricks job-task retries, such as `schedule_timezone`, `job_tags`, `max_concurrent_runs`, `max_retries`, `min_retry_interval_millis`, or `retry_on_timeout`, are not applied in this execution mode.
 {% endhint %}
 
 {% hint style="warning" %}

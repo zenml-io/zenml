@@ -19,8 +19,10 @@ from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
     DatabricksBaseSettings,
 )
-from zenml.orchestrators import BaseOrchestratorConfig
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
+from zenml.orchestrators.base_orchestrator import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
+)
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:

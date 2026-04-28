@@ -20,10 +20,13 @@ from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import
     DatabricksOrchestratorSettings,
 )
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
+    DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS,
     DatabricksAccessControlRequest,
     DatabricksBaseSettings,
 )
 from zenml.utils.secret_utils import is_secret_field
+
+InvalidNumericSettingsKwargs = dict[str, int | tuple[int, int]]
 
 
 def test_databricks_flavor_modules_import() -> None:
@@ -35,6 +38,25 @@ def test_databricks_flavor_modules_import() -> None:
 
     assert databricks_orchestrator_flavor.DatabricksOrchestratorSettings
     assert databricks_step_operator_flavor.DatabricksStepOperatorSettings
+
+
+def test_databricks_step_operator_ignored_settings_are_shared() -> None:
+    """Tests the shared one-time-run ignored settings contract."""
+    assert DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS == (
+        "schedule_timezone",
+        "job_tags",
+        "max_concurrent_runs",
+        "max_retries",
+        "min_retry_interval_millis",
+        "retry_on_timeout",
+    )
+    assert (
+        "access_control_list" not in DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS
+    )
+    assert "timeout_seconds" not in DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS
+    assert (
+        "task_timeout_seconds" not in DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS
+    )
 
 
 def test_databricks_settings_allow_valid_values() -> None:
@@ -132,7 +154,7 @@ def test_databricks_orchestrator_settings_round_trip_serialized_values() -> (
     ],
 )
 def test_databricks_settings_reject_invalid_numeric_values(
-    kwargs: dict[str, object],
+    kwargs: InvalidNumericSettingsKwargs,
 ) -> None:
     """Tests that invalid Databricks numeric settings are rejected."""
     with pytest.raises(ValidationError):

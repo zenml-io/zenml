@@ -13,13 +13,17 @@
 #  permissions and limitations under the License.
 """Tests for the Databricks step operator."""
 
+from __future__ import annotations
+
 import importlib.util
+from dataclasses import dataclass, field
 from datetime import datetime
-from types import SimpleNamespace
-from typing import Any
-from uuid import uuid4
+from typing import Optional
+from unittest.mock import Mock
+from uuid import UUID, uuid4
 
 import pytest
+from pytest_mock import MockerFixture
 
 from zenml import __version__
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -31,6 +35,7 @@ pytestmark = pytest.mark.skipif(
 
 if DATABRICKS_INSTALLED:
     from databricks.sdk.errors import NotFound
+    from databricks.sdk.service.compute import ClusterSpec
     from databricks.sdk.service.jobs import (
         Run,
         RunLifeCycleState,
@@ -47,21 +52,8 @@ if DATABRICKS_INSTALLED:
         DATABRICKS_STEP_RUN_URL_METADATA_KEY,
         DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY,
         DatabricksStepOperator,
-        get_wheel_package_name,
     )
-else:
-    NotFound = Exception
-    Run = Any
-    RunLifeCycleState = Any
-    RunResultState = Any
-    DatabricksStepOperatorConfig = Any
-    DatabricksStepOperatorSettings = Any
-    DatabricksStepOperator = Any
-    get_wheel_package_name = Any
-    DATABRICKS_STEP_JOB_ID_METADATA_KEY = "job_id"
-    DATABRICKS_STEP_RUN_ID_METADATA_KEY = "run_id"
-    DATABRICKS_STEP_RUN_URL_METADATA_KEY = "run_page_url"
-    DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY = "wheel_directory"
+    from zenml.orchestrators.wheel_build_utils import get_wheel_package_name
 
 
 def _get_databricks_step_operator() -> DatabricksStepOperator:
@@ -82,10 +74,98 @@ def _get_databricks_step_operator() -> DatabricksStepOperator:
     )
 
 
-def _get_step_run(run_id: str = "123") -> Any:
+@dataclass
+class _FakeStepRun:
+    """Minimal step run object used by status and cancellation tests."""
+
+    id: UUID = field(default_factory=uuid4)
+    run_metadata: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class _SubmittedRunResponse:
+    """Minimal Databricks submit response used by submission tests."""
+
+    run_id: int | None
+
+
+@dataclass
+class _SubmittedRunWait:
+    """Minimal Databricks wait wrapper returned by jobs.submit."""
+
+    response: _SubmittedRunResponse
+    run_id: int | None
+
+
+@dataclass
+class _FakePipeline:
+    """Minimal pipeline object needed by step-operator submission."""
+
+    name: str
+
+
+@dataclass
+class _FakeStackModel:
+    """Marker stack model for patched Stack.from_model calls."""
+
+
+@dataclass
+class _FakeSnapshot:
+    """Minimal snapshot object needed by step-operator submission."""
+
+    id: UUID = field(default_factory=uuid4)
+    stack: _FakeStackModel = field(default_factory=_FakeStackModel)
+
+
+@dataclass
+class _FakeDockerSettings:
+    """Marker Docker settings for patched requirements calls."""
+
+
+@dataclass
+class _FakeResourceSettings:
+    """Minimal resource settings object used for warning logic."""
+
+    empty: bool = True
+
+
+@dataclass
+class _FakeStepConfig:
+    """Minimal step configuration object used by submission tests."""
+
+    docker_settings: _FakeDockerSettings = field(
+        default_factory=_FakeDockerSettings
+    )
+    resource_settings: _FakeResourceSettings = field(
+        default_factory=_FakeResourceSettings
+    )
+
+
+@dataclass
+class _FakeStack:
+    """Marker stack for patched requirements calls."""
+
+
+@dataclass
+class _FakeStepRunInfo:
+    """Minimal step-run info object used by submission tests."""
+
+    pipeline: _FakePipeline = field(
+        default_factory=lambda: _FakePipeline(name="my-pipeline")
+    )
+    pipeline_step_name: str = "trainer"
+    run_name: str = "my-run"
+    run_id: UUID = field(default_factory=uuid4)
+    snapshot: _FakeSnapshot = field(default_factory=_FakeSnapshot)
+    config: _FakeStepConfig = field(default_factory=_FakeStepConfig)
+    step_run: _FakeStepRun = field(default_factory=_FakeStepRun)
+    step_run_id: UUID = field(default_factory=uuid4)
+    force_write_logs: Mock = field(default_factory=Mock)
+
+
+def _get_step_run(run_id: str = "123") -> _FakeStepRun:
     """Create a mock step run with run metadata."""
-    return SimpleNamespace(
-        id=uuid4(),
+    return _FakeStepRun(
         run_metadata={
             DATABRICKS_STEP_RUN_ID_METADATA_KEY: run_id,
             DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY: (
@@ -95,9 +175,26 @@ def _get_step_run(run_id: str = "123") -> Any:
     )
 
 
+def _get_submitted_run(run_id: int | None = 123) -> _SubmittedRunWait:
+    """Create a Databricks submit wait wrapper for testing."""
+    return _SubmittedRunWait(
+        response=_SubmittedRunResponse(run_id=run_id),
+        run_id=run_id,
+    )
+
+
+def _get_cluster_spec() -> ClusterSpec:
+    """Create a minimal cluster spec for submission tests."""
+    return ClusterSpec(
+        spark_version="16.4.x-scala2.12",
+        node_type_id="Standard_D4s_v5",
+        num_workers=1,
+    )
+
+
 def _get_run(
-    life_cycle_state: Any,
-    result_state: Any = None,
+    life_cycle_state: RunLifeCycleState,
+    result_state: Optional[RunResultState] = None,
     job_id: int = 456,
     run_id: int = 123,
     run_page_url: str = "https://workspace/jobs/runs/123",
@@ -116,13 +213,11 @@ def _get_run(
     )
 
 
-def test_submit_publishes_run_metadata(mocker: Any) -> None:
+def test_submit_publishes_run_metadata(mocker: MockerFixture) -> None:
     """Tests that submitting a step stores Databricks run metadata."""
     operator = _get_databricks_step_operator()
     operator._client = mocker.Mock()
-    operator._client.jobs.submit.return_value = SimpleNamespace(
-        response=SimpleNamespace(run_id=123), run_id=123
-    )
+    operator._client.jobs.submit.return_value = _get_submitted_run()
     operator._client.jobs.get_run.return_value = _get_run(
         RunLifeCycleState.PENDING
     )
@@ -150,10 +245,10 @@ def test_submit_publishes_run_metadata(mocker: Any) -> None:
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.build_databricks_cluster_spec",
-        return_value=SimpleNamespace(),
+        return_value=_get_cluster_spec(),
     )
     mocker.patch(
-        "zenml.integrations.databricks.step_operators.databricks_step_operator.build_submit_access_control_list",
+        "zenml.integrations.databricks.step_operators.databricks_step_operator.build_access_control_list",
         return_value=None,
     )
     mocker.patch(
@@ -161,7 +256,7 @@ def test_submit_publishes_run_metadata(mocker: Any) -> None:
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.Stack.from_model",
-        return_value=SimpleNamespace(),
+        return_value=_FakeStack(),
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.fileio.rmtree"
@@ -171,21 +266,8 @@ def test_submit_publishes_run_metadata(mocker: Any) -> None:
         return_value=None,
     )
 
-    step_run = SimpleNamespace(run_metadata={})
-    step_run_info = SimpleNamespace(
-        pipeline=SimpleNamespace(name="my-pipeline"),
-        pipeline_step_name="trainer",
-        run_name="my-run",
-        run_id=uuid4(),
-        snapshot=SimpleNamespace(id=uuid4(), stack=SimpleNamespace()),
-        config=SimpleNamespace(
-            docker_settings=SimpleNamespace(),
-            resource_settings=SimpleNamespace(empty=True),
-        ),
-        step_run=step_run,
-        step_run_id=uuid4(),
-        force_write_logs=mocker.Mock(),
-    )
+    step_run_info = _FakeStepRunInfo()
+    step_run = step_run_info.step_run
 
     operator.submit(
         info=step_run_info,
@@ -225,13 +307,13 @@ def test_submit_publishes_run_metadata(mocker: Any) -> None:
     ]
 
 
-def test_submit_reuses_existing_databricks_wheel_source(mocker: Any) -> None:
+def test_submit_reuses_existing_databricks_wheel_source(
+    mocker: MockerFixture,
+) -> None:
     """Tests that nested Databricks execution reuses the installed wheel source."""
     operator = _get_databricks_step_operator()
     operator._client = mocker.Mock()
-    operator._client.jobs.submit.return_value = SimpleNamespace(
-        response=SimpleNamespace(run_id=123), run_id=123
-    )
+    operator._client.jobs.submit.return_value = _get_submitted_run()
     operator._client.jobs.get_run.return_value = _get_run(
         RunLifeCycleState.PENDING
     )
@@ -259,10 +341,10 @@ def test_submit_reuses_existing_databricks_wheel_source(mocker: Any) -> None:
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.build_databricks_cluster_spec",
-        return_value=SimpleNamespace(),
+        return_value=_get_cluster_spec(),
     )
     mocker.patch(
-        "zenml.integrations.databricks.step_operators.databricks_step_operator.build_submit_access_control_list",
+        "zenml.integrations.databricks.step_operators.databricks_step_operator.build_access_control_list",
         return_value=None,
     )
     mocker.patch(
@@ -270,7 +352,7 @@ def test_submit_reuses_existing_databricks_wheel_source(mocker: Any) -> None:
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.Stack.from_model",
-        return_value=SimpleNamespace(),
+        return_value=_FakeStack(),
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.fileio.rmtree"
@@ -280,20 +362,7 @@ def test_submit_reuses_existing_databricks_wheel_source(mocker: Any) -> None:
         return_value=("/tmp/installed-wheel-source", "existing-wheel-package"),
     )
 
-    step_run_info = SimpleNamespace(
-        pipeline=SimpleNamespace(name="my-pipeline"),
-        pipeline_step_name="trainer",
-        run_name="my-run",
-        run_id=uuid4(),
-        snapshot=SimpleNamespace(id=uuid4(), stack=SimpleNamespace()),
-        config=SimpleNamespace(
-            docker_settings=SimpleNamespace(),
-            resource_settings=SimpleNamespace(empty=True),
-        ),
-        step_run=SimpleNamespace(run_metadata={}),
-        step_run_id=uuid4(),
-        force_write_logs=mocker.Mock(),
-    )
+    step_run_info = _FakeStepRunInfo()
 
     operator.submit(
         info=step_run_info,
@@ -308,7 +377,7 @@ def test_submit_reuses_existing_databricks_wheel_source(mocker: Any) -> None:
     )
 
 
-def test_get_status_maps_databricks_status(mocker: Any) -> None:
+def test_get_status_maps_databricks_status(mocker: MockerFixture) -> None:
     """Tests that Databricks status values map to ZenML statuses."""
     operator = _get_databricks_step_operator()
     operator._client = mocker.Mock()
@@ -321,7 +390,9 @@ def test_get_status_maps_databricks_status(mocker: Any) -> None:
     assert status == ExecutionStatus.RUNNING
 
 
-def test_get_status_keeps_waiting_for_retry_running(mocker: Any) -> None:
+def test_get_status_keeps_waiting_for_retry_running(
+    mocker: MockerFixture,
+) -> None:
     """Tests that Databricks retry wait does not terminate the step early."""
     operator = _get_databricks_step_operator()
     operator._client = mocker.Mock()
@@ -334,7 +405,9 @@ def test_get_status_keeps_waiting_for_retry_running(mocker: Any) -> None:
     assert status == ExecutionStatus.RUNNING
 
 
-def test_get_status_returns_failed_for_missing_run(mocker: Any) -> None:
+def test_get_status_returns_failed_for_missing_run(
+    mocker: MockerFixture,
+) -> None:
     """Tests that missing Databricks runs are treated as failures."""
     operator = _get_databricks_step_operator()
     operator._client = mocker.Mock()
@@ -345,7 +418,7 @@ def test_get_status_returns_failed_for_missing_run(mocker: Any) -> None:
     assert status == ExecutionStatus.FAILED
 
 
-def test_cancel_cancels_run(mocker: Any) -> None:
+def test_cancel_cancels_run(mocker: MockerFixture) -> None:
     """Tests that canceling a step cancels the Databricks run."""
     operator = _get_databricks_step_operator()
     operator._client = mocker.Mock()
@@ -355,7 +428,9 @@ def test_cancel_cancels_run(mocker: Any) -> None:
     operator._client.jobs.cancel_run.assert_called_once_with(run_id=123)
 
 
-def test_wait_returns_completed_on_success_status(mocker: Any) -> None:
+def test_wait_returns_completed_on_success_status(
+    mocker: MockerFixture,
+) -> None:
     """Tests that wait returns COMPLETED when the run succeeds."""
     operator = _get_databricks_step_operator()
     operator._client = mocker.Mock()

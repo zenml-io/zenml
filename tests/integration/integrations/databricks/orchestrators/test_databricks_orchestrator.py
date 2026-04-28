@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Tests for the Databricks orchestrator."""
 
+from __future__ import annotations
+
 import importlib.util
 from datetime import datetime
-from types import SimpleNamespace
-from typing import Any
 from uuid import uuid4
 
 import pytest
+from pytest_mock import MockerFixture
 
 from zenml.enums import StackComponentType
 
@@ -29,6 +30,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 if DATABRICKS_INSTALLED:
+    from databricks.sdk.service.jobs import Task as DatabricksTask
+
     from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import (
         DatabricksOrchestratorConfig,
         DatabricksOrchestratorSettings,
@@ -36,10 +39,50 @@ if DATABRICKS_INSTALLED:
     from zenml.integrations.databricks.orchestrators.databricks_orchestrator import (
         DatabricksOrchestrator,
     )
-else:
-    DatabricksOrchestrator = Any
-    DatabricksOrchestratorConfig = Any
-    DatabricksOrchestratorSettings = Any
+
+
+class _FakeConfig:
+    """Minimal Databricks client config used by orchestrator tests."""
+
+    host = "https://workspace.cloud.databricks.com"
+
+
+class _FakeClusterPolicies:
+    """Minimal cluster policies API used by orchestrator tests."""
+
+    def list(self) -> list[object]:
+        """Return no available cluster policies."""
+        return []
+
+
+class _CreatedDatabricksJob:
+    """Minimal Databricks job creation response."""
+
+    def __init__(self, job_id: int) -> None:
+        self.job_id = job_id
+
+
+class _FakeJobsAPI:
+    """Minimal Databricks Jobs API used by orchestrator tests."""
+
+    def __init__(self, job_id: int) -> None:
+        self._job_id = job_id
+
+    def create(self, **_kwargs: object) -> _CreatedDatabricksJob:
+        """Return a fake created Databricks job."""
+        return _CreatedDatabricksJob(job_id=self._job_id)
+
+    def run_now(self, **_kwargs: object) -> None:
+        """Fake starting a Databricks job run."""
+
+
+class _FakeDatabricksClient:
+    """Minimal Databricks client used by orchestrator tests."""
+
+    def __init__(self, job_id: int) -> None:
+        self.config = _FakeConfig()
+        self.cluster_policies = _FakeClusterPolicies()
+        self.jobs = _FakeJobsAPI(job_id=job_id)
 
 
 def _get_databricks_orchestrator() -> DatabricksOrchestrator:
@@ -60,26 +103,19 @@ def _get_databricks_orchestrator() -> DatabricksOrchestrator:
     )
 
 
-def _get_databricks_client(job_id: int = 123) -> SimpleNamespace:
+def _get_databricks_client(job_id: int = 123) -> _FakeDatabricksClient:
     """Create a mock Databricks workspace client."""
-    return SimpleNamespace(
-        config=SimpleNamespace(host="https://workspace.cloud.databricks.com"),
-        cluster_policies=SimpleNamespace(list=lambda: []),
-        jobs=SimpleNamespace(
-            create=lambda **kwargs: SimpleNamespace(job_id=job_id),
-            run_now=lambda **kwargs: None,
-        ),
-    )
+    return _FakeDatabricksClient(job_id=job_id)
 
 
 def test_upload_and_run_pipeline_forwards_settings_to_job_payload(
-    mocker: Any,
+    mocker: MockerFixture,
 ) -> None:
     """Tests orchestrator Databricks job and cluster payload construction."""
     orchestrator = _get_databricks_orchestrator()
     databricks_client = _get_databricks_client()
     databricks_client.jobs.create = mocker.Mock(
-        return_value=SimpleNamespace(job_id=123)
+        return_value=_CreatedDatabricksJob(job_id=123)
     )
     databricks_client.jobs.run_now = mocker.Mock()
     mocker.patch.object(
@@ -108,10 +144,7 @@ def test_upload_and_run_pipeline_forwards_settings_to_job_payload(
         task_timeout_seconds=3600,
         timeout_seconds=7200,
     )
-    task = SimpleNamespace(
-        task_key="step",
-        as_dict=lambda: {},
-    )
+    task = DatabricksTask(task_key="step")
 
     orchestrator._upload_and_run_pipeline(
         pipeline_name="training-pipeline",

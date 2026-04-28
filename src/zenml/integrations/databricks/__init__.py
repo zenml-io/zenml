@@ -17,7 +17,7 @@ from typing import List, Optional, Type
 
 from zenml.integrations.constants import DATABRICKS
 from zenml.integrations.integration import Integration
-from zenml.stack import Flavor
+from zenml.stack.flavor import Flavor
 
 DATABRICKS_ORCHESTRATOR_FLAVOR = "databricks"
 DATABRICKS_STEP_OPERATOR_FLAVOR = "databricks"

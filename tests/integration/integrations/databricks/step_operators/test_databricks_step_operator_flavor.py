@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Tests for the Databricks step operator flavor config."""
 
+from __future__ import annotations
+
 import importlib.util
-from typing import Any
 
 import pytest
 
@@ -27,8 +28,6 @@ if DATABRICKS_INSTALLED:
     from zenml.integrations.databricks.flavors.databricks_step_operator_flavor import (
         DatabricksStepOperatorConfig,
     )
-else:
-    DatabricksStepOperatorConfig = Any
 
 
 def test_databricks_step_operator_config_uses_shared_settings() -> None:

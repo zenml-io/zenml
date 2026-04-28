@@ -15,22 +15,30 @@
 
 import builtins
 import logging
-from typing import Any
+from types import ModuleType
+
+from pytest_mock import MockerFixture
 
 from zenml import logger as logger_module
 
 
 def test_zenml_logging_handler_reports_non_circular_import_errors(
-    mocker: Any,
+    mocker: MockerFixture,
 ) -> None:
     """Tests genuine logging utility import errors are surfaced."""
     original_import = builtins.__import__
 
-    def fail_logging_utils_import(name: str, *args: Any, **kwargs: Any) -> Any:
+    def fail_logging_utils_import(
+        name: str,
+        globals_: dict[str, object] | None = None,
+        locals_: dict[str, object] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> ModuleType:
         if name == "zenml.utils.logging_utils":
             raise RuntimeError("unexpected import failure")
 
-        return original_import(name, *args, **kwargs)
+        return original_import(name, globals_, locals_, fromlist, level)
 
     handler = logger_module.ZenMLLoggingHandler()
     handle_error_mock = mocker.patch.object(handler, "handleError")
@@ -52,19 +60,25 @@ def test_zenml_logging_handler_reports_non_circular_import_errors(
 
 
 def test_zenml_logging_handler_suppresses_circular_import_errors(
-    mocker: Any,
+    mocker: MockerFixture,
 ) -> None:
     """Tests logger keeps suppressing import-cycle initialization failures."""
     original_import = builtins.__import__
 
-    def fail_logging_utils_import(name: str, *args: Any, **kwargs: Any) -> Any:
+    def fail_logging_utils_import(
+        name: str,
+        globals_: dict[str, object] | None = None,
+        locals_: dict[str, object] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> ModuleType:
         if name == "zenml.utils.logging_utils":
             raise ImportError(
                 "cannot import name 'LoggingContext' from partially "
                 "initialized module"
             )
 
-        return original_import(name, *args, **kwargs)
+        return original_import(name, globals_, locals_, fromlist, level)
 
     handler = logger_module.ZenMLLoggingHandler()
     handle_error_mock = mocker.patch.object(handler, "handleError")
@@ -88,3 +102,38 @@ def test_zenml_logging_handler_suppresses_circular_import_errors(
     handler.emit(record)
 
     handle_error_mock.assert_not_called()
+
+
+def test_wrapped_write_suppresses_circular_import_errors(
+    mocker: MockerFixture,
+) -> None:
+    """Tests wrapped stream writes bypass import-cycle failures."""
+    original_import = builtins.__import__
+
+    def fail_logging_utils_import(
+        name: str,
+        globals_: dict[str, object] | None = None,
+        locals_: dict[str, object] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "zenml.utils.logging_utils":
+            raise ImportError(
+                "cannot import name 'LoggingContext' from partially "
+                "initialized module"
+            )
+
+        return original_import(name, globals_, locals_, fromlist, level)
+
+    original_write = mocker.Mock(return_value=13)
+    mocker.patch.object(
+        logger_module,
+        "_is_logging_utils_circular_import_error",
+        return_value=True,
+    )
+    mocker.patch.object(builtins, "__import__", fail_logging_utils_import)
+
+    wrapped_write = logger_module._wrapped_write(original_write, "stdout")
+
+    assert wrapped_write("hello") == 13
+    original_write.assert_called_once_with("hello")

@@ -23,6 +23,14 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import SecretField
 
 DATABRICKS_DEFAULT_AUTOSCALE = (0, 1)
+DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS: Tuple[str, ...] = (
+    "schedule_timezone",
+    "job_tags",
+    "max_concurrent_runs",
+    "max_retries",
+    "min_retry_interval_millis",
+    "retry_on_timeout",
+)
 
 
 class DatabricksAvailabilityType(StrEnum):
@@ -342,9 +350,8 @@ class DatabricksBaseSettings(BaseSettings):
         Raises:
             ValueError: If only one Docker registry credential is configured.
         """
-        data = object.__getattribute__(self, "__dict__")
-        has_username = bool(data.get("docker_image_username"))
-        has_password = bool(data.get("docker_image_password"))
+        has_username = bool(self.docker_image_username)
+        has_password = bool(self.docker_image_password)
         if has_username != has_password:
             raise ValueError(
                 "Databricks Docker image authentication requires both "

@@ -19,7 +19,10 @@ from zenml.integrations.databricks import DATABRICKS_STEP_OPERATOR_FLAVOR
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
     DatabricksBaseSettings,
 )
-from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
+from zenml.step_operators.base_step_operator import (
+    BaseStepOperatorConfig,
+    BaseStepOperatorFlavor,
+)
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:

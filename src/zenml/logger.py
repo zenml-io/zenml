@@ -128,11 +128,8 @@ class ConsoleFormatter(logging.Formatter):
     blue: str = "\x1b[34m"
     reset: str = "\x1b[0m"
 
-    def _get_format_template(self, record: logging.LogRecord) -> str:
+    def _get_format_template(self) -> str:
         """Get the format template based on the logging level.
-
-        Args:
-            record: The log record to format.
 
         Returns:
             The format template string.
@@ -159,14 +156,11 @@ class ConsoleFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
-        format_template = self._get_format_template(record)
+        format_template = self._get_format_template()
 
         message = record.getMessage()
-        try:
-            if step_names_in_console.get():
-                message = _add_step_name_to_message(message)
-        except Exception:
-            pass
+        if step_names_in_console.get():
+            message = _add_step_name_to_message(message)
 
         modified_record = logging.LogRecord(
             name=record.name,
@@ -273,7 +267,12 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
         Returns:
             The result of the original write method.
         """
-        from zenml.utils.logging_utils import LoggingContext
+        try:
+            from zenml.utils.logging_utils import LoggingContext
+        except Exception as e:
+            if _is_logging_utils_circular_import_error(e):
+                return original_write(text)
+            raise
 
         level = logging.INFO if stream_name == "stdout" else logging.ERROR
 

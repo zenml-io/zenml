@@ -27,26 +27,19 @@ You should use the Databricks orchestrator if:
 
 You will need to do the following to start using the Databricks orchestrator:
 
-* An Active Databricks workspace, depends on the cloud provider you are using, you can find more information on how to create a workspace:
+* An active Databricks workspace. See the cloud-specific setup guides:
     * [AWS](https://docs.databricks.com/en/getting-started/onboarding-account.html)
     * [Azure](https://learn.microsoft.com/en-us/azure/databricks/getting-started/#--create-an-azure-databricks-workspace)
     * [GCP](https://docs.gcp.databricks.com/en/getting-started/index.html)
-* Active Databricks account or service account with sufficient permission to create and run jobs
+* A Databricks account or service account with permission to create and run jobs.
 
 ## How it works
 
-
 ![Databricks How It works Diagram](../../.gitbook/assets/Databricks_How_It_works.png)
 
-The Databricks orchestrator in ZenML leverages the concept of Wheel Packages. When you run a pipeline with the Databricks orchestrator, ZenML creates a Python wheel package from your project. This wheel package contains all the necessary code and dependencies for your pipeline.
+When you run a pipeline with the Databricks orchestrator, ZenML builds a Python wheel from your project and uploads it to Databricks. ZenML then uses the Databricks SDK to create a job whose tasks mirror your pipeline steps and their upstream dependencies.
 
-Once the wheel package is created, ZenML uploads it to Databricks. ZenML leverage Databricks SDK to create a job definition, This job definition includes information about the pipeline steps and ensures that each step is executed only after its upstream steps have successfully completed.
-
-The Databricks job is also configured with the necessary cluster settings to run. This includes specifying the version of Spark to use, the number of workers, the node type, and other configuration options.
-
-When the Databricks job is executed, it retrieves the wheel package from Databricks and runs the pipeline using the specified cluster configuration. The job ensures that the steps are executed in the correct order based on their dependencies.
-
-Once the job is completed, ZenML retrieves the logs and status of the job and updates the pipeline run accordingly. This allows you to monitor the progress of your pipeline and view the logs of each step.
+The job uses the cluster settings configured on the orchestrator, including Spark version, worker count or autoscaling, node type, and any Spark configuration. When Databricks starts the job, each task installs the uploaded wheel and executes the corresponding ZenML step entrypoint.
 
 {% hint style="info" %}
 The orchestrator keeps uploaded wheel packages under `/Workspace/Shared/.zenml` after a successful job submission because Databricks job definitions, scheduled runs, and manual re-runs keep referencing those workspace files. Clean up old wheel directories from that workspace path according to your team's retention policy when you no longer need to re-run those jobs.
@@ -61,13 +54,7 @@ To use the Databricks orchestrator, you first need to register it and add it to 
 zenml integration install databricks
 ```
 
-This command will install the necessary dependencies, including the `databricks-sdk` package, which is required for authentication with Databricks. Once the integration is installed, you can proceed with registering the orchestrator and configuring the necessary authentication details.
-
-```shell
-zenml integration install databricks
-```
-
-Then, we can register the orchestrator and use it in our active stack:
+This installs the required dependencies, including `databricks-sdk`. Once the integration is installed, register the orchestrator and configure authentication:
 
 ```shell
 zenml orchestrator register databricks_orchestrator --flavor=databricks --host="https://xxxxx.x.azuredatabricks.net" --client_id={{databricks.client_id}} --client_secret={{databricks.client_secret}}
@@ -76,7 +63,7 @@ zenml orchestrator register databricks_orchestrator --flavor=databricks --host="
 {% hint style="info" %}
 We recommend creating a Databricks service account with the necessary permissions to create and run jobs. You can find more information on how to create a service account [here](https://docs.databricks.com/dev-tools/api/latest/authentication.html). You can generate a client_id and client_secret for the service account and use them to authenticate with Databricks.
 
-![Databricks Service Account Permession](../../.gitbook/assets/DatabricksPermessions.png)
+![Databricks Service Account Permission](../../.gitbook/assets/DatabricksPermessions.png)
 {% endhint %}
 
 ```shell
@@ -110,7 +97,7 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 
 ### Run pipelines on a schedule
 
-The Databricks Pipelines orchestrator supports running pipelines on a schedule using its [native scheduling capability](https://docs.databricks.com/en/workflows/jobs/schedule-jobs.html).
+The Databricks orchestrator supports running pipelines on a schedule using its [native scheduling capability](https://docs.databricks.com/en/workflows/jobs/schedule-jobs.html).
 
 **How to schedule a pipeline**
 
@@ -135,9 +122,7 @@ The Databricks orchestrator requires an IANA timezone ID to be configured throug
 
 **How to delete a scheduled pipeline**
 
-Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule is the responsibility of the user.
-
-In order to cancel a scheduled Databricks pipeline, you need to manually delete the schedule in Databricks (via the UI or the CLI).
+ZenML creates the Databricks schedule, but you manage its lifecycle in Databricks. To cancel a scheduled Databricks pipeline, delete the schedule in Databricks via the UI or CLI.
 
 ### Additional configuration
 
@@ -151,13 +136,14 @@ databricks_settings = DatabricksOrchestratorSettings(
     num_workers=3,
     node_type_id="Standard_D4s_v5",
     policy_id=POLICY_ID,
-    autoscale=(2, 3),
     spark_conf={},
     spark_env_vars={},
     init_scripts=["dbfs:/scripts/install_dependencies.sh"],
     schedule_timezone="America/Los_Angeles",
 )
 ```
+
+Use `num_workers` for fixed-size clusters. For autoscaling clusters, omit `num_workers` and set `autoscale`, for example `autoscale=(2, 3)`.
 
 These settings can then be specified on either pipeline-level or step-level:
 
@@ -193,7 +179,7 @@ databricks_settings = DatabricksOrchestratorSettings(
 )
 ```
 
-We can also enable GPU support for the Databricks orchestrator changing the `spark_version` and `node_type_id` to a GPU-enabled version and node type:
+To use GPU-backed clusters, set `spark_version` and `node_type_id` to GPU-enabled values:
 
 ```python
 from zenml.integrations.databricks.flavors.databricks_orchestrator_flavor import DatabricksOrchestratorSettings
@@ -206,15 +192,12 @@ databricks_settings = DatabricksOrchestratorSettings(
 )
 ```
 
-With these settings, the orchestrator will use a GPU-enabled Spark version and a GPU-enabled node type to run the pipeline on Databricks, next section will show how to enable CUDA for the GPU to give its full acceleration for your pipeline.
+With these settings, the orchestrator uses a GPU-enabled Spark version and node type.
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/user-guides/tutorial/distributed-training) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+If your steps need CUDA, follow the [distributed training guide](https://docs.zenml.io/user-guides/tutorial/distributed-training) to configure the required dependencies and runtime settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 
-
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
-
-For more information and a full list of configurable attributes of the Databricks orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) .
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) for all configurable attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.

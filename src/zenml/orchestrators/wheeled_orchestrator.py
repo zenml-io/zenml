@@ -16,7 +16,7 @@
 from abc import ABC
 
 from zenml import __version__
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.wheel_build_utils import (
     DEFAULT_PACKAGE_NAME,
     create_wheel,
