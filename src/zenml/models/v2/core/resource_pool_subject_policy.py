@@ -223,15 +223,12 @@ class ResourcePoolSubjectPolicyFilter(UserScopedFilter):
     pool_id: UUIDFilterOption = Field(
         default=None,
         description="The ID of the resource pool that the policy is attached to.",
-        union_mode="left_to_right",
     )
     component_id: UUIDFilterOption = Field(
         default=None,
         description="The ID of the component that is the subject of the policy.",
-        union_mode="left_to_right",
     )
     priority: IntFilterOption = Field(
         default=None,
         description="The priority of the policy in the resource pool.",
-        union_mode="left_to_right",
     )

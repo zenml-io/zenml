@@ -240,17 +240,14 @@ class ResourceRequestFilter(UserScopedFilter):
     component_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the component that is requesting the resources.",
-        union_mode="left_to_right",
     )
     step_run_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the step run that is requesting the resources.",
-        union_mode="left_to_right",
     )
     preemption_initiated_by_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the request that initiated the preemption of this request.",
-        union_mode="left_to_right",
     )
     status: StrFilterOption = Field(
         default=None,
@@ -259,7 +256,6 @@ class ResourceRequestFilter(UserScopedFilter):
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the pipeline run that is requesting the resources.",
-        union_mode="left_to_right",
     )
 
     def get_custom_filters(
