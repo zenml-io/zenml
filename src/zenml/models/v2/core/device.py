@@ -14,7 +14,7 @@
 """Models representing devices."""
 
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 from uuid import UUID
 
 from pydantic import Field
@@ -27,6 +27,7 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     BoolFilterOption,
     DatetimeFilterOption,
+    EnumFilterOption,
     IntFilterOption,
     UUIDFilterOption,
 )
@@ -457,7 +458,7 @@ class OAuthDeviceFilter(UserScopedFilter):
         description="The client ID of the OAuth2 device.",
         union_mode="left_to_right",
     )
-    status: Union[OAuthDeviceStatus, str, None] = Field(
+    status: EnumFilterOption[OAuthDeviceStatus] = Field(
         default=None,
         description="The status of the OAuth2 device.",
         union_mode="left_to_right",

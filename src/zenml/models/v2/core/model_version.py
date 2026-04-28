@@ -34,6 +34,7 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
+    EnumFilterOption,
     IntFilterOption,
     StrFilterOption,
     UUIDFilterOption,
@@ -684,7 +685,10 @@ class ModelVersionFilter(
         default=None,
         description="The number of the Model Version",
     )
-    stage: Optional[Union[str, ModelStages]] = Field(
+    # TODO: By doing this we are changing the union order, is this a problem?
+    # This may have always been cast to a string anyway, perhaps we can use 
+    # a StrFilterOption instead?
+    stage: EnumFilterOption[ModelStages] = Field(
         description="The model version stage",
         default=None,
         union_mode="left_to_right",
