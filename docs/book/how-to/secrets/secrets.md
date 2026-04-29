@@ -114,6 +114,10 @@ Other Client methods used for secrets management include `get_secret` to fetch a
 {% endtab %}
 {% endtabs %}
 
+## Size limits
+
+A **secret** in ZenML is a name plus a set of key–value pairs. Size is usually the total UTF-8 size of all keys and values. See the table in [Secret value size limits](https://docs.zenml.io/getting-started/deploying-zenml/secret-management#secret-value-size-limits) for the limits associated with the different secrets stores. If you are over the limit, add another named secret, split keys across secrets, or keep large files outside ZenML and only store a reference in a value.
+
 ## Private and public secrets
 
 ZenML secrets can be either **private** or **public**:
