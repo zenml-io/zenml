@@ -363,8 +363,8 @@ async def record_requests(request: Request, call_next: Any) -> Any:
 
     Creates a RequestContext and binds key request fields into the
     logging context (via :func:`bind_request_context`) so that every
-    downstream log line automatically carries request_id, trace_id,
-    method, path, and client_ip.
+    downstream log line automatically carries request_id, method, path,
+    and client_ip.
 
     Args:
         request: The incoming request object.
@@ -380,7 +380,6 @@ async def record_requests(request: Request, call_next: Any) -> Any:
 
     bind_request_context(
         request_id=request_context.request_id,
-        trace_id=request_context.trace_id,
         method=request.method,
         path=request.url.path,
         client_ip=(request.client.host if request.client else "unknown"),

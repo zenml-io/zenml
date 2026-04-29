@@ -64,9 +64,6 @@ class RequestContext:
                     "Please use a valid UUID."
                 )
 
-        # Use a random trace ID to identify the request internally in the logs.
-        self.trace_id = str(uuid4())[:4]
-
         self.source = request.headers.get("User-Agent") or ""
         self.received_at = utc_now()
 
@@ -89,7 +86,7 @@ class RequestContext:
             The request ID.
         """
         source_type = self.source.split("/")[0]
-        return f"{self.request_id}/{source_type}/{self.trace_id}"
+        return f"{self.request_id}/{source_type}"
 
     @property
     def log_request(self) -> str:
