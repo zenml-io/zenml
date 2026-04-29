@@ -23,12 +23,21 @@ from zenml.integrations.databricks.flavors.databricks_shared_settings import (
     DatabricksAccessControlRequest,
     DatabricksBaseSettings,
 )
-from zenml.integrations.databricks.step_operators.databricks_step_operator import (
-    DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS,
+from zenml.integrations.databricks.flavors.databricks_step_operator_flavor import (
+    DatabricksStepOperatorSettings,
 )
 from zenml.utils.secret_utils import is_secret_field
 
 InvalidNumericSettingsKwargs = dict[str, int | tuple[int, int]]
+
+ORCHESTRATOR_ONLY_FIELDS = (
+    "schedule_timezone",
+    "job_tags",
+    "max_concurrent_runs",
+    "max_retries",
+    "min_retry_interval_millis",
+    "retry_on_timeout",
+)
 
 
 def test_databricks_flavor_modules_import() -> None:
@@ -42,23 +51,19 @@ def test_databricks_flavor_modules_import() -> None:
     assert databricks_step_operator_flavor.DatabricksStepOperatorSettings
 
 
-def test_databricks_step_operator_ignored_settings_are_shared() -> None:
-    """Tests the shared one-time-run ignored settings contract."""
-    assert DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS == (
-        "schedule_timezone",
-        "job_tags",
-        "max_concurrent_runs",
-        "max_retries",
-        "min_retry_interval_millis",
-        "retry_on_timeout",
-    )
-    assert (
-        "access_control_list" not in DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS
-    )
-    assert "timeout_seconds" not in DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS
-    assert (
-        "task_timeout_seconds" not in DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS
-    )
+def test_orchestrator_only_fields_are_not_on_step_operator_settings() -> None:
+    """Tests that Job-resource fields are not exposed on the step operator."""
+    step_operator_fields = set(DatabricksStepOperatorSettings.model_fields)
+    orchestrator_fields = set(DatabricksOrchestratorSettings.model_fields)
+
+    for field_name in ORCHESTRATOR_ONLY_FIELDS:
+        assert field_name not in step_operator_fields, (
+            f"`{field_name}` is orchestrator-only and must not appear on "
+            "`DatabricksStepOperatorSettings`."
+        )
+        assert field_name in orchestrator_fields, (
+            f"`{field_name}` must be defined on `DatabricksOrchestratorSettings`."
+        )
 
 
 def test_databricks_settings_allow_valid_values() -> None:
@@ -68,11 +73,9 @@ def test_databricks_settings_allow_valid_values() -> None:
         docker_image_username="username",
         docker_image_password="password",
         init_scripts=["dbfs:/scripts/install_dependencies.sh"],
-        schedule_timezone="UTC",
     )
 
     assert settings.autoscale == (0, 1)
-    assert settings.schedule_timezone == "UTC"
     assert is_secret_field(
         DatabricksBaseSettings.model_fields["docker_image_password"]
     )
@@ -91,7 +94,6 @@ def test_databricks_settings_model_validate_serialized_values() -> None:
         docker_image_username="username",
         docker_image_password="password",
         init_scripts=["dbfs:/scripts/install_dependencies.sh"],
-        schedule_timezone="UTC",
     )
 
     serialized_settings = settings.model_dump(mode="json")
@@ -147,10 +149,7 @@ def test_databricks_orchestrator_settings_round_trip_serialized_values() -> (
         {"num_workers": -1},
         {"autotermination_minutes": -1},
         {"timeout_seconds": -1},
-        {"max_concurrent_runs": 0},
         {"task_timeout_seconds": -1},
-        {"max_retries": -2},
-        {"min_retry_interval_millis": -1},
         {"autoscale": (-1, 1)},
         {"autoscale": (2, 1)},
     ],
@@ -161,6 +160,22 @@ def test_databricks_settings_reject_invalid_numeric_values(
     """Tests that invalid Databricks numeric settings are rejected."""
     with pytest.raises(ValidationError):
         DatabricksBaseSettings(**kwargs)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"max_concurrent_runs": 0},
+        {"max_retries": -2},
+        {"min_retry_interval_millis": -1},
+    ],
+)
+def test_databricks_orchestrator_settings_reject_invalid_numeric_values(
+    kwargs: InvalidNumericSettingsKwargs,
+) -> None:
+    """Tests that invalid Databricks orchestrator numeric settings are rejected."""
+    with pytest.raises(ValidationError):
+        DatabricksOrchestratorSettings(**kwargs)
 
 
 def test_databricks_settings_reject_partial_docker_credentials() -> None:
@@ -178,10 +193,12 @@ def test_databricks_settings_reject_non_dbfs_init_scripts() -> None:
         DatabricksBaseSettings(init_scripts=["s3://bucket/script.sh"])
 
 
-def test_databricks_settings_reject_invalid_schedule_timezone() -> None:
+def test_databricks_orchestrator_settings_reject_invalid_schedule_timezone() -> (
+    None
+):
     """Tests that Databricks schedule timezone must be an IANA timezone."""
     with pytest.raises(ValidationError):
-        DatabricksBaseSettings(schedule_timezone="PST")
+        DatabricksOrchestratorSettings(schedule_timezone="PST")
 
 
 def test_databricks_access_control_requires_exactly_one_principal() -> None:

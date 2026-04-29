@@ -112,8 +112,8 @@ def databricks_step(...) -> ...:
     ...
 ```
 
-{% hint style="warning" %}
-The Databricks step operator submits one-time Databricks runs. Settings related to scheduling, long-lived Databricks jobs, or Databricks job-task retries, such as `schedule_timezone`, `job_tags`, `max_concurrent_runs`, `max_retries`, `min_retry_interval_millis`, or `retry_on_timeout`, are not applied in this execution mode.
+{% hint style="info" %}
+The Databricks step operator submits one-time Databricks runs (`jobs.submit`) rather than persistent Databricks Jobs (`jobs.create`). Fields that only apply to persistent Jobs — `schedule_timezone`, `job_tags`, `max_concurrent_runs`, `max_retries`, `min_retry_interval_millis`, and `retry_on_timeout` — therefore live on `DatabricksOrchestratorSettings` and are not exposed on the step operator.
 {% endhint %}
 
 {% hint style="warning" %}

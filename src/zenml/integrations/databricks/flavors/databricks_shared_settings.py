@@ -14,7 +14,6 @@
 """Shared Databricks settings models."""
 
 from typing import Dict, List, Optional, Tuple
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -145,12 +144,6 @@ class DatabricksBaseSettings(BaseSettings):
         description="Environment variables for the Spark driver and executors. "
         "Example: {'SPARK_WORKER_MEMORY': '4g', 'SPARK_DRIVER_MEMORY': '2g'}",
     )
-    schedule_timezone: Optional[str] = Field(
-        default=None,
-        description="IANA timezone for scheduled pipeline execution. "
-        "Used only by the Databricks orchestrator when a schedule is configured. "
-        "Example: 'America/New_York'.",
-    )
     availability_type: Optional[DatabricksAvailabilityType] = Field(
         default=None,
         description="Instance availability type: ON_DEMAND (guaranteed), SPOT "
@@ -162,13 +155,6 @@ class DatabricksBaseSettings(BaseSettings):
         "instances, EBS volumes). Useful for cost allocation and governance. "
         "Maximum 45 tags. "
         "Example: {'cost_center': 'ml-team', 'environment': 'production'}",
-    )
-    job_tags: Optional[Dict[str, str]] = Field(
-        default=None,
-        description="Tags associated with the Databricks job, forwarded to the "
-        "cluster as cluster tags. Used only by the Databricks orchestrator. "
-        "Maximum 25 tags. "
-        "Example: {'project': 'recommendation-engine', 'owner': 'data-team'}",
     )
     access_control_list: Optional[List[DatabricksAccessControlRequest]] = (
         Field(
@@ -185,37 +171,11 @@ class DatabricksBaseSettings(BaseSettings):
         description="Timeout in seconds applied to each run of the job. "
         "Value of 0 means no timeout. Example: 3600 for a 1-hour timeout",
     )
-    max_concurrent_runs: Optional[int] = Field(
-        default=None,
-        ge=1,
-        le=1000,
-        description="Maximum number of concurrent runs for this job. "
-        "Used only by the Databricks orchestrator. Databricks defaults to 1 "
-        "if not specified. Maximum is 1000",
-    )
     task_timeout_seconds: Optional[int] = Field(
         default=None,
         ge=0,
         description="Timeout in seconds for each task (step) in the job. "
         "Value of 0 means no timeout",
-    )
-    max_retries: Optional[int] = Field(
-        default=None,
-        ge=-1,
-        description="Maximum number of times to retry a failed task. "
-        "Use -1 for unlimited retries. Used only by the Databricks orchestrator.",
-    )
-    min_retry_interval_millis: Optional[int] = Field(
-        default=None,
-        ge=0,
-        description="Minimum interval in milliseconds between retry attempts. "
-        "Used only by the Databricks orchestrator. Example: 60000 for "
-        "1 minute between retries",
-    )
-    retry_on_timeout: Optional[bool] = Field(
-        default=None,
-        description="Whether to retry a task when it times out. Requires "
-        "max_retries to be set. Used only by the Databricks orchestrator.",
     )
     driver_node_type_id: Optional[str] = Field(
         default=None,
@@ -303,35 +263,6 @@ class DatabricksBaseSettings(BaseSettings):
                 "Databricks init scripts must use DBFS paths starting with "
                 f"`dbfs:/`. Invalid paths: {invalid_paths}."
             )
-
-        return value
-
-    @field_validator("schedule_timezone")
-    @classmethod
-    def _validate_schedule_timezone(
-        cls, value: Optional[str]
-    ) -> Optional[str]:
-        """Validates the schedule timezone.
-
-        Args:
-            value: The schedule timezone.
-
-        Returns:
-            The validated schedule timezone.
-
-        Raises:
-            ValueError: If the timezone is not a valid IANA timezone.
-        """
-        if value is None:
-            return None
-
-        try:
-            ZoneInfo(value)
-        except ZoneInfoNotFoundError as e:
-            raise ValueError(
-                "Databricks `schedule_timezone` must be a valid IANA "
-                "timezone, e.g. 'America/New_York' or 'UTC'."
-            ) from e
 
         return value
 

@@ -68,15 +68,6 @@ DATABRICKS_STEP_JOB_ID_METADATA_KEY = "job_id"
 DATABRICKS_STEP_RUN_URL_METADATA_KEY = "run_page_url"
 DATABRICKS_STEP_WHEEL_DIRECTORY_METADATA_KEY = "wheel_directory"
 
-DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS: Tuple[str, ...] = (
-    "schedule_timezone",
-    "job_tags",
-    "max_concurrent_runs",
-    "max_retries",
-    "min_retry_interval_millis",
-    "retry_on_timeout",
-)
-
 
 class DatabricksStepOperator(BaseStepOperator):
     """Step operator to run individual steps on Databricks."""
@@ -84,9 +75,6 @@ class DatabricksStepOperator(BaseStepOperator):
     # Initialized lazily because stack components are deserialized before use.
     _client: Optional[DatabricksClient] = None
     _cleaned_wheel_directories: Optional[set[str]] = None
-    _ignored_settings_warning_signatures: Optional[
-        set[Tuple[bool, Tuple[str, ...]]]
-    ] = None
 
     @property
     def client(self) -> DatabricksClient:
@@ -163,60 +151,6 @@ class DatabricksStepOperator(BaseStepOperator):
             custom_validation_function=_validate_remote_components
         )
 
-    def _warn_about_ignored_settings(
-        self,
-        info: "StepRunInfo",
-        settings: DatabricksStepOperatorSettings,
-    ) -> None:
-        """Warn about settings that the one-time-run path cannot honor.
-
-        Args:
-            info: Information about the step run.
-            settings: Databricks step operator settings.
-        """
-        custom_resources_configured = not info.config.resource_settings.empty
-        configured_ignored_settings = {
-            "schedule_timezone": settings.schedule_timezone is not None,
-            "job_tags": bool(settings.job_tags),
-            "max_concurrent_runs": settings.max_concurrent_runs is not None,
-            "max_retries": settings.max_retries is not None,
-            "min_retry_interval_millis": (
-                settings.min_retry_interval_millis is not None
-            ),
-            "retry_on_timeout": settings.retry_on_timeout is not None,
-        }
-        ignored_settings = [
-            setting_name
-            for setting_name in DATABRICKS_STEP_OPERATOR_IGNORED_SETTINGS
-            if configured_ignored_settings[setting_name]
-        ]
-
-        sorted_ignored_settings = tuple(sorted(ignored_settings))
-        warning_signature = (
-            custom_resources_configured,
-            sorted_ignored_settings,
-        )
-        if self._ignored_settings_warning_signatures is None:
-            self._ignored_settings_warning_signatures = set()
-        if warning_signature in self._ignored_settings_warning_signatures:
-            return
-        self._ignored_settings_warning_signatures.add(warning_signature)
-
-        if custom_resources_configured:
-            logger.warning(
-                "Specifying custom step resources is not supported for the "
-                "Databricks step operator. Configure Databricks cluster "
-                "resources through the Databricks step operator settings "
-                "instead."
-            )
-
-        if sorted_ignored_settings:
-            logger.warning(
-                "The Databricks step operator does not apply the following "
-                "settings for one-time Databricks runs: %s.",
-                ", ".join(sorted_ignored_settings),
-            )
-
     def submit(
         self,
         info: "StepRunInfo",
@@ -245,7 +179,6 @@ class DatabricksStepOperator(BaseStepOperator):
                 "Missing stack for Databricks step operator submission."
             )
 
-        self._warn_about_ignored_settings(info=info, settings=settings)
         info.force_write_logs()
 
         wheel_source = get_databricks_wheel_source()

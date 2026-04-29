@@ -13,7 +13,10 @@
 #  permissions and limitations under the License.
 """Databricks orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from pydantic import Field, field_validator
 
 from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
@@ -32,7 +35,78 @@ if TYPE_CHECKING:
 
 
 class DatabricksOrchestratorSettings(DatabricksBaseSettings):
-    """Databricks orchestrator settings."""
+    """Databricks orchestrator settings.
+
+    These fields apply only to persistent Databricks Jobs created by the
+    orchestrator. They are not available on the Databricks step operator,
+    which submits one-time runs that have no Job resource to attach them to.
+    """
+
+    schedule_timezone: Optional[str] = Field(
+        default=None,
+        description="IANA timezone for scheduled pipeline execution. Used "
+        "only when a schedule with a cron expression is configured. "
+        "Example: 'America/New_York'.",
+    )
+    job_tags: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Tags associated with the Databricks job, forwarded to "
+        "the cluster as cluster tags. Maximum 25 tags. "
+        "Example: {'project': 'recommendation-engine', 'owner': 'data-team'}",
+    )
+    max_concurrent_runs: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description="Maximum number of concurrent runs for this job. "
+        "Databricks defaults to 1 if not specified. Maximum is 1000",
+    )
+    max_retries: Optional[int] = Field(
+        default=None,
+        ge=-1,
+        description="Maximum number of times to retry a failed task. "
+        "Use -1 for unlimited retries.",
+    )
+    min_retry_interval_millis: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Minimum interval in milliseconds between retry attempts. "
+        "Example: 60000 for 1 minute between retries",
+    )
+    retry_on_timeout: Optional[bool] = Field(
+        default=None,
+        description="Whether to retry a task when it times out. Requires "
+        "max_retries to be set.",
+    )
+
+    @field_validator("schedule_timezone")
+    @classmethod
+    def _validate_schedule_timezone(
+        cls, value: Optional[str]
+    ) -> Optional[str]:
+        """Validates the schedule timezone.
+
+        Args:
+            value: The schedule timezone.
+
+        Returns:
+            The validated schedule timezone.
+
+        Raises:
+            ValueError: If the timezone is not a valid IANA timezone.
+        """
+        if value is None:
+            return None
+
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as e:
+            raise ValueError(
+                "Databricks `schedule_timezone` must be a valid IANA "
+                "timezone, e.g. 'America/New_York' or 'UTC'."
+            ) from e
+
+        return value
 
 
 class DatabricksOrchestratorConfig(
