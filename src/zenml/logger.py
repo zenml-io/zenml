@@ -20,7 +20,7 @@ import re
 import sys
 import traceback
 from contextlib import contextmanager
-from typing import Any, Generator, Iterator, Optional
+from typing import Any, Generator, Optional
 
 import structlog
 from rich.traceback import install as rich_tb_install
@@ -178,6 +178,8 @@ class ZenMLConsoleFormatter(logging.Formatter):
         Decides based on whether ``ENV_ZENML_SERVER`` is set to True.
     """
 
+    # log format:
+    # <time> | <loglevel> | <name>:<funcName>:<lineno> | <message> | <extras as JSON, if any> \n [traceback if any]
     LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s"
 
     _RESET = "\x1b[0m"
@@ -256,12 +258,25 @@ class ZenMLConsoleFormatter(logging.Formatter):
             Formatted log message string.
         """
         message = record.getMessage()
-        if ZENML_LOGGING_COLORS_DISABLED:
-            return message
 
+        # Format the traceback text separately to avoid colorizing the traceback text.
+        traceback_text = ""
+        if record.exc_info:
+            traceback_text = "\n" + self.formatException(record.exc_info)
+
+        # Return the message and traceback text if colors are disabled.
+        if ZENML_LOGGING_COLORS_DISABLED:
+            return message + traceback_text
+
+        # Colorize the level and highlights.
         level_color = self._LEVEL_COLORS.get(record.levelno, "")
         colored_message = f"{level_color}{message}{self._RESET}"
-        return self._colorize_highlights(colored_message, level_color)
+        colored_message = self._colorize_highlights(
+            colored_message, level_color
+        )
+
+        # Return the colored message and plain traceback text.
+        return colored_message + traceback_text
 
     def _format_structured_log(self, record: logging.LogRecord) -> str:
         """Uses LOG_FORMAT to format the log record. DEBUG logs are greyed out.
@@ -272,8 +287,20 @@ class ZenMLConsoleFormatter(logging.Formatter):
         Returns:
             Fully formatted line.
         """
-        is_debug = record.levelno == logging.DEBUG
+        # log format:
+        # <time> | <loglevel> | <name>:<funcName>:<lineno> | <message> | <extras as JSON, if any> \n [traceback if any]
+
+        # Format without traceback first so we can append extras before the traceback.
+        exc_info_backup = record.exc_info
+        exc_text_backup = record.exc_text
+        record.exc_info = None
+        record.exc_text = None
+
         formatted_log = super().format(record)
+
+        # Restore exc_info and exc_text.
+        record.exc_info = exc_info_backup
+        record.exc_text = exc_text_backup
 
         extras = self._collect_extras(record)
         if extras:
@@ -282,18 +309,29 @@ class ZenMLConsoleFormatter(logging.Formatter):
                 json.dumps(extras, default=str, separators=(",", ":")),
             )
 
+        if record.exc_info:
+            formatted_log = "{}\n{}".format(
+                formatted_log,
+                self.formatException(record.exc_info),
+            )
+
         if ZENML_LOGGING_COLORS_DISABLED:
             return formatted_log
 
+        # Grey out DEBUG logs.
+        is_debug = record.levelno == logging.DEBUG
         if is_debug:
             formatted_log = f"{self._GREY}{formatted_log}{self._RESET}"
             return self._colorize_highlights(formatted_log, self._GREY)
 
+        # Colorize the log level.
         plain_level = f"{record.levelname:<8}"
         level_color = self._LEVEL_COLORS.get(record.levelno, "")
         formatted_log = formatted_log.replace(
             plain_level, f"{level_color}{plain_level}{self._RESET}", 1
         )
+
+        # Colorize highlights - backtick-quoted text and URLs.
         return self._colorize_highlights(formatted_log, level_color)
 
     @classmethod
@@ -386,9 +424,9 @@ def _is_json_format() -> bool:
     fmt = os.environ.get(ENV_ZENML_LOGGING_FORMAT, "").lower()
     if fmt == "json":
         return True
-    if fmt == "console":
-        return False
-    return handle_bool_env_var(ENV_ZENML_SERVER, False)
+
+    # Default to console output
+    return False
 
 
 def _select_console_formatter() -> logging.Formatter:
@@ -560,7 +598,7 @@ class _ContextVarsFilter(logging.Filter):
     """Copy structlog contextvars onto every log record.
 
     If the attribute already exists, it is left untouched.
-    
+
     This bridges the gap between the structlog contextvars and the log
     record. Without this filter, the structlog contextvars would not be
     available to the log record and neither the formatter nor the OTel handler
