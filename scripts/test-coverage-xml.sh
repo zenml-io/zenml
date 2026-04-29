@@ -77,4 +77,6 @@ fi
 
 coverage combine
 coverage report --show-missing
+coverage_started_at="$(date +%s)"
 coverage xml
+python scripts/ci/validate_xml_artifact.py coverage.xml --label "coverage XML" --root-tag coverage --mtime-after "$coverage_started_at"

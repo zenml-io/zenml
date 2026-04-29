@@ -4,6 +4,8 @@
 !.github/workflows
 !.github/workflows/**
 !Dockerfile.ci
+!examples
+!examples/**
 !LICENSE
 !README.md
 !alembic.ini

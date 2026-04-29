@@ -26,7 +26,7 @@ on:
         required: false
         default: true
 jobs:
-  modal-fast-ci:
+  modal-sqlite-fast-ci:
     if: ${{ inputs.use_modal && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     # Fail fast if Modal stalls. The offload run itself has a 16-minute
@@ -43,6 +43,7 @@ jobs:
       PYTHONIOENCODING: utf-8
       PYTHONDONTWRITEBYTECODE: 1
       MODAL_ENVIRONMENT: ci
+      UV_VERSION: 0.8.22
     defaults:
       run:
         shell: bash
@@ -68,11 +69,12 @@ jobs:
           path: |
             /opt/uv-cache
             /opt/pip-cache
-          key: uv-fast-modal-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml',
+          key: uv-modal-sqlite-fast-ci-${{ runner.os }}-${{ inputs.python-version }}-${{ env.UV_VERSION }}-${{ hashFiles('pyproject.toml',
             'scripts/ci/modal_sandbox_requirements.txt') }}
           restore-keys: |
-            uv-fast-modal-${{ runner.os }}-${{ inputs.python-version }}-
-            uv-fast-modal-${{ runner.os }}-
+            uv-modal-sqlite-fast-ci-${{ runner.os }}-${{ inputs.python-version }}-${{ env.UV_VERSION }}-
+            uv-modal-sqlite-fast-ci-${{ runner.os }}-${{ inputs.python-version }}-
+            uv-modal-sqlite-fast-ci-${{ runner.os }}-
       - name: Set up Python
         id: setup_python
         continue-on-error: true
@@ -101,6 +103,7 @@ jobs:
       - name: Prepare Modal runtime
         id: prepare
         if: ${{ steps.setup_python.outcome == 'success' && steps.install_rust.outcome == 'success' }}
+        continue-on-error: true
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
@@ -121,7 +124,7 @@ jobs:
             fi
           fi
           if ! command -v uv >/dev/null 2>&1; then
-            python -m pip install --upgrade uv
+            python -m pip install --upgrade "uv==${UV_VERSION}"
           fi
           runner_extras=".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
           # offload.toml's high-frequency per-batch commands invoke
@@ -156,10 +159,10 @@ jobs:
         id: restore_junit_cache
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
-          path: test-results/modal-fast-ci/junit.xml
-          key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}
+          path: test-results/modal-sqlite-fast-ci/junit.xml
+          key: offload-modal-sqlite-fast-ci-junit-${{ runner.os }}-${{ inputs.python-version }}
           restore-keys: |
-            offload-junit-${{ runner.os }}-
+            offload-modal-sqlite-fast-ci-junit-${{ runner.os }}-
       - name: Seed JUnit durations from baseline if cache missed
         # The offload scheduler uses junit.xml to drive LPT bin-packing.
         # Without historical durations it falls back to 1s/test, which packs
@@ -171,9 +174,9 @@ jobs:
           != 'true' && hashFiles('ci/baseline-junit.xml') != '' }}
         run: |
           set -euo pipefail
-          mkdir -p test-results/modal-fast-ci
-          cp ci/baseline-junit.xml test-results/modal-fast-ci/junit.xml
-          echo "::notice::Seeded offload scheduler with ci/baseline-junit.xml ($(wc -c < test-results/modal-fast-ci/junit.xml) bytes)"
+          mkdir -p test-results/modal-sqlite-fast-ci
+          cp ci/baseline-junit.xml test-results/modal-sqlite-fast-ci/junit.xml
+          echo "::notice::Seeded offload scheduler with ci/baseline-junit.xml ($(wc -c < test-results/modal-sqlite-fast-ci/junit.xml) bytes)"
       - name: Run tests via offload
         id: run
         if: ${{ steps.prepare.outputs.run_modal == 'true' }}
@@ -192,8 +195,8 @@ jobs:
         run: |
           set -euo pipefail
           run_started_at="$(date +%s)"
-          offload_log="test-results/modal-fast-ci/offload.log"
-          junit_file="test-results/modal-fast-ci/junit.xml"
+          offload_log="test-results/modal-sqlite-fast-ci/offload.log"
+          junit_file="test-results/modal-sqlite-fast-ci/junit.xml"
           mkdir -p "$(dirname "$offload_log")"
           if [[ -f "$junit_file" ]]; then
             touch -d "2000-01-01 00:00:00 UTC" "$junit_file"
@@ -207,126 +210,34 @@ jobs:
           exit_code="${PIPESTATUS[0]}"
           set -e
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
-          modal_infra_failed=false
-          is_offload_prepare_failure() {
-            if [[ ! -f "$offload_log" ]]; then
-              return 1
-            fi
-            grep -Eq \
-              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox|Failed to discover tests|pytest --collect-only failed|No module named pytest' \
-              "$offload_log"
-          }
-          if [[ "$exit_code" != "0" && "$exit_code" != "2" ]]; then
-            if [[ ! -f "$junit_file" || "$(stat -c %Y "$junit_file")" -lt "$run_started_at" ]]; then
-              if is_offload_prepare_failure; then
-                echo "::warning::offload failed before producing a fresh JUnit XML; falling back to standard CI."
-                modal_infra_failed=true
-              fi
-            fi
-          fi
-          echo "modal_infra_failed=$modal_infra_failed" >> "$GITHUB_OUTPUT"
-          if [[ "$modal_infra_failed" == "true" ]]; then
-            exit 0
-          fi
-          # offload exit-code contract (see offload/src/orchestrator.rs):
-          #   0 = all tests passed
-          #   1 = one or more tests failed, or expected tests were never run
-          #   2 = all tests passed, but one or more were flaky (pass on retry)
-          # None of these signal infrastructure failure: that's detected
-          # separately via `is_offload_prepare_failure` on the offload log and
-          # via the fresh-junit check below. Both 0 and 2 mean the Modal run
-          # produced a trustworthy result and we should NOT fall back to the
-          # standard CI path.
-          exit "$exit_code"
+          # Classification decides whether the recorded exit code is an
+          # infrastructure fallback, a test failure, or a cache-safe success.
+          # Keep this step successful so infra failures can trigger fallback.
       - name: Classify Modal result
         id: classify
         if: always()
+        env:
+          OFFLOAD_EXIT_CODE: ${{ steps.run.outputs.exit_code }}
+          RUN_STARTED_AT: ${{ steps.run.outputs.run_started_at }}
+          SETUP_PYTHON_OUTCOME: ${{ steps.setup_python.outcome }}
+          INSTALL_RUST_OUTCOME: ${{ steps.install_rust.outcome }}
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          PREPARE_MODAL_INFRA_FAILED: ${{ steps.prepare.outputs.modal_infra_failed }}
+          RUN_MODAL_ENABLED: ${{ steps.prepare.outputs.run_modal }}
         run: |
           set -euo pipefail
-          junit_file="test-results/modal-fast-ci/junit.xml"
-          offload_log="test-results/modal-fast-ci/offload.log"
-          modal_infra_failed=false
-          test_failed=false
-          junit_cache_safe=false
-          is_offload_prepare_failure() {
-            if [[ ! -f "$offload_log" ]]; then
-              return 1
-            fi
-            grep -Eq \
-              'Failed to prepare Default provider|Default prepare command failed|failed to run builder command|modal\.exception\.RemoteError|Image build .* failed|Failed to create sandboxes|Failed to execute command: Create command failed|Failed to spawn: .*modal_sandbox|Failed to discover tests|pytest --collect-only failed|No module named pytest' \
-              "$offload_log"
-          }
-          if [[ "${{ steps.setup_python.outcome }}" != "success" ]]; then
-            echo "::warning::Python setup failed; falling back to standard CI."
-            modal_infra_failed=true
-          fi
-          if [[ "${{ steps.install_rust.outcome }}" != "success" ]]; then
-            echo "::warning::Install Rust failed; falling back to standard CI."
-            modal_infra_failed=true
-          fi
-          if [[ "${{ steps.prepare.outcome }}" == "failure" ]]; then
-            echo "::warning::Modal runtime preparation failed; falling back to standard CI."
-            modal_infra_failed=true
-          fi
-          if [[ "${{ steps.prepare.outputs.modal_infra_failed }}" == "true" ]]; then
-            modal_infra_failed=true
-          fi
-          if [[ "${{ steps.run.outputs.modal_infra_failed }}" == "true" ]]; then
-            modal_infra_failed=true
-          fi
-          if [[ "$modal_infra_failed" != "true" && "${{ steps.prepare.outputs.run_modal }}" == "true" ]]; then
-            exit_code="${{ steps.run.outputs.exit_code }}"
-            run_started_at="${{ steps.run.outputs.run_started_at }}"
-            if [[ -z "$exit_code" ]]; then
-              echo "::error::offload did not report an exit code."
-              test_failed=true
-            elif [[ ! -f "$junit_file" ]]; then
-              if is_offload_prepare_failure; then
-                echo "::warning::offload failed before executing tests; falling back to standard CI."
-                modal_infra_failed=true
-              else
-                echo "::error::offload exited with $exit_code but no JUnit XML was produced."
-                test_failed=true
-              fi
-            elif [[ -z "$run_started_at" || "$(stat -c %Y "$junit_file")" -lt "$run_started_at" ]]; then
-              if is_offload_prepare_failure; then
-                echo "::warning::offload failed during environment preparation; falling back to standard CI."
-                modal_infra_failed=true
-              else
-                echo "::error::offload did not write a fresh JUnit XML for this run."
-                test_failed=true
-              fi
-            elif ! summary_output="$(python3 scripts/ci/print_junit_summary.py "$junit_file" 2>&1)"; then
-              echo "::error::Failed to parse JUnit XML at $junit_file."
-              printf '%s\n' "$summary_output"
-              test_failed=true
-            else
-              printf '%s\n' "$summary_output"
-              # Exit 0 = clean pass; exit 2 = pass with flakes (retry succeeded).
-              # Both indicate a trustworthy, complete run and are safe to
-              # cache the JUnit file from. Exit 1 (or anything else) means
-              # real failures or missing tests.
-              if [[ "$exit_code" == "0" || "$exit_code" == "2" ]]; then
-                junit_cache_safe=true
-                if [[ "$exit_code" == "2" ]]; then
-                  echo "::notice::offload reported flaky tests (passed on retry); treating run as successful."
-                fi
-                if [[ "$summary_output" == *"Failed tests:"* ]]; then
-                  echo "::error::offload reported success, but the JUnit XML still contains failures."
-                  junit_cache_safe=false
-                  test_failed=true
-                fi
-              else
-                test_failed=true
-                if [[ "$summary_output" != *"Failed tests:"* ]]; then
-                  echo "::error::offload exited with $exit_code but the fresh JUnit XML contains no failures."
-                fi
-              fi
-            fi
-          fi
-          echo "modal_infra_failed=$modal_infra_failed" >> "$GITHUB_OUTPUT"
-          echo "test_failed=$test_failed" >> "$GITHUB_OUTPUT"
-          echo "junit_cache_safe=$junit_cache_safe" >> "$GITHUB_OUTPUT"
+          python scripts/ci/classify_offload_result.py \
+            --lane modal-sqlite-fast-ci \
+            --infra-policy fallback \
+            --junit-file test-results/modal-sqlite-fast-ci/junit.xml \
+            --offload-log test-results/modal-sqlite-fast-ci/offload.log \
+            --exit-code "$OFFLOAD_EXIT_CODE" \
+            --run-started-at "$RUN_STARTED_AT" \
+            --setup-python-outcome "$SETUP_PYTHON_OUTCOME" \
+            --install-rust-outcome "$INSTALL_RUST_OUTCOME" \
+            --prepare-outcome "$PREPARE_OUTCOME" \
+            --prepare-modal-infra-failed "$PREPARE_MODAL_INFRA_FAILED" \
+            --run-modal-enabled "$RUN_MODAL_ENABLED"
       - name: Save offload image cache
         if: ${{ always() && steps.prepare.outputs.run_modal == 'true' }}
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
@@ -339,20 +250,22 @@ jobs:
         if: ${{ always() && steps.classify.outputs.junit_cache_safe == 'true' }}
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
-          path: test-results/modal-fast-ci/junit.xml
-          key: offload-junit-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id
+          path: test-results/modal-sqlite-fast-ci/junit.xml
+          key: offload-modal-sqlite-fast-ci-junit-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id
             }}
       - name: Upload fast-CI artifacts
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
         with:
-          name: modal-fast-ci
-          path: test-results/modal-fast-ci/**
+          name: modal-sqlite-fast-ci
+          path: test-results/modal-sqlite-fast-ci/**
           if-no-files-found: warn
       - name: Exit with classified status
         if: always()
+        env:
+          TEST_FAILED: ${{ steps.classify.outputs.test_failed }}
         run: |
-          if [[ "${{ steps.classify.outputs.test_failed }}" == "true" ]]; then
+          if [[ "$TEST_FAILED" == "true" ]]; then
             exit 1
           fi
   # Fallback path when Modal infra is unavailable (missing credentials,
@@ -360,16 +273,16 @@ jobs:
   # default rerun policy from unit-test.yml / integration-test-fast.yml
   # so genuine flakes in the fallback path still get retried.
   fallback-unit-test:
-    needs: modal-fast-ci
-    if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' }}
+    needs: modal-sqlite-fast-ci
+    if: ${{ needs.modal-sqlite-fast-ci.outputs.modal_infra_failed == 'true' }}
     uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
       python-version: ${{ inputs.python-version }}
     secrets: inherit
   fallback-integration-test:
-    needs: [modal-fast-ci, fallback-unit-test]
-    if: ${{ needs.modal-fast-ci.outputs.modal_infra_failed == 'true' && needs.fallback-unit-test.result
+    needs: [modal-sqlite-fast-ci, fallback-unit-test]
+    if: ${{ needs.modal-sqlite-fast-ci.outputs.modal_infra_failed == 'true' && needs.fallback-unit-test.result
       == 'success' }}
     uses: ./.github/workflows/integration-test-fast.yml
     with:

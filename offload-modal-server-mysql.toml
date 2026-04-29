@@ -25,4 +25,4 @@ retry_count = 0
 filters = "tests/integration --ignore=tests/integration/examples -m 'not slow'"
 
 [report]
-output_dir = "test-results/modal-server-mysql-ci"
+output_dir = "test-results/modal-server-rest-mysql-ci"

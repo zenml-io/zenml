@@ -252,6 +252,8 @@ def _zenml_client_template(
         template_dir = tmp_path_factory.mktemp(
             "zenml-client-template", numbered=False
         )
+
+    # Validate externally supplied templates before tests rely on them.
     return build_client_template_dir(template_dir)
 
 

@@ -29,12 +29,25 @@ the Modal sandbox image at build time.
 
 import logging
 import os
+import shutil
 from pathlib import Path
 
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.login.credentials_store import CredentialsStore
+
+TEMPLATE_COMPLETE_SENTINEL = ".zenml-template-complete"
+
+
+def is_client_template_complete(template_dir: Path) -> bool:
+    """Check whether a client template was fully materialized."""
+    template_zenml = template_dir / "zenml"
+    return (
+        (template_dir / TEMPLATE_COMPLETE_SENTINEL).is_file()
+        and template_zenml.is_dir()
+        and (template_zenml / "config.yaml").is_file()
+    )
 
 
 def build_client_template_dir(template_dir: Path) -> Path:
@@ -55,8 +68,15 @@ def build_client_template_dir(template_dir: Path) -> Path:
     """
     template_dir.mkdir(parents=True, exist_ok=True)
     template_zenml = template_dir / "zenml"
-    if template_zenml.exists():
+    sentinel = template_dir / TEMPLATE_COMPLETE_SENTINEL
+    if is_client_template_complete(template_dir):
         return template_dir
+
+    if template_zenml.is_dir():
+        shutil.rmtree(template_zenml)
+    elif template_zenml.exists():
+        template_zenml.unlink()
+    sentinel.unlink(missing_ok=True)
 
     original_config = GlobalConfiguration.get_instance()
     original_client = Client.get_instance()
@@ -112,6 +132,8 @@ def build_client_template_dir(template_dir: Path) -> Path:
                 exc,
                 exc_info=True,
             )
+
+        sentinel.write_text("complete\n")
     finally:
         os.chdir(orig_cwd)
         if orig_config_path is not None:

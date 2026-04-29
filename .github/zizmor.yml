@@ -59,33 +59,6 @@ rules:
       - snack-it.yml:354  # project_added from step output
       - validate-changelog.yml:37  # step output
       - notify-changelog.yml:27  # inputs.release_tag is workflow_dispatch input (authorized users only)
-      # linux-fast-modal.yml: the `Classify Modal result` step inspects
-      # outputs set earlier in the same job (setup_python.outcome,
-      # install_rust.outcome, prepare.outputs.*, run.outputs.*,
-      # classify.outputs.test_failed). All of these are produced by
-      # trusted first-party steps and expand to "true"/"false" or a
-      # numeric exit code; there is no untrusted input path.
-      - linux-fast-modal.yml:262  # steps.setup_python.outcome
-      - linux-fast-modal.yml:266  # steps.install_rust.outcome
-      - linux-fast-modal.yml:270  # steps.prepare.outcome
-      - linux-fast-modal.yml:274  # steps.prepare.outputs.modal_infra_failed
-      - linux-fast-modal.yml:277  # steps.run.outputs.modal_infra_failed
-      - linux-fast-modal.yml:280  # steps.prepare.outputs.run_modal
-      - linux-fast-modal.yml:281  # steps.run.outputs.exit_code
-      - linux-fast-modal.yml:282  # steps.run.outputs.run_started_at
-      - linux-fast-modal.yml:360  # steps.classify.outputs.test_failed
-      # linux-modal-server-mysql.yml: same pattern — outputs from
-      # trusted first-party steps (setup_python/install_rust/prepare/
-      # provision/run/classify) used in subsequent bash conditions.
-      - linux-modal-server-mysql.yml:175  # steps.run.outputs.exit_code
-      - linux-modal-server-mysql.yml:176  # steps.run.outputs.run_started_at
-      - linux-modal-server-mysql.yml:186  # steps.setup_python.outcome
-      - linux-modal-server-mysql.yml:191  # steps.install_rust.outcome
-      - linux-modal-server-mysql.yml:196  # steps.prepare.outcome
-      - linux-modal-server-mysql.yml:201  # steps.provision.outcome
-      - linux-modal-server-mysql.yml:206  # steps.provision.outcome
-      - linux-modal-server-mysql.yml:289  # steps.classify.outputs.modal_infra_failed
-      - linux-modal-server-mysql.yml:292  # steps.classify.outputs.test_failed
 
   # Detect cache poisoning vulnerabilities
   # Ignores: Low-confidence findings for protected publish workflows

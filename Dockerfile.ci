@@ -1,6 +1,8 @@
 ARG PYTHON_VERSION=3.13
+ARG UV_VERSION=0.8.22
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
+ARG UV_VERSION
 
 RUN set -ex \
   && apt-get update \
@@ -8,7 +10,7 @@ RUN set -ex \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade wheel pip uv
+RUN pip install --upgrade wheel pip "uv==${UV_VERSION}"
 
 WORKDIR /app
 

@@ -23,6 +23,7 @@ from tests.harness.deployment._modal_runtime import (
     ZENML_SERVER_PORT,
     build_server_image,
     check_modal_credentials,
+    stop_modal_app,
     wait_for_server,
 )
 from tests.harness.deployment.base import (
@@ -35,12 +36,20 @@ from tests.harness.model import (
     DeploymentStoreConfig,
     ServerType,
 )
+from zenml.constants import (
+    DEFAULT_PASSWORD,
+    DEFAULT_USERNAME,
+    ENV_ZENML_DEFAULT_USER_NAME,
+    ENV_ZENML_DEFAULT_USER_PASSWORD,
+)
 
 # Sandbox lifetime cap. One CI shard finishes well under an hour; beyond
 # that Modal will reap a leaked sandbox on its own, but cap explicitly so
 # a test runner crash doesn't leave one running for the full Modal max.
 _SANDBOX_TIMEOUT_SECS = 60 * 60
 ENV_MODAL_SERVER_URL = "ZENML_MODAL_SERVER_URL"
+ENV_MODAL_SERVER_USERNAME = "ZENML_MODAL_SERVER_USERNAME"
+ENV_MODAL_SERVER_PASSWORD = "ZENML_MODAL_SERVER_PASSWORD"
 
 # Modal app names are <=64 chars; the deployment name + an 8-char random
 # suffix leaves plenty of room and keeps names identifiable in the Modal
@@ -96,6 +105,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         self._app_name: Optional[str] = None
         self._sandbox: Optional[_ModalSandbox] = None
         self._tunnel_url: Optional[str] = None
+        self._server_credentials: Optional[tuple[str, str]] = None
 
     @property
     def app_name(self) -> Optional[str]:
@@ -113,6 +123,13 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         """Returns the externally managed server URL, if one was injected."""
         server_url = os.getenv(ENV_MODAL_SERVER_URL)
         return server_url or None
+
+    def _get_server_credentials(self) -> tuple[str, str]:
+        """Returns Modal REST credentials, with local defaults as fallback."""
+        return (
+            os.getenv(ENV_MODAL_SERVER_USERNAME) or DEFAULT_USERNAME,
+            os.getenv(ENV_MODAL_SERVER_PASSWORD) or DEFAULT_PASSWORD,
+        )
 
     @property
     def is_running(self) -> bool:
@@ -188,12 +205,22 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         self._app_name = app_name
         self._app = modal.App.lookup(app_name, create_if_missing=True)
 
+        username, password = self._get_server_credentials()
+        self._server_credentials = (username, password)
+        server_credentials_secret = modal.Secret.from_dict(
+            {
+                ENV_ZENML_DEFAULT_USER_NAME: username,
+                ENV_ZENML_DEFAULT_USER_PASSWORD: password,
+            }
+        )
+
         logging.info("Launching Modal sandbox...")
         self._sandbox = modal.Sandbox.create(
             "/usr/local/bin/zenml-modal-entrypoint.sh",
             app=self._app,
             image=image,
             encrypted_ports=[ZENML_SERVER_PORT],
+            secrets=[server_credentials_secret],
             timeout=_SANDBOX_TIMEOUT_SECS,
         )
 
@@ -226,6 +253,7 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
 
     def _terminate_sandbox(self) -> None:
         """Terminates the sandbox and clears local references."""
+        app_name = self._app_name
         if self._sandbox is not None:
             try:
                 self._sandbox.terminate()
@@ -238,10 +266,13 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
                     self.config.name,
                     exc,
                 )
+        if app_name:
+            stop_modal_app(app_name)
         self._sandbox = None
         self._app = None
         self._app_name = None
         self._tunnel_url = None
+        self._server_credentials = None
 
     def get_store_config(self) -> Optional[DeploymentStoreConfig]:
         """Returns the store config for the running deployment.
@@ -252,24 +283,26 @@ class ServerModalMySQLTestDeployment(BaseTestDeployment):
         Returns:
             Store config pointing at the Modal tunnel URL.
         """
-        from zenml.constants import DEFAULT_PASSWORD, DEFAULT_USERNAME
-
         preprovisioned_server_url = self._get_preprovisioned_server_url()
         if preprovisioned_server_url:
+            username, password = self._get_server_credentials()
             return DeploymentStoreConfig(
                 url=preprovisioned_server_url,
-                username=DEFAULT_USERNAME,
-                password=DEFAULT_PASSWORD,
+                username=username,
+                password=password,
             )
 
         if not self.is_running or self._tunnel_url is None:
             raise RuntimeError(
                 f"The {self.config.name} deployment is not running."
             )
+        username, password = (
+            self._server_credentials or self._get_server_credentials()
+        )
         return DeploymentStoreConfig(
             url=self._tunnel_url,
-            username=DEFAULT_USERNAME,
-            password=DEFAULT_PASSWORD,
+            username=username,
+            password=password,
         )
 
 

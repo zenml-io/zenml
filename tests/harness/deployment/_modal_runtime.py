@@ -21,6 +21,8 @@ Modal image construction, server-ready polling, and filesystem locations.
 
 import logging
 import os
+import shutil
+import subprocess
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict
@@ -44,24 +46,81 @@ ZENML_SERVER_PORT = 8080
 # ~30s.
 DEFAULT_SERVER_READY_TIMEOUT_SECS = 600
 
-# Files under the repo that would bloat the Modal image build context and
-# don't belong inside the server sandbox. Mirrors `.dockerignore` intent
-# without needing to parse it.
-_IMAGE_IGNORE_PATTERNS = (
-    ".git",
-    ".venv",
-    "venv",
-    "node_modules",
-    "__pycache__",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    ".offload-image-cache",
-    "test-results",
-    "tests/harness/runtime",
-    "docs/book",
-    "examples",
+# Only these paths are needed to install `zenml[server]` inside the
+# Modal-hosted test server. Keeping this as an allowlist prevents accidental
+# leakage of CI artifacts, prompts, tests, or local checkout state into the
+# server image build context.
+_SERVER_IMAGE_CONTEXT_FILES = (
+    "pyproject.toml",
+    "README.md",
+    "LICENSE",
+    "alembic.ini",
 )
+_SERVER_IMAGE_CONTEXT_DIRS = ("src",)
+
+ALLOWLISTED_SERVER_IMAGE_CONTEXT_FILES = _SERVER_IMAGE_CONTEXT_FILES
+ALLOWLISTED_SERVER_IMAGE_CONTEXT_DIRS = _SERVER_IMAGE_CONTEXT_DIRS
+
+
+def modal_environment_cli_args() -> list[str]:
+    """Returns Modal CLI args for the selected environment, if any."""
+    modal_environment = os.getenv("MODAL_ENVIRONMENT")
+    if modal_environment:
+        return ["--env", modal_environment]
+    return []
+
+
+def stop_modal_app(app_name: str) -> bool:
+    """Stops a Modal app without raising during best-effort cleanup."""
+    modal_command = shutil.which("modal")
+    if modal_command is None:
+        logging.warning(
+            "Unable to stop Modal app '%s': modal CLI not found.", app_name
+        )
+        return False
+
+    result = subprocess.run(
+        [
+            modal_command,
+            "app",
+            "stop",
+            app_name,
+            *modal_environment_cli_args(),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        logging.warning(
+            "Unable to stop Modal app '%s' (exit %s): %s%s",
+            app_name,
+            result.returncode,
+            result.stdout,
+            result.stderr,
+        )
+        return False
+
+    logging.info("Stopped Modal app %s.", app_name)
+    return True
+
+
+def _add_server_image_context(base: "modal.Image") -> "modal.Image":
+    """Adds the allowlisted repo context required by the Modal server."""
+    image = base
+    for relative_path in _SERVER_IMAGE_CONTEXT_FILES:
+        image = image.add_local_file(
+            str(REPO_ROOT / relative_path),
+            f"/src/zenml/{relative_path}",
+            copy=True,
+        )
+    for relative_path in _SERVER_IMAGE_CONTEXT_DIRS:
+        image = image.add_local_dir(
+            str(REPO_ROOT / relative_path),
+            f"/src/zenml/{relative_path}",
+            copy=True,
+        )
+    return image
 
 
 def check_modal_credentials() -> None:
@@ -126,12 +185,7 @@ def build_server_image(
     }
 
     return (
-        base.add_local_dir(
-            str(REPO_ROOT),
-            "/src/zenml",
-            copy=True,
-            ignore=list(_IMAGE_IGNORE_PATTERNS),
-        )
+        _add_server_image_context(base)
         .add_local_file(
             str(ENTRYPOINT_SCRIPT_PATH),
             "/usr/local/bin/zenml-modal-entrypoint.sh",

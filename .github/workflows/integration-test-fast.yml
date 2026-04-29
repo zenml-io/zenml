@@ -78,7 +78,6 @@ on:
           - local-server-airflow-orchestrator
           # Local ZenML docker-compose server deployments
           - docker-server-mysql
-          - modal-server-mysql
           - docker-server-mariadb
           - docker-server-docker-orchestrator-mysql
           - docker-server-docker-orchestrator-mariadb
@@ -153,6 +152,7 @@ jobs:
       MODAL_TOKEN_ID: ${{ contains(inputs.test_environment, 'modal') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.MODAL_TOKEN_ID || '' }}
       MODAL_TOKEN_SECRET: ${{ contains(inputs.test_environment, 'modal') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && secrets.MODAL_TOKEN_SECRET || '' }}
       PYTEST_RERUNS: ${{ inputs.reruns }}
+      UV_VERSION: 0.8.22
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     defaults:
       run:
@@ -251,7 +251,7 @@ jobs:
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
-          pip install uv
+          pip install "uv==${UV_VERSION}"
           # see https://github.com/docker/docker-py/issues/3256 for why we need to pin requests
           # docker-compose is deprecated and doesn't work with newer versions of docker
           uv pip install --system "pyyaml==5.3.1" "requests<2.32.0" "docker==6.1.3" docker-compose

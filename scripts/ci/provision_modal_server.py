@@ -5,8 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import shutil
-import subprocess
+import secrets
 import sys
 import time
 from pathlib import Path
@@ -15,12 +14,19 @@ SCRIPT_ROOT = Path(__file__).resolve().parents[2]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
+from tests.harness.deployment._modal_runtime import (  # noqa: E402
+    stop_modal_app,
+)
 from tests.harness.deployment.server_modal_mysql import (  # noqa: E402
+    ENV_MODAL_SERVER_PASSWORD,
+    ENV_MODAL_SERVER_USERNAME,
     ServerModalMySQLTestDeployment,
 )
 from tests.harness.harness import TestHarness  # noqa: E402
 
 DEFAULT_DEPLOYMENT = "modal-server-mysql"
+_CREDENTIAL_USERNAME_BYTES = 6
+_CREDENTIAL_PASSWORD_BYTES = 32
 
 
 def _write_output(name: str, value: str) -> None:
@@ -33,6 +39,29 @@ def _write_output(name: str, value: str) -> None:
         return
 
     print(f"{name}={value}")
+
+
+def _mask_value(value: str) -> None:
+    """Registers a generated secret with GitHub Actions masking."""
+    if value and os.getenv("GITHUB_ACTIONS"):
+        print(f"::add-mask::{value}")
+
+
+def _generate_server_credentials() -> tuple[str, str]:
+    """Generates per-run credentials for the Modal-hosted REST server."""
+    username = f"ci_{secrets.token_hex(_CREDENTIAL_USERNAME_BYTES)}"
+    password = secrets.token_urlsafe(_CREDENTIAL_PASSWORD_BYTES)
+    return username, password
+
+
+def _set_generated_server_credentials() -> tuple[str, str]:
+    """Generates, masks, and exports Modal REST server credentials."""
+    username, password = _generate_server_credentials()
+    _mask_value(username)
+    _mask_value(password)
+    os.environ[ENV_MODAL_SERVER_USERNAME] = username
+    os.environ[ENV_MODAL_SERVER_PASSWORD] = password
+    return username, password
 
 
 def _get_modal_deployment(
@@ -50,6 +79,8 @@ def _get_modal_deployment(
 def provision(deployment_name: str) -> int:
     """Provisions a Modal MySQL deployment and emits its connection info."""
     import modal
+
+    username, password = _set_generated_server_credentials()
 
     with modal.enable_output():
         deployment = _get_modal_deployment(deployment_name)
@@ -73,52 +104,11 @@ def provision(deployment_name: str) -> int:
             )
 
     _write_output("server_url", store_config.url)
+    _write_output("server_username", username)
+    _write_output("server_password", password)
     _write_output("sandbox_id", sandbox_id)
     _write_output("app_name", app_name)
     return 0
-
-
-def _modal_environment_cli_args() -> list[str]:
-    """Returns Modal CLI args for the selected environment, if any."""
-    modal_environment = os.getenv("MODAL_ENVIRONMENT")
-    if modal_environment:
-        return ["--env", modal_environment]
-    return []
-
-
-def _stop_modal_app(app_name: str) -> None:
-    """Stops the Modal app created only to host the server sandbox."""
-    modal_command = shutil.which("modal")
-    if modal_command is None:
-        logging.warning(
-            "Unable to stop Modal app '%s': modal CLI not found.", app_name
-        )
-        return
-
-    command = [
-        modal_command,
-        "app",
-        "stop",
-        app_name,
-        *_modal_environment_cli_args(),
-    ]
-    result = subprocess.run(
-        command,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        logging.warning(
-            "Unable to stop Modal app '%s' (exit %s): %s%s",
-            app_name,
-            result.returncode,
-            result.stdout,
-            result.stderr,
-        )
-        return
-
-    logging.info("Stopped Modal app %s.", app_name)
 
 
 def teardown(sandbox_id: str, app_name: str | None = None) -> int:
@@ -154,7 +144,7 @@ def teardown(sandbox_id: str, app_name: str | None = None) -> int:
     if sandbox_terminated:
         logging.info("Terminated Modal sandbox %s.", sandbox_id)
     if app_name:
-        _stop_modal_app(app_name)
+        stop_modal_app(app_name)
     return 0
 
 

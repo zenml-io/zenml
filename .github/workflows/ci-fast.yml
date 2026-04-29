@@ -5,44 +5,54 @@ on:
   workflow_call:
   push:
     branches: [main]
-    paths-ignore:
-      - docs/**
-      - '*'
-      - '!Dockerfile.ci'
-      - '!.dockerignore'
-      - '!offload.toml'
-      - '!offload-modal-server-mysql.toml'
-      - '!scripts/ci/**'
-      - '!scripts/test-coverage-xml.sh'
-      - '!.github/workflows/ci-fast.yml'
-      - '!.github/workflows/integration-test-fast.yml'
-      - '!.github/workflows/linux-fast-modal.yml'
-      - '!.github/workflows/linux-modal-server-mysql.yml'
-      - '!pyproject.toml'
-      - '!tests/integration/functional/test_docker_orchestrator_smoke.py'
-      - '**.md'
-      - .github/workflows/claude.yml
-      - .claude/**
+    # Use valid include patterns instead of negated paths-ignore. The Modal
+    # lane now carries non-slow example integration tests, so changes under
+    # examples/ and tests/integration/examples/ should trigger fast CI.
+    paths:
+      - .dockerignore
+      - .github/actions/setup_environment/**
+      - .github/workflows/ci-fast.yml
+      - .github/workflows/integration-test-fast.yml
+      - .github/workflows/linux-fast-modal.yml
+      - .github/workflows/linux-modal-server-mysql.yml
+      - .github/workflows/unit-test.yml
+      - ci/baseline-junit.xml
+      - Dockerfile.ci
+      - examples/**
+      - offload-modal-server-mysql.toml
+      - offload.toml
+      - pyproject.toml
+      - scripts/**
+      - src/**
+      - tests/**
+      - zen-dev
+      - zen-dev/**
+      - zen-test
+      - zen-test/**
   pull_request:
     types: [opened, synchronize, ready_for_review]
-    paths-ignore:
-      - docs/**
-      - '*'
-      - '!Dockerfile.ci'
-      - '!.dockerignore'
-      - '!offload.toml'
-      - '!offload-modal-server-mysql.toml'
-      - '!scripts/ci/**'
-      - '!scripts/test-coverage-xml.sh'
-      - '!.github/workflows/ci-fast.yml'
-      - '!.github/workflows/integration-test-fast.yml'
-      - '!.github/workflows/linux-fast-modal.yml'
-      - '!.github/workflows/linux-modal-server-mysql.yml'
-      - '!pyproject.toml'
-      - '!tests/integration/functional/test_docker_orchestrator_smoke.py'
-      - '**.md'
-      - .github/workflows/claude.yml
-      - .claude/**
+    # Keep this in sync with push.paths above.
+    paths:
+      - .dockerignore
+      - .github/actions/setup_environment/**
+      - .github/workflows/ci-fast.yml
+      - .github/workflows/integration-test-fast.yml
+      - .github/workflows/linux-fast-modal.yml
+      - .github/workflows/linux-modal-server-mysql.yml
+      - .github/workflows/unit-test.yml
+      - ci/baseline-junit.xml
+      - Dockerfile.ci
+      - examples/**
+      - offload-modal-server-mysql.toml
+      - offload.toml
+      - pyproject.toml
+      - scripts/**
+      - src/**
+      - tests/**
+      - zen-dev
+      - zen-dev/**
+      - zen-test
+      - zen-test/**
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -111,14 +121,14 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  linux-fast-modal:
+  modal-sqlite-fast-ci:
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/linux-fast-modal.yml
     with:
       python-version: '3.13'
       use_modal: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     secrets: inherit
-  ubuntu-latest-modal-server-mysql-integration-test:
+  modal-server-rest-mysql-ci:
     if: >-
       github.event.pull_request.draft == false &&
       (github.event_name != 'pull_request' ||

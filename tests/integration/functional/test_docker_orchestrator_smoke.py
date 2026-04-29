@@ -77,5 +77,5 @@ def test_docker_orchestrator_persists_pipeline_outputs(
 
     assert pipeline_run.steps["smoke_constant_step"].output.load() == 7
     assert pipeline_run.steps["smoke_increment_step"].output.load() == 8
-    assert client.list_pipeline_runs().total == 1
-    assert client.list_run_steps().total == 2
+    assert client.list_pipeline_runs(id=pipeline_run.id).total == 1
+    assert client.list_run_steps(pipeline_run_id=pipeline_run.id).total == 2

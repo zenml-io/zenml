@@ -12,6 +12,16 @@ if [[ -z "${ZENML_MODAL_SERVER_URL:-}" ]]; then
   exit 1
 fi
 
+if [[ -z "${ZENML_MODAL_SERVER_USERNAME:-}" ]]; then
+  echo "ZENML_MODAL_SERVER_USERNAME must be set." >&2
+  exit 1
+fi
+
+if [[ -z "${ZENML_MODAL_SERVER_PASSWORD:-}" ]]; then
+  echo "ZENML_MODAL_SERVER_PASSWORD must be set." >&2
+  exit 1
+fi
+
 modal_sandbox_script="$1"
 image_id="$2"
 
@@ -30,4 +40,6 @@ exec uv run "$modal_sandbox_script" create "$image_id" \
   --env AUTO_OPEN_DASHBOARD=false \
   --env ZENML_CLIENT_TEMPLATE_DIR=/opt/zenml-template \
   --env ZENML_TEST_ISOLATE_PROJECT=true \
-  --env "ZENML_MODAL_SERVER_URL=${ZENML_MODAL_SERVER_URL}"
+  --env "ZENML_MODAL_SERVER_URL=${ZENML_MODAL_SERVER_URL}" \
+  --env "ZENML_MODAL_SERVER_USERNAME=${ZENML_MODAL_SERVER_USERNAME}" \
+  --env "ZENML_MODAL_SERVER_PASSWORD=${ZENML_MODAL_SERVER_PASSWORD}"

@@ -30,6 +30,7 @@ from uuid import UUID
 
 import pytest
 
+from tests.harness.client_template import is_client_template_complete
 from tests.harness.environment import TestEnvironment
 from tests.harness.harness import TestHarness
 from zenml.client import Client
@@ -345,33 +346,34 @@ def clean_default_client_session(
     used_template = False
 
     try:
-        if template_dir is not None:
+        if template_dir is not None and is_client_template_complete(
+            template_dir
+        ):
             template_zenml = template_dir / "zenml"
-            if template_zenml.exists():
-                used_template = True
-                shutil.copytree(template_zenml, tmp_path / "zenml")
-                # The template's config.yaml has absolute paths baked in
-                # (database/url/backup_directory all point to the template
-                # directory the template was built in). Without rewriting,
-                # every test would read/write the template DB instead of
-                # its own copy, leaking state across tests. Substitute
-                # the template's absolute prefix with this test's tmp_path
-                # so paths inside the copied config.yaml resolve to the
-                # per-test DB and backup dir.
-                #
-                # Both prefixes must be passed through Path.resolve() so
-                # that symlinks (notably macOS's /tmp -> /private/tmp)
-                # are canonicalized identically: zenml stores the resolved
-                # path in config.yaml, so old_prefix has to match that
-                # form, not the unresolved value the caller may have
-                # passed in.
-                config_yaml = tmp_path / "zenml" / "config.yaml"
-                if config_yaml.exists():
-                    old_prefix = str(template_dir.resolve())
-                    new_prefix = str(tmp_path.resolve())
-                    config_yaml.write_text(
-                        config_yaml.read_text().replace(old_prefix, new_prefix)
-                    )
+            used_template = True
+            shutil.copytree(template_zenml, tmp_path / "zenml")
+            # The template's config.yaml has absolute paths baked in
+            # (database/url/backup_directory all point to the template
+            # directory the template was built in). Without rewriting,
+            # every test would read/write the template DB instead of
+            # its own copy, leaking state across tests. Substitute
+            # the template's absolute prefix with this test's tmp_path
+            # so paths inside the copied config.yaml resolve to the
+            # per-test DB and backup dir.
+            #
+            # Both prefixes must be passed through Path.resolve() so
+            # that symlinks (notably macOS's /tmp -> /private/tmp)
+            # are canonicalized identically: zenml stores the resolved
+            # path in config.yaml, so old_prefix has to match that
+            # form, not the unresolved value the caller may have
+            # passed in.
+            config_yaml = tmp_path / "zenml" / "config.yaml"
+            if config_yaml.exists():
+                old_prefix = str(template_dir.resolve())
+                new_prefix = str(tmp_path.resolve())
+                config_yaml.write_text(
+                    config_yaml.read_text().replace(old_prefix, new_prefix)
+                )
 
         os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
         os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"

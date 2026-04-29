@@ -65,13 +65,10 @@ filters = "tests/unit"
 # pytest-rerunfailures (or post-hoc CI rerun) for true flakes.
 retry_count = 0
 # Keep the fast path close to the existing integration coverage and
-# exclude only tests that are explicitly marked slow. Example tests
-# are excluded because `.dockerignore` strips `examples/` from the
-# Modal sandbox image — anything under `tests/integration/examples/`
-# would try to `copytree` from `/app/examples/<name>` and fail with
-# FileNotFoundError. The example suite is a heavier regression run
-# that isn't part of fast CI anyway.
-filters = "tests/integration --ignore=tests/integration/examples -m 'not slow'"
+# exclude only tests that are explicitly marked slow. Non-slow example
+# integration tests are included; `.dockerignore` must keep `examples/`
+# in the Modal image context so those tests can copy public examples.
+filters = "tests/integration -m 'not slow'"
 
 [report]
-output_dir = "test-results/modal-fast-ci"
+output_dir = "test-results/modal-sqlite-fast-ci"

@@ -11,6 +11,10 @@ from uuid import UUID, uuid4
 import pytest
 
 import tests.harness.utils as harness_utils
+from tests.harness.client_template import (
+    TEMPLATE_COMPLETE_SENTINEL,
+    is_client_template_complete,
+)
 from zenml.constants import DEFAULT_PROJECT_NAME, ENV_ZENML_CONFIG_PATH
 
 
@@ -45,6 +49,7 @@ def test_clean_default_client_session_rewrites_template_paths_and_restores_env(
             root=template_root
         )
     )
+    (template_dir / TEMPLATE_COMPLETE_SENTINEL).write_text("complete\n")
 
     monkeypatch.setenv(ENV_ZENML_CONFIG_PATH, "original-config-path")
     monkeypatch.setenv("DISABLE_DATABASE_MIGRATION", "sentinel")
@@ -114,6 +119,107 @@ def test_clean_default_client_session_rewrites_template_paths_and_restores_env(
 
     assert os.getenv(ENV_ZENML_CONFIG_PATH) == "original-config-path"
     assert os.getenv("DISABLE_DATABASE_MIGRATION") == "sentinel"
+
+
+def test_is_client_template_complete_requires_sentinel_and_config(
+    tmp_path: Path,
+) -> None:
+    """Tests that template completeness is gated on the sentinel."""
+    template_dir = tmp_path / "template"
+    template_zenml = template_dir / "zenml"
+    template_zenml.mkdir(parents=True)
+
+    assert not is_client_template_complete(template_dir)
+
+    (template_zenml / "config.yaml").write_text("config")
+    assert not is_client_template_complete(template_dir)
+
+    (template_dir / TEMPLATE_COMPLETE_SENTINEL).write_text("complete\n")
+    assert is_client_template_complete(template_dir)
+
+
+def test_clean_default_client_session_ignores_incomplete_template(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Tests that partial templates do not suppress migrations."""
+    template_dir = tmp_path / "template"
+    template_zenml = template_dir / "zenml"
+    template_zenml.mkdir(parents=True)
+    (template_zenml / "config.yaml").write_text("marker: copied-template\n")
+
+    session_root = tmp_path / "clean-client-session"
+    session_factory = _DummyTmpPathFactory(session_root)
+    client_root = session_root / "pytest-clean-client"
+
+    monkeypatch.setenv("DISABLE_DATABASE_MIGRATION", "original-disable")
+
+    clear_calls = {"count": 0}
+    stack_module = ModuleType("zenml.stack.stack")
+    stack_module._STACK_CACHE = SimpleNamespace(
+        clear=lambda: clear_calls.__setitem__(
+            "count", clear_calls["count"] + 1
+        )
+    )
+    monkeypatch.setitem(sys.modules, "zenml.stack.stack", stack_module)
+
+    captured_disable_migration = {"value": None}
+
+    class FakeGlobalConfiguration:
+        def __init__(self) -> None:
+            self.analytics_opt_in = True
+
+        @classmethod
+        def get_instance(cls) -> object:
+            return object()
+
+        @classmethod
+        def _reset_instance(cls, instance: object | None = None) -> None:
+            del instance
+
+    class FakeClient:
+        def __init__(self) -> None:
+            captured_disable_migration["value"] = os.getenv(
+                "DISABLE_DATABASE_MIGRATION"
+            )
+            self.zen_store = SimpleNamespace()
+
+        @classmethod
+        def get_instance(cls) -> object:
+            return object()
+
+        @classmethod
+        def _reset_instance(cls, instance: object | None = None) -> None:
+            del instance
+
+    class FakeCredentialsStore:
+        @classmethod
+        def get_instance(cls) -> object:
+            return object()
+
+        @classmethod
+        def reset_instance(cls, instance: object | None = None) -> None:
+            del instance
+
+    monkeypatch.setattr(
+        harness_utils, "GlobalConfiguration", FakeGlobalConfiguration
+    )
+    monkeypatch.setattr(harness_utils, "Client", FakeClient)
+    monkeypatch.setattr(
+        harness_utils, "CredentialsStore", FakeCredentialsStore
+    )
+
+    with harness_utils.clean_default_client_session(
+        tmp_path_factory=session_factory,
+        template_dir=template_dir,
+    ) as client:
+        assert isinstance(client, FakeClient)
+        assert clear_calls["count"] == 1
+        assert captured_disable_migration["value"] == "original-disable"
+        assert Path(os.environ[ENV_ZENML_CONFIG_PATH]) == client_root / "zenml"
+        assert not (client_root / "zenml" / "config.yaml").exists()
+
+    assert os.getenv("DISABLE_DATABASE_MIGRATION") == "original-disable"
 
 
 def test_no_provision_isolated_session_restores_default_active_project(
