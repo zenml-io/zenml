@@ -45,6 +45,7 @@ from zenml.logger import (
     bind_request_context,
     get_logger,
     get_logging_context,
+    logging_scope,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.request_management import RequestContext
@@ -82,6 +83,15 @@ def _error_response(
     except Exception:
         pass
     return JSONResponse(status_code=status_code, content=content)
+
+
+def _request_log_fields(request: Request) -> dict[str, Any]:
+    """Get common request fields for request lifecycle logs."""
+    return {
+        "method": request.method,
+        "path": request.url.path,
+        "client_ip": request.client.host if request.client else "unknown",
+    }
 
 
 # Track active requests with an atomic counter
@@ -331,7 +341,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     """
     global active_requests_count
 
-    if not logging.getLogger(__name__).isEnabledFor(logging.DEBUG):
+    if not logger.isEnabledFor(logging.DEBUG):
         return await call_next(request)
 
     async with active_requests_lock:
@@ -343,14 +353,17 @@ async def log_requests(request: Request, call_next: Any) -> Any:
         response = await call_next(request)
 
         request_context = request_manager().current_request
-        logger.debug(
-            "request.completed",
-            extra={
-                "status_code": response.status_code,
-                "duration_ms": request_context.log_duration,
-                **get_system_metrics(),
-            },
-        )
+
+        # Only log full request metadata once at the request boundary.
+        with logging_scope(**_request_log_fields(request)):
+            logger.debug(
+                "request.completed",
+                extra={
+                    "status_code": response.status_code,
+                    "duration_ms": request_context.log_duration,
+                    **get_system_metrics(),
+                },
+            )
 
         return response
     finally:
@@ -361,10 +374,9 @@ async def log_requests(request: Request, call_next: Any) -> Any:
 async def record_requests(request: Request, call_next: Any) -> Any:
     """Record requests to the ZenML server.
 
-    Creates a RequestContext and binds key request fields into the
-    logging context (via :func:`bind_request_context`) so that every
-    downstream log line automatically carries request_id, method, path,
-    and client_ip.
+    Creates a RequestContext, logs the full request metadata once at the
+    request boundary, and binds the request_id into the logging context so
+    downstream log lines can be correlated without repeating request fields.
 
     Args:
         request: The incoming request object.
@@ -378,12 +390,11 @@ async def record_requests(request: Request, call_next: Any) -> Any:
     request_context = RequestContext(request=request)
     request_manager().current_request = request_context
 
-    bind_request_context(
-        request_id=request_context.request_id,
-        method=request.method,
-        path=request.url.path,
-        client_ip=(request.client.host if request.client else "unknown"),
-    )
+    bind_request_context(request_id=request_context.request_id)
+
+    # Only log full request metadata once at the request boundary.
+    with logging_scope(**_request_log_fields(request)):
+        logger.info("request.started")
 
     try:
         response = await call_next(request)
