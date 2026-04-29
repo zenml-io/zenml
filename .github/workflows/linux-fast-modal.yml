@@ -109,6 +109,8 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         run: |
           set -euo pipefail
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "ended_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
           if [[ -z "${MODAL_TOKEN_ID:-}" || -z "${MODAL_TOKEN_SECRET:-}" ]]; then
             echo "::warning::Modal credentials are unavailable; falling back to standard CI."
             echo "modal_infra_failed=true" >> "$GITHUB_OUTPUT"
@@ -195,6 +197,8 @@ jobs:
         run: |
           set -euo pipefail
           run_started_at="$(date +%s)"
+          echo "started_at=$run_started_at" >> "$GITHUB_OUTPUT"
+          trap 'echo "ended_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
           offload_log="test-results/modal-sqlite-fast-ci/offload.log"
           junit_file="test-results/modal-sqlite-fast-ci/junit.xml"
           mkdir -p "$(dirname "$offload_log")"
@@ -226,6 +230,8 @@ jobs:
           RUN_MODAL_ENABLED: ${{ steps.prepare.outputs.run_modal }}
         run: |
           set -euo pipefail
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "ended_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
           python scripts/ci/classify_offload_result.py \
             --lane modal-sqlite-fast-ci \
             --infra-policy fallback \
@@ -238,6 +244,37 @@ jobs:
             --prepare-outcome "$PREPARE_OUTCOME" \
             --prepare-modal-infra-failed "$PREPARE_MODAL_INFRA_FAILED" \
             --run-modal-enabled "$RUN_MODAL_ENABLED"
+      - name: Emit timing manifest
+        if: always()
+        env:
+          CLASSIFICATION: ${{ steps.classify.outputs.classification }}
+          CLASSIFICATION_REASON: ${{ steps.classify.outputs.reason }}
+          CLASSIFICATION_DIAGNOSTIC: ${{ steps.classify.outputs.diagnostic }}
+          FAILED_PHASE: ${{ steps.classify.outputs.failed_phase }}
+          FAILED_TESTS: ${{ steps.classify.outputs.failed_tests }}
+          MODAL_INFRA_FAILED: ${{ steps.classify.outputs.modal_infra_failed }}
+          TEST_FAILED: ${{ steps.classify.outputs.test_failed }}
+          HARNESS_FAILED: ${{ steps.classify.outputs.harness_failed }}
+          JUNIT_CACHE_SAFE: ${{ steps.classify.outputs.junit_cache_safe }}
+        run: |
+          set -euo pipefail
+          python scripts/ci/emit_timing_manifest.py \
+            --lane modal-sqlite-fast-ci \
+            --output-dir test-results/modal-sqlite-fast-ci \
+            --junit-file test-results/modal-sqlite-fast-ci/junit.xml \
+            --offload-log test-results/modal-sqlite-fast-ci/offload.log \
+            --classification "${CLASSIFICATION:-unknown}" \
+            --classification-reason "${CLASSIFICATION_REASON:-unknown}" \
+            --classification-diagnostic "${CLASSIFICATION_DIAGNOSTIC:-}" \
+            --failed-phase "${FAILED_PHASE:-none}" \
+            --failed-tests "${FAILED_TESTS:-[]}" \
+            --modal-infra-failed "${MODAL_INFRA_FAILED:-}" \
+            --test-failed "${TEST_FAILED:-}" \
+            --harness-failed "${HARNESS_FAILED:-}" \
+            --junit-cache-safe "${JUNIT_CACHE_SAFE:-}" \
+            --phase "modal_prepare=${{ steps.prepare.outputs.started_at }},${{ steps.prepare.outputs.ended_at }},${{ steps.prepare.outcome }}" \
+            --phase "test_execution=${{ steps.run.outputs.started_at }},${{ steps.run.outputs.ended_at }},exit_${{ steps.run.outputs.exit_code || 'missing' }}" \
+            --phase "classification=${{ steps.classify.outputs.started_at }},${{ steps.classify.outputs.ended_at }},${{ steps.classify.outcome }}"
       - name: Save offload image cache
         if: ${{ always() && steps.prepare.outputs.run_modal == 'true' }}
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4

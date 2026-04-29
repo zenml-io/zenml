@@ -87,6 +87,8 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         run: |
           set -euo pipefail
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "ended_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
           if [[ -z "${MODAL_TOKEN_ID:-}" || -z "${MODAL_TOKEN_SECRET:-}" ]]; then
             echo "::error::Modal credentials are required for this workflow."
             exit 1
@@ -131,7 +133,11 @@ jobs:
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-        run: python scripts/ci/provision_modal_server.py
+        run: |
+          set -euo pipefail
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "ended_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
+          python scripts/ci/provision_modal_server.py
       - name: Run tests via offload
         id: run
         if: ${{ steps.provision.outcome == 'success' }}
@@ -144,6 +150,16 @@ jobs:
         run: |
           set -euo pipefail
           run_started_at="$(date +%s)"
+          echo "started_at=$run_started_at" >> "$GITHUB_OUTPUT"
+          original_offload=""
+          finish_run() {
+            echo "ended_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+            if [[ -n "$original_offload" && -f "$original_offload" ]]; then
+              cp "$original_offload" offload.toml
+              rm -f "$original_offload"
+            fi
+          }
+          trap finish_run EXIT
           offload_log="test-results/modal-server-rest-mysql-ci/offload.log"
           junit_file="test-results/modal-server-rest-mysql-ci/junit.xml"
           mkdir -p "$(dirname "$offload_log")"
@@ -156,11 +172,6 @@ jobs:
           # invocation and restore the canonical file before cache keys run.
           original_offload="$(mktemp)"
           cp offload.toml "$original_offload"
-          restore_offload_config() {
-            cp "$original_offload" offload.toml
-            rm -f "$original_offload"
-          }
-          trap restore_offload_config EXIT
           cp offload-modal-server-mysql.toml offload.toml
           set +e
           stdbuf -oL -eL offload -v run 2>&1 \
@@ -183,6 +194,8 @@ jobs:
           PROVISION_OUTCOME: ${{ steps.provision.outcome }}
         run: |
           set -euo pipefail
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "ended_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
           python scripts/ci/classify_offload_result.py \
             --lane modal-server-rest-mysql-ci \
             --infra-policy fail \
@@ -195,16 +208,53 @@ jobs:
             --prepare-outcome "$PREPARE_OUTCOME" \
             --provision-outcome "$PROVISION_OUTCOME"
       - name: Teardown Modal server
+        id: teardown
         if: always() && steps.provision.outputs.sandbox_id != ''
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           SANDBOX_ID: ${{ steps.provision.outputs.sandbox_id }}
           APP_NAME: ${{ steps.provision.outputs.app_name }}
-        run: >-
-          python scripts/ci/provision_modal_server.py teardown
-          --sandbox-id "$SANDBOX_ID"
-          --app-name "$APP_NAME"
+        run: |
+          set -euo pipefail
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "ended_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
+          python scripts/ci/provision_modal_server.py teardown \
+            --sandbox-id "$SANDBOX_ID" \
+            --app-name "$APP_NAME"
+      - name: Emit timing manifest
+        if: always()
+        env:
+          CLASSIFICATION: ${{ steps.classify.outputs.classification }}
+          CLASSIFICATION_REASON: ${{ steps.classify.outputs.reason }}
+          CLASSIFICATION_DIAGNOSTIC: ${{ steps.classify.outputs.diagnostic }}
+          FAILED_PHASE: ${{ steps.classify.outputs.failed_phase }}
+          FAILED_TESTS: ${{ steps.classify.outputs.failed_tests }}
+          MODAL_INFRA_FAILED: ${{ steps.classify.outputs.modal_infra_failed }}
+          TEST_FAILED: ${{ steps.classify.outputs.test_failed }}
+          HARNESS_FAILED: ${{ steps.classify.outputs.harness_failed }}
+          JUNIT_CACHE_SAFE: ${{ steps.classify.outputs.junit_cache_safe }}
+        run: |
+          set -euo pipefail
+          python scripts/ci/emit_timing_manifest.py \
+            --lane modal-server-rest-mysql-ci \
+            --output-dir test-results/modal-server-rest-mysql-ci \
+            --junit-file test-results/modal-server-rest-mysql-ci/junit.xml \
+            --offload-log test-results/modal-server-rest-mysql-ci/offload.log \
+            --classification "${CLASSIFICATION:-unknown}" \
+            --classification-reason "${CLASSIFICATION_REASON:-unknown}" \
+            --classification-diagnostic "${CLASSIFICATION_DIAGNOSTIC:-}" \
+            --failed-phase "${FAILED_PHASE:-none}" \
+            --failed-tests "${FAILED_TESTS:-[]}" \
+            --modal-infra-failed "${MODAL_INFRA_FAILED:-}" \
+            --test-failed "${TEST_FAILED:-}" \
+            --harness-failed "${HARNESS_FAILED:-}" \
+            --junit-cache-safe "${JUNIT_CACHE_SAFE:-}" \
+            --phase "modal_prepare=${{ steps.prepare.outputs.started_at }},${{ steps.prepare.outputs.ended_at }},${{ steps.prepare.outcome }}" \
+            --phase "server_provision=${{ steps.provision.outputs.started_at }},${{ steps.provision.outputs.ended_at }},${{ steps.provision.outcome }}" \
+            --phase "test_execution=${{ steps.run.outputs.started_at }},${{ steps.run.outputs.ended_at }},exit_${{ steps.run.outputs.exit_code || 'missing' }}" \
+            --phase "classification=${{ steps.classify.outputs.started_at }},${{ steps.classify.outputs.ended_at }},${{ steps.classify.outcome }}" \
+            --phase "teardown=${{ steps.teardown.outputs.started_at }},${{ steps.teardown.outputs.ended_at }},${{ steps.teardown.outcome }}"
       - name: Save offload image cache
         if: always()
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
@@ -21,24 +21,39 @@ from scripts.ci.print_junit_summary import (  # noqa: E402
     parse_junit_summary,
     print_parsed_summary,
 )
+from scripts.ci.timing_utils import parse_timestamp  # noqa: E402
 
-INFRA_PATTERNS = tuple(
-    re.compile(pattern)
-    for pattern in (
-        r"Failed to prepare Default provider",
-        r"Default prepare command failed",
-        r"failed to run builder command",
-        r"modal\.exception\.RemoteError",
-        r"Image build .* failed",
-        r"Failed to create sandboxes",
-        r"Failed to execute command: Create command failed",
-        r"Failed to spawn: .*modal_sandbox",
-        r"Failed to discover tests",
-        r"pytest --collect-only failed",
-        r"No module named pytest",
-        r"error: unexpected argument",
+FAILED_TESTS_LIMIT = 20
+
+INFRA_PATTERN = re.compile(
+    "|".join(
+        f"(?:{pattern})"
+        for pattern in (
+            r"Failed to prepare Default provider",
+            r"Default prepare command failed",
+            r"failed to run builder command",
+            r"modal\.exception\.RemoteError",
+            r"Image build .* failed",
+            r"Failed to create sandboxes",
+            r"Failed to execute command: Create command failed",
+            r"Failed to spawn: .*modal_sandbox",
+            r"Failed to discover tests",
+            r"pytest --collect-only failed",
+            r"No module named pytest",
+            r"error: unexpected argument",
+        )
     )
 )
+
+INFRA_SIGNAL_PHASES = {
+    "setup_python_failed": "modal_prepare",
+    "install_rust_failed": "modal_prepare",
+    "prepare_failed": "modal_prepare",
+    "prepare_marked_modal_infra_failed": "modal_prepare",
+    "modal_disabled": "modal_prepare",
+    "provision_failed": "server_provision",
+    "infra_log_pattern": "sandbox_create",
+}
 
 
 @dataclass(frozen=True)
@@ -47,7 +62,13 @@ class Classification:
 
     modal_infra_failed: bool
     test_failed: bool
+    harness_failed: bool
     junit_cache_safe: bool
+    classification: Literal["success", "modal_infra_failure", "test_failure"]
+    reason: str
+    diagnostic: str
+    failed_phase: str = "none"
+    failed_tests: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -68,52 +89,30 @@ def _is_true(value: str | None) -> bool:
     return (value or "").lower() == "true"
 
 
-def _parse_timestamp(value: str | None) -> float | None:
-    if not value:
-        return None
-
-    try:
-        return float(value)
-    except ValueError:
-        pass
-
-    normalized = value.strip().replace("Z", "+00:00")
-    try:
-        timestamp = datetime.fromisoformat(normalized)
-    except ValueError:
-        return None
-
-    if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=timezone.utc)
-    return timestamp.timestamp()
-
-
 def _validate_junit(
     junit_file: Path, run_started_at: str | None
 ) -> JUnitValidation:
-    run_started_ts = _parse_timestamp(run_started_at)
+    run_started_ts = parse_timestamp(run_started_at)
     if run_started_ts is None:
         return JUnitValidation(
             False, None, reason="run start timestamp is missing or invalid"
         )
 
-    if not junit_file.exists():
+    try:
+        stat = junit_file.stat()
+    except FileNotFoundError:
         return JUnitValidation(
             False, None, reason=f"JUnit XML not found: {junit_file}"
         )
-
-    try:
-        stat = junit_file.stat()
     except OSError as exc:
         return JUnitValidation(
             False, None, reason=f"Could not stat JUnit XML {junit_file}: {exc}"
         )
 
-    if stat.st_size == 0:
+    if stat.st_size <= 0:
         return JUnitValidation(
             False, None, reason=f"JUnit XML is empty: {junit_file}"
         )
-
     if stat.st_mtime < run_started_ts:
         return JUnitValidation(
             False, None, reason=f"JUnit XML is stale: {junit_file}"
@@ -121,18 +120,25 @@ def _validate_junit(
 
     try:
         root, summary = parse_junit_summary(junit_file)
-    except (OSError, ET.ParseError) as exc:
+    except ET.ParseError as exc:
         return JUnitValidation(
             False,
             None,
-            reason=f"JUnit XML is not parseable: {junit_file}: {exc}",
+            reason=f"JUnit XML is not parseable XML: {junit_file}: {exc}",
+        )
+    except OSError as exc:
+        return JUnitValidation(
+            False, None, reason=f"Could not read JUnit XML {junit_file}: {exc}"
         )
 
     if root.tag not in {"testsuite", "testsuites"}:
         return JUnitValidation(
             False,
             None,
-            reason=f"JUnit XML has unexpected root tag '{root.tag}': {junit_file}",
+            reason=(
+                f"JUnit XML has unexpected root tag '{root.tag}' in "
+                f"{junit_file}; expected testsuite, testsuites"
+            ),
         )
 
     return JUnitValidation(True, summary, root=root)
@@ -140,11 +146,61 @@ def _validate_junit(
 
 def _log_matches_infra_pattern(offload_log: Path) -> bool:
     try:
-        text = offload_log.read_text(errors="replace")
+        with offload_log.open(encoding="utf-8", errors="replace") as log_file:
+            return any(INFRA_PATTERN.search(line) for line in log_file)
     except OSError:
         return False
 
-    return any(pattern.search(text) for pattern in INFRA_PATTERNS)
+
+def _single_line(value: str) -> str:
+    """Collapse diagnostics so they are safe for GitHub output files."""
+    return " ".join(value.split())
+
+
+def _infra_signals(
+    *,
+    setup_python_outcome: str | None,
+    install_rust_outcome: str | None,
+    prepare_outcome: str | None,
+    prepare_modal_infra_failed: str | None,
+    run_modal_enabled: str | None,
+    provision_outcome: str | None,
+) -> list[str]:
+    """Return stable reason slugs for explicit infrastructure signals."""
+    signals: list[str] = []
+    if _is_failure_outcome(setup_python_outcome):
+        signals.append("setup_python_failed")
+    if _is_failure_outcome(install_rust_outcome):
+        signals.append("install_rust_failed")
+    if prepare_outcome == "failure":
+        signals.append("prepare_failed")
+    if _is_true(prepare_modal_infra_failed):
+        signals.append("prepare_marked_modal_infra_failed")
+    if run_modal_enabled == "false":
+        signals.append("modal_disabled")
+    if provision_outcome == "failure":
+        signals.append("provision_failed")
+    return signals
+
+
+def _failed_test_names(
+    root: ET.Element | None, limit: int = FAILED_TESTS_LIMIT
+) -> tuple[str, ...]:
+    """Return capped JUnit testcase identifiers that failed or errored."""
+    if root is None:
+        return ()
+
+    failed_tests: list[str] = []
+    for testcase in root.iter("testcase"):
+        if testcase.find("failure") is None and testcase.find("error") is None:
+            continue
+        classname = testcase.get("classname", "").strip()
+        name = testcase.get("name", "").strip()
+        identifier = "::".join(part for part in (classname, name) if part)
+        failed_tests.append(identifier or "<unknown>")
+        if len(failed_tests) >= limit:
+            break
+    return tuple(failed_tests)
 
 
 def _infra_annotation_command(
@@ -166,7 +222,19 @@ def _write_github_outputs(classification: Classification) -> None:
             f"test_failed={str(classification.test_failed).lower()}\n"
         )
         output_file.write(
+            f"harness_failed={str(classification.harness_failed).lower()}\n"
+        )
+        output_file.write(
             f"junit_cache_safe={str(classification.junit_cache_safe).lower()}\n"
+        )
+        output_file.write(f"classification={classification.classification}\n")
+        output_file.write(f"reason={classification.reason}\n")
+        output_file.write(f"failed_phase={classification.failed_phase}\n")
+        output_file.write(
+            f"failed_tests={json.dumps(list(classification.failed_tests))}\n"
+        )
+        output_file.write(
+            f"diagnostic={_single_line(classification.diagnostic)}\n"
         )
 
 
@@ -186,15 +254,13 @@ def classify_offload_result(
     provision_outcome: str | None = None,
 ) -> Classification:
     """Classify an offload run without deciding final workflow exit status."""
-    infra_failed = any(
-        (
-            _is_failure_outcome(setup_python_outcome),
-            _is_failure_outcome(install_rust_outcome),
-            prepare_outcome == "failure",
-            _is_true(prepare_modal_infra_failed),
-            run_modal_enabled == "false",
-            provision_outcome == "failure",
-        )
+    infra_signals = _infra_signals(
+        setup_python_outcome=setup_python_outcome,
+        install_rust_outcome=install_rust_outcome,
+        prepare_outcome=prepare_outcome,
+        prepare_modal_infra_failed=prepare_modal_infra_failed,
+        run_modal_enabled=run_modal_enabled,
+        provision_outcome=provision_outcome,
     )
 
     junit = _validate_junit(junit_file, run_started_at)
@@ -204,17 +270,28 @@ def classify_offload_result(
         print_parsed_summary(junit.root, junit.summary)
 
     if not junit.fresh and _log_matches_infra_pattern(offload_log):
-        infra_failed = True
+        infra_signals.append("infra_log_pattern")
 
-    if infra_failed and not junit.fresh:
+    if infra_signals and not junit.fresh:
         annotation = _infra_annotation_command(infra_policy)
+        reason = infra_signals[0]
+        diagnostic = _single_line(
+            f"{lane}: Modal infrastructure signal '{reason}' with "
+            f"unusable JUnit: {junit.reason or 'JUnit XML is missing'}"
+        )
         print(
-            f"::{annotation}::{lane}: classified as Modal infrastructure failure"
+            f"::{annotation}::{lane}: classified as Modal infrastructure "
+            f"failure ({reason})"
         )
         return Classification(
             modal_infra_failed=True,
             test_failed=False,
+            harness_failed=True,
             junit_cache_safe=False,
+            classification="modal_infra_failure",
+            reason=reason,
+            diagnostic=diagnostic,
+            failed_phase=INFRA_SIGNAL_PHASES.get(reason, "harness_failure"),
         )
 
     try:
@@ -231,24 +308,51 @@ def classify_offload_result(
 
     success_like_exit = parsed_exit_code in {0, 2}
     test_failed = False
+    harness_failed = False
+    failed_phase = "none"
+    failed_tests: tuple[str, ...] = ()
+    reason = "none"
+    diagnostic = f"{lane}: offload completed with passing JUnit results"
     if not junit.fresh:
         test_failed = True
+        harness_failed = True
+        failed_phase = "junit_invalid"
+        reason = "junit_not_fresh"
+        diagnostic = f"{lane}: {junit.reason or 'JUnit XML is missing'}"
     elif has_junit_failures:
         test_failed = True
+        failed_phase = "test_execution"
+        failed_tests = _failed_test_names(junit.root)
+        reason = "junit_failures"
+        assert junit.summary is not None
+        diagnostic = (
+            f"{lane}: JUnit reported {junit.summary.failures} failures "
+            f"and {junit.summary.errors} errors"
+        )
     elif not success_like_exit:
         test_failed = True
-        print(
-            f"::error::{lane}: offload exited {parsed_exit_code} "
-            "but JUnit XML contains no failures or errors"
+        harness_failed = True
+        failed_phase = "harness_failure"
+        reason = "offload_exit_code"
+        diagnostic = (
+            f"{lane}: offload exited {parsed_exit_code} but JUnit XML "
+            "contains no failures or errors"
         )
+        print(f"::error::{diagnostic}")
 
     junit_cache_safe = bool(
         junit.fresh and success_like_exit and not has_junit_failures
     )
     return Classification(
-        modal_infra_failed=infra_failed,
+        modal_infra_failed=False,
         test_failed=test_failed,
+        harness_failed=harness_failed,
         junit_cache_safe=junit_cache_safe,
+        classification="test_failure" if test_failed else "success",
+        reason=reason,
+        diagnostic=_single_line(diagnostic),
+        failed_phase=failed_phase,
+        failed_tests=failed_tests,
     )
 
 
@@ -293,7 +397,13 @@ def main(argv: list[str] | None = None) -> int:
         "Classification: "
         f"modal_infra_failed={classification.modal_infra_failed} "
         f"test_failed={classification.test_failed} "
-        f"junit_cache_safe={classification.junit_cache_safe}"
+        f"harness_failed={classification.harness_failed} "
+        f"junit_cache_safe={classification.junit_cache_safe} "
+        f"classification={classification.classification} "
+        f"reason={classification.reason} "
+        f"failed_phase={classification.failed_phase} "
+        f"failed_tests={list(classification.failed_tests)} "
+        f"diagnostic={classification.diagnostic}"
     )
     return 0
 

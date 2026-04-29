@@ -64,7 +64,12 @@ def test_success_with_fresh_passing_junit_is_cache_safe(
 
     assert not classification.modal_infra_failed
     assert not classification.test_failed
+    assert not classification.harness_failed
     assert classification.junit_cache_safe
+    assert classification.classification == "success"
+    assert classification.reason == "none"
+    assert classification.failed_phase == "none"
+    assert classification.failed_tests == ()
     assert "Total: 1  Passed: 1" in capsys.readouterr().out
 
 
@@ -106,12 +111,38 @@ def test_junit_failures_classify_as_test_failure(
 
     assert not classification.modal_infra_failed
     assert classification.test_failed
+    assert not classification.harness_failed
     assert not classification.junit_cache_safe
+    assert classification.classification == "test_failure"
+    assert classification.reason == "junit_failures"
+    assert classification.failed_phase == "test_execution"
+    assert classification.failed_tests == ("suite::test",)
     output = capsys.readouterr().out
     assert "Total: 1  Passed: 0  Failed: 1" in output
     assert "Failed tests:" in output
     assert "FAIL  suite::test" in output
     assert "assertion failed" in output
+
+
+def test_failed_tests_output_is_capped(tmp_path: Path) -> None:
+    """Failed testcase identifiers are capped for stable GitHub outputs."""
+    body = "".join(
+        f'<testcase classname="suite" name="test_{index}">'
+        '<failure message="failed" /></testcase>'
+        for index in range(25)
+    )
+    start = _write_junit(
+        tmp_path / "junit.xml",
+        tests=25,
+        failures=25,
+        body=body,
+    )
+
+    classification = _classify(tmp_path, run_started_at=str(start))
+
+    assert len(classification.failed_tests) == 20
+    assert classification.failed_tests[0] == "suite::test_0"
+    assert classification.failed_tests[-1] == "suite::test_19"
 
 
 def test_missing_junit_with_infra_log_pattern_is_infra_failure(
@@ -128,7 +159,11 @@ def test_missing_junit_with_infra_log_pattern_is_infra_failure(
 
     assert classification.modal_infra_failed
     assert not classification.test_failed
+    assert classification.harness_failed
     assert not classification.junit_cache_safe
+    assert classification.classification == "modal_infra_failure"
+    assert classification.reason == "infra_log_pattern"
+    assert classification.failed_phase == "sandbox_create"
     assert "::warning::" in capsys.readouterr().out
 
 
@@ -163,7 +198,11 @@ def test_missing_junit_without_infra_pattern_is_test_failure(
 
     assert not classification.modal_infra_failed
     assert classification.test_failed
+    assert classification.harness_failed
     assert not classification.junit_cache_safe
+    assert classification.classification == "test_failure"
+    assert classification.reason == "junit_not_fresh"
+    assert classification.failed_phase == "junit_invalid"
 
 
 def test_corrupt_junit_is_test_failure(tmp_path: Path) -> None:
@@ -195,6 +234,31 @@ def test_prepare_failure_without_junit_is_infra_failure(
 
     assert classification.modal_infra_failed
     assert not classification.test_failed
+    assert classification.harness_failed
+    assert classification.classification == "modal_infra_failure"
+    assert classification.reason == "prepare_failed"
+    assert classification.failed_phase == "modal_prepare"
+
+
+def test_provision_failure_without_junit_is_attributed_to_infra(
+    tmp_path: Path,
+) -> None:
+    """REST server provisioning failures get a stable infra reason."""
+    classification = _classify(
+        tmp_path,
+        exit_code="1",
+        infra_policy="fail",
+        run_started_at=str(time.time()),
+        provision_outcome="failure",
+    )
+
+    assert classification.modal_infra_failed
+    assert not classification.test_failed
+    assert classification.harness_failed
+    assert classification.classification == "modal_infra_failure"
+    assert classification.reason == "provision_failed"
+    assert classification.failed_phase == "server_provision"
+    assert "provision_failed" in classification.diagnostic
 
 
 def test_main_writes_github_outputs(tmp_path: Path, monkeypatch) -> None:
@@ -226,5 +290,14 @@ def test_main_writes_github_outputs(tmp_path: Path, monkeypatch) -> None:
     )
 
     assert output_path.read_text() == (
-        "modal_infra_failed=false\ntest_failed=false\njunit_cache_safe=true\n"
+        "modal_infra_failed=false\n"
+        "test_failed=false\n"
+        "harness_failed=false\n"
+        "junit_cache_safe=true\n"
+        "classification=success\n"
+        "reason=none\n"
+        "failed_phase=none\n"
+        "failed_tests=[]\n"
+        "diagnostic=modal-sqlite-fast-ci: offload completed with "
+        "passing JUnit results\n"
     )

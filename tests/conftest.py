@@ -192,6 +192,18 @@ def check_module_requirements(
 
 
 @pytest.fixture
+def isolated_project(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Generator[Client, None, None]:
+    """Fixture to create, activate, and use a separate ZenML project."""
+    with clean_project_session(
+        tmp_path_factory=tmp_path_factory,
+        clean_repo=False,
+    ) as client:
+        yield client
+
+
+@pytest.fixture
 def clean_project(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:

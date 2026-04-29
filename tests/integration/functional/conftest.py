@@ -13,12 +13,56 @@
 #  permissions and limitations under the License.
 
 import logging
+import os
+from typing import Generator
 
 import pytest
 
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.types import HTMLString
+
+AUTO_ISOLATE_ENV_VAR = "ZENML_TESTS_AUTO_ISOLATE"
+NO_ISOLATED_PROJECT_MARKER = "no_isolated_project"
+PROJECT_ISOLATION_FIXTURES = {
+    "clean_project",
+    "isolated_project",
+    "module_clean_project",
+}
+
+
+def _auto_isolation_enabled() -> bool:
+    """Return whether functional tests should auto-isolate projects."""
+    return os.getenv(AUTO_ISOLATE_ENV_VAR, "").lower() in {"1", "true", "yes"}
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Register the functional-test project-isolation opt-out marker."""
+    config.addinivalue_line(
+        "markers",
+        f"{NO_ISOLATED_PROJECT_MARKER}: opt out of automatic project isolation",
+    )
+
+
+@pytest.fixture(autouse=True)
+def auto_isolated_project(
+    request: pytest.FixtureRequest,
+) -> Generator[None, None, None]:
+    """Auto-enable per-test projects for functional tests in Modal CI."""
+    uses_project_fixture = any(
+        fixture_name in request.fixturenames
+        for fixture_name in PROJECT_ISOLATION_FIXTURES
+    )
+    if (
+        not _auto_isolation_enabled()
+        or uses_project_fixture
+        or request.node.get_closest_marker(NO_ISOLATED_PROJECT_MARKER)
+    ):
+        yield
+        return
+
+    request.getfixturevalue("isolated_project")
+    yield
 
 
 @pytest.fixture

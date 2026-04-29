@@ -222,10 +222,10 @@ def test_clean_default_client_session_ignores_incomplete_template(
     assert os.getenv("DISABLE_DATABASE_MIGRATION") == "original-disable"
 
 
-def test_no_provision_isolated_session_restores_default_active_project(
+def test_no_provision_session_restores_default_active_project(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Tests project isolation when a reused server has no local active project."""
+    """Tests reused-server sessions select the default project if needed."""
 
     class FakeClient:
         def __init__(self) -> None:
@@ -296,7 +296,6 @@ def test_no_provision_isolated_session_restores_default_active_project(
             return environment
 
     monkeypatch.setattr(harness_utils, "TestHarness", FakeTestHarness)
-    monkeypatch.setenv("ZENML_TEST_ISOLATE_PROJECT", "true")
 
     with harness_utils.environment_session(no_provision=True) as (
         yielded_environment,
@@ -304,10 +303,7 @@ def test_no_provision_isolated_session_restores_default_active_project(
     ):
         assert yielded_environment is environment
         assert yielded_client is client
-        assert client.set_active_calls[0] == DEFAULT_PROJECT_NAME
-        isolated_project_name = client.active_project.name
-        assert isolated_project_name.startswith("pytest_")
+        assert client.set_active_calls == [DEFAULT_PROJECT_NAME]
 
     assert client.active_project.id == client.default_project_id
-    assert client.set_active_calls[-1] == client.default_project_id
-    assert client.deleted_projects == [isolated_project_name]
+    assert client.deleted_projects == []
