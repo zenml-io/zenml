@@ -175,11 +175,11 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
     # server-side logs
     headers: dict[str, str] = {}
     try:
-        import structlog
+        from zenml.logger import get_logging_context
 
-        ctx = structlog.contextvars.get_contextvars()
-        if rid := ctx.get("request_id"):
-            headers["X-Request-ID"] = str(rid)
+        ctx = get_logging_context()
+        if request_id := ctx.get("request_id"):
+            headers["X-Request-ID"] = str(request_id)
     except Exception:
         pass
 

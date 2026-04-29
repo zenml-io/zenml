@@ -68,9 +68,11 @@ class ZenMLCloudConnection:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 "rbac.request.started",
-                rbac_method=method,
-                rbac_endpoint=endpoint,
-                **get_system_metrics(),
+                extra={
+                    "rbac_method": method,
+                    "rbac_endpoint": endpoint,
+                    **get_system_metrics(),
+                },
             )
             start_time = time.time()
 
@@ -112,11 +114,13 @@ class ZenMLCloudConnection:
                 duration_ms = round((time.time() - start_time) * 1000, 2)  # type: ignore[unbound-variable]
                 logger.debug(
                     "rbac.request.completed",
-                    rbac_method=method,
-                    rbac_endpoint=endpoint,
-                    status_code=status_code,
-                    duration_ms=duration_ms,
-                    **get_system_metrics(),
+                    extra={
+                        "rbac_method": method,
+                        "rbac_endpoint": endpoint,
+                        "status_code": status_code,
+                        "duration_ms": duration_ms,
+                        **get_system_metrics(),
+                    },
                 )
 
         return response

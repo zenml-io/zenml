@@ -541,8 +541,10 @@ class Session(SqlModelSession):
 
             logger.debug(
                 "sql.session.started",
-                caller=self.caller_method,
-                **self._get_metrics(),
+                extra={
+                    "caller": self.caller_method,
+                    **self._get_metrics(),
+                },
             )
 
             self.start_time = time.time()
@@ -567,10 +569,12 @@ class Session(SqlModelSession):
 
             logger.debug(
                 "sql.session.completed",
-                caller=self.caller_method,
-                duration_ms=duration_ms,
-                error=exc_type is not None,
-                **self._get_metrics(),
+                extra={
+                    "caller": self.caller_method,
+                    "duration_ms": duration_ms,
+                    "error": exc_type is not None,
+                    **self._get_metrics(),
+                },
             )
 
         super().__exit__(exc_type, exc_val, exc_tb)

@@ -1331,14 +1331,14 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
         def sync_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
             assert request_context is not None
 
-            logger.debug("request.authorizing", **get_system_metrics())
+            logger.debug("request.authorizing", extra=get_system_metrics())
 
             try:
                 auth_context = provider(*args, **kwargs)
                 request_context.auth_context = auth_context
                 return auth_context
             finally:
-                logger.debug("request.authorized", **get_system_metrics())
+                logger.debug("request.authorized", extra=get_system_metrics())
 
         func = functools.partial(sync_authorize_fn, *args, **kwargs)
         return await anyio.to_thread.run_sync(func, limiter=thread_limiter)

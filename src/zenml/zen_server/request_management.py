@@ -317,8 +317,7 @@ class RequestManager:
 
         logger.debug(
             "endpoint.async.started",
-            endpoint=func.__name__,
-            **get_system_metrics(),
+            extra={"endpoint": func.__name__, **get_system_metrics()},
         )
 
         def sync_run_and_cache_result(*args: Any, **kwargs: Any) -> Any:
@@ -330,8 +329,7 @@ class RequestManager:
 
             logger.debug(
                 "endpoint.sync.started",
-                endpoint=func.__name__,
-                **get_system_metrics(),
+                extra={"endpoint": func.__name__, **get_system_metrics()},
             )
 
             try:
@@ -351,7 +349,7 @@ class RequestManager:
                     except EntityExistsError:
                         logger.error(
                             "transaction.already_exists",
-                            transaction_id=str(transaction_id),
+                            extra={"transaction_id": str(transaction_id)},
                         )
                         deduplicate_request = False
                     except Exception:
@@ -362,7 +360,7 @@ class RequestManager:
                         if api_transaction.completed:
                             logger.debug(
                                 "endpoint.sync.cache_hit",
-                                endpoint=func.__name__,
+                                extra={"endpoint": func.__name__},
                             )
 
                             try:
@@ -390,7 +388,7 @@ class RequestManager:
                         elif not transaction_created:
                             logger.debug(
                                 "endpoint.sync.delayed",
-                                endpoint=func.__name__,
+                                extra={"endpoint": func.__name__},
                             )
 
                             # The transaction is being processed by another server
@@ -479,8 +477,7 @@ class RequestManager:
             finally:
                 logger.debug(
                     "endpoint.sync.completed",
-                    endpoint=func.__name__,
-                    **get_system_metrics(),
+                    extra={"endpoint": func.__name__, **get_system_metrics()},
                 )
 
         try:
@@ -497,8 +494,7 @@ class RequestManager:
 
         logger.debug(
             "endpoint.async.completed",
-            endpoint=func.__name__,
-            **get_system_metrics(),
+            extra={"endpoint": func.__name__, **get_system_metrics()},
         )
 
         if isinstance(result, Exception):
@@ -540,8 +536,7 @@ class RequestManager:
 
         logger.debug(
             "endpoint.started",
-            endpoint=func.__name__,
-            **get_system_metrics(),
+            extra={"endpoint": func.__name__, **get_system_metrics()},
         )
 
         transaction_id = request_context.transaction_id
@@ -562,8 +557,7 @@ class RequestManager:
                 fut = self.transactions[transaction_id].future
                 logger.debug(
                     "endpoint.resumed",
-                    endpoint=func.__name__,
-                    **get_system_metrics(),
+                    extra={"endpoint": func.__name__, **get_system_metrics()},
                 )
             else:
                 # Start execution in background, use the future to wait for it
@@ -602,15 +596,13 @@ class RequestManager:
 
             logger.debug(
                 "endpoint.completed",
-                endpoint=func.__name__,
-                **get_system_metrics(),
+                extra={"endpoint": func.__name__, **get_system_metrics()},
             )
             return result
         except asyncio.TimeoutError:
             logger.debug(
                 "endpoint.timeout",
-                endpoint=func.__name__,
-                **get_system_metrics(),
+                extra={"endpoint": func.__name__, **get_system_metrics()},
             )
             return JSONResponse(
                 {"error": "Server too busy. Please try again later."},

@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 """Logger Implementation."""
 
+import json
 import logging
 import os
 import re
 import sys
-from contextvars import ContextVar
-from typing import Any, Optional
+import traceback
+from contextlib import contextmanager
+from typing import Any, Generator, Iterator, Optional
 
 import structlog
 from rich.traceback import install as rich_tb_install
@@ -37,10 +39,6 @@ from zenml.enums import LoggingLevels
 
 ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
     ENV_ZENML_LOGGING_COLORS_DISABLED, False
-)
-
-step_names_in_console: ContextVar[bool] = ContextVar(
-    "step_names_in_console", default=False
 )
 
 _original_stdout_write: Optional[Any] = None
@@ -74,63 +72,115 @@ class _ZenMLStdoutStream:
         sys.stdout.flush()
 
 
-def get_logger(logger_name: str) -> structlog.stdlib.BoundLogger:
-    """Get a structlog-wrapped logger by name.
+def get_logger(logger_name: str) -> logging.Logger:
+    """Returns a stdlib logger by name.
 
-    The returned logger object is fully compatible with the stdlib
-    logging API. And it supports extra keyword arguments, e.g.:
-    ``logger.info("event", key=value)``.
+    To attach structured fields to a log record,
+    use the stdlib pattern:
 
-    Args:
-        logger_name: Name of logger to initialize.
-
-    Returns:
-        A structlog logger object
+        ``logger.info("event", extra={"key": "value"})``
     """
-    return structlog.get_logger(logger_name)
+    return logging.getLogger(logger_name)
 
 
-# the function signature of a structlog processor requires you to
-# have three arguments: logger, method_name, and event_dict
-def _add_step_name_processor(
-    logger: Any,
-    method_name: str,
-    event_dict: structlog.types.EventDict,
-) -> structlog.types.EventDict:
-    """Structlog processor that injects the current step name.
+def bind_request_context(**fields: Any) -> None:
+    """Bind extra context variables to the current logging context.
 
-    Args:
-        logger: The wrapped logger object.
-        method_name: The log method called.
-        event_dict: The event dictionary being processed.
+    Use it to propagate common context variables to every downstream
+    log record. The extra context persists until the current logging
+    context is cleared.
 
-    Returns:
-        The enriched event dict.
+    E.g.: This can be used at request boundaries to propagate context
+    like request_id, method, path, etc. to all log records in a request.
+
+    Any previously bound contextvars are cleared first, so this sets a
+    fresh set of context variables to the current logging context.
     """
-    try:
-        if step_names_in_console.get():
-            from zenml.steps import get_step_context
-
-            step_context = get_step_context()
-            if step_context:
-                event_dict["step"] = step_context.step_name
-    except Exception:
-        # If we can't get step context, just use the original message
-        pass
-    return event_dict
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(**fields)
 
 
-class _ConsoleRenderer:
-    """Structlog renderer for all client-side console output.
+@contextmanager
+def logging_scope(**fields: Any) -> Generator[None, None, None]:
+    """Bind extra context to a specific set of log records.
 
-    * ``INFO+`` -- bare event message with level coloring and
-      backtick / URL highlights
+    Use this for narrow scopes inside a request (e.g. a single transaction,
+    a step execution, a retry attempt) where you want a few fields to
+    propagate to certain downstream log records within a scope.
 
-    * ``DEBUG`` -- delegates to ``structlog.dev.ConsoleRenderer`` for the
-      full structured layout, but wraps DEBUG-level lines in grey so
-      framework noise fades into the background.
+    E.g.::
+
+        with logging_scope(transaction_id=tx_id, attempt=2):
+            logger.info("retrying transaction")
+            do_something()
+            logger.info("transaction attempt succeeded")
+
+        This will propagate extra context (on top of the context bound by
+        `bind_request_context`) to the log records emitted within the scope.
+    """
+    with structlog.contextvars.bound_contextvars(**fields):
+        yield
+
+
+def get_logging_context() -> dict[str, Any]:
+    """Return a snapshot of the currently bound logging context.
+
+    Returns a fresh dict (safe to mutate) with all the context
+    variables bound via ``bind_request_context`` or ``logging_scope``.
+
+    Useful at response/error boundaries that need to surface a single field
+    (typically ``request_id``) back to the caller.
+    """
+    return dict(structlog.contextvars.get_contextvars())
+
+
+# Stdlib LogRecord attributes plus our derived ones — never rendered
+# as "extras". Kept in sync with
+# https://docs.python.org/3/library/logging.html#logrecord-attributes
+_RESERVED_LOG_RECORD_ATTRS: frozenset[str] = frozenset(
+    {
+        "args",
+        "asctime",
+        "created",
+        "exc_info",
+        "exc_text",
+        "filename",
+        "funcName",
+        "levelname",
+        "levelno",
+        "lineno",
+        "message",
+        "module",
+        "msecs",
+        "msg",
+        "name",
+        "pathname",
+        "process",
+        "processName",
+        "relativeCreated",
+        "stack_info",
+        "taskName",
+        "thread",
+        "threadName",
+    }
+)
+
+
+class ZenMLConsoleFormatter(logging.Formatter):
+    """Stdlib console formatter for all ZenML console output.
+
+    Client Side:
+      * ``INFO+``: bare log message with level coloring and backtick / URL highlights.
+      * ``DEBUG+``: structured log format
+
+    Server Side:
+      * Always: structured log format.
+        Decides based on whether ``ENV_ZENML_SERVER`` is set to True.
     """
 
+    LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s"
+
+    _RESET = "\x1b[0m"
     _GREY = "\x1b[90m"
     _WHITE = "\x1b[37m"
     _YELLOW = "\x1b[33m"
@@ -138,80 +188,129 @@ class _ConsoleRenderer:
     _BOLD_RED = "\x1b[31;1m"
     _PURPLE = "\x1b[38;5;105m"
     _BLUE = "\x1b[34m"
-    _RESET = "\x1b[0m"
 
-    _LEVEL_COLORS: dict[str, str] = {
-        "debug": _GREY,
-        "info": _WHITE,
-        "warning": _YELLOW,
-        "error": _RED,
-        "critical": _BOLD_RED,
+    _LEVEL_COLORS: dict[int, str] = {
+        logging.DEBUG: _GREY,
+        logging.INFO: _WHITE,
+        logging.WARNING: _YELLOW,
+        logging.ERROR: _RED,
+        logging.CRITICAL: _BOLD_RED,
     }
 
     _BACKTICK_PATTERN = r"`([^`]*)`"
     _URL_PATTERN = r"https?://[^\s)\"'>]+"
 
-    def __init__(self, debug_mode: bool) -> None:
-        self._debug_mode = debug_mode
-        if debug_mode:
-            self._colored = structlog.dev.ConsoleRenderer(
-                colors=not ZENML_LOGGING_COLORS_DISABLED,
-            )
-            self._uncolored = structlog.dev.ConsoleRenderer(colors=False)
+    def __init__(self) -> None:
+        """Initialize the formatter."""
+        super().__init__(fmt=self.LOG_FORMAT)
 
-    def __call__(
-        self,
-        _logger: Any,
-        _method_name: str,
-        event_dict: structlog.types.EventDict,
-    ) -> str:
-        """Format a single log event.
+        # The ENV_ZENML_SERVER env var is set to True when the ZenML
+        # server is running. By default, if the env var is not set,
+        # it get initalized at import time.
+        # src/zenml/zen_server/utils.py: initialize_zen_store()
+        # sets it later during FastAPI startup. Once set, the value
+        # never changes.
+        self._is_server: Optional[bool] = None
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Render a log record.
 
         Args:
-            _logger: The wrapped logger object.
-            _method_name: The log method called.
-            event_dict: The event dictionary being processed.
+            record: The log record to render.
 
         Returns:
-            The formatted message string.
+            The fully formatted line.
         """
-        if self._debug_mode:
-            return self._format_debug_logs(_logger, _method_name, event_dict)
-        return self._format_log_message(event_dict)
+        # Show structured log format in the console; always on server side, and for client at DEBUG+ log level.
+        if self._use_structured_log():
+            return self._format_structured_log(record)
 
-    def _format_log_message(
-        self, event_dict: structlog.types.EventDict
-    ) -> str:
-        """Bare message with level coloring and backtick/URL highlights."""
-        message = str(event_dict.get("event", ""))
+        # Show bare log message for client at INFO+ log level.
+        return self._format_log_message(record)
 
+    def _use_structured_log(self) -> bool:
+        """Check whether to use structured log format in the console.
+
+        Structured log is shown always on server side, and for client at DEBUG+ log level.
+
+        Returns:
+            True for structured pipe layout, False for bare messages.
+        """
+        # On server side, always show structured log.
+        if self._is_server is None:
+            self._is_server = handle_bool_env_var(ENV_ZENML_SERVER, False)
+
+        if self._is_server:
+            return True
+
+        # If the log level is DEBUG, show structured log.
+        return get_logging_level() == LoggingLevels.DEBUG
+
+    def _format_log_message(self, record: logging.LogRecord) -> str:
+        """Bare log message with level coloring and highlights.
+
+        Args:
+            record: The log record to render.
+
+        Returns:
+            Formatted log message string.
+        """
+        message = record.getMessage()
         if ZENML_LOGGING_COLORS_DISABLED:
             return message
 
-        level = str(event_dict.get("level", "info"))
-        level_color = self._LEVEL_COLORS.get(level, "")
-        message = level_color + message + self._RESET
-        return self._colorize_highlights(message, level_color)
+        level_color = self._LEVEL_COLORS.get(record.levelno, "")
+        colored_message = f"{level_color}{message}{self._RESET}"
+        return self._colorize_highlights(colored_message, level_color)
 
-    def _format_debug_logs(
-        self,
-        _logger: Any,
-        _method_name: str,
-        event_dict: structlog.types.EventDict,
-    ) -> str:
-        """ConsoleRenderer layout with DEBUG lines greyed out."""
+    def _format_structured_log(self, record: logging.LogRecord) -> str:
+        """Uses LOG_FORMAT to format the log record. DEBUG logs are greyed out.
+
+        Args:
+            record: The log record to render.
+
+        Returns:
+            Fully formatted line.
+        """
+        is_debug = record.levelno == logging.DEBUG
+        formatted_log = super().format(record)
+
+        extras = self._collect_extras(record)
+        if extras:
+            formatted_log = "{} | {}".format(
+                formatted_log,
+                json.dumps(extras, default=str, separators=(",", ":")),
+            )
+
         if ZENML_LOGGING_COLORS_DISABLED:
-            return str(self._uncolored(_logger, _method_name, event_dict))
+            return formatted_log
 
-        level = str(event_dict.get("level", "info"))
-        if level == "debug":
-            formatted = str(self._uncolored(_logger, _method_name, event_dict))
-            formatted = self._GREY + formatted + self._RESET
-            return self._colorize_highlights(formatted, self._GREY)
+        if is_debug:
+            formatted_log = f"{self._GREY}{formatted_log}{self._RESET}"
+            return self._colorize_highlights(formatted_log, self._GREY)
 
-        formatted = str(self._colored(_logger, _method_name, event_dict))
-        level_color = self._LEVEL_COLORS.get(level, self._WHITE)
-        return self._colorize_highlights(formatted, level_color)
+        plain_level = f"{record.levelname:<8}"
+        level_color = self._LEVEL_COLORS.get(record.levelno, "")
+        formatted_log = formatted_log.replace(
+            plain_level, f"{level_color}{plain_level}{self._RESET}", 1
+        )
+        return self._colorize_highlights(formatted_log, level_color)
+
+    @classmethod
+    def _collect_extras(cls, record: logging.LogRecord) -> dict[str, Any]:
+        """Extract structured fields that aren't stdlib LogRecord attrs.
+
+        Args:
+            record: The log record whose ``__dict__`` we mine.
+
+        Returns:
+            Mapping of extra-field name to value.
+        """
+        return {
+            k: v
+            for k, v in record.__dict__.items()
+            if k not in _RESERVED_LOG_RECORD_ATTRS and not k.startswith("_")
+        }
 
     @classmethod
     def _colorize_highlights(cls, text: str, base_color: str) -> str:
@@ -229,6 +328,55 @@ class _ConsoleRenderer:
         return text
 
 
+class ZenMLJsonFormatter(logging.Formatter):
+    """Format a log record as a single-line JSON object."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Render ``record`` as a single-line JSON object.
+
+        Args:
+            record: The log record to render.
+
+        Returns:
+            A JSON string (no trailing newline; the handler adds one).
+        """
+        payload: dict[str, Any] = {
+            "timestamp": self.formatTime(record),
+            "level": record.levelname,
+            "logger": record.name,
+            "function": record.funcName,
+            "line": record.lineno,
+            "message": record.getMessage(),
+        }
+
+        for k, v in record.__dict__.items():
+            # Skip stdlib internals, duplicates, and private attributes.
+            if (
+                k in _RESERVED_LOG_RECORD_ATTRS
+                or k in payload
+                or k.startswith("_")
+            ):
+                continue
+            payload[k] = v
+
+        if record.exc_info:
+            exc_type, exc_value, exc_traceback = record.exc_info
+            payload["exception"] = {
+                "type": exc_type.__name__ if exc_type else None,
+                "message": str(exc_value) if exc_value else None,
+                "stacktrace": "".join(
+                    traceback.format_exception(
+                        exc_type, exc_value, exc_traceback
+                    )
+                ),
+            }
+
+        if record.stack_info:
+            payload["stack_info"] = record.stack_info
+
+        return json.dumps(payload, default=str, separators=(",", ":"))
+
+
 def _is_json_format() -> bool:
     """Decide whether to emit JSON or console output.
 
@@ -241,6 +389,21 @@ def _is_json_format() -> bool:
     if fmt == "console":
         return False
     return handle_bool_env_var(ENV_ZENML_SERVER, False)
+
+
+def _select_console_formatter() -> logging.Formatter:
+    """Return a JSON or console formatter based on ``ZENML_LOGGING_FORMAT`` env var. Default is console.
+
+    Returns:
+        The formatter to attach to the console handler.
+
+    """
+    # Return a JSON formatter if the env var is set to "json" or if the server is running.
+    if _is_json_format():
+        return ZenMLJsonFormatter()
+
+    # Return a console formatter if the env var is set to "console" or for the client.
+    return ZenMLConsoleFormatter()
 
 
 def get_logging_level() -> LoggingLevels:
@@ -370,23 +533,38 @@ class ZenMLLoggingHandler(logging.Handler):
         LoggingContext.emit(record)
 
 
-def get_zenml_handler() -> logging.Handler:
-    """Get ZenML handler that routes logs through LoggingContext.
+class _StepNameFilter(logging.Filter):
+    """Inject pipeline step name into the log record when available."""
 
-    Returns:
-        A ZenML handler.
-    """
-    return ZenMLLoggingHandler()
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Set ``record.step`` to the active step name when available.
+
+        Args:
+            record: The log record to enrich.
+
+        Returns:
+            Always True (never filters records out).
+        """
+        try:
+            from zenml.steps import get_step_context
+
+            step_context = get_step_context()
+            if step_context is not None:
+                record.step = step_context.step_name
+        except Exception:
+            pass
+        return True
 
 
 class _ContextVarsFilter(logging.Filter):
-    """Copies structlog contextvars into LogRecord attributes.
+    """Copy structlog contextvars onto every log record.
 
-    This bridges the gap between structlog's context binding and handlers
-    that read raw LogRecord objects (e.g. OTel's LoggingHandler). Without
-    this filter, structured fields like request_id or method would only
-    appear in the structlog-formatted console/JSON output but not in OTel
-    log exports to any OpenTelemetry-compatible backend.
+    If the attribute already exists, it is left untouched.
+    
+    This bridges the gap between the structlog contextvars and the log
+    record. Without this filter, the structlog contextvars would not be
+    available to the log record and neither the formatter nor the OTel handler
+    would be able to access them.
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -400,172 +578,56 @@ class _ContextVarsFilter(logging.Filter):
         """
         ctx = structlog.contextvars.get_contextvars()
         for key, value in ctx.items():
+            # Set the attribute on the log record if it doesn't already exist
             if not hasattr(record, key):
                 setattr(record, key, value)
         return True
 
 
-def _choose_renderer(level: LoggingLevels) -> structlog.types.Processor:
-    """Pick the right renderer based on environment and log level.
-
-    Three rendering modes:
-
-    * JSON -- server default, ``ZENML_LOGGING_FORMAT=json``
-    * Console -- server with ``ZENML_LOGGING_FORMAT=console`` override.
-    * Client -- ``_ConsoleRenderer``: formatter log messages at ``INFO+``, structured
-      output with greyed-out ``DEBUG`` lines.
+def add_zenml_filters(handler: logging.Handler) -> logging.Handler:
+    """Add filters to logging handler to attach structlog contextvars and step name to the log record.
 
     Args:
-        level: The active logging level.
+        handler: The logging handler to enrich.
 
     Returns:
-        A structlog processor that renders the final output string.
+        The same handler, with the filters attached.
     """
-    # Server-side default, or ZENML_LOGGING_FORMAT=json: machine-readable JSON lines
-    if _is_json_format():
-        return structlog.processors.JSONRenderer()
-
-    # Server with ZENML_LOGGING_FORMAT=console: structured key=value output
-    if handle_bool_env_var(ENV_ZENML_SERVER, False):
-        return structlog.dev.ConsoleRenderer(
-            colors=not ZENML_LOGGING_COLORS_DISABLED,
-        )
-
-    # Client-side: bare messages at INFO+, greyed-out DEBUG lines at DEBUG verbosity
-    return _ConsoleRenderer(debug_mode=(level == LoggingLevels.DEBUG))
-
-
-def get_console_handler() -> logging.Handler:
-    """Get a console handler with structlog formatting.
-
-    Useful for attaching to standalone loggers (e.g. alembic) that are
-    not children of the root logger.
-
-    Returns:
-        A console handler using structlog's ProcessorFormatter.
-    """
-    shared_processors: list[structlog.types.Processor] = [
-        # injects bind_contextvars() fields (request_id, method, etc.)
-        structlog.contextvars.merge_contextvars,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-    ]
-
-    level = get_logging_level()
-    json_mode = _is_json_format()
-    if json_mode:
-        # JSONRenderer can't handle raw exc_info; pre-format it
-        shared_processors.append(structlog.processors.format_exc_info)
-
-    renderer = _choose_renderer(level)
-
-    formatter = structlog.stdlib.ProcessorFormatter(
-        processors=[
-            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            renderer,
-        ],
-        # processes stdlib LogRecords (e.g. from alembic) through the same pipeline
-        foreign_pre_chain=shared_processors,
-    )
-
-    handler = logging.StreamHandler(_ZenMLStdoutStream())
-    handler.setFormatter(formatter)
+    # Copies bound contextvars (request_id, method, etc.) onto each LogRecord
+    handler.addFilter(_ContextVarsFilter())
+    # Injects step name onto LogRecords emitted during step execution
+    handler.addFilter(_StepNameFilter())
     return handler
 
 
+def get_console_handler() -> logging.Handler:
+    """Get console handler that writes to stdout and is configured with ZenML formatter and filters."""
+    handler = logging.StreamHandler(_ZenMLStdoutStream())
+    handler.setFormatter(_select_console_formatter())
+    return add_zenml_filters(handler)
+
+
+def get_zenml_handler() -> logging.Handler:
+    """Get ZenML handler that routes logs through LoggingContext."""
+    handler = ZenMLLoggingHandler()
+    return add_zenml_filters(handler)
+
+
 def init_logging() -> None:
-    """Initialize the ZenML logging system using structlog.
-
-    Configures structlog's ProcessorFormatter on the root logger so all
-    stdlib log records (ZenML's own and those from third-party libraries)
-    pass through the same processor pipeline.
-
-    Output format is JSON when running inside the server (or when
-    ``ZENML_LOGGING_FORMAT=json``), otherwise colored console output.
-    """
+    """Initialize the ZenML logging system."""
     level = set_root_verbosity()
+
+    # If the root verbosity is NOTSET, return early.
     if level == LoggingLevels.NOTSET:
-        # Route structlog through stdlib so the disabled root
-        # logger silences everything. Without this, structlog's default
-        # PrintLogger would leak to stdout.
-        structlog.configure(
-            wrapper_class=structlog.stdlib.BoundLogger,
-            logger_factory=structlog.stdlib.LoggerFactory(),
-        )
         return
-
-    # Processors shared between structlog-native loggers and Python's logging library.
-    shared_processors: list[structlog.types.Processor] = [
-        # injects any bind_contextvars() fields (request_id, method, path, etc.) into the event dict automatically
-        structlog.contextvars.merge_contextvars,
-        # injects step=<name> during step execution
-        _add_step_name_processor,
-        # interpolates %s-style positional args into the event string. Without this, logger.info("msg %s", arg) would render the literal %s.
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        # adds logger name, log level, timestamp, stack_info
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-    ]
-
-    json_mode = _is_json_format()
-    if json_mode:
-        # JSONRenderer doesn't handle exc_info; pre-format it.
-        shared_processors.append(structlog.processors.format_exc_info)
-
-    # Configure structlog
-    structlog.configure(
-        processors=[
-            *shared_processors,
-            # stashes the event dict on the LogRecord for ProcessorFormatter
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
-        # BoundLogger mirrors logging.Logger API + structured kwargs
-        wrapper_class=structlog.stdlib.BoundLogger,
-        context_class=dict,
-        # creates real stdlib loggers so records flow through stdlib handlers
-        logger_factory=structlog.stdlib.LoggerFactory(),
-    )
-
-    renderer = _choose_renderer(level)
-    formatter = structlog.stdlib.ProcessorFormatter(
-        processors=[
-            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            renderer,
-        ],
-        foreign_pre_chain=shared_processors,
-        # ^^^foreign_pre_chain is used to process logs that come from Python's logging library.
-        # processes stdlib LogRecords (uvicorn, SQLAlchemy, etc.) through the same pipeline
-    )
-
-    # Console handler — writes to original stdout to bypass the
-    # LoggingContext wrapper and prevent duplicate stored-log entries.
-    console_handler = logging.StreamHandler(_ZenMLStdoutStream())
-    console_handler.setFormatter(formatter)
-
-    # Copies structlog contextvars onto LogRecord for OTel export.
-    # Must live on the handler, not the root logger: Python's logging
-    # module does NOT run root-logger filters on records propagated
-    # from child loggers, so a filter on root would silently skip
-    # every ZenML log (they all come from child loggers like
-    # "zenml.pipelines.pipeline_definition").
-    ctx_filter = _ContextVarsFilter()
-    console_handler.addFilter(ctx_filter)
-
-    zenml_handler = get_zenml_handler()
-    zenml_handler.addFilter(ctx_filter)
 
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
-    root_logger.addHandler(console_handler)
-    root_logger.addHandler(zenml_handler)
-    root_logger.setLevel(level.value)
+    root_logger.addHandler(get_console_handler())
+    root_logger.addHandler(get_zenml_handler())
 
-    # must run after handlers are attached so any init-time stdout
-    # writes hit a fully configured logging system
+    # Wraps stdout/stderr after handlers are attached so the
+    # wrapped writes flow through a fully configured pipeline.
     wrap_stdout_stderr()
 
     # Mute tensorflow cuda warnings

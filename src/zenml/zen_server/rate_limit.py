@@ -92,9 +92,11 @@ class RequestLimiter:
         if self.day_limit and len(self.limiter[requester]) > self.day_limit:
             logger.warning(
                 "rate_limit.exceeded",
-                client_ip=requester,
-                limit_type="daily",
-                limit=self.day_limit,
+                extra={
+                    "client_ip": requester,
+                    "limit_type": "daily",
+                    "limit": self.day_limit,
+                },
             )
             raise HTTPException(
                 status_code=429, detail="Daily request limit exceeded."
@@ -109,9 +111,11 @@ class RequestLimiter:
         if self.minute_limit and minute_requests > self.minute_limit:
             logger.warning(
                 "rate_limit.exceeded",
-                client_ip=requester,
-                limit_type="minute",
-                limit=self.minute_limit,
+                extra={
+                    "client_ip": requester,
+                    "limit_type": "minute",
+                    "limit": self.minute_limit,
+                },
             )
             raise HTTPException(
                 status_code=429, detail="Minute request limit exceeded."

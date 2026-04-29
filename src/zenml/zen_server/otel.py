@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -37,56 +37,13 @@ Ref:
 import logging
 from typing import TYPE_CHECKING
 
+from zenml.logger import add_zenml_filters, get_logger
+
 if TYPE_CHECKING:
     from fastapi import FastAPI
+    from opentelemetry.sdk.resources import Resource
 
-logger = logging.getLogger(__name__)
-
-
-_OTEL_SAFE_TYPES = (type(None), bool, bytes, int, float, str, list, tuple)
-
-
-def sanitize_log_record_for_otel(record: logging.LogRecord) -> None:
-    """Remove ``_``-prefixed non-primitive attributes from a LogRecord in place.
-
-    Args:
-        record: The log record to sanitize (mutated in place).
-    """
-    for key in list(record.__dict__):
-        if key.startswith("_") and not isinstance(
-            record.__dict__[key], _OTEL_SAFE_TYPES
-        ):
-            del record.__dict__[key]
-
-
-class _OTelSanitizeFilter(logging.Filter):
-    """Strip non-serializable private attributes from LogRecords before OTel export.
-
-    structlog stashes internal objects (e.g. ``_logger``) on the LogRecord.
-    OTel's LoggingHandler can only serialize primitives like str, float, bool, etc.,
-    so it emits a warning on every log record:
-
-        ``Failed to encode attribute _logger of type BoundLoggerFilteringAtLevel``
-
-    This filter removes those attributes without dropping any records.
-
-    Ref:
-     - https://github.com/open-telemetry/opentelemetry-python/issues/3649
-     - https://github.com/open-telemetry/opentelemetry-python/issues/3370
-     - https://github.com/open-telemetry/opentelemetry-python/issues/3389
-    """
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Remove non-serializable private attributes from the record.
-
-        Args:
-            record: The log record to sanitize.
-
-        Returns:
-            Always True — records are never dropped, only cleaned.
-        """
-        sanitize_log_record_for_otel(record)
-        return True
+logger = get_logger(__name__)
 
 
 def configure_otel(app: "FastAPI") -> None:
@@ -108,26 +65,17 @@ def configure_otel(app: "FastAPI") -> None:
         return
 
     try:
-        from opentelemetry import trace
-        from opentelemetry._logs import set_logger_provider
-        from opentelemetry.exporter.otlp.proto.http._log_exporter import (
-            OTLPLogExporter,
-        )
-        from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
-            OTLPMetricExporter,
-        )
-        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-            OTLPSpanExporter,
-        )
-        from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-        from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-        from opentelemetry.sdk.metrics import MeterProvider
-        from opentelemetry.sdk.metrics.export import (
-            PeriodicExportingMetricReader,
-        )
         from opentelemetry.sdk.resources import Resource
-        from opentelemetry.sdk.trace import TracerProvider
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+        resource = Resource.create({"service.name": config.otel_service_name})
+
+        _configure_traces(endpoint=endpoint, resource=resource)
+        _configure_metrics(endpoint=endpoint, resource=resource)
+        _configure_logs(
+            endpoint=endpoint,
+            resource=resource,
+            log_level=config.otel_python_log_level,
+        )
     except ImportError:
         logger.debug(
             "OpenTelemetry SDK packages not installed — skipping "
@@ -135,17 +83,47 @@ def configure_otel(app: "FastAPI") -> None:
         )
         return
 
-    resource = Resource.create({"service.name": config.otel_service_name})
+    _instrument_libraries(app=app)
 
-    # --- Traces ---
+    logger.info(
+        "OpenTelemetry instrumentation enabled — exporting to %s", endpoint
+    )
+
+
+def _configure_traces(endpoint: str, resource: "Resource") -> None:
+    """Configure OpenTelemetry trace export.
+
+    Args:
+        endpoint: Base OTLP endpoint.
+        resource: Resource attributes shared by all telemetry signals.
+    """
+    from opentelemetry import trace
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+        OTLPSpanExporter,
+    )
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
     tracer_provider = TracerProvider(resource=resource)
     tracer_provider.add_span_processor(
         BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces"))
     )
     trace.set_tracer_provider(tracer_provider)
 
-    # --- Metrics ---
+
+def _configure_metrics(endpoint: str, resource: "Resource") -> None:
+    """Configure OpenTelemetry metric export.
+
+    Args:
+        endpoint: Base OTLP endpoint.
+        resource: Resource attributes shared by all telemetry signals.
+    """
     from opentelemetry import metrics
+    from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+        OTLPMetricExporter,
+    )
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
     reader = PeriodicExportingMetricReader(
         OTLPMetricExporter(endpoint=f"{endpoint}/v1/metrics")
@@ -153,7 +131,26 @@ def configure_otel(app: "FastAPI") -> None:
     meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
     metrics.set_meter_provider(meter_provider)
 
-    # --- Logs ---
+
+def _configure_logs(
+    endpoint: str,
+    resource: "Resource",
+    log_level: str,
+) -> None:
+    """Configure OpenTelemetry log export.
+
+    Args:
+        endpoint: Base OTLP endpoint.
+        resource: Resource attributes shared by all telemetry signals.
+        log_level: Python logging level name for the OTel handler.
+    """
+    from opentelemetry._logs import set_logger_provider
+    from opentelemetry.exporter.otlp.proto.http._log_exporter import (
+        OTLPLogExporter,
+    )
+    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+
     logger_provider = LoggerProvider(resource=resource)
     logger_provider.add_log_record_processor(
         BatchLogRecordProcessor(
@@ -162,17 +159,27 @@ def configure_otel(app: "FastAPI") -> None:
     )
     set_logger_provider(logger_provider)
 
-    otel_log_level = getattr(
-        logging, config.otel_python_log_level.upper(), logging.INFO
-    )
+    otel_log_level = getattr(logging, log_level.upper(), logging.INFO)
     otel_handler = LoggingHandler(
         level=otel_log_level,
         logger_provider=logger_provider,
     )
-    otel_handler.addFilter(_OTelSanitizeFilter())
-    logging.getLogger().addHandler(otel_handler)
 
-    # Instrumenting FastAPI, Requests, and SQLAlchemy
+    # Attach the ZenML filters that add structlog contextvars
+    # and step name to the log record to the OTel handler
+    otel_handler = add_zenml_filters(otel_handler)
+
+    # Add the OTel handler to the root logger
+    root_logger = logging.getLogger()
+    root_logger.addHandler(otel_handler)
+
+
+def _instrument_libraries(app: "FastAPI") -> None:
+    """Instrument supported libraries when their OTel packages are present.
+
+    Args:
+        app: The FastAPI application instance to instrument.
+    """
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
@@ -195,7 +202,3 @@ def configure_otel(app: "FastAPI") -> None:
         SQLAlchemyInstrumentor().instrument()
     except ImportError:
         pass
-
-    logger.info(
-        "OpenTelemetry instrumentation enabled — exporting to %s", endpoint
-    )

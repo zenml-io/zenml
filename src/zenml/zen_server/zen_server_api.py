@@ -170,10 +170,18 @@ async def initialize() -> None:
     # through the root logger's structlog ProcessorFormatter and OTel.
     for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
+
+        if _uvicorn_logger_name == "uvicorn.access":
+            _uvicorn_logger.setLevel(logging.WARNING)
+
         # clear uvicorn handlers to avoid double logging
         _uvicorn_logger.handlers.clear()
         # propagate uvicorn logs to the root logger
         _uvicorn_logger.propagate = True
+
+    # disable uvicorn access logs
+    # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    # logging.getLogger("uvicorn.access").disabled = True
 
     cfg = server_config()
     # Set the maximum number of worker threads

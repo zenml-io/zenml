@@ -19,7 +19,6 @@ from asyncio import Lock
 from datetime import datetime, timedelta
 from typing import Any, Set
 
-import structlog
 from anyio import CapacityLimiter, to_thread
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
@@ -42,7 +41,11 @@ from zenml.constants import (
     READY,
 )
 from zenml.enums import SourceContextTypes
-from zenml.logger import get_logger
+from zenml.logger import (
+    bind_request_context,
+    get_logger,
+    get_logging_context,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.request_management import RequestContext
 from zenml.zen_server.secure_headers import (
@@ -74,8 +77,7 @@ def _error_response(
     """
     content: dict[str, Any] = {"detail": detail}
     try:
-        ctx = structlog.contextvars.get_contextvars()
-        if request_id := ctx.get("request_id"):
+        if request_id := get_logging_context().get("request_id"):
             content["request_id"] = request_id
     except Exception:
         pass
@@ -222,7 +224,7 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
 
                 def update_last_user_activity_timestamp() -> None:
                     logger.debug(
-                        "user_activity.updating", **get_system_metrics()
+                        "user_activity.updating", extra=get_system_metrics()
                     )
 
                     try:
@@ -231,7 +233,7 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
                         )
                     finally:
                         logger.debug(
-                            "user_activity.updated", **get_system_metrics()
+                            "user_activity.updated", extra=get_system_metrics()
                         )
 
                 await to_thread.run_sync(
@@ -335,7 +337,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     async with active_requests_lock:
         active_requests_count += 1
 
-    logger.debug("request.received", **get_system_metrics())
+    logger.debug("request.received", extra=get_system_metrics())
 
     try:
         response = await call_next(request)
@@ -343,9 +345,11 @@ async def log_requests(request: Request, call_next: Any) -> Any:
         request_context = request_manager().current_request
         logger.debug(
             "request.completed",
-            status_code=response.status_code,
-            duration_ms=request_context.log_duration,
-            **get_system_metrics(),
+            extra={
+                "status_code": response.status_code,
+                "duration_ms": request_context.log_duration,
+                **get_system_metrics(),
+            },
         )
 
         return response
@@ -357,9 +361,10 @@ async def log_requests(request: Request, call_next: Any) -> Any:
 async def record_requests(request: Request, call_next: Any) -> Any:
     """Record requests to the ZenML server.
 
-    Creates a RequestContext and binds key request fields into structlog's
-    context vars so that every downstream log line automatically carries
-    request_id, method, path, and client_ip.
+    Creates a RequestContext and binds key request fields into the
+    logging context (via :func:`bind_request_context`) so that every
+    downstream log line automatically carries request_id, trace_id,
+    method, path, and client_ip.
 
     Args:
         request: The incoming request object.
@@ -373,8 +378,7 @@ async def record_requests(request: Request, call_next: Any) -> Any:
     request_context = RequestContext(request=request)
     request_manager().current_request = request_context
 
-    structlog.contextvars.clear_contextvars()
-    structlog.contextvars.bind_contextvars(
+    bind_request_context(
         request_id=request_context.request_id,
         trace_id=request_context.trace_id,
         method=request.method,
