@@ -51,7 +51,7 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
-from zenml.zen_server.otel import configure_otel
+from zenml.zen_server.otel import configure_otel, shutdown_otel
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -216,6 +216,7 @@ async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
+    shutdown_otel()
     snapshot_executor().shutdown(wait=True)
     await cleanup_request_manager()
 

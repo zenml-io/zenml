@@ -35,7 +35,7 @@ Ref:
 """
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from zenml.logger import add_zenml_filters, get_logger
 
@@ -44,6 +44,11 @@ if TYPE_CHECKING:
     from opentelemetry.sdk.resources import Resource
 
 logger = get_logger(__name__)
+
+_otel_configured = False
+_otel_log_handler: Optional[logging.Handler] = None
+_otel_providers: list[Any] = []
+# ^^^list of OTel providers: logger, tracer, meter
 
 
 def configure_otel(app: "FastAPI") -> None:
@@ -57,7 +62,13 @@ def configure_otel(app: "FastAPI") -> None:
     Args:
         app: The FastAPI application instance to instrument.
     """
+    global _otel_configured
+
     from zenml.zen_server.utils import server_config
+
+    if _otel_configured:
+        logger.debug("OpenTelemetry instrumentation already configured.")
+        return
 
     config = server_config()
     endpoint = config.otel_exporter_otlp_endpoint
@@ -68,110 +79,199 @@ def configure_otel(app: "FastAPI") -> None:
         from opentelemetry.sdk.resources import Resource
 
         resource = Resource.create({"service.name": config.otel_service_name})
-
-        _configure_traces(endpoint=endpoint, resource=resource)
-        _configure_metrics(endpoint=endpoint, resource=resource)
-        _configure_logs(
-            endpoint=endpoint,
-            resource=resource,
-            log_level=config.otel_python_log_level,
-        )
     except ImportError:
         logger.debug(
             "OpenTelemetry SDK packages not installed — skipping "
-            "instrumentation.  Install the [otel] extra to enable."
+            "instrumentation.  Install the [server] extra to enable."
+        )
+        return
+
+    traces_configured = _configure_traces(endpoint=endpoint, resource=resource)
+    metrics_configured = _configure_metrics(
+        endpoint=endpoint, resource=resource
+    )
+    logs_configured = _configure_logs(
+        endpoint=endpoint,
+        resource=resource,
+        log_level=config.otel_python_log_level,
+    )
+
+    if not any([traces_configured, metrics_configured, logs_configured]):
+        logger.warning(
+            "OpenTelemetry endpoint is configured, but no telemetry signals "
+            "could be initialized. Install the [server] extra to enable."
         )
         return
 
     _instrument_libraries(app=app)
+    _otel_configured = True
 
     logger.info(
         "OpenTelemetry instrumentation enabled — exporting to %s", endpoint
     )
 
 
-def _configure_traces(endpoint: str, resource: "Resource") -> None:
+def shutdown_otel() -> None:
+    """Flush and shut down OpenTelemetry providers configured by ZenML."""
+    global _otel_configured, _otel_log_handler
+
+    if _otel_log_handler:
+        root_logger = logging.getLogger()
+        root_logger.removeHandler(_otel_log_handler)
+        _otel_log_handler.close()
+        _otel_log_handler = None
+
+    while _otel_providers:
+        provider = _otel_providers.pop()
+        try:
+            provider.shutdown()
+        except Exception:
+            logger.exception(
+                "Failed to shut down OpenTelemetry provider cleanly."
+            )
+
+    _otel_configured = False
+
+
+def _configure_traces(endpoint: str, resource: "Resource") -> bool:
     """Configure OpenTelemetry trace export.
 
     Args:
         endpoint: Base OTLP endpoint.
         resource: Resource attributes shared by all telemetry signals.
+
+    Returns:
+        True if trace export was configured, otherwise False.
     """
-    from opentelemetry import trace
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-        OTLPSpanExporter,
-    )
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    try:
+        from opentelemetry import trace
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+            OTLPSpanExporter,
+        )
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-    tracer_provider = TracerProvider(resource=resource)
-    tracer_provider.add_span_processor(
-        BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces"))
-    )
-    trace.set_tracer_provider(tracer_provider)
+        tracer_provider = TracerProvider(resource=resource)
+        tracer_provider.add_span_processor(
+            BatchSpanProcessor(
+                OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces")
+            )
+        )
+        trace.set_tracer_provider(tracer_provider)
+        _otel_providers.append(tracer_provider)
+        return True
+    except Exception:
+        logger.exception("Failed to configure OpenTelemetry trace export.")
+        return False
 
 
-def _configure_metrics(endpoint: str, resource: "Resource") -> None:
+def _configure_metrics(endpoint: str, resource: "Resource") -> bool:
     """Configure OpenTelemetry metric export.
 
     Args:
         endpoint: Base OTLP endpoint.
         resource: Resource attributes shared by all telemetry signals.
-    """
-    from opentelemetry import metrics
-    from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
-        OTLPMetricExporter,
-    )
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-    reader = PeriodicExportingMetricReader(
-        OTLPMetricExporter(endpoint=f"{endpoint}/v1/metrics")
-    )
-    meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
-    metrics.set_meter_provider(meter_provider)
+    Returns:
+        True if metric export was configured, otherwise False.
+    """
+    try:
+        from opentelemetry import metrics
+        from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+            OTLPMetricExporter,
+        )
+        from opentelemetry.sdk.metrics import MeterProvider
+        from opentelemetry.sdk.metrics.export import (
+            PeriodicExportingMetricReader,
+        )
+
+        reader = PeriodicExportingMetricReader(
+            OTLPMetricExporter(endpoint=f"{endpoint}/v1/metrics")
+        )
+        meter_provider = MeterProvider(
+            resource=resource, metric_readers=[reader]
+        )
+        metrics.set_meter_provider(meter_provider)
+        _otel_providers.append(meter_provider)
+        return True
+    except Exception:
+        logger.exception("Failed to configure OpenTelemetry metric export.")
+        return False
 
 
 def _configure_logs(
     endpoint: str,
     resource: "Resource",
     log_level: str,
-) -> None:
+) -> bool:
     """Configure OpenTelemetry log export.
 
     Args:
         endpoint: Base OTLP endpoint.
         resource: Resource attributes shared by all telemetry signals.
         log_level: Python logging level name for the OTel handler.
+
+    Returns:
+        True if log export was configured, otherwise False.
     """
-    from opentelemetry._logs import set_logger_provider
-    from opentelemetry.exporter.otlp.proto.http._log_exporter import (
-        OTLPLogExporter,
-    )
-    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+    global _otel_log_handler
 
-    logger_provider = LoggerProvider(resource=resource)
-    logger_provider.add_log_record_processor(
-        BatchLogRecordProcessor(
-            OTLPLogExporter(endpoint=f"{endpoint}/v1/logs")
+    try:
+        from opentelemetry._logs import set_logger_provider
+        from opentelemetry.exporter.otlp.proto.http._log_exporter import (
+            OTLPLogExporter,
         )
+        from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+        from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+
+        logger_provider = LoggerProvider(resource=resource)
+        logger_provider.add_log_record_processor(
+            BatchLogRecordProcessor(
+                OTLPLogExporter(endpoint=f"{endpoint}/v1/logs")
+            )
+        )
+        set_logger_provider(logger_provider)
+
+        otel_log_level = _resolve_log_level(log_level)
+        otel_handler = LoggingHandler(
+            level=otel_log_level,
+            logger_provider=logger_provider,
+        )
+        # Attach the ZenML filters that add structlog contextvars
+        # and step name to the log record to the OTel handler.
+        otel_handler = add_zenml_filters(otel_handler)
+
+        # Attach the OTel handler to the root logger.
+        root_logger = logging.getLogger()
+        root_logger.addHandler(otel_handler)
+        # Store the OTel handler so it can be removed on shutdown.
+        _otel_log_handler = otel_handler
+        _otel_providers.append(logger_provider)
+        return True
+    except Exception:
+        logger.exception("Failed to configure OpenTelemetry log export.")
+        return False
+
+
+def _resolve_log_level(log_level: str) -> int:
+    """Resolve and validate a Python logging level name.
+
+    Args:
+        log_level: The configured logging level name.
+
+    Returns:
+        The resolved numeric logging level.
+    """
+    resolved = logging.getLevelName(log_level.upper())
+    resolved = logging.getLevelNamesMapping().get(log_level.upper())
+    if resolved is not None:
+        return resolved
+
+    logger.warning(
+        "Invalid OpenTelemetry log level `%s`; falling back to INFO.",
+        log_level,
     )
-    set_logger_provider(logger_provider)
-
-    otel_log_level = getattr(logging, log_level.upper(), logging.INFO)
-    otel_handler = LoggingHandler(
-        level=otel_log_level,
-        logger_provider=logger_provider,
-    )
-
-    # Attach the ZenML filters that add structlog contextvars
-    # and step name to the log record to the OTel handler
-    otel_handler = add_zenml_filters(otel_handler)
-
-    # Add the OTel handler to the root logger
-    root_logger = logging.getLogger()
-    root_logger.addHandler(otel_handler)
+    return logging.INFO
 
 
 def _instrument_libraries(app: "FastAPI") -> None:
@@ -185,6 +285,10 @@ def _instrument_libraries(app: "FastAPI") -> None:
 
         FastAPIInstrumentor.instrument_app(app)
     except ImportError:
+        logger.debug(
+            "OpenTelemetry FastAPI instrumentation package not installed. "
+            "Install `opentelemetry-instrumentation-fastapi`."
+        )
         pass
 
     try:
@@ -192,6 +296,10 @@ def _instrument_libraries(app: "FastAPI") -> None:
 
         RequestsInstrumentor().instrument()
     except ImportError:
+        logger.debug(
+            "OpenTelemetry requests instrumentation package not installed. "
+            "Install `opentelemetry-instrumentation-requests`."
+        )
         pass
 
     try:
@@ -201,4 +309,8 @@ def _instrument_libraries(app: "FastAPI") -> None:
 
         SQLAlchemyInstrumentor().instrument()
     except ImportError:
+        logger.debug(
+            "OpenTelemetry SQLAlchemy instrumentation package not installed. "
+            "Install `opentelemetry-instrumentation-sqlalchemy`."
+        )
         pass
