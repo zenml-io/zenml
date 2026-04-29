@@ -37,9 +37,6 @@ if TYPE_CHECKING:
 class DatabricksOrchestratorSettings(DatabricksBaseSettings):
     """Databricks orchestrator settings.
 
-    These fields apply only to persistent Databricks Jobs created by the
-    orchestrator. They are not available on the Databricks step operator,
-    which submits one-time runs that have no Job resource to attach them to.
     """
 
     schedule_timezone: Optional[str] = Field(
