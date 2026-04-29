@@ -47,7 +47,6 @@ RUNAI_STATUS_TO_EXECUTION_STATUS = {
     RunAIWorkloadStatus.STOPPING: ExecutionStatus.STOPPING,
 }
 
-# Frozen sets are used for quick status classification to avoid creating new sets on each call.
 _SUCCESS_STATUSES = frozenset(
     {
         RunAIWorkloadStatus.SUCCEEDED,

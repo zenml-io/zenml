@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Run:AI training workload settings."""
 
+import re
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -26,42 +27,19 @@ RunAIUIDGIDSource = Literal["fromTheImage", "fromIdpToken", "custom"]
 RunAITolerationOperator = Literal["Equal", "Exists"]
 RunAITolerationEffect = Literal["NoSchedule", "PreferNoSchedule", "NoExecute"]
 
+_OCTAL_MODE_RE = re.compile(r"^0[0-7]{3}$")
+
 
 def _validate_absolute_path(value: str) -> str:
-    """Validate that a container mount path is absolute.
-
-    Args:
-        value: The mount path to validate.
-
-    Returns:
-        The validated mount path.
-
-    Raises:
-        ValueError: If the path is empty or does not start with '/'.
-    """
     if not value or not value.startswith("/"):
         raise ValueError("Mount paths must be absolute paths.")
     return value
 
 
 def _validate_default_mode(value: Optional[str]) -> Optional[str]:
-    """Validate a Kubernetes volume default mode string.
-
-    Args:
-        value: The default mode to validate.
-
-    Returns:
-        The validated default mode.
-
-    Raises:
-        ValueError: If the value is not a four-character octal mode.
-    """
     if value is None:
         return None
-
-    import re
-
-    if not re.match(r"^0[0-7]{3}$", value):
+    if not _OCTAL_MODE_RE.match(value):
         raise ValueError(
             "default_mode must be a four-character octal string like "
             "'0644' or '0400'."
@@ -69,10 +47,36 @@ def _validate_default_mode(value: Optional[str]) -> Optional[str]:
     return value
 
 
-class RunAITolerationSettings(BaseModel):
-    """Settings for a Kubernetes toleration on a Run:AI workload."""
+class RunAIBaseSettings(BaseModel):
+    """Common base for Run:AI workload settings models.
+
+    Forbids unknown fields so typos in user settings surface as
+    validation errors rather than being silently dropped.
+    """
 
     model_config = ConfigDict(extra="forbid")
+
+
+class RunAIMountBase(RunAIBaseSettings):
+    """Common fields for Run:AI workload storage mount settings."""
+
+    name: Optional[str] = Field(default=None, description="Run:AI mount name.")
+    exclude: Optional[bool] = Field(
+        default=None, description="Whether to exclude this mount."
+    )
+
+    @property
+    def container_mount_path(self) -> str:
+        """The absolute container path where this mount is exposed.
+
+        Returns:
+            The absolute container mount path.
+        """
+        raise NotImplementedError
+
+
+class RunAITolerationSettings(RunAIMountBase):
+    """Settings for a Kubernetes toleration on a Run:AI workload."""
 
     key: Optional[str] = Field(
         default=None, description="Taint key that the toleration applies to."
@@ -91,10 +95,9 @@ class RunAITolerationSettings(BaseModel):
     )
 
 
-class RunAIPVCMountSettings(BaseModel):
+class RunAIPVCMountSettings(RunAIMountBase):
     """Settings for a Run:AI PVC storage mount."""
 
-    name: Optional[str] = Field(default=None, description="Run:AI mount name.")
     path: str = Field(description="Absolute container path for the PVC mount.")
     existing_pvc: Optional[bool] = Field(
         default=True,
@@ -117,17 +120,22 @@ class RunAIPVCMountSettings(BaseModel):
     data_sharing: Optional[bool] = Field(
         default=None, description="Whether to enable Run:AI data sharing."
     )
-    exclude: Optional[bool] = Field(
-        default=None, description="Whether to exclude this mount."
-    )
 
     _validate_path = field_validator("path")(_validate_absolute_path)
 
+    @property
+    def container_mount_path(self) -> str:
+        """The absolute container path for this PVC mount.
 
-class RunAIConfigMapMountSettings(BaseModel):
+        Returns:
+            The absolute container mount path.
+        """
+        return self.path
+
+
+class RunAIConfigMapMountSettings(RunAIMountBase):
     """Settings for a Run:AI ConfigMap storage mount."""
 
-    name: Optional[str] = Field(default=None, description="Run:AI mount name.")
     config_map: str = Field(description="Name of the existing ConfigMap.")
     mount_path: str = Field(
         description="Absolute container path for the ConfigMap mount."
@@ -139,9 +147,6 @@ class RunAIConfigMapMountSettings(BaseModel):
         default=None,
         description="Four-character octal default file mode for mounted ConfigMap files, e.g. '0644'.",
     )
-    exclude: Optional[bool] = Field(
-        default=None, description="Whether to exclude this mount."
-    )
 
     _validate_mount_path = field_validator("mount_path")(
         _validate_absolute_path
@@ -150,11 +155,19 @@ class RunAIConfigMapMountSettings(BaseModel):
         _validate_default_mode
     )
 
+    @property
+    def container_mount_path(self) -> str:
+        """The absolute container path for this ConfigMap mount.
 
-class RunAISecretMountSettings(BaseModel):
+        Returns:
+            The absolute container mount path.
+        """
+        return self.mount_path
+
+
+class RunAISecretMountSettings(RunAIMountBase):
     """Settings for a Run:AI Secret storage mount."""
 
-    name: Optional[str] = Field(default=None, description="Run:AI mount name.")
     mount_path: str = Field(
         description="Absolute container path for the Secret mount."
     )
@@ -163,9 +176,6 @@ class RunAISecretMountSettings(BaseModel):
         description="Four-character octal default file mode for mounted Secret files, e.g. '0644'.",
     )
     secret: str = Field(description="Name of the existing Secret.")
-    exclude: Optional[bool] = Field(
-        default=None, description="Whether to exclude this mount."
-    )
 
     _validate_mount_path = field_validator("mount_path")(
         _validate_absolute_path
@@ -174,11 +184,19 @@ class RunAISecretMountSettings(BaseModel):
         _validate_default_mode
     )
 
+    @property
+    def container_mount_path(self) -> str:
+        """The absolute container path for this Secret mount.
 
-class RunAINFSMountSettings(BaseModel):
+        Returns:
+            The absolute container mount path.
+        """
+        return self.mount_path
+
+
+class RunAINFSMountSettings(RunAIMountBase):
     """Settings for a Run:AI NFS storage mount."""
 
-    name: Optional[str] = Field(default=None, description="Run:AI mount name.")
     path: str = Field(description="Path exported by the NFS server.")
     read_only: Optional[bool] = Field(
         default=None, description="Whether the mount is read-only."
@@ -187,19 +205,24 @@ class RunAINFSMountSettings(BaseModel):
     mount_path: str = Field(
         description="Absolute container path for the NFS mount."
     )
-    exclude: Optional[bool] = Field(
-        default=None, description="Whether to exclude this mount."
-    )
 
     _validate_mount_path = field_validator("mount_path")(
         _validate_absolute_path
     )
 
+    @property
+    def container_mount_path(self) -> str:
+        """The absolute container path for this NFS mount.
 
-class RunAIS3MountSettings(BaseModel):
+        Returns:
+            The absolute container mount path.
+        """
+        return self.mount_path
+
+
+class RunAIS3MountSettings(RunAIMountBase):
     """Settings for a Run:AI S3 storage mount."""
 
-    name: Optional[str] = Field(default=None, description="Run:AI mount name.")
     bucket: str = Field(description="S3 bucket name.")
     path: str = Field(description="Absolute container path for the S3 mount.")
     url: Optional[str] = Field(
@@ -216,17 +239,22 @@ class RunAIS3MountSettings(BaseModel):
         default=None,
         description="Secret key containing the S3 secret access key.",
     )
-    exclude: Optional[bool] = Field(
-        default=None, description="Whether to exclude this mount."
-    )
 
     _validate_path = field_validator("path")(_validate_absolute_path)
 
+    @property
+    def container_mount_path(self) -> str:
+        """The absolute container path for this S3 mount.
 
-class RunAIHostPathMountSettings(BaseModel):
+        Returns:
+            The absolute container mount path.
+        """
+        return self.path
+
+
+class RunAIHostPathMountSettings(RunAIMountBase):
     """Settings for a Run:AI HostPath storage mount."""
 
-    name: Optional[str] = Field(default=None, description="Run:AI mount name.")
     path: str = Field(description="Absolute path on the host node.")
     read_only: Optional[bool] = Field(
         default=None, description="Whether the mount is read-only."
@@ -237,17 +265,23 @@ class RunAIHostPathMountSettings(BaseModel):
     mount_propagation: Optional[str] = Field(
         default=None, description="Kubernetes mount propagation mode."
     )
-    exclude: Optional[bool] = Field(
-        default=None, description="Whether to exclude this mount."
-    )
 
     _validate_path = field_validator("path")(_validate_absolute_path)
     _validate_mount_path = field_validator("mount_path")(
         _validate_absolute_path
     )
 
+    @property
+    def container_mount_path(self) -> str:
+        """The absolute container path for this HostPath mount.
 
-class RunAISecurityContextSettings(BaseModel):
+        Returns:
+            The absolute container mount path.
+        """
+        return self.mount_path
+
+
+class RunAISecurityContextSettings(RunAIMountBase):
     """Settings for the Run:AI workload security context."""
 
     allow_privilege_escalation: Optional[bool] = Field(
@@ -302,17 +336,6 @@ class RunAISecurityContextSettings(BaseModel):
     def _validate_supplemental_groups(
         cls, value: Optional[List[int]]
     ) -> Optional[List[int]]:
-        """Validate supplemental group IDs.
-
-        Args:
-            value: The list of group IDs to validate.
-
-        Returns:
-            The validated list of group IDs.
-
-        Raises:
-            ValueError: If any group ID is negative.
-        """
         if value is None:
             return None
         if any(group < 0 for group in value):
@@ -322,7 +345,7 @@ class RunAISecurityContextSettings(BaseModel):
         return value
 
 
-class RunAIPortSettings(BaseModel):
+class RunAIPortSettings(RunAIMountBase):
     """Settings for exposing a container port on the Run:AI workload."""
 
     container: int = Field(
@@ -358,7 +381,7 @@ class RunAIPortSettings(BaseModel):
     )
 
 
-class RunAIExternalURLSettings(BaseModel):
+class RunAIExternalURLSettings(RunAIMountBase):
     """Settings for exposing a Run:AI workload external URL."""
 
     container: int = Field(

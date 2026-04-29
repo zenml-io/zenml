@@ -14,6 +14,7 @@
 """Run:AI step operator implementation."""
 
 import random
+import re
 import time
 from datetime import datetime, timezone
 from typing import (
@@ -478,8 +479,6 @@ class RunAIStepOperator(BaseStepOperator):
         Returns:
             A sanitized string with only lowercase alphanumeric chars and hyphens.
         """
-        import re
-
         sanitized = name.lower()
         sanitized = re.sub(r"[^a-z0-9-]", "-", sanitized)
         sanitized = re.sub(r"-+", "-", sanitized)
@@ -634,24 +633,32 @@ class RunAIStepOperator(BaseStepOperator):
         Returns:
             Run:AI storage settings, or None when no mounts are configured.
         """
-        storage_kwargs = {
-            "config_map_volume": self._build_instances(
-                settings.config_map_mounts, ConfigMapInstance
-            ),
-            "host_path": self._build_instances(
-                settings.host_path_mounts, HostPathInstance
-            ),
-            "nfs": self._build_instances(settings.nfs_mounts, NfsInstance),
-            "pvc": self._build_instances(settings.pvc_mounts, PvcInstance),
-            "s3": self._build_instances(settings.s3_mounts, S3Instance),
-            "secret_volume": self._build_instances(
-                settings.secret_mounts, SecretInstance2
-            ),
-        }
-        if not any(storage_kwargs.values()):
+        config_map_volume = self._build_instances(
+            settings.config_map_mounts, ConfigMapInstance
+        )
+        host_path = self._build_instances(
+            settings.host_path_mounts, HostPathInstance
+        )
+        nfs = self._build_instances(settings.nfs_mounts, NfsInstance)
+        pvc = self._build_instances(settings.pvc_mounts, PvcInstance)
+        s3 = self._build_instances(settings.s3_mounts, S3Instance)
+        secret_volume = self._build_instances(
+            settings.secret_mounts, SecretInstance2
+        )
+
+        if not any(
+            [config_map_volume, host_path, nfs, pvc, s3, secret_volume]
+        ):
             return None
 
-        return SupersetSpecAllOfStorage(**storage_kwargs)
+        return SupersetSpecAllOfStorage(
+            config_map_volume=config_map_volume,
+            host_path=host_path,
+            nfs=nfs,
+            pvc=pvc,
+            s3=s3,
+            secret_volume=secret_volume,
+        )
 
     def _build_security_context(
         self, settings: RunAIStepOperatorSettings

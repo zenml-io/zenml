@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Run:AI step operator flavor."""
 
+import re
 from collections import Counter
 from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type
 from urllib.parse import urlparse
@@ -41,6 +42,8 @@ from zenml.integrations.runai.flavors.runai_training_workload_settings import (
 )
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 from zenml.utils.secret_utils import PlainSerializedSecretStr
+
+_MEMORY_FORMAT_RE = re.compile(r"^(\d+(?:\.\d+)?)(K|M|G|T|Ki|Mi|Gi|Ti)$")
 
 if TYPE_CHECKING:
     from zenml.integrations.runai.step_operators import RunAIStepOperator
@@ -314,10 +317,7 @@ class RunAIStepOperatorSettings(BaseSettings):
         if value is None:
             return None
 
-        import re
-
-        pattern = r"^(\d+(?:\.\d+)?)(K|M|G|T|Ki|Mi|Gi|Ti)$"
-        if not re.match(pattern, value):
+        if not _MEMORY_FORMAT_RE.match(value):
             raise ValueError(
                 f"Invalid memory format: {value}. "
                 f"Must be a number followed by one of: K, M, G, T, Ki, Mi, Gi, Ti. "
@@ -353,14 +353,19 @@ class RunAIStepOperatorSettings(BaseSettings):
         ):
             raise ValueError("parallelism must be <= completions")
 
-        mount_paths = (
-            [mount.path for mount in self.pvc_mounts or []]
-            + [mount.mount_path for mount in self.config_map_mounts or []]
-            + [mount.mount_path for mount in self.secret_mounts or []]
-            + [mount.mount_path for mount in self.nfs_mounts or []]
-            + [mount.path for mount in self.s3_mounts or []]
-            + [mount.mount_path for mount in self.host_path_mounts or []]
+        mount_collections = (
+            self.pvc_mounts,
+            self.config_map_mounts,
+            self.secret_mounts,
+            self.nfs_mounts,
+            self.s3_mounts,
+            self.host_path_mounts,
         )
+        mount_paths = [
+            mount.container_mount_path
+            for collection in mount_collections
+            for mount in (collection or [])
+        ]
         duplicate_mount_paths = {
             path for path, count in Counter(mount_paths).items() if count > 1
         }
