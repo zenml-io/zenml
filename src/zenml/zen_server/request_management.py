@@ -16,6 +16,7 @@
 import asyncio
 import base64
 import json
+import logging
 import random
 import time
 from contextvars import ContextVar
@@ -312,10 +313,11 @@ class RequestManager:
         request_context = request_record.request_context
         transaction_id = request_context.transaction_id
 
-        logger.debug(
-            "endpoint.async.started",
-            extra={"endpoint": func.__name__, **get_system_metrics()},
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "endpoint.async.started",
+                extra={"endpoint": func.__name__, **get_system_metrics()},
+            )
 
         def sync_run_and_cache_result(*args: Any, **kwargs: Any) -> Any:
             from zenml.zen_server.utils import zen_store
@@ -324,10 +326,11 @@ class RequestManager:
             # the argument in the outer scope.
             deduplicate_request = deduplicate
 
-            logger.debug(
-                "endpoint.sync.started",
-                extra={"endpoint": func.__name__, **get_system_metrics()},
-            )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "endpoint.sync.started",
+                    extra={"endpoint": func.__name__, **get_system_metrics()},
+                )
 
             try:
                 # Create or get the API transaction from the database
@@ -472,10 +475,11 @@ class RequestManager:
 
                 return result
             finally:
-                logger.debug(
-                    "endpoint.sync.completed",
-                    extra={"endpoint": func.__name__, **get_system_metrics()},
-                )
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        "endpoint.sync.completed",
+                        extra={"endpoint": func.__name__, **get_system_metrics()},
+                    )
 
         try:
             result = await run_in_threadpool(
@@ -489,10 +493,11 @@ class RequestManager:
                 if transaction_id in self.transactions:
                     del self.transactions[transaction_id]
 
-        logger.debug(
-            "endpoint.async.completed",
-            extra={"endpoint": func.__name__, **get_system_metrics()},
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "endpoint.async.completed",
+                extra={"endpoint": func.__name__, **get_system_metrics()},
+            )
 
         if isinstance(result, Exception):
             request_record.set_exception(result)
@@ -531,10 +536,11 @@ class RequestManager:
         request_context = self.current_request
         assert request_context is not None
 
-        logger.debug(
-            "endpoint.started",
-            extra={"endpoint": func.__name__, **get_system_metrics()},
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "endpoint.started",
+                extra={"endpoint": func.__name__, **get_system_metrics()},
+            )
 
         transaction_id = request_context.transaction_id
 
@@ -552,10 +558,11 @@ class RequestManager:
                 # The transaction is still being processed on the same
                 # server instance. We just wait for it to complete.
                 fut = self.transactions[transaction_id].future
-                logger.debug(
-                    "endpoint.resumed",
-                    extra={"endpoint": func.__name__, **get_system_metrics()},
-                )
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        "endpoint.resumed",
+                        extra={"endpoint": func.__name__, **get_system_metrics()},
+                    )
             else:
                 # Start execution in background, use the future to wait for it
                 # to complete.
@@ -591,16 +598,18 @@ class RequestManager:
                 timeout=timeout if deduplicate else None,
             )
 
-            logger.debug(
-                "endpoint.completed",
-                extra={"endpoint": func.__name__, **get_system_metrics()},
-            )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "endpoint.completed",
+                    extra={"endpoint": func.__name__, **get_system_metrics()},
+                )
             return result
         except asyncio.TimeoutError:
-            logger.debug(
-                "endpoint.timeout",
-                extra={"endpoint": func.__name__, **get_system_metrics()},
-            )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "endpoint.timeout",
+                    extra={"endpoint": func.__name__, **get_system_metrics()},
+                )
             return JSONResponse(
                 {"error": "Server too busy. Please try again later."},
                 status_code=429,
