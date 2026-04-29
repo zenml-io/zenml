@@ -223,7 +223,8 @@ class ZenMLConsoleFormatter(logging.Formatter):
         Returns:
             The fully formatted line.
         """
-        # Show structured log format in the console; always on server side, and for client at DEBUG+ log level.
+        # Show structured log format in the console
+        # always on server side, and for client at DEBUG+ log level.
         if self._use_structured_log():
             return self._format_structured_log(record)
 
@@ -238,10 +239,13 @@ class ZenMLConsoleFormatter(logging.Formatter):
         Returns:
             True for structured pipe layout, False for bare messages.
         """
-        # On server side, always show structured log.
+        # Only cache once True — before initialize_zen_store() runs
+        # the env var isn't set yet, so we must keep re-checking.
         if self._is_server is None:
-            self._is_server = handle_bool_env_var(ENV_ZENML_SERVER, False)
+            if handle_bool_env_var(ENV_ZENML_SERVER, False):
+                self._is_server = True
 
+        # On server side, always show structured log.
         if self._is_server:
             return True
 
