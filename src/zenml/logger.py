@@ -208,7 +208,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
 
         # The ENV_ZENML_SERVER env var is set to True when the ZenML
         # server is running. By default, if the env var is not set,
-        # it get initalized at import time.
+        # it get initialized at import time.
         # src/zenml/zen_server/utils.py: initialize_zen_store()
         # sets it later during FastAPI startup. Once set, the value
         # never changes.
