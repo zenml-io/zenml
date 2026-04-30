@@ -85,3 +85,74 @@ def test_resolve_baseline_explicit_requires_id():
             suite_name="s",
             mode=EvaluationMode.RAG,
         )
+
+
+def test_resolve_baseline_model_registry_with_production(monkeypatch):
+    fake_result = _result("s", EvaluationMode.RAG, {"f": 0.85})
+    fake_client = MagicMock()
+
+    fake_registry = MagicMock()
+    version_id = uuid4()
+    fake_version = MagicMock()
+    fake_version.id = version_id
+    fake_registry.get_latest_model_version.return_value = fake_version
+
+    fake_artifact = MagicMock()
+    fake_artifact.load.return_value = fake_result
+
+    fake_client.get_active_stack.return_value.model_registry = fake_registry
+    fake_client.list_artifact_versions.return_value = [fake_artifact]
+
+    monkeypatch.setattr(
+        "zenml.evaluators.baseline.Client", lambda: fake_client
+    )
+
+    out = resolve_baseline(
+        BaselineSpec(strategy="model_registry", model_name="my-model"),
+        suite_name="s",
+        mode=EvaluationMode.RAG,
+    )
+    assert out == fake_result
+    fake_registry.get_latest_model_version.assert_called_once()
+    fake_client.list_artifact_versions.assert_called_once_with(
+        model_version_id=version_id
+    )
+
+
+def test_resolve_baseline_filters_by_suite_and_mode(monkeypatch):
+    """Test that resolve_baseline filters artifacts by suite_name and mode."""
+    matching_result = _result("s", EvaluationMode.RAG, {"f": 0.85})
+    non_matching_result_wrong_suite = _result(
+        "x", EvaluationMode.RAG, {"f": 0.75}
+    )
+
+    fake_client = MagicMock()
+    fake_registry = MagicMock()
+    version_id = uuid4()
+    fake_version = MagicMock()
+    fake_version.id = version_id
+    fake_registry.get_latest_model_version.return_value = fake_version
+
+    # Two artifacts: one matching suite_name/mode, one not (wrong suite name).
+    matching_artifact = MagicMock()
+    matching_artifact.load.return_value = matching_result
+    non_matching_artifact = MagicMock()
+    non_matching_artifact.load.return_value = non_matching_result_wrong_suite
+
+    fake_client.get_active_stack.return_value.model_registry = fake_registry
+    fake_client.list_artifact_versions.return_value = [
+        non_matching_artifact,
+        matching_artifact,
+    ]
+
+    monkeypatch.setattr(
+        "zenml.evaluators.baseline.Client", lambda: fake_client
+    )
+
+    out = resolve_baseline(
+        BaselineSpec(strategy="model_registry", model_name="my-model"),
+        suite_name="s",
+        mode=EvaluationMode.RAG,
+    )
+    # Should return the matching artifact (last one that matches).
+    assert out == matching_result

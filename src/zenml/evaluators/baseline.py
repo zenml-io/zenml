@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """Resolve a baseline EvaluationResult to compare against."""
 
+import json
 from typing import Literal, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.client import Client
 from zenml.evaluators.result import EvaluationMode, EvaluationResult
@@ -34,7 +35,16 @@ class BaselineSpec(BaseModel):
     strategy: BaselineStrategy = "model_registry"
     artifact_id: Optional[UUID] = None
     run_id: Optional[UUID] = None
-    model_version_id: Optional[UUID] = None  # override: pull from this version
+    # When strategy="model_registry": if model_version_id is set it is used
+    # directly; otherwise model_name is required to locate the production
+    # version via get_latest_model_version.
+    model_version_id: Optional[UUID] = None
+    model_name: Optional[str] = Field(
+        None,
+        description="Name of the registered model. Required when model_version_id is not "
+        "set; used to look up the production version via the model registry. "
+        "Ignored when model_version_id is provided.",
+    )
 
 
 def resolve_baseline(
@@ -97,10 +107,25 @@ def _resolve_from_model_registry(
 ) -> Optional[EvaluationResult]:
     """Resolve baseline from the active stack's model registry.
 
-    Stubbed in this task. Wired in Task 7b against the real model-registry
-    API (uses production-version + linked-artifact lookup, filtered by
-    suite_name and mode).
+    When spec.model_version_id is provided it is used directly. Otherwise
+    spec.model_name is required and get_latest_model_version(name,
+    stage=PRODUCTION) is called to locate the current production version.
+
+    Linked artifact versions are retrieved via
+    Client().list_artifact_versions(model_version_id=...). Because the
+    materializer persists suite_name/mode inside the JSON body (not as
+    ZenML artifact metadata), each candidate must be loaded and inspected.
+    The list is iterated in the order the API returns it (default sort is
+    ascending by created); the last matching artifact is returned as the
+    most recently produced baseline.
+
+    API surface used:
+      - BaseModelRegistry.get_latest_model_version(name, stage) -> Optional[RegistryModelVersion]
+      - Client().list_artifact_versions(model_version_id=UUID) -> Page[ArtifactVersionResponse]
+      - ArtifactVersionResponse.load() -> Any
     """
+    from zenml.model_registries.base_model_registry import ModelVersionStage
+
     client = Client()
     registry = client.get_active_stack().model_registry
     if registry is None:
@@ -109,8 +134,60 @@ def _resolve_from_model_registry(
             "(strategy=model_registry)."
         )
         return None
-    logger.warning(
-        "Model-registry baseline resolution is stubbed (Task 7b). "
-        "Returning None until the real lookup is wired up."
+
+    version_id = spec.model_version_id
+    if version_id is None:
+        if not spec.model_name:
+            logger.debug(
+                "model_registry strategy requires model_name (or "
+                "model_version_id) in BaselineSpec; baseline=None."
+            )
+            return None
+        prod_version = registry.get_latest_model_version(
+            name=spec.model_name,
+            stage=ModelVersionStage.PRODUCTION,
+        )
+        if prod_version is None:
+            logger.debug(
+                "No production model version for model '%s'; baseline=None.",
+                spec.model_name,
+            )
+            return None
+        version_id = prod_version.id
+
+    candidates = client.list_artifact_versions(
+        model_version_id=version_id,
     )
-    return None
+
+    # Load each candidate and filter by suite_name / mode. The materializer
+    # stores these fields inside the JSON body, not as ZenML artifact
+    # metadata, so we must deserialize to inspect them.
+    latest: Optional[EvaluationResult] = None
+    for art in candidates:
+        try:
+            result = art.load()
+        except (
+            ValueError,
+            TypeError,
+            AttributeError,
+            KeyError,
+            json.JSONDecodeError,
+        ):
+            logger.debug(
+                "Failed to load artifact %s; skipping.", art.id, exc_info=True
+            )
+            continue
+        if not isinstance(result, EvaluationResult):
+            continue
+        if result.suite_name == suite_name and result.mode == mode:
+            latest = result
+
+    if latest is None:
+        logger.debug(
+            "No EvaluationResult artifact matched suite_name=%r mode=%r "
+            "in model version %s.",
+            suite_name,
+            mode,
+            version_id,
+        )
+    return latest
