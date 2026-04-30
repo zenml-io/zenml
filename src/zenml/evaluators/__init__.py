@@ -17,6 +17,11 @@ Public API for building eval suites against LLM/agent outputs and gating
 pipeline runs on regression versus a baseline.
 """
 
+from zenml.evaluators.base_evaluator import (
+    BaseEvaluator,
+    BaseEvaluatorConfig,
+    BaseEvaluatorFlavor,
+)
 from zenml.evaluators.cases import (
     PointwiseCase,
     RAGCase,
@@ -35,6 +40,9 @@ from zenml.evaluators.result import (
 )
 
 __all__ = [
+    "BaseEvaluator",
+    "BaseEvaluatorConfig",
+    "BaseEvaluatorFlavor",
     "PointwiseCase",
     "RAGCase",
     "ReferenceCase",
