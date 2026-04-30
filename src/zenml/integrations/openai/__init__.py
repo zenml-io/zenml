@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Initialization of the OpenAI integration."""
 
+from typing import List, Type
+
 from zenml.integrations.constants import OPEN_AI
 from zenml.integrations.integration import Integration
+from zenml.stack import Flavor
 
 
 class OpenAIIntegration(Integration):
@@ -22,5 +25,18 @@ class OpenAIIntegration(Integration):
 
     NAME = OPEN_AI
     REQUIREMENTS = ["openai>=1.0.0"]
+
+    @classmethod
+    def flavors(cls) -> List[Type[Flavor]]:
+        """Declare the stack component flavors for the OpenAI integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
+        from zenml.integrations.openai.evaluators.openai_evaluator_flavor import (
+            OpenAIEvaluatorFlavor,
+        )
+
+        return [OpenAIEvaluatorFlavor]
 
 
