@@ -17,12 +17,14 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Callable, Dict, List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import LogsResponse
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils.logging_utils import LogEntry
+
+LogFilterHook = Callable[[logging.LogRecord], Optional[logging.LogRecord]]
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -84,6 +86,25 @@ class BaseLogStore(StackComponent, ABC):
         super().__init__(*args, **kwargs)
         self._origins: Dict[str, BaseLogStoreOrigin] = {}
         self._lock = threading.RLock()
+        self._log_filter: Optional[LogFilterHook] = None
+
+    @property
+    def log_filter(self) -> Optional[LogFilterHook]:
+        """Get the current log filter.
+
+        Returns:
+            The log filter function if set, otherwise None.
+        """
+        return self._log_filter
+
+    def set_log_filter(self, log_filter: LogFilterHook) -> None:
+        """Set a custom filter for log records before they are emitted.
+
+        Args:
+            log_filter: A callable that takes a LogRecord and returns a LogRecord
+            (to keep/modify) or None (to drop).
+        """
+        self._log_filter = log_filter
 
     @property
     def config(self) -> BaseLogStoreConfig:

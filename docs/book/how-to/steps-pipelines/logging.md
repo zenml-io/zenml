@@ -213,6 +213,23 @@ These prefixes only appear in console output, not in stored logs. Disable them w
 ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 ```
 
+### Filtering and Rewriting Logs
+
+If you are building downstream tools or wrappers around ZenML, you can filter or rewrite log records before they are emitted to the backend by setting a custom log filter hook on the active log store. This preserves user logs while allowing you to drop or modify framework-internal records:
+```python
+import logging
+from typing import Optional
+from zenml.client import Client
+
+def my_custom_filter(record: logging.LogRecord) -> Optional[logging.LogRecord]:
+    if "Initiating a new run" in record.getMessage():
+        return None  # Drop the log
+    return record
+
+log_store = Client().active_stack.log_store
+log_store.set_log_filter(my_custom_filter)
+```
+
 ## Limitations
 
 ### on Steps and pipelines

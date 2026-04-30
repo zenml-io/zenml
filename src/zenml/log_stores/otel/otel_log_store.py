@@ -239,6 +239,12 @@ class OtelLogStore(BaseLogStore):
         Raises:
             RuntimeError: If the OpenTelemetry provider is not initialized.
         """
+        if self.log_filter:
+            filtered_record = self.log_filter(record)
+            if filtered_record is None:
+                return
+            record = filtered_record
+
         assert isinstance(origin, OtelLogStoreOrigin)
         with self._lock:
             if not self._provider:

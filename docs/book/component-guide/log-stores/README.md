@@ -17,6 +17,8 @@ ZenML's log capture system is designed to be comprehensive and non-intrusive. He
 
 3. **Log routing**: All captured messages are routed through a `LoggingContext` to the active log store in your stack.
 
+4. **Log filtering**: Before emission, records pass through an optional `LogFilterHook`, enabling downstream tools to filter or rewrite framework logs before they reach the storage backend.
+
 This approach ensures that you don't miss any output from your pipeline steps, including:
 - Standard Python `logging` messages
 - `print()` statements
