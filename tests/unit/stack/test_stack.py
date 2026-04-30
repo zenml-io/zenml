@@ -26,6 +26,22 @@ from zenml.exceptions import StackValidationError
 from zenml.stack import Stack
 
 
+def test_stack_evaluator_defaults_to_none(
+    local_orchestrator, local_artifact_store
+):
+    """Stack.evaluator is optional and defaults to None when not configured."""
+    components = {
+        StackComponentType.ORCHESTRATOR: [local_orchestrator],
+        StackComponentType.ARTIFACT_STORE: [local_artifact_store],
+    }
+
+    stack = Stack.from_components_v2(
+        id=uuid4(), name="", components=components
+    )
+
+    assert stack.evaluator is None
+
+
 def test_initializing_a_stack_from_components(
     local_orchestrator, local_artifact_store, local_container_registry
 ):

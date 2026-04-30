@@ -63,6 +63,7 @@ if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
     from zenml.data_validators import BaseDataValidator
     from zenml.deployers import BaseDeployer
+    from zenml.evaluators.base_evaluator import BaseEvaluator
     from zenml.experiment_trackers.base_experiment_tracker import (
         BaseExperimentTracker,
     )
@@ -123,6 +124,7 @@ class Stack:
         model_registry: Optional["BaseModelRegistry"] = None,
         deployer: Optional["BaseDeployer"] = None,
         log_store: Optional["BaseLogStore"] = None,
+        evaluator: Optional["BaseEvaluator"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -147,6 +149,7 @@ class Stack:
             model_registry: Model registry component of the stack.
             deployer: Deployer component of the stack.
             log_store: Log store component of the stack.
+            evaluator: Evaluator component of the stack.
         """
         self._id = id
         self._name = name
@@ -172,6 +175,7 @@ class Stack:
             model_registry,
             deployer,
             log_store,
+            evaluator,
         ]:
             components: List["StackComponent"] = list()
             if component_input:
@@ -287,6 +291,7 @@ class Stack:
         from zenml.container_registries import BaseContainerRegistry
         from zenml.data_validators import BaseDataValidator
         from zenml.deployers import BaseDeployer
+        from zenml.evaluators import BaseEvaluator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
@@ -390,6 +395,10 @@ class Stack:
         if log_store is not None and not isinstance(log_store, BaseLogStore):
             _raise_type_error(log_store, BaseLogStore)
 
+        evaluator = components.get(StackComponentType.EVALUATOR)
+        if evaluator is not None and not isinstance(evaluator, BaseEvaluator):
+            _raise_type_error(evaluator, BaseEvaluator)
+
         return Stack(
             id=id,
             name=name,
@@ -409,6 +418,7 @@ class Stack:
             model_registry=model_registry,
             deployer=deployer,
             log_store=log_store,
+            evaluator=evaluator,
         )
 
     @classmethod
@@ -447,6 +457,7 @@ class Stack:
         from zenml.container_registries import BaseContainerRegistry
         from zenml.data_validators import BaseDataValidator
         from zenml.deployers import BaseDeployer
+        from zenml.evaluators import BaseEvaluator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
@@ -601,6 +612,14 @@ class Stack:
             if not isinstance(log_store[0], BaseLogStore):
                 _raise_type_error(log_store[0], BaseLogStore)
 
+        # Evaluator
+        evaluator = components.get(StackComponentType.EVALUATOR)
+        if evaluator:
+            if len(evaluator) > 1:
+                raise TypeError("Multiple evaluators are not supported.")
+            if not isinstance(evaluator[0], BaseEvaluator):
+                _raise_type_error(evaluator[0], BaseEvaluator)
+
         return Stack(
             id=id,
             name=name,
@@ -657,6 +676,9 @@ class Stack:
             ),
             log_store=cast(
                 Optional["BaseLogStore"], log_store[0] if log_store else None
+            ),
+            evaluator=cast(
+                Optional["BaseEvaluator"], evaluator[0] if evaluator else None
             ),
         )
 
@@ -980,6 +1002,19 @@ class Stack:
         return cast(
             "BaseLogStore",
             self._get_default_component(StackComponentType.LOG_STORE),
+        )
+
+    @property
+    def evaluator(self) -> Optional["BaseEvaluator"]:
+        """The evaluator of the stack.
+
+        Returns:
+            The evaluator of the stack or None if the stack does not
+            have an evaluator.
+        """
+        return cast(
+            "BaseEvaluator",
+            self._get_default_component(StackComponentType.EVALUATOR),
         )
 
     def dict(self) -> Dict[str, str]:
