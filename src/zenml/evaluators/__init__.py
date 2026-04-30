@@ -24,6 +24,10 @@ from zenml.evaluators.cases import (
     Rubric,
     RubricExample,
 )
+from zenml.evaluators.exceptions import (
+    EvaluationModeNotSupportedError,
+    EvaluationRegressionError,
+)
 from zenml.evaluators.result import (
     CaseResult,
     EvaluationMode,
@@ -39,4 +43,6 @@ __all__ = [
     "CaseResult",
     "EvaluationMode",
     "EvaluationResult",
+    "EvaluationModeNotSupportedError",
+    "EvaluationRegressionError",
 ]
