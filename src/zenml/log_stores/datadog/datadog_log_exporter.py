@@ -13,15 +13,14 @@
 #  permissions and limitations under the License.
 """Log exporter that writes logs to Datadog."""
 
-from typing import TYPE_CHECKING, Any, Dict, Sequence
+from typing import Any, Dict, Sequence
+
+from opentelemetry.sdk._logs import ReadableLogRecord
 
 from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.logger import get_logger
 
 DEFAULT_TIMEOUT = 10
-
-if TYPE_CHECKING:
-    from opentelemetry.sdk._logs import LogData
 
 logger = get_logger(__name__)
 
@@ -34,52 +33,45 @@ class DatadogLogExporter(OTLPLogExporter):
     """
 
     @classmethod
-    def _encode_log(cls, log_data: "LogData") -> Dict[str, Any]:
-        """Encode a log data object to a dictionary.
+    def _encode_log(cls, readable: ReadableLogRecord) -> Dict[str, Any]:
+        """Encode a readable log record to a dictionary.
 
         Args:
-            log_data: The log data object to encode.
+            readable: SDK readable log record from the batch processor.
 
         Returns:
             A dictionary representing the log data.
         """
-        body = log_data.log_record.body
-        attributes = (
-            dict(log_data.log_record.attributes)
-            if log_data.log_record.attributes
-            else {}
-        )
+        lr = readable.log_record
+        body = lr.body
+        attributes = dict(lr.attributes) if lr.attributes else {}
 
-        resource = log_data.log_record.resource
-        instrumentation = log_data.instrumentation_scope
+        resource = readable.resource
+        instrumentation = readable.instrumentation_scope
 
         if resource.attributes:
             attributes.update(dict(resource.attributes))
 
-        if instrumentation.attributes:
+        if instrumentation and instrumentation.attributes:
             attributes.update(dict(instrumentation.attributes))
 
         log_record = dict(
             **attributes,
             service=attributes.get("service.name"),
             version=attributes.get("service.version"),
-            timestamp=int(log_data.log_record.timestamp / 1e6)
-            if log_data.log_record.timestamp
-            else None,
+            timestamp=int(lr.timestamp / 1e6) if lr.timestamp else None,
             message=str(body),
-            status=log_data.log_record.severity_text.lower()
-            if log_data.log_record.severity_text
-            else "info",
+            status=lr.severity_text.lower() if lr.severity_text else "info",
             source="zenml",
         )
 
         return {k: v for k, v in log_record.items() if v is not None}
 
-    def _encode_logs(self, logs: Sequence["LogData"]) -> Any:
-        """Encode a sequence of log data objects to a list of dictionaries.
+    def _encode_logs(self, logs: Sequence[ReadableLogRecord]) -> Any:
+        """Encode a sequence of readable log records to a list of dictionaries.
 
         Args:
-            logs: The sequence of log data objects to encode.
+            logs: Readable log records from the batch processor.
 
         Returns:
             The log data.
