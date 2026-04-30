@@ -242,13 +242,18 @@ class TagFilter(UserScopedFilter):
 
         if self.resource_type:
             # Filter for tags that have at least one association with the specified resource type
-            resource_type_filter = exists(
+            resource_type_filters = (
+                self.resource_type
+                if isinstance(self.resource_type, list)
+                else [self.resource_type]
+            )
+            for resource_type_filter in resource_type_filters:
+                custom_filters.append(exists(
                 select(TagResourceSchema).where(
                     TagResourceSchema.tag_id == TagSchema.id,
                     TagResourceSchema.resource_type
-                    == self.resource_type.value,
-                )
-            )
-            custom_filters.append(resource_type_filter)
+                        == resource_type_filter.value,
+                    )
+                ))
 
         return custom_filters

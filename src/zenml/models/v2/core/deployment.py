@@ -438,14 +438,23 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
         custom_filters = super().get_custom_filters(table)
 
         if self.pipeline:
-            pipeline_filter = and_(
-                DeploymentSchema.snapshot_id == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.pipeline, table=PipelineSchema
-                ),
+            pipeline_filters = (
+                self.pipeline
+                if isinstance(self.pipeline, list)
+                else [self.pipeline]
             )
-            custom_filters.append(pipeline_filter)
+            for pipeline_filter in pipeline_filters:
+                custom_filters.append(
+                    and_(
+                        DeploymentSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.pipeline_id
+                        == PipelineSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=pipeline_filter, table=PipelineSchema
+                        ),
+                    )
+                )
 
         return custom_filters
 

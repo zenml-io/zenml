@@ -181,32 +181,43 @@ class ModelVersionPipelineRunFilter(BaseFilter):
         )
 
         if self.pipeline_run_name:
-            value, filter_operator = self._resolve_operator(
+            pipeline_run_name_filters = (
                 self.pipeline_run_name
+                if isinstance(self.pipeline_run_name, list)
+                else [self.pipeline_run_name]
             )
-            filter_ = StrFilter(
-                operation=GenericFilterOps(filter_operator),
-                column="name",
-                value=value,
-            )
-            pipeline_run_name_filter = and_(
-                ModelVersionPipelineRunSchema.pipeline_run_id
-                == PipelineRunSchema.id,
-                filter_.generate_query_conditions(PipelineRunSchema),
-            )
-            custom_filters.append(pipeline_run_name_filter)
+            for pipeline_run_name_filter in pipeline_run_name_filters:
+                value, filter_operator = self._resolve_operator(
+                    self.pipeline_run_name
+                )
+                filter_ = StrFilter(
+                    operation=GenericFilterOps(filter_operator),
+                    column="name",
+                    value=value,
+                )
+                pipeline_run_name_filter = and_(
+                    ModelVersionPipelineRunSchema.pipeline_run_id
+                    == PipelineRunSchema.id,
+                    filter_.generate_query_conditions(PipelineRunSchema),
+                )
+                custom_filters.append(pipeline_run_name_filter)
 
         if self.user:
-            user_filter = and_(
-                ModelVersionPipelineRunSchema.pipeline_run_id
-                == PipelineRunSchema.id,
-                PipelineRunSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
+            user_filters = (
+                self.user if isinstance(self.user, list) else [self.user]
             )
-            custom_filters.append(user_filter)
+            for user_filter in user_filters:
+                custom_filters.append(
+                    and_(
+                        ModelVersionPipelineRunSchema.pipeline_run_id
+                        == PipelineRunSchema.id,
+                        PipelineRunSchema.user_id == UserSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=user_filter,
+                            table=UserSchema,
+                            additional_columns=["full_name"],
+                        ),
+                    )
+                )
 
         return custom_filters

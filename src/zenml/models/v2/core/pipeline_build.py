@@ -555,14 +555,22 @@ class PipelineBuildFilter(ProjectScopedFilter):
         )
 
         if self.container_registry_id:
-            container_registry_filter = and_(
-                PipelineBuildSchema.stack_id == StackSchema.id,
-                StackSchema.id == StackCompositionSchema.stack_id,
-                StackCompositionSchema.component_id == StackComponentSchema.id,
-                StackComponentSchema.type
-                == StackComponentType.CONTAINER_REGISTRY.value,
-                StackComponentSchema.id == self.container_registry_id,
+            container_registry_filters = (
+                self.container_registry_id
+                if isinstance(self.container_registry_id, list)
+                else [self.container_registry_id]
             )
-            custom_filters.append(container_registry_filter)
+            for container_registry_filter in container_registry_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineBuildSchema.stack_id == StackSchema.id,
+                        StackSchema.id == StackCompositionSchema.stack_id,
+                        StackCompositionSchema.component_id
+                        == StackComponentSchema.id,
+                        StackComponentSchema.type
+                        == StackComponentType.CONTAINER_REGISTRY.value,
+                        StackComponentSchema.id == container_registry_filter,
+                    )
+                )
 
         return custom_filters

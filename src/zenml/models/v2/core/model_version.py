@@ -723,12 +723,17 @@ class ModelVersionFilter(
         custom_filters = super().get_custom_filters(table)
 
         if self.model:
-            model_filter = and_(
-                ModelVersionSchema.model_id == ModelSchema.id,  # type: ignore[arg-type]
-                self.generate_name_or_id_query_conditions(
-                    value=self.model, table=ModelSchema
-                ),
+            model_filters = (
+                self.model if isinstance(self.model, list) else [self.model]
             )
-            custom_filters.append(model_filter)
+            for model_filter in model_filters:
+                custom_filters.append(
+                    and_(
+                        ModelVersionSchema.model_id == ModelSchema.id,  # type: ignore[arg-type]
+                        self.generate_name_or_id_query_conditions(
+                            value=model_filter, table=ModelSchema
+                        ),
+                    )
+                )
 
         return custom_filters

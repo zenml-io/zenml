@@ -491,10 +491,17 @@ class ComponentFilter(UserScopedFilter):
         )
 
         if self.stack_id:
-            stack_filter = and_(
-                StackCompositionSchema.stack_id == self.stack_id,
-                StackCompositionSchema.component_id == StackComponentSchema.id,
+            stack_filters = (
+                self.stack_id
+                if isinstance(self.stack_id, list)
+                else [self.stack_id]
             )
-            custom_filters.append(stack_filter)
+            for stack_filter in stack_filters:
+                stack_filter = and_(
+                    StackCompositionSchema.stack_id == stack_filter,
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id,
+                )
+                custom_filters.append(stack_filter)
 
         return custom_filters

@@ -280,10 +280,17 @@ class ResourceRequestFilter(UserScopedFilter):
         )
 
         if self.pipeline_run_id:
-            pipeline_run_filter = and_(
-                ResourceRequestSchema.step_run_id == StepRunSchema.id,
-                StepRunSchema.pipeline_run_id == self.pipeline_run_id,
+            pipeline_run_filters = (
+                self.pipeline_run_id
+                if isinstance(self.pipeline_run_id, list)
+                else [self.pipeline_run_id]
             )
-            custom_filters.append(pipeline_run_filter)
+            for pipeline_run_filter in pipeline_run_filters:
+                custom_filters.append(
+                    and_(
+                        ResourceRequestSchema.step_run_id == StepRunSchema.id,
+                        StepRunSchema.pipeline_run_id == pipeline_run_filter,
+                    )
+                )
 
         return custom_filters

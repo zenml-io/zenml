@@ -358,47 +358,35 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         )
 
         if self.resolved_by:
-            resolved_values = (
+            resolved_by_filters = (
                 self.resolved_by
                 if isinstance(self.resolved_by, list)
                 else [self.resolved_by]
             )
-            resolved_filters = [
-                and_(
+            for resolved_by_filter in resolved_by_filters:
+                custom_filters.append(and_(
                     RunWaitConditionSchema.resolved_by_user_id
                     == UserSchema.id,
                     self.generate_name_or_id_query_conditions(
-                        value=v,
+                        value=resolved_by_filter,
                         table=UserSchema,
                         additional_columns=["full_name"],
                     ),
-                )
-                for v in resolved_values
-            ]
-            if len(resolved_filters) == 1:
-                custom_filters.append(resolved_filters[0])
-            else:
-                custom_filters.append(or_(*resolved_filters))
+                ))
 
         if self.pipeline_run:
-            run_values = (
+            pipeline_run_filters = (
                 self.pipeline_run
                 if isinstance(self.pipeline_run, list)
                 else [self.pipeline_run]
             )
-            run_filters = [
-                and_(
+            for pipeline_run_filter in pipeline_run_filters:
+                custom_filters.append(and_(
                     RunWaitConditionSchema.run_id == PipelineRunSchema.id,
                     self.generate_name_or_id_query_conditions(
-                        value=v,
+                        value=pipeline_run_filter,
                         table=PipelineRunSchema,
                     ),
-                )
-                for v in run_values
-            ]
-            if len(run_filters) == 1:
-                custom_filters.append(run_filters[0])
-            else:
-                custom_filters.append(or_(*run_filters))
+                ))
 
         return custom_filters

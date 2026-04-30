@@ -832,7 +832,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         description="Version of the step run.",
         union_mode="left_to_right",
     )
-    exclude_retried: BoolFilterOption = Field(
+    exclude_retried: Optional[bool] = Field(
         default=None,
         description="Whether to exclude retried step runs.",
     )
@@ -870,23 +870,17 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         )
 
         if self.model:
-            model_values = (
+            model_filters = (
                 self.model if isinstance(self.model, list) else [self.model]
             )
-            model_filters = [
-                and_(
+            for model_filter in model_filters:
+                custom_filters.append(and_(
                     StepRunSchema.model_version_id == ModelVersionSchema.id,
                     ModelVersionSchema.model_id == ModelSchema.id,
                     self.generate_name_or_id_query_conditions(
-                        value=v, table=ModelSchema
+                        value=model_filter, table=ModelSchema
                     ),
-                )
-                for v in model_values
-            ]
-            if len(model_filters) == 1:
-                custom_filters.append(model_filters[0])
-            else:
-                custom_filters.append(or_(*model_filters))
+                ))
 
         if self.exclude_retried:
             custom_filters.append(

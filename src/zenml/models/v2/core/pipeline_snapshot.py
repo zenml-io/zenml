@@ -36,7 +36,6 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     StrFilterOption,
     UUIDFilterOption,
 )
@@ -671,7 +670,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Name of the snapshot.",
     )
-    named_only: BoolFilterOption = Field(
+    named_only: bool = Field(
         default=None,
         description="Whether to only return snapshots with a name.",
     )
@@ -700,15 +699,15 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
     )
-    runnable: BoolFilterOption = Field(
+    runnable: bool = Field(
         default=None,
         description="Whether the snapshot is runnable.",
     )
-    deployable: BoolFilterOption = Field(
+    deployable: bool = Field(
         default=None,
         description="Whether the snapshot is deployable.",
     )
-    deployed: BoolFilterOption = Field(
+    deployed: bool = Field(
         default=None,
         description="Whether the snapshot is deployed.",
     )
@@ -748,23 +747,36 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             )
 
         if self.pipeline:
-            pipeline_filter = and_(
-                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.pipeline, table=PipelineSchema
-                ),
+            pipeline_filters = (
+                self.pipeline
+                if isinstance(self.pipeline, list)
+                else [self.pipeline]
             )
-            custom_filters.append(pipeline_filter)
+            for pipeline_filter in pipeline_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineSnapshotSchema.pipeline_id
+                        == PipelineSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=pipeline_filter, table=PipelineSchema
+                        ),
+                    )
+                )
 
         if self.stack:
-            stack_filter = and_(
-                PipelineSnapshotSchema.stack_id == StackSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.stack,
-                    table=StackSchema,
-                ),
+            stack_filters = (
+                self.stack if isinstance(self.stack, list) else [self.stack]
             )
-            custom_filters.append(stack_filter)
+            for stack_filter in stack_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineSnapshotSchema.stack_id == StackSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=stack_filter,
+                            table=StackSchema,
+                        ),
+                    )
+                )
 
         if self.runnable is True:
             runnable_filter = and_(

@@ -41,7 +41,6 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     FilterGenerator,
     IntFilterOption,
     StrFilterOption,
@@ -565,6 +564,7 @@ class ArtifactVersionFilter(
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        "only_unused",
     ]
 
     artifact: UUIDFilterOption = Field(
@@ -616,10 +616,10 @@ class ArtifactVersionFilter(
         "artifact version.",
         union_mode="left_to_right",
     )
-    only_unused: BoolFilterOption = Field(
+    only_unused: bool = Field(
         default=False, description="Filter only for unused artifacts"
     )
-    has_custom_name: BoolFilterOption = Field(
+    has_custom_name: bool = Field(
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
@@ -786,14 +786,20 @@ class ArtifactVersionFilter(
         )
 
         if self.artifact:
-            value, operator = self._resolve_operator(self.artifact)
-            artifact_filter = and_(
-                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.artifact, table=ArtifactSchema
-                ),
+            artifact_filters = (
+                self.artifact
+                if isinstance(self.artifact, list)
+                else [self.artifact]
             )
-            custom_filters.append(artifact_filter)
+            for artifact_filter in artifact_filters:
+                value, operator = self._resolve_operator(artifact_filter)
+                artifact_filter = and_(
+                    ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                    self.generate_name_or_id_query_conditions(
+                        value=artifact_filter, table=ArtifactSchema
+                    ),
+                )
+                custom_filters.append(artifact_filter)
 
         if self.only_unused:
             unused_filter = and_(
@@ -807,18 +813,26 @@ class ArtifactVersionFilter(
             custom_filters.append(unused_filter)
 
         if self.model_version_id:
-            value, operator = self._resolve_operator(self.model_version_id)
-
-            model_version_filter = and_(
-                ArtifactVersionSchema.id
-                == ModelVersionArtifactSchema.artifact_version_id,
-                ModelVersionArtifactSchema.model_version_id
-                == ModelVersionSchema.id,
-                FilterGenerator(ModelVersionSchema)
-                .define_filter(column="id", value=value, operator=operator)
-                .generate_query_conditions(ModelVersionSchema),
+            model_version_filters = (
+                self.model_version_id
+                if isinstance(self.model_version_id, list)
+                else [self.model_version_id]
             )
-            custom_filters.append(model_version_filter)
+            for model_version_filter in model_version_filters:
+                value, operator = self._resolve_operator(model_version_filter)
+                custom_filters.append(
+                    and_(
+                        ArtifactVersionSchema.id
+                        == ModelVersionArtifactSchema.artifact_version_id,
+                        ModelVersionArtifactSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        FilterGenerator(ModelVersionSchema)
+                        .define_filter(
+                            column="id", value=value, operator=operator
+                        )
+                        .generate_query_conditions(ModelVersionSchema),
+                    )
+                )
 
         if self.has_custom_name is not None:
             custom_name_filter = and_(
@@ -828,17 +842,22 @@ class ArtifactVersionFilter(
             custom_filters.append(custom_name_filter)
 
         if self.model:
-            model_filter = and_(
-                ArtifactVersionSchema.id
-                == ModelVersionArtifactSchema.artifact_version_id,
-                ModelVersionArtifactSchema.model_version_id
-                == ModelVersionSchema.id,
-                ModelVersionSchema.model_id == ModelSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.model, table=ModelSchema
-                ),
+            model_filters = (
+                self.model if isinstance(self.model, list) else [self.model]
             )
-            custom_filters.append(model_filter)
+            for model_filter in model_filters:
+                custom_filters.append(
+                    and_(
+                        ArtifactVersionSchema.id
+                        == ModelVersionArtifactSchema.artifact_version_id,
+                        ModelVersionArtifactSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        ModelVersionSchema.model_id == ModelSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=model_filter, table=ModelSchema
+                        ),
+                    )
+                )
 
         return custom_filters
 

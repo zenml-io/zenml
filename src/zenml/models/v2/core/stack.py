@@ -506,21 +506,37 @@ class StackFilter(UserScopedFilter):
         custom_filters = super().get_custom_filters(table)
 
         if self.component_id:
-            component_id_filter = and_(
-                StackCompositionSchema.stack_id == StackSchema.id,
-                StackCompositionSchema.component_id == self.component_id,
+            component_id_filters = (
+                self.component_id
+                if isinstance(self.component_id, list)
+                else [self.component_id]
             )
-            custom_filters.append(component_id_filter)
+            for component_id_filter in component_id_filters:
+                custom_filters.append(
+                    and_(
+                        StackCompositionSchema.stack_id == StackSchema.id,
+                        StackCompositionSchema.component_id
+                        == component_id_filter,
+                    )
+                )
 
         if self.component:
-            component_filter = and_(
-                StackCompositionSchema.stack_id == StackSchema.id,
-                StackCompositionSchema.component_id == StackComponentSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.component,
-                    table=StackComponentSchema,
-                ),
+            component_filters = (
+                self.component
+                if isinstance(self.component, list)
+                else [self.component]
             )
-            custom_filters.append(component_filter)
+            for component_filter in component_filters:
+                custom_filters.append(
+                    and_(
+                        StackCompositionSchema.stack_id == StackSchema.id,
+                        StackCompositionSchema.component_id
+                        == StackComponentSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=component_filter,
+                            table=StackComponentSchema,
+                        ),
+                    )
+                )
 
         return custom_filters
