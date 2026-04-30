@@ -66,7 +66,9 @@ class StackValidator:
             StackValidationError: If the stack does not meet all the
                 validation criteria.
         """
-        missing_components = self._required_components - set(stack.components)
+        existing_components = set(c.type for c in stack.all_components)
+
+        missing_components = self._required_components - existing_components
         if missing_components:
             raise StackValidationError(
                 f"Missing stack components {missing_components} for "

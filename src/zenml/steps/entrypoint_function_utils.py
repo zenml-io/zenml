@@ -29,6 +29,7 @@ from typing import (
 
 from pydantic import ConfigDict, ValidationError, create_model
 
+from zenml.config.step_configurations import InputSpec
 from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
@@ -93,6 +94,19 @@ class StepArtifact:
             "artifacts visit https://docs.zenml.io/concepts/steps_and_pipelines#multiple-return-values."
         )
 
+    def to_spec(self) -> InputSpec:
+        """Converts the step artifact to an input spec.
+
+        Returns:
+            The corresponding input spec.
+        """
+        return InputSpec(
+            step_name=self.invocation_id,
+            output_name=self.output_name,
+            chunk_index=self.chunk_index,
+            chunk_size=self.chunk_size,
+        )
+
 
 def validate_reserved_arguments(
     signature: inspect.Signature, reserved_arguments: Sequence[str]
@@ -133,9 +147,9 @@ class EntrypointFunctionDefinition(NamedTuple):
         Raises:
             KeyError: If the function has no input for the given key.
             RuntimeError: If a parameter is passed for an input that is
-                annotated as an `UnmaterializedArtifact`.
-            RuntimeError: If the input value is not valid for the type
-                annotation provided for the function parameter.
+                annotated as an `UnmaterializedArtifact`, or if the input
+                value is not valid for the type annotation provided for
+                the function parameter.
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """

@@ -190,3 +190,5 @@ Use this decision tree to determine the right approach:
 **"I can't find the endpoint to run a snapshot"**
 - ✅ Running snapshots is only possible using the **Workspace API**, not the ZenML Pro API
 - ✅ Use your workspace URL + `/docs` to see the full API documentation
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

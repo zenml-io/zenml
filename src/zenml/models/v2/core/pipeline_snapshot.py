@@ -878,6 +878,10 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         Returns:
             The query with filter applied.
         """
+        from sqlalchemy import func
+        from sqlalchemy.orm import aliased
+        from sqlmodel import col, select
+
         from zenml.zen_stores.schemas import (
             PipelineSnapshotSchema,
             TriggerSnapshotSchema,
@@ -886,10 +890,26 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         query = super().apply_filter(query=query, table=table)
 
         if self.trigger_id is not None:
-            query = query.join(
-                TriggerSnapshotSchema,
-                PipelineSnapshotSchema.id == TriggerSnapshotSchema.snapshot_id,
-            ).where(TriggerSnapshotSchema.trigger_id == self.trigger_id)
+            source_of_trigger_snapshot = aliased(PipelineSnapshotSchema)
+            query = query.where(
+                col(PipelineSnapshotSchema.id).in_(
+                    select(
+                        func.coalesce(
+                            source_of_trigger_snapshot.source_snapshot_id,
+                            source_of_trigger_snapshot.id,
+                        )
+                    )
+                    .join(
+                        TriggerSnapshotSchema,
+                        col(TriggerSnapshotSchema.snapshot_id)
+                        == source_of_trigger_snapshot.id,
+                    )
+                    .where(
+                        col(TriggerSnapshotSchema.trigger_id)
+                        == self.trigger_id
+                    )
+                )
+            )
 
         return query
 

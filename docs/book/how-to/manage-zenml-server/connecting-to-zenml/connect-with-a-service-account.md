@@ -119,3 +119,5 @@ The service accounts described here are only supported for OSS servers. If you a
 ## Important notice
 
 Every API key issued is a potential gateway to access your data, secrets and infrastructure. It's important to regularly rotate API keys and deactivate or delete service accounts and API keys that are no longer needed.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

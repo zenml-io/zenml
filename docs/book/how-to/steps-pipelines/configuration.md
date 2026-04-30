@@ -133,18 +133,27 @@ def my_step():
 
 This approach allows you to use different components for different steps in your pipeline while also customizing their runtime behavior.
 
+{% hint style="info" %}
+If your stack contains multiple step operators, `@step(step_operator=True)` uses the default step operator, which is the first attached step operator in the stack. If your stack contains multiple experiment trackers, `@step(experiment_tracker=True)` activates all attached experiment trackers for that step.
+{% endhint %}
+
 ## Types of Settings
 
 Settings in ZenML are categorized into three main types:
 
 * **General settings** that can be used on all ZenML pipelines:
   * `DockerSettings` for container configuration
-  * `ResourceSettings` for CPU, memory, and GPU allocation
+  * `ResourceSettings` for CPU, memory, and GPU allocation (on ZenML Pro, the same
+    fields drive [resource pools](https://docs.zenml.io/pro/core-concepts/resource-pools)
+    for workspace quotas, queuing, and preemption)
   * `DeploymentSettings` for pipeline deployment configuration - can only be set at the pipeline level
 
 * **Stack-component-specific settings** for configuring behaviors of components in your stack:
-  * These use the pattern `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>` as keys
-  * Examples include `experiment_tracker.mlflow` or just `step_operator`
+  * These use the pattern `<COMPONENT_CATEGORY>`, `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`, or `<COMPONENT_CATEGORY>:<COMPONENT_NAME>` as keys
+  * Use `<COMPONENT_CATEGORY>` to target the default attached component of that type
+  * Use `.` to select by flavor: `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>` only works if exactly one attached component of that flavor exists in the stack
+  * Use `:` to select an exact named instance: `<COMPONENT_CATEGORY>:<COMPONENT_NAME>` targets a specific attached component by name
+  * Examples include `experiment_tracker`, `experiment_tracker.wandb`, or `step_operator:vertex`
 
 ## Configuration Hierarchy
 
@@ -187,6 +196,12 @@ simple_ml_pipeline.configuration.settings["resources"]
 ### Resource Settings
 
 Resource settings allow you to specify the CPU, memory, and GPU requirements for your steps.
+
+On **ZenML Pro**, those declarations are also what the **resource pool** feature
+uses: for eligible dynamic pipelines, the server builds resource
+requests from your merged `ResourceSettings` (including `pool_resources` and
+`preemptible`), matches them against workspace pools and policies on your stack’s
+orchestrator or step operator, and may queue or preempt work accordingly. For more information on how this feature works, see [ZenML Pro Resource Pools](https://docs.zenml.io/pro/core-concepts/resource-pools).
 
 ```python
 from zenml.config import ResourceSettings
@@ -633,3 +648,5 @@ steps:
 {% hint style="info" %}
 When you want to configure your pipeline with a certain stack in mind, you can do so as well: `...write_run_configuration_template(stack=<Insert_stack_here>)`
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

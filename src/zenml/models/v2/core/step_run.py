@@ -59,6 +59,7 @@ if TYPE_CHECKING:
         LogsRequest,
         LogsResponse,
     )
+    from zenml.models.v2.core.resource_request import ResourceRequestResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -168,6 +169,11 @@ class StepRunRequest(ProjectScopedRequest):
     )
     dynamic_config: Optional["Step"] = Field(
         title="The dynamic configuration of the step run.",
+        default=None,
+    )
+    resource_requester: Optional[UUID] = Field(
+        title="The ID of the component that requested the resources for the "
+        "step run.",
         default=None,
     )
 
@@ -335,6 +341,10 @@ class StepRunResponseResources(ProjectScopedResponseResources):
     outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
         title="The output artifact versions of the step run.",
         default_factory=dict,
+    )
+    resource_request: Optional["ResourceRequestResponse"] = Field(
+        title="The resource request of the step run.",
+        default=None,
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -723,6 +733,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_resources().model_version
+
+    @property
+    def resource_request(self) -> Optional["ResourceRequestResponse"]:
+        """The `resource_request` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().resource_request
 
 
 # ------------------ Filter Model ------------------

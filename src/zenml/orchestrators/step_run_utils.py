@@ -18,6 +18,8 @@ from datetime import timedelta
 from typing import Dict, List, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
+import requests
+
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import (
@@ -274,6 +276,16 @@ class StepRunRequestFactory:
                 if request.docstring is None:
                     request.docstring = cached_step_run.docstring
 
+        if (
+            request.status != ExecutionStatus.CACHED
+            and self.snapshot.is_dynamic
+        ):
+            if step.config.step_operator:
+                assert self.stack.step_operator
+                request.resource_requester = self.stack.step_operator.id
+            else:
+                request.resource_requester = self.stack.orchestrator.id
+
     def _populate_skipped_step(
         self,
         request: StepRunRequest,
@@ -284,11 +296,9 @@ class StepRunRequestFactory:
             request: The request to populate.
 
         Raises:
-            RuntimeError: If the pipeline run is not a replayed run.
-            RuntimeError: If no step run is found for the step in the original
-                run.
-            RuntimeError: If the step wasn't successfully completed in the
-                original run.
+            RuntimeError: If the pipeline run is not a replayed run, if no
+                step run is found for the step in the original run, or if
+                the step wasn't successfully completed in the original run.
         """
         if not self.pipeline_run.original_run:
             raise RuntimeError(
@@ -641,6 +651,45 @@ def fetch_step_runs_by_names(
     Returns:
         A dictionary of step runs by name.
     """
+
+    def _fetch_chunk_with_retry(
+        chunk: List[str],
+    ) -> Dict[str, "StepRunResponse"]:
+        if not chunk:
+            return {}
+        try:
+            return {
+                run_step.name: run_step
+                for run_step in pagination_utils.depaginate(
+                    Client().list_run_steps,
+                    pipeline_run_id=pipeline_run.id,
+                    project=pipeline_run.project_id,
+                    name="oneof:" + json.dumps(chunk),
+                )
+            }
+        except requests.exceptions.HTTPError as e:
+            if e.response is None or e.response.status_code != 414:
+                raise
+
+            if len(chunk) == 1:
+                raise RuntimeError(
+                    "Failed to fetch step run because the request URI is too "
+                    "large even for a single step name."
+                ) from e
+
+            midpoint = len(chunk) // 2
+            logger.debug(
+                "Failed fetching %d step runs with HTTP 414. Reducing chunk "
+                "size and retrying.",
+                len(chunk),
+            )
+
+            left_step_runs = _fetch_chunk_with_retry(chunk=chunk[:midpoint])
+            right_step_runs = _fetch_chunk_with_retry(chunk=chunk[midpoint:])
+
+            left_step_runs.update(right_step_runs)
+            return left_step_runs
+
     step_runs = {}
 
     chunks = []
@@ -663,15 +712,6 @@ def fetch_step_runs_by_names(
         chunks.append(current_chunk)
 
     for chunk in chunks:
-        step_runs.update(
-            {
-                run_step.name: run_step
-                for run_step in pagination_utils.depaginate(
-                    Client().list_run_steps,
-                    pipeline_run_id=pipeline_run.id,
-                    project=pipeline_run.project_id,
-                    name="oneof:" + json.dumps(chunk),
-                )
-            }
-        )
+        step_runs.update(_fetch_chunk_with_retry(chunk=chunk))
+
     return step_runs

@@ -18,7 +18,10 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+    ReplayRunConfiguration,
+)
 from zenml.enums import RunWaitConditionStatus, StackDeploymentProvider
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
@@ -158,9 +161,12 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsStoreInterface,
+)
 
 
-class ZenStoreInterface(ABC):
+class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
     """ZenML store interface.
 
     All ZenML stores must implement the methods in this interface.
@@ -1663,6 +1669,22 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def replay_run(
+        self,
+        run_id: UUID,
+        run_configuration: ReplayRunConfiguration,
+    ) -> PipelineRunResponse:
+        """Replay a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to replay.
+            run_configuration: Replay configuration.
+
+        Returns:
+            The replayed pipeline run.
+        """
+
+    @abstractmethod
     def disable_run_heartbeat(self, run_id: UUID) -> None:
         """Disables the run's heartbeat.
 
@@ -1873,6 +1895,21 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the entities don't exist.
+        """
+
+    @abstractmethod
+    def clear_trigger_dispatch_error(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID | None = None,
+    ) -> None:
+        """Clear recorded dispatch errors for a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: Optional snapshot ID. If provided, clear only this
+                snapshot association. If omitted, clear all associated
+                snapshot dispatch errors for the trigger.
         """
 
     # -------------------- Schedules --------------------

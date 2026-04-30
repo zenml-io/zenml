@@ -100,7 +100,7 @@ class OldSchoolMarkdownHeading(Heading):
 
         Yields:
             RenderResult: The rendered content.
-        """
+        """  # noqa: DOC201, DOC403
         text = self.text
         text.justify = "left"
         if self.tag == "h1":

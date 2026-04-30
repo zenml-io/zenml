@@ -17,6 +17,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 from typing import Any, Dict, List
 
 import distro
@@ -381,10 +382,12 @@ class Environment(metaclass=SingletonMetaClass):
             List of installed packages in pip freeze format.
         """
         try:
-            output = subprocess.check_output(["pip", "freeze"]).decode()
+            output = subprocess.check_output(
+                [sys.executable, "-m", "pip", "freeze"]
+            ).decode()
             return output.strip().split("\n")
-        except FileNotFoundError:
-            # pip not found in PATH, try uv as a fallback
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            # pip not found in current python environment, try uv as a fallback
             if shutil.which("uv"):
                 try:
                     output = subprocess.check_output(

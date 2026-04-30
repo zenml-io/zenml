@@ -72,6 +72,7 @@ Methods for managing ZenML pipelines, runs, and related resources:
 * [`Client.delete_run_template`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_run_template)
 * [`Client.delete_schedule`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_schedule)
 * [`Client.create_trigger`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.create_trigger)
+* [`Client.clear_trigger_dispatch_error`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.clear_trigger_dispatch_error)
 * [`Client.delete_trigger`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_trigger)
 * [`Client.delete_trigger_execution`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_trigger_execution)
 
@@ -180,3 +181,5 @@ Methods for managing ZenML server settings:
 
 * [`Client.get_settings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.get_settings)
 * [`Client.update_server_settings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.update_server_settings)
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

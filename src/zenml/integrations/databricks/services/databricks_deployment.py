@@ -247,7 +247,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
             )
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the Databricks deployment.
+        """Check the current operational state of the Databricks deployment.
 
         Returns:
             The operational state of the Databricks deployment and a message

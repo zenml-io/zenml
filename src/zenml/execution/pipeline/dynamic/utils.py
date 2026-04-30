@@ -19,10 +19,13 @@ from typing import (
     Any,
     Dict,
     Generic,
+    List,
+    Literal,
     Optional,
     Sequence,
     Type,
     TypeVar,
+    Union,
     overload,
 )
 from uuid import UUID
@@ -34,10 +37,12 @@ from zenml.models import (
     ArtifactVersionResponse,
     StepRunResponse,
 )
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.execution.pipeline.dynamic.outputs import (
         AnyStepFuture,
+        BaseStepFuture,
         OutputArtifact,
         StepRunOutputs,
     )
@@ -281,9 +286,102 @@ def load_step_run_outputs(step_run_id: UUID) -> "StepRunOutputs":
     else:
         # Make sure we return them in the same order as they're defined in the
         # step configuration, as we don't enforce any ordering in the DB.
-        return tuple(
-            _convert_output_artifact(
-                output_name=name, artifact=output_artifacts[name]
+        outputs = []
+
+        for template_name in step_run.config.outputs.keys():
+            name = string_utils.format_name_template(
+                template_name,
+                substitutions=step_run.config.substitutions,
             )
-            for name in step_run.config.outputs.keys()
-        )
+            outputs.append(
+                _convert_output_artifact(
+                    output_name=template_name, artifact=output_artifacts[name]
+                )
+            )
+
+        return tuple(outputs)
+
+
+@overload
+def collect_futures(
+    inputs: Optional[Dict[str, Any]] = ...,
+    after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = ...,
+    expand_map_results: Literal[True] = ...,
+) -> List["BaseStepFuture"]: ...
+
+
+@overload
+def collect_futures(
+    inputs: Optional[Dict[str, Any]] = ...,
+    after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = ...,
+    expand_map_results: Literal[False] = ...,
+) -> List["AnyStepFuture"]: ...
+
+
+def collect_futures(
+    inputs: Optional[Dict[str, Any]] = None,
+    after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+    expand_map_results: bool = False,
+) -> Union[List["BaseStepFuture"], List["AnyStepFuture"]]:
+    """Collect futures referenced in step inputs and `after`.
+
+    Args:
+        inputs: Optional step inputs to inspect for futures.
+        after: Optional explicit upstream dependencies. Must be a future or a
+            sequence containing only futures.
+        expand_map_results: Whether map futures should be expanded into their
+            child step futures.
+
+    Raises:
+        TypeError: If `after` is not a future or a sequence containing only
+            futures.
+
+    Returns:
+        The collected futures.
+    """
+    from zenml.execution.pipeline.dynamic.outputs import (
+        ArtifactFuture,
+        MapResultsFuture,
+        StepFuture,
+    )
+
+    VALID_FUTURE_CLASSES = (ArtifactFuture, StepFuture, MapResultsFuture)
+
+    futures: List["AnyStepFuture"] = []
+
+    def _append_future(future: "AnyStepFuture") -> None:
+        if expand_map_results and isinstance(future, MapResultsFuture):
+            futures.extend(future.futures)
+        else:
+            futures.append(future)
+
+    def _collect_input_value(value: Any) -> None:
+        if isinstance(value, VALID_FUTURE_CLASSES):
+            _append_future(value)
+            return
+
+        if isinstance(value, Sequence) and all(
+            isinstance(item, VALID_FUTURE_CLASSES) for item in value
+        ):
+            for item in value:
+                _append_future(item)
+            return
+
+    if inputs:
+        for value in inputs.values():
+            _collect_input_value(value=value)
+
+    if after:
+        if isinstance(after, VALID_FUTURE_CLASSES):
+            _append_future(after)
+        elif isinstance(after, Sequence) and all(
+            isinstance(item, VALID_FUTURE_CLASSES) for item in after
+        ):
+            for item in after:
+                _append_future(item)
+        else:
+            raise TypeError(
+                "`after` must be a future or a sequence of futures."
+            )
+
+    return futures
