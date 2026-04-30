@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Resource settings class used to specify resources for a step."""
 
+import math
 from enum import Enum
-from typing import Literal, Optional, Union
+from typing import Dict, Literal, Optional, Union
 
 from pydantic import (
     ConfigDict,
@@ -112,6 +113,8 @@ class ResourceSettings(BaseSettings):
         cpu_count: The amount of CPU cores that should be configured.
         gpu_count: The amount of GPUs that should be configured.
         memory: The amount of memory that should be configured.
+        preemptible: Whether the resources can be preempted. This only applies
+            when using ZenML resource pools.
         min_replicas: Minimum number of container instances (replicas).
             Use 0 to allow scale-to-zero on idle. Only relevant to
             deployed pipelines.
@@ -127,11 +130,27 @@ class ResourceSettings(BaseSettings):
         max_concurrency: Maximum concurrent requests per instance (if supported
             by the platform). Defines a concurrency limit for each container.
             Only relevant to deployed pipelines.
+        pool_resources: Optional map of resource name to positive integer amount
+            for ZenML resource pools. Use for custom keys
+            (for example ``tpu``) or to supply ``gpu`` / ``mcpu`` / ``memory_mb``
+            without the typed fields. When ``gpu_count``, ``cpu_count``, or
+            ``memory`` is set, those fields override the same keys in this map.
     """
 
     cpu_count: Optional[PositiveFloat] = None
     gpu_count: Optional[NonNegativeInt] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
+    pool_resources: Optional[Dict[str, PositiveInt]] = Field(
+        default=None,
+        description=(
+            "Maps resource names to positive integer amounts allocated from "
+            "ZenML resource pools. Examples: {'memory': 2}, {'tpu': 4}, "
+            "{'vcpus': 2}, {'gpus': 4}. When gpu_count, cpu_count, or memory "
+            "is set, those fields override the gpu, mcpu, and memory_mb keys "
+            "respectively."
+        ),
+    )
+    preemptible: bool = True
 
     # Settings only applicable for deployers and deployed pipelines
     min_replicas: Optional[NonNegativeInt] = None
@@ -166,15 +185,32 @@ class ResourceSettings(BaseSettings):
 
     @property
     def empty(self) -> bool:
-        """Returns if this object is "empty" (=no values configured) or not.
+        """Returns if this object is "empty" or not.
+
+        A ResourceSettings instance is considered empty if none of the
+        generic resource-related values are configured. This excludes the
+        preemptible flag and the pool_resources map, which are only relevant
+        for resource pool scheduling and currently ignored by workload
+        scheduling stack components like orchestrators and step operators.
 
         Returns:
             `True` if no values were configured, `False` otherwise.
         """
         # To detect whether this config is empty (= no values specified), we
         # check if there are any attributes which are explicitly set to any
-        # value other than `None`.
-        return len(self.model_dump(exclude_unset=True, exclude_none=True)) == 0
+        # value other than `None`. Exclude preemptible and pool_resources
+        # because they are not part of the set of unified resource settings
+        # that are understood and applied by orchestrators and step operators.
+        return (
+            len(
+                self.model_dump(
+                    exclude_unset=True,
+                    exclude_none=True,
+                    exclude={"preemptible", "pool_resources"},
+                )
+            )
+            == 0
+        )
 
     def get_memory(
         self, unit: Union[str, ByteUnit] = ByteUnit.GB
@@ -205,6 +241,31 @@ class ResourceSettings(BaseSettings):
         else:
             # Should never happen due to the regex validation
             raise ValueError(f"Unable to parse memory unit from '{memory}'.")
+
+    def merged_requested_resources(self) -> Dict[str, int]:
+        """Build the resource request map for scheduling and pool allocation.
+
+        Returns:
+            Resource name to amount.
+        """
+        merged: Dict[str, int] = (
+            dict(self.pool_resources) if self.pool_resources else {}
+        )
+
+        if self.gpu_count is not None:
+            if self.gpu_count > 0:
+                merged["gpu"] = self.gpu_count
+            else:
+                merged.pop("gpu", None)
+
+        if self.cpu_count is not None:
+            merged["mcpu"] = math.ceil(self.cpu_count * 1000)
+
+        memory_amount = self.get_memory(unit=ByteUnit.MB)
+        if memory_amount is not None:
+            merged["memory_mb"] = math.ceil(memory_amount)
+
+        return merged
 
     model_config = ConfigDict(
         # public attributes are immutable

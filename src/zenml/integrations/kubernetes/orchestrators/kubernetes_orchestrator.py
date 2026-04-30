@@ -51,12 +51,18 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client import ApiException
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    MetadataResourceTypes,
+    StackComponentType,
+)
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
@@ -82,6 +88,7 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypo
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models import RunMetadataResource
 from zenml.models.v2.core.schedule import ScheduleUpdate
 from zenml.orchestrators import (
     ContainerizedOrchestrator,
@@ -361,7 +368,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 # go through all stack components and identify those that
                 # advertise a local path where they persist information that
                 # they need to be available when running pipelines.
-                for stack_comp in stack.components.values():
+                for stack_comp in stack.all_components:
                     if stack_comp.local_path is None:
                         continue
                     return False, (
@@ -941,6 +948,25 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             job_manifest=job_manifest,
             api_request_timeout=settings.api_request_timeout,
         )
+
+        try:
+            Client().create_run_metadata(
+                metadata={
+                    "step_jobs": {step_run_info.pipeline_step_name: job_name}
+                },
+                resources=[
+                    RunMetadataResource(
+                        id=step_run_info.run_id,
+                        type=MetadataResourceTypes.PIPELINE_RUN,
+                    )
+                ],
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to create run metadata for step `%s`: %s",
+                step_run_info.pipeline_step_name,
+                str(e),
+            )
 
     def get_isolated_step_status(
         self, step_run: "StepRunResponse"

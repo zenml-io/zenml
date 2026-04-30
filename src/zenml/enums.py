@@ -16,7 +16,7 @@
 import logging
 from enum import Enum
 
-from zenml.utils.enum_utils import StrEnum
+from zenml.utils.enum_utils import DescribedValuesEnum, StrEnum
 
 
 class ArtifactType(StrEnum):
@@ -85,6 +85,7 @@ class ExecutionStatus(StrEnum):
 
     INITIALIZING = "initializing"
     PROVISIONING = "provisioning"
+    QUEUED = "queued"
     RUNNING = "running"
     FAILED = "failed"
     COMPLETED = "completed"
@@ -94,6 +95,8 @@ class ExecutionStatus(StrEnum):
     # Once the next retry is attempted, the status is set to retried.
     RETRYING = "retrying"
     RETRIED = "retried"
+    CANCELLING = "cancelling"
+    CANCELLED = "cancelled"
     PAUSED = "paused"
     RESUMING = "resuming"
     STOPPED = "stopped"
@@ -113,6 +116,7 @@ class ExecutionStatus(StrEnum):
             ExecutionStatus.SKIPPED,
             ExecutionStatus.RETRIED,
             ExecutionStatus.STOPPED,
+            ExecutionStatus.CANCELLED,
         }
 
     @property
@@ -135,7 +139,7 @@ class ExecutionStatus(StrEnum):
         Returns:
             Whether the execution status refers to a failed execution.
         """
-        return self in {ExecutionStatus.FAILED}
+        return self in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
 
 
 class LoggingLevels(Enum):
@@ -222,6 +226,19 @@ class StackComponentType(StrEnum):
             return "model_registries"
 
         return f"{self.value}s"
+
+    @property
+    def supports_multiple_per_stack(self) -> bool:
+        """Whether multiple components of this type can exist in one stack.
+
+        Returns:
+            True if this component type is repeatable within a stack.
+        """
+        return self in {
+            StackComponentType.ALERTER,
+            StackComponentType.EXPERIMENT_TRACKER,
+            StackComponentType.STEP_OPERATOR,
+        }
 
 
 class StoreType(StrEnum):
@@ -608,6 +625,7 @@ class StepType(StrEnum):
 
     TOOL_CALL = "tool_call"
     LLM_CALL = "llm_call"
+    MEMORY_CALL = "memory_call"
 
 
 class GroupType(StrEnum):
@@ -617,16 +635,30 @@ class GroupType(StrEnum):
     MAP = "map"
 
 
+class ResourceRequestStatus(StrEnum):
+    """Resource request statuses."""
+
+    PENDING = "pending"
+    ALLOCATED = "allocated"
+    PREEMPTING = "preempting"
+    PREEMPTED = "preempted"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+    RELEASED = "released"
+
+
 class TriggerType(StrEnum):
     """Enum representing fundamental trigger types."""
 
-    SCHEDULE = "schedule"  # TODO: Extend with Webhook
+    SCHEDULE = "schedule"
+    PLATFORM_EVENT = "platform_event"
 
 
 class TriggerFlavor(StrEnum):
     """Enum representing trigger flavors."""
 
-    NATIVE_SCHEDULE = "native schedule"  # TODO: extend with new flavors
+    NATIVE_SCHEDULE = "native schedule"
+    PLATFORM_EVENT = "platform event"
 
 
 class TriggerRunConcurrency(StrEnum):
@@ -641,3 +673,54 @@ class ContainerEngineType(StrEnum):
 
     DOCKER = "docker"
     PODMAN = "podman"
+
+
+class SourceType(StrEnum):
+    """Enum representing the source type."""
+
+    PIPELINE = "pipeline"
+    PIPELINE_RUN = "pipeline_run"
+
+
+class PipelineEvent(DescribedValuesEnum):
+    """Enum representing platform target events for pipelines."""
+
+    RUN_COMPLETED = "run_completed"
+    RUN_FAILED = "run_failed"
+
+    @classmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
+
+        Returns:
+            An dictionary with descriptions for each enum value.
+        """
+        return {
+            cls.RUN_COMPLETED: "A pipeline run of the source pipeline has completed successfully.",
+            cls.RUN_FAILED: "A pipeline run of the source pipeline has failed.",
+        }
+
+
+class PipelineRunEvent(DescribedValuesEnum):
+    """Enum representing platform target events for pipeline runs."""
+
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+    @classmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
+
+        Returns:
+            An dictionary with descriptions for each enum value.
+        """
+        return {
+            cls.COMPLETED: "Source pipeline run completed successfully.",
+            cls.FAILED: "Source pipeline run failed.",
+        }
+
+
+PLATFORM_EVENT_REGISTRY: dict[SourceType, type[DescribedValuesEnum]] = {
+    SourceType.PIPELINE: PipelineEvent,
+    SourceType.PIPELINE_RUN: PipelineRunEvent,
+}
