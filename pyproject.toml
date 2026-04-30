@@ -134,6 +134,8 @@ vertex = [
 azureml = [
     "azure-ai-ml==1.23.1",
 ]
+openai = ["openai>=1.0.0"]
+ragas = ["ragas>=0.2,<0.4", "datasets"]
 dev = [
     "bandit>=1.7.5,<2.0.0",
     "ruff>=0.1.7",
