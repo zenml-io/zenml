@@ -262,7 +262,6 @@ def _resolve_log_level(log_level: str) -> int:
     Returns:
         The resolved numeric logging level.
     """
-    resolved = logging.getLevelName(log_level.upper())
     resolved = logging.getLevelNamesMapping().get(log_level.upper())
     if resolved is not None:
         return resolved
