@@ -203,6 +203,7 @@ class StackComponentType(StrEnum):
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     DATA_VALIDATOR = "data_validator"
+    EVALUATOR = "evaluator"
     EXPERIMENT_TRACKER = "experiment_tracker"
     FEATURE_STORE = "feature_store"
     IMAGE_BUILDER = "image_builder"
