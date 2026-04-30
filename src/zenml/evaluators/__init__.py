@@ -24,6 +24,11 @@ from zenml.evaluators.cases import (
     Rubric,
     RubricExample,
 )
+from zenml.evaluators.result import (
+    CaseResult,
+    EvaluationMode,
+    EvaluationResult,
+)
 
 __all__ = [
     "PointwiseCase",
@@ -31,4 +36,7 @@ __all__ = [
     "ReferenceCase",
     "Rubric",
     "RubricExample",
+    "CaseResult",
+    "EvaluationMode",
+    "EvaluationResult",
 ]
