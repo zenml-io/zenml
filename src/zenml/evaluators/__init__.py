@@ -22,6 +22,7 @@ from zenml.evaluators.base_evaluator import (
     BaseEvaluatorConfig,
     BaseEvaluatorFlavor,
 )
+from zenml.evaluators.baseline import BaselineSpec
 from zenml.evaluators.cases import (
     PointwiseCase,
     RAGCase,
@@ -38,11 +39,17 @@ from zenml.evaluators.result import (
     EvaluationMode,
     EvaluationResult,
 )
+from zenml.evaluators.steps import (
+    evaluate_pointwise,
+    evaluate_rag,
+    evaluate_reference,
+)
 
 __all__ = [
     "BaseEvaluator",
     "BaseEvaluatorConfig",
     "BaseEvaluatorFlavor",
+    "BaselineSpec",
     "PointwiseCase",
     "RAGCase",
     "ReferenceCase",
@@ -53,4 +60,7 @@ __all__ = [
     "EvaluationResult",
     "EvaluationModeNotSupportedError",
     "EvaluationRegressionError",
+    "evaluate_pointwise",
+    "evaluate_rag",
+    "evaluate_reference",
 ]
