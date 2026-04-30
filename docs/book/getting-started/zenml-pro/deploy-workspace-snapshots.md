@@ -150,6 +150,34 @@ Granting these permissions can be achieved in several ways:
   * configure a service account with implicit access to the container registry - associating some cloud service identity (e.g. a GCP service account, an AWS IAM role, etc.) with the Kubernetes service account
   * configure an image pull secret for the service account - similar to the previous option, but using a Kubernetes secret instead of a cloud service identity
 
+#### Recommended least-privilege split
+
+Use separate identities for:
+
+1. the service account running the Workspace Server pod,
+2. the service account configured in
+   `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` for runner/builder jobs.
+
+**Workspace Server service account RBAC (in workload manager namespace)**
+
+The Workspace Server creates, monitors, and cleans up workload manager jobs and
+fetches pod logs. Grant:
+
+- `batch/jobs`: `create`, `get`, `deletecollection`
+- `core/pods`: `list`
+- `core/pods/log`: `get`
+
+**Workload manager runner/builder service account**
+
+The runner/builder jobs launched by the workload manager do not need Kubernetes
+API permissions for the workload manager control loop itself. This account
+mainly needs:
+
+- container registry pull permissions for runner images,
+- container registry push permissions if build-on-demand is enabled,
+- optional cloud permissions required by your workload implementation (for
+  example S3 write access when AWS external logs are enabled).
+
 ### 4. Environment Variable Reference
 
 All supported environment variables for workload manager configuration:

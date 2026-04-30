@@ -481,6 +481,9 @@ CURATED_VISUALIZATIONS = "/curated_visualizations"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
+RESOURCE_POOLS = "/resource_pools"
+RESOURCE_POOL_SUBJECT_POLICIES = "/resource_pool_subject_policies"
+RESOURCE_REQUESTS = "/resource_requests"
 PROJECTS = "/projects"
 REFRESH = "/refresh"
 RESOLVE = "/resolve"
@@ -515,10 +518,12 @@ STATUS = "/status"
 STEP_CONFIGURATION = "/step-configuration"
 STEPS = "/steps"
 HEARTBEAT = "/heartbeat"
+REPLAY = "/replay"
 STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"
 TRIGGERS = "/triggers"
+TRIGGER_SNAPSHOT_DISPATCH_STATE = "/dispatch_state"
 ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
 URL = "/url"
@@ -577,7 +582,6 @@ TEXT_FIELD_MAX_LENGTH = 65535
 STR_ID_FIELD_MAX_LENGTH = 50
 STR_FIELD_MAX_LENGTH = 255
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
-
 # Model Control Plane constants
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"
 
@@ -654,5 +658,6 @@ LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
 
 # Subscription-based features
 SCHEDULE_FEATURE = "schedule"
+RESOURCE_POOL_FEATURE = "resource_pool"
 
 LOGS_RUNNER_SOURCE = "runner"

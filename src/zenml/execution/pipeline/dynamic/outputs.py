@@ -13,16 +13,30 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline execution outputs."""
 
+import threading
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
-from typing import Any, Iterator, List, Optional, Tuple, Union, overload
+from typing import (
+    Any,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 from uuid import UUID
 
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import ArtifactVersionResponse, StepRunResponse
 from zenml.utils import exception_utils
 
 logger = get_logger(__name__)
+
+T = TypeVar("T")
 
 
 class OutputArtifact(ArtifactVersionResponse):
@@ -124,7 +138,7 @@ class _InlineStepFuture(BaseFuture):
 
 
 class _IsolatedStepFuture(BaseFuture):
-    """Future for an inline step run."""
+    """Future for an isolated step run."""
 
     def __init__(
         self,
@@ -140,6 +154,7 @@ class _IsolatedStepFuture(BaseFuture):
             wrapped: Optional future to wait for that submits the step run.
         """
         self._wrapped = wrapped
+        self._finished_step_run: Optional[StepRunResponse] = None
         self.pipeline_run_id = pipeline_run_id
         self.invocation_id = invocation_id
 
@@ -151,12 +166,25 @@ class _IsolatedStepFuture(BaseFuture):
         """
         from zenml.execution.pipeline.dynamic.utils import get_latest_step_run
 
-        if self._wrapped and not self._wrapped.done():
-            return True
+        if self._finished_step_run is not None:
+            return False
+
+        if self._wrapped:
+            if not self._wrapped.done():
+                # Waiting for the step run to be launched.
+                return True
+
+            try:
+                self._wrapped.result()
+            except BaseException:
+                # Launching the step run failed or was cancelled.
+                return False
 
         step_run = get_latest_step_run(
             self.pipeline_run_id, self.invocation_id, hydrate=False
         )
+        if step_run.status.is_finished:
+            self._finished_step_run = step_run
 
         return not step_run.status.is_finished
 
@@ -166,6 +194,7 @@ class _IsolatedStepFuture(BaseFuture):
         Raises:
             BaseException: Any exception that happened while waiting for the
                 step to finish.
+            RuntimeError: If the step was stopped.
 
         Returns:
             The result of the step future.
@@ -174,16 +203,24 @@ class _IsolatedStepFuture(BaseFuture):
             wait_for_step_to_finish,
         )
 
-        if self._wrapped:
-            # We first wait until the step run is submitted and only then
-            # start monitoring the actual step.
-            self._wrapped.result()
+        if self._finished_step_run is not None:
+            step_run = self._finished_step_run
+        else:
+            if self._wrapped:
+                # We first wait until the step run is submitted and only then
+                # start monitoring the actual step.
+                self._wrapped.result()
 
-        step_run = wait_for_step_to_finish(
-            pipeline_run_id=self.pipeline_run_id, step_name=self.invocation_id
-        )
+            step_run = wait_for_step_to_finish(
+                pipeline_run_id=self.pipeline_run_id,
+                step_name=self.invocation_id,
+            )
+            self._finished_step_run = step_run
 
-        if step_run.status.is_failed:
+        if (
+            step_run.status.is_failed
+            or step_run.status == ExecutionStatus.STOPPED
+        ):
             raise exception_utils.reconstruct_exception(
                 exception_info=step_run.exception_info,
                 fallback_message=(
@@ -195,21 +232,81 @@ class _IsolatedStepFuture(BaseFuture):
         return step_run
 
 
-class BaseStepFuture(BaseFuture):
+StepExecutionFuture = Union[_InlineStepFuture, _IsolatedStepFuture]
+
+
+class _StartupResult(Generic[T]):
+    """Container for a startup result or startup exception."""
+
+    def __init__(self) -> None:
+        """Initialize the startup result."""
+        self._lock = threading.Lock()
+        self._future: Future[T] = Future()
+
+    def done(self) -> bool:
+        """Whether the startup completed.
+
+        Returns:
+            Whether the startup completed.
+        """
+        return self._future.done()
+
+    def failed(self) -> bool:
+        """Whether the startup failed.
+
+        Returns:
+            Whether the startup failed.
+        """
+        return self._future.done() and self._future.exception() is not None
+
+    def result(self) -> T:
+        """Get the startup result.
+
+        Returns:
+            The startup result.
+        """
+        return self._future.result()
+
+    def set_result(self, value: T) -> None:
+        """Store the startup result if it is still unresolved.
+
+        Args:
+            value: The startup result.
+        """
+        with self._lock:
+            if self._future.done():
+                return
+
+            self._future.set_result(value)
+
+    def set_exception(self, exception: BaseException) -> None:
+        """Store the startup exception if it is still unresolved.
+
+        Args:
+            exception: The startup exception.
+        """
+        with self._lock:
+            if self._future.done():
+                return
+
+            self._future.set_exception(exception)
+
+
+class BaseStepFuture(BaseFuture, ABC):
     """Base step future."""
 
     def __init__(
         self,
-        wrapped: Union[_InlineStepFuture, _IsolatedStepFuture],
+        invocation_id: str,
         **kwargs: Any,
     ) -> None:
         """Initialize the dynamic step run future.
 
         Args:
-            wrapped: The wrapped future object.
+            invocation_id: The invocation ID of the future.
             **kwargs: Additional keyword arguments.
         """
-        self._wrapped = wrapped
+        self._invocation_id = invocation_id
 
     @property
     def invocation_id(self) -> str:
@@ -218,15 +315,11 @@ class BaseStepFuture(BaseFuture):
         Returns:
             The step run invocation ID.
         """
-        return self._wrapped.invocation_id
+        return self._invocation_id
 
-    def running(self) -> bool:
-        """Check if the step run future is running.
-
-        Returns:
-            True if the step run future is running, False otherwise.
-        """
-        return self._wrapped.running()
+    @abstractmethod
+    def wait(self) -> None:
+        """Wait for the future to finish."""
 
 
 class ArtifactFuture(BaseStepFuture):
@@ -234,17 +327,26 @@ class ArtifactFuture(BaseStepFuture):
 
     def __init__(
         self,
-        wrapped: Union[_InlineStepFuture, _IsolatedStepFuture],
+        parent: "StepFuture",
         index: int,
     ) -> None:
         """Initialize the future.
 
         Args:
-            wrapped: The wrapped future object.
+            parent: The parent step future object.
             index: The index of the output artifact.
         """
-        super().__init__(wrapped=wrapped)
+        super().__init__(invocation_id=parent.invocation_id)
         self._index = index
+        self._parent = parent
+
+    def running(self) -> bool:
+        """Check if the artifact future is running.
+
+        Returns:
+            True if the artifact future is running, False otherwise.
+        """
+        return self._parent.running()
 
     def result(self) -> OutputArtifact:
         """Get the output artifact this future represents.
@@ -255,11 +357,11 @@ class ArtifactFuture(BaseStepFuture):
         Returns:
             The output artifact.
         """
-        step_run = self._wrapped.result()
         from zenml.execution.pipeline.dynamic.utils import (
             load_step_run_outputs,
         )
 
+        step_run = self._parent._wait()
         result = load_step_run_outputs(step_run.id)
 
         if isinstance(result, OutputArtifact):
@@ -297,22 +399,32 @@ class ArtifactFuture(BaseStepFuture):
         """
         return self.result().chunk(index=index)
 
+    def wait(self) -> None:
+        """Wait for the artifact future to complete."""
+        self._parent.wait()
+
 
 class StepFuture(BaseStepFuture):
     """Future for a step run output."""
 
     def __init__(
         self,
-        wrapped: Union[_InlineStepFuture, _IsolatedStepFuture],
+        invocation_id: str,
         output_keys: List[str],
+        execution_future: Optional[StepExecutionFuture] = None,
     ) -> None:
         """Initialize the future.
 
         Args:
-            wrapped: The wrapped future object.
+            invocation_id: The invocation ID of the step run.
             output_keys: The output keys of the step run.
+            execution_future: Optional execution future if the startup has
+                already completed.
         """
-        super().__init__(wrapped=wrapped)
+        super().__init__(invocation_id=invocation_id)
+        self._startup = _StartupResult[StepExecutionFuture]()
+        if execution_future is not None:
+            self._startup.set_result(execution_future)
         self._output_keys = output_keys
 
     def get_artifact(self, key: str) -> ArtifactFuture:
@@ -334,13 +446,27 @@ class StepFuture(BaseStepFuture):
             )
 
         return ArtifactFuture(
-            wrapped=self._wrapped,
+            parent=self,
             index=self._output_keys.index(key),
         )
 
+    def running(self) -> bool:
+        """Check if the step future is running.
+
+        Returns:
+            True if the step future is running, False otherwise.
+        """
+        if not self._startup.done():
+            return True
+
+        if self._startup.failed():
+            return False
+
+        return self._startup.result().running()
+
     def wait(self) -> None:
         """Wait for the step to finish."""
-        self._wrapped.result()
+        self._wait()
 
     def artifacts(self) -> StepRunOutputs:
         """Get the step run output artifacts.
@@ -360,7 +486,7 @@ class StepFuture(BaseStepFuture):
             load_step_run_outputs,
         )
 
-        step_run = self._wrapped.result()
+        step_run = self._wait()
         return load_step_run_outputs(step_run.id)
 
     def load(self, disable_cache: bool = False) -> Any:
@@ -412,14 +538,14 @@ class StepFuture(BaseStepFuture):
             output_key = self._output_keys[key]
 
             return ArtifactFuture(
-                wrapped=self._wrapped,
+                parent=self,
                 index=self._output_keys.index(output_key),
             )
         elif isinstance(key, slice):
             output_keys = self._output_keys[key]
             return tuple(
                 ArtifactFuture(
-                    wrapped=self._wrapped,
+                    parent=self,
                     index=self._output_keys.index(output_key),
                 )
                 for output_key in output_keys
@@ -443,7 +569,7 @@ class StepFuture(BaseStepFuture):
 
         for index in range(len(self._output_keys)):
             yield ArtifactFuture(
-                wrapped=self._wrapped,
+                parent=self,
                 index=index,
             )
 
@@ -455,17 +581,112 @@ class StepFuture(BaseStepFuture):
         """
         return len(self._output_keys)
 
+    def _wait(self) -> StepRunResponse:
+        """Wait for the step to finish.
+
+        Returns:
+            The step run response.
+        """
+        return self._startup.result().result()
+
+    def _set_startup_result(
+        self, wrapped: Union[_InlineStepFuture, _IsolatedStepFuture]
+    ) -> None:
+        """Store the future that represents the started step.
+
+        Args:
+            wrapped: The future that represents the started step.
+        """
+        self._startup.set_result(wrapped)
+
+    def _set_startup_failed(self, exception: BaseException) -> None:
+        """Store a startup exception for the step.
+
+        Args:
+            exception: The startup exception.
+        """
+        self._startup.set_exception(exception)
+
+    def _cancel_startup(self, exception: BaseException) -> None:
+        """Cancel step startup if it has not been resolved yet.
+
+        Args:
+            exception: The cancellation exception to store.
+        """
+        self._set_startup_failed(exception)
+
 
 class MapResultsFuture(BaseFuture):
     """Future that represents the results of a `step.map/product(...)` call."""
 
-    def __init__(self, futures: List[StepFuture]) -> None:
-        """Initialize the map results future.
+    def __init__(self, invocation_id: str) -> None:
+        """Initialize an empty map results future.
 
         Args:
-            futures: The step run futures.
+            invocation_id: Stable invocation ID for the map expansion.
         """
-        self.futures = futures
+        self._invocation_id = invocation_id
+        self._startup = _StartupResult[List[StepFuture]]()
+
+    @property
+    def invocation_id(self) -> str:
+        """Stable invocation ID for this map expansion.
+
+        Returns:
+            The invocation ID.
+        """
+        return self._invocation_id
+
+    @property
+    def startup_succeeded(self) -> bool:
+        """Whether map startup completed successfully with child futures.
+
+        Returns:
+            Whether the  startup completed successfully.
+        """
+        return self._startup.done() and not self._startup.failed()
+
+    @property
+    def startup_failed(self) -> bool:
+        """Whether the map startup failed.
+
+        Returns:
+            Whether the map startup failed.
+        """
+        return self._startup.failed()
+
+    def _set_startup_result(self, futures: List[StepFuture]) -> None:
+        """Store the child step futures created for the map.
+
+        Args:
+            futures: The child step futures created for the map.
+        """
+        self._startup.set_result(futures)
+
+    def _set_startup_failed(self, exception: BaseException) -> None:
+        """Store a startup exception for the map.
+
+        Args:
+            exception: The startup exception.
+        """
+        self._startup.set_exception(exception)
+
+    def _cancel_startup(self, exception: BaseException) -> None:
+        """Cancel map startup if it has not been resolved yet.
+
+        Args:
+            exception: The cancellation exception to store.
+        """
+        self._set_startup_failed(exception)
+
+    @property
+    def futures(self) -> List[StepFuture]:
+        """Get the child step futures for the map.
+
+        Returns:
+            The child step futures.
+        """
+        return self._startup.result()
 
     def running(self) -> bool:
         """Check if the map results future is running.
@@ -473,7 +694,16 @@ class MapResultsFuture(BaseFuture):
         Returns:
             True if the map results future is running, False otherwise.
         """
+        if not self._startup.done():
+            return True
+        if self._startup.failed():
+            return False
         return any(future.running() for future in self.futures)
+
+    def wait(self) -> None:
+        """Wait for the map results future to complete."""
+        for future in self.futures:
+            future.wait()
 
     def result(self) -> List[StepRunOutputs]:
         """Get the step run outputs this future represents.
