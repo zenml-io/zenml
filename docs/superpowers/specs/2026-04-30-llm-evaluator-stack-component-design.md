@@ -1,9 +1,10 @@
 # Design: First-class LLM Evaluation as a ZenML Stack Component
 
-**Status:** Draft RFC
+**Status:** Draft RFC — open for discussion
 **Date:** 2026-04-30
 **Author:** Demian Havdun
 **Phase:** 1 of 3 (LLM eval first; classical ML eval mirror follows in Phase 2)
+**Discussion:** [zenml-io/zenml#4787](https://github.com/zenml-io/zenml/discussions/4787)
 
 ## Summary
 
