@@ -232,6 +232,9 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 for. Only called with resource types that do not support
                 multiple instances.
 
+        Returns:
+            The default resource ID for the resource type.
+
         Raises:
             RuntimeError: If the resource type does not support multiple
                 instances and the connector implementation did not provide a
@@ -298,7 +301,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
                 authentication method.
-        """
+        """  # noqa: DOC502
 
     @classmethod
     @abstractmethod
@@ -336,7 +339,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         Raises:
             NotImplementedError: If the connector auto-configuration fails or
                 is not supported.
-        """
+        """  # noqa: DOC502
 
     @abstractmethod
     def _verify(

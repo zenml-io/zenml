@@ -33,7 +33,7 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import ZENML_PRO_API_KEY_PREFIX
-from zenml.enums import ServerProviderType, StoreType
+from zenml.enums import ContainerEngineType, ServerProviderType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
@@ -161,14 +161,13 @@ def start_local_server(
     from zenml.zen_server.deploy.deployer import LocalServerDeployer
 
     if docker:
-        from zenml.utils.docker_utils import check_docker
+        from zenml.container_engines import check_container_engine
 
-        if not check_docker():
-            cli_utils.error(
-                "Docker does not seem to be installed on your system. Please "
-                "install Docker to use the Docker ZenML server local "
-                "deployment or use one of the other deployment options."
-            )
+        is_available, error_message = check_container_engine(
+            ContainerEngineType.DOCKER
+        )
+        if not is_available:
+            cli_utils.error(f"Docker is not available: {error_message}")
         provider = ServerProviderType.DOCKER
     else:
         if sys.platform == "win32" and not blocking:

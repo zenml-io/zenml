@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
-import signal
 import time
 from contextlib import nullcontext
 from typing import (
@@ -33,9 +32,13 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
+from zenml.enums import (
+    ExecutionStatus,
+    ResourceRequestStatus,
+    StepRuntime,
+)
 from zenml.environment import get_run_environment_dict
-from zenml.exceptions import RunInterruptedException, RunStoppedException
+from zenml.exceptions import RunStoppedException
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunRequest,
@@ -46,6 +49,7 @@ from zenml.models import (
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
+from zenml.orchestrators.signal_handler import SignalHandler
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException
@@ -55,7 +59,7 @@ from zenml.utils.logging_utils import (
     is_step_logging_enabled,
     setup_logging_context,
 )
-from zenml.utils.time_utils import utc_now
+from zenml.utils.time_utils import exponential_backoff_delays, utc_now
 
 if TYPE_CHECKING:
     from zenml.step_operators import BaseStepOperator
@@ -78,19 +82,19 @@ def _get_step_operator(
     Raises:
         RuntimeError: If no active step operator is found.
     """
-    step_operator = stack.step_operator
+    if step_operator_name is None:
+        step_operator = stack.step_operator
+        if step_operator is None:
+            raise RuntimeError(
+                f"No step operators specified for active stack '{stack.name}'."
+            )
+        return step_operator
 
-    # the two following errors should never happen as the stack gets
-    # validated before running the pipeline
-    if not step_operator:
+    step_operator = stack.step_operators.get(step_operator_name)
+    if step_operator is None:
         raise RuntimeError(
-            f"No step operator specified for active stack '{stack.name}'."
-        )
-
-    if step_operator_name and step_operator_name != step_operator.name:
-        raise RuntimeError(
-            f"No step operator named '{step_operator_name}' in active "
-            f"stack '{stack.name}'."
+            f"No step operator named '{step_operator_name}' found in active "
+            f"stack '{stack.name}'. Available step operators: {list(stack.step_operators)}."
         )
 
     return step_operator
@@ -147,117 +151,6 @@ class StepLauncher:
 
         # Internal properties and methods
         self._step_run: Optional[StepRunResponse] = None
-        self._setup_signal_handlers()
-
-    def _setup_signal_handlers(self) -> None:
-        """Set up signal handlers for graceful shutdown, chaining previous handlers."""
-        try:
-            # Save previous handlers
-            self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
-            self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
-        except ValueError as e:
-            # This happens when not in the main thread
-            logger.debug(f"Cannot set up signal handlers: {e}")
-            self._prev_sigterm_handler = None
-            self._prev_sigint_handler = None
-            return
-
-        def signal_handler(signum: int, frame: Any) -> None:
-            """Handle shutdown signals gracefully.
-
-            Args:
-                signum: The signal number.
-                frame: The frame of the signal handler.
-
-            Raises:
-                RunStoppedException: If the pipeline run is stopped by the user.
-                RunInterruptedException: If the execution is interrupted for any
-                    other reason.
-            """
-            logger.info(
-                f"Received signal shutdown {signum}. Requesting shutdown "
-                f"for step '{self._invocation_id}'..."
-            )
-
-            try:
-                client = Client()
-
-                if self._step_run:
-                    pipeline_run = client.get_pipeline_run(
-                        self._step_run.pipeline_run_id, hydrate=False
-                    )
-                else:
-                    raise RunInterruptedException(
-                        "The execution was interrupted and the step does not "
-                        "exist yet."
-                    )
-
-                if pipeline_run and pipeline_run.status in [
-                    ExecutionStatus.STOPPING,
-                    ExecutionStatus.STOPPED,
-                ]:
-                    if self._step_run:
-                        publish_utils.publish_step_run_status_update(
-                            step_run_id=self._step_run.id,
-                            status=ExecutionStatus.STOPPED,
-                            end_time=utc_now(),
-                        )
-                    raise RunStoppedException("Pipeline run is stopped.")
-
-                step_run = client.get_run_step(
-                    self._step_run.id, hydrate=False
-                )
-
-                if (
-                    pipeline_run.status == ExecutionStatus.FAILED
-                    and step_run.status == ExecutionStatus.RUNNING
-                    and self._snapshot.pipeline_configuration.execution_mode
-                    == ExecutionMode.FAIL_FAST
-                ):
-                    publish_utils.publish_step_run_status_update(
-                        step_run_id=self._step_run.id,
-                        status=ExecutionStatus.STOPPED,
-                        end_time=utc_now(),
-                    )
-                    raise RunStoppedException(
-                        "Step run was stopped due to a failure in the pipeline "
-                        "run and the execution mode 'FAIL_FAST'."
-                    )
-
-                elif step_run.status == ExecutionStatus.STOPPING:
-                    publish_utils.publish_step_run_status_update(
-                        step_run_id=step_run.id,
-                        status=ExecutionStatus.STOPPED,
-                        end_time=utc_now(),
-                    )
-                    raise RunStoppedException("Pipeline run is stopped.")
-                else:
-                    raise RunInterruptedException(
-                        "The execution was interrupted."
-                    )
-            except (RunStoppedException, RunInterruptedException):
-                raise
-            except Exception as e:
-                raise RunInterruptedException(str(e))
-            finally:
-                # Chain to previous handler if it exists and is not default/ignore
-                if signum == signal.SIGTERM and callable(
-                    self._prev_sigterm_handler
-                ):
-                    self._prev_sigterm_handler(signum, frame)
-                elif signum == signal.SIGINT and callable(
-                    self._prev_sigint_handler
-                ):
-                    self._prev_sigint_handler(signum, frame)
-
-        # Register handlers for common termination signals
-        try:
-            signal.signal(signal.SIGTERM, signal_handler)
-            signal.signal(signal.SIGINT, signal_handler)
-        except ValueError as e:
-            # This happens when not in the main thread
-            logger.debug(f"Cannot register signal handlers: {e}")
-            # Continue without signal handling - the step will still run
 
     def launch(self) -> StepRunResponse:
         """Launches the step.
@@ -339,8 +232,16 @@ class StepLauncher:
                 if not step_run.status.is_finished:
                     logger.info(f"Step `{self._invocation_id}` has started.")
 
+                    signal_handler: Optional[SignalHandler] = None
                     start_time = time.time()
                     try:
+                        if self._should_register_signal_handler():
+                            signal_handler = SignalHandler(
+                                step_run=step_run,
+                                execution_mode=self._snapshot.pipeline_configuration.execution_mode,
+                            )
+                            signal_handler.register()
+
                         self._run_step(
                             pipeline_run=pipeline_run,
                             step_run=step_run,
@@ -353,7 +254,11 @@ class StepLauncher:
                             step_run_id=step_run.id
                         )
 
-                        if (
+                        if step_run.status == ExecutionStatus.CANCELLING:
+                            publish_utils.publish_cancelled_step_run(
+                                step_run_id=step_run.id
+                            )
+                        elif (
                             isinstance(e, StepHeartBeatTerminationException)
                             or step_run.status == ExecutionStatus.STOPPING
                         ):
@@ -366,13 +271,19 @@ class StepLauncher:
                                 self._invocation_id,
                                 e,
                             )
-                            if step_run.status == ExecutionStatus.RUNNING:
+                            if step_run.status in {
+                                ExecutionStatus.RUNNING,
+                                ExecutionStatus.QUEUED,
+                            }:
                                 # Only update the status if the step runner
                                 # somehow failed to do so.
                                 publish_utils.publish_failed_step_run(
                                     step_run.id
                                 )
                         raise
+                    finally:
+                        if signal_handler:
+                            signal_handler.unregister()
 
                     if self._wait:
                         duration = time.time() - start_time
@@ -457,8 +368,7 @@ class StepLauncher:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
-
-        """
+        """  # noqa: DOC501
         from zenml.deployers.server import runtime
 
         step_run_info = StepRunInfo(
@@ -480,6 +390,9 @@ class StepLauncher:
             step=self._step,
             skip_artifact_materialization=runtime.should_skip_artifact_materialization(),
         )
+
+        if self._snapshot.is_dynamic:
+            self._wait_until_resources_acquired(step_run_info)
 
         try:
             if self._step.config.step_operator:
@@ -550,18 +463,18 @@ class StepLauncher:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
 
-        # noqa: DAR401
         Raises:
             RuntimeError: If trying to use a step operator that does not support
                 running asynchronously in a dynamic pipeline.
             NotImplementedError: If the step operator does not implement the
                 `submit(...)` or `launch(...)` methods.
             BaseException: If the step run failed.
-        """
+        """  # noqa: DOC502, DOC503
         step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
         )
+
         entrypoint_cfg_class = step_operator.entrypoint_config_class
         entrypoint_command = (
             entrypoint_cfg_class.get_entrypoint_command()
@@ -657,10 +570,9 @@ class StepLauncher:
         Args:
             step_run_info: Additional information needed to run the step.
 
-        # noqa: DAR401
         Raises:
             BaseException: If the step run failed.
-        """
+        """  # noqa: DOC502, DOC503
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
@@ -716,3 +628,101 @@ class StepLauncher:
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )
+
+    def _should_register_signal_handler(self) -> bool:
+        """Whether the signal handler should be registered.
+
+        Returns:
+            Whether the signal handler should be registered.
+        """
+        if not self._snapshot.is_dynamic:
+            # In static pipelines we always register the signal handler.
+            return True
+
+        if self._step.config.step_operator:
+            return False
+
+        from zenml.execution.pipeline.dynamic.runner import get_step_runtime
+
+        step_runtime = get_step_runtime(
+            step_config=self._step.config,
+            pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+            orchestrator=self._stack.orchestrator,
+        )
+        return step_runtime == StepRuntime.INLINE
+
+    def _wait_until_resources_acquired(
+        self, step_run_info: StepRunInfo
+    ) -> None:
+        """Waits until the resources are acquired.
+
+        Args:
+            step_run_info: Step run information.
+
+        Raises:
+            RuntimeError: If the resource request was not found, or
+                was rejected, preempted, or cancelled.
+        """
+        resource_request = step_run_info.step_run.resource_request
+        if not resource_request:
+            return
+
+        if resource_request.status == ResourceRequestStatus.ALLOCATED:
+            return
+
+        for delay in exponential_backoff_delays(
+            initial_delay=1.0,
+            max_delay=20.0,
+            factor=2.0,
+            jitter="equal",
+        ):
+            try:
+                resource_request = Client().zen_store.get_resource_request(
+                    resource_request.id, hydrate=False
+                )
+            except KeyError as e:
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` not found. This "
+                    "is most likely because someone deleted the resource "
+                    "request."
+                ) from e
+
+            if resource_request.status == ResourceRequestStatus.ALLOCATED:
+                logger.info(
+                    "Resource request `%s` for step `%s` was approved.",
+                    resource_request.id,
+                    step_run_info.pipeline_step_name,
+                )
+                publish_utils.publish_step_run_status_update(
+                    step_run_id=step_run_info.step_run_id,
+                    status=ExecutionStatus.RUNNING,
+                )
+                return
+            elif resource_request.status == ResourceRequestStatus.REJECTED:
+                reason = resource_request.status_reason or "Unknown reason"
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was rejected: "
+                    f"{reason}"
+                )
+            elif resource_request.status == ResourceRequestStatus.PREEMPTED:
+                reason = resource_request.status_reason or "Unknown reason"
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was preempted: "
+                    f"{reason}"
+                )
+            elif resource_request.status == ResourceRequestStatus.CANCELLED:
+                raise RuntimeError(
+                    f"Resource request `{resource_request.id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` was cancelled."
+                )
+
+            logger.info(
+                "Waiting for resource request `%s` of step `%s` to be "
+                "approved...",
+                resource_request.id,
+                step_run_info.pipeline_step_name,
+            )
+            time.sleep(delay)

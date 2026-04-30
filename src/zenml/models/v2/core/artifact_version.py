@@ -147,7 +147,7 @@ class ArtifactVersionRequest(ProjectScopedRequest):
         Raises:
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
-        """
+        """  # noqa: DOC502
         assert len(str(value)) < STR_FIELD_MAX_LENGTH, (
             "The length of the value for this field can not "
             f"exceed {STR_FIELD_MAX_LENGTH}"
@@ -240,7 +240,7 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
         Raises:
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
-        """
+        """  # noqa: DOC502
         assert len(str(value)) < STR_FIELD_MAX_LENGTH, (
             "The length of the value for this field can not "
             f"exceed {STR_FIELD_MAX_LENGTH}"

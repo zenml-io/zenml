@@ -167,6 +167,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
         Raises:
             ValueError: when unable to access the Label Studio API key.
+            RuntimeError: when the step context is not available.
         """
         try:
             settings = cast(
