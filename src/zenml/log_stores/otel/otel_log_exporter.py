@@ -330,7 +330,9 @@ class OTLPLogExporter(LogRecordExporter):
 
         return dict(resource_logs=json_resource_logs)
 
-    def export(self, batch: Sequence[ReadableLogRecord]) -> LogRecordExportResult:
+    def export(
+        self, batch: Sequence[ReadableLogRecord]
+    ) -> LogRecordExportResult:
         """Export a batch of logs to the OpenTelemetry backend.
 
         Args:

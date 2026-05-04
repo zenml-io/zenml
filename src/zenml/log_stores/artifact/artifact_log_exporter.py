@@ -52,7 +52,9 @@ class ArtifactLogExporter(LogRecordExporter):
         """
         self.artifact_store = artifact_store
 
-    def export(self, batch: Sequence[ReadableLogRecord]) -> LogRecordExportResult:
+    def export(
+        self, batch: Sequence[ReadableLogRecord]
+    ) -> LogRecordExportResult:
         """Export a batch of logs to the artifact store.
 
         Args:
