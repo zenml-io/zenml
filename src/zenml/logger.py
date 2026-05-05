@@ -575,6 +575,10 @@ class ZenMLLoggingHandler(logging.Handler):
         LoggingContext.emit(record)
 
 
+class ZenMLConsoleHandler(logging.StreamHandler):
+    """Console handler owned by the ZenML logging setup."""
+
+
 class _StepNameFilter(logging.Filter):
     """Inject pipeline step name into the log record when available."""
 
@@ -644,7 +648,7 @@ def add_zenml_filters(handler: logging.Handler) -> logging.Handler:
 
 def get_console_handler() -> logging.Handler:
     """Get console handler that writes to stdout and is configured with ZenML formatter and filters."""
-    handler = logging.StreamHandler(_ZenMLStdoutStream())
+    handler = ZenMLConsoleHandler(_ZenMLStdoutStream())
     handler.setFormatter(_select_console_formatter())
     return add_zenml_filters(handler)
 
@@ -653,6 +657,14 @@ def get_zenml_handler() -> logging.Handler:
     """Get ZenML handler that routes logs through LoggingContext."""
     handler = ZenMLLoggingHandler()
     return add_zenml_filters(handler)
+
+
+def _remove_zenml_handlers(root_logger: logging.Logger) -> None:
+    """Remove handlers owned by the ZenML logging setup."""
+    for handler in root_logger.handlers[:]:
+        if isinstance(handler, (ZenMLConsoleHandler, ZenMLLoggingHandler)):
+            root_logger.removeHandler(handler)
+            handler.close()
 
 
 def init_logging() -> None:
@@ -664,7 +676,11 @@ def init_logging() -> None:
         return
 
     root_logger = logging.getLogger()
-    root_logger.handlers.clear()
+
+    # Clear existing ZenML handlers to avoid duplicates
+    _remove_zenml_handlers(root_logger)
+
+    # Add new ZenML handlers to the root logger
     root_logger.addHandler(get_console_handler())
     root_logger.addHandler(get_zenml_handler())
 
