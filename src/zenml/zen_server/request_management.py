@@ -478,7 +478,10 @@ class RequestManager:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(
                         "endpoint.sync.completed",
-                        extra={"endpoint": func.__name__, **get_system_metrics()},
+                        extra={
+                            "endpoint": func.__name__,
+                            **get_system_metrics(),
+                        },
                     )
 
         try:
@@ -561,7 +564,10 @@ class RequestManager:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(
                         "endpoint.resumed",
-                        extra={"endpoint": func.__name__, **get_system_metrics()},
+                        extra={
+                            "endpoint": func.__name__,
+                            **get_system_metrics(),
+                        },
                     )
             else:
                 # Start execution in background, use the future to wait for it

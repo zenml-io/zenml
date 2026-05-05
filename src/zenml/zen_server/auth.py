@@ -1341,7 +1341,9 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
                 return auth_context
             finally:
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug("request.authorized", extra=get_system_metrics())
+                    logger.debug(
+                        "request.authorized", extra=get_system_metrics()
+                    )
 
         func = functools.partial(sync_authorize_fn, *args, **kwargs)
         return await anyio.to_thread.run_sync(func, limiter=thread_limiter)

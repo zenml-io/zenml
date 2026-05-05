@@ -235,7 +235,8 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
                 def update_last_user_activity_timestamp() -> None:
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(
-                            "user_activity.updating", extra=get_system_metrics()
+                            "user_activity.updating",
+                            extra=get_system_metrics(),
                         )
 
                     try:
@@ -245,7 +246,8 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
                     finally:
                         if logger.isEnabledFor(logging.DEBUG):
                             logger.debug(
-                                "user_activity.updated", extra=get_system_metrics(),
+                                "user_activity.updated",
+                                extra=get_system_metrics(),
                             )
 
                 await to_thread.run_sync(
