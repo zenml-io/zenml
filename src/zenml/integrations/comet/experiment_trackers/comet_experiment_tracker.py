@@ -16,7 +16,7 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 
-from comet_ml import Experiment  # type: ignore
+from comet_ml import Experiment
 
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (
