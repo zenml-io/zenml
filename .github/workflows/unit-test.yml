@@ -106,7 +106,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0  # Fetch all history for all branches and tags
       - name: Restore uv cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
           key: |
