@@ -1,6 +1,5 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
-import logging
 import time
 from datetime import datetime, timedelta
 from threading import RLock
@@ -65,16 +64,15 @@ class ZenMLCloudConnection:
         """
         url = self._config.api_url + endpoint
 
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "rbac.request.started",
-                extra={
-                    "rbac_method": method,
-                    "rbac_endpoint": endpoint,
-                    **get_system_metrics(),
-                },
-            )
-            start_time = time.time()
+        logger.debug(
+            "rbac.request.started",
+            extra={
+                "rbac_method": method,
+                "rbac_endpoint": endpoint,
+                **get_system_metrics(),
+            },
+        )
+        start_time = time.time()
 
         status_code: Optional[int] = None
         try:
@@ -110,18 +108,17 @@ class ZenMLCloudConnection:
                         f"service: {e}"
                     )
         finally:
-            if logger.isEnabledFor(logging.DEBUG):
-                duration_ms = round((time.time() - start_time) * 1000, 2)  # type: ignore[unbound-variable]
-                logger.debug(
-                    "rbac.request.completed",
-                    extra={
-                        "rbac_method": method,
-                        "rbac_endpoint": endpoint,
-                        "status_code": status_code,
-                        "duration_ms": duration_ms,
-                        **get_system_metrics(),
-                    },
-                )
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            logger.debug(
+                "rbac.request.completed",
+                extra={
+                    "rbac_method": method,
+                    "rbac_endpoint": endpoint,
+                    "status_code": status_code,
+                    "duration_ms": duration_ms,
+                    **get_system_metrics(),
+                },
+            )
 
         return response
 

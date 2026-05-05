@@ -15,6 +15,7 @@
 
 import asyncio
 import inspect
+import logging
 import os
 import sys
 import threading
@@ -690,12 +691,30 @@ if sys.platform != "win32":
         pass
 
 
-def get_system_metrics() -> Dict[str, Any]:
-    """Get comprehensive system metrics.
+def get_system_metrics(
+    logger: Optional[logging.Logger] = None,
+    log_level: int = logging.DEBUG,
+) -> Dict[str, Any]:
+    """Get comprehensive system metrics for enabled log records.
+
+    Metrics are only collected when the provided logger, or this module's
+    logger when omitted, is enabled for ``log_level``. This keeps debug-only
+    structured fields cheap when debug logging is disabled.
+
+    Args:
+        logger: Logger whose logging level decides whether metrics are
+            collected.
+        log_level: Logging level that must be enabled to collect metrics.
+            Defaults to ``logging.DEBUG``.
 
     Returns:
-        Dict containing system metrics
+        Dict containing system metrics, or an empty dict if ``log_level`` is
+        not enabled.
     """
+    active_logger = logger or get_logger(__name__)
+    if not active_logger.isEnabledFor(log_level):
+        return {}
+
     # Get active requests count
     from zenml.zen_server.middleware import active_requests_count
 
