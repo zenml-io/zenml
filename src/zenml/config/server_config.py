@@ -261,9 +261,6 @@ class ServerConfiguration(BaseModel):
         otel_service_name: Service name reported in OTel resource attributes.
             Appears as ``service.name`` in traces, metrics, and logs.
             Defaults to 'zenml-server'
-        otel_python_log_level: Minimum log level forwarded to the OTel log
-            exporter. Must be a standard Python level name (DEBUG, INFO,
-            WARNING, ERROR, CRITICAL). Defaults to 'INFO'
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -380,7 +377,6 @@ class ServerConfiguration(BaseModel):
 
     otel_exporter_otlp_endpoint: Optional[str] = None
     otel_service_name: str = "zenml-server"
-    otel_python_log_level: str = "INFO"
 
     _deployment_id: Optional[UUID] = None
 

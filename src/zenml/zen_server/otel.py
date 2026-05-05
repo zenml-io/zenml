@@ -37,7 +37,7 @@ Ref:
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
-from zenml.logger import add_zenml_filters, get_logger
+from zenml.logger import add_zenml_filters, get_logger, get_logging_level
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -82,7 +82,7 @@ def configure_otel(app: "FastAPI") -> None:
     except ImportError:
         logger.debug(
             "OpenTelemetry SDK packages not installed — skipping "
-            "instrumentation.  Install the [server] extra to enable."
+            "instrumentation.  Install the [otel] extra to enable."
         )
         return
 
@@ -93,13 +93,12 @@ def configure_otel(app: "FastAPI") -> None:
     logs_configured = _configure_logs(
         endpoint=endpoint,
         resource=resource,
-        log_level=config.otel_python_log_level,
     )
 
     if not any([traces_configured, metrics_configured, logs_configured]):
         logger.warning(
             "OpenTelemetry endpoint is configured, but no telemetry signals "
-            "could be initialized. Install the [server] extra to enable."
+            "could be initialized. Install the [otel] extra to enable."
         )
         return
 
@@ -202,14 +201,12 @@ def _configure_metrics(endpoint: str, resource: "Resource") -> bool:
 def _configure_logs(
     endpoint: str,
     resource: "Resource",
-    log_level: str,
 ) -> bool:
     """Configure OpenTelemetry log export.
 
     Args:
         endpoint: Base OTLP endpoint.
         resource: Resource attributes shared by all telemetry signals.
-        log_level: Python logging level name for the OTel handler.
 
     Returns:
         True if log export was configured, otherwise False.
@@ -232,9 +229,8 @@ def _configure_logs(
         )
         set_logger_provider(logger_provider)
 
-        otel_log_level = _resolve_log_level(log_level)
         otel_handler = LoggingHandler(
-            level=otel_log_level,
+            level=get_logging_level().value,
             logger_provider=logger_provider,
         )
         # Attach the ZenML filters that add structlog contextvars
@@ -251,26 +247,6 @@ def _configure_logs(
     except Exception:
         logger.exception("Failed to configure OpenTelemetry log export.")
         return False
-
-
-def _resolve_log_level(log_level: str) -> int:
-    """Resolve and validate a Python logging level name.
-
-    Args:
-        log_level: The configured logging level name.
-
-    Returns:
-        The resolved numeric logging level.
-    """
-    resolved = logging.getLevelNamesMapping().get(log_level.upper())
-    if resolved is not None:
-        return resolved
-
-    logger.warning(
-        "Invalid OpenTelemetry log level `%s`; falling back to INFO.",
-        log_level,
-    )
-    return logging.INFO
 
 
 def _instrument_libraries(app: "FastAPI") -> None:
