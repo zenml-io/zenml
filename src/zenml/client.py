@@ -25,6 +25,7 @@ from typing import (
     Callable,
     Dict,
     Generator,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -204,6 +205,7 @@ from zenml.models import (
     StepRunFilter,
     StepRunResponse,
     StepRunUpdate,
+    StreamEvent,
     TagFilter,
     TagRequest,
     TagResource,
@@ -5258,6 +5260,48 @@ class Client(metaclass=ClientMetaClass):
             runs_filter_model=runs_filter_model,
             hydrate=hydrate,
             include_full_metadata=include_full_metadata,
+        )
+
+    @_fail_for_sql_zen_store
+    def iter_run_events(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        since: Optional[str] = None,
+        kinds: Optional[List[str]] = None,
+        reconnect: bool = True,
+    ) -> "Iterator[StreamEvent]":
+        """Iterate live events for a pipeline run via SSE.
+
+        Yields decoded `StreamEvent`s as they arrive. Requires the
+        ZenML server to have streaming enabled.
+
+        Args:
+            name_id_or_prefix: Pipeline run identifier (UUID, name, or
+                name prefix).
+            since: Optional cursor; if set, replay events from this
+                broker-assigned id forward.
+            kinds: Optional list of event kinds to filter on the
+                server side (e.g., ["token", "tool_call"]).
+            reconnect: Auto-reconnect on transient network errors,
+                resuming via Last-Event-ID. Default True.
+
+        Yields:
+            `StreamEvent` instances in arrival order.
+        """
+        from zenml.zen_stores.rest_zen_store import RestZenStore
+
+        run = self.get_pipeline_run(name_id_or_prefix, hydrate=False)
+        store = self.zen_store
+        if not isinstance(store, RestZenStore):
+            raise NotImplementedError(
+                "Live event streaming requires a REST-backed ZenML "
+                "client (connect via `zenml login`)."
+            )
+        return store.iter_run_events(
+            pipeline_run_id=run.id,
+            since=since,
+            kinds=kinds,
+            reconnect=reconnect,
         )
 
     def delete_pipeline_run(

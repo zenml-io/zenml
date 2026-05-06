@@ -63,6 +63,8 @@ from zenml.zen_server.pipeline_execution.workload_manager_interface import (
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.request_management import RequestContext, RequestManager
+from zenml.zen_server.streaming.broker import EventBroker
+from zenml.zen_server.streaming.hub import StreamHub
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
@@ -90,6 +92,8 @@ _workload_manager: Optional[WorkloadManagerInterface] = None
 _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
 _request_manager: Optional[RequestManager] = None
+_event_broker: Optional[EventBroker] = None
+_stream_hub: Optional[StreamHub] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
@@ -204,6 +208,102 @@ def initialize_workload_manager() -> None:
             logger.warning("Unable to load workload manager source.")
         else:
             _workload_manager = workload_manager_class()
+
+
+def event_broker() -> EventBroker:
+    """Return the initialized live-streaming event broker.
+
+    Raises:
+        RuntimeError: If streaming is not enabled on this server.
+
+    Returns:
+        The event broker.
+    """
+    global _event_broker
+    if _event_broker is None:
+        raise RuntimeError(
+            "Event broker not initialized; streaming is disabled. "
+            "Set `event_broker_implementation_source` on the server config."
+        )
+    return _event_broker
+
+
+def stream_hub() -> StreamHub:
+    """Return the initialized per-replica stream fan-out hub.
+
+    Raises:
+        RuntimeError: If streaming is not enabled on this server.
+
+    Returns:
+        The stream hub.
+    """
+    global _stream_hub
+    if _stream_hub is None:
+        raise RuntimeError(
+            "Stream hub not initialized; streaming is disabled. "
+            "Set `event_broker_implementation_source` on the server config."
+        )
+    return _stream_hub
+
+
+def initialize_streaming() -> None:
+    """Initialize the live event streaming components.
+
+    No-op when `event_broker_implementation_source` is not set. Failures
+    to load the broker class are logged but do not prevent the server
+    from starting — endpoints will simply return 501 Not Implemented.
+    """
+    global _event_broker, _stream_hub
+
+    cfg = server_config()
+    source = cfg.event_broker_implementation_source
+    if not source:
+        return
+
+    from zenml.utils import source_utils
+
+    try:
+        broker_class: Type[EventBroker] = source_utils.load_and_validate_class(
+            source=source, expected_class=EventBroker
+        )
+    except (ModuleNotFoundError, KeyError):
+        logger.warning(
+            "Unable to load event broker from %r; streaming disabled.", source
+        )
+        return
+
+    try:
+        _event_broker = broker_class()
+    except Exception:
+        logger.exception(
+            "Failed to instantiate event broker %r; streaming disabled.",
+            source,
+        )
+        _event_broker = None
+        return
+
+    _stream_hub = StreamHub(
+        broker=_event_broker,
+        max_consumers_per_stream=cfg.streaming_max_consumers_per_stream,
+        idle_grace_seconds=cfg.streaming_hub_idle_grace_seconds,
+    )
+
+
+async def shutdown_streaming() -> None:
+    """Cancel hub readers and close the broker. Safe to call when off."""
+    global _event_broker, _stream_hub
+    if _stream_hub is not None:
+        try:
+            await _stream_hub.shutdown()
+        except Exception:
+            logger.exception("Error during stream hub shutdown")
+        _stream_hub = None
+    if _event_broker is not None:
+        try:
+            await _event_broker.close()
+        except Exception:
+            logger.exception("Error during event broker close")
+        _event_broker = None
 
 
 def resource_pool_store() -> ResourcePoolsSQLStoreInterface:

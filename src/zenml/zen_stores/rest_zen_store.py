@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
 
+import json
 import os
 import re
 import time
@@ -23,6 +24,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -76,6 +78,7 @@ from zenml.constants import (
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    EVENTS,
     FLAVORS,
     HEARTBEAT,
     INFO,
@@ -117,6 +120,7 @@ from zenml.constants import (
     STACK_DEPLOYMENT,
     STACKS,
     STEPS,
+    STREAM,
     TAG_RESOURCES,
     TAGS,
     TRIGGER_SNAPSHOT_DISPATCH_STATE,
@@ -182,6 +186,8 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
+    EventBatchRequest,
+    EventBatchResponse,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -284,6 +290,7 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamEvent,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -2401,6 +2408,154 @@ class RestZenStore(BaseZenStore):
         self.put(
             path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
         )
+
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: EventBatchRequest
+    ) -> EventBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the pipeline run.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side acknowledgment with the count and last id.
+        """
+        response_body = self.post(
+            f"{RUNS}/{pipeline_run_id}{EVENTS}",
+            body=batch,
+        )
+        return EventBatchResponse.model_validate(response_body)
+
+    def iter_run_events(
+        self,
+        pipeline_run_id: UUID,
+        since: Optional[str] = None,
+        kinds: Optional[List[str]] = None,
+        reconnect: bool = True,
+    ) -> Iterator[StreamEvent]:
+        """Iterate live events for a pipeline run via SSE.
+
+        Yields decoded `StreamEvent`s as they arrive. Handles SSE
+        reconnect via `Last-Event-ID` if the connection drops mid-stream
+        and `reconnect=True`. Stops cleanly on the server's `event: end`.
+
+        Args:
+            pipeline_run_id: ID of the pipeline run to subscribe to.
+            since: Optional cursor; if set, replay from this id forward.
+            kinds: Optional list of event kinds to filter on server-side.
+            reconnect: If True, transparently reconnect on transient
+                network errors using `Last-Event-ID`.
+
+        Yields:
+            `StreamEvent` instances as they arrive.
+        """
+        url = (
+            f"{self.url}{API}{VERSION_1}{RUNS}/"
+            f"{pipeline_run_id}{EVENTS}{STREAM}"
+        )
+        last_id = since
+        backoff = 0.5
+        max_backoff = 30.0
+
+        # Ensure session is authenticated; the streaming GET below uses
+        # the session directly (we can't pipe streaming responses through
+        # `_request`, which consumes them).
+        # if "Authorization" not in self.session.headers:
+        #     self.authenticate()
+
+        while True:
+            headers: Dict[str, str] = {"Accept": "text/event-stream"}
+            if last_id is not None:
+                headers["Last-Event-ID"] = last_id
+            params: Dict[str, Any] = {}
+            if kinds:
+                params["kinds"] = list(kinds)
+
+            try:
+                response = self.session.get(
+                    url,
+                    headers=headers,
+                    params=params,
+                    stream=True,
+                    timeout=(self.config.http_timeout, None),
+                    verify=self.config.verify_ssl,
+                )
+                if response.status_code == 401:
+                    # Re-auth once and retry the connection.
+                    self.authenticate(force=True)
+                    continue
+                if response.status_code == 501:
+                    raise RuntimeError(
+                        "Live event streaming is not enabled on the "
+                        "server (501 Not Implemented)."
+                    )
+                response.raise_for_status()
+
+                event_id: Optional[str] = None
+                event_name = "message"
+                data_buf: List[str] = []
+
+                for raw_line in response.iter_lines(
+                    decode_unicode=True, chunk_size=1
+                ):
+                    if raw_line is None:
+                        continue
+                    line = raw_line  # str
+                    if line == "":
+                        # Dispatch buffered event.
+                        if data_buf or event_id is not None:
+                            data_str = "\n".join(data_buf)
+                            if event_name == "end":
+                                response.close()
+                                return
+                            if event_name == "gap":
+                                # Lossy gap; let the iterator continue.
+                                if event_id:
+                                    last_id = event_id
+                            elif event_name == "error":
+                                response.close()
+                                raise RuntimeError(
+                                    f"Server-side stream error: {data_str}"
+                                )
+                            else:
+                                try:
+                                    payload = json.loads(data_str)
+                                    yield StreamEvent.model_validate(payload)
+                                except Exception:
+                                    logger.exception(
+                                        "Skipping malformed SSE event"
+                                    )
+                                if event_id:
+                                    last_id = event_id
+                        event_id = None
+                        event_name = "message"
+                        data_buf = []
+                    elif line.startswith(":"):
+                        continue  # comment / heartbeat
+                    elif line.startswith("id:"):
+                        event_id = line[3:].lstrip()
+                    elif line.startswith("event:"):
+                        event_name = line[6:].lstrip()
+                    elif line.startswith("data:"):
+                        data_buf.append(line[5:].lstrip())
+                # Server closed the connection without sending `end`.
+                if not reconnect:
+                    return
+            except (requests.ConnectionError, requests.Timeout):
+                if not reconnect:
+                    raise
+                logger.debug(
+                    "SSE connection dropped; reconnecting in %.1fs", backoff
+                )
+                time.sleep(backoff)
+                backoff = min(backoff * 2, max_backoff)
+                continue
+            else:
+                # Loop back around to attempt another connection.
+                if not reconnect:
+                    return
+                backoff = 0.5
 
     def create_run_wait_condition(
         self, run_wait_condition: RunWaitConditionRequest

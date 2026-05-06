@@ -72,6 +72,7 @@ from zenml.zen_server.routers import (
     resource_pool_subject_policies_endpoints,
     resource_pools_endpoints,
     resource_requests_endpoints,
+    run_events_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
     run_wait_conditions_endpoints,
@@ -101,10 +102,12 @@ from zenml.zen_server.utils import (
     initialize_request_manager,
     initialize_resource_pool_store,
     initialize_snapshot_executor,
+    initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
     register_event_handlers,
     server_config,
+    shutdown_streaming,
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
@@ -197,6 +200,7 @@ async def initialize() -> None:
     initialize_workload_manager()
     initialize_resource_pool_store()
     initialize_snapshot_executor()
+    initialize_streaming()
     initialize_secure_headers()
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
@@ -216,6 +220,7 @@ async def shutdown() -> None:
         stop_event_loop_lag_monitor()
     shutdown_otel()
     snapshot_executor().shutdown(wait=True)
+    await shutdown_streaming()
     await cleanup_request_manager()
 
 
@@ -304,6 +309,7 @@ app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(pipeline_snapshot_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(run_events_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(run_wait_conditions_endpoints.router)
 app.include_router(run_templates_endpoints.router)

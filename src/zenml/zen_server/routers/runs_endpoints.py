@@ -81,6 +81,7 @@ from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
+    stream_hub,
     workload_manager,
     zen_store,
 )
@@ -264,12 +265,27 @@ def update_run(
     Returns:
         The updated run model.
     """
-    return verify_permissions_and_update_entity(
+    response = verify_permissions_and_update_entity(
         id=run_id,
         update_model=run_model,
         get_method=zen_store().get_run,
         update_method=zen_store().update_run,
     )
+
+    # Signal end-of-stream when the run reaches a terminal status, so
+    # SSE consumers close cleanly. Best-effort and gated by streaming
+    # being enabled — never block run updates on streaming.
+    if (
+        response.status is not None
+        and response.status.is_finished
+        and server_config().streaming_enabled
+    ):
+        try:
+            stream_hub().emit_end(f"zenml:stream:run:{run_id}")
+        except Exception:
+            logger.exception("Failed to emit end marker for run %s", run_id)
+
+    return response
 
 
 @router.delete(
