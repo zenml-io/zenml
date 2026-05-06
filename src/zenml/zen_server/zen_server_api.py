@@ -162,26 +162,17 @@ async def initialize() -> None:
     #   "uvicorn.error"  – server lifecycle and internal errors
     #   "uvicorn.access" – per-request access log
     #
-    # These handlers use uvicorn's own formatters, so their output bypasses
-    # structlog's ProcessorFormatter and appears as raw unstructured lines
-    # alongside the structured logs from the rest of the application.
-    #
-    # Strip them and enable propagation so all uvicorn records flow
-    # through the root logger's structlog ProcessorFormatter and OTel.
+    # These handlers use uvicorn's own output path. Clear them and let uvicorn
+    # propagate to the root logger so its records are handled by the same
+    # ZenML handlers that render console/JSON output and export logs to OTel.
     for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
 
-        if _uvicorn_logger_name == "uvicorn.access":
-            _uvicorn_logger.setLevel(logging.WARNING)
-
         # clear uvicorn handlers to avoid double logging
         _uvicorn_logger.handlers.clear()
+
         # propagate uvicorn logs to the root logger
         _uvicorn_logger.propagate = True
-
-    # disable uvicorn access logs
-    # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-    # logging.getLogger("uvicorn.access").disabled = True
 
     cfg = server_config()
     # Set the maximum number of worker threads
