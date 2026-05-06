@@ -233,15 +233,21 @@ class RunAIStepOperator(BaseStepOperator):
 
         workload_name = self._build_workload_name(info)
 
-        training_request = self._build_training_request(
-            settings=settings,
-            image=image,
-            workload_name=workload_name,
-            project_id=project_id,
-            cluster_id=cluster_id,
-            entrypoint_command=entrypoint_command,
-            environment=environment,
-        )
+        try:
+            training_request = self._build_training_request(
+                settings=settings,
+                image=image,
+                workload_name=workload_name,
+                project_id=project_id,
+                cluster_id=cluster_id,
+                entrypoint_command=entrypoint_command,
+                environment=environment,
+            )
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Failed to build Run:AI training request for step "
+                f"'{info.pipeline_step_name}': {exc}"
+            ) from exc
 
         info.force_write_logs()
 
@@ -298,58 +304,49 @@ class RunAIStepOperator(BaseStepOperator):
 
         Returns:
             The Run:AI training creation request.
-
-        Raises:
-            RunAIClientError: If SDK model construction fails.
         """
-        try:
-            command, args = self._build_command_and_args(entrypoint_command)
-            return TrainingCreationRequest(
-                name=workload_name,
-                project_id=project_id,
-                cluster_id=cluster_id,
-                template_id=settings.workload_template_id,
-                spec=TrainingSpecSpec(
-                    image=image,
-                    command=command,
-                    compute=self._build_compute_spec(settings),
-                    environment_variables=(
-                        self._build_environment_variables(environment)
-                    ),
-                    args=args,
-                    image_pull_secrets=self._build_image_pull_secrets(),
-                    node_pools=settings.node_pools,
-                    node_type=settings.node_type,
-                    preemptibility=settings.preemptibility,
-                    priority_class=settings.priority_class,
-                    tolerations=self._build_instances(
-                        settings.tolerations, Toleration
-                    ),
-                    backoff_limit=settings.backoff_limit,
-                    termination_grace_period_seconds=(
-                        settings.termination_grace_period_seconds
-                    ),
-                    terminate_after_preemption=(
-                        settings.terminate_after_preemption
-                    ),
-                    working_dir=settings.working_dir,
-                    labels=self._build_labels(settings),
-                    annotations=self._build_annotations(settings),
-                    storage=self._build_storage(settings),
-                    security=self._build_security_context(settings),
-                    ports=self._build_instances(settings.ports, Port),
-                    exposed_urls=self._build_instances(
-                        settings.external_urls, ExposedUrl
-                    ),
-                    parallelism=settings.parallelism,
-                    completions=settings.completions,
+        command, args = self._build_command_and_args(entrypoint_command)
+        return TrainingCreationRequest(
+            name=workload_name,
+            project_id=project_id,
+            cluster_id=cluster_id,
+            template_id=settings.workload_template_id,
+            spec=TrainingSpecSpec(
+                image=image,
+                command=command,
+                compute=self._build_compute_spec(settings),
+                environment_variables=(
+                    self._build_environment_variables(environment)
                 ),
-            )
-        except Exception as exc:
-            raise RunAIClientError(
-                "Failed to build Run:AI training request "
-                f"({type(exc).__name__}): {exc}"
-            ) from exc
+                args=args,
+                image_pull_secrets=self._build_image_pull_secrets(),
+                node_pools=settings.node_pools,
+                node_type=settings.node_type,
+                preemptibility=settings.preemptibility,
+                priority_class=settings.priority_class,
+                tolerations=self._build_instances(
+                    settings.tolerations, Toleration
+                ),
+                backoff_limit=settings.backoff_limit,
+                termination_grace_period_seconds=(
+                    settings.termination_grace_period_seconds
+                ),
+                terminate_after_preemption=(
+                    settings.terminate_after_preemption
+                ),
+                working_dir=settings.working_dir,
+                labels=self._build_labels(settings),
+                annotations=self._build_annotations(settings),
+                storage=self._build_storage(settings),
+                security=self._build_security_context(settings),
+                ports=self._build_instances(settings.ports, Port),
+                exposed_urls=self._build_instances(
+                    settings.external_urls, ExposedUrl
+                ),
+                parallelism=settings.parallelism,
+                completions=settings.completions,
+            ),
+        )
 
     def _get_workload_id(self, step_run: "StepRunResponse") -> str:
         """Gets the Run:AI workload ID from step run metadata.

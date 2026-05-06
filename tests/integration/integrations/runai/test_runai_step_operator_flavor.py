@@ -145,6 +145,28 @@ def test_runai_settings_accept_advanced_training_fields() -> None:
     )
 
 
+def test_runai_toleration_settings_ignore_unknown_fields() -> None:
+    """Unknown toleration fields are ignored to preserve backwards compat.
+
+    Tolerations were previously typed as ``List[Dict[str, Any]]``; existing
+    components that include extra keys must still validate without error.
+    """
+    settings = RunAIStepOperatorSettings(
+        tolerations=[
+            {
+                "key": "dedicated",
+                "operator": "Equal",
+                "value": "training",
+                "effect": "NoExecute",
+                "tolerationSeconds": 60,
+            }
+        ],
+    )
+
+    assert settings.tolerations is not None
+    assert settings.tolerations[0].key == "dedicated"
+
+
 @pytest.mark.parametrize(
     "settings_kwargs,error_match",
     [
@@ -161,10 +183,10 @@ def test_runai_settings_accept_advanced_training_fields() -> None:
             },
             "Mount paths must be unique",
         ),
-        ({"ports": [{"container": 0}]}, "greater than or equal to 1"),
+        ({"ports": [{"container": 0}]}, "greater than 0"),
         (
             {"ports": [{"container": 80, "external": 0}]},
-            "greater than or equal to 1",
+            "greater than 0",
         ),
         (
             {"ports": [{"container": 80, "service_type": "ExternalUrl"}]},
@@ -215,7 +237,19 @@ def test_runai_settings_accept_advanced_training_fields() -> None:
             "Input should be",
         ),
         (
-            {"tolerations": [{"unexpected": "value"}]},
+            {
+                "pvc_mounts": [
+                    {
+                        "claim_name": "pvc",
+                        "path": "/data",
+                        "unexpected": "value",
+                    }
+                ]
+            },
+            "Extra inputs are not permitted",
+        ),
+        (
+            {"security_context": {"unexpected": "value"}},
             "Extra inputs are not permitted",
         ),
         ({"security_context": {"run_as_uid": -1}}, "greater than or equal"),

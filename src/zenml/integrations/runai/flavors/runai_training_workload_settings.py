@@ -16,7 +16,25 @@
 import re
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    NonNegativeInt,
+    PositiveInt,
+    field_validator,
+)
+
+
+class _RunAIStrictSettings(BaseModel):
+    """Base for Run:AI settings models that reject unknown fields.
+
+    Toleration settings opt out of strict mode for backwards compatibility
+    with the previous untyped ``List[Dict[str, Any]]`` schema.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
 
 RunAIServiceType = Literal["LoadBalancer", "NodePort", "ClusterIP"]
 RunAIExternalURLAuthorizationType = Literal[
@@ -31,12 +49,34 @@ _OCTAL_MODE_RE = re.compile(r"^0[0-7]{3}$")
 
 
 def _validate_absolute_path(value: str) -> str:
+    """Validate that the given path is an absolute container/host path.
+
+    Args:
+        value: The path string to validate.
+
+    Returns:
+        The validated path.
+
+    Raises:
+        ValueError: If the path is empty or not absolute.
+    """
     if not value or not value.startswith("/"):
         raise ValueError("Mount paths must be absolute paths.")
     return value
 
 
 def _validate_default_mode(value: Optional[str]) -> Optional[str]:
+    """Validate that the given default file mode is a four-digit octal string.
+
+    Args:
+        value: The mode string to validate, or None.
+
+    Returns:
+        The validated mode string, or None.
+
+    Raises:
+        ValueError: If the value is not a four-character octal string.
+    """
     if value is None:
         return None
     if not _OCTAL_MODE_RE.match(value):
@@ -47,17 +87,7 @@ def _validate_default_mode(value: Optional[str]) -> Optional[str]:
     return value
 
 
-class RunAIBaseSettings(BaseModel):
-    """Common base for Run:AI workload settings models.
-
-    Forbids unknown fields so typos in user settings surface as
-    validation errors rather than being silently dropped.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class RunAIMountBase(RunAIBaseSettings):
+class RunAIMountBase(_RunAIStrictSettings):
     """Common fields for Run:AI workload storage mount settings."""
 
     name: Optional[str] = Field(default=None, description="Run:AI mount name.")
@@ -71,11 +101,14 @@ class RunAIMountBase(RunAIBaseSettings):
 
         Returns:
             The absolute container mount path.
+
+        Raises:
+            NotImplementedError: Subclasses must override this property.
         """
         raise NotImplementedError
 
 
-class RunAITolerationSettings(RunAIMountBase):
+class RunAITolerationSettings(BaseModel):
     """Settings for a Kubernetes toleration on a Run:AI workload."""
 
     key: Optional[str] = Field(
@@ -92,6 +125,13 @@ class RunAITolerationSettings(RunAIMountBase):
     effect: Optional[RunAITolerationEffect] = Field(
         default=None,
         description="Taint effect tolerated by the workload.",
+    )
+    name: Optional[str] = Field(
+        default=None, description="Optional name for the toleration."
+    )
+    exclude: Optional[bool] = Field(
+        default=None,
+        description="Whether to exclude this toleration from the workload spec.",
     )
 
 
@@ -281,7 +321,7 @@ class RunAIHostPathMountSettings(RunAIMountBase):
         return self.mount_path
 
 
-class RunAISecurityContextSettings(RunAIMountBase):
+class RunAISecurityContextSettings(_RunAIStrictSettings):
     """Settings for the Run:AI workload security context."""
 
     allow_privilege_escalation: Optional[bool] = Field(
@@ -304,25 +344,23 @@ class RunAISecurityContextSettings(RunAIMountBase):
         default=None,
         description="Whether the container root filesystem is read-only.",
     )
-    run_as_gid: Optional[int] = Field(
+    run_as_gid: Optional[NonNegativeInt] = Field(
         default=None,
-        ge=0,
         description="GID to run the container as. Used together with uid_gid_source='custom'.",
     )
     run_as_non_root: Optional[bool] = Field(
         default=None,
         description="Whether the container must run as a non-root user.",
     )
-    run_as_uid: Optional[int] = Field(
+    run_as_uid: Optional[NonNegativeInt] = Field(
         default=None,
-        ge=0,
         description="UID to run the container as. Used together with uid_gid_source='custom'.",
     )
     seccomp_profile_type: Optional[RunAISeccompProfileType] = Field(
         default=None,
         description="Seccomp profile type. One of 'RuntimeDefault', 'Unconfined', or 'Localhost'.",
     )
-    supplemental_groups: Optional[List[int]] = Field(
+    supplemental_groups: Optional[List[NonNegativeInt]] = Field(
         default=None,
         description="Supplemental group IDs. These are serialized as a semicolon-separated string for Run:AI.",
     )
@@ -331,25 +369,11 @@ class RunAISecurityContextSettings(RunAIMountBase):
         description="Source of the UID/GID. One of 'fromTheImage', 'fromIdpToken', or 'custom'.",
     )
 
-    @field_validator("supplemental_groups")
-    @classmethod
-    def _validate_supplemental_groups(
-        cls, value: Optional[List[int]]
-    ) -> Optional[List[int]]:
-        if value is None:
-            return None
-        if any(group < 0 for group in value):
-            raise ValueError(
-                "supplemental_groups must contain non-negative IDs."
-            )
-        return value
 
-
-class RunAIPortSettings(RunAIMountBase):
+class RunAIPortSettings(_RunAIStrictSettings):
     """Settings for exposing a container port on the Run:AI workload."""
 
-    container: int = Field(
-        ge=1,
+    container: PositiveInt = Field(
         le=65535,
         description="Container port to expose. Must be between 1 and 65535.",
     )
@@ -357,9 +381,8 @@ class RunAIPortSettings(RunAIMountBase):
         default=None,
         description="Kubernetes service type. One of 'LoadBalancer', 'NodePort', or 'ClusterIP'.",
     )
-    external: Optional[int] = Field(
+    external: Optional[PositiveInt] = Field(
         default=None,
-        ge=1,
         le=65535,
         description="External service port that maps to the container port.",
     )
@@ -381,11 +404,10 @@ class RunAIPortSettings(RunAIMountBase):
     )
 
 
-class RunAIExternalURLSettings(RunAIMountBase):
+class RunAIExternalURLSettings(_RunAIStrictSettings):
     """Settings for exposing a Run:AI workload external URL."""
 
-    container: int = Field(
-        ge=1,
+    container: PositiveInt = Field(
         le=65535,
         description="Container port to expose externally. Must be between 1 and 65535.",
     )
