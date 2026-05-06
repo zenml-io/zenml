@@ -38,11 +38,18 @@ def _make_mock_client(config_schema, component_flavor="default"):
         def get_stack_component(
             self, name_id_or_prefix: str, component_type: StackComponentType
         ) -> object:
+            class _ComponentFlavor:
+                pass
+
+            cf = _ComponentFlavor()
+            cf.config_schema = config_schema
+
             class _Component:
                 pass
 
             c = _Component()
             c.flavor_name = component_flavor
+            c.flavor = cf
             return c
 
     return _MockClient
