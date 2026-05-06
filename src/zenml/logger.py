@@ -344,9 +344,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
         formatted_log = f"{level_color}{formatted_log}{self._RESET}"
 
         # Colorize highlights - backtick-quoted text and URLs.
-        formatted_log = self._colorize_highlights(
-            formatted_log, level_color
-        )
+        formatted_log = self._colorize_highlights(formatted_log, level_color)
         return formatted_log + self._RESET + extras_text + traceback_text
 
     @classmethod

@@ -348,7 +348,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
 
     async with active_requests_lock:
         active_requests_count += 1
-    
+
     # Log full request metadata on lifecycle events only, i.e. when the
     # request is received and completed; downstream logs get request_id
     # for correlation without repeating method/path/client_ip.
