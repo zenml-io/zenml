@@ -11269,9 +11269,9 @@ class SqlZenStore(BaseZenStore):
 
                 if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
                     raise IllegalOperationError(
-                        f"Cannot creat step '{step_run.name}' for the run '{run.name}' "
-                        "because the run is in a FAILED state and the execution mode is"
-                        f"{execution_mode}."
+                        f"Cannot create step '{step_run.name}' for the run '{run.name}' "
+                        "because the run is in a FAILED state and the execution "
+                        f"mode is {execution_mode}."
                     )
 
             self._get_reference_schema_by_id(
