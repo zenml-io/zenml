@@ -310,10 +310,10 @@ class ServerConfiguration(BaseModel):
     reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
     resource_pool_implementation_source: Optional[str] = None
-    event_broker_implementation_source: Optional[str] = None
-    streaming_heartbeat_seconds: int = 15
-    streaming_max_consumers_per_stream: int = 100
-    streaming_hub_idle_grace_seconds: int = 30
+    stream_broker_implementation_source: Optional[str] = None
+    streaming_heartbeat_seconds: float = Field(default=30.0, gt=0.0)
+    streaming_max_consumers_per_stream: int = Field(default=100, gt=0)
+    streaming_hub_idle_grace_seconds: float = Field(default=30.0, gt=0.0)
     max_concurrent_snapshot_runs: int = (
         DEFAULT_ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS
     )
@@ -589,9 +589,9 @@ class ServerConfiguration(BaseModel):
         """Whether live event streaming is enabled on the server or not.
 
         Returns:
-            True if `event_broker_implementation_source` is set.
+            True if `stream_broker_implementation_source` is set.
         """
-        return self.event_broker_implementation_source is not None
+        return self.stream_broker_implementation_source is not None
 
     def get_jwt_token_issuer(self) -> str:
         """Get the JWT token issuer.

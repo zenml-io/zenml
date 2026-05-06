@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Producer-side API for live event streaming inside pipelines."""
+"""Client-side API for live event streaming inside pipelines."""
 
-from zenml.streams.api import flush, publish
+from zenml.streams.publishing import flush, publish
 
-__all__ = ["flush", "publish",]
+__all__ = ["flush", "publish"]

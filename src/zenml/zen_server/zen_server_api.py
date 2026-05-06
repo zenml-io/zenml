@@ -72,7 +72,6 @@ from zenml.zen_server.routers import (
     resource_pool_subject_policies_endpoints,
     resource_pools_endpoints,
     resource_requests_endpoints,
-    run_events_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
     run_wait_conditions_endpoints,
@@ -200,7 +199,7 @@ async def initialize() -> None:
     initialize_workload_manager()
     initialize_resource_pool_store()
     initialize_snapshot_executor()
-    initialize_streaming()
+    await initialize_streaming()
     initialize_secure_headers()
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
@@ -309,7 +308,6 @@ app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(pipeline_snapshot_endpoints.router)
 app.include_router(runs_endpoints.router)
-app.include_router(run_events_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(run_wait_conditions_endpoints.router)
 app.include_router(run_templates_endpoints.router)

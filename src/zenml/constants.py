@@ -490,7 +490,7 @@ REFRESH = "/refresh"
 RESOLVE = "/resolve"
 RUNS = "/runs"
 EVENTS = "/events"
-STREAM = "/stream"
+EVENTS_STREAM = "/events/stream"
 RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
 RUN_WAIT_CONDITIONS = "/run_wait_conditions"
@@ -664,3 +664,26 @@ SCHEDULE_FEATURE = "schedule"
 RESOURCE_POOL_FEATURE = "resource_pool"
 
 LOGS_RUNNER_SOURCE = "runner"
+
+# Live event streaming
+# Allowed shape of `StreamEvent.kind`. Bounded length and no newlines:
+# the latter would let the field smuggle SSE control frames into other
+# consumers' streams via the server's frame formatter. Uses `^`/`$`
+# rather than `\A`/`\Z` because Pydantic v2's `Field(pattern=...)` is
+# validated by the Rust regex engine, which rejects the latter.
+STREAM_EVENT_KIND_PATTERN = r"^[A-Za-z0-9._-]{1,64}$"
+# SSE event names the server emits as control frames. A producer that
+# used one of these as `kind` would emit `event: end\ndata: ...` on
+# the wire, which a browser's `addEventListener("end", ...)` handler
+# would fire on by mistake. `system` is reserved for future
+# server-emitted control frames.
+RESERVED_STREAM_EVENT_KINDS = frozenset(
+    {"end", "gap", "error", "cursor", "system"}
+)
+# Producer-side cap on a single batch's event count. Independent of
+# the request body size cap; this just bounds per-call work.
+STREAM_EVENT_MAX_BATCH_SIZE = 1000
+# Per-event payload byte cap. Producer-side fail-fast so oversize
+# events don't waste an HTTP round-trip; the server's wire envelope
+# cap is slightly larger to leave room for envelope metadata.
+STREAM_EVENT_PAYLOAD_BYTES_MAX = 64 * 1024

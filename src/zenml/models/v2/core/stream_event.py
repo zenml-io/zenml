@@ -13,48 +13,48 @@
 #  permissions and limitations under the License.
 """Wire models for live event streaming on pipeline runs."""
 
-from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from zenml.utils.time_utils import utc_now
+from zenml.constants import (
+    RESERVED_STREAM_EVENT_KINDS,
+    STREAM_EVENT_KIND_PATTERN,
+    STREAM_EVENT_MAX_BATCH_SIZE,
+)
 
 
 class StreamEvent(BaseModel):
-    """A single event published to a pipeline run's live stream.
+    """A single producer-published event on a pipeline run's stream."""
 
-    Lives only in transit (broker, SSE wire) — never persisted to the
-    metadata DB. Consumers attribute events to a step via step_run_id /
-    step_name. tokens of a single LLM generation are grouped by stream_id
-    with a per-stream_id monotonic index.
-    """
-
-    version: Literal[1] = 1
     pipeline_run_id: UUID
     step_run_id: Optional[UUID] = None
     step_name: Optional[str] = None
-    kind: str = Field(
-        description=(
-            "Event kind. Free-form at the protocol layer; well-known kinds "
-            "include 'token', 'tool_call', 'tool_result', 'reasoning', "
-            "'status', 'overflow', 'end'."
-        )
-    )
-    stream_id: Optional[str] = None
+    kind: str = Field(pattern=STREAM_EVENT_KIND_PATTERN)
+    correlation_id: Optional[str] = None
     index: Optional[int] = None
-    ts: datetime = Field(default_factory=utc_now)
     payload: Dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("kind")
+    @classmethod
+    def _reject_reserved_kind(cls, value: str) -> str:
+        if value in RESERVED_STREAM_EVENT_KINDS:
+            raise ValueError(
+                f"kind {value!r} collides with an SSE control event name "
+                f"({sorted(RESERVED_STREAM_EVENT_KINDS)}); "
+                "pick a different `kind`."
+            )
+        return value
 
-class EventBatchRequest(BaseModel):
-    """Producer-side batched ingest body for run events."""
 
-    events: List[StreamEvent]
+class StreamBatchRequest(BaseModel):
+    """Producer-side batched ingest body for run stream events."""
+
+    events: List[StreamEvent] = Field(max_length=STREAM_EVENT_MAX_BATCH_SIZE)
 
 
-class EventBatchResponse(BaseModel):
+class StreamBatchResponse(BaseModel):
     """Server-side response from the batched ingest endpoint."""
 
     count: int

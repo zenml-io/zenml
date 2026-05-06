@@ -40,6 +40,20 @@ class EventDispatcher(metaclass=SingletonMetaClass):
         with self._handlers_lock:
             self._event_handlers.append(event_handler)
 
+    def unregister_event_handler(self, event_handler: EventHandler) -> None:
+        """Unregister a previously-registered event handler.
+
+        No-op if the handler isn't registered.
+
+        Args:
+            event_handler: The event handler instance to remove.
+        """
+        with self._handlers_lock:
+            try:
+                self._event_handlers.remove(event_handler)
+            except ValueError:
+                pass
+
     def handle_run_status_update(
         self,
         run: PipelineRunResponse,

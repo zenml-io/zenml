@@ -38,12 +38,22 @@ class EventHandler(ABC):
         """
         pass
 
-    @staticmethod
-    @abstractmethod
-    async def create() -> "EventHandler":
-        """Factory method.
+    @classmethod
+    async def create(cls) -> "EventHandler":
+        """Factory for source-loaded handlers.
+
+        Override to support being loaded via
+        `server_config.event_handler_sources`. Handlers constructed
+        directly with explicit dependencies (e.g., the streaming
+        end-event handler) don't need to override this.
 
         Returns:
             An EventHandler instance.
+
+        Raises:
+            NotImplementedError: If the subclass isn't source-loadable.
         """
-        pass
+        raise NotImplementedError(
+            f"{cls.__name__} cannot be source-loaded; instantiate it "
+            "directly with the required dependencies."
+        )

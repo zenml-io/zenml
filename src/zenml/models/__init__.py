@@ -394,8 +394,8 @@ from zenml.models.v2.core.step_run import (
 )
 from zenml.models.v2.core.stream_event import (
     StreamEvent,
-    EventBatchRequest,
-    EventBatchResponse,
+    StreamBatchRequest,
+    StreamBatchResponse,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -895,8 +895,8 @@ __all__ = [
     "StepRunResponseMetadata",
     "StepRunResponseResources",
     "StreamEvent",
-    "EventBatchRequest",
-    "EventBatchResponse",
+    "StreamBatchRequest",
+    "StreamBatchResponse",
     "TagFilter",
     "TagResourceResponse",
     "TagResourceResponseBody",

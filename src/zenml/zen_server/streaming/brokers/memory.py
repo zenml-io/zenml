@@ -11,32 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""In-memory EventBroker. Single-process only.
-
-Used as the bring-up implementation (Phase 1) and as a viable option for
-single-replica self-host deployments. Events live in a per-stream capped
-deque; ids are stringified monotonic integers.
-"""
+"""In-memory StreamBroker. Single-process only."""
 
 import asyncio
 import os
 from collections import deque
 from typing import Deque, Dict, List, Optional, Tuple
 
-from zenml.logger import get_logger
 from zenml.zen_server.streaming.broker import (
     BrokerEvent,
-    EventBroker,
+    StreamBroker,
     StreamTruncatedError,
 )
-
-logger = get_logger(__name__)
 
 _DEFAULT_MAX_LEN = 10_000
 
 
 class _Stream:
-    """Internal per-stream state: capped log + a notify condvar."""
+    """Per-stream state: capped log + a notify condvar."""
 
     def __init__(self, max_len: int) -> None:
         self.entries: Deque[Tuple[int, bytes]] = deque(maxlen=max_len)
@@ -48,31 +40,16 @@ class _Stream:
         return self.entries[0][0] if self.entries else None
 
 
-class InMemoryBroker(EventBroker):
-    """Single-process broker. NOT safe across replicas.
-
-    Stream entries are kept in a bounded deque per stream key; oldest
-    entries fall off when the cap is hit (mirrors Redis Streams MAXLEN).
-    Reads block on an asyncio.Condition until new entries arrive or the
-    block_ms timeout elapses.
-    """
+class InMemoryBroker(StreamBroker):
+    """Single-process broker. Only works for single-replica deployments."""
 
     def __init__(self, max_len: Optional[int] = None) -> None:
+        """Initialize the broker; optionally override the per-stream cap."""
         self._max_len = max_len or int(
             os.environ.get("ZENML_IN_MEMORY_BROKER_MAX_LEN", _DEFAULT_MAX_LEN)
         )
         self._streams: Dict[str, _Stream] = {}
         self._lock = asyncio.Lock()
-        self._closed = False
-
-        replicas = os.environ.get("ZENML_SERVER_REPLICAS")
-        if replicas and replicas.isdigit() and int(replicas) > 1:
-            logger.warning(
-                "InMemoryBroker is single-process only; running with %s "
-                "replicas will silently drop events for consumers connected "
-                "to a different replica. Use RedisStreamsBroker instead.",
-                replicas,
-            )
 
     async def _get_or_create(self, stream_key: str) -> _Stream:
         async with self._lock:
@@ -85,6 +62,7 @@ class InMemoryBroker(EventBroker):
     async def publish(
         self, stream_key: str, payloads: List[bytes]
     ) -> List[str]:
+        """Append payloads to a stream; return assigned ids."""
         stream = await self._get_or_create(stream_key)
         ids: List[str] = []
         async with stream.condition:
@@ -104,6 +82,7 @@ class InMemoryBroker(EventBroker):
         max_count: int = 256,
         block_ms: int = 1000,
     ) -> List[BrokerEvent]:
+        """Read events strictly after `from_id`, blocking up to `block_ms`."""
         stream = await self._get_or_create(stream_key)
         cursor = int(from_id) if from_id is not None else 0
 
@@ -128,32 +107,44 @@ class InMemoryBroker(EventBroker):
                         break
             return out
 
-        events = _drain()
-        if events:
-            return events
-
+        # Drain + wait both under the condition so a publish that fires
+        # `notify_all` between an empty drain and our wait isn't missed
+        # (otherwise we sleep the full block_ms before noticing).
         async with stream.condition:
+            events = _drain()
+            if events:
+                return events
             try:
                 await asyncio.wait_for(
                     stream.condition.wait(), timeout=block_ms / 1000.0
                 )
             except asyncio.TimeoutError:
                 return []
-        return _drain()
+            return _drain()
+
+    async def latest_id(self, stream_key: str) -> Optional[str]:
+        """Return the most recent id, or `None` if the stream is empty.
+
+        Does NOT create a stream record for unknown keys — bare reads
+        (e.g., the startup connectivity probe) should not leave empty
+        streams behind.
+        """
+        async with self._lock:
+            stream = self._streams.get(stream_key)
+        if stream is None or not stream.entries:
+            return None
+        return str(stream.entries[-1][0])
 
     async def delete_stream(self, stream_key: str) -> None:
+        """Forget a stream; idempotent."""
         async with self._lock:
             stream = self._streams.pop(stream_key, None)
         if stream is not None:
             async with stream.condition:
                 stream.condition.notify_all()
 
-    async def health_check(self) -> None:
-        if self._closed:
-            raise RuntimeError("InMemoryBroker is closed")
-
     async def close(self) -> None:
-        self._closed = True
+        """Drop all streams and wake any waiting readers."""
         async with self._lock:
             streams = list(self._streams.values())
             self._streams.clear()

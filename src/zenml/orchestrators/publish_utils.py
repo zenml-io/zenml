@@ -33,24 +33,6 @@ from zenml.utils.time_utils import utc_now
 logger = get_logger(__name__)
 
 
-def _drain_step_streams() -> None:
-    """Best-effort drain of any pending stream events before step end.
-
-    Imported lazily so the streaming optional dep stack stays decoupled
-    from the orchestrator hot path.
-    """
-    try:
-        from zenml.streams.publisher import flush_and_drain
-
-        flush_and_drain(timeout=2.0)
-    except Exception:
-        # Streaming is best-effort. Never let it fail a step.
-        logger.debug(
-            "Stream flush skipped (publisher not initialized or failed)",
-            exc_info=True,
-        )
-
-
 if TYPE_CHECKING:
     from uuid import UUID
 
@@ -73,7 +55,6 @@ def publish_successful_step_run(
     Returns:
         The updated step run.
     """
-    _drain_step_streams()
     return Client().zen_store.update_run_step(
         step_run_id=step_run_id,
         step_run_update=StepRunUpdate(
@@ -111,9 +92,6 @@ def publish_step_run_status_update(
 
     if end_time is None and status.is_finished:
         end_time = utc_now()
-
-    if status.is_finished:
-        _drain_step_streams()
 
     step_run = Client().zen_store.update_run_step(
         step_run_id=step_run_id,
