@@ -520,6 +520,21 @@ class Session(SqlModelSession):
             "overflow_connections": overflow,
         }
 
+    def _get_log_metrics(self) -> Dict[str, Any]:
+        """Get SQL and system metrics for debug logs.
+
+        Returns:
+            The metrics for SQL session debug logs.
+        """
+        metrics = self._get_metrics()
+
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            from zenml.zen_server.utils import get_system_metrics
+
+            metrics.update(get_system_metrics())
+
+        return metrics
+
     def __enter__(self) -> "Session":
         """Enter the context manager.
 
@@ -543,7 +558,7 @@ class Session(SqlModelSession):
                 "sql.session.started",
                 extra={
                     "caller": self.caller_method,
-                    **self._get_metrics(),
+                    **self._get_log_metrics(),
                 },
             )
 
@@ -573,7 +588,7 @@ class Session(SqlModelSession):
                     "caller": self.caller_method,
                     "duration_ms": duration_ms,
                     "error": exc_type is not None,
-                    **self._get_metrics(),
+                    **self._get_log_metrics(),
                 },
             )
 
