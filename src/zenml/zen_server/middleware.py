@@ -348,15 +348,19 @@ async def log_requests(request: Request, call_next: Any) -> Any:
 
     async with active_requests_lock:
         active_requests_count += 1
-
-    logger.debug("request.received", extra=get_system_metrics())
+    
+    # Log full request metadata on lifecycle events only, i.e. when the
+    # request is received and completed; downstream logs get request_id
+    # for correlation without repeating method/path/client_ip.
+    with logging_scope(**_request_log_fields(request)):
+        logger.debug("request.received", extra=get_system_metrics())
 
     try:
         response = await call_next(request)
 
         request_context = request_manager().current_request
 
-        # Only log full request metadata once at the request boundary.
+        # Log full request metadata on the request boundary.
         with logging_scope(**_request_log_fields(request)):
             logger.debug(
                 "request.completed",
@@ -376,9 +380,10 @@ async def log_requests(request: Request, call_next: Any) -> Any:
 async def record_requests(request: Request, call_next: Any) -> Any:
     """Record requests to the ZenML server.
 
-    Creates a RequestContext, logs the full request metadata once at the
-    request boundary, and binds the request_id into the logging context so
-    downstream log lines can be correlated without repeating request fields.
+    Creates a RequestContext and binds the request_id into the logging context
+    so downstream log lines can be correlated without repeating request fields.
+    Full request metadata is logged by ``log_requests`` on the request
+    lifecycle events.
 
     Args:
         request: The incoming request object.
@@ -392,11 +397,9 @@ async def record_requests(request: Request, call_next: Any) -> Any:
     request_context = RequestContext(request=request)
     request_manager().current_request = request_context
 
+    # Bind only request_id globally for correlation; method/path/client_ip stay
+    # scoped to request lifecycle logs to avoid bloating every downstream line.
     bind_request_context(request_id=request_context.request_id)
-
-    # Only log full request metadata once at the request boundary.
-    with logging_scope(**_request_log_fields(request)):
-        logger.info("request.started")
 
     try:
         response = await call_next(request)
