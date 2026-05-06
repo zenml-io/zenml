@@ -139,8 +139,8 @@ def pipeline_function_definition() -> None:
 
 
 def test_pipeline_run_with_nested_pipeline_definition() -> None:
-    """Tests that a dynamic pipeline run succeeds when the pipeline is defined "
-    "inside a function rather than at module top level."""
+    """Tests that a dynamic pipeline run succeeds when the pipeline is defined 
+    inside a function rather than at module top level."""
     nested_pipeline = pipeline(dynamic=True, enable_cache=False)(
         pipeline_function_definition
     )
