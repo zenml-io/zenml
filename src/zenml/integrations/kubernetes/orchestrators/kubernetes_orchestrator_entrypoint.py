@@ -350,10 +350,14 @@ def main() -> None:
         step_runs: Dict[str, StepRunResponse] = {}
 
         base_labels = {
-            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
-            "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
-            "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
-            "pipeline": kube_utils.sanitize_label(
+            "project_id": kube_utils.sanitize_label_value(
+                str(snapshot.project_id)
+            ),
+            "run_id": kube_utils.sanitize_label_value(str(pipeline_run.id)),
+            "run_name": kube_utils.sanitize_label_value(
+                str(pipeline_run.name)
+            ),
+            "pipeline": kube_utils.sanitize_label_value(
                 snapshot.pipeline_configuration.name
             ),
         }
@@ -458,7 +462,9 @@ def main() -> None:
                     return NodeStatus.COMPLETED
 
             step_labels = base_labels.copy()
-            step_labels["step_name"] = kube_utils.sanitize_label(step_name)
+            step_labels["step_name"] = kube_utils.sanitize_label_value(
+                step_name
+            )
             step_annotations = {
                 STEP_NAME_ANNOTATION_KEY: step_name,
             }
@@ -626,8 +632,8 @@ def main() -> None:
             step_name = node.id
 
             label_selector = (
-                f"run_id={kube_utils.sanitize_label(str(pipeline_run.id))},"
-                f"step_name={kube_utils.sanitize_label(node.id)}"
+                f"run_id={kube_utils.sanitize_label_value(str(pipeline_run.id))},"
+                f"step_name={kube_utils.sanitize_label_value(node.id)}"
             )
 
             try:

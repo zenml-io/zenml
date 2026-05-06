@@ -1121,3 +1121,17 @@ def test_step_source_code_cache_value():
 
     assert source_code_1 == source_code_2 == source_code_3
     assert source_code_4 == source_code_5
+
+
+@step
+def step_with_keyword_only_arguments(a: int, *, b: int) -> None:
+    pass
+
+
+def test_step_with_keyword_only_arguments_works():
+    @pipeline
+    def test_pipeline():
+        step_with_keyword_only_arguments(a=1, b=2)
+
+    with does_not_raise():
+        test_pipeline()
