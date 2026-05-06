@@ -1137,3 +1137,17 @@ def test_pipeline_run_with_nested_step_definition():
 
     with does_not_raise():
         p()
+
+
+@step
+def step_with_keyword_only_arguments(a: int, *, b: int) -> None:
+    pass
+
+
+def test_step_with_keyword_only_arguments_works():
+    @pipeline
+    def test_pipeline():
+        step_with_keyword_only_arguments(a=1, b=2)
+
+    with does_not_raise():
+        test_pipeline()
