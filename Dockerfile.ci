@@ -1,0 +1,32 @@
+ARG PYTHON_VERSION=3.13
+ARG UV_VERSION=0.8.22
+
+FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
+ARG UV_VERSION
+
+RUN set -ex \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends git graphviz build-essential \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade wheel pip "uv==${UV_VERSION}"
+
+WORKDIR /app
+COPY . .
+
+RUN scripts/install-zenml-dev.sh --integrations yes --system \
+  && uv pip install --system 'setuptools<82' \
+  && { pip cache purge 2>/dev/null || true; }
+
+FROM python:${PYTHON_VERSION}-slim-bookworm
+
+RUN set -ex \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends git graphviz \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local /usr/local
+
+WORKDIR /app

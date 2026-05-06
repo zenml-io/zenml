@@ -1,0 +1,343 @@
+---
+name: Linux fast offload
+on:
+  workflow_call:
+    inputs:
+      backend:
+        description: Offload backend to use
+        type: string
+        required: false
+        default: modal
+      python-version:
+        description: Python version used by fallback runner jobs
+        type: string
+        required: false
+        default: '3.13'
+      use-offload:
+        description: Attempt remote offload before falling back
+        type: boolean
+        required: false
+        default: true
+      test_environment:
+        description: Test environment to execute remotely
+        type: string
+        required: false
+        default: default
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: Offload backend to use
+        type: choice
+        options: [modal]
+        required: false
+        default: modal
+      python-version:
+        description: Python version used by fallback runner jobs
+        type: choice
+        options: ['3.11', '3.12', '3.13']
+        required: false
+        default: '3.13'
+      use-offload:
+        description: Attempt remote offload before falling back
+        type: boolean
+        required: false
+        default: true
+      test_environment:
+        description: Test environment to execute remotely
+        type: choice
+        options: [default, modal-server-mysql]
+        required: false
+        default: default
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  offload-fast-tests:
+    name: offload-fast-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    outputs:
+      offload-infra-failed: ${{ steps.classify.outputs.offload_infra_failed }}
+      tests-failed: ${{ steps.classify.outputs.tests_failed }}
+      conclusion: ${{ steps.classify.outputs.conclusion }}
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: 1
+      ZENML_ENABLE_RICH_TRACEBACK: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Prepare result directory
+        run: mkdir -p .ci/offload
+      - name: Check offload eligibility
+        id: eligibility
+        env:
+          BACKEND: ${{ inputs.backend }}
+          USE_OFFLOAD: ${{ inputs.use-offload }}
+        run: |
+          set -euo pipefail
+          eligible=true
+          reason="eligible"
+          if [ "$USE_OFFLOAD" != "true" ]; then
+            eligible=false
+            reason="offload disabled by input"
+          elif [ "$BACKEND" != "modal" ]; then
+            eligible=false
+            reason="unsupported backend: $BACKEND"
+          elif [ -z "${MODAL_TOKEN_ID}" ] || [ -z "${MODAL_TOKEN_SECRET}" ]; then
+            eligible=false
+            reason="Modal credentials unavailable"
+          fi
+          echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+          echo "$reason"
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - name: Cache cargo/offload binary
+        if: steps.eligibility.outputs.eligible == 'true'
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: |
+            ~/.cargo/bin/offload
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: offload-${{ runner.os }}-a43298e03113c39e7c0bb4cf1d5f6f72d2c86584-v1
+          restore-keys: |
+            offload-${{ runner.os }}-
+      - name: Install driver dependencies
+        id: setup
+        if: steps.eligibility.outputs.eligible == 'true'
+        continue-on-error: true
+        env:
+          OFFLOAD_GIT_REPO: https://github.com/safoinme/offload.git
+          OFFLOAD_GIT_REV: a43298e03113c39e7c0bb4cf1d5f6f72d2c86584
+        run: |
+          set -euo pipefail
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
+          python3 -m pip install --user "uv==0.8.22" -r scripts/ci/modal_sandbox_requirements.txt
+          if ! command -v cargo >/dev/null 2>&1; then
+            echo "cargo is required to install the pinned offload binary"
+            exit 1
+          fi
+          if ! command -v offload >/dev/null 2>&1; then
+            cargo install --git "$OFFLOAD_GIT_REPO" --rev "$OFFLOAD_GIT_REV" offload
+          fi
+          offload --version
+      - name: Restore offload image cache
+        id: restore-image-cache
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success'
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: .offload-image-cache
+          key: offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml', 'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml') }}
+          restore-keys: |
+            offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-
+      - name: Restore JUnit duration cache
+        id: restore-junit-cache
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success'
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: .ci/offload/junit.xml
+          key: offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-${{ inputs.python-version }}
+          restore-keys: |
+            offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-
+      - name: Start Modal MySQL server
+        id: modal-server
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success' && inputs.test_environment == 'modal-server-mysql'
+        continue-on-error: true
+        env:
+          ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
+          python3 scripts/ci_modal_mysql_sandbox.py start
+      - name: Run offload
+        id: run-offload
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success' && steps.modal-server.outcome != 'failure'
+        continue-on-error: true
+        env:
+          OFFLOAD_COMMAND: ${{ vars.ZENML_CI_OFFLOAD_COMMAND }}
+          TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          MODAL_CI_SERVER_URL: ${{ steps.modal-server.outputs.server_url }}
+          MODAL_CI_SERVER_USERNAME: ${{ steps.modal-server.outputs.server_username }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -o pipefail
+          original_offload=""
+          restore_config() {
+            if [ -n "$original_offload" ] && [ -f "$original_offload" ]; then
+              cp "$original_offload" offload.toml
+              rm -f "$original_offload"
+            fi
+          }
+          trap restore_config EXIT
+          if [ "$TEST_ENVIRONMENT" = "modal-server-mysql" ]; then
+            export MODAL_CI_SERVER_PASSWORD
+            MODAL_CI_SERVER_PASSWORD=$(python3 - <<'PY'
+          from scripts.ci_modal_mysql_sandbox import derive_server_password
+          print(derive_server_password())
+          PY
+          )
+            original_offload="$(mktemp)"
+            cp offload.toml "$original_offload"
+            cp offload-modal-server-mysql.toml offload.toml
+          fi
+          command=${OFFLOAD_COMMAND:-"offload -v run --parallel 20"}
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          echo "Running: $command"
+          bash -lc "$command" 2>&1 | tee .ci/offload/offload.log
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - name: Mark skipped offload as infrastructure fallback
+        if: steps.eligibility.outputs.eligible != 'true' || steps.setup.outcome == 'failure' || steps.modal-server.outcome == 'failure'
+        env:
+          ELIGIBILITY_REASON: ${{ steps.eligibility.outputs.reason }}
+          SETUP_OUTCOME: ${{ steps.setup.outcome }}
+          SERVER_OUTCOME: ${{ steps.modal-server.outcome }}
+        run: |
+          {
+            echo "Offload did not run."
+            echo "Eligibility: $ELIGIBILITY_REASON"
+            echo "Setup outcome: $SETUP_OUTCOME"
+            echo "Server outcome: $SERVER_OUTCOME"
+          } | tee .ci/offload/offload.log
+      - name: Classify offload result
+        id: classify
+        env:
+          SETUP_FAILED: ${{ steps.eligibility.outputs.eligible != 'true' || steps.setup.outcome == 'failure' || steps.modal-server.outcome == 'failure' }}
+          OFFLOAD_EXIT_CODE: ${{ steps.run-offload.outputs.exit_code || '1' }}
+        run: |
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
+          python3 scripts/ci/classify_offload_result.py \
+            --exit-code "$OFFLOAD_EXIT_CODE" \
+            --junit .ci/offload/junit.xml \
+            --log .ci/offload/offload.log \
+            --setup-failed "$SETUP_FAILED"
+      - name: Emit timing manifest
+        if: always()
+        env:
+          CLASSIFICATION: ${{ steps.classify.outputs.conclusion || 'unknown' }}
+          LANE: ${{ inputs.test_environment }}
+          STARTED_AT: ${{ steps.run-offload.outputs.started_at || steps.eligibility.outputs.started_at }}
+          COMPLETED_AT: ${{ steps.run-offload.outputs.completed_at }}
+          SETUP_STARTED_AT: ${{ steps.setup.outputs.started_at }}
+          SETUP_COMPLETED_AT: ${{ steps.setup.outputs.completed_at }}
+          SETUP_OUTCOME: ${{ steps.setup.outcome }}
+          SERVER_STARTED_AT: ${{ steps.modal-server.outputs.started_at }}
+          SERVER_COMPLETED_AT: ${{ steps.modal-server.outputs.completed_at }}
+          SERVER_OUTCOME: ${{ steps.modal-server.outcome }}
+          TEST_STARTED_AT: ${{ steps.run-offload.outputs.started_at }}
+          TEST_COMPLETED_AT: ${{ steps.run-offload.outputs.completed_at }}
+          TEST_EXIT_CODE: ${{ steps.run-offload.outputs.exit_code || 'missing' }}
+          CLASSIFY_STARTED_AT: ${{ steps.classify.outputs.started_at }}
+          CLASSIFY_COMPLETED_AT: ${{ steps.classify.outputs.completed_at }}
+          CLASSIFY_OUTCOME: ${{ steps.classify.outcome }}
+          TEARDOWN_STARTED_AT: ${{ steps.teardown.outputs.started_at }}
+          TEARDOWN_COMPLETED_AT: ${{ steps.teardown.outputs.completed_at }}
+          TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
+        run: |
+          python3 scripts/ci/emit_timing_manifest.py \
+            --lane "$LANE" \
+            --output-dir .ci/offload \
+            --started-at "$STARTED_AT" \
+            --completed-at "${COMPLETED_AT:-$(date +%s)}" \
+            --classification "$CLASSIFICATION" \
+            --phase "setup=$SETUP_STARTED_AT,$SETUP_COMPLETED_AT,$SETUP_OUTCOME" \
+            --phase "server_provision=$SERVER_STARTED_AT,$SERVER_COMPLETED_AT,$SERVER_OUTCOME" \
+            --phase "test_execution=$TEST_STARTED_AT,$TEST_COMPLETED_AT,exit_$TEST_EXIT_CODE" \
+            --phase "classification=$CLASSIFY_STARTED_AT,$CLASSIFY_COMPLETED_AT,$CLASSIFY_OUTCOME" \
+            --phase "teardown=$TEARDOWN_STARTED_AT,$TEARDOWN_COMPLETED_AT,$TEARDOWN_OUTCOME"
+      - name: Save offload image cache
+        if: always() && steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success' && steps.restore-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: .offload-image-cache
+          key: offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml', 'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml') }}
+      - name: Save JUnit duration cache
+        if: always() && steps.classify.outputs.conclusion == 'success'
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: .ci/offload/junit.xml
+          key: offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id }}
+      - name: Stop Modal MySQL server
+        id: teardown
+        if: always() && steps.modal-server.outputs.sandbox_id != ''
+        env:
+          SANDBOX_ID: ${{ steps.modal-server.outputs.sandbox_id }}
+        run: |
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          trap 'echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
+          python3 scripts/ci_modal_mysql_sandbox.py stop --sandbox-id "$SANDBOX_ID"
+      - name: Upload offload artifacts
+        if: always()
+        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # v4.6.2
+        with:
+          name: linux-fast-offload-artifacts
+          path: .ci/offload
+          if-no-files-found: warn
+      - name: Fail on offloaded test failures
+        if: steps.classify.outputs.tests_failed == 'true'
+        run: exit 1
+  fallback-unit-test:
+    needs: offload-fast-tests
+    if: needs.offload-fast-tests.outputs.offload-infra-failed == 'true' && inputs.test_environment == 'default'
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      os: ubuntu-latest
+      python-version: ${{ inputs.python-version }}
+  fallback-integration-test:
+    needs: offload-fast-tests
+    if: needs.offload-fast-tests.outputs.offload-infra-failed == 'true' && inputs.test_environment == 'default'
+    uses: ./.github/workflows/integration-test-fast.yml
+    with:
+      os: ubuntu-latest
+      python-version: ${{ inputs.python-version }}
+      test_environment: default
+  fallback-mysql-integration-test:
+    needs: offload-fast-tests
+    if: needs.offload-fast-tests.outputs.offload-infra-failed == 'true' && inputs.test_environment == 'modal-server-mysql'
+    uses: ./.github/workflows/integration-test-fast.yml
+    with:
+      os: ubuntu-latest
+      python-version: ${{ inputs.python-version }}
+      test_environment: docker-server-mysql
+  linux-fast-offload-required:
+    runs-on: ubuntu-latest
+    needs:
+      - offload-fast-tests
+      - fallback-unit-test
+      - fallback-integration-test
+      - fallback-mysql-integration-test
+    if: always()
+    steps:
+      - name: Verify offload or fallback result
+        env:
+          NEEDS_CONTEXT: ${{ toJSON(needs) }}
+        run: |-
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          needs = json.loads(os.environ["NEEDS_CONTEXT"])
+          failed = []
+          for name, data in needs.items():
+              result = data["result"]
+              if result not in {"success", "skipped"}:
+                  failed.append(f"{name}: {result}")
+          if failed:
+              print("Linux fast offload dependencies failed:")
+              print("\n".join(failed))
+              sys.exit(1)
+          print("Linux fast offload passed or fell back successfully.")
+          PY

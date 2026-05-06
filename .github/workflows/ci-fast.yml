@@ -77,35 +77,15 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  ubuntu-setup-and-unit-test:
+  linux-fast-offload:
     needs: linting
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
-    uses: ./.github/workflows/unit-test.yml
+    uses: ./.github/workflows/linux-fast-offload.yml
     with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  ubuntu-latest-integration-test:
-    needs: [linting]
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-        test_environment: [default]
-      fail-fast: false
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
+      backend: modal
+      python-version: '3.13'
+      use-offload: true
     secrets: inherit
   start-modal-mysql-sandbox:
     needs: linting
@@ -162,6 +142,17 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           SANDBOX_ID: ${{ needs.start-modal-mysql-sandbox.outputs.sandbox-id }}
         run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id "$SANDBOX_ID"
+  linux-fast-offload-modal-mysql:
+    needs: linting
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name == github.repository)
+    uses: ./.github/workflows/linux-fast-offload.yml
+    with:
+      backend: modal
+      python-version: '3.13'
+      use-offload: true
+      test_environment: modal-server-mysql
+    secrets: inherit
   ci-fast-required:
     runs-on: ubuntu-latest
     needs:
@@ -170,8 +161,7 @@ jobs:
       - api-docs-test
       - update-templates-to-examples
       - linting
-      - ubuntu-setup-and-unit-test
-      - ubuntu-latest-integration-test
+      - linux-fast-offload
       - start-modal-mysql-sandbox
       - ubuntu-latest-modal-integration-test
       - stop-modal-mysql-sandbox
