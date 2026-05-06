@@ -1109,10 +1109,24 @@ class DynamicPipelineRunner:
     ) -> Any:
         """Create and poll a run wait condition.
 
+        The ``timeout`` argument is a soft timeout: once the deadline
+        passes, the runner stops scheduling further *wait* polling cycles,
+        but it keeps polling as long as sibling steps in the same dynamic
+        pipeline are still in progress. This avoids hard-cancelling
+        concurrent work (e.g. a long-running training step running next to
+        a ``wait(timeout=30)`` for external input) just because the wait
+        condition's own budget ran out. Callers that want a hard upper
+        bound on ``wait`` should drain any concurrent step futures before
+        calling ``wait``.
+
         Args:
             schema: Optional expected output type for the resolved result.
             type: Wait condition type.
-            timeout: Maximum time in seconds to poll before pausing.
+            timeout: Soft timeout in seconds. After this many seconds the
+                runner stops accepting new poll cycles for this wait
+                condition, but polling continues until any in-progress
+                sibling steps have finished. See the method-level docstring
+                above for the full semantics.
             poll_interval: Poll interval in seconds.
             question: Optional question shown to external actors.
             metadata: Optional metadata attached to the condition.
