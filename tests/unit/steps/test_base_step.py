@@ -1121,3 +1121,19 @@ def test_step_source_code_cache_value():
 
     assert source_code_1 == source_code_2 == source_code_3
     assert source_code_4 == source_code_5
+
+
+def step_function_definition() -> int:
+    return 1
+
+
+def test_pipeline_run_with_nested_step_definition():
+    """Tests that a step can be defined inside a function rather than at
+    module top level."""
+
+    @pipeline
+    def p() -> None:
+        step(step_function_definition)()
+
+    with does_not_raise():
+        p()

@@ -132,3 +132,17 @@ def test_replay_skips_first_step_and_overrides_second_step_input():
         skip={"producer"},
         step_input_overrides={"consumer": {"input_": 42}},
     )
+
+
+def pipeline_function_definition() -> None:
+    producer()
+
+
+def test_pipeline_run_with_nested_pipeline_definition() -> None:
+    """Tests that a dynamic pipeline run succeeds when the pipeline is defined "
+    "inside a function rather than at module top level."""
+    nested_pipeline = pipeline(dynamic=True, enable_cache=False)(
+        pipeline_function_definition
+    )
+    with does_not_raise():
+        nested_pipeline()
